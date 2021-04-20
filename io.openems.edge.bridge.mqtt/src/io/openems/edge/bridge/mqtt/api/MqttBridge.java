@@ -12,10 +12,13 @@ import org.eclipse.paho.client.mqttv3.MqttException;
 import org.joda.time.DateTimeZone;
 
 
-
-
 public interface MqttBridge extends OpenemsComponent {
 
+    /**
+     * get the Timezone set for the Bridge and therefore for all Timestamps of each payload who have a Timestamp bool set.
+     *
+     * @return the TimeZone of Joda.Time
+     */
     DateTimeZone getTimeZone();
 
     enum ChannelId implements io.openems.edge.common.channel.ChannelId {
@@ -28,7 +31,7 @@ public interface MqttBridge extends OpenemsComponent {
 
         private final Doc doc;
 
-        private ChannelId(Doc doc) {
+        ChannelId(Doc doc) {
             this.doc = doc;
         }
 
@@ -61,6 +64,12 @@ public interface MqttBridge extends OpenemsComponent {
         return this.channel(ChannelId.MQTT_TYPES);
     }
 
+    /**
+     * List of all Subscribetask corresponding to the given device Id.
+     *
+     * @param id the id of the corresponding Component
+     * @return the MqttTaskList.
+     */
     List<MqttTask> getSubscribeTasks(String id);
 
     /**
@@ -68,9 +77,8 @@ public interface MqttBridge extends OpenemsComponent {
      *
      * @param id        id of the MqttComponent usually from config of the Component
      * @param component the Component itself.
-     * @return false if the key is already in List. (Happens on not unique ID)
      */
-    boolean addMqttComponent(String id, MqttComponent component);
+    void addMqttComponent(String id, MqttComponent component);
 
     /**
      * Removes the Mqtt  Component and their Tasks. Usually called on deactivation of the MqttComponent
@@ -86,10 +94,6 @@ public interface MqttBridge extends OpenemsComponent {
      */
     boolean isConnected();
 
-    //NOT IN USE RN BUT ARE HERE FOR FUTURE IMPLEMENTATION
-    List<MqttTask> getPublishTasks(String id);
-
-    String getSubscribePayloadFromTopic(String topic, MqttType type);
 }
 
 

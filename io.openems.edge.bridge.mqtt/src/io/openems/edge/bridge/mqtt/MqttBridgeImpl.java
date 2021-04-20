@@ -283,30 +283,17 @@ public class MqttBridgeImpl extends AbstractOpenemsComponent implements OpenemsC
         return this.subscribeTasks.get(id);
     }
 
-    @Override
-    public List<MqttTask> getPublishTasks(String id) {
-        return this.publishTasks.get(id);
-    }
-
-    @Override
-    public String getSubscribePayloadFromTopic(String topic, MqttType type) {
-        return this.subscribeManager.getPayloadFromTopic(topic, type);
-    }
-
     /**
      * Adds The MqttComponent to the Bridge. Important for Updating JSON Config and Reacting to Commands and Events
      *
      * @param id        id of the MqttComponent usually from config of the Component
      * @param component the Component itself.
-     * @return true if the MqttComponent was successfully added.
      */
     @Override
-    public boolean addMqttComponent(String id, MqttComponent component) {
+    public void addMqttComponent(String id, MqttComponent component) {
         if (this.components.containsKey(id)) {
-            return false;
         } else {
             this.components.put(id, component);
-            return true;
         }
     }
 

@@ -14,20 +14,35 @@ public class CommandWrapper {
         this.expiration = expiration;
     }
 
+    /**
+     * Get the Value send by the Command subscription.
+     *
+     * @return the value.
+     */
     public String getValue() {
-        return value;
+        return this.value;
     }
 
     public void setValue(String value) {
         this.value = value;
     }
 
+    /**
+     * get the Expirationtime of this command. (Date is saved in the Task. ExpirationTime in seconds is stored here.
+     *
+     * @return the expirationTime.
+     */
     public String getExpiration() {
-        return expiration;
+        return this.expiration;
     }
 
+    /**
+     * If no expirationTime is given, this will be true.
+     *
+     * @return if the command holds up forever.
+     */
     public boolean isInfinite() {
-        return infinite;
+        return this.infinite;
     }
 
     /**
