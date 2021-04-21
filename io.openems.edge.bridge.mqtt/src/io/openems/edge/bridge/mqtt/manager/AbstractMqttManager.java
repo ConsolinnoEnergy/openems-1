@@ -2,7 +2,11 @@ package io.openems.edge.bridge.mqtt.manager;
 
 import io.openems.common.worker.AbstractCycleWorker;
 import io.openems.edge.bridge.mqtt.api.MqttTask;
+import io.openems.edge.common.component.ComponentManager;
+import io.openems.edge.common.cycle.Cycle;
 import org.joda.time.DateTimeZone;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -16,6 +20,13 @@ import java.util.stream.Collectors;
 
 
 abstract class AbstractMqttManager extends AbstractCycleWorker {
+
+    protected static final Logger log = LoggerFactory.getLogger(AbstractMqttManager.class);
+    ComponentManager cpm;
+    Cycle cycle;
+    private boolean useCoreCycle = false;
+
+
     //STRING = ID OF COMPONENT
     Map<String, List<MqttTask>> allTasks; //with ID
     List<MqttTask> toDoFuture = new ArrayList<>();
@@ -27,7 +38,7 @@ abstract class AbstractMqttManager extends AbstractCycleWorker {
     String mqttClientId;
     int keepAlive;
     DateTimeZone timeZone;
-    int maxListLength = 30;
+    protected static final int MAX_LIST_LENGTH = 30;
     //Counter for Qos --> e.g. QoS 0 has counter 10 --> FOR LIST FILL
     Map<Integer, AtomicInteger> counterForQos = new HashMap<>();
     //Time for QoS in mS
@@ -35,12 +46,7 @@ abstract class AbstractMqttManager extends AbstractCycleWorker {
 
     private long currentTime;
 
-    //TODO GET EFFECTIVE CYCLE TIME
-    //TODO ATM STANDARD TIME 1000 ms UPDATE Only possible with newer OpenEMS Version (Has not our components --> therefor wait till official pull request)
-
-    private long maxTime = 1000;
-
-    private List<Long> averageTime = new ArrayList<>();
+    private final List<Long> averageTime = new ArrayList<>();
 
     AbstractMqttManager(String mqttBroker, String mqttUsername, String mqttPassword,
                         String mqttClientId, int keepAlive, Map<String, List<MqttTask>> allTasks,
@@ -57,15 +63,16 @@ abstract class AbstractMqttManager extends AbstractCycleWorker {
             this.timeForQos.put(x, new ArrayList<>());
             this.counterForQos.put(x, new AtomicInteger(0));
             this.timeForQos.put(x, new ArrayList<>());
+            //just default timestamps that will be overwritten
             this.timeForQos.get(x).add(0, (long) (x + 1) * 10);
         }
         this.timeZone = timeZone;
     }
 
     void foreverAbstract() {
-        calculateAverageTimes();
-        calculateCurrentTime();
-        addToFutureAndCurrentToDo(sortTasks());
+        this.calculateAverageTimes();
+        this.calculateCurrentTime();
+        this.addToFutureAndCurrentToDo(this.sortTasks());
     }
 
     /**
@@ -76,7 +83,8 @@ abstract class AbstractMqttManager extends AbstractCycleWorker {
      * If yes --> Don't add it and break the loop
      * otherwise add task to current To do and Remove from Future Task.
      * Repeat till there's no time left.
-     *</p>
+     * </p>
+     *
      * @param sortedTasks sorted Tasks by QoS 0 and the Priority (Bc QoS 0 will always be published) sorted Tasks are from method sortTasks()
      */
     private void addToFutureAndCurrentToDo(List<MqttTask> sortedTasks) {
@@ -84,16 +92,29 @@ abstract class AbstractMqttManager extends AbstractCycleWorker {
         if (sortedTasks != null) {
             this.toDoFuture.addAll(sortedTasks);
         }
+        AtomicLong maxTime = new AtomicLong(Cycle.DEFAULT_CYCLE_TIME);
 
-        long timeLeft = maxTime;
-        while ((toDoFuture.size() > 0)) {
-            MqttTask task = toDoFuture.get(0);
-            timeLeft = timeLeft - averageTime.get(task.getQos());
+        if (this.useCoreCycle) {
+            if (this.cycle == null) {
+                this.cpm.getAllComponents().stream().filter(component -> component instanceof Cycle).findAny().ifPresent(component -> {
+                            this.cycle = (Cycle) component;
+                            maxTime.set(this.cycle.getCycleTime());
+                        }
+                );
+
+            } else {
+                maxTime.set(this.cycle.getCycleTime());
+            }
+        }
+        long timeLeft = maxTime.get();
+        while ((this.toDoFuture.size() > 0)) {
+            MqttTask task = this.toDoFuture.get(0);
+            timeLeft = timeLeft - this.averageTime.get(task.getQos());
             if (timeLeft < 0) {
                 break;
             }
-            currentToDo.add(task);
-            toDoFuture.remove(0);
+            this.currentToDo.add(task);
+            this.toDoFuture.remove(0);
         }
     }
 
@@ -111,9 +132,9 @@ abstract class AbstractMqttManager extends AbstractCycleWorker {
         List<MqttTask> collectionOfAllTasks = new ArrayList<>();
         this.allTasks.forEach((key, value) -> collectionOfAllTasks.addAll(value));
         //Add QoS 0 to CurrentToDo --> No Time Required
-        collectionOfAllTasks.stream().filter(mqttTask -> mqttTask.getQos() == 0 && mqttTask.isReady(this.currentTime)).forEach(task -> {
-            this.currentToDo.add(task);
-        });
+        collectionOfAllTasks.stream().filter(mqttTask -> mqttTask.getQos() == 0 && mqttTask.isReady(this.currentTime)).forEach(task ->
+                this.currentToDo.add(task)
+        );
         //remove all added Tasks from all tasks that will be filtered now with the Priority
         this.currentToDo.forEach(collectionOfAllTasks::remove);
         if (collectionOfAllTasks.size() > 0) {
@@ -136,7 +157,7 @@ abstract class AbstractMqttManager extends AbstractCycleWorker {
             } else {
                 value.forEach(time::getAndAdd);
                 long addedTime = time.get();
-                addedTime /= value.size(); //either maxlength or <
+                addedTime /= value.size(); //either max length or <
                 this.averageTime.add(key, addedTime);
                 time.set(0);
             }
@@ -150,6 +171,14 @@ abstract class AbstractMqttManager extends AbstractCycleWorker {
 
     long getCurrentTime() {
         return this.currentTime;
+    }
+
+    public void setComponentManager(ComponentManager cpm) {
+        this.cpm = cpm;
+    }
+
+    public void setCoreCycle(boolean setCoreCycle) {
+        this.useCoreCycle = setCoreCycle;
     }
 
 }

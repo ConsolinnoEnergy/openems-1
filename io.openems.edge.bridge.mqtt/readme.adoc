@@ -10,6 +10,11 @@ AutoReconnect is also handled automatically.
 
 Two Examples are found in the dummy package.
 
+External Resource: http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html ::
+
 Implemented Natures::
-- MqttBridge
+- MqttBridge.
+
+
+
 

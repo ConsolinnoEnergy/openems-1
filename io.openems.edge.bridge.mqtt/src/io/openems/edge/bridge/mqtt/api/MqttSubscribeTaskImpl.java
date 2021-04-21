@@ -13,14 +13,17 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
- * The Concrete Implementation of the AbstractMqttTask. The SubscribeTaskImpl handles the
+ * The Concrete Implementation of the AbstractMqttTask. The SubscribeTaskImpl allows to subscribe to the MqttBroker
+ * and either: map the value of the payload to certain Channel (Depends on Config) or get Commands and store them.
+ * They will be handled later by the MqttCommandComponent.
  */
 public class MqttSubscribeTaskImpl extends AbstractMqttTask implements MqttSubscribeTask {
-
-    private int messageId;
+    private final Logger log = LoggerFactory.getLogger(MqttSubscribeTaskImpl.class);
     private String time;
     //converted time
     private DateTime timeDate;
@@ -45,13 +48,14 @@ public class MqttSubscribeTaskImpl extends AbstractMqttTask implements MqttSubsc
                 this.nameIdAndChannelIdMap.put(tokens[x], tokens[x + 1]);
             }
         } else if (type.equals(MqttType.COMMAND)) {
-            commandValueMap = new HashMap<>();
+            this.commandValueMap = new HashMap<>();
             Arrays.stream(MqttCommandType.values()).forEach(consumer -> this.commandValueMap.put(consumer, new CommandWrapper("NOTDEFINED", "NOTDEFINED")));
         }
     }
 
     /**
      * Called by MqttSubscribeManager. Response to Payload.
+     * Response depends on the Style of the Payload (Atm Standard payload only).
      *
      * @param payload the Payload for the concrete MqttTask.
      */
@@ -59,10 +63,9 @@ public class MqttSubscribeTaskImpl extends AbstractMqttTask implements MqttSubsc
     public void response(String payload) {
         super.payloadToOrFromBroker = payload;
         switch (super.style) {
-
             case STANDARD:
             default:
-                standardResponse();
+                this.standardResponse();
         }
     }
 
@@ -78,7 +81,7 @@ public class MqttSubscribeTaskImpl extends AbstractMqttTask implements MqttSubsc
      * }
      * </p>
      * <p>
-     * The name of broker param after metrics --> has a value, this value will be written into an Openems channel.
+     * The name of broker param after metrics --> has a value, this value will be written into an OpenEms channel.
      * It either writes directly in the channel and sets something (e.g. subscribe to telemetry)
      * or
      * MqttType --> Each MqttComponent got a channel for corresponding MqttType and therefore each component can react to
@@ -111,22 +114,26 @@ public class MqttSubscribeTaskImpl extends AbstractMqttTask implements MqttSubsc
 
         switch (this.getMqttType()) {
             case TELEMETRY:
-                standardTelemetryResponse(responseJson);
+                this.standardTelemetryResponse(responseJson);
                 break;
             case COMMAND:
-                standardCommandResponse(responseJson);
+                this.standardCommandResponse(responseJson);
                 break;
             case EVENT:
-                standardEventResponse(responseJson);
+                //Not supported yet
                 break;
         }
 
     }
 
-    private void standardEventResponse(JsonObject tokens) {
-        System.out.println("Events are not supported by Subscribers yet!");
-    }
-
+    /**
+     * This allows the task to react to Commands.
+     * Behind Method a Method is expected (Defined in MqttCommandType)
+     * After that a value and an expiration is expected.
+     * Those will be set to the corresponding CommandType.
+     * See MqttType or genericexcampleconfig.json for more details/example/explanation.
+     * @param tokens the Payload from the MqttBroker.
+     */
     private void standardCommandResponse(JsonObject tokens) {
         if (!super.getMqttType().equals(MqttType.COMMAND)) {
             return;
@@ -137,14 +144,21 @@ public class MqttSubscribeTaskImpl extends AbstractMqttTask implements MqttSubsc
         tokens.keySet().forEach(entry -> {
             if (entry.toLowerCase().contains("method")) {
                 commandTypeString.set(tokens.get(entry).getAsString().toUpperCase());
+                if (!MqttCommandType.contains(commandTypeString.get())) {
+                    this.log.warn("CommandType: " + commandTypeString.get() + " is not supported!");
+                }
 
-            } else if (entry.toLowerCase().contains("value")) {
-                this.commandValueMap.get(MqttCommandType.valueOf(commandTypeString.get())).setValue(tokens.get(entry).getAsString());
-            } else if (entry.toLowerCase().contains("expires") || entry.toLowerCase().contains("expiration")) {
-                if (tokens.get(entry).isJsonNull()) {
-                    this.commandValueMap.get(MqttCommandType.valueOf(commandTypeString.get())).setExpiration("Infinite");
-                } else {
-                    this.commandValueMap.get(MqttCommandType.valueOf(commandTypeString.get())).setExpiration(tokens.get(entry).getAsString());
+            }
+            if (MqttCommandType.contains(commandTypeString.get())) {
+
+                if (entry.toLowerCase().contains("value")) {
+                    this.commandValueMap.get(MqttCommandType.valueOf(commandTypeString.get())).setValue(tokens.get(entry).getAsString());
+                } else if (entry.toLowerCase().contains("expires") || entry.toLowerCase().contains("expiration")) {
+                    if (tokens.get(entry).isJsonNull()) {
+                        this.commandValueMap.get(MqttCommandType.valueOf(commandTypeString.get())).setExpiration("Infinite");
+                    } else {
+                        this.commandValueMap.get(MqttCommandType.valueOf(commandTypeString.get())).setExpiration(tokens.get(entry).getAsString());
+                    }
                 }
             }
         });
@@ -152,8 +166,12 @@ public class MqttSubscribeTaskImpl extends AbstractMqttTask implements MqttSubsc
 
     /**
      * Standard Telemetry Response. Map the Data from the Broker to the OpenEMS channel.
+     * Configure the MqttTelemetryComponent -> You can subscribe Topics and configure a payload.
+     * The Key in the Payload will be filtered and Mapped to a OpenEMSChannel. Whatever value is send by the Broker standing behind the key.
+     * This value will be stored in the corresponding channel.
+     * See MqttType or genericexcampleconfig.json for more details/example/explanation.
      *
-     * @param tokens response as a Json obj.
+     * @param tokens response (payload) as a Json obj.
      */
     private void standardTelemetryResponse(JsonObject tokens) {
         //Events and Commands need to be handled by Component itself, only telemetry is allowed to update Channels directly.
@@ -171,12 +189,12 @@ public class MqttSubscribeTaskImpl extends AbstractMqttTask implements MqttSubsc
                         String channelId = this.nameIdAndChannelIdMap.get(key);
                         Channel<?> channel = super.channels.get(channelId);
                         channel.setNextValue(value);
-                        System.out.println("Update Channel: " + channelId + " with Value: " + value);
+                        this.log.info("Update Channel: " + channelId + " with Value: " + value);
                     } else {
-                        System.out.println("Value not defined yet for: " + this.nameIdAndChannelIdMap.get(key));
+                        this.log.info("Value not defined yet for: " + this.nameIdAndChannelIdMap.get(key));
                     }
                 } else {
-                    System.out.println("Key: " + key + " was not configured!");
+                    this.log.info("Key: " + key + " was not configured!");
                 }
             } catch (java.lang.UnsupportedOperationException ignored) {
                 String value = tokens.get(key).toString();
@@ -187,37 +205,17 @@ public class MqttSubscribeTaskImpl extends AbstractMqttTask implements MqttSubsc
                         String channelId = this.nameIdAndChannelIdMap.get(key);
                         Channel<?> channel = super.channels.get(channelId);
                         channel.setNextValue(value);
-                        System.out.println("Update Channel: " + channelId + " with Value: " + value);
+                        this.log.info("Update Channel: " + channelId + " with Value: " + value);
                     } else {
-                        System.out.println("Value not defined yet for: " + this.nameIdAndChannelIdMap.get(key));
+                        this.log.info("Value not defined yet for: " + this.nameIdAndChannelIdMap.get(key));
                     }
                 } else {
-                    System.out.println("Key: " + key + " was not configured!");
+                    this.log.info("Key: " + key + " was not configured!");
                 }
             }
         });
     }
 
-    /**
-     * MessageId of the MqttTask. Given by the MqttBridge.
-     *
-     * @param messageId the Number of the message.
-     */
-
-    @Override
-    public void putMessageId(int messageId) {
-        this.messageId = messageId;
-    }
-
-    /**
-     * For Future Implementation.
-     *
-     * @return the MessageId
-     */
-    @Override
-    public int getMessageId() {
-        return this.messageId;
-    }
 
     /**
      * Converts the time. Usually Called by Manager.
@@ -233,7 +231,7 @@ public class MqttSubscribeTaskImpl extends AbstractMqttTask implements MqttSubsc
 
     @Override
     public DateTime getTime() {
-        return timeDate;
+        return this.timeDate;
     }
 
     /**

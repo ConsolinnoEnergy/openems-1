@@ -28,16 +28,16 @@ public class CommandWrapper {
     }
 
     /**
-     * get the Expirationtime of this command. (Date is saved in the Task. ExpirationTime in seconds is stored here.
+     * Get the Expiration of this command. (Date is saved in the Task. Expiration in seconds is stored here.
      *
-     * @return the expirationTime.
+     * @return the expiration.
      */
     public String getExpiration() {
         return this.expiration;
     }
 
     /**
-     * If no expirationTime is given, this will be true.
+     * If no expiration is given/set to INFINITE, this will be true.
      *
      * @return if the command holds up forever.
      */

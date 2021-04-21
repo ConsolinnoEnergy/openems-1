@@ -27,7 +27,7 @@ public class MqttPublishManager extends AbstractMqttManager {
         super(mqttBroker, mqttUsername, mqttPassword, mqttClientId, keepAlive, publishTasks,
                 formatter);
         //Create new Connection Publish
-        //Magic numbers bc there're only 3 QoS available
+        //Magic numbers bc there are only 3 QoS available
         for (int x = 0; x < 3; x++) {
             this.connections.put(x, new MqttConnectionPublishImpl());
             this.connections.get(x).createMqttPublishSession(super.mqttBroker, super.mqttClientId + "_PUBLISH_" + x,
@@ -60,7 +60,7 @@ public class MqttPublishManager extends AbstractMqttManager {
                 AtomicInteger counter = super.counterForQos.get(qos);
                 super.timeForQos.get(qos).add(counter.get(), time);
                 counter.getAndIncrement();
-                counter.set(counter.get() % 30);
+                counter.set(counter.get() % MAX_LIST_LENGTH);
             } catch (MqttException e) {
                 e.printStackTrace();
                 //On Error add the task to future tasks to try again.
@@ -71,18 +71,20 @@ public class MqttPublishManager extends AbstractMqttManager {
         super.currentToDo.clear();
     }
 
-
+    /**
+     * Called by MqttBridge.
+     * this will disconnect every connection and stops the communication with the Broker.
+     */
     public void deactivate() {
         super.deactivate();
         this.connections.forEach((key, value) -> {
             try {
                 value.disconnect();
             } catch (MqttException e) {
-                e.printStackTrace();
+               log.warn("Error on disconnecting: " + e.getMessage());
             }
         });
     }
-
 
 
     /**

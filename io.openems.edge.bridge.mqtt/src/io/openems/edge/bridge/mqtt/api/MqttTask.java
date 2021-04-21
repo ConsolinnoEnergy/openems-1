@@ -1,5 +1,9 @@
 package io.openems.edge.bridge.mqtt.api;
 
+/**
+ * The interface MqttTask provides an Interface that allows other classes to access most MQTT relevant information of a task or
+ * check if the Task is ready to e.g. publish another payload.
+ */
 public interface MqttTask {
     /**
      * Get the Mqtt: Quality of Service of this Task.
@@ -55,7 +59,14 @@ public interface MqttTask {
      * Called by Abstract Cycle Worker for current Tasks to handle.
      *
      * @param currentTime the currentTime, calculated each cycle by abstractManager
-     * @return aboolean.
+     * @return aBoolean.
      */
     boolean isReady(long currentTime);
+
+    /**
+     * Returns the Id. Used to Unsubscribe Topic.
+     *
+     * @return the Id of the Task.
+     */
+    String getId();
 }

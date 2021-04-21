@@ -15,18 +15,13 @@ import org.joda.time.DateTimeZone;
 public interface MqttBridge extends OpenemsComponent {
 
     /**
-     * get the Timezone set for the Bridge and therefore for all Timestamps of each payload who have a Timestamp bool set.
+     * Get the Timezone set for the Bridge and therefore for all Timestamps of each payload who have a Timestamp bool set.
      *
      * @return the TimeZone of Joda.Time
      */
     DateTimeZone getTimeZone();
 
     enum ChannelId implements io.openems.edge.common.channel.ChannelId {
-        SLAVE_COMMUNICATION_FAILED(Doc.of(Level.FAULT) //
-                .debounce(10, Debounce.TRUE_VALUES_IN_A_ROW_TO_SET_TRUE)), //
-        CYCLE_TIME_IS_TOO_SHORT(Doc.of(Level.WARNING) //
-                .debounce(10, Debounce.TRUE_VALUES_IN_A_ROW_TO_SET_TRUE)), //
-        EXECUTION_DURATION(Doc.of(OpenemsType.LONG)),
         MQTT_TYPES(Doc.of(OpenemsType.STRING));
 
         private final Doc doc;
@@ -65,7 +60,7 @@ public interface MqttBridge extends OpenemsComponent {
     }
 
     /**
-     * List of all Subscribetask corresponding to the given device Id.
+     * List of all SubscribeTask corresponding to the given device Id.
      *
      * @param id the id of the corresponding Component
      * @return the MqttTaskList.

@@ -6,7 +6,10 @@ import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 
 
-
+/**
+ * This provides the Interface for MqttSubscribeTasks. It allows the MqttSubscribeManager to access the tasks, as well as
+ * the Command component to access all the command values.
+ */
 public interface MqttSubscribeTask extends MqttTask {
 
     /**
@@ -22,21 +25,18 @@ public interface MqttSubscribeTask extends MqttTask {
      * @param messageId the Number of the message.
      */
 
-    void putMessageId(int messageId);
-
-    /**
-     * For Future Implementation.
-     *
-     * @return the MessageId
-     */
-    int getMessageId();
-
     /**
      * Converts the time. Usually Called by Manager.
      *
      * @param timeZone given by Manager-Class.
      */
     void convertTime(DateTimeZone timeZone);
+
+    /**
+     * Gets the Time where the Payload was received (important for CommandValues -> check if command is expired).
+     *
+     * @return the Time (Joda-Time)
+     */
 
     DateTime getTime();
 

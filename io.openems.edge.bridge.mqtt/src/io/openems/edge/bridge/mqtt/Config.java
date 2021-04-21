@@ -18,6 +18,8 @@ import org.osgi.service.metatype.annotations.Option;
     @AttributeDefinition(name = "Alias", description = "Human readable name for this Component.")
     String alias() default "";
 
+    boolean useCoreCycleTime();
+
     @AttributeDefinition(name = "Broker URL", description = "URL of the Broker (if any given)..if you set a URL, you do NOT need to enter IP+ Port+ basepath + connection")
     String brokerUrl() default "";
 

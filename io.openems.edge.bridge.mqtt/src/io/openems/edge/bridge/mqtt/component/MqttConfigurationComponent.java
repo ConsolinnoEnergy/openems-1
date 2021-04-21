@@ -11,9 +11,14 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * This provides the Interface for the MqttConfigurationComponent.
+ * This allows the TelemetryComponent/CommandComponent etc to use certain methods.
+ * The MqttConfigurationComponent also provides an inner class that extends the AbstractMqttComponent.
+ */
 public interface MqttConfigurationComponent {
     /**
-     * Inits the Tasks by Channel and Payloadstyle. IMPORTANT: Only called/exec if it was created by OSGi!
+     * Initiates the Tasks by Channel and PayloadStyle. IMPORTANT: Only called/exec if it was created by OSGi!
      *
      * @param channels     The Channel of the parent.
      * @param payloadStyle payloadStyle usually from config.
@@ -22,14 +27,19 @@ public interface MqttConfigurationComponent {
      */
     void initTasks(List<Channel<?>> channels, String payloadStyle) throws MqttException, ConfigurationException;
 
+    /**
+     * Check if the Components Configuration is done. (OSGi Config)
+     *
+     * @return a Boolean.
+     */
     boolean hasBeenConfigured();
 
     /**
      * Tells the parent if the Command is expired.
      *
      * @param task MqttTask given by Parent.
-     * @param key  Commandwrapper used to get Expiration and InfiniteTime Status(==never expire).
-     * @return aboolean
+     * @param key  CommandWrapper used to get Expiration and InfiniteTime Status(==never expire).
+     * @return aBoolean
      */
     boolean expired(MqttSubscribeTask task, CommandWrapper key);
 
@@ -43,6 +53,11 @@ public interface MqttConfigurationComponent {
      */
     void update(Configuration configuration, String channelIdList, List<Channel<?>> channels, int length);
 
+    /**
+     * Tells if the Component is ready and configured.
+     *
+     * @return a Boolean
+     */
     boolean isConfigured();
 
     /**
@@ -54,10 +69,11 @@ public interface MqttConfigurationComponent {
      * @throws ConfigurationException if JsonFile has wrong config.
      * @throws MqttException          If subscription fails.
      */
+
     void initJson(ArrayList<Channel<?>> channels, String pathForJson) throws IOException, ConfigurationException, MqttException;
 
     /**
-     * Updates the JsonConfig via OpenEmsChannel: Configuration
+     * Updates the JsonConfig via OpenEmsChannel: Configuration.
      *
      * @param channels Parent Channel
      * @param s        content of ConfigurationChannel
@@ -67,7 +83,8 @@ public interface MqttConfigurationComponent {
     void updateJsonByChannel(ArrayList<Channel<?>> channels, String s) throws ConfigurationException, MqttException;
 
     /**
-     * Checks if the Value is legit e.g. if it is "NotDefined" (No Value read yet) or "NaN" (Happens if a new Schedule is called by broker)
+     * Checks if the Value is legit.
+     * E.g. if it is "NotDefined" (No Value read yet) or "NaN" (Happens if a new Schedule is called by broker).
      *
      * @param value value of CommandWrapper in Parent Task.
      * @return aBoolean

@@ -22,7 +22,7 @@ public abstract class AbstractMqttTask implements MqttTask {
     Map<String, Channel<?>> channels;
     private long timeStamp = -1;
     private final int timeToWait;
-    private  static final int TIME_CONVERTER_TO_SECONDS = 1000;
+    private static final int TIME_CONVERTER_TO_SECONDS = 1000;
     //Payload either for the Pub task that needs to be changed for broker OR the handled sub task payload.
     String configuredPayload;
     PayloadStyle style;
@@ -130,4 +130,8 @@ public abstract class AbstractMqttTask implements MqttTask {
         return isReady;
     }
 
+    @Override
+    public String getId() {
+        return this.id;
+    }
 }

@@ -6,25 +6,27 @@ import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import static io.openems.edge.bridge.mqtt.api.ConfigurationSplits.PAYLOAD_MAPPING_SPLITTER;
 
 
 /**
  * A Mqtt Connection Created by either the mqttBridge, subscribe or publish-manager.
  */
 public abstract class AbstractMqttConnection implements MqttConnection {
-    //MqttClient, Informations by MqttBridge
+    protected final Logger log = LoggerFactory.getLogger(AbstractMqttConnection.class);
+    //MqttClient, information by MqttBridge
     MqttClient mqttClient;
-    private MemoryPersistence persistence;
-    private MqttConnectOptions mqttConnectOptions;
+    private final MemoryPersistence persistence;
+    private final MqttConnectOptions mqttConnectOptions;
     boolean cleanSessionFlag;
 
-    private boolean disconnected = false;
-
     AbstractMqttConnection() {
-        //protected boolean lastWillSet;
         this.persistence = new MemoryPersistence();
         this.mqttConnectOptions = new MqttConnectOptions();
     }
@@ -44,15 +46,15 @@ public abstract class AbstractMqttConnection implements MqttConnection {
                                              boolean cleanSession, int keepAlive) throws MqttException {
         this.mqttClient = new MqttClient(mqttBroker, mqttClientId, this.persistence);
         if (!username.trim().equals("")) {
-            mqttConnectOptions.setUserName(username);
+            this.mqttConnectOptions.setUserName(username);
         }
         if (!username.trim().equals("")) {
-            mqttConnectOptions.setPassword(mqttPassword.toCharArray());
+            this.mqttConnectOptions.setPassword(mqttPassword.toCharArray());
         }
-        mqttConnectOptions.setCleanSession(cleanSession);
-        mqttConnectOptions.setKeepAliveInterval(keepAlive);
-        mqttConnectOptions.setMqttVersion(MqttConnectOptions.MQTT_VERSION_3_1_1);
-        mqttConnectOptions.setAutomaticReconnect(true);
+        this.mqttConnectOptions.setCleanSession(cleanSession);
+        this.mqttConnectOptions.setKeepAliveInterval(keepAlive);
+        this.mqttConnectOptions.setMqttVersion(MqttConnectOptions.MQTT_VERSION_3_1_1);
+        this.mqttConnectOptions.setAutomaticReconnect(true);
         this.cleanSessionFlag = cleanSession;
     }
 
@@ -64,13 +66,13 @@ public abstract class AbstractMqttConnection implements MqttConnection {
      * @param mqttClientId ClientID of the Connection.
      * @param username     username.
      * @param mqttPassword password.
-     * @param keepAlive    keepalive.
-     * @throws MqttException if connection fails or other problems occured with mqtt.
+     * @param keepAlive    keepAlive.
+     * @throws MqttException if connection fails or other problems occurred with mqtt.
      */
     @Override
     public void createMqttSubscribeSession(String mqttBroker, String mqttClientId, String username, String mqttPassword, int keepAlive) throws MqttException {
-        createMqttSessionBasicSetup(mqttBroker, mqttClientId, username, mqttPassword, false, keepAlive);
-        connect();
+        this.createMqttSessionBasicSetup(mqttBroker, mqttClientId, username, mqttPassword, false, keepAlive);
+        this.connect();
     }
 
     /**
@@ -78,7 +80,7 @@ public abstract class AbstractMqttConnection implements MqttConnection {
      *
      * @param broker       URL of Broker usually from manager/bridge.
      * @param clientId     ClientID of the Connection.
-     * @param keepAlive    keepalive flag.
+     * @param keepAlive    keepAlive flag.
      * @param username     username.
      * @param password     password.
      * @param cleanSession clean session flag.
@@ -88,7 +90,7 @@ public abstract class AbstractMqttConnection implements MqttConnection {
     public void createMqttPublishSession(String broker, String clientId, int keepAlive, String username,
                                          String password, boolean cleanSession) throws MqttException {
 
-        createMqttSessionBasicSetup(broker, clientId, username, password, cleanSession, keepAlive);
+        this.createMqttSessionBasicSetup(broker, clientId, username, password, cleanSession, keepAlive);
 
     }
 
@@ -110,68 +112,46 @@ public abstract class AbstractMqttConnection implements MqttConnection {
             lastWillPayload.addProperty("time", time);
 
         }
-        String[] payload = payloadLastWill.split(":");
+        String[] payload = payloadLastWill.split(PAYLOAD_MAPPING_SPLITTER.stringValue);
         AtomicInteger counter = new AtomicInteger(0);
         Arrays.stream(payload).forEachOrdered(consumer -> {
             if (counter.get() % 2 == 0) {
                 lastWillPayload.addProperty(consumer, payload[counter.incrementAndGet()]);
             }
         });
-        mqttConnectOptions.setWill(topicLastWill, payloadLastWill.getBytes(), qosLastWill, retainedFlag);
+        this.mqttConnectOptions.setWill(topicLastWill, payloadLastWill.getBytes(), qosLastWill, retainedFlag);
     }
 
 
     /**
-     * Connects with it's mqttConnectOptions to the broker.
+     * Connects with it's this.mqttConnectOptions to the broker.
      *
      * @throws MqttException will be thrown if configs are wrong or connection not available.
      */
     @Override
     public void connect() throws MqttException {
-        System.out.println("Connecting to Broker");
+        this.log.info("Connecting to Broker: " + this.mqttClient.getClientId());
         this.mqttClient.connect(this.mqttConnectOptions);
-        this.disconnected = false;
-        System.out.println("Connected");
+        this.log.info("Connected: " + this.mqttClient.getClientId());
     }
 
+    /**
+     * Disconnects the Connection. Happens on deactivation. Only for internal usage.
+     *
+     * @throws MqttException if somethings wrong with the MQTT Connection.
+     */
     @Override
     public void disconnect() throws MqttException {
 
         this.mqttClient.disconnect();
-        this.disconnected = true;
-    }
-
-    @Override
-    public MqttClient getMqttClient() {
-        return this.mqttClient;
     }
 
     /**
-     * Usually false. Usually you don't want a clean session within an EMS. But for Future implementations:
-     * If CleanSessions should be an option.
+     * Checks if the Connection is still available.
      *
-     * @return aBoolean.
+     * @return a Boolean.
      */
-    @Override
-    public boolean isCleanSession() {
-        return this.cleanSessionFlag;
-    }
-
-    public MqttConnectOptions getMqttConnectOptions() {
-        return mqttConnectOptions;
-    }
-
-    public void reconnect() {
-        if (this.mqttClient.isConnected() == false) {
-            try {
-                this.mqttClient.reconnect();
-            } catch (MqttException e) {
-                e.getMessage();
-            }
-        }
-    }
-
     public boolean isConnected() {
-       return this.mqttClient.isConnected();
+        return this.mqttClient.isConnected();
     }
 }

@@ -12,6 +12,7 @@ import io.openems.edge.bridge.mqtt.connection.MqttConnectionPublishImpl;
 import io.openems.edge.bridge.mqtt.manager.MqttPublishManager;
 import io.openems.edge.bridge.mqtt.manager.MqttSubscribeManager;
 import io.openems.edge.common.component.AbstractOpenemsComponent;
+import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.common.event.EdgeEventConstants;
 import org.eclipse.paho.client.mqttv3.MqttException;
@@ -25,6 +26,7 @@ import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.ConfigurationPolicy;
 import org.osgi.service.component.annotations.Deactivate;
+import org.osgi.service.component.annotations.Modified;
 import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.event.Event;
 import org.osgi.service.event.EventConstants;
@@ -63,16 +65,19 @@ public class MqttBridgeImpl extends AbstractOpenemsComponent implements OpenemsC
     @Reference
     ConfigurationAdmin ca;
 
+    @Reference
+    ComponentManager cpm;
+
     private final Logger log = LoggerFactory.getLogger(MqttBridgeImpl.class);
 
 
     //Add to Manager
     //MAP OF ALL TASKS <-- ID and values in list
-    private Map<String, List<MqttTask>> publishTasks = new ConcurrentHashMap<>();
-    private Map<String, List<MqttTask>> subscribeTasks = new ConcurrentHashMap<>();
+    private final Map<String, List<MqttTask>> publishTasks = new ConcurrentHashMap<>();
+    private final Map<String, List<MqttTask>> subscribeTasks = new ConcurrentHashMap<>();
 
     //MqttComponentMap
-    private Map<String, MqttComponent> components = new ConcurrentHashMap<>();
+    private final Map<String, MqttComponent> components = new ConcurrentHashMap<>();
 
     //Manager, handling the mqtt tasks and when to do what task
     private MqttPublishManager publishManager;
@@ -81,13 +86,7 @@ public class MqttBridgeImpl extends AbstractOpenemsComponent implements OpenemsC
     private String mqttUsername;
     private String mqttPassword;
     private String mqttBroker;
-    private String mqttBrokerUrl;
     private String mqttClientId;
-    static int subscribeIdCounter = 0;
-
-    //ONLY DEBUG SUBSCRIBE
-    private String subscribeId;
-    private String subscribeTopic;
 
     //FOR LAST WILL
     private MqttConnectionPublishImpl bridgePublisher;
@@ -102,31 +101,39 @@ public class MqttBridgeImpl extends AbstractOpenemsComponent implements OpenemsC
 
 
     @Activate
-    public void activate(ComponentContext context, Config config) throws OpenemsException, MqttException {
+    void activate(ComponentContext context, Config config) throws OpenemsException, MqttException {
 
         super.activate(context, config.id(), config.alias(), config.enabled());
         if (config.mqttPriorities().length != MqttPriority.values().length || config.mqttTypes().length != MqttPriority.values().length) {
-            updateConfig();
+            this.updateConfig();
             return;
         }
+        this.basicActivationOrModifiedSetup(config);
+    }
+
+    private void basicActivationOrModifiedSetup(Config config) throws OpenemsException, MqttException {
         this.timeZone = config.locale().equals("") ? DateTimeZone.UTC : DateTimeZone.forID(config.locale());
         //Important for last will.
         this.bridgePublisher = new MqttConnectionPublishImpl();
         try {
             this.createMqttSession(config);
         } catch (MqttException e) {
-            log.warn(e.getMessage());
+            this.log.warn(e.getMessage());
             throw new OpenemsException(e.getMessage());
         }
 
-        publishManager = new MqttPublishManager(publishTasks, this.mqttBroker, this.mqttUsername,
-                this.mqttPassword, config.keepAlive(), this.mqttClientId, timeZone);
+        this.publishManager = new MqttPublishManager(this.publishTasks, this.mqttBroker, this.mqttUsername,
+                this.mqttPassword, config.keepAlive(), this.mqttClientId, this.timeZone);
         //ClientId --> + CLIENT_SUB_0
-        subscribeManager = new MqttSubscribeManager(subscribeTasks, this.mqttBroker, this.mqttUsername,
-                this.mqttPassword, this.mqttClientId, config.keepAlive(), timeZone);
+        this.subscribeManager = new MqttSubscribeManager(this.subscribeTasks, this.mqttBroker, this.mqttUsername,
+                this.mqttPassword, this.mqttClientId, config.keepAlive(), this.timeZone);
+        this.publishManager.setComponentManager(this.cpm);
+        this.subscribeManager.setComponentManager(this.cpm);
+        this.publishManager.setCoreCycle(config.useCoreCycleTime());
+        this.subscribeManager.setCoreCycle(config.useCoreCycleTime());
+        this.publishManager.activate(super.id() + "_publish");
+        this.subscribeManager.activate(super.id() + "_subscribe");
 
-        publishManager.activate(super.id() + "_publish");
-        subscribeManager.activate(super.id() + "_subscribe");
     }
 
     /**
@@ -136,18 +143,18 @@ public class MqttBridgeImpl extends AbstractOpenemsComponent implements OpenemsC
         Configuration c;
 
         try {
-            c = ca.getConfiguration(this.servicePid(), "?");
+            c = this.ca.getConfiguration(this.servicePid(), "?");
             Dictionary<String, Object> properties = c.getProperties();
-            String types = Arrays.toString(MqttType.values());
+            String propertyInput = Arrays.toString(MqttType.values());
 
-            properties.put("mqttTypes", propertyInput(types));
+            properties.put("mqttTypes", this.propertyInput(propertyInput));
             this.setMqttTypes().setNextValue(MqttType.values());
-            types = Arrays.toString(MqttPriority.values());
-            properties.put("mqttPriorities", propertyInput(types));
+            propertyInput = Arrays.toString(MqttPriority.values());
+            properties.put("mqttPriorities", this.propertyInput(propertyInput));
             c.update(properties);
 
         } catch (IOException e) {
-            e.printStackTrace();
+            this.log.warn("Couldn't update config, reason: " + e.getMessage());
         }
     }
 
@@ -173,11 +180,9 @@ public class MqttBridgeImpl extends AbstractOpenemsComponent implements OpenemsC
     private void createMqttSession(Config config) throws MqttException {
         //Create Broker URL/IP etc
         //TCP SSL OR WSS
-        //The Bridge won't work if a basepath is set @Felix you may want to take a look at that
         if (config.brokerUrl().equals("")) {
             String basepath = config.basepath();
-            // if (basepath.equals("") || basepath.startsWith("/") == false) {
-            if ((basepath.equals("") || basepath.startsWith("/")) == false) {
+            if (!(basepath.equals("") || basepath.startsWith("/"))) {
                 basepath = "/" + basepath;
             }
             String broker = config.connection().toLowerCase();
@@ -191,7 +196,6 @@ public class MqttBridgeImpl extends AbstractOpenemsComponent implements OpenemsC
         this.mqttPassword = config.password();
         //ClientID will be automatically altered by Managers depending on what they're doing
         this.mqttClientId = config.clientId();
-        this.mqttBrokerUrl = config.brokerUrl();
         //BridgePublish set LastWill if configured
         this.bridgePublisher.createMqttPublishSession(this.mqttBroker, this.mqttClientId, config.keepAlive(),
                 this.mqttUsername, this.mqttPassword, config.cleanSessionFlag());
@@ -205,15 +209,36 @@ public class MqttBridgeImpl extends AbstractOpenemsComponent implements OpenemsC
 
     }
 
+    @Modified
+    void modified(ComponentContext context, Config config) throws MqttException, OpenemsException {
+        super.modified(context, config.id(), config.alias(), config.enabled());
+        this.disconnectPublishAndSubscriber();
+        this.basicActivationOrModifiedSetup(config);
+        this.subscribeTasks.forEach((id, taskList) ->
+                taskList.forEach(task -> {
+                    try {
+                        this.subscribeManager.subscribeToTopic(task, id);
+                    } catch (MqttException e) {
+                        this.log.warn("Couldn't subscribe to Topic: " + task.getTopic() + "\nReason: " + e.getMessage());
+                    }
+                })
+        );
+    }
+
+    private void disconnectPublishAndSubscriber() throws MqttException {
+        this.bridgePublisher.disconnect();
+        this.publishManager.deactivate();
+        this.subscribeManager.deactivate();
+
+    }
+
     @Deactivate
-    public void deactivate() {
+    protected void deactivate() {
         try {
             //Disconnect every connection
-            this.bridgePublisher.disconnect();
-            this.publishManager.deactivate();
-            this.subscribeManager.deactivate();
+            this.disconnectPublishAndSubscriber();
         } catch (MqttException e) {
-            e.printStackTrace();
+            this.log.warn("Mqtt Exception on deactivation of this Bridge " + super.id() + "\nReason: " + e.getMessage());
         }
     }
 
@@ -253,7 +278,6 @@ public class MqttBridgeImpl extends AbstractOpenemsComponent implements OpenemsC
 
                 this.subscribeTasks.put(id, task);
             }
-            ((MqttSubscribeTask) mqttTask).putMessageId(subscribeIdCounter++);
             this.subscribeManager.subscribeToTopic(mqttTask, id);
         }
     }
@@ -270,7 +294,7 @@ public class MqttBridgeImpl extends AbstractOpenemsComponent implements OpenemsC
                 try {
                     this.subscribeManager.unsubscribeFromTopic(task);
                 } catch (MqttException e) {
-                    log.warn("Couldn't unsubscribe from Topic: " + task.getTopic() + "reason " + e.getMessage());
+                    this.log.warn("Couldn't unsubscribe from Topic: " + task.getTopic() + "reason " + e.getMessage());
                 }
             });
             this.subscribeTasks.remove(id);
@@ -292,6 +316,7 @@ public class MqttBridgeImpl extends AbstractOpenemsComponent implements OpenemsC
     @Override
     public void addMqttComponent(String id, MqttComponent component) {
         if (this.components.containsKey(id)) {
+            this.log.warn("Couldn't put the component " + id + " to the Bridge, already in Map, please use a Unique Id");
         } else {
             this.components.put(id, component);
         }
@@ -304,6 +329,13 @@ public class MqttBridgeImpl extends AbstractOpenemsComponent implements OpenemsC
             this.removeMqttTasks(id);
         }
     }
+
+
+    /**
+     * Checks if one of the Managers is connected to the Mqtt Server.
+     *
+     * @return true if the connection is established
+     */
 
     public boolean isConnected() {
         return this.subscribeManager.isConnected() || this.publishManager.isConnected();
@@ -322,7 +354,7 @@ public class MqttBridgeImpl extends AbstractOpenemsComponent implements OpenemsC
                     try {
                         value.updateJsonConfig();
                     } catch (MqttException | ConfigurationException e) {
-                        log.warn("Couldn't refresh the config of component " + value.id() + " Please check your"
+                        this.log.warn("Couldn't refresh the config of component " + value.id() + " Please check your"
                                 + " configuration or MqttConnection");
                     }
                 }

@@ -7,6 +7,11 @@ import io.openems.edge.common.channel.StringWriteChannel;
 import io.openems.edge.common.channel.WriteChannel;
 import io.openems.edge.common.component.OpenemsComponent;
 
+/**
+ * This interface provides the Nature for a Schedule.
+ * This Nature is for a more complex schedule of Components (Not just a simple method: SetSchedule value: foo expiration: bar Schedule)
+ * The Schedule needs to be extracted manually.
+ */
 public interface Schedule extends OpenemsComponent {
     enum ChannelId implements io.openems.edge.common.channel.ChannelId {
 
@@ -26,7 +31,13 @@ public interface Schedule extends OpenemsComponent {
             return this.doc;
         }
     }
-    default WriteChannel<String> getSchedule(){
+
+    /**
+     * Get The Schedule Channel.
+     *
+     * @return the channel.
+     */
+    default WriteChannel<String> getSchedule() {
         return this.channel(ChannelId.SCHEDULE);
     }
 }
