@@ -1,0 +1,6 @@
+= Heat Pump Alpha Innotec
+
+This module reads the most important variables available via Modbus from a Alpha Innotec heat pump and maps them to OpenEMS channels. 
+WriteChannels can be used to send commands to the heat pump via setter methods in HeatpumpAlphaInnotecChannel and HeatpumpSmartGridGeneralizedChannel.
+
+https://github.com/OpenEMS/openems/tree/develop/io.openems.edge.heater.heatpump.alphainnotec[Source Code icon:github[]]

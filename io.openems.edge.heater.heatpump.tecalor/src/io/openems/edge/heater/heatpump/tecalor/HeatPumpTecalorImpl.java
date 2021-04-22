@@ -17,9 +17,7 @@ import io.openems.edge.common.event.EdgeEventConstants;
 import io.openems.edge.common.taskmanager.Priority;
 import io.openems.edge.heater.heatpump.tecalor.api.HeatpumpTecalorChannel;
 import io.openems.edge.heater.api.HeatpumpSmartGridGeneralizedChannel;
-
 import java.util.Optional;
-
 import org.osgi.service.cm.ConfigurationAdmin;
 import org.osgi.service.component.ComponentContext;
 import org.osgi.service.component.annotations.*;
