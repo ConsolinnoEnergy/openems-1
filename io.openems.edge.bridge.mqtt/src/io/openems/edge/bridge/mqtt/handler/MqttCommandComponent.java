@@ -78,11 +78,40 @@ public class MqttCommandComponent extends MqttOpenemsComponentConnector implemen
                         if (this.mqttConfigurationComponent.valueLegit(value.getValue())) {
                             if (!this.mqttConfigurationComponent.expired(task, value)) {
                                 this.reactToComponentCommand(key, value);
+                            } else {
+                                this.log.info(this.id() + " Command : " + key + " expired, resetting Channel...");
+                                this.resetComponentCommandValue(key, value);
                             }
+                        } else {
+                            this.resetComponentCommandValue(key, value);
                         }
                     });
                 }
             });
+        }
+    }
+
+    private void resetComponentCommandValue(MqttCommandType key, CommandWrapper value) {
+        if (super.otherComponent instanceof MqttCommands) {
+            MqttCommands commandChannel = (MqttCommands) super.otherComponent;
+            try {
+                switch (key) {
+                    case SETPOWER:
+                        commandChannel.getSetPower().setNextWriteValue(null);
+                        break;
+                    case SETPERFORMANCE:
+                        commandChannel.getSetPerformance().setNextWriteValue(null);
+                        break;
+                    case SETSCHEDULE:
+                        commandChannel.getSetSchedule().setNextWriteValue(null);
+                        break;
+                    case SETTEMPERATURE:
+                        commandChannel.getSetTemperature().setNextWriteValue(null);
+                        break;
+                }
+            } catch (OpenemsError.OpenemsNamedException e) {
+                super.log.warn("Couldn't reset Channel for: " + this.id() + " Key: " + key);
+            }
         }
     }
 
@@ -111,7 +140,7 @@ public class MqttCommandComponent extends MqttOpenemsComponentConnector implemen
                         break;
                 }
             } catch (OpenemsError.OpenemsNamedException e) {
-                e.printStackTrace();
+                super.log.warn("Couldn't set ChannelValue for: " + this.id() + " Key: " + key + "Value: " + value.getValue());
             }
         }
     }

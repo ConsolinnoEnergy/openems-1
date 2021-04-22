@@ -14,6 +14,8 @@ import org.eclipse.paho.client.mqttv3.MqttException;
 import org.osgi.service.cm.ConfigurationAdmin;
 import org.osgi.service.cm.ConfigurationException;
 import org.osgi.service.component.ComponentContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -25,7 +27,7 @@ import java.util.concurrent.atomic.AtomicReference;
  * It has basic Methods, that all extending Components will need (such as setConfiguration)
  */
 public abstract class MqttOpenemsComponentConnector extends AbstractOpenemsComponent implements MqttComponent {
-
+    protected final Logger log = LoggerFactory.getLogger(MqttOpenemsComponentConnector.class);
     private static final String CONFIGURATION_CHANNEL_IDENTIFICATION = "channelIdList";
 
     AtomicReference<MqttBridge> mqttBridge = new AtomicReference<>();
