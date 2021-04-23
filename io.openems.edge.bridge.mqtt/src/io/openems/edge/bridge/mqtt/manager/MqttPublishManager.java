@@ -73,7 +73,7 @@ public class MqttPublishManager extends AbstractMqttManager {
 
     /**
      * Called by MqttBridge.
-     * this will disconnect every connection and stops the communication with the Broker.
+     * This will disconnect every connection and stops the communication with the Broker.
      */
     public void deactivate() {
         super.deactivate();

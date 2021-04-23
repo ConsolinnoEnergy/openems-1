@@ -56,17 +56,13 @@ public class MqttSubscribeTaskImpl extends AbstractMqttTask implements MqttSubsc
     /**
      * Called by MqttSubscribeManager. Response to Payload.
      * Response depends on the Style of the Payload (Atm Standard payload only).
-     *
+     * Switch case atm with only one style, but open
      * @param payload the Payload for the concrete MqttTask.
      */
     @Override
     public void response(String payload) {
         super.payloadToOrFromBroker = payload;
-        switch (super.style) {
-            case STANDARD:
-            default:
-                this.standardResponse();
-        }
+        this.standardResponse();
     }
 
     /**

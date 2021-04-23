@@ -77,8 +77,8 @@ public class MqttConfigurationComponentImpl implements MqttConfigurationComponen
     }
 
     @Override
-    public void updateJsonByChannel(ArrayList<Channel<?>> channels, String config) throws ConfigurationException, MqttException {
-        this.mqttComponent.initJson(channels, config);
+    public void updateJsonByChannel(ArrayList<Channel<?>> channels, String content) throws ConfigurationException, MqttException {
+        this.mqttComponent.initJson(channels, content);
     }
 
     @Override

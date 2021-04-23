@@ -62,8 +62,18 @@ public class MqttTelemetryComponent extends MqttOpenemsComponentConnector implem
         this.configureMqtt(config);
     }
 
+
+    /**
+     * Configures the telemetry Component with the given Config -> Ready to send/receive data via MQTT.
+     *
+     * @param config the Config.
+     * @throws MqttException                      thrown if subscription fails.
+     * @throws ConfigurationException             if the config has an error.
+     * @throws IOException                        if the json file could not be found.
+     * @throws OpenemsError.OpenemsNamedException if the bridge with given Id couldn't be found.
+     */
     private void configureMqtt(TelemetryComponentConfig config) throws MqttException, ConfigurationException, IOException, OpenemsError.OpenemsNamedException {
-        super.setTelemetryComponent(config.otherComponentId(), this.cpm);
+        super.setCorrespondingComponent(config.otherComponentId(), this.cpm);
 
         super.setConfiguration(MqttType.TELEMETRY, config.subscriptionList(), config.publishList(),
                 config.payloads(), config.createdByOsgi(), config.mqttId(), this.cm, config.channelIdList().length,

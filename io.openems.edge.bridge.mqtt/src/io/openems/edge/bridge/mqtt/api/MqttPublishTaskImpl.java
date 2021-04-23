@@ -52,7 +52,7 @@ public class MqttPublishTaskImpl extends AbstractMqttTask implements MqttPublish
 
 
         JsonObject payload = new JsonObject();
-        if (getAddTime()) {
+        if (super.getAddTime()) {
             payload.addProperty("time", now);
         }
         payload.addProperty("device", super.mqttId);

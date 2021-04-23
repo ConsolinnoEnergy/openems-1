@@ -23,6 +23,11 @@ public class CommandWrapper {
         return this.value;
     }
 
+    /**
+     * Set the value of a command.
+     *
+     * @param value the value, usually from SubscribeTask.
+     */
     public void setValue(String value) {
         this.value = value;
     }
@@ -46,7 +51,7 @@ public class CommandWrapper {
     }
 
     /**
-     * Sets the Expiration. If The Expiration should be infinite. The Infinite Boolean will be set and called later in
+     * Sets the Expiration. In case the expiration should be infinite, the boolean will be set to true and called later in
      * MqttConfigurationComponent.
      *
      * @param expiration expirationTime usually set by MqttSubscribeTaskImpl.

@@ -46,7 +46,7 @@ import static io.openems.edge.bridge.mqtt.api.ConfigurationSplits.TIME_TO_WAIT_P
 import static io.openems.edge.bridge.mqtt.api.ConfigurationSplits.TOPIC_POSITION;
 
 /**
- * This is where the most Part of the Magic happens.
+ * This is where most of the Magic happens.
  * In this component, The Publish and Subscribe Task are created and added together by config (Either OSGi or JSON)
  */
 public abstract class AbstractMqttComponent {
@@ -378,14 +378,6 @@ public abstract class AbstractMqttComponent {
     }
 
     /**
-     * "Deactivates" the component -> Removes all Tasks from the corresponding Bridge.
-     */
-    public void deactivate() {
-        this.mqttBridge.removeMqttTasks(this.id);
-    }
-
-
-    /**
      * Init a Json by a String (Either from Channel Configuration OR Loaded in json File).
      *
      * @param channels   channels of the  parent.
@@ -400,10 +392,13 @@ public abstract class AbstractMqttComponent {
             this.jsonConfig = jsonConfig;
             JsonObject jsonConfigObject = new Gson().fromJson(this.jsonConfig, JsonObject.class);
             //Get payload Style and use it as an indicator how the payload should be created (ATM Only STANDARD)
-            switch (PayloadStyle.valueOf(jsonConfigObject.get("payloadStyle").getAsString().toUpperCase())) {
-                case STANDARD:
-                default:
+            String payloadStyle = jsonConfigObject.get("payloadStyle").getAsString().toUpperCase().trim();
+            if (PayloadStyle.contains(payloadStyle)) {
+                if (PayloadStyle.valueOf(payloadStyle).equals(PayloadStyle.STANDARD)) {
                     this.initStandardJson(jsonConfigObject, channels);
+                } else {
+                    throw new ConfigurationException("initJson  " + this.id, "PayloadStyle is not supported: " + payloadStyle);
+                }
             }
             //IF no errors occurred --> Remove old MqttTasks (from Bridge and locally) and add the new ones.
             this.mqttBridge.removeMqttTasks(this.id);
@@ -417,9 +412,7 @@ public abstract class AbstractMqttComponent {
                 this.publishTasks.putAll(this.publishTasksNew);
                 this.publishTasksNew.clear();
             }
-
             this.addTasksToBridge();
-
         }
     }
 

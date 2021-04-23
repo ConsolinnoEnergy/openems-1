@@ -76,18 +76,18 @@ public interface MqttConfigurationComponent {
      * Updates the JsonConfig via OpenEmsChannel: Configuration.
      *
      * @param channels Parent Channel
-     * @param s        content of ConfigurationChannel
+     * @param content        content of ConfigurationChannel
      * @throws ConfigurationException if wrong Config was given.
      * @throws MqttException          if subscription fails.
      */
-    void updateJsonByChannel(ArrayList<Channel<?>> channels, String s) throws ConfigurationException, MqttException;
+    void updateJsonByChannel(ArrayList<Channel<?>> channels, String content) throws ConfigurationException, MqttException;
 
     /**
-     * Checks if the Value is legit.
+     * Checks if the Value is legitimate.
      * E.g. if it is "NotDefined" (No Value read yet) or "NaN" (Happens if a new Schedule is called by broker).
      *
      * @param value value of CommandWrapper in Parent Task.
-     * @return aBoolean
+     * @return a Boolean
      */
     boolean valueLegit(String value);
 }

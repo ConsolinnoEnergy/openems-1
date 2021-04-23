@@ -43,7 +43,7 @@ public interface MqttComponent extends OpenemsComponent {
     }
 
     /**
-     * Get the Configuration Channel, if configured by REST/ or json file.
+     * Get the Configuration Channel, if configured by REST or json file.
      *
      * @return the channel
      */
@@ -58,7 +58,7 @@ public interface MqttComponent extends OpenemsComponent {
     void reactToEvent();
 
     /**
-     * Called By Mqtt Bridge. Component has to implement what to do on commands set by mqtt bridge.
+     * Called By MqttBridge. Component has to implement what to do on commands set by MqttBridge.
      */
     void reactToCommand();
 

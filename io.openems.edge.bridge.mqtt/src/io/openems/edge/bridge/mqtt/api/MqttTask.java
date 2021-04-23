@@ -59,7 +59,7 @@ public interface MqttTask {
      * Called by Abstract Cycle Worker for current Tasks to handle.
      *
      * @param currentTime the currentTime, calculated each cycle by abstractManager
-     * @return aBoolean.
+     * @return  if this task is ready -> either update Payload or Publish payload.
      */
     boolean isReady(long currentTime);
 

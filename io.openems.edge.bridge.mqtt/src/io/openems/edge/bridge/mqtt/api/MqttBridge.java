@@ -11,7 +11,10 @@ import io.openems.edge.common.component.OpenemsComponent;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.joda.time.DateTimeZone;
 
-
+/**
+ * This Interface provides the MqttBridge Nature. This allows the Telemetry/Command Component to add it's task to this
+ * bridge and communicate via MQTT.
+ */
 public interface MqttBridge extends OpenemsComponent {
 
     /**
@@ -22,6 +25,13 @@ public interface MqttBridge extends OpenemsComponent {
     DateTimeZone getTimeZone();
 
     enum ChannelId implements io.openems.edge.common.channel.ChannelId {
+        /**
+         * The Mqtt Types Available, those will be written in the Config.
+         * <ul>
+         *     <li> Interface: MqttBridge
+         *     <li> Type: String
+         * </ul>
+         */
         MQTT_TYPES(Doc.of(OpenemsType.STRING));
 
         private final Doc doc;
@@ -60,7 +70,7 @@ public interface MqttBridge extends OpenemsComponent {
     }
 
     /**
-     * List of all SubscribeTask corresponding to the given device Id.
+     * List of all SubscribeTasks corresponding to the given device Id.
      *
      * @param id the id of the corresponding Component
      * @return the MqttTaskList.

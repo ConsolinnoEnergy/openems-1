@@ -59,14 +59,28 @@ public class MqttCommandComponent extends MqttOpenemsComponentConnector implemen
         this.configureMqtt(config);
     }
 
+    /**
+     * Configures the Config for MQTT in the command Component. Here: No PublishConfig is necessary.
+     *
+     * @param config the Config.
+     * @throws MqttException                      thrown on Mqtt Error -> subscription fail
+     * @throws ConfigurationException             if something is not correctly configured in OSGi
+     * @throws IOException                        if the json file given is wrong.
+     * @throws OpenemsError.OpenemsNamedException if the ComponentManager couldn't find anything with corresponding id (MqttBridge)
+     */
     private void configureMqtt(CommandComponentConfig config) throws MqttException, ConfigurationException, IOException, OpenemsError.OpenemsNamedException {
-        super.setTelemetryComponent(config.otherComponentId(), this.cpm);
+        super.setCorrespondingComponent(config.otherComponentId(), this.cpm);
 
         super.setConfiguration(MqttType.COMMAND, config.subscriptionList(), null,
                 config.payloads(), config.createdByOsgi(), config.mqttId(), this.cm, config.channelIdList().length,
                 config.pathForJson(), config.payloadStyle(), config.configurationDone());
     }
 
+
+    /**
+     * React to the Command. Signal comes from the MqttBridge.
+     * Get the corresponding SubscribeTasks and write CommandValues into the correct channel.
+     */
 
     @Override
     public void reactToCommand() {
@@ -80,10 +94,10 @@ public class MqttCommandComponent extends MqttOpenemsComponentConnector implemen
                                 this.reactToComponentCommand(key, value);
                             } else {
                                 this.log.info(this.id() + " Command : " + key + " expired, resetting Channel...");
-                                this.resetComponentCommandValue(key, value);
+                                this.resetComponentCommandValue(key);
                             }
                         } else {
-                            this.resetComponentCommandValue(key, value);
+                            this.resetComponentCommandValue(key);
                         }
                     });
                 }
@@ -91,7 +105,12 @@ public class MqttCommandComponent extends MqttOpenemsComponentConnector implemen
         }
     }
 
-    private void resetComponentCommandValue(MqttCommandType key, CommandWrapper value) {
+    /**
+     * Resets the value of the command, if the command is expired.
+     *
+     * @param key the Command.
+     */
+    private void resetComponentCommandValue(MqttCommandType key) {
         if (super.otherComponent instanceof MqttCommands) {
             MqttCommands commandChannel = (MqttCommands) super.otherComponent;
             try {

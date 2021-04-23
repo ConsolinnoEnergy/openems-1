@@ -68,15 +68,20 @@ public abstract class AbstractMqttTask implements MqttTask {
         return this.topic;
     }
 
+    /**
+     * Get the Payload of the Task.
+     *
+     * @return the payload
+     */
     @Override
     public String getPayload() {
         return this.payloadToOrFromBroker;
     }
 
     /**
-     * Get the Payload of the Task.
+     * Check if this task has the RetainFlag set.
      *
-     * @return the payload
+     * @return the boolean.
      */
     @Override
     public boolean getRetainFlag() {
@@ -129,6 +134,12 @@ public abstract class AbstractMqttTask implements MqttTask {
         }
         return isReady;
     }
+
+    /**
+     * Returns the Id. Used to Unsubscribe Topic.
+     *
+     * @return the Id of the Task.
+     */
 
     @Override
     public String getId() {

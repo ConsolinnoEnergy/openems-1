@@ -2,7 +2,7 @@ package io.openems.edge.bridge.mqtt.api;
 
 /**
  * CommandTypes supported by OpenEMS, if you want to handle more commands, just put them here.
- * The SubscribeTask will add them automatically and handle them.
+ * The SubscribeTask will automatically add and handle them
  * After adding it here, go to MqttCommands Nature and add corresponding Channels, as well as expand the MqttCommandComponent.
  */
 public enum MqttCommandType {

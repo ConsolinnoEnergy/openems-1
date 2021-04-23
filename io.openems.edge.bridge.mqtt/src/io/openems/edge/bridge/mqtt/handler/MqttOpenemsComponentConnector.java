@@ -23,7 +23,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * This class is the baseClass for MqttComponents to extend from (e.g. the Telemetry and Command Component)
+ * This class is the basis for MqttComponents to extend from (e.g. the Telemetry and Command Component)
  * It has basic Methods, that all extending Components will need (such as setConfiguration)
  */
 public abstract class MqttOpenemsComponentConnector extends AbstractOpenemsComponent implements MqttComponent {
@@ -141,6 +141,9 @@ public abstract class MqttOpenemsComponentConnector extends AbstractOpenemsCompo
 
     }
 
+    /**
+     * Deactivates the CycleWorker and remove everything from the MqttBridge corresponding to this worker.
+     */
     void connectorDeactivate() {
         super.deactivate();
         if (this.mqttConfigurationComponent != null) {
@@ -150,7 +153,14 @@ public abstract class MqttOpenemsComponentConnector extends AbstractOpenemsCompo
         }
     }
 
-    void setTelemetryComponent(String otherComponentId, ComponentManager cpm) throws OpenemsError.OpenemsNamedException {
+    /**
+     * Get the Component via ComponentManager. This method gets the OpenEmsComponent you want to monitor/send information/ communicate via MQTT.
+     *
+     * @param otherComponentId the Id of the other OpenEmsComponent. Usually from Config.
+     * @param cpm              the ComponentManager.
+     * @throws OpenemsError.OpenemsNamedException thrown if the OpenEmsComponent with the given id couldn't be found.
+     */
+    void setCorrespondingComponent(String otherComponentId, ComponentManager cpm) throws OpenemsError.OpenemsNamedException {
         this.otherComponent = cpm.getComponent(otherComponentId);
     }
 }

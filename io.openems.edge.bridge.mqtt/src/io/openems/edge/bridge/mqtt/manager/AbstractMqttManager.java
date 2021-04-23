@@ -18,7 +18,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
-
+/**
+ * This class provides the AbstractMqttManager. This class stores most important data of the Subscribe-/PublishManager,
+ * as well as providing methods to tell the extending Manager, what tasks to handle in the current OpenEmsCycle.
+ */
 abstract class AbstractMqttManager extends AbstractCycleWorker {
 
     protected static final Logger log = LoggerFactory.getLogger(AbstractMqttManager.class);
@@ -59,6 +62,7 @@ abstract class AbstractMqttManager extends AbstractCycleWorker {
         this.keepAlive = keepAlive;
         this.allTasks = allTasks;
         this.timeForQos = new HashMap<>();
+        //one List Entry for each QoS
         for (int x = 0; x < 3; x++) {
             this.timeForQos.put(x, new ArrayList<>());
             this.counterForQos.put(x, new AtomicInteger(0));
@@ -101,7 +105,6 @@ abstract class AbstractMqttManager extends AbstractCycleWorker {
                             maxTime.set(this.cycle.getCycleTime());
                         }
                 );
-
             } else {
                 maxTime.set(this.cycle.getCycleTime());
             }
@@ -164,19 +167,36 @@ abstract class AbstractMqttManager extends AbstractCycleWorker {
         });
     }
 
-
+    /**
+     * Gets the current Time an save it for 1 Cycle. (Used by extending manager).
+     */
     void calculateCurrentTime() {
         this.currentTime = TimeUnit.MILLISECONDS.convert(System.nanoTime(), TimeUnit.NANOSECONDS);
     }
 
+    /**
+     * Get the current Time.
+     *
+     * @return this.currentTime
+     */
     long getCurrentTime() {
         return this.currentTime;
     }
 
+    /**
+     * Sets the ComponentManager, usually called by MqttBridge.
+     *
+     * @param cpm the ComponentManager.
+     */
     public void setComponentManager(ComponentManager cpm) {
         this.cpm = cpm;
     }
 
+    /**
+     * Sets the CoreCycle if configured. Usually called by the MqttBridge.
+     *
+     * @param setCoreCycle should the CoreCycle be set.
+     */
     public void setCoreCycle(boolean setCoreCycle) {
         this.useCoreCycle = setCoreCycle;
     }

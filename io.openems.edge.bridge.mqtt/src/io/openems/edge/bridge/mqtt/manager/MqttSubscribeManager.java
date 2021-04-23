@@ -64,7 +64,7 @@ public class MqttSubscribeManager extends AbstractMqttManager {
     }
 
     /**
-     * Deactivates the Component. Called by The MqttBridge
+     * Deactivates the Component. Called by the MqttBridge.
      * Closes the connection.
      */
     public void deactivate() {

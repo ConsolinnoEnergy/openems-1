@@ -10,7 +10,7 @@ import io.openems.edge.common.component.OpenemsComponent;
 /**
  * This Nature allows the CommandComponent to write the CommandValues into corresponding channel.
  * Any Device that should react to commands, can implement this nature and react if any channel has anything written into.
- * Remember: If you want more commands, simply expand the MqttCommandType, Integrate the Channel here and tell the
+ * Note: If you want more commands, simply expand the MqttCommandType, Integrate the Channel here and tell the
  * CommandComponent to write the Value into the corresponding channel. (Can be improved tho)
  */
 public interface MqttCommands extends OpenemsComponent {

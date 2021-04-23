@@ -24,5 +24,20 @@ package io.openems.edge.bridge.mqtt.api;
  * If you need different Payload-Styles add here an enum and add them to pub and sub task.
  */
 public enum PayloadStyle {
-    STANDARD
+    STANDARD;
+
+    /**
+     * Checks if the given PayloadStyle is supported.
+     *
+     * @param style the given PayloadStyle
+     * @return a boolean.
+     */
+    public static boolean contains(String style) {
+        for (PayloadStyle payloadStyle : PayloadStyle.values()) {
+            if (payloadStyle.name().equals(style)) {
+                return true;
+            }
+        }
+        return false;
+    }
 }
