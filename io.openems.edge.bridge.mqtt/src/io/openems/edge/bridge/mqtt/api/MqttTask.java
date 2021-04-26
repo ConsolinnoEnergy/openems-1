@@ -1,8 +1,8 @@
 package io.openems.edge.bridge.mqtt.api;
 
 /**
- * The interface MqttTask provides an Interface that allows other classes to access most MQTT relevant information of a task or
- * check if the Task is ready to e.g. publish another payload.
+ * The MqttTask is an Interface that allows other classes to access most MQTT relevant information of a task or
+ * check if the Task is ready to e.g. publish another payload. The check will be called by the AbstractMqttManager.
  */
 public interface MqttTask {
     /**

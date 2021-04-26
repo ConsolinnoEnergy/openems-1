@@ -111,6 +111,14 @@ public class MqttBridgeImpl extends AbstractOpenemsComponent implements OpenemsC
         this.basicActivationOrModifiedSetup(config);
     }
 
+    /**
+     * Basic setup for modified or activation method. Sets up Time and configures the MqttSession as well as
+     * setting up the manager.
+     *
+     * @param config the Config.
+     * @throws OpenemsException thrown on error
+     * @throws MqttException    thrown if publish/subscribe manager couldn't connect.
+     */
     private void basicActivationOrModifiedSetup(Config config) throws OpenemsException, MqttException {
         this.timeZone = config.locale().equals("") ? DateTimeZone.UTC : DateTimeZone.forID(config.locale());
         //Important for last will.
@@ -225,6 +233,12 @@ public class MqttBridgeImpl extends AbstractOpenemsComponent implements OpenemsC
         );
     }
 
+    /**
+     * Disconnects the Manager, if not null.
+     *
+     * @throws MqttException thrown if deactivate/disconnect fails bc of Mqtt reasons.
+     */
+
     private void disconnectPublishAndSubscriber() throws MqttException {
         if (this.bridgePublisher != null) {
             this.bridgePublisher.disconnect();
@@ -319,6 +333,7 @@ public class MqttBridgeImpl extends AbstractOpenemsComponent implements OpenemsC
      * @param id        id of the MqttComponent usually from config of the Component
      * @param component the Component itself.
      */
+
     @Override
     public void addMqttComponent(String id, MqttComponent component) {
         if (this.components.containsKey(id)) {
@@ -327,6 +342,12 @@ public class MqttBridgeImpl extends AbstractOpenemsComponent implements OpenemsC
             this.components.put(id, component);
         }
     }
+
+    /**
+     * Removes the Mqtt  Component and their Tasks. Usually called on deactivation of the MqttComponent
+     *
+     * @param id id of the Component you want to remove.
+     */
 
     @Override
     public void removeMqttComponent(String id) {
@@ -347,6 +368,12 @@ public class MqttBridgeImpl extends AbstractOpenemsComponent implements OpenemsC
         return this.subscribeManager.isConnected() || this.publishManager.isConnected();
     }
 
+    /**
+     * Triggers the next Cycle of the manager, as well as updating the configuration of containing components.
+     * Additionally components react to Commands/Mqtt Events.
+     *
+     * @param event the Event, usually TOPIC_CYCLE_BEFORE_PROCESS_IMAGE
+     */
     @Override
     public void handleEvent(Event event) {
         if (!this.isEnabled()) {

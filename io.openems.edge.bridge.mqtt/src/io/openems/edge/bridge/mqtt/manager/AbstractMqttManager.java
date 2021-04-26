@@ -150,6 +150,10 @@ abstract class AbstractMqttManager extends AbstractCycleWorker {
 
     //EACH QoS has AverageTime except QoS 0
 
+    /**
+     * Each QoS has an AverageTime except for QoS 0.
+     * Calculate the avg. Time a Message needs to be completed. Used by the PublishManager.
+     */
     private void calculateAverageTimes() {
         //for each Time of each QoS --> add and create Average
         AtomicLong time = new AtomicLong(0);
