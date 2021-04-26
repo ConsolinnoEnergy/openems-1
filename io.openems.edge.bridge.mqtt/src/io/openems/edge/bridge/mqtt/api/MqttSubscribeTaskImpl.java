@@ -7,10 +7,12 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
+import io.openems.common.exceptions.OpenemsError;
 import io.openems.edge.common.channel.Channel;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
+import io.openems.edge.common.channel.WriteChannel;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.slf4j.Logger;
@@ -57,6 +59,7 @@ public class MqttSubscribeTaskImpl extends AbstractMqttTask implements MqttSubsc
      * Called by MqttSubscribeManager. Response to Payload.
      * Response depends on the Style of the Payload (Atm Standard payload only).
      * Switch case atm with only one style, but open
+     *
      * @param payload the Payload for the concrete MqttTask.
      */
     @Override
@@ -128,6 +131,7 @@ public class MqttSubscribeTaskImpl extends AbstractMqttTask implements MqttSubsc
      * After that a value and an expiration is expected.
      * Those will be set to the corresponding CommandType.
      * See MqttType or genericexcampleconfig.json for more details/example/explanation.
+     *
      * @param tokens the Payload from the MqttBroker.
      */
     private void standardCommandResponse(JsonObject tokens) {
@@ -184,7 +188,11 @@ public class MqttSubscribeTaskImpl extends AbstractMqttTask implements MqttSubsc
                     if (!value.equals("Not Defined Yet")) {
                         String channelId = this.nameIdAndChannelIdMap.get(key);
                         Channel<?> channel = super.channels.get(channelId);
-                        channel.setNextValue(value);
+                        if (channel instanceof WriteChannel<?>) {
+                            ((WriteChannel<?>) channel).setNextWriteValueFromObject(value);
+                        } else {
+                            channel.setNextValue(value);
+                        }
                         this.log.info("Update Channel: " + channelId + " with Value: " + value);
                     } else {
                         this.log.info("Value not defined yet for: " + this.nameIdAndChannelIdMap.get(key));
@@ -208,6 +216,8 @@ public class MqttSubscribeTaskImpl extends AbstractMqttTask implements MqttSubsc
                 } else {
                     this.log.info("Key: " + key + " was not configured!");
                 }
+            } catch (OpenemsError.OpenemsNamedException e) {
+                this.log.warn("SubscribeTask: " + this.id + " Couldn't write into Channel: " + e.getMessage());
             }
         });
     }

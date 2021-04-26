@@ -62,7 +62,7 @@ public class MqttPublishManager extends AbstractMqttManager {
                 counter.getAndIncrement();
                 counter.set(counter.get() % MAX_LIST_LENGTH);
             } catch (MqttException e) {
-                e.printStackTrace();
+                log.warn("Error in Publishmanager: " + e.getMessage());
                 //On Error add the task to future tasks to try again.
                 super.toDoFuture.add(task);
             }
@@ -81,7 +81,7 @@ public class MqttPublishManager extends AbstractMqttManager {
             try {
                 value.disconnect();
             } catch (MqttException e) {
-               log.warn("Error on disconnecting: " + e.getMessage());
+                log.warn("Error on disconnecting: " + e.getMessage());
             }
         });
     }

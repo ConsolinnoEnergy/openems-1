@@ -226,9 +226,15 @@ public class MqttBridgeImpl extends AbstractOpenemsComponent implements OpenemsC
     }
 
     private void disconnectPublishAndSubscriber() throws MqttException {
-        this.bridgePublisher.disconnect();
-        this.publishManager.deactivate();
-        this.subscribeManager.deactivate();
+        if (this.bridgePublisher != null) {
+            this.bridgePublisher.disconnect();
+        }
+        if (this.publishManager != null) {
+            this.publishManager.deactivate();
+        }
+        if (this.subscribeManager != null) {
+            this.subscribeManager.deactivate();
+        }
 
     }
 
@@ -343,7 +349,9 @@ public class MqttBridgeImpl extends AbstractOpenemsComponent implements OpenemsC
 
     @Override
     public void handleEvent(Event event) {
-
+        if (!this.isEnabled()) {
+            return;
+        }
         if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE)) {
             //handle all Tasks
             this.subscribeManager.triggerNextRun();
