@@ -3,7 +3,12 @@ package io.openems.edge.heatsystem.components;
 import io.openems.common.channel.AccessMode;
 import io.openems.common.channel.Unit;
 import io.openems.common.types.OpenemsType;
-import io.openems.edge.common.channel.*;
+import io.openems.edge.common.channel.BooleanWriteChannel;
+import io.openems.edge.common.channel.Channel;
+import io.openems.edge.common.channel.Doc;
+import io.openems.edge.common.channel.DoubleWriteChannel;
+import io.openems.edge.common.channel.IntegerWriteChannel;
+import io.openems.edge.common.channel.WriteChannel;
 import io.openems.edge.common.component.OpenemsComponent;
 
 public interface PassingChannel extends OpenemsComponent {
@@ -21,8 +26,6 @@ public interface PassingChannel extends OpenemsComponent {
          */
         CURRENT_POWER_LEVEL(Doc.of(OpenemsType.DOUBLE).unit(Unit.PERCENT)),
 
-
-        // TODO: Why is this a write channel? It does not seem it needs to be. Can it be changed to a read channel if that is sufficient?
         /**
          * PowerLevel Goal. == Future PowerLevel that needs to be reached.
          *
