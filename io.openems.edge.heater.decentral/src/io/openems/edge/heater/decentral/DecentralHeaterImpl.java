@@ -162,7 +162,7 @@ public class DecentralHeaterImpl extends AbstractOpenemsComponent implements Ope
             this.setState(HeaterState.RUNNING.name());
             this.getNeedMoreHeatChannel().setNextValue(false);
             if (this.isValve) {
-                this.configuredValve.setPowerLevelPercent().setNextValue(100);
+                this.configuredValve.setPointPowerLevelChannel().setNextValue(100);
             }
         } else {
             this.getNeedMoreHeatChannel().setNextValue(true);
@@ -256,7 +256,7 @@ public class DecentralHeaterImpl extends AbstractOpenemsComponent implements Ope
      */
     private void closeValveOrDisableValveController() {
         if (this.isValve) {
-            this.configuredValve.setPowerLevelPercent().setNextValue(0);
+            this.configuredValve.setPointPowerLevelChannel().setNextValue(0);
         } else {
             this.configuredValveController.setEnableSignal(false);
         }

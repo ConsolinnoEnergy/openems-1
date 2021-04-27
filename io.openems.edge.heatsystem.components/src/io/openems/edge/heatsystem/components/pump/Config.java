@@ -1,5 +1,6 @@
 package io.openems.edge.heatsystem.components.pump;
 
+import io.openems.edge.heatsystem.components.ConfigurationType;
 import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 import org.osgi.service.metatype.annotations.Option;
@@ -20,19 +21,22 @@ import org.osgi.service.metatype.annotations.Option;
     @AttributeDefinition(name = "Alias", description = "Human readable name for this Component.")
     String alias() default "";
 
+    @AttributeDefinition(name = "Configuration Type", description = "Do you want to Configure and Control the Pump via Devices or Channels")
+    ConfigurationType configType() default ConfigurationType.CHANNEL;
+
     @AttributeDefinition(name = "Pump Type", description = "What Kind of Pump is it?",
     options = {
-            @Option(label = "Relays", value = "Relays"),
+            @Option(label = "Relay", value = "Relay"),
             @Option(label = "Pwm", value = "Pwm"),
             @Option(label = "Both", value = "Both")
     })
     String pump_Type() default "Both";
 
-    @AttributeDefinition(name =  "Relays Id", description = "If the Pump is connected to a relays; type the id.")
-    String pump_Relays() default "Relays2";
+    @AttributeDefinition(name =  "Relay Id/ RelayChannel", description = "If the Pump is connected to a relays; type the id.")
+    String pump_Relays() default "Relay0/WriteOnOff";
 
-    @AttributeDefinition(name = "PWM Id", description = "If the Pump is connected as a pwm Device; type in the id.")
-    String pump_Pwm() default "PwmDevice0";
+    @AttributeDefinition(name = "PWM Id/ PwmChannel", description = "If the Pump is connected as a pwm Device; type in the id.")
+    String pump_Pwm() default "PwmDevice0/WritePowerLevel";
 
     boolean enabled() default true;
 

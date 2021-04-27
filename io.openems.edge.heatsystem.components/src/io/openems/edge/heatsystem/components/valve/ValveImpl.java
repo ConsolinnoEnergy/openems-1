@@ -11,7 +11,7 @@ import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.common.event.EdgeEventConstants;
 
 import io.openems.edge.heatsystem.components.ConfigurationType;
-import io.openems.edge.heatsystem.components.PassingChannel;
+import io.openems.edge.heatsystem.components.HeatsystemComponent;
 import io.openems.edge.heatsystem.components.Valve;
 import io.openems.edge.relay.api.Relay;
 import org.osgi.service.cm.ConfigurationException;
@@ -34,13 +34,17 @@ import java.math.RoundingMode;
 import java.util.concurrent.TimeUnit;
 
 
+/**
+ * This Component allows a Valve  to be configured and controlled.
+ * It either works with 2 Relays or 2 ChannelAddresses.
+ * It updates it's opening/closing state and shows up the percentage value of itself.
+ */
 @Designate(ocd = Config.class, factory = true)
-@Component(name = "Passing.Valve",
+@Component(name = "HeatsystemComponent.Valve",
         configurationPolicy = ConfigurationPolicy.REQUIRE,
         immediate = true,
         property = {
                 EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE,
-                EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_BEFORE_CONTROLLERS,
                 EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS}
 )
 public class ValveImpl extends AbstractOpenemsComponent implements OpenemsComponent, Valve, EventHandler {
@@ -62,15 +66,15 @@ public class ValveImpl extends AbstractOpenemsComponent implements OpenemsCompon
     private boolean isClosing = false;
     private boolean wasAlreadyReset = false;
     private boolean isForced;
-    private static int EXTRA_BUFFER_TIME = 2000;
+    //Extra Buffer Time , only needed for Force Open/Close --> Just making sure that Valve is completely closed/opened
+    private static final int EXTRA_BUFFER_TIME = 2000;
 
     private static final int BUFFER = 5;
 
     private Double lastMaximum;
     private Double lastMinimum;
-    private Double maximum;
-    private Double minimum;
-    private Config config;
+    private Double maximum = 100.d;
+    private Double minimum = 0.d;
     private ConfigurationType configurationType;
 
     @Reference
@@ -78,7 +82,7 @@ public class ValveImpl extends AbstractOpenemsComponent implements OpenemsCompon
 
 
     public ValveImpl() {
-        super(OpenemsComponent.ChannelId.values(), PassingChannel.ChannelId.values());
+        super(OpenemsComponent.ChannelId.values(), HeatsystemComponent.ChannelId.values());
     }
 
 
@@ -86,16 +90,23 @@ public class ValveImpl extends AbstractOpenemsComponent implements OpenemsCompon
     void activate(ComponentContext context, Config config) throws OpenemsError.OpenemsNamedException, ConfigurationException {
         super.activate(context, config.id(), config.alias(), config.enabled());
         this.activateOrModifiedRoutine(config);
-        this.getIsBusy().setNextValue(false);
-        this.getPowerLevel().setNextValue(0);
-        this.getLastPowerLevel().setNextValue(0);
-        this.setPowerLevelPercent().setNextValue(-1);
-        this.setGoalPowerLevel().setNextValue(0);
-        this.config = config;
+        this.getIsBusyChannel().setNextValue(false);
+        this.getPowerLevelChannel().setNextValue(0);
+        this.getLastPowerLevelChannel().setNextValue(0);
+        this.setPointPowerLevelChannel().setNextValue(-1);
+        this.futurePowerLevelChannel().setNextValue(0);
         if (config.shouldCloseOnActivation()) {
             this.forceClose();
         }
     }
+
+    /**
+     * This will be called on either Activation or Modification.
+     *
+     * @param config the Config of the Valve
+     * @throws ConfigurationException             if anything is configured Wrong
+     * @throws OpenemsError.OpenemsNamedException thrown if configured address or Relay cannot be found at all.
+     */
 
     private void activateOrModifiedRoutine(Config config) throws ConfigurationException, OpenemsError.OpenemsNamedException {
         this.configurationType = config.configurationType();
@@ -114,7 +125,7 @@ public class ValveImpl extends AbstractOpenemsComponent implements OpenemsCompon
                 break;
         }
         this.secondsPerPercentage = ((double) config.valve_Time() / 100.d);
-        this.getTimeNeeded().setNextValue(0);
+        this.timeChannel().setNextValue(0);
 
     }
 
@@ -124,6 +135,14 @@ public class ValveImpl extends AbstractOpenemsComponent implements OpenemsCompon
         this.activateOrModifiedRoutine(config);
     }
 
+    /**
+     * Called on Activation or Modifictation. Checks if the Strings match a Relay configured within openems
+     *
+     * @param open  the String/Id of the Relay that opens the Valve
+     * @param close the String/Id of the Relay that closes the Valve
+     * @return true if the device is ok, otherwise false (Happens if the OpenemsComponent is not an instance of a Relay)
+     * @throws OpenemsError.OpenemsNamedException if the Id is not found at all
+     */
     private boolean checkDevicesOk(String open, String close) throws OpenemsError.OpenemsNamedException {
         OpenemsComponent relayToApply = this.cpm.getComponent(open);
         if (relayToApply instanceof Relay) {
@@ -140,6 +159,12 @@ public class ValveImpl extends AbstractOpenemsComponent implements OpenemsCompon
         return true;
     }
 
+    /**
+     * Checks if the Channel are correct.
+     *
+     * @return if the channel are instances of WriteChannel and Type = Boolean
+     * @throws OpenemsError.OpenemsNamedException if Channel could not be found
+     */
     private boolean checkChannelOk() throws OpenemsError.OpenemsNamedException {
         Channel<?> openChannel = this.cpm.getChannel(this.openAddress);
         Channel<?> closeChannel = this.cpm.getChannel(this.closeAddress);
@@ -161,22 +186,14 @@ public class ValveImpl extends AbstractOpenemsComponent implements OpenemsCompon
      */
     @Override
     public boolean readyToChange() {
-        long currentTime = this.getMilliSecondTime();
         if (this.isForced) {
+            long currentTime = this.getMilliSecondTime();
             if (this.timeStampValveCurrent == -1 || (currentTime - this.timeStampValveInitial)
-                    < ((this.getTimeNeeded().getNextValue().get() * 1000) + EXTRA_BUFFER_TIME)) {
+                    < ((this.timeNeeded() * 1000) + EXTRA_BUFFER_TIME)) {
                 return false;
             }
-            this.getIsBusy().setNextValue(false);
-            this.shouldForceClose().setNextValue(false);
-            this.wasAlreadyReset = false;
-            this.isForced = false;
-        }
-        if (this.isChanging == false) {
-            this.timeStampValveCurrent = -1;
         }
         return true;
-
     }
 
 
@@ -207,10 +224,10 @@ public class ValveImpl extends AbstractOpenemsComponent implements OpenemsCompon
             return false;
         } else {
             //Setting the oldPowerLevel and adjust the percentage Value
-            currentPowerLevel = this.getPowerLevel().value().get();
-            this.getLastPowerLevel().setNextValue(currentPowerLevel);
-            this.maximum = getMaxValue();
-            this.minimum = getMinValue();
+            currentPowerLevel = this.getPowerLevelChannel().value().get();
+            this.getLastPowerLevelChannel().setNextValue(currentPowerLevel);
+            this.maximum = getMaxAllowedValue();
+            this.minimum = getMinAllowedValue();
             if (this.maxMinValid() == false) {
                 this.minimum = null;
                 this.maximum = null;
@@ -228,17 +245,17 @@ public class ValveImpl extends AbstractOpenemsComponent implements OpenemsCompon
                 currentPowerLevel = this.lastMinimum;
             }
             //Set goal Percentage for future reference
-            this.setGoalPowerLevel().setNextValue(currentPowerLevel);
+            this.futurePowerLevelChannel().setNextValue(currentPowerLevel);
             //if same power level do not change and return --> relays is not always powered
-            if (getLastPowerLevel().getNextValue().get() == currentPowerLevel) {
+            if (getLastPowerLevelChannel().getNextValue().get() == currentPowerLevel) {
                 this.isChanging = false;
                 return false;
             }
             //Calculate the Time to Change the Valve
             if (Math.abs(percentage) >= 100) {
-                this.getTimeNeeded().setNextValue(100 * this.secondsPerPercentage);
+                this.timeChannel().setNextValue(100 * this.secondsPerPercentage);
             } else {
-                this.getTimeNeeded().setNextValue(Math.abs(percentage) * this.secondsPerPercentage);
+                this.timeChannel().setNextValue(Math.abs(percentage) * this.secondsPerPercentage);
             }
             //Close on negative Percentage and Open on Positive
             this.isChanging = true;
@@ -250,6 +267,12 @@ public class ValveImpl extends AbstractOpenemsComponent implements OpenemsCompon
             return true;
         }
     }
+
+    /**
+     * Checks if the max and Min Values are correct and not bizarre that leads to bugs and errors.
+     *
+     * @return validation.
+     */
 
     private boolean maxMinValid() {
         return (this.maximum >= this.minimum && this.maximum > 0 && this.minimum >= 0);
@@ -265,8 +288,7 @@ public class ValveImpl extends AbstractOpenemsComponent implements OpenemsCompon
      * Update PowerLevel by getting elapsed Time and check how much time has passed.
      * Current PowerLevel and new Percentage is added together and rounded to 3 decimals.
      */
-    @Override
-    public void updatePowerLevel() {
+    private void updatePowerLevel() {
         //Only Update PowerLevel if the Valve is Changing
         if (this.isChanging()) {
             long elapsedTime = this.getMilliSecondTime();
@@ -287,7 +309,7 @@ public class ValveImpl extends AbstractOpenemsComponent implements OpenemsCompon
                 percentIncrease *= -1;
             }
             //Round the calculated PercentIncrease of current PowerLevel and percentIncrease to 3 decimals
-            double truncatedDouble = this.getPowerLevel().value().isDefined() == false ? 0 : BigDecimal.valueOf(this.getPowerLevel().value().get() + percentIncrease)
+            double truncatedDouble = this.getPowerLevelChannel().value().isDefined() == false ? 0 : BigDecimal.valueOf(this.getPowerLevelChannel().value().get() + percentIncrease)
                     .setScale(3, RoundingMode.HALF_UP)
                     .doubleValue();
             if (truncatedDouble > 100) {
@@ -295,7 +317,9 @@ public class ValveImpl extends AbstractOpenemsComponent implements OpenemsCompon
             } else if (truncatedDouble < 0) {
                 truncatedDouble = 0;
             }
-            this.getPowerLevel().setNextValue(truncatedDouble);
+            this.getPowerLevelChannel().setNextValue(truncatedDouble);
+        } else {
+            this.timeStampValveCurrent = -1;
         }
     }
 
@@ -309,11 +333,11 @@ public class ValveImpl extends AbstractOpenemsComponent implements OpenemsCompon
         boolean reached = true;
         if (this.isChanging()) {
             reached = false;
-            if (this.getPowerLevel().value().isDefined() && this.setGoalPowerLevel().getNextValue().isDefined()) {
+            if (this.getPowerLevelChannel().value().isDefined() && this.futurePowerLevelChannel().getNextValue().isDefined()) {
                 if (this.isClosing) {
-                    reached = this.getPowerLevel().value().get() <= this.setGoalPowerLevel().getNextValue().get();
+                    reached = this.getPowerLevelChannel().value().get() <= this.futurePowerLevelChannel().getNextValue().get();
                 } else {
-                    reached = this.getPowerLevel().value().get() >= this.setGoalPowerLevel().getNextValue().get();
+                    reached = this.getPowerLevelChannel().value().get() >= this.futurePowerLevelChannel().getNextValue().get();
 
                 }
             }
@@ -356,16 +380,16 @@ public class ValveImpl extends AbstractOpenemsComponent implements OpenemsCompon
     }
 
     /**
-     * Called by ValveManager to check if this Valve should be reset.
+     * Checks if the Valve should be reset.
      *
      * @return shouldReset.
      */
-    @Override
-    public boolean shouldReset() {
-        if (this.shouldForceClose().getNextValue().isDefined()) {
-            return this.shouldForceClose().getNextValue().get();
+    private boolean shouldReset() {
+        if (this.wasAlreadyReset) {
+            return false;
+        } else {
+            return this.getResetValueAndResetChannel();
         }
-        return false;
     }
 
 
@@ -381,14 +405,14 @@ public class ValveImpl extends AbstractOpenemsComponent implements OpenemsCompon
     public void forceClose() {
         if (this.isForced == false || this.isClosing == false) {
             this.isForced = true;
-            this.setGoalPowerLevel().setNextValue(0);
-            this.getTimeNeeded().setNextValue(100 * this.secondsPerPercentage);
+            this.futurePowerLevelChannel().setNextValue(0);
+            this.timeChannel().setNextValue(100 * this.secondsPerPercentage);
             this.valveClose();
-            this.getIsBusy().setNextValue(true);
-            this.isChanging = true;
-            this.isClosing = true;
-            this.timeStampValveCurrent = -1;
+            this.getIsBusyChannel().setNextValue(true);
+            //Making sure to wait the correct time even if it is already closing.
+            this.timeStampValveInitial = -1;
             this.updatePowerLevel();
+            this.isChanging = true;
         }
 
     }
@@ -402,14 +426,14 @@ public class ValveImpl extends AbstractOpenemsComponent implements OpenemsCompon
     public void forceOpen() {
         if (this.isForced == false || this.isClosing == true) {
             this.isForced = true;
-            this.setGoalPowerLevel().setNextValue(100);
-            this.getTimeNeeded().setNextValue(100 * this.secondsPerPercentage);
+            this.futurePowerLevelChannel().setNextValue(100);
+            this.timeChannel().setNextValue(100 * this.secondsPerPercentage);
             this.valveOpen();
-            this.getIsBusy().setNextValue(true);
-            this.isChanging = true;
-            this.isClosing = false;
-            this.timeStampValveCurrent = -1;
+            this.getIsBusyChannel().setNextValue(true);
+            //Making sure to wait the correct time even if it is already opening
+            this.timeStampValveInitial = -1;
             this.updatePowerLevel();
+            this.isChanging = true;
         }
 
     }
@@ -434,8 +458,6 @@ public class ValveImpl extends AbstractOpenemsComponent implements OpenemsCompon
 
     /**
      * Closes the valve and sets a time stamp.
-     * DO NOT CALL DIRECTLY! Might not work if called directly as the timer for "readyToChange()" is not
-     * set properly. Use either "changeByPercentage()" or forceClose / forceOpen.
      */
     private void valveClose() {
 
@@ -467,7 +489,6 @@ public class ValveImpl extends AbstractOpenemsComponent implements OpenemsCompon
 
     /**
      * Controls the relays by typing either activate or not and what relays should be called.
-     * DO NOT USE THIS !!!! Exception: ValveManager --> Needs this method if Time is up to set Valve Relays off.
      * If ExceptionHandling --> use forceClose or forceOpen!
      *
      * @param activateOrDeactivate activate or deactivate.
@@ -502,7 +523,7 @@ public class ValveImpl extends AbstractOpenemsComponent implements OpenemsCompon
 
             }
         } catch (OpenemsError.OpenemsNamedException e) {
-            e.printStackTrace();
+            this.log.warn("Couldn't write into Channel; Valve: " + super.id());
         }
     }
 
@@ -510,7 +531,7 @@ public class ValveImpl extends AbstractOpenemsComponent implements OpenemsCompon
     // --------- UTILITY -------------//
 
     /**
-     * get Current Time in Ms.
+     * Get Current Time in Ms.
      *
      * @return currentTime in Ms.
      */
@@ -525,14 +546,14 @@ public class ValveImpl extends AbstractOpenemsComponent implements OpenemsCompon
 
     @Override
     public String debugLog() {
-        if (this.getPowerLevel().value().isDefined()) {
+        if (this.getPowerLevelChannel().value().isDefined()) {
             String name = "";
             if (!super.alias().equals("")) {
                 name = super.alias();
             } else {
                 name = super.id();
             }
-            return "Valve: " + name + ": " + this.getPowerLevel().value().toString() + "\n";
+            return "Valve: " + name + ": " + this.getPowerLevelChannel().value().toString() + "\n";
         } else {
             return "\n";
         }
@@ -545,49 +566,29 @@ public class ValveImpl extends AbstractOpenemsComponent implements OpenemsCompon
             this.lastMaximum = this.maximum;
             this.lastMinimum = this.minimum;
             this.updatePowerLevel();
-            boolean reached = this.powerLevelReached();
+            boolean reached = this.powerLevelReached() && this.readyToChange();
             if (reached) {
-                this.readyToChange();
+                this.getIsBusyChannel().setNextValue(false);
+                this.isForced = false;
             }
-            this.updatePowerLevel();
+            if (this.maxValueChannel().getNextWriteValue().isPresent() && this.maxValueChannel().getNextWriteValue().get() + BUFFER < this.getPowerLevelValue()) {
+                this.changeByPercentage(this.maxValueChannel().getNextWriteValue().get() - this.getPowerLevelValue());
+            } else if (this.minValueChannel().getNextWriteValue().isPresent() && this.minValueChannel().getNextWriteValue().get() + BUFFER > this.getPowerLevelValue()) {
+                this.changeByPercentage(this.minValueChannel().getNextWriteValue().get() - this.getPowerLevelValue());
+            }
         }
         if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS)) {
-            boolean maxMin = false;
-            if (this.maxValue().getNextWriteValue().isPresent() && this.maxValue().getNextWriteValue().get() + BUFFER < this.getCurrentPowerLevelValue()) {
-                this.changeByPercentage(this.maxValue().getNextWriteValue().get() - this.getCurrentPowerLevelValue());
-                if (this.maxMinValid()) {
-                    maxMin = true;
-                } else {
-                    maxMin = false;
-                }
-
-            } else if (this.minValue().getNextWriteValue().isPresent() && this.minValue().getNextWriteValue().get() + BUFFER > this.getCurrentPowerLevelValue()) {
-                this.changeByPercentage(this.minValue().getNextWriteValue().get() - this.getCurrentPowerLevelValue());
-                if (this.maxMinValid()) {
-                    maxMin = true;
-                } else {
-                    maxMin = false;
-                }
-            }
-
-
-            //next Value bc on short scheduler the value.get() is not quick enough updated
-            //Should this be Reset?
             if (this.shouldReset()) {
                 this.reset();
-                this.shouldForceClose().setNextValue(false);
-                this.updatePowerLevel();
             } else {
-                //Reacting to SetPowerLevelPercent by REST Request
-                if (maxMin == false && this.setPowerLevelPercent().value().isDefined() && this.setPowerLevelPercent().value().get() >= 0) {
-
-                    int changeByPercent = this.setPowerLevelPercent().value().get();
+                int changeByPercent = this.setPointPowerLevelValue();
+                if (changeByPercent >= 0) {
                     //getNextPowerLevel Bc it's the true current state that's been calculated
-                    if (this.getPowerLevel().getNextValue().isDefined()) {
-                        changeByPercent -= this.getPowerLevel().getNextValue().get();
+                    if (this.getPowerLevelChannel().getNextValue().isDefined()) {
+                        changeByPercent -= this.getPowerLevelValue();
                     }
                     if (this.changeByPercentage(changeByPercent)) {
-                        this.setPowerLevelPercent().setNextValue(-1);
+                        this.setPointPowerLevelChannel().setNextValue(-1);
                     }
                 }
                 //Calculate current % State of Valve

@@ -59,16 +59,16 @@ public class ManagerValveImpl extends AbstractOpenemsComponent implements Openem
 
         valves.values().forEach(valve -> {
             boolean maxMin = false;
-            if (valve.maxValue().getNextWriteValue().isPresent() && valve.maxValue().getNextWriteValue().get() + BUFFER < valve.getCurrentPowerLevelValue()) {
-                valve.changeByPercentage(valve.maxValue().getNextWriteValue().get() - valve.getCurrentPowerLevelValue());
+            if (valve.maxValueChannel().getNextWriteValue().isPresent() && valve.maxValueChannel().getNextWriteValue().get() + BUFFER < valve.getPowerLevelValue()) {
+                valve.changeByPercentage(valve.maxValueChannel().getNextWriteValue().get() - valve.getPowerLevelValue());
                 if (maxMinValid(valve)) {
                     maxMin = true;
                 } else {
                     maxMin = false;
                 }
 
-            } else if (valve.minValue().getNextWriteValue().isPresent() && valve.minValue().getNextWriteValue().get() + BUFFER > valve.getCurrentPowerLevelValue()) {
-                valve.changeByPercentage(valve.minValue().getNextWriteValue().get() - valve.getCurrentPowerLevelValue());
+            } else if (valve.minValueChannel().getNextWriteValue().isPresent() && valve.minValueChannel().getNextWriteValue().get() + BUFFER > valve.getPowerLevelValue()) {
+                valve.changeByPercentage(valve.minValueChannel().getNextWriteValue().get() - valve.getPowerLevelValue());
                 if (maxMinValid(valve)) {
                     maxMin = true;
                 } else {
@@ -85,15 +85,15 @@ public class ManagerValveImpl extends AbstractOpenemsComponent implements Openem
                 valve.updatePowerLevel();
             } else {
                 //Reacting to SetPowerLevelPercent by REST Request
-                if (maxMin == false && valve.setPowerLevelPercent().value().isDefined() && valve.setPowerLevelPercent().value().get() >= 0) {
+                if (maxMin == false && valve.setPointPowerLevelChannel().value().isDefined() && valve.setPointPowerLevelChannel().value().get() >= 0) {
 
-                    int changeByPercent = valve.setPowerLevelPercent().value().get();
+                    int changeByPercent = valve.setPointPowerLevelChannel().value().get();
                     //getNextPowerLevel Bc it's the true current state that's been calculated
-                    if (valve.getPowerLevel().getNextValue().isDefined()) {
-                        changeByPercent -= valve.getPowerLevel().getNextValue().get();
+                    if (valve.getPowerLevelChannel().getNextValue().isDefined()) {
+                        changeByPercent -= valve.getPowerLevelChannel().getNextValue().get();
                     }
                     if (valve.changeByPercentage(changeByPercent)) {
-                        valve.setPowerLevelPercent().setNextValue(-1);
+                        valve.setPointPowerLevelChannel().setNextValue(-1);
                     }
                 }
                 //Calculate current % State of Valve
@@ -112,8 +112,8 @@ public class ManagerValveImpl extends AbstractOpenemsComponent implements Openem
     }
 
     private boolean maxMinValid(Valve valve) {
-        double maximum = valve.maxValue().getNextWriteValue().get();
-        double minimum = valve.maxValue().getNextWriteValue().get();
+        double maximum = valve.maxValueChannel().getNextWriteValue().get();
+        double minimum = valve.maxValueChannel().getNextWriteValue().get();
         return (maximum >= minimum && maximum > 0 && minimum >= 0);
     }
 

@@ -7,7 +7,7 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
 @ObjectClassDefinition(
         name = "Valve Two Relays",
-        description = "A Valve controlled by 2 relays used in the passing station."
+        description = "A valve controlled by 2 relays."
 )
 @interface Config {
 

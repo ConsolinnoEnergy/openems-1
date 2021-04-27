@@ -1,10 +1,6 @@
 package io.openems.edge.heatsystem.components;
 
-public interface Valve extends PassingForPid {
-
-    boolean readyToChange();
-
-    boolean changeByPercentage(double percentage);
+public interface Valve extends HeatsystemComponent {
 
     /**
      * Closes the valve completely, overriding any current valve operation.
@@ -22,17 +18,23 @@ public interface Valve extends PassingForPid {
 
     void forceOpen();
 
-    void updatePowerLevel();
-
+    /**
+     * This checks if the SetPointPowerLevel (FuturePowerLevel) is reached, by checking the current PowerLevel + a Small Buffer.
+     *
+     * @return if the PowerLevel is Reached.
+     */
     boolean powerLevelReached();
 
+    /**
+     * Checks if the Valve is Changing atm.
+     * @return true if the valve is changing (opening/closing)
+     */
     boolean isChanging();
 
+    /**
+     * Resets the Valve -> Force Closes it.
+     * Can be useful if something weird is happening or fi the Valve was deactivated for some reason and got reactivated again.
+     */
     void reset();
-
-    boolean shouldReset();
-
-    //void shutdownRelays();
-
 
 }

@@ -2,7 +2,7 @@ package io.openems.edge.heatsystem.components.test;
 
 import io.openems.edge.common.component.AbstractOpenemsComponent;
 import io.openems.edge.common.component.OpenemsComponent;
-import io.openems.edge.heatsystem.components.PassingChannel;
+import io.openems.edge.heatsystem.components.HeatsystemComponent;
 import io.openems.edge.heatsystem.components.Valve;
 import io.openems.edge.relay.api.Relay;
 
@@ -22,23 +22,23 @@ public class DummyValve extends AbstractOpenemsComponent implements Valve, Opene
 
 
     public DummyValve(Relay valveOpen, Relay valveClose, String id, double valveTimeInSeconds) {
-        super(OpenemsComponent.ChannelId.values(), PassingChannel.ChannelId.values());
+        super(OpenemsComponent.ChannelId.values(), HeatsystemComponent.ChannelId.values());
         super.activate(null, id, "", true);
         this.opens = valveOpen;
         this.closing = valveClose;
         this.secondsPerPercentage = valveTimeInSeconds / 100.d;
-        this.getLastPowerLevel().setNextValue(0);
-        this.getPowerLevel().setNextValue(0);
-        this.getTimeNeeded().setNextValue(0);
-        this.getIsBusy().setNextValue(false);
+        this.getLastPowerLevelChannel().setNextValue(0);
+        this.getPowerLevelChannel().setNextValue(0);
+        this.timeChannel().setNextValue(0);
+        this.getIsBusyChannel().setNextValue(false);
     }
 
 
     private void valveClose() {
-        if (!this.getIsBusy().getNextValue().get()) {
+        if (!this.getIsBusyChannel().getNextValue().get()) {
             controlRelays(false, "Open");
             controlRelays(true, "Closed");
-            this.getIsBusy().setNextValue(true);
+            this.getIsBusyChannel().setNextValue(true);
             timeStampValve = System.currentTimeMillis();
         }
     }
@@ -46,10 +46,10 @@ public class DummyValve extends AbstractOpenemsComponent implements Valve, Opene
 
     private void valveOpen() {
         //opens will be set true when closing is done
-        if (!this.getIsBusy().getNextValue().get()) {
+        if (!this.getIsBusyChannel().getNextValue().get()) {
             controlRelays(false, "Closed");
             controlRelays(true, "Open");
-            this.getIsBusy().setNextValue(true);
+            this.getIsBusyChannel().setNextValue(true);
             timeStampValve = System.currentTimeMillis();
         }
     }
@@ -57,15 +57,7 @@ public class DummyValve extends AbstractOpenemsComponent implements Valve, Opene
 
     @Override
     public boolean readyToChange() {
-//        if (percentageWasSet) {
-//            if ((System.currentTimeMillis() - timeStampValve)
-//                    >= ((this.getTimeNeeded().getNextValue().get() * 1000))) {
-//                percentageWasSet = false;
-//                return true;
-//            }
-//        }
-//        return false;
-        return System.currentTimeMillis() - timeStampValve >= (this.getTimeNeeded().getNextValue().get() * 1000);
+        return System.currentTimeMillis() - timeStampValve >= (this.timeChannel().getNextValue().get() * 1000);
     }
 
     @Override
@@ -73,22 +65,22 @@ public class DummyValve extends AbstractOpenemsComponent implements Valve, Opene
         double currentPowerLevel;
 
         //opens / closes valve by a certain percentage value
-        if ((this.getIsBusy().getNextValue().get()) || percentage == 0) {
+        if ((this.getIsBusyChannel().getNextValue().get()) || percentage == 0) {
             return false;
         } else {
-            currentPowerLevel = this.getPowerLevel().getNextValue().get();
-            this.getLastPowerLevel().setNextValue(currentPowerLevel);
+            currentPowerLevel = this.getPowerLevelChannel().getNextValue().get();
+            this.getLastPowerLevelChannel().setNextValue(currentPowerLevel);
             currentPowerLevel += percentage;
 
             currentPowerLevel = currentPowerLevel > 100 ? 100
                     : currentPowerLevel < 0 ? 0 : currentPowerLevel;
 
-            this.getPowerLevel().setNextValue(currentPowerLevel);
+            this.getPowerLevelChannel().setNextValue(currentPowerLevel);
             System.out.println("Next PowerLevel Value is " + currentPowerLevel);
             if (Math.abs(percentage) >= 100) {
-                this.getTimeNeeded().setNextValue(100 * secondsPerPercentage);
+                this.timeChannel().setNextValue(100 * secondsPerPercentage);
             } else {
-                this.getTimeNeeded().setNextValue(Math.abs(percentage) * secondsPerPercentage);
+                this.timeChannel().setNextValue(Math.abs(percentage) * secondsPerPercentage);
             }
             if (percentage < 0) {
                 controlRelays(false, "Open");
@@ -121,7 +113,7 @@ public class DummyValve extends AbstractOpenemsComponent implements Valve, Opene
                 break;
         }
         if (!activate) {
-            this.getIsBusy().setNextValue(false);
+            this.getIsBusyChannel().setNextValue(false);
         }
     }
 
@@ -129,11 +121,6 @@ public class DummyValve extends AbstractOpenemsComponent implements Valve, Opene
     // Added because of changes to valve interface. Won't compile otherwise.
     @Override
     public void forceOpen() {
-    }
-
-    @Override
-    public void updatePowerLevel() {
-
     }
 
     @Override
@@ -150,12 +137,6 @@ public class DummyValve extends AbstractOpenemsComponent implements Valve, Opene
     public void reset() {
 
     }
-
-    @Override
-    public boolean shouldReset() {
-        return false;
-    }
-
     @Override
     public void forceClose() {
     }

@@ -8,7 +8,7 @@ import io.openems.edge.common.channel.Doc;
 import io.openems.edge.common.channel.WriteChannel;
 import io.openems.edge.common.component.OpenemsComponent;
 
-public interface PassingActivateNature extends OpenemsComponent {
+public interface PassingStation extends OpenemsComponent {
 
     enum ChannelId implements io.openems.edge.common.channel.ChannelId {
 
@@ -27,7 +27,7 @@ public interface PassingActivateNature extends OpenemsComponent {
 
         private final Doc doc;
 
-        private ChannelId(Doc doc) {
+        ChannelId(Doc doc) {
             this.doc = doc;
         }
 
