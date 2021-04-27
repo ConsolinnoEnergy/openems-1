@@ -26,9 +26,9 @@ public class MyProcessImage implements ProcessImage {
 
 	private final Logger log = LoggerFactory.getLogger(MyProcessImage.class);
 
-	protected final AbstractModbusTcpApi parent;
+	protected final AbstractModbusApi parent;
 
-	protected MyProcessImage(AbstractModbusTcpApi parent) {
+	protected MyProcessImage(AbstractModbusApi parent) {
 		this.parent = parent;
 	}
 
@@ -84,7 +84,7 @@ public class MyProcessImage implements ProcessImage {
 			throw new MyIllegalAddressException(this,
 					"Record for Modbus address [" + ref + "] is not available.");
 		}
-		
+
 		// Get Registers from Record
 		Register[] registers = this.getRecordValueRegisters(record);
 
@@ -99,7 +99,7 @@ public class MyProcessImage implements ProcessImage {
 
 	/**
 	 * Get value as byte-array and convert it to InputRegisters.
-	 * 
+	 *
 	 * @param record the record
 	 * @return the Register
 	 */
