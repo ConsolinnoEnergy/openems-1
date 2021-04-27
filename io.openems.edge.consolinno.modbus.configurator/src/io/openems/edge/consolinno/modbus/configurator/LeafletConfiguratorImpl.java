@@ -14,6 +14,7 @@ import io.openems.edge.bridge.modbus.api.task.FC6WriteRegisterTask;
 import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.common.event.EdgeEventConstants;
 import io.openems.edge.common.taskmanager.Priority;
+import io.openems.edge.consolinno.modbus.configurator.api.Error;
 import io.openems.edge.consolinno.modbus.configurator.api.LeafletConfigurator;
 import org.osgi.service.cm.ConfigurationAdmin;
 import org.osgi.service.component.ComponentContext;
@@ -21,7 +22,6 @@ import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.ConfigurationPolicy;
 import org.osgi.service.component.annotations.Deactivate;
-import org.osgi.service.component.annotations.Modified;
 import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.component.annotations.ReferenceCardinality;
 import org.osgi.service.component.annotations.ReferencePolicy;
@@ -41,6 +41,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import javax.naming.ConfigurationException;
 
 /**
  * Configurator for Consolinno Modbus modules. Reads the CSV Register source file, sets the general Modbus Protocol and configures
@@ -129,7 +131,7 @@ public class LeafletConfiguratorImpl extends AbstractOpenemsModbusComponent impl
     protected SourceReader sourceReader = new SourceReader();
 
     @Activate
-    public void activate(ComponentContext context, Config config) throws OpenemsException {
+    void activate(ComponentContext context, Config config) throws OpenemsException, ConfigurationException {
         //Reads Source file CSV with the Register information
         this.source = this.sourceReader.readCsv(config.source());
         //Splits the big CSV Output into the different Modbus Types(OutputCoil,...)
@@ -137,8 +139,14 @@ public class LeafletConfiguratorImpl extends AbstractOpenemsModbusComponent impl
         //Sets the Register variables for the Configuration
         this.createRelayInverseRegisterArray();
         this.setPwmConfigurationAddresses();
-        super.activate(context, config.id(), config.alias(), config.enabled(), config.modbusUnitId(), this.cm,
-                "Modbus", config.modbusBridgeId());
+        if (this.checkFirmwareCompatibility()) {
+            super.activate(context, config.id(), config.alias(), config.enabled(), config.modbusUnitId(), this.cm,
+                    "Modbus", config.modbusBridgeId());
+        } else {
+            this.log.error("Firmware incompatible or not Running!");
+            this.log.info("The Configurator will now deactivate itself.");
+            this.deactivate();
+        }
     }
 
     /**
@@ -234,7 +242,7 @@ public class LeafletConfiguratorImpl extends AbstractOpenemsModbusComponent impl
     }
 
     @Deactivate
-    public void deactivate() {
+    protected void deactivate() {
         super.deactivate();
     }
 
@@ -421,7 +429,7 @@ public class LeafletConfiguratorImpl extends AbstractOpenemsModbusComponent impl
                     response += line;
                 }
             } catch (IOException e) {
-                this.log.error("This shouldn't have happened");
+                this.log.error("The Firmware is not Running!");
             }
             if (response.equals("") == false) {
                 String[] partOne = response.split("V");
@@ -449,10 +457,9 @@ public class LeafletConfiguratorImpl extends AbstractOpenemsModbusComponent impl
      * @param moduleType   TMP,RELAY,PWM
      * @param moduleNumber Internal Number of the module
      * @param position     Pin position of the Module
+     * @param id           Unique Id of the Device
      * @return boolean true if present
      */
-
-
     @Override
     public boolean modbusModuleCheckout(ModuleType moduleType, int moduleNumber, int position, String id) {
         switch (moduleType) {
@@ -660,6 +667,15 @@ public class LeafletConfiguratorImpl extends AbstractOpenemsModbusComponent impl
                         }
                         break;
                 }
+                break;
+            case LEAFLET: {
+                this.log.error("This should never happen. LEAFLET called modbusModuleCheckout");
+                break;
+            }
+            case ERROR: {
+                this.log.error("This should never happen. ERROR called modbusModuleCheckout");
+                break;
+            }
 
         }
         return false;
@@ -930,6 +946,12 @@ public class LeafletConfiguratorImpl extends AbstractOpenemsModbusComponent impl
 
     }
 
+    /**
+     * Puts a relay back in regular mode. Is Called when a inverted Relay deactivates.
+     *
+     * @param moduleNumber Module number specified on the Device
+     * @param position     Position of the Relay on the module
+     */
     @Override
     public void revertInversion(int moduleNumber, int position) {
         try {

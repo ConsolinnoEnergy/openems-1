@@ -35,6 +35,7 @@
 	bnd.identity;id='org.apache.felix.webconsole.plugins.ds',\
 	bnd.identity;id='org.apache.felix.inventory',\
 	bnd.identity;id='io.openems.edge.application',\
+	bnd.identity;id='io.openems.edge.aio.api',\
 	bnd.identity;id='io.openems.edge.battery.bmw',\
 	bnd.identity;id='io.openems.edge.battery.bydcommercial',\
 	bnd.identity;id='io.openems.edge.battery.fenecon.home',\
@@ -48,10 +49,10 @@
 	bnd.identity;id='io.openems.edge.bridge.onewire',\
 	bnd.identity;id='io.openems.edge.common',\
 	bnd.identity;id='io.openems.edge.consolinno.modbus.configurator',\
-	bnd.identity;id='io.openems.edge.pwm',\
-	bnd.identity;id='io.openems.edge.relay',\
-	bnd.identity;id='io.openems.edge.sensor.signal',\
-	bnd.identity;id='io.openems.edge.sensor.temperature',\
+	bnd.identity;id='io.openems.edge.consolinno.pwm',\
+	bnd.identity;id='io.openems.edge.consolinno.relay',\
+	bnd.identity;id='io.openems.edge.consolinno.sensor.signal',\
+	bnd.identity;id='io.openems.edge.consolinno.sensor.temperature',\
 	bnd.identity;id='io.openems.edge.controller.api.backend',\
 	bnd.identity;id='io.openems.edge.controller.api.common',\
 	bnd.identity;id='io.openems.edge.controller.api.modbus',\
@@ -153,6 +154,7 @@
 	bnd.identity;id='io.openems.edge.pvinverter.sma',\
 	bnd.identity;id='io.openems.edge.pvinverter.solarlog',\
 	bnd.identity;id='io.openems.edge.pvinverter.sunspec',\
+	bnd.identity;id='io.openems.edge.pwm.api',\
 	bnd.identity;id='io.openems.edge.relay.api',\
 	bnd.identity;id='io.openems.edge.remote.rest.device',\
 	bnd.identity;id='io.openems.edge.scheduler.allalphabetically',\
@@ -175,6 +177,7 @@
 	com.google.guava.failureaccess;version='[1.0.1,1.0.2)',\
 	com.sun.jna;version='[5.8.0,5.8.1)',\
 	io.openems.common;version=snapshot,\
+	io.openems.edge.aio.api;version=snapshot,\
 	io.openems.edge.application;version=snapshot,\
 	io.openems.edge.battery.api;version=snapshot,\
 	io.openems.edge.battery.bmw;version=snapshot,\
@@ -303,6 +306,7 @@
 	io.openems.edge.pvinverter.sma;version=snapshot,\
 	io.openems.edge.pvinverter.solarlog;version=snapshot,\
 	io.openems.edge.pvinverter.sunspec;version=snapshot,\
+	io.openems.edge.pwm.api;version=snapshot,\
 	io.openems.edge.relay.api;version=snapshot,\
 	io.openems.edge.remote.rest.device;version=snapshot,\
 	io.openems.edge.scheduler.allalphabetically;version=snapshot,\
