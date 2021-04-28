@@ -60,7 +60,6 @@ public abstract class AbstractModbusApi extends AbstractOpenemsComponent
 	private final MyProcessImage processImage;
 	private final String implementationName;
 	private String port;
-	private String connectionType;
 	private String[] componentIdsArray;
 
 	/**
@@ -96,12 +95,12 @@ public abstract class AbstractModbusApi extends AbstractOpenemsComponent
 		// configuration settings
 		this.port = port;
 
-		switch (implementationName) {
+		switch (this.implementationName) {
 			case "Modbus/TCP-Api Custom":
 			case "Modbus/Serial-Api Custom":
 
 				// Verify that the input has the correct format. Abort if not.
-				if (processChannelInput(componentIds, cpm)) {
+				if (this.processChannelInput(componentIds, cpm)) {
 					return;
 				}
 				break;
@@ -109,12 +108,12 @@ public abstract class AbstractModbusApi extends AbstractOpenemsComponent
 			case "Modbus/TCP-Api Read-Only":
 			case "Modbus/Serial-Api Read-Write":
 			case "Modbus/Serial-Api Read-Only":
-				componentIdsArray = componentIds;
+				this.componentIdsArray = componentIds;
 				break;
 		}
 
 		// update filter for 'components'
-		if (OpenemsComponent.updateReferenceFilter(cm, this.servicePid(), "Component", componentIdsArray)) {
+		if (OpenemsComponent.updateReferenceFilter(cm, this.servicePid(), "Component", this.componentIdsArray)) {
 			return;
 		}
 
@@ -125,18 +124,14 @@ public abstract class AbstractModbusApi extends AbstractOpenemsComponent
 			return;
 		}
 
-		switch (implementationName) {
+		switch (this.implementationName) {
 			case "Modbus/TCP-Api Custom":
-				this.connectionType = "TCP";
-				break;
 			case "Modbus/Serial-Api Custom":
-				this.connectionType = "Serial";
 				break;
 			case "Modbus/TCP-Api Read-Write":
 			case "Modbus/TCP-Api Read-Only":
 			case "Modbus/Serial-Api Read-Write":
 			case "Modbus/Serial-Api Read-Only":
-				this.connectionType = connectionType;
 
 				// Add Meta-Component to _components
 				this.addComponent(metaComponent);
@@ -146,7 +141,7 @@ public abstract class AbstractModbusApi extends AbstractOpenemsComponent
 				break;
 		}
 
-		printModbusAddressMapping();
+		this.printModbusAddressMapping();
 
 		// Start Modbus-Server
 		this.startApiWorker.activate(id);
@@ -173,17 +168,17 @@ public abstract class AbstractModbusApi extends AbstractOpenemsComponent
 				try {
 					// start new server
 					//this.slave = ModbusSlaveFactory.createTCPSlave(port, AbstractModbusTcpApi.this.maxConcurrentConnections);
-					this.slave = createModbusSlave();
+					this.slave = AbstractModbusApi.this.createModbusSlave();
 					this.slave.addProcessImage(UNIT_ID, AbstractModbusApi.this.processImage);
 					this.slave.open();
 					AbstractModbusApi.this.logInfo(this.log, AbstractModbusApi.this.implementationName
-							+ " started on port [" + port + "] with UnitId [" + AbstractModbusApi.UNIT_ID + "].");
+							+ " started on port [" + AbstractModbusApi.this.port + "] with UnitId [" + AbstractModbusApi.UNIT_ID + "].");
 					AbstractModbusApi.this._setUnableToStart(false);
 				} catch (ModbusException e) {
 					ModbusSlaveFactory.close();
 					AbstractModbusApi.this.logError(this.log,
-							"Unable to start " + AbstractModbusApi.this.implementationName + " on port [" + port
-									+ "]: " + e.getMessage());
+							"Unable to start " + AbstractModbusApi.this.implementationName + " on port ["
+									+ AbstractModbusApi.this.port + "]: " + e.getMessage());
 					AbstractModbusApi.this._setUnableToStart(true);
 				}
 
@@ -192,7 +187,8 @@ public abstract class AbstractModbusApi extends AbstractOpenemsComponent
 				String error = this.slave.getError();
 				if (error != null) {
 					AbstractModbusApi.this.logError(this.log,
-							"Unable to start Modbus/TCP Api on port [" + port + "]: " + error);
+							"Unable to start " + AbstractModbusApi.this.implementationName + " on port ["
+									+ AbstractModbusApi.this.port + "]: " + error);
 					AbstractModbusApi.this._setUnableToStart(true);
 					this.slave = null;
 					// stop server
@@ -332,10 +328,11 @@ public abstract class AbstractModbusApi extends AbstractOpenemsComponent
 	 * The channels given by this array are mapped to modbus registers according to the configuration.
 	 *
 	 * @param channelInput string array containing input from the user.
+	 * @param cpm 		   the component manager.
 	 * @return false for success, true for error.
 	 */
 	private boolean processChannelInput(String[] channelInput, ComponentManager cpm) {
-		componentIdsArray = new String[channelInput.length];
+		this.componentIdsArray = new String[channelInput.length];
 		int counter = 0;
 
 		for (String entry : channelInput) {
@@ -395,7 +392,7 @@ public abstract class AbstractModbusApi extends AbstractOpenemsComponent
 						&& cpm.getComponent(componentIdString).isEnabled();
 				if (componentExistsAndIsEnabled) {
 					componentEntry = cpm.getComponent(componentIdString);
-					addComponent(componentEntry);
+					this.addComponent(componentEntry);
 				} else {
 					this.logWarn(this.log, "Bad entry in configuration option \"Channels\", line "
 							+ (counter + 1) + ": [" + componentIdString + "] is not a valid component-ID. Discarding entry.");
@@ -471,7 +468,7 @@ public abstract class AbstractModbusApi extends AbstractOpenemsComponent
 			} catch (NumberFormatException e) {
 				this.logWarn(this.log, "Wrong format in configuration option \"Channels\", line "
 						+ (counter + 1) + ": [" + registerAddressString + "] is not a number. Assigning next free address.");
-				registerAddress = mapToNextFreeAddress(modbusTypeEntry);
+				registerAddress = this.mapToNextFreeAddress(modbusTypeEntry);
 				this.logWarn(this.log, "Assigned " + componentIdString + "/" + channelIdString
 						+ " to Modbus address " + registerAddress + ".");
 			}
@@ -479,35 +476,35 @@ public abstract class AbstractModbusApi extends AbstractOpenemsComponent
 				this.logWarn(this.log, "Wrong format in configuration option \"Channels\", line "
 						+ (counter + 1) + ": [" + registerAddress + "] is not a possible Modbus holding register address. "
 						+ "Assigning next free address.");
-				registerAddress = mapToNextFreeAddress(modbusTypeEntry);
+				registerAddress = this.mapToNextFreeAddress(modbusTypeEntry);
 				this.logWarn(this.log, "Assigned " + componentIdString + "/" + channelIdString
 						+ " to Modbus address " + registerAddress + ".");
 			}
 
 			// Verify that the intended address range is free to use.
-			if (records.isEmpty() == false) {
+			if (this.records.isEmpty() == false) {
 
 				// Check adjacent lower entry.
-				if (records.floorKey(registerAddress) != null) {
-					int usedRangeLowerEntry = records.floorKey(registerAddress)
-							+ records.floorEntry(registerAddress).getValue().getType().getWords() - 1;
+				if (this.records.floorKey(registerAddress) != null) {
+					int usedRangeLowerEntry = this.records.floorKey(registerAddress)
+							+ this.records.floorEntry(registerAddress).getValue().getType().getWords() - 1;
 					if (usedRangeLowerEntry >= registerAddress) {
 						this.logWarn(this.log, "Modbus register address " + registerAddress + " is already used. Each "
 								+ "channel must have a unique address! Assigning next free address.");
-						registerAddress = mapToNextFreeAddress(modbusTypeEntry);
+						registerAddress = this.mapToNextFreeAddress(modbusTypeEntry);
 						this.logWarn(this.log, "Assigned " + componentIdString + "/" + channelIdString
 								+ " to Modbus address " + registerAddress + ".");
 					}
 				}
 
 				// Check adjacent higher entry.
-				if (records.ceilingKey(registerAddress) != null) {
+				if (this.records.ceilingKey(registerAddress) != null) {
 					int usedRangeThisEntry = registerAddress + modbusTypeEntry.getWords() - 1;
-					if (usedRangeThisEntry >= records.ceilingKey(registerAddress)) {
+					if (usedRangeThisEntry >= this.records.ceilingKey(registerAddress)) {
 						this.logWarn(this.log, "Cannot fit channel " + componentIdString + "/"
 								+ channelIdString +	" in Modbus register address " + registerAddress + ". Not enough "
 								+ "unassigned registers before the next entry. Assigning next free address.");
-						registerAddress = mapToNextFreeAddress(modbusTypeEntry);
+						registerAddress = this.mapToNextFreeAddress(modbusTypeEntry);
 						this.logWarn(this.log, "Assigned " + componentIdString + "/" + channelIdString
 								+ " to Modbus address " + registerAddress + ".");
 					}
@@ -536,9 +533,9 @@ public abstract class AbstractModbusApi extends AbstractOpenemsComponent
 
 			// Build entry
 			ModbusRecordChannel recordChannelEntry = new ModbusRecordChannel(0, modbusTypeEntry, channelEntry.channelId(), accessModeEntry);
-			componentIdsArray[counter] = componentIdString;
+			this.componentIdsArray[counter] = componentIdString;
 			this.components.put(registerAddress, componentEntry.alias());
-			addRecordToProcessImage(registerAddress, recordChannelEntry, componentEntry);
+			this.addRecordToProcessImage(registerAddress, recordChannelEntry, componentEntry);
 
 			counter++;
 		}
@@ -563,7 +560,7 @@ public abstract class AbstractModbusApi extends AbstractOpenemsComponent
 		int neededRegisters = type.getWords();
 
 		// Travers the map and see if a gap is big enough.
-		for (Map.Entry<Integer, ModbusRecord> entry : records.entrySet()) {
+		for (Map.Entry<Integer, ModbusRecord> entry : this.records.entrySet()) {
 			int gap = entry.getKey() - previousKey - previousKeyLength;
 			if (gap >= neededRegisters) {
 				return previousKey + previousKeyLength;
@@ -590,7 +587,7 @@ public abstract class AbstractModbusApi extends AbstractOpenemsComponent
 		this.logInfo(this.log, "");
 		this.logInfo(this.log, "--Modbus address mapping--");
 		boolean notice = false;
-		for (Map.Entry<Integer, ModbusRecord> entry : records.entrySet()) {
+		for (Map.Entry<Integer, ModbusRecord> entry : this.records.entrySet()) {
 			String keyRange = "";
 			switch (entry.getValue().getType()) {
 				case UINT16:

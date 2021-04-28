@@ -1,4 +1,4 @@
-package io.openems.edge.controller.api.modbus.readwriteSerial;
+package io.openems.edge.controller.api.modbus.readonly.serial;
 
 import com.ghgande.j2mod.modbus.ModbusException;
 import com.ghgande.j2mod.modbus.slave.ModbusSlaveFactory;
@@ -27,11 +27,11 @@ import org.osgi.service.metatype.annotations.Designate;
 
 @Designate(ocd = Config.class, factory = true)
 @Component(//
-		name = "Controller.Api.ModbusSerial.ReadWrite", //
+		name = "Controller.Api.ModbusSerial.ReadOnly", //
 		immediate = true, //
 		configurationPolicy = ConfigurationPolicy.REQUIRE)
-public class ModbusSerialApiReadWriteImpl extends AbstractModbusApi
-		implements ModbusSerialApiReadWrite, ModbusApi, Controller, OpenemsComponent, JsonApi {
+public class ModbusSerialApiReadOnlyImpl extends AbstractModbusApi
+		implements ModbusSerialApiReadOnly, ModbusApi, Controller, OpenemsComponent, JsonApi {
 
 	private SerialParameters serialParameters;
 
@@ -49,21 +49,20 @@ public class ModbusSerialApiReadWriteImpl extends AbstractModbusApi
 	@Reference
 	protected ComponentManager cpm;
 
-	public ModbusSerialApiReadWriteImpl() {
-		super("Modbus/Serial-Api Read-Write", //
+	public ModbusSerialApiReadOnlyImpl() {
+		super("Modbus/Serial-Api Read-Only", //
 				OpenemsComponent.ChannelId.values(), //
 				Controller.ChannelId.values(), //
 				ModbusApi.ChannelId.values(), //
-				ModbusSerialApiReadWrite.ChannelId.values() //
+				ModbusSerialApiReadOnly.ChannelId.values() //
 		);
-		this.apiWorker.setLogChannel(this.getApiWorkerLogChannel());
 	}
 
 	@Activate
 	void activate(ComponentContext context, Config config) throws ModbusException, OpenemsException {
 		super.activate(context, config.id(), config.alias(), config.enabled(), this.cm, this.cpm, this.metaComponent,
-				config.component_ids(), config.apiTimeout(), config.port());
-		serialParameters = new SerialParameters(config.port(), config.baudRate(), config.flowControlIn().getValue(),
+				config.component_ids(), 0 /* no timeout */, config.port());
+		this.serialParameters = new SerialParameters(config.port(), config.baudRate(), config.flowControlIn().getValue(),
 				config.flowControlOut().getValue(), config.databits(), config.stopbits().getValue(), config.parity().getValue(), config.echo());
 	}
 
@@ -79,11 +78,11 @@ public class ModbusSerialApiReadWriteImpl extends AbstractModbusApi
 	 */
 	@Override
 	protected com.ghgande.j2mod.modbus.slave.ModbusSlave createModbusSlave() throws ModbusException {
-		return ModbusSlaveFactory.createSerialSlave(serialParameters);
-	};
+		return ModbusSlaveFactory.createSerialSlave(this.serialParameters);
+	}
 
 	@Override
 	protected AccessMode getAccessMode() {
-		return AccessMode.READ_WRITE;
+		return AccessMode.READ_ONLY;
 	}
 }

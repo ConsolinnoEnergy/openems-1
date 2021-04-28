@@ -1,4 +1,4 @@
-package io.openems.edge.controller.api.modbus.readonlyTCP;
+package io.openems.edge.controller.api.modbus.readonly.tcp;
 
 import com.ghgande.j2mod.modbus.ModbusException;
 import com.ghgande.j2mod.modbus.slave.ModbusSlaveFactory;
@@ -78,7 +78,7 @@ public class ModbusTcpApiReadOnlyImpl extends AbstractModbusApi
 	 */
 	@Override
 	protected com.ghgande.j2mod.modbus.slave.ModbusSlave createModbusSlave() throws ModbusException {
-		return ModbusSlaveFactory.createTCPSlave(port, this.maxConcurrentConnections);
+		return ModbusSlaveFactory.createTCPSlave(this.port, this.maxConcurrentConnections);
 	}
 
 	@Override

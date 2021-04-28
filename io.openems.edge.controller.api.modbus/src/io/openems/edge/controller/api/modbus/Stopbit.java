@@ -13,6 +13,11 @@ public enum Stopbit {
 
 	private int value;
 
+	/**
+	 * Gets the stop bit setting.
+	 *
+	 * @return the stop bit setting.
+	 */
 	public int getValue() {
 		return this.value;
 	}

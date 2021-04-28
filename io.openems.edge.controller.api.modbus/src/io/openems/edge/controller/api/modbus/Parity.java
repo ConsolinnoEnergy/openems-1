@@ -15,6 +15,11 @@ public enum Parity {
 
 	private int value;
 
+	/**
+	 * Gets the parity setting.
+	 *
+	 * @return the parity setting.
+	 */
 	public int getValue() {
 		return this.value;
 	}

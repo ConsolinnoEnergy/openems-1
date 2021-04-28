@@ -16,6 +16,11 @@ public enum FlowControlOut {
 
 	private int value;
 
+	/**
+	 * Gets the flow control out setting.
+	 *
+	 * @return the flow control setting.
+	 */
 	public int getValue() {
 		return this.value;
 	}

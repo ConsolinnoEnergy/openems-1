@@ -1,4 +1,4 @@
-package io.openems.edge.controller.api.modbus.readwriteSerial;
+package io.openems.edge.controller.api.modbus.readwrite.serial;
 
 import io.openems.common.types.OpenemsType;
 import io.openems.edge.common.channel.Doc;

@@ -1,4 +1,4 @@
-package io.openems.edge.controller.api.modbus.readwriteTCP;
+package io.openems.edge.controller.api.modbus.readwrite.tcp;
 
 import io.openems.edge.controller.api.modbus.AbstractModbusApi;
 import org.osgi.service.metatype.annotations.AttributeDefinition;

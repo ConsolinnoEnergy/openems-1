@@ -1,8 +1,7 @@
-package io.openems.edge.controller.api.modbus.readonlySerial;
+package io.openems.edge.controller.api.modbus.custom.tcp;
 
 import com.ghgande.j2mod.modbus.ModbusException;
 import com.ghgande.j2mod.modbus.slave.ModbusSlaveFactory;
-import com.ghgande.j2mod.modbus.util.SerialParameters;
 import io.openems.common.channel.AccessMode;
 import io.openems.common.exceptions.OpenemsException;
 import io.openems.edge.common.component.ComponentManager;
@@ -27,19 +26,20 @@ import org.osgi.service.metatype.annotations.Designate;
 
 @Designate(ocd = Config.class, factory = true)
 @Component(//
-		name = "Controller.Api.ModbusSerial.ReadOnly", //
+		name = "Controller.Api.ModbusTcp.Custom", //
 		immediate = true, //
 		configurationPolicy = ConfigurationPolicy.REQUIRE)
-public class ModbusSerialApiReadOnlyImpl extends AbstractModbusApi
-		implements ModbusSerialApiReadOnly, ModbusApi, Controller, OpenemsComponent, JsonApi {
+public class ModbusTcpApiCustomImpl extends AbstractModbusApi
+		implements ModbusTcpApiCustom, ModbusApi, Controller, OpenemsComponent, JsonApi {
 
-	private SerialParameters serialParameters;
+	private int port = DEFAULT_PORT_TCP;
+	private int maxConcurrentConnections = DEFAULT_MAX_CONCURRENT_CONNECTIONS;
 
 	@Reference(policy = ReferencePolicy.STATIC, policyOption = ReferencePolicyOption.GREEDY, cardinality = ReferenceCardinality.MANDATORY)
 	protected Meta metaComponent = null;
 
 	@Reference(policy = ReferencePolicy.STATIC, policyOption = ReferencePolicyOption.GREEDY, cardinality = ReferenceCardinality.MULTIPLE)
-	protected void addComponent(ModbusSlave component) {
+	protected void addComponent(OpenemsComponent component) {
 		super.addComponent(component);
 	}
 
@@ -49,21 +49,22 @@ public class ModbusSerialApiReadOnlyImpl extends AbstractModbusApi
 	@Reference
 	protected ComponentManager cpm;
 
-	public ModbusSerialApiReadOnlyImpl() {
-		super("Modbus/Serial-Api Read-Only", //
+	public ModbusTcpApiCustomImpl() {
+		super("Modbus/TCP-Api Custom", //
 				OpenemsComponent.ChannelId.values(), //
 				Controller.ChannelId.values(), //
 				ModbusApi.ChannelId.values(), //
-				ModbusSerialApiReadOnly.ChannelId.values() //
+				ModbusTcpApiCustom.ChannelId.values() //
 		);
+		this.apiWorker.setLogChannel(this.getApiWorkerLogChannel());
 	}
 
 	@Activate
 	void activate(ComponentContext context, Config config) throws ModbusException, OpenemsException {
 		super.activate(context, config.id(), config.alias(), config.enabled(), this.cm, this.cpm, this.metaComponent,
-				config.component_ids(), 0 /* no timeout */, config.port());
-		serialParameters = new SerialParameters(config.port(), config.baudRate(), config.flowControlIn().getValue(),
-				config.flowControlOut().getValue(), config.databits(), config.stopbits().getValue(), config.parity().getValue(), config.echo());
+				config.component_ids(), config.apiTimeout(), Integer.toString(config.port()));
+		this.port = config.port();
+		this.maxConcurrentConnections = config.maxConcurrentConnections();
 	}
 
 	@Deactivate
@@ -78,11 +79,11 @@ public class ModbusSerialApiReadOnlyImpl extends AbstractModbusApi
 	 */
 	@Override
 	protected com.ghgande.j2mod.modbus.slave.ModbusSlave createModbusSlave() throws ModbusException {
-		return ModbusSlaveFactory.createSerialSlave(serialParameters);
-	};
+		return ModbusSlaveFactory.createTCPSlave(this.port, this.maxConcurrentConnections);
+	}
 
 	@Override
 	protected AccessMode getAccessMode() {
-		return AccessMode.READ_ONLY;
+		return AccessMode.READ_WRITE;
 	}
 }

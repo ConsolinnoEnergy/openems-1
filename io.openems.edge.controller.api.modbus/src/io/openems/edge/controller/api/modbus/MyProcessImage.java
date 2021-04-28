@@ -80,7 +80,7 @@ public class MyProcessImage implements ProcessImage {
 		ModbusRecord record = this.parent.records.get(ref);
 
 		// make sure the ModbusRecord is available
-		if(record == null) {
+		if (record == null) {
 			throw new MyIllegalAddressException(this,
 					"Record for Modbus address [" + ref + "] is not available.");
 		}

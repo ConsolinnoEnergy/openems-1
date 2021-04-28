@@ -16,6 +16,11 @@ public enum FlowControlIn {
 
 	private int value;
 
+	/**
+	 * Gets the flow control in setting.
+	 *
+	 * @return the flow control setting.
+	 */
 	public int getValue() {
 		return this.value;
 	}

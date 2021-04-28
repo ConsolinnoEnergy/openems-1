@@ -1,4 +1,4 @@
-package io.openems.edge.controller.api.modbus.readwriteTCP;
+package io.openems.edge.controller.api.modbus.readwrite.tcp;
 
 import com.ghgande.j2mod.modbus.ModbusException;
 import com.ghgande.j2mod.modbus.slave.ModbusSlaveFactory;
@@ -79,7 +79,7 @@ public class ModbusTcpApiReadWriteImpl extends AbstractModbusApi
 	 */
 	@Override
 	protected com.ghgande.j2mod.modbus.slave.ModbusSlave createModbusSlave() throws ModbusException {
-		return ModbusSlaveFactory.createTCPSlave(port, this.maxConcurrentConnections);
+		return ModbusSlaveFactory.createTCPSlave(this.port, this.maxConcurrentConnections);
 	}
 
 	@Override

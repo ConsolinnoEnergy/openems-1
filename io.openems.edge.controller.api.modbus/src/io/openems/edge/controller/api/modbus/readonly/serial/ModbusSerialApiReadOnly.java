@@ -1,4 +1,4 @@
-package io.openems.edge.controller.api.modbus.readonlySerial;
+package io.openems.edge.controller.api.modbus.readonly.serial;
 
 import io.openems.edge.common.channel.Doc;
 import io.openems.edge.common.component.OpenemsComponent;
