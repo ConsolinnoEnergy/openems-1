@@ -8,11 +8,11 @@ Bundle-Description: \
 
 -buildpath:  \
 	${buildpath},\
-	io.openems.edge.common,\
     io.openems.common,\
     io.openems.edge.bridge.modbus,\
-    io.openems.edge.thermometer.api,\
+	io.openems.edge.common,\
     io.openems.edge.consolinno.modbus.configurator,\
+    io.openems.edge.thermometer.api,\
 
 -testpath: \
 	${testpath}

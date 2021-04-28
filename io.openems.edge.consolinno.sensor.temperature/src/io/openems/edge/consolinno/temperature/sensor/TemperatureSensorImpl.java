@@ -26,7 +26,7 @@ import org.osgi.service.metatype.annotations.Designate;
 
 
 @Designate(ocd = Config.class, factory = true)
-@Component(name = "io.openems.edge.consolinno.temperature.sensor", immediate = true,
+@Component(name = "Consolinno.Temperature", immediate = true,
         configurationPolicy = ConfigurationPolicy.REQUIRE)
 public class TemperatureSensorImpl extends AbstractOpenemsModbusComponent implements OpenemsComponent, Thermometer {
     @Reference(policy = ReferencePolicy.STATIC, policyOption = ReferencePolicyOption.GREEDY, cardinality = ReferenceCardinality.MANDATORY)
@@ -67,7 +67,7 @@ public class TemperatureSensorImpl extends AbstractOpenemsModbusComponent implem
     }
 
     @Deactivate
-    public void deactivate() {
+    protected void deactivate() {
         this.lc.removeModule(LeafletConfigurator.ModuleType.TMP, this.temperatureModule, this.position);
         super.deactivate();
 
@@ -88,7 +88,8 @@ public class TemperatureSensorImpl extends AbstractOpenemsModbusComponent implem
 
     @Override
     public String debugLog() {
-        return "Temperature " + getTemperatureValue();
+        String temperature = getTemperature().isDefined() ? getTemperature().get().toString() : "Not Defined";
+        return "Temperature " + temperature;
     }
 
 }
