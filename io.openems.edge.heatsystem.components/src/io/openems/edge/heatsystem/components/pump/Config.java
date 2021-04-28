@@ -38,6 +38,8 @@ import org.osgi.service.metatype.annotations.Option;
     @AttributeDefinition(name = "PWM Id/ PwmChannel", description = "If the Pump is connected as a pwm Device; type in the id.")
     String pump_Pwm() default "PwmDevice0/WritePowerLevel";
 
+    boolean disableOnActivation() default true;
+
     boolean enabled() default true;
 
     String webconsole_configurationFactory_nameHint() default "Pump [{id}]";

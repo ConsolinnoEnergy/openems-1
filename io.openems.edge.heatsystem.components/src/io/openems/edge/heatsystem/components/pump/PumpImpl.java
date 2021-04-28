@@ -1,7 +1,10 @@
 package io.openems.edge.heatsystem.components.pump;
 
+import io.openems.common.channel.Unit;
 import io.openems.common.exceptions.OpenemsError;
 import io.openems.common.types.ChannelAddress;
+import io.openems.edge.common.channel.Channel;
+import io.openems.edge.common.channel.WriteChannel;
 import io.openems.edge.common.component.AbstractOpenemsComponent;
 import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
@@ -17,20 +20,23 @@ import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.metatype.annotations.Designate;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * This simple Pump can be configured and used by either a Pwm or a Relay or Both.
- * It works with Channels as well. You still need to configure if the Pump is controlled by a Realy, Pwm or Both.
+ * It works with Channels as well. You still need to configure if the Pump is controlled by a Relay, Pwm or Both.
  */
 @Designate(ocd = Config.class, factory = true)
 @Component(name = "HeatsystemComponent.Pump")
 public class PumpImpl extends AbstractOpenemsComponent implements OpenemsComponent, Pump {
+    private final Logger log = LoggerFactory.getLogger(PumpImpl.class);
 
     private Relay relay;
     private Pwm pwm;
 
-    private ChannelAddress relayChannelAddress;
-    private ChannelAddress pwmChannelAddress;
+    private WriteChannel<?> relayChannel;
+    private WriteChannel<?> pwmChannel;
     private boolean isRelay = false;
     private boolean isPwm = false;
     private ConfigurationType configurationType;
@@ -49,6 +55,18 @@ public class PumpImpl extends AbstractOpenemsComponent implements OpenemsCompone
         this.getIsBusyChannel().setNextValue(false);
         this.getPowerLevelChannel().setNextValue(0);
         this.getLastPowerLevelChannel().setNextValue(0);
+        if (config.disableOnActivation()) {
+            this.deactivateDevices();
+        }
+    }
+
+    private void deactivateDevices() {
+        if (this.isRelay) {
+            this.controlRelay(false);
+        }
+        if (this.isPwm) {
+            this.controlPwm(0);
+        }
     }
 
 
@@ -56,64 +74,88 @@ public class PumpImpl extends AbstractOpenemsComponent implements OpenemsCompone
      * Allocates the components.
      *
      * @param configurationType The Configuration Type -> either Channel or Device
-     * @param pump_type         is the pump controlled via realys, pwm or both.
-     * @param pump_relays       the unique id of the relays controlling the pump.
+     * @param pump_type         is the pump controlled via relay, pwm or both.
+     * @param pump_relay        the unique id of the relays controlling the pump.
      * @param pump_pwm          unique id of the pwm controlling the pump.
-     *
-     *                          <p>Depending if it's a relays/pwm/both the Components will be fetched by the component-manager and allocated.
-     *                          The relays and or pump will be off (just in case).
      */
-    private void allocateComponents(ConfigurationType configurationType, String pump_type, String pump_relays, String pump_pwm) throws OpenemsError.OpenemsNamedException, ConfigurationException {
+    private void allocateComponents(ConfigurationType configurationType, String pump_type, String pump_relay, String pump_pwm) throws OpenemsError.OpenemsNamedException, ConfigurationException {
         this.configurationType = configurationType;
         switch (pump_type) {
             case "Relay":
-                isRelay = true;
+                this.isRelay = true;
                 break;
             case "Pwm":
-                isPwm = true;
+                this.isPwm = true;
                 break;
 
             case "Both":
             default:
-                isRelay = true;
-                isPwm = true;
+                this.isRelay = true;
+                this.isPwm = true;
                 break;
         }
 
-        if (isRelay) {
-            this.configureRelay(pump_relays);
-            if (cpm.getComponent(pump_relays) instanceof Relay) {
-                this.relay = cpm.getComponent(pump_relays);
-                this.relay.getRelaysWriteChannel().setNextWriteValue(!this.relay.isCloser().getNextValue().get());
-            } else {
-                throw new ConfigurationException(pump_relays, "Allocated relays not a (configured) relays.");
-            }
+        if (this.isRelay) {
+            this.configureRelay(pump_relay);
         }
-        if (isPwm) {
-            this.configurePump(pump_pwm);
-            if (cpm.getComponent(pump_pwm) instanceof Pwm) {
-                this.pwm = cpm.getComponent(pump_pwm);
-                //reset pwm to 0; so pump is on activation off
-                this.pwm.getWritePwmPowerLevelChannel().setNextWriteValue(0.f);
-            } else {
-                throw new ConfigurationException(pump_pwm, "Allocated Pwm, not a (configured) pwm-device.");
-            }
+        if (this.isPwm) {
+            this.configurePwm(pump_pwm);
         }
 
     }
 
-    private void configurePump(String pump_pwm) {
-        switch(this.configurationType){
+    /**
+     * Configures the Pwm either by Device or Channel.
+     *
+     * @param pump_pwm the Pwm Id or ChannelAddress
+     * @throws OpenemsError.OpenemsNamedException if either the Adress or Device by the pump_pwm couldn't be found
+     * @throws ConfigurationException             if either the Channel is not a WriteChannel or the Device is not a Pwm.
+     */
+    private void configurePwm(String pump_pwm) throws OpenemsError.OpenemsNamedException, ConfigurationException {
+        switch (this.configurationType) {
             case CHANNEL:
+                ChannelAddress pwmAddress = ChannelAddress.fromString(pump_pwm);
+                Channel<?> pwmChannelByAddress = this.cpm.getChannel(pwmAddress);
+                if (pwmChannelByAddress instanceof WriteChannel<?>) {
+                    this.pwmChannel = (WriteChannel<?>) pwmChannelByAddress;
 
+                } else {
+                    throw new ConfigurationException("Configure Pump in : " + super.id(), "Channel is not a WriteChannel");
+                }
                 break;
             case DEVICE:
+                OpenemsComponent pwmComponent = this.cpm.getComponent(pump_pwm);
+                if (pwmComponent instanceof Pwm) {
+                    this.pwm = (Pwm) pwmComponent;
+                    //reset pwm to 0; so pump is on activation off
+                    this.pwm.getWritePwmPowerLevelChannel().setNextWriteValue(0);
+                } else {
+                    throw new ConfigurationException(pump_pwm, "Allocated Pwm, not a (configured) pwm-device.");
+                }
                 break;
         }
     }
 
-    private void configureRelay(String pump_relays) {
-
+    private void configureRelay(String pump_relay) throws OpenemsError.OpenemsNamedException, ConfigurationException {
+        switch (this.configurationType) {
+            case CHANNEL:
+                ChannelAddress relayAddress = ChannelAddress.fromString(pump_relay);
+                Channel<?> relayChannelByAddress = this.cpm.getChannel(relayAddress);
+                if (relayChannelByAddress instanceof WriteChannel<?>) {
+                    this.relayChannel = (WriteChannel<?>) relayChannelByAddress;
+                } else {
+                    throw new ConfigurationException("Configure Relay in : " + super.id(), "Channel is not a WriteChannel");
+                }
+                break;
+            case DEVICE:
+                OpenemsComponent relayComponent = this.cpm.getComponent(pump_relay);
+                if (relayComponent instanceof Relay) {
+                    this.relay = (Relay) relayComponent;
+                } else {
+                    throw new ConfigurationException(pump_relay, "Allocated relay, not a (configured) relay-device.");
+                }
+                break;
+        }
     }
 
 
@@ -126,16 +168,7 @@ public class PumpImpl extends AbstractOpenemsComponent implements OpenemsCompone
     @Deactivate
     public void deactivate() {
         super.deactivate();
-        try {
-            if (this.isRelay) {
-                this.relay.getRelaysWriteChannel().setNextWriteValue(!this.relay.isCloser().getNextValue().get());
-            }
-            if (this.isPwm) {
-                this.pwm.getWritePwmPowerLevelChannel().setNextWriteValue(0.f);
-            }
-        } catch (OpenemsError.OpenemsNamedException e) {
-            e.printStackTrace();
-        }
+        this.deactivateDevices();
     }
 
     @Override
@@ -145,9 +178,6 @@ public class PumpImpl extends AbstractOpenemsComponent implements OpenemsCompone
 
     /**
      * Changes the powervalue by percentage.
-     *
-     * @param percentage to adjust the current powerlevel.
-     * @return successful boolean
      * <p>
      * If the Pump is only a relays --> if negative --> controlyRelays false, else true
      * If it's in addition a pwm --> check if the powerlevel - percentage <= 0
@@ -155,61 +185,106 @@ public class PumpImpl extends AbstractOpenemsComponent implements OpenemsCompone
      * Otherwise it's calculating the new Power-level and writing
      * the old power-level in the LastPowerLevel Channel
      * </p>
+     *
+     * @param percentage to adjust the current powerLevel.
+     * @return successful boolean
      */
     @Override
     public boolean changeByPercentage(double percentage) {
 
         if (this.isRelay) {
             if (this.isPwm) {
-                if ((this.getPowerLevelChannel().getNextValue().get() + percentage <= 0)) {
-                    this.getLastPowerLevelChannel().setNextValue(this.getPowerLevelChannel().getNextValue().get());
-                    this.getPowerLevelChannel().setNextValue(0);
-                    try {
-                        this.pwm.getWritePwmPowerLevelChannel().setNextWriteValue(0.f);
-                    } catch (OpenemsError.OpenemsNamedException e) {
-                        e.printStackTrace();
+                double powerLevel = this.getPowerLevelValue();
+                //deactivate
+                if ((powerLevel + percentage <= 0)) {
+                    if (this.controlRelay(false) && this.controlPwm(0)) {
+                        this.getLastPowerLevelChannel().setNextValue(powerLevel);
+                        this.getPowerLevelChannel().setNextValue(0);
+                        return true;
+                    } else {
                         return false;
                     }
-                    controlRelays(false);
-                    return true;
                 } else {
-                    controlRelays(true);
+                    //activate relay, set Pwm Later
+                    if (this.controlRelay(true) == false) {
+                        return false;
+                    }
                 }
-            } else if (percentage <= 0) {
-                controlRelays(false);
             } else {
-                controlRelays(true);
+                //set relay if only relay
+                return this.controlRelay((percentage <= 0) == false);
             }
         }
+        //sets pwm
         if (this.isPwm) {
             double currentPowerLevel;
-            currentPowerLevel = this.getPowerLevelChannel().getNextValue().get();
-            this.getLastPowerLevelChannel().setNextValue(currentPowerLevel);
+            currentPowerLevel = this.getPowerLevelValue();
             currentPowerLevel += percentage;
             currentPowerLevel = currentPowerLevel > 100 ? 100
                     : currentPowerLevel < 0 ? 0 : currentPowerLevel;
 
-            this.getPowerLevelChannel().setNextValue(currentPowerLevel);
-            try {
-                this.pwm.getWritePwmPowerLevelChannel().setNextWriteValue((float) currentPowerLevel);
-            } catch (OpenemsError.OpenemsNamedException e) {
-                e.printStackTrace();
+            if (this.controlPwm(currentPowerLevel)) {
+                this.getLastPowerLevelChannel().setNextValue(this.getPowerLevelValue());
+                this.getPowerLevelChannel().setNextValue(currentPowerLevel);
+            } else {
                 return false;
             }
         }
         return true;
     }
 
-    private void controlRelays(boolean activate) {
-        try {
-            if (this.relay.isCloser().value().get()) {
-                this.relay.getRelaysWriteChannel().setNextWriteValue(activate);
-            } else {
-                this.relay.getRelaysWriteChannel().setNextWriteValue(!activate);
-            }
-        } catch (OpenemsError.OpenemsNamedException e) {
-            e.printStackTrace();
+    private boolean controlRelay(boolean activate) {
+
+        switch (this.configurationType) {
+            case CHANNEL:
+                try {
+                    this.relayChannel.setNextWriteValueFromObject(activate);
+                } catch (OpenemsError.OpenemsNamedException e) {
+                    this.log.warn("Couldn't write into Channel; Pump: " + super.id() + "Channel : " + this.relayChannel.toString());
+                    return false;
+                }
+                break;
+            case DEVICE:
+                try {
+                    this.relay.getRelaysWriteChannel().setNextWriteValueFromObject(activate);
+                } catch (OpenemsError.OpenemsNamedException e) {
+                    this.log.warn("Couldn't write into Channel; Pump: " + super.id() + "Device: " + this.relay.id());
+                    return false;
+                }
+                break;
         }
+        return true;
+    }
+
+    private boolean controlPwm(double percent) {
+        int multiplier = 1;
+        int maxValue = 100;
+        Unit unit = this.pwmChannel.channelDoc().getUnit();
+        if (unit == Unit.THOUSANDTH) {
+            multiplier = 10;
+        }
+        int percentToApply = (int) (percent * multiplier);
+        percentToApply = percentToApply > maxValue ? maxValue : Math.max(percentToApply, 0);
+
+        switch (this.configurationType) {
+            case CHANNEL:
+                try {
+                    this.pwmChannel.setNextWriteValueFromObject(percentToApply);
+                } catch (OpenemsError.OpenemsNamedException e) {
+                    this.log.warn("Couldn't apply PwmValue for Pump: " + super.id() + " Value: " + percentToApply);
+                    return false;
+                }
+                break;
+            case DEVICE:
+                try {
+                    this.pwm.getWritePwmPowerLevelChannel().setNextWriteValueFromObject(percentToApply);
+                } catch (OpenemsError.OpenemsNamedException e) {
+                    this.log.warn("Couldn't apply PwmValue for Pump: " + super.id() + " Value: " + percentToApply);
+                    return false;
+                }
+                break;
+        }
+        return true;
     }
 
     @Override
@@ -219,4 +294,6 @@ public class PumpImpl extends AbstractOpenemsComponent implements OpenemsCompone
             this.changeByPercentage(changeByPercent);
         }
     }
+
+
 }
