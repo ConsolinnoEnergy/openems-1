@@ -12,7 +12,7 @@ import io.openems.edge.bridge.modbus.api.task.FC1ReadCoilsTask;
 import io.openems.edge.bridge.modbus.api.task.FC5WriteCoilTask;
 import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.common.taskmanager.Priority;
-import io.openems.edge.consolinno.modbus.configurator.Error;
+import io.openems.edge.consolinno.modbus.configurator.api.Error;
 import io.openems.edge.consolinno.modbus.configurator.api.LeafletConfigurator;
 import io.openems.edge.relay.api.Relay;
 import org.osgi.service.cm.ConfigurationAdmin;
@@ -84,7 +84,7 @@ public class RelayImpl extends AbstractOpenemsModbusComponent implements Openems
     }
 
     @Deactivate
-    public void deactivate() {
+    protected void deactivate() {
         try {
             this.getRelaysWriteChannel().setNextWriteValue(false);
         } catch (OpenemsError.OpenemsNamedException ignored) {
@@ -99,14 +99,18 @@ public class RelayImpl extends AbstractOpenemsModbusComponent implements Openems
 
     @Override
     protected ModbusProtocol defineModbusProtocol() throws OpenemsException {
-
-        return new ModbusProtocol(this,
-                new FC5WriteCoilTask(this.relayDiscreteOutput,
-                        (ModbusCoilElement) m(Relay.ChannelId.WRITE_ON_OFF, new CoilElement(this.relayDiscreteOutput),
-                                ElementToChannelConverter.DIRECT_1_TO_1)),
-                new FC1ReadCoilsTask(this.relayDiscreteOutput, Priority.HIGH,
-                        m(Relay.ChannelId.READ_ON_OFF, new CoilElement(this.relayDiscreteOutput),
-                                ElementToChannelConverter.DIRECT_1_TO_1)));
+        if (this.lc.checkFirmwareCompatibility()) {
+            return new ModbusProtocol(this,
+                    new FC5WriteCoilTask(this.relayDiscreteOutput,
+                            (ModbusCoilElement) m(Relay.ChannelId.WRITE_ON_OFF, new CoilElement(this.relayDiscreteOutput),
+                                    ElementToChannelConverter.DIRECT_1_TO_1)),
+                    new FC1ReadCoilsTask(this.relayDiscreteOutput, Priority.HIGH,
+                            m(Relay.ChannelId.READ_ON_OFF, new CoilElement(this.relayDiscreteOutput),
+                                    ElementToChannelConverter.DIRECT_1_TO_1)));
+        } else {
+            this.deactivate();
+            return null;
+        }
     }
 
     @Override

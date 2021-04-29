@@ -15,7 +15,7 @@ import io.openems.edge.bridge.modbus.api.task.FC5WriteCoilTask;
 import io.openems.edge.bridge.modbus.api.task.FC6WriteRegisterTask;
 import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.common.taskmanager.Priority;
-import io.openems.edge.consolinno.modbus.configurator.Error;
+import io.openems.edge.consolinno.modbus.configurator.api.Error;
 import io.openems.edge.consolinno.modbus.configurator.api.LeafletConfigurator;
 import io.openems.edge.pwm.api.Pwm;
 import org.osgi.service.cm.ConfigurationAdmin;
@@ -81,7 +81,7 @@ public class PwmImpl extends AbstractOpenemsModbusComponent implements OpenemsCo
             throw new ConfigurationException("Pwm not configured properly. Please check the Config", "This Device doesn't Exist");
         }
         try {
-            getWritePwmPowerLevelChannel().setNextWriteValue((float)config.percent());
+            getWritePwmPowerLevelChannel().setNextWriteValue(config.percent());
         } catch (OpenemsError.OpenemsNamedException ignored) {
             this.log.error("Error in getWritePwmPowerChannel.setNextWriteValue");
         }
@@ -93,9 +93,9 @@ public class PwmImpl extends AbstractOpenemsModbusComponent implements OpenemsCo
     }
 
     @Deactivate
-    public void deactivate() {
+    protected void deactivate() {
         try {
-            getWritePwmPowerLevelChannel().setNextWriteValue(0.f);
+            getWritePwmPowerLevelChannel().setNextWriteValue(0);
         } catch (OpenemsError.OpenemsNamedException ignored) {
             this.log.error("Error in getWritePwmPowerChannel.setNextWriteValue");
         }
@@ -105,18 +105,23 @@ public class PwmImpl extends AbstractOpenemsModbusComponent implements OpenemsCo
 
     @Override
     protected ModbusProtocol defineModbusProtocol() throws OpenemsException {
-        return new ModbusProtocol(this,
-                new FC3ReadRegistersTask(this.pwmAnalogOutput, Priority.HIGH,
-                        m(Pwm.ChannelId.READ_POWER_LEVEL, new UnsignedWordElement(this.pwmAnalogOutput),
-                                ElementToChannelConverter.DIRECT_1_TO_1)),
-                new FC6WriteRegisterTask(this.pwmAnalogOutput,
-                        m(Pwm.ChannelId.WRITE_POWER_LEVEL,
-                                new SignedWordElement(this.pwmAnalogOutput),
-                                ElementToChannelConverter.DIRECT_1_TO_1)),
-                new FC5WriteCoilTask(this.pwmDiscreteOutput,
-                        (ModbusCoilElement) m(Pwm.ChannelId.INVERTED,
-                                new CoilElement(this.pwmDiscreteOutput),
-                                ElementToChannelConverter.DIRECT_1_TO_1)));
+        if (this.lc.checkFirmwareCompatibility()) {
+            return new ModbusProtocol(this,
+                    new FC3ReadRegistersTask(this.pwmAnalogOutput, Priority.HIGH,
+                            m(Pwm.ChannelId.READ_POWER_LEVEL, new UnsignedWordElement(this.pwmAnalogOutput),
+                                    ElementToChannelConverter.DIRECT_1_TO_1)),
+                    new FC6WriteRegisterTask(this.pwmAnalogOutput,
+                            m(Pwm.ChannelId.WRITE_POWER_LEVEL,
+                                    new SignedWordElement(this.pwmAnalogOutput),
+                                    ElementToChannelConverter.DIRECT_1_TO_1)),
+                    new FC5WriteCoilTask(this.pwmDiscreteOutput,
+                            (ModbusCoilElement) m(Pwm.ChannelId.INVERTED,
+                                    new CoilElement(this.pwmDiscreteOutput),
+                                    ElementToChannelConverter.DIRECT_1_TO_1)));
+        } else {
+            this.deactivate();
+            return null;
+        }
     }
 
     @Override

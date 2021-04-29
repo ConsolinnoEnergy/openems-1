@@ -7,11 +7,8 @@ Bundle-Version: 1.0.0.${tstamp}
 -buildpath: \
 	Java-WebSocket,\
 	lib/common-0.5-SNAPSHOT.jar;version=file,\
-	lib/OCPP-J-0.5-SNAPSHOT.jar;version=file,\
-	lib/v1_6-0.5-SNAPSHOT.jar;version=file,\
-
-Export-Package:  \
-    eu.chargetime.ocpp.*
+    lib/OCPP-J-0.5-SNAPSHOT.jar;version=file,\
+    lib/v1_6-0.5-SNAPSHOT.jar;version=file
 
 -includeresource.ocpp: \
 	@lib/common-0.5-SNAPSHOT.jar; lib:=true,\
@@ -50,5 +47,19 @@ Import-Package: \
 
 -metatypeannotations: *
 
--sources: false
+Export-Package: \
+    eu.chargetime.ocpp;-split-package:=merge-first,\
+    eu.chargetime.ocpp.feature;-split-package:=merge-first,\
+    eu.chargetime.ocpp.feature.profile;-split-package:=merge-first,\
+    eu.chargetime.ocpp.model;-split-package:=merge-first,\
+    eu.chargetime.ocpp.model.core,\
+    eu.chargetime.ocpp.model.firmware,\
+    eu.chargetime.ocpp.model.localauthlist,\
+    eu.chargetime.ocpp.model.remotetrigger,\
+    eu.chargetime.ocpp.model.reservation,\
+    eu.chargetime.ocpp.model.smartcharging,\
+    eu.chargetime.ocpp.profile,\
+    eu.chargetime.ocpp.utilities,\
+    eu.chargetime.ocpp.wss,\
 
+-sources: false

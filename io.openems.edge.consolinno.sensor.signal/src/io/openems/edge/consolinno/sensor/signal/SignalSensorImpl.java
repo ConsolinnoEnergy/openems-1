@@ -7,10 +7,11 @@ import io.openems.edge.bridge.modbus.api.ElementToChannelConverter;
 import io.openems.edge.bridge.modbus.api.ModbusProtocol;
 import io.openems.edge.bridge.modbus.api.element.UnsignedWordElement;
 import io.openems.edge.bridge.modbus.api.task.FC4ReadInputRegistersTask;
+import io.openems.edge.common.channel.value.Value;
 import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.common.event.EdgeEventConstants;
 import io.openems.edge.common.taskmanager.Priority;
-import io.openems.edge.consolinno.modbus.configurator.Error;
+import io.openems.edge.consolinno.modbus.configurator.api.Error;
 import io.openems.edge.consolinno.modbus.configurator.api.LeafletConfigurator;
 import io.openems.edge.consolinno.sensor.signal.api.SignalSensor;
 import io.openems.edge.thermometer.api.Thermometer;
@@ -83,7 +84,7 @@ public class SignalSensorImpl extends AbstractOpenemsModbusComponent implements 
     }
 
     @Deactivate
-    public void deactivate() {
+    protected void deactivate() {
         this.lc.removeModule(LeafletConfigurator.ModuleType.TMP, this.signalModule, this.position);
         super.deactivate();
 
@@ -91,28 +92,34 @@ public class SignalSensorImpl extends AbstractOpenemsModbusComponent implements 
 
     @Override
     protected ModbusProtocol defineModbusProtocol() throws OpenemsException {
-        return new ModbusProtocol(this,
-                new FC4ReadInputRegistersTask(this.temperatureAnalogInput, Priority.HIGH,
-                        m(Thermometer.ChannelId.TEMPERATURE, new UnsignedWordElement(this.temperatureAnalogInput),
-                                ElementToChannelConverter.DIRECT_1_TO_1)));
-
+        if (this.lc.checkFirmwareCompatibility()) {
+            return new ModbusProtocol(this,
+                    new FC4ReadInputRegistersTask(this.temperatureAnalogInput, Priority.HIGH,
+                            m(Thermometer.ChannelId.TEMPERATURE, new UnsignedWordElement(this.temperatureAnalogInput),
+                                    ElementToChannelConverter.DIRECT_1_TO_1)));
+        } else {
+            return null;
+        }
     }
 
     @Override
     public String debugLog() {
-        return "Temperature " + getTemperatureValue() + " Signal: " + getSignalType().value();
+        String temperature = getTemperature().isDefined() ? getTemperature().get().toString() : "Not Defined";
+        return "Temperature " + temperature + " Signal: " + getSignalType().value();
     }
 
     @Override
     public void handleEvent(Event event) {
+        Value<Integer> currentTemperature = getTemperature();
+        boolean currentTempDefined = currentTemperature.isDefined();
         if (getSignalType().value().isDefined()) {
             if (this.isInverted) {
-                if (getTemperatureValue() < maxTemperature) {
+                if (currentTempDefined && currentTemperature.get() < maxTemperature) {
                     getSignalType().setNextValue("Error");
                     return;
                 }
             } else {
-                if (getTemperatureValue() > maxTemperature) {
+                if (currentTempDefined && currentTemperature.get() > maxTemperature) {
                     getSignalType().setNextValue("Error");
                     return;
                 }
