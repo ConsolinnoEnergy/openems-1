@@ -78,7 +78,8 @@ public class PumpImpl extends AbstractOpenemsComponent implements OpenemsCompone
      * @param pump_relay        the unique id of the relays controlling the pump.
      * @param pump_pwm          unique id of the pwm controlling the pump.
      */
-    private void allocateComponents(ConfigurationType configurationType, String pump_type, String pump_relay, String pump_pwm) throws OpenemsError.OpenemsNamedException, ConfigurationException {
+    private void allocateComponents(ConfigurationType configurationType, String pump_type, String pump_relay, String pump_pwm)
+            throws OpenemsError.OpenemsNamedException, ConfigurationException {
         this.configurationType = configurationType;
         switch (pump_type) {
             case "Relay":
@@ -108,7 +109,7 @@ public class PumpImpl extends AbstractOpenemsComponent implements OpenemsCompone
      * Configures the Pwm either by Device or Channel.
      *
      * @param pump_pwm the Pwm Id or ChannelAddress
-     * @throws OpenemsError.OpenemsNamedException if either the Adress or Device by the pump_pwm couldn't be found
+     * @throws OpenemsError.OpenemsNamedException if either the Address or Device by the pump_pwm couldn't be found
      * @throws ConfigurationException             if either the Channel is not a WriteChannel or the Device is not a Pwm.
      */
     private void configurePwm(String pump_pwm) throws OpenemsError.OpenemsNamedException, ConfigurationException {
@@ -118,7 +119,6 @@ public class PumpImpl extends AbstractOpenemsComponent implements OpenemsCompone
                 Channel<?> pwmChannelByAddress = this.cpm.getChannel(pwmAddress);
                 if (pwmChannelByAddress instanceof WriteChannel<?>) {
                     this.pwmChannel = (WriteChannel<?>) pwmChannelByAddress;
-
                 } else {
                     throw new ConfigurationException("Configure Pump in : " + super.id(), "Channel is not a WriteChannel");
                 }

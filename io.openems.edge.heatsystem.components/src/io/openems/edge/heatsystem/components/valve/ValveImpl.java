@@ -60,7 +60,6 @@ public class ValveImpl extends AbstractOpenemsComponent implements OpenemsCompon
     private double secondsPerPercentage;
     private long timeStampValveInitial;
     private long timeStampValveCurrent = -1;
-    //if true updatePowerlevel
     private boolean isChanging = false;
     //if true --> subtraction in updatePowerLevel else add
     private boolean isClosing = false;
@@ -69,7 +68,11 @@ public class ValveImpl extends AbstractOpenemsComponent implements OpenemsCompon
     //Extra Buffer Time , only needed for Force Open/Close --> Just making sure that Valve is completely closed/opened
     private static final int EXTRA_BUFFER_TIME = 2000;
 
-    private static final int BUFFER = 5;
+    private static final int VALUE_BUFFER = 5;
+
+    private static final int MILLI_SECONDS_TO_SECONDS = 1000;
+    private static final int MAX_PERCENT_POSSIBLE = 100;
+    private static final int MIN_PERCENT_POSSIBLE = 0;
 
     private Double lastMaximum;
     private Double lastMinimum;
@@ -115,32 +118,26 @@ public class ValveImpl extends AbstractOpenemsComponent implements OpenemsCompon
                 this.openAddress = ChannelAddress.fromString(config.open());
                 this.closeAddress = ChannelAddress.fromString(config.close());
                 if (this.checkChannelOk() == false) {
-                    throw new ConfigurationException("ActivateMethod", "Given Channels are not ok!");
+                    throw new ConfigurationException("ActivateMethod in Valve: " + super.id(), "Given Channels are not ok!");
                 }
                 break;
             case DEVICE:
                 if (this.checkDevicesOk(config.open(), config.close()) == false) {
-                    throw new ConfigurationException("ActivateMethod", "Given Devices are not ok!");
+                    throw new ConfigurationException("ActivateMethod in Valve: " + super.id(), "Given Devices are not ok!");
                 }
                 break;
         }
         this.secondsPerPercentage = ((double) config.valve_Time() / 100.d);
         this.timeChannel().setNextValue(0);
-
     }
 
-    @Modified
-    void modified(ComponentContext context, Config config) throws OpenemsError.OpenemsNamedException, ConfigurationException {
-        super.modified(context, config.id(), config.alias(), config.enabled());
-        this.activateOrModifiedRoutine(config);
-    }
 
     /**
-     * Called on Activation or Modifictation. Checks if the Strings match a Relay configured within openems
+     * Called on Activation or Modification. Checks if the Strings match a Relay configured within OpenEms
      *
      * @param open  the String/Id of the Relay that opens the Valve
      * @param close the String/Id of the Relay that closes the Valve
-     * @return true if the device is ok, otherwise false (Happens if the OpenemsComponent is not an instance of a Relay)
+     * @return true if the device is ok, otherwise false (Happens if the OpenEmsComponent is not an instance of a Relay)
      * @throws OpenemsError.OpenemsNamedException if the Id is not found at all
      */
     private boolean checkDevicesOk(String open, String close) throws OpenemsError.OpenemsNamedException {
@@ -172,115 +169,51 @@ public class ValveImpl extends AbstractOpenemsComponent implements OpenemsCompon
                 .equals(OpenemsType.BOOLEAN) && closeChannel.getType().equals(OpenemsType.BOOLEAN);
     }
 
-    @Deactivate
-    protected void deactivate() {
-        super.deactivate();
+
+    @Modified
+    void modified(ComponentContext context, Config config) throws OpenemsError.OpenemsNamedException, ConfigurationException {
+        super.modified(context, config.id(), config.alias(), config.enabled());
+        this.activateOrModifiedRoutine(config);
     }
 
 
-    // --------------- READY TO CHANGE AND CHANGE BY PERCENTAGE ------------ //
-
-    /**
-     * Ready To Change is always true except if the Valve was forced to open/close and the Time to close/open the
-     * Valve completely is not over.
-     */
     @Override
-    public boolean readyToChange() {
-        if (this.isForced) {
-            long currentTime = this.getMilliSecondTime();
-            if (this.timeStampValveCurrent == -1 || (currentTime - this.timeStampValveInitial)
-                    < ((this.timeNeeded() * 1000) + EXTRA_BUFFER_TIME)) {
-                return false;
+    public void handleEvent(Event event) {
+        if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE)) {
+            this.lastMaximum = this.maximum;
+            this.lastMinimum = this.minimum;
+            this.updatePowerLevel();
+            boolean reached = this.powerLevelReached() && this.readyToChange();
+            if (reached) {
+                this.getIsBusyChannel().setNextValue(false);
+                this.isForced = false;
+            }
+            Double maxAllowed = this.getMaxAllowedValue();
+            Double minAllowed = this.getMinAllowedValue();
+            if (maxAllowed != null && maxAllowed + VALUE_BUFFER < this.getPowerLevelValue()) {
+                this.changeByPercentage(maxAllowed - this.getPowerLevelValue());
+            } else if (minAllowed != null && minAllowed - VALUE_BUFFER > this.getPowerLevelValue()) {
+                this.changeByPercentage(minAllowed - this.getPowerLevelValue());
             }
         }
-        return true;
-    }
-
-
-    /**
-     * Changes Valve Position by incoming percentage.
-     * Warning, only executes if valve is not busy! (was not forced to open/close)
-     * Depending on + or - it changes the current State to open/close it more. Switching the relays on/off does
-     * not open/close the valve instantly but slowly. The time it takes from completely closed to completely
-     * open is entered in the config. Partial open state of x% is then archived by switching the relay on for
-     * time-to-open * x%, or the appropriate amount of time depending on initial state.
-     * Sets the Future PowerLevel; ValveManager calls further Methods to refresh true % state
-     *
-     * @param percentage adjusting the current powerlevel in % points. Meaning if current state is 10%, requesting
-     *                   changeByPercentage(20) will change the state to 30%.
-     *                   <p>
-     *                   If the Valve is busy return false
-     *                   otherwise: save the current PowerLevel to the old one and overwrite the new one.
-     *                   Then it will check how much time is needed to adjust the position of the valve.
-     *                   If percentage is neg. valve needs to be closed (further)
-     *                   else it needs to open (further).
-     *                   </p>
-     */
-    @Override
-    public boolean changeByPercentage(double percentage) {
-        double currentPowerLevel;
-
-        if (this.readyToChange() == false || percentage == 0) {
-            return false;
-        } else {
-            //Setting the oldPowerLevel and adjust the percentage Value
-            currentPowerLevel = this.getPowerLevelChannel().value().get();
-            this.getLastPowerLevelChannel().setNextValue(currentPowerLevel);
-            this.maximum = getMaxAllowedValue();
-            this.minimum = getMinAllowedValue();
-            if (this.maxMinValid() == false) {
-                this.minimum = null;
-                this.maximum = null;
-            }
-            currentPowerLevel += percentage;
-            if (this.maximum != null && this.maximum < currentPowerLevel) {
-                currentPowerLevel = this.maximum;
-            } else if (this.lastMaximum != null && this.lastMaximum < currentPowerLevel) {
-                currentPowerLevel = this.lastMaximum;
-            } else if (currentPowerLevel >= 100) {
-                currentPowerLevel = 100;
-            } else if (this.minimum != null && this.minimum > currentPowerLevel) {
-                currentPowerLevel = this.minimum;
-            } else if (this.lastMinimum != null && this.lastMinimum > currentPowerLevel) {
-                currentPowerLevel = this.lastMinimum;
-            }
-            //Set goal Percentage for future reference
-            this.futurePowerLevelChannel().setNextValue(currentPowerLevel);
-            //if same power level do not change and return --> relays is not always powered
-            if (getLastPowerLevelChannel().getNextValue().get() == currentPowerLevel) {
-                this.isChanging = false;
-                return false;
-            }
-            //Calculate the Time to Change the Valve
-            if (Math.abs(percentage) >= 100) {
-                this.timeChannel().setNextValue(100 * this.secondsPerPercentage);
+        if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS)) {
+            if (this.shouldReset()) {
+                this.reset();
             } else {
-                this.timeChannel().setNextValue(Math.abs(percentage) * this.secondsPerPercentage);
+                int changeByPercent = this.setPointPowerLevelValue();
+                if (changeByPercent >= MIN_PERCENT_POSSIBLE) {
+                    changeByPercent -= this.getPowerLevelValue();
+                    if (this.changeByPercentage(changeByPercent)) {
+                        this.setPointPowerLevelChannel().setNextValue(-1);
+                    }
+                }
+                //Calculate current % State of Valve
+                if (this.powerLevelReached() == false) {
+                    this.updatePowerLevel();
+                }
             }
-            //Close on negative Percentage and Open on Positive
-            this.isChanging = true;
-            if (percentage < 0) {
-                this.valveClose();
-            } else {
-                this.valveOpen();
-            }
-            return true;
         }
     }
-
-    /**
-     * Checks if the max and Min Values are correct and not bizarre that leads to bugs and errors.
-     *
-     * @return validation.
-     */
-
-    private boolean maxMinValid() {
-        return (this.maximum >= this.minimum && this.maximum > 0 && this.minimum >= 0);
-    }
-
-
-    //------------------------------------------------------ //
-
 
     //--------------UPDATE POWERLEVEL AND POWER LEVEL REACHED---------------//
 
@@ -295,7 +228,7 @@ public class ValveImpl extends AbstractOpenemsComponent implements OpenemsCompon
             //If it's the first update of PowerLevel
             if (this.timeStampValveCurrent == -1) {
                 //only important for ForceClose/Open
-                this.timeStampValveInitial = this.getMilliSecondTime();
+                this.timeStampValveInitial = elapsedTime;
                 //First time in change
                 elapsedTime = 0;
 
@@ -304,18 +237,19 @@ public class ValveImpl extends AbstractOpenemsComponent implements OpenemsCompon
                 elapsedTime -= this.timeStampValveCurrent;
             }
             this.timeStampValveCurrent = this.getMilliSecondTime();
-            double percentIncrease = elapsedTime / (this.secondsPerPercentage * 1000);
+            double percentIncrease = elapsedTime / (this.secondsPerPercentage * MILLI_SECONDS_TO_SECONDS);
             if (this.isClosing) {
                 percentIncrease *= -1;
             }
             //Round the calculated PercentIncrease of current PowerLevel and percentIncrease to 3 decimals
-            double truncatedDouble = this.getPowerLevelChannel().value().isDefined() == false ? 0 : BigDecimal.valueOf(this.getPowerLevelChannel().value().get() + percentIncrease)
+            Double powerLevel = this.getPowerLevelValue();
+            double truncatedDouble = powerLevel == null ? 0 : BigDecimal.valueOf(powerLevel + percentIncrease)
                     .setScale(3, RoundingMode.HALF_UP)
                     .doubleValue();
-            if (truncatedDouble > 100) {
-                truncatedDouble = 100;
-            } else if (truncatedDouble < 0) {
-                truncatedDouble = 0;
+            if (truncatedDouble > MAX_PERCENT_POSSIBLE) {
+                truncatedDouble = MAX_PERCENT_POSSIBLE;
+            } else if (truncatedDouble < MIN_PERCENT_POSSIBLE) {
+                truncatedDouble = MIN_PERCENT_POSSIBLE;
             }
             this.getPowerLevelChannel().setNextValue(truncatedDouble);
         } else {
@@ -333,16 +267,17 @@ public class ValveImpl extends AbstractOpenemsComponent implements OpenemsCompon
         boolean reached = true;
         if (this.isChanging()) {
             reached = false;
-            if (this.getPowerLevelChannel().value().isDefined() && this.futurePowerLevelChannel().getNextValue().isDefined()) {
+            Double powerLevel = this.getPowerLevelValue();
+            Double futurePowerLevel = this.getPowerLevelValue();
+            if (powerLevel != null && futurePowerLevel != null) {
                 if (this.isClosing) {
-                    reached = this.getPowerLevelChannel().value().get() <= this.futurePowerLevelChannel().getNextValue().get();
+                    reached = powerLevel <= futurePowerLevel;
                 } else {
-                    reached = this.getPowerLevelChannel().value().get() >= this.futurePowerLevelChannel().getNextValue().get();
-
+                    reached = powerLevel >= futurePowerLevel;
                 }
             }
         }
-        //ReadyToChange always True except
+        //ReadyToChange always True except if it is forced
         reached = reached && this.readyToChange();
         if (reached) {
             this.isChanging = false;
@@ -353,6 +288,97 @@ public class ValveImpl extends AbstractOpenemsComponent implements OpenemsCompon
     }
 
     // ------------------------------------------------------------- //
+
+    // --------------- READY TO CHANGE AND CHANGE BY PERCENTAGE ------------ //
+
+    /**
+     * Ready To Change is always true except if the Valve was forced to open/close and the Time to close/open the
+     * Valve completely is not over.
+     */
+    @Override
+    public boolean readyToChange() {
+        if (this.isForced) {
+            long currentTime = this.getMilliSecondTime();
+            return this.timeStampValveCurrent != -1 && ((currentTime - this.timeStampValveInitial)
+                    >= ((this.timeNeeded() * 1000) + EXTRA_BUFFER_TIME));
+        }
+        return true;
+    }
+
+
+    /**
+     * Changes Valve Position by incoming percentage.
+     * Warning, only executes if valve is not busy! (was not forced to open/close)
+     * Depending on + or - it changes the current State to open/close it more. Switching the relays on/off does
+     * not open/close the valve instantly but slowly. The time it takes from completely closed to completely
+     * open is entered in the config. Partial open state of x% is then archived by switching the relay on for
+     * time-to-open * x%, or the appropriate amount of time depending on initial state.
+     * Sets the Future PowerLevel; ValveManager calls further Methods to refresh true % state
+     *
+     * @param percentage adjusting the current powerLevel in % points. Meaning if current state is 10%, requesting
+     *                   changeByPercentage(20) will change the state to 30%.
+     *                   <p>
+     *                   If the Valve is busy return false
+     *                   otherwise: save the current PowerLevel to the old one and overwrite the new one.
+     *                   Then it will check how much time is needed to adjust the position of the valve.
+     *                   If percentage is neg. valve needs to be closed (further)
+     *                   else it needs to open (further).
+     *                   </p>
+     */
+    @Override
+    public boolean changeByPercentage(double percentage) {
+
+
+        if (this.readyToChange() == false || percentage == MIN_PERCENT_POSSIBLE) {
+            return false;
+        } else {
+            Double currentPowerLevel = this.getPowerLevelValue();
+            //Setting the oldPowerLevel and adjust the percentage Value
+            this.getLastPowerLevelChannel().setNextValue(currentPowerLevel);
+            this.maximum = getMaxAllowedValue();
+            this.minimum = getMinAllowedValue();
+            if (this.maxMinValid() == false) {
+                this.minimum = null;
+                this.maximum = null;
+            }
+            currentPowerLevel += percentage;
+            if (this.maximum != null && this.maximum < currentPowerLevel) {
+                currentPowerLevel = this.maximum;
+            } else if (this.lastMaximum != null && this.lastMaximum < currentPowerLevel) {
+                currentPowerLevel = this.lastMaximum;
+            } else if (currentPowerLevel >= MAX_PERCENT_POSSIBLE) {
+                currentPowerLevel = (double) MAX_PERCENT_POSSIBLE;
+            } else if (this.minimum != null && this.minimum > currentPowerLevel) {
+                currentPowerLevel = this.minimum;
+            } else if (this.lastMinimum != null && this.lastMinimum > currentPowerLevel) {
+                currentPowerLevel = this.lastMinimum;
+            }
+            //Set goal Percentage for future reference
+            this.futurePowerLevelChannel().setNextValue(currentPowerLevel);
+            //if same power level do not change and return --> relays is not always powered
+            Double lastPower = this.getLastPowerLevelValue();
+            if (lastPower.equals(currentPowerLevel)) {
+                this.isChanging = false;
+                this.shutdownRelays();
+                return false;
+            }
+            //Calculate the Time to Change the Valve
+            if (Math.abs(percentage) >= MAX_PERCENT_POSSIBLE) {
+                this.timeChannel().setNextValue(MAX_PERCENT_POSSIBLE * this.secondsPerPercentage);
+            } else {
+                this.timeChannel().setNextValue(Math.abs(percentage) * this.secondsPerPercentage);
+            }
+            //Close on negative Percentage and Open on Positive
+            this.isChanging = true;
+            if (percentage < MIN_PERCENT_POSSIBLE) {
+                this.valveClose();
+            } else {
+                this.valveOpen();
+            }
+            return true;
+        }
+    }
+    //------------------------------------------------------ //
 
     /**
      * IS Changing --> Is closing/Opening.
@@ -405,8 +431,8 @@ public class ValveImpl extends AbstractOpenemsComponent implements OpenemsCompon
     public void forceClose() {
         if (this.isForced == false || this.isClosing == false) {
             this.isForced = true;
-            this.futurePowerLevelChannel().setNextValue(0);
-            this.timeChannel().setNextValue(100 * this.secondsPerPercentage);
+            this.futurePowerLevelChannel().setNextValue(MIN_PERCENT_POSSIBLE);
+            this.timeChannel().setNextValue(MAX_PERCENT_POSSIBLE * this.secondsPerPercentage);
             this.valveClose();
             this.getIsBusyChannel().setNextValue(true);
             //Making sure to wait the correct time even if it is already closing.
@@ -426,8 +452,8 @@ public class ValveImpl extends AbstractOpenemsComponent implements OpenemsCompon
     public void forceOpen() {
         if (this.isForced == false || this.isClosing == true) {
             this.isForced = true;
-            this.futurePowerLevelChannel().setNextValue(100);
-            this.timeChannel().setNextValue(100 * this.secondsPerPercentage);
+            this.futurePowerLevelChannel().setNextValue(MAX_PERCENT_POSSIBLE);
+            this.timeChannel().setNextValue(MAX_PERCENT_POSSIBLE * this.secondsPerPercentage);
             this.valveOpen();
             this.getIsBusyChannel().setNextValue(true);
             //Making sure to wait the correct time even if it is already opening
@@ -441,7 +467,7 @@ public class ValveImpl extends AbstractOpenemsComponent implements OpenemsCompon
     //-------------------------------------------------------------//
 
 
-    //---------------------ShutDown Relay---------//
+    //---------------------ShutDown Relay-------------------------//
 
     /**
      * Turn off Relay if PowerLevel is reached.
@@ -541,6 +567,19 @@ public class ValveImpl extends AbstractOpenemsComponent implements OpenemsCompon
         return TimeUnit.MILLISECONDS.convert(time, TimeUnit.NANOSECONDS);
     }
 
+
+    /**
+     * Checks if the max and Min Values are correct and not bizarre that leads to bugs and errors.
+     *
+     * @return validation.
+     */
+
+    private boolean maxMinValid() {
+        return (this.maximum >= this.minimum && this.maximum > MIN_PERCENT_POSSIBLE && this.minimum >= MIN_PERCENT_POSSIBLE);
+    }
+
+
+
     // ----------------------------- //
 
 
@@ -560,43 +599,9 @@ public class ValveImpl extends AbstractOpenemsComponent implements OpenemsCompon
     }
 
 
-    @Override
-    public void handleEvent(Event event) {
-        if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE)) {
-            this.lastMaximum = this.maximum;
-            this.lastMinimum = this.minimum;
-            this.updatePowerLevel();
-            boolean reached = this.powerLevelReached() && this.readyToChange();
-            if (reached) {
-                this.getIsBusyChannel().setNextValue(false);
-                this.isForced = false;
-            }
-            if (this.maxValueChannel().getNextWriteValue().isPresent() && this.maxValueChannel().getNextWriteValue().get() + BUFFER < this.getPowerLevelValue()) {
-                this.changeByPercentage(this.maxValueChannel().getNextWriteValue().get() - this.getPowerLevelValue());
-            } else if (this.minValueChannel().getNextWriteValue().isPresent() && this.minValueChannel().getNextWriteValue().get() + BUFFER > this.getPowerLevelValue()) {
-                this.changeByPercentage(this.minValueChannel().getNextWriteValue().get() - this.getPowerLevelValue());
-            }
-        }
-        if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS)) {
-            if (this.shouldReset()) {
-                this.reset();
-            } else {
-                int changeByPercent = this.setPointPowerLevelValue();
-                if (changeByPercent >= 0) {
-                    //getNextPowerLevel Bc it's the true current state that's been calculated
-                    if (this.getPowerLevelChannel().getNextValue().isDefined()) {
-                        changeByPercent -= this.getPowerLevelValue();
-                    }
-                    if (this.changeByPercentage(changeByPercent)) {
-                        this.setPointPowerLevelChannel().setNextValue(-1);
-                    }
-                }
-                //Calculate current % State of Valve
-                if (this.powerLevelReached() == false) {
-                    this.updatePowerLevel();
-                }
-            }
-        }
+    @Deactivate
+    protected void deactivate() {
+        super.deactivate();
     }
 }
 
