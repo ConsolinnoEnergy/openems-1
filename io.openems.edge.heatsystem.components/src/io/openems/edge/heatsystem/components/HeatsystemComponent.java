@@ -236,7 +236,7 @@ public interface HeatsystemComponent extends OpenemsComponent {
      *
      * @return the futurePowerLevel.
      */
-    default double futurePowerLevelValue() {
+    default double getFuturePowerLevelValue() {
         Double futurePowerLevel = (Double) this.getValueOfChannel(this.futurePowerLevelChannel());
         if (futurePowerLevel == null) {
             futurePowerLevel = 0.d;

@@ -8,6 +8,7 @@ import io.openems.edge.common.channel.WriteChannel;
 import io.openems.edge.common.component.AbstractOpenemsComponent;
 import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
+import io.openems.edge.common.cycle.Cycle;
 import io.openems.edge.common.event.EdgeEventConstants;
 
 import io.openems.edge.heatsystem.components.ConfigurationType;
@@ -49,6 +50,9 @@ import java.util.concurrent.TimeUnit;
 )
 public class ValveImpl extends AbstractOpenemsComponent implements OpenemsComponent, Valve, EventHandler {
 
+    @Reference
+    Cycle cycle;
+
     private final Logger log = LoggerFactory.getLogger(ValveImpl.class);
 
     private ChannelAddress openAddress;
@@ -58,7 +62,7 @@ public class ValveImpl extends AbstractOpenemsComponent implements OpenemsCompon
     private Relay closeRelay;
 
     private double secondsPerPercentage;
-    private long timeStampValveInitial;
+    private long timeStampValveInitial = 0;
     private long timeStampValveCurrent = -1;
     private boolean isChanging = false;
     //if true --> subtraction in updatePowerLevel else add
@@ -183,20 +187,15 @@ public class ValveImpl extends AbstractOpenemsComponent implements OpenemsCompon
             this.lastMaximum = this.maximum;
             this.lastMinimum = this.minimum;
             this.updatePowerLevel();
+            this.checkMaxAndMinAllowed();
             boolean reached = this.powerLevelReached() && this.readyToChange();
             if (reached) {
                 this.getIsBusyChannel().setNextValue(false);
                 this.isForced = false;
+            } else {
+                this.adaptValveValue();
             }
-            Double maxAllowed = this.getMaxAllowedValue();
-            Double minAllowed = this.getMinAllowedValue();
-            if (maxAllowed != null && maxAllowed + VALUE_BUFFER < this.getPowerLevelValue()) {
-                this.changeByPercentage(maxAllowed - this.getPowerLevelValue());
-            } else if (minAllowed != null && minAllowed - VALUE_BUFFER > this.getPowerLevelValue()) {
-                this.changeByPercentage(minAllowed - this.getPowerLevelValue());
-            }
-        }
-        if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS)) {
+        } else if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS)) {
             if (this.shouldReset()) {
                 this.reset();
             } else {
@@ -208,9 +207,37 @@ public class ValveImpl extends AbstractOpenemsComponent implements OpenemsCompon
                     }
                 }
                 //Calculate current % State of Valve
-                if (this.powerLevelReached() == false) {
+                else if (this.powerLevelReached() == false) {
                     this.updatePowerLevel();
                 }
+            }
+        }
+    }
+
+    private void checkMaxAndMinAllowed() {
+        Double maxAllowed = this.getMaxAllowedValue();
+        Double minAllowed = this.getMinAllowedValue();
+        double futurePowerLevel = this.getFuturePowerLevelValue();
+        if (maxAllowed != null && maxAllowed + VALUE_BUFFER < futurePowerLevel) {
+            this.changeByPercentage(maxAllowed - this.getPowerLevelValue());
+        } else if (minAllowed != null && minAllowed - VALUE_BUFFER > futurePowerLevel) {
+            this.changeByPercentage(minAllowed - futurePowerLevel);
+        }
+    }
+
+    /**
+     * Only if Reached! this Method will be called.
+     */
+    private void adaptValveValue() {
+        int cycleTime = this.cycle == null ? Cycle.DEFAULT_CYCLE_TIME : this.cycle.getCycleTime();
+        double percentPossiblePerCycle = cycleTime / (this.secondsPerPercentage * MILLI_SECONDS_TO_SECONDS);
+        double limit = percentPossiblePerCycle * 2;
+        boolean powerLevelWithinLimits = this.getPowerLevelValue() + limit < this.getFuturePowerLevelValue() || this.getPowerLevelValue() - limit > this.getFuturePowerLevelValue();
+        if (percentPossiblePerCycle >= 2 && powerLevelWithinLimits == false) {
+            try {
+                this.setPointPowerLevelChannel().setNextWriteValueFromObject(this.getFuturePowerLevelValue());
+            } catch (OpenemsError.OpenemsNamedException e) {
+                this.log.warn("Couldn't adapt Valve Value of Valve: " + super.id());
             }
         }
     }
@@ -268,7 +295,7 @@ public class ValveImpl extends AbstractOpenemsComponent implements OpenemsCompon
         if (this.isChanging()) {
             reached = false;
             Double powerLevel = this.getPowerLevelValue();
-            Double futurePowerLevel = this.getPowerLevelValue();
+            Double futurePowerLevel = this.getFuturePowerLevelValue();
             if (powerLevel != null && futurePowerLevel != null) {
                 if (this.isClosing) {
                     reached = powerLevel <= futurePowerLevel;
@@ -299,8 +326,8 @@ public class ValveImpl extends AbstractOpenemsComponent implements OpenemsCompon
     public boolean readyToChange() {
         if (this.isForced) {
             long currentTime = this.getMilliSecondTime();
-            return this.timeStampValveCurrent != -1 && ((currentTime - this.timeStampValveInitial)
-                    >= ((this.timeNeeded() * 1000) + EXTRA_BUFFER_TIME));
+            return (currentTime - this.timeStampValveInitial)
+                    >= ((this.timeNeeded() * 1000) + EXTRA_BUFFER_TIME);
         }
         return true;
     }
@@ -431,6 +458,7 @@ public class ValveImpl extends AbstractOpenemsComponent implements OpenemsCompon
     public void forceClose() {
         if (this.isForced == false || this.isClosing == false) {
             this.isForced = true;
+            this.isChanging = true;
             this.futurePowerLevelChannel().setNextValue(MIN_PERCENT_POSSIBLE);
             this.timeChannel().setNextValue(MAX_PERCENT_POSSIBLE * this.secondsPerPercentage);
             this.valveClose();
@@ -438,7 +466,7 @@ public class ValveImpl extends AbstractOpenemsComponent implements OpenemsCompon
             //Making sure to wait the correct time even if it is already closing.
             this.timeStampValveInitial = -1;
             this.updatePowerLevel();
-            this.isChanging = true;
+
         }
 
     }
@@ -452,6 +480,7 @@ public class ValveImpl extends AbstractOpenemsComponent implements OpenemsCompon
     public void forceOpen() {
         if (this.isForced == false || this.isClosing == true) {
             this.isForced = true;
+            this.isChanging = true;
             this.futurePowerLevelChannel().setNextValue(MAX_PERCENT_POSSIBLE);
             this.timeChannel().setNextValue(MAX_PERCENT_POSSIBLE * this.secondsPerPercentage);
             this.valveOpen();
@@ -459,7 +488,6 @@ public class ValveImpl extends AbstractOpenemsComponent implements OpenemsCompon
             //Making sure to wait the correct time even if it is already opening
             this.timeStampValveInitial = -1;
             this.updatePowerLevel();
-            this.isChanging = true;
         }
 
     }
@@ -575,9 +603,14 @@ public class ValveImpl extends AbstractOpenemsComponent implements OpenemsCompon
      */
 
     private boolean maxMinValid() {
+        if (this.maximum == null) {
+            this.maximum = (double) MAX_PERCENT_POSSIBLE;
+        }
+        if (this.minimum == null) {
+            this.minimum = (double) MIN_PERCENT_POSSIBLE;
+        }
         return (this.maximum >= this.minimum && this.maximum > MIN_PERCENT_POSSIBLE && this.minimum >= MIN_PERCENT_POSSIBLE);
     }
-
 
 
     // ----------------------------- //
@@ -592,7 +625,7 @@ public class ValveImpl extends AbstractOpenemsComponent implements OpenemsCompon
             } else {
                 name = super.id();
             }
-            return "Valve: " + name + ": " + this.getPowerLevelChannel().value().toString() + "\n";
+            return "Valve: " + name + ": " + this.getPowerLevelValue() + "\n";
         } else {
             return "\n";
         }

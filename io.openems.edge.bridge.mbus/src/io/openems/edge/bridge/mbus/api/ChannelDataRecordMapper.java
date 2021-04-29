@@ -28,7 +28,6 @@ public class ChannelDataRecordMapper {
 	public ChannelDataRecordMapper(VariableDataStructure data, List<ChannelRecord> channelDataRecordsList) {
 		this.data = data;
 		this.channelDataRecordsList = channelDataRecordsList;
-
 		for (ChannelRecord channelRecord : channelDataRecordsList) {
 			mapDataToChannel(data, channelRecord.getDataRecordPosition(), channelRecord.getChannel(),
 					channelRecord.getDataType());
