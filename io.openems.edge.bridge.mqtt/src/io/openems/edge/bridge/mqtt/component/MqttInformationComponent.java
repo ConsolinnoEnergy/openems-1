@@ -45,7 +45,7 @@ public class MqttInformationComponent extends AbstractOpenemsComponent implement
     }
 
     @Activate
-    public void activate(ComponentContext context, ConfigMqttInformationComponent config) {
+    void activate(ComponentContext context, ConfigMqttInformationComponent config) {
         super.activate(context, config.id(), config.alias(), config.enabled());
         if (config.mqttCommandTypes().length != MqttCommandType.values().length
                 || config.mqttPriority().length != MqttPriority.values().length
@@ -53,7 +53,7 @@ public class MqttInformationComponent extends AbstractOpenemsComponent implement
                 || config.mqttTypes().length != MqttType.values().length
                 || config.payloadStyle().length != PayloadStyle.values().length
         ) {
-            update();
+            this.update();
         }
 
 
@@ -64,15 +64,15 @@ public class MqttInformationComponent extends AbstractOpenemsComponent implement
 
 
         try {
-            c = ca.getConfiguration(this.servicePid(), "?");
+            c = this.ca.getConfiguration(this.servicePid(), "?");
             Dictionary<String, Object> properties = c.getProperties();
 
-            properties.put("mqttTypes", propertyInput(Arrays.toString(MqttType.values())));
-            properties.put("mqttPriorities", propertyInput(Arrays.toString(MqttPriority.values())));
-            properties.put("mqttCommandTypes", propertyInput(Arrays.toString(MqttCommandType.values())));
-            properties.put("mqttEventTypes", propertyInput(Arrays.toString(MqttEventType.values())));
-            properties.put("payloadStyle", propertyInput(Arrays.toString(PayloadStyle.values())));
-            properties.put("mqttPriority", propertyInput(Arrays.toString(MqttPriority.values())));
+            properties.put("mqttTypes", this.propertyInput(Arrays.toString(MqttType.values())));
+            properties.put("mqttPriorities", this.propertyInput(Arrays.toString(MqttPriority.values())));
+            properties.put("mqttCommandTypes", this.propertyInput(Arrays.toString(MqttCommandType.values())));
+            properties.put("mqttEventTypes", this.propertyInput(Arrays.toString(MqttEventType.values())));
+            properties.put("payloadStyle", this.propertyInput(Arrays.toString(PayloadStyle.values())));
+            properties.put("mqttPriority", this.propertyInput(Arrays.toString(MqttPriority.values())));
 
             c.update(properties);
 
@@ -88,7 +88,7 @@ public class MqttInformationComponent extends AbstractOpenemsComponent implement
     }
 
     @Deactivate
-    public void deactivate() {
+    protected void deactivate() {
         super.deactivate();
     }
 }

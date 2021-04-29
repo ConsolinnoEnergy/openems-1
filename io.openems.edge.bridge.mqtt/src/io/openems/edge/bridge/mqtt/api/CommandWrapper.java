@@ -14,24 +14,44 @@ public class CommandWrapper {
         this.expiration = expiration;
     }
 
+    /**
+     * Get the Value send by the Command subscription.
+     *
+     * @return the value.
+     */
     public String getValue() {
-        return value;
+        return this.value;
     }
 
+    /**
+     * Set the value of a command.
+     *
+     * @param value the value, usually from SubscribeTask.
+     */
     public void setValue(String value) {
         this.value = value;
     }
 
+    /**
+     * Get the Expiration of this command. (Date is saved in the Task. Expiration in seconds is stored here.
+     *
+     * @return the expiration.
+     */
     public String getExpiration() {
-        return expiration;
-    }
-
-    public boolean isInfinite() {
-        return infinite;
+        return this.expiration;
     }
 
     /**
-     * Sets the Expiration. If The Expiration should be infinite. The Infinite Boolean will be set and called later in
+     * If no expiration is given/set to INFINITE, this will be true.
+     *
+     * @return if the command holds up forever.
+     */
+    public boolean isInfinite() {
+        return this.infinite;
+    }
+
+    /**
+     * Sets the Expiration. In case the expiration should be infinite, the boolean will be set to true and called later in
      * MqttConfigurationComponent.
      *
      * @param expiration expirationTime usually set by MqttSubscribeTaskImpl.
