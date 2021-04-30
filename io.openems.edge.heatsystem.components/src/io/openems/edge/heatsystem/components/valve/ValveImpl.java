@@ -192,7 +192,6 @@ public class ValveImpl extends AbstractOpenemsComponent implements OpenemsCompon
             if (reached) {
                 this.getIsBusyChannel().setNextValue(false);
                 this.isForced = false;
-            } else {
                 this.adaptValveValue();
             }
         } else if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS)) {
@@ -232,12 +231,12 @@ public class ValveImpl extends AbstractOpenemsComponent implements OpenemsCompon
         int cycleTime = this.cycle == null ? Cycle.DEFAULT_CYCLE_TIME : this.cycle.getCycleTime();
         double percentPossiblePerCycle = cycleTime / (this.secondsPerPercentage * MILLI_SECONDS_TO_SECONDS);
         double limit = percentPossiblePerCycle * 2;
-        boolean powerLevelWithinLimits = this.getPowerLevelValue() + limit < this.getFuturePowerLevelValue() || this.getPowerLevelValue() - limit > this.getFuturePowerLevelValue();
-        if (percentPossiblePerCycle >= 2 && powerLevelWithinLimits == false) {
+        boolean powerLevelOutOfBounce = this.getPowerLevelValue() - limit > this.getFuturePowerLevelValue() || this.getPowerLevelValue() + limit < this.getFuturePowerLevelValue() || this.getPowerLevelValue() == this.getFuturePowerLevelValue();
+        if (percentPossiblePerCycle >= 2 && powerLevelOutOfBounce) {
             try {
                 this.setPointPowerLevelChannel().setNextWriteValueFromObject(this.getFuturePowerLevelValue());
             } catch (OpenemsError.OpenemsNamedException e) {
-                this.log.warn("Couldn't adapt Valve Value of Valve: " + super.id());
+                this.log.warn("Couldn't adapt Valve; Value of Valve: " + super.id());
             }
         }
     }
@@ -326,8 +325,15 @@ public class ValveImpl extends AbstractOpenemsComponent implements OpenemsCompon
     public boolean readyToChange() {
         if (this.isForced) {
             long currentTime = this.getMilliSecondTime();
-            return (currentTime - this.timeStampValveInitial)
-                    >= ((this.timeNeeded() * 1000) + EXTRA_BUFFER_TIME);
+            if (currentTime - this.timeStampValveInitial
+                    >= ((this.timeNeeded() * 1000) + EXTRA_BUFFER_TIME)) {
+                this.getIsBusyChannel().setNextValue(false);
+                this.wasAlreadyReset = false;
+                this.isForced = false;
+                return true;
+            } else {
+                return false;
+            }
         }
         return true;
     }
