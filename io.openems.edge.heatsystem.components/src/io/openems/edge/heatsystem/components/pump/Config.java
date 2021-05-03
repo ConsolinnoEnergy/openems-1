@@ -32,10 +32,10 @@ import org.osgi.service.metatype.annotations.Option;
     })
     String pump_Type() default "Both";
 
-    @AttributeDefinition(name =  "Relay Id/ RelayChannel", description = "If the Pump is connected to a relays; type the id.")
+    @AttributeDefinition(name =  "BooleanChannel or Id of (Relay) Device", description = "Either the BooleanChannel or the Relay Device.")
     String pump_Relays() default "Relay0/WriteOnOff";
 
-    @AttributeDefinition(name = "PWM Id/ PwmChannel", description = "If the Pump is connected as a pwm Device; type in the id.")
+    @AttributeDefinition(name = "PWM Id/ PwmChannel", description = "Either the WriteChannel or the Pwm Device")
     String pump_Pwm() default "PwmDevice0/WritePowerLevel";
 
     boolean disableOnActivation() default true;

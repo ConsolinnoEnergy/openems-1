@@ -8,6 +8,7 @@ import io.openems.edge.common.channel.WriteChannel;
 import io.openems.edge.common.component.AbstractOpenemsComponent;
 import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
+import io.openems.edge.common.event.EdgeEventConstants;
 import io.openems.edge.heatsystem.components.ConfigurationType;
 import io.openems.edge.heatsystem.components.HeatsystemComponent;
 import io.openems.edge.heatsystem.components.Pump;
@@ -20,6 +21,9 @@ import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Modified;
 import org.osgi.service.component.annotations.Reference;
+import org.osgi.service.event.Event;
+import org.osgi.service.event.EventConstants;
+import org.osgi.service.event.EventHandler;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,8 +33,9 @@ import org.slf4j.LoggerFactory;
  * It works with Channels as well. You still need to configure if the Pump is controlled by a Relay, Pwm or Both.
  */
 @Designate(ocd = Config.class, factory = true)
-@Component(name = "HeatsystemComponent.Pump")
-public class PumpImpl extends AbstractOpenemsComponent implements OpenemsComponent, Pump {
+@Component(name = "HeatsystemComponent.Pump",
+        property = EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS)
+public class PumpImpl extends AbstractOpenemsComponent implements OpenemsComponent, Pump, EventHandler {
     private final Logger log = LoggerFactory.getLogger(PumpImpl.class);
 
     private Relay relay;
@@ -162,10 +167,10 @@ public class PumpImpl extends AbstractOpenemsComponent implements OpenemsCompone
     @Modified
     void modified(ComponentContext context, Config config) throws OpenemsError.OpenemsNamedException, ConfigurationException {
         super.modified(context, config.id(), config.alias(), config.enabled());
+        this.isPwm = false;
+        this.isRelay = false;
         this.allocateComponents(config.configType(), config.pump_Type(), config.pump_Relays(), config.pump_Pwm());
     }
-
-
 
 
     /**
@@ -273,7 +278,7 @@ public class PumpImpl extends AbstractOpenemsComponent implements OpenemsCompone
             multiplier = 10;
         }
         int percentToApply = (int) (percent * multiplier);
-        percentToApply = percentToApply > maxValue ? maxValue : Math.max(percentToApply, 0);
+        percentToApply = percentToApply > maxValue * multiplier ? maxValue : Math.max(percentToApply, 0);
 
         switch (this.configurationType) {
             case CHANNEL:
@@ -305,4 +310,14 @@ public class PumpImpl extends AbstractOpenemsComponent implements OpenemsCompone
     }
 
 
+    @Override
+    public void handleEvent(Event event) {
+        if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS)) {
+            if (this.getResetValueAndResetChannel()) {
+                this.setPowerLevel(0);
+            } else if (this.setPointPowerLevelChannel().getNextValue().isDefined()) {
+                this.setPowerLevel(this.setPointPowerLevelChannel().getNextValue().get());
+            }
+        }
+    }
 }
