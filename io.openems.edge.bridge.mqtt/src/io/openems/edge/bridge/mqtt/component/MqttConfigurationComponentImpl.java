@@ -14,11 +14,15 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+/**
+ * This Class provides the implementation of the MqttConfigurationComponent.
+ * It allows e.g. the MqttTelemetryComponent to use the AbstractMqttComponent as well as some more Methods.
+ * Such as initiation of Tasks, checking expiration of commands etc.
+ */
 public class MqttConfigurationComponentImpl implements MqttConfigurationComponent {
 
 
-    private MqttComponentImpl mqttComponent;
-    private boolean configured;
+    private final MqttComponentImpl mqttComponent;
 
     public MqttConfigurationComponentImpl(String[] subscriptions, String[] publish, String[] payloads, String id,
                                           boolean createdByOsgi, MqttBridge mqttBridge, String mqttId, MqttType mqttType) {
@@ -46,7 +50,6 @@ public class MqttConfigurationComponentImpl implements MqttConfigurationComponen
     }
 
 
-
     @Override
     public boolean expired(MqttSubscribeTask task, CommandWrapper key) {
         if (key.isInfinite()) {
@@ -65,7 +68,7 @@ public class MqttConfigurationComponentImpl implements MqttConfigurationComponen
 
     @Override
     public boolean isConfigured() {
-        return this.configured;
+        return this.mqttComponent.hasBeenConfigured();
     }
 
     @Override
@@ -74,8 +77,8 @@ public class MqttConfigurationComponentImpl implements MqttConfigurationComponen
     }
 
     @Override
-    public void updateJsonByChannel(ArrayList<Channel<?>> channels, String config) throws ConfigurationException, MqttException {
-        this.mqttComponent.initJson(channels, config);
+    public void updateJsonByChannel(ArrayList<Channel<?>> channels, String content) throws ConfigurationException, MqttException {
+        this.mqttComponent.initJson(channels, content);
     }
 
     @Override
@@ -87,14 +90,15 @@ public class MqttConfigurationComponentImpl implements MqttConfigurationComponen
     private class MqttComponentImpl extends AbstractMqttComponent {
         /**
          * Initially update Config and after that set params for initTasks.
-         *  @param id            id of this Component, usually from configuredDevice and it's config.
+         *
+         * @param id            id of this Component, usually from configuredDevice and it's config.
          * @param subConfigList Subscribe ConfigList, containing the Configuration for the subscribeTasks.
          * @param pubConfigList Publish ConfigList, containing the Configuration for the publishTasks.
          * @param payloads      containing all the Payloads. ConfigList got the Payload list as well.
          * @param createdByOsgi is this Component configured by OSGi or not. If not --> Read JSON File/Listen to Configuration Channel.
          * @param mqttBridge    mqttBridge of this Component.
-         * @param mqttId
-         * @param mqttType
+         * @param mqttId        the Id showing up in the Payload in the Broker.
+         * @param mqttType      the Type (e.g. Telemetry..Command etc)
          */
         public MqttComponentImpl(String id, List<String> subConfigList, List<String> pubConfigList, List<String> payloads,
                                  boolean createdByOsgi, MqttBridge mqttBridge, String mqttId, MqttType mqttType) {

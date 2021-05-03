@@ -447,4 +447,9 @@ public class ApartmentModuleImpl extends AbstractOpenemsModbusComponent implemen
 
 
     }
+
+    @Override
+    public boolean isTopAm() {
+        return this.topAM;
+    }
 }

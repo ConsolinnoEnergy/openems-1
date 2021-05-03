@@ -63,13 +63,17 @@ public class MqttSubscribeManager extends AbstractMqttManager {
         connection.subscribeToTopic(task.getTopic(), task.getQos(), id);
     }
 
+    /**
+     * Deactivates the Component. Called by the MqttBridge.
+     * Closes the connection.
+     */
     public void deactivate() {
         super.deactivate();
         this.connections.forEach((key, value) -> {
             try {
                 value.disconnect();
             } catch (MqttException e) {
-                e.printStackTrace();
+                log.warn("Error on disconnecting: " + e.getMessage());
             }
         });
     }
@@ -86,8 +90,13 @@ public class MqttSubscribeManager extends AbstractMqttManager {
         return this.connections.get(type).getPayload(topic);
     }
 
+    /**
+     * Unsubscribes a Topic if there is no other subscriber left.
+     * @param task the task you wish to unsubscribe.
+     * @throws MqttException if somethings wrong with the connection.
+     */
     public void unsubscribeFromTopic(MqttTask task) throws MqttException {
-        this.connections.get(task.getMqttType()).unsubscribeFromTopic(task.getTopic());
+        this.connections.get(task.getMqttType()).unsubscribeFromTopic(task.getTopic(), task.getId());
     }
 
 

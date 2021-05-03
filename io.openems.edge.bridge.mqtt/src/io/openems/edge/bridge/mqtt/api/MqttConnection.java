@@ -1,32 +1,33 @@
 package io.openems.edge.bridge.mqtt.api;
 
-import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.MqttException;
 
 import java.security.KeyManagementException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 
+/**
+ * Provides the Interface for the MqttConnection. This will be used by the MqttManager and the MqttBridge.
+ */
 public interface MqttConnection {
     /**
-     * Creates the MqttSubscribe session. HERE: AutoConnect
+     * Creates the MqttSubscribe session.
      *
      * @param mqttBroker   URL of Broker usually from manager/bridge.
      * @param mqttClientId ClientID of the Connection.
      * @param username     username.
      * @param mqttPassword password.
-     * @param keepAlive    keepalive.
-     * @throws MqttException if connection fails or other problems occured with mqtt.
+     * @param keepAlive    keepAlive.
+     * @throws MqttException if connection fails or other problems occurred with mqtt.
      */
     void createMqttSubscribeSession(String mqttBroker, String mqttClientId, String username, String mqttPassword, int keepAlive) throws MqttException;
 
     /**
-     * Creates the publish connection. Connection not already occurs bc a last will flag could be set.
-     * HERE: NO Auto connect (Bc. of optional Last Will messages)
+     * Creates the publish connection.
      *
      * @param broker       URL of Broker usually from manager/bridge.
      * @param clientId     ClientID of the Connection.
-     * @param keepAlive    keepalive flag.
+     * @param keepAlive    keepAlive flag.
      * @param username     username.
      * @param password     password.
      * @param cleanSession clean session flag.
@@ -36,7 +37,7 @@ public interface MqttConnection {
                                   String password, boolean cleanSession) throws MqttException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException;
 
     /**
-     * Adds last will to the    Connection.
+     * Adds the last will to the Connection.
      *
      * @param topicLastWill   topic of the last will.
      * @param payloadLastWill payload.
@@ -54,15 +55,11 @@ public interface MqttConnection {
      */
     void connect() throws MqttException;
 
+    /**
+     * Disconnects the Connection. Happens on deactivation. Only for internal usage.
+     *
+     * @throws MqttException if somethings wrong with the MQTT Connection.
+     */
     void disconnect() throws MqttException;
 
-    MqttClient getMqttClient();
-
-    /**
-     * Usually false. Usually you don't want a clean session within an EMS. But for Future implementations:
-     * If CleanSessions should be an option.
-     *
-     * @return aBoolean.
-     */
-    boolean isCleanSession();
 }

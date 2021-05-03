@@ -1,19 +1,32 @@
 package io.openems.edge.bridge.mqtt.handler;
 
 import io.openems.common.exceptions.OpenemsError;
-import io.openems.edge.bridge.mqtt.api.*;
+import io.openems.edge.bridge.mqtt.api.CommandWrapper;
+import io.openems.edge.bridge.mqtt.api.MqttCommandType;
+import io.openems.edge.bridge.mqtt.api.MqttCommands;
+import io.openems.edge.bridge.mqtt.api.MqttComponent;
+import io.openems.edge.bridge.mqtt.api.MqttSubscribeTask;
+import io.openems.edge.bridge.mqtt.api.MqttType;
 import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.osgi.service.cm.ConfigurationAdmin;
 import org.osgi.service.cm.ConfigurationException;
 import org.osgi.service.component.ComponentContext;
-import org.osgi.service.component.annotations.*;
+import org.osgi.service.component.annotations.Activate;
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.ConfigurationPolicy;
+import org.osgi.service.component.annotations.Deactivate;
+import org.osgi.service.component.annotations.Modified;
+import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.metatype.annotations.Designate;
 
 import java.io.IOException;
 import java.util.stream.Collectors;
 
+/**
+ * The MqttCommandComponent provides a class that allows the usage of Commands, written in the MqttCommandType and MqttCommands.
+ */
 @Designate(ocd = CommandComponentConfig.class, factory = true)
 @Component(name = "MqttCommandComponent",
         configurationPolicy = ConfigurationPolicy.REQUIRE,
@@ -32,21 +45,42 @@ public class MqttCommandComponent extends MqttOpenemsComponentConnector implemen
 
     @Activate
     void activate(ComponentContext context, CommandComponentConfig config) throws OpenemsError.OpenemsNamedException, IOException, ConfigurationException, MqttException {
-        if (super.activate(context, config.id(), config.alias(), config.enabled(), cpm, config.mqttBridgeId())) {
+        if (super.activate(context, config.id(), config.alias(), config.enabled(), this.cpm, config.mqttBridgeId())) {
             this.configureMqtt(config);
         } else {
             throw new ConfigurationException("Something went wrong", "Somethings wrong in Activate method");
         }
     }
 
-    private void configureMqtt(CommandComponentConfig config) throws MqttException, ConfigurationException, IOException, OpenemsError.OpenemsNamedException {
-        super.setTelemetryComponent(config.otherComponentId(), cpm);
+    @Modified
+    void modified(ComponentContext context, CommandComponentConfig config) throws OpenemsError.OpenemsNamedException, IOException, ConfigurationException, MqttException {
+        super.modified(context, config.id(), config.alias(), config.enabled());
+        super.connectorDeactivate();
+        this.configureMqtt(config);
+    }
 
-        super.setConfiguration(MqttType.COMMAND, config.subscriptionList(), config.publishList(),
-                config.payloads(), config.createdByOsgi(), config.mqttId(), cm, config.channelIdList().length,
+    /**
+     * Configures the Config for MQTT in the command Component. Here: No PublishConfig is necessary.
+     *
+     * @param config the Config.
+     * @throws MqttException                      thrown on Mqtt Error -> subscription fail
+     * @throws ConfigurationException             if something is not correctly configured in OSGi
+     * @throws IOException                        if the json file given is wrong.
+     * @throws OpenemsError.OpenemsNamedException if the ComponentManager couldn't find anything with corresponding id (MqttBridge)
+     */
+    private void configureMqtt(CommandComponentConfig config) throws MqttException, ConfigurationException, IOException, OpenemsError.OpenemsNamedException {
+        super.setCorrespondingComponent(config.otherComponentId(), this.cpm);
+
+        super.setConfiguration(MqttType.COMMAND, config.subscriptionList(), null,
+                config.payloads(), config.createdByOsgi(), config.mqttId(), this.cm, config.channelIdList().length,
                 config.pathForJson(), config.payloadStyle(), config.configurationDone());
     }
 
+
+    /**
+     * React to the Command. Signal comes from the MqttBridge.
+     * Get the corresponding SubscribeTasks and write CommandValues into the correct channel.
+     */
 
     @Override
     public void reactToCommand() {
@@ -57,12 +91,46 @@ public class MqttCommandComponent extends MqttOpenemsComponentConnector implemen
                     task.getCommandValues().forEach((key, value) -> {
                         if (this.mqttConfigurationComponent.valueLegit(value.getValue())) {
                             if (!this.mqttConfigurationComponent.expired(task, value)) {
-                                reactToComponentCommand(key, value);
+                                this.reactToComponentCommand(key, value);
+                            } else {
+                                this.log.info(this.id() + " Command : " + key + " expired, resetting Channel...");
+                                this.resetComponentCommandValue(key);
                             }
+                        } else {
+                            this.resetComponentCommandValue(key);
                         }
                     });
                 }
             });
+        }
+    }
+
+    /**
+     * Resets the value of the command, if the command is expired.
+     *
+     * @param key the Command.
+     */
+    private void resetComponentCommandValue(MqttCommandType key) {
+        if (super.otherComponent instanceof MqttCommands) {
+            MqttCommands commandChannel = (MqttCommands) super.otherComponent;
+            try {
+                switch (key) {
+                    case SETPOWER:
+                        commandChannel.getSetPower().setNextWriteValue(null);
+                        break;
+                    case SETPERFORMANCE:
+                        commandChannel.getSetPerformance().setNextWriteValue(null);
+                        break;
+                    case SETSCHEDULE:
+                        commandChannel.getSetSchedule().setNextWriteValue(null);
+                        break;
+                    case SETTEMPERATURE:
+                        commandChannel.getSetTemperature().setNextWriteValue(null);
+                        break;
+                }
+            } catch (OpenemsError.OpenemsNamedException e) {
+                super.log.warn("Couldn't reset Channel for: " + this.id() + " Key: " + key);
+            }
         }
     }
 
@@ -91,13 +159,13 @@ public class MqttCommandComponent extends MqttOpenemsComponentConnector implemen
                         break;
                 }
             } catch (OpenemsError.OpenemsNamedException e) {
-                e.printStackTrace();
+                super.log.warn("Couldn't set ChannelValue for: " + this.id() + " Key: " + key + "Value: " + value.getValue());
             }
         }
     }
 
     @Deactivate
-    public void deactivate() {
+    protected void deactivate() {
         super.connectorDeactivate();
     }
 }

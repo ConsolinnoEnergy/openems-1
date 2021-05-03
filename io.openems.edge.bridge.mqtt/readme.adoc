@@ -1,12 +1,25 @@
-# io.openems.edge.bridge.mqtt Provider
+= io.openems.edge.bridge.mqtt Provider
 
-This Bundle Provides the MQTT Bridge. It Communicates with a Broker, Handles the Subscribe and Publish task.
-Handles inflight messages and If Broker changes. --> QoS > 0 Handling.
-Since only One Bridge is needed (Only one Broker) this Bridge is implemented with SingletonPattern.
+This Bundle Provides the MQTT Bridge, and Telemetry/CommandComponents
+It Communicates with a Broker.
+It handles subscribe and Publish - Tasks.
 
-Persistent or Clean Session will be configured automatically.
+persistent/clean Session will be configured automatically.
 
-AutoReconnect is also handled automatically.
+AutoReconnect is per default set to true.
 
-Two Examples are found in the dummy package.
+TelemetryComponents can send data to a broker. You can configure multiple Payloads and send them to multiple Topics.
+Additionally, you can Map Keys to OpenEmsChannel for telemetry subscription to get Virtual/Remote data and store them in mapped channel.
+CommandComponents react to Commands from the broker reading a "method" and store a value and expiration.
+These command values will be stored in corresponding channel.
+These can be used in implementing Components to react to certain values/events.
+
+
+External Resource: http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html ::
+
+Implemented Natures::
+- MqttBridge.
+
+
+
 
