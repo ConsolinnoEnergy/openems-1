@@ -142,6 +142,14 @@ public class PumpImpl extends AbstractOpenemsComponent implements OpenemsCompone
         }
     }
 
+    /**
+     * Configures the Relay either by Device or Channel (Boolean).
+     *
+     * @param pump_relay the Relay allocated to the pump.
+     * @throws OpenemsError.OpenemsNamedException thrown if the Id of Device/Channel couldn't be found.
+     * @throws ConfigurationException             if the id of the Device is not an instance of a relay.
+     */
+
     private void configureRelay(String pump_relay) throws OpenemsError.OpenemsNamedException, ConfigurationException {
         switch (this.configurationType) {
             case CHANNEL:
@@ -184,6 +192,12 @@ public class PumpImpl extends AbstractOpenemsComponent implements OpenemsCompone
         super.deactivate();
         this.deactivateDevices();
     }
+
+    /**
+     * Called internally or by other Components. Tells the calling device if the HeatsystemComponent is ready to apply any Changes.
+     *
+     * @return a Boolean
+     */
 
     @Override
     public boolean readyToChange() {
@@ -247,6 +261,12 @@ public class PumpImpl extends AbstractOpenemsComponent implements OpenemsCompone
         return true;
     }
 
+    /**
+     * Sets the Relay(Channel) to either true or false, depending on the {@link #changeByPercentage(double percentage)}.
+     *
+     * @param activate if the relay should be active or not
+     * @return true on success.
+     */
     private boolean controlRelay(boolean activate) {
 
         switch (this.configurationType) {
@@ -270,10 +290,21 @@ public class PumpImpl extends AbstractOpenemsComponent implements OpenemsCompone
         return true;
     }
 
+    /**
+     * Sets the Pwm Value Depending on the Unit of the Channel. Called by {@link #changeByPercentage(double)}
+     *
+     * @param percent the Percent set to this Pump
+     * @return true on success
+     */
     private boolean controlPwm(double percent) {
         int multiplier = 1;
         int maxValue = 100;
-        Unit unit = this.pwmChannel.channelDoc().getUnit();
+        Unit unit;
+        if (this.configurationType.equals(ConfigurationType.CHANNEL)) {
+            unit = this.pwmChannel.channelDoc().getUnit();
+        } else {
+            unit = this.pwm.getWritePwmPowerLevelChannel().channelDoc().getUnit();
+        }
         if (unit == Unit.THOUSANDTH) {
             multiplier = 10;
         }
@@ -300,6 +331,12 @@ public class PumpImpl extends AbstractOpenemsComponent implements OpenemsCompone
         }
         return true;
     }
+
+    /**
+     * Sets the PowerLevel of the Pump. Values between 0-100% can be applied.
+     *
+     * @param percent the PowerLevel the Pump should be set to.
+     */
 
     @Override
     public void setPowerLevel(double percent) {

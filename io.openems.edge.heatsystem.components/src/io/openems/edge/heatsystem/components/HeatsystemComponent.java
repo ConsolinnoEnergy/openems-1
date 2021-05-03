@@ -11,6 +11,10 @@ import io.openems.edge.common.channel.IntegerWriteChannel;
 import io.openems.edge.common.channel.WriteChannel;
 import io.openems.edge.common.component.OpenemsComponent;
 
+/**
+ * This Nature provides Channel and Methods for a HeatsystemComponent, such as a Valve or a Pump.
+ * You can set e.g. SetPointPowerLevel or change a HeatsystemComponent by a Percentage Value etc etc.
+ */
 public interface HeatsystemComponent extends OpenemsComponent {
 
     public enum ChannelId implements io.openems.edge.common.channel.ChannelId {

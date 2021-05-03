@@ -7,7 +7,9 @@ import io.openems.edge.heatsystem.components.HeatsystemComponent;
 import io.openems.edge.pwm.api.Pwm;
 import io.openems.edge.relay.api.Relay;
 
-
+/**
+ * This Device acts as a Dummy for Unittests.
+ */
 public class DummyPump extends AbstractOpenemsComponent implements OpenemsComponent, Pump {
 
     private Relay relays;

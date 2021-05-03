@@ -6,13 +6,13 @@ import io.openems.edge.heatsystem.components.HeatsystemComponent;
 import io.openems.edge.heatsystem.components.Valve;
 import io.openems.edge.relay.api.Relay;
 
+/**
+ * This Class works the same way as the ValveImpl except it's constructor and lacking of the
+ * Osgi Activate and Deactivate Methods for obv Reasons. It should be combined with the Passing Station + the DummyPump.
+ * */
 
 public class DummyValve extends AbstractOpenemsComponent implements Valve, OpenemsComponent {
-    /*
-     * This Class works the same way as the ValveImpl except it's constructor and lacking of the
-     * Osgi Activate and Deactivate Methods for obv Reasons. It should be combined with the Passing Station
-     * + the DummyPump.
-     * */
+
 
     private Relay opens;
     private Relay closing;
