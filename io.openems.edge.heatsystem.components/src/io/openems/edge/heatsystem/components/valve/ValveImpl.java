@@ -197,6 +197,8 @@ public class ValveImpl extends AbstractOpenemsComponent implements OpenemsCompon
         } else if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS)) {
             if (this.shouldReset()) {
                 this.reset();
+            } else if (this.getForceFullPowerAndResetChannel()) {
+                this.forceOpen();
             } else {
                 int changeByPercent = this.setPointPowerLevelValue();
                 if (changeByPercent >= MIN_PERCENT_POSSIBLE) {
@@ -213,6 +215,9 @@ public class ValveImpl extends AbstractOpenemsComponent implements OpenemsCompon
         }
     }
 
+    /**
+     * Check if the Min and/or Max value is defined and valid.
+     */
     private void checkMaxAndMinAllowed() {
         Double maxAllowed = this.getMaxAllowedValue();
         Double minAllowed = this.getMinAllowedValue();

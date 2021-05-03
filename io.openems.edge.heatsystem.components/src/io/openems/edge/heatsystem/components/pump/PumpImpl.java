@@ -66,6 +66,9 @@ public class PumpImpl extends AbstractOpenemsComponent implements OpenemsCompone
         }
     }
 
+    /**
+     * Deactivates the Devices. It sets the Relay to false and the Pwm to 0.
+     */
     private void deactivateDevices() {
         if (this.isRelay) {
             this.controlRelay(false);
@@ -352,6 +355,8 @@ public class PumpImpl extends AbstractOpenemsComponent implements OpenemsCompone
         if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS)) {
             if (this.getResetValueAndResetChannel()) {
                 this.setPowerLevel(0);
+            } else if (this.getForceFullPowerAndResetChannel()) {
+                this.setPowerLevel(100);
             } else if (this.setPointPowerLevelChannel().getNextValue().isDefined()) {
                 this.setPowerLevel(this.setPointPowerLevelChannel().getNextValue().get());
             }

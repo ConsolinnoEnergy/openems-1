@@ -1,28 +1,10 @@
 package io.openems.edge.heatsystem.components;
 
-import io.openems.common.types.OpenemsType;
-import io.openems.edge.common.channel.Doc;
-
+/**
+ * The Valve interface, an expansion of a HeatsystemComponent.
+ * It allows other Components / Controller to force Open/Close or reset the Valve.
+ */
 public interface Valve extends HeatsystemComponent {
-
-    enum ChannelId implements io.openems.edge.common.channel.ChannelId {
-
-
-        FORCE_CLOSE(Doc.of(OpenemsType.BOOLEAN)),
-        FORCE_OPEN(Doc.of(OpenemsType.BOOLEAN));
-
-
-        private final Doc doc;
-
-        ChannelId(Doc doc) {
-            this.doc = doc;
-        }
-
-        @Override
-        public Doc doc() {
-            return this.doc;
-        }
-    }
 
     /**
      * Closes the valve completely, overriding any current valve operation.

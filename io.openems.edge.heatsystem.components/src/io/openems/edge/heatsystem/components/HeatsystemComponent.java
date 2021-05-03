@@ -87,6 +87,16 @@ public interface HeatsystemComponent extends OpenemsComponent {
         RESET(Doc.of(OpenemsType.BOOLEAN).accessMode(AccessMode.READ_WRITE)),
 
         /**
+         * Forces the HeatsystemComponent to run at full power.
+         * Note: This has to be written constantly.
+         * <ul>
+         *     <li>Interface: HeatsystemComponent
+         *     <li>Type: Boolean
+         * </ul>
+         */
+        FORCE_FULL_POWER(Doc.of(OpenemsType.BOOLEAN).accessMode(AccessMode.READ_WRITE)),
+
+        /**
          * Maximum value in % the Valve is allowed to be open.
          *
          * <ul>
@@ -275,6 +285,7 @@ public interface HeatsystemComponent extends OpenemsComponent {
     // ---------------------- ----------- ---------------------- //
     // ----------------------- MIN VALUE ----------------------- //
     // ---------------------- ----------- ---------------------- //
+
     /**
      * The Min Value Channel. This tells the Component the Minimum allowed value to apply.
      * Usually a HeatsystemComponent regulates itself if the minAllowedValue is defined.
@@ -350,6 +361,30 @@ public interface HeatsystemComponent extends OpenemsComponent {
     default boolean getResetValueAndResetChannel() {
         return this.getResetChannel().getNextWriteValueAndReset().orElse(false);
     }
+    // ---------------------- ----------- ---------------------- //
+    // ------------------------- FORCE ------------------------- //
+    // ---------------------- ----------- ---------------------- //
+
+    /**
+     * Get the Force Full Power Channel. If the nextWriteValue is true -> e.g. :This will open a valve completely or
+     * set a Pump to 100%
+     *
+     * @return the channel.
+     */
+    default WriteChannel<Boolean> getForceFullPowerChannel() {
+        return this.channel(ChannelId.FORCE_FULL_POWER);
+    }
+
+    /**
+     * Get the nextWriteValue and reset the channel. This allows HeatPump/Valve/HeatsystemComponents in general to
+     * force the activation
+     *
+     * @return true if nextWriteValue is true else false
+     */
+
+    default boolean getForceFullPowerAndResetChannel() {
+        return this.getForceFullPowerChannel().getNextWriteValueAndReset().orElse(false);
+    }
 
     // ---------------------- ----------- ---------------------- //
     // ------------------------- TIME -------------------------- //
@@ -385,7 +420,7 @@ public interface HeatsystemComponent extends OpenemsComponent {
 
     /**
      * Returns the Value of a Channel, either by getting current Value or on null the next Value
-     * if the next Value is also null, calling methods have to apply to this occurence.
+     * if the next Value is also null, calling methods have to apply to this occurrence.
      *
      * @param channel the given Channel
      * @return the Value of the Channel.
@@ -420,6 +455,7 @@ public interface HeatsystemComponent extends OpenemsComponent {
 
     /**
      * Called internally or by other Components. Tells the calling device if the HeatsystemComponent is ready to apply any Changes.
+     *
      * @return a Boolean
      */
     boolean readyToChange();
@@ -428,6 +464,7 @@ public interface HeatsystemComponent extends OpenemsComponent {
      * Usually used internally but can be used by calling Components/Controller.
      * Changes the Current Powerlevel by given Percentage. Can be positive or negative.
      * The reached Powerlevel can be at most 100 and at least 0 but can be modified by the Max/Min Value.
+     *
      * @param percentage the percentage to change the HeatsystemComponent by this value.
      * @return true on success
      */

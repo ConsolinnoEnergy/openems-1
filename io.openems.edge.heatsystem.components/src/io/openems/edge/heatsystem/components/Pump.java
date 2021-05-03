@@ -1,7 +1,8 @@
 package io.openems.edge.heatsystem.components;
 
 /**
- *
+ * The Pump is an extension of the HeatsystemComponent and provides the ability to set a PowerLevel by other components.
+ * Otherwise it functions as a normal HeatsystemComponent.
  */
 public interface Pump extends HeatsystemComponent {
     /**
