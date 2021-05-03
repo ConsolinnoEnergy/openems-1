@@ -12,6 +12,7 @@ import io.openems.edge.common.modbusslave.ModbusSlave;
 import io.openems.edge.controller.api.Controller;
 import io.openems.edge.controller.api.modbus.AbstractModbusApi;
 import io.openems.edge.controller.api.modbus.ModbusApi;
+import io.openems.edge.controller.api.modbus.readwrite.ModbusApiReadWrite;
 import org.osgi.service.cm.ConfigurationAdmin;
 import org.osgi.service.component.ComponentContext;
 import org.osgi.service.component.annotations.Activate;
@@ -24,13 +25,18 @@ import org.osgi.service.component.annotations.ReferencePolicy;
 import org.osgi.service.component.annotations.ReferencePolicyOption;
 import org.osgi.service.metatype.annotations.Designate;
 
+/**
+ * This is the extension for AbstractModbusApi to operate in TCP mode with custom Modbus mapping.
+ * A direct copy of ModbusTcpApiReadWriteImpl except for the custom Modbus mapping.
+ */
+
 @Designate(ocd = Config.class, factory = true)
 @Component(//
 		name = "Controller.Api.ModbusTcp.Custom", //
 		immediate = true, //
 		configurationPolicy = ConfigurationPolicy.REQUIRE)
 public class ModbusTcpApiCustomImpl extends AbstractModbusApi
-		implements ModbusTcpApiCustom, ModbusApi, Controller, OpenemsComponent, JsonApi {
+		implements ModbusApiReadWrite, ModbusApi, Controller, OpenemsComponent, JsonApi {
 
 	private int port = DEFAULT_PORT_TCP;
 	private int maxConcurrentConnections = DEFAULT_MAX_CONCURRENT_CONNECTIONS;
@@ -54,7 +60,7 @@ public class ModbusTcpApiCustomImpl extends AbstractModbusApi
 				OpenemsComponent.ChannelId.values(), //
 				Controller.ChannelId.values(), //
 				ModbusApi.ChannelId.values(), //
-				ModbusTcpApiCustom.ChannelId.values() //
+				ModbusApiReadWrite.ChannelId.values() //
 		);
 		this.apiWorker.setLogChannel(this.getApiWorkerLogChannel());
 	}

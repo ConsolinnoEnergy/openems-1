@@ -12,6 +12,7 @@ import io.openems.edge.common.modbusslave.ModbusSlave;
 import io.openems.edge.controller.api.Controller;
 import io.openems.edge.controller.api.modbus.AbstractModbusApi;
 import io.openems.edge.controller.api.modbus.ModbusApi;
+import io.openems.edge.controller.api.modbus.readwrite.ModbusApiReadWrite;
 import org.osgi.service.cm.ConfigurationAdmin;
 import org.osgi.service.component.ComponentContext;
 import org.osgi.service.component.annotations.Activate;
@@ -30,7 +31,7 @@ import org.osgi.service.metatype.annotations.Designate;
 		immediate = true, //
 		configurationPolicy = ConfigurationPolicy.REQUIRE)
 public class ModbusTcpApiReadWriteImpl extends AbstractModbusApi
-		implements ModbusTcpApiReadWrite, ModbusApi, Controller, OpenemsComponent, JsonApi {
+		implements ModbusApiReadWrite, ModbusApi, Controller, OpenemsComponent, JsonApi {
 
 	private int port = DEFAULT_PORT_TCP;
 	private int maxConcurrentConnections = DEFAULT_MAX_CONCURRENT_CONNECTIONS;
@@ -54,7 +55,7 @@ public class ModbusTcpApiReadWriteImpl extends AbstractModbusApi
 				OpenemsComponent.ChannelId.values(), //
 				Controller.ChannelId.values(), //
 				ModbusApi.ChannelId.values(), //
-				ModbusTcpApiReadWrite.ChannelId.values() //
+				ModbusApiReadWrite.ChannelId.values() //
 		);
 		this.apiWorker.setLogChannel(this.getApiWorkerLogChannel());
 	}

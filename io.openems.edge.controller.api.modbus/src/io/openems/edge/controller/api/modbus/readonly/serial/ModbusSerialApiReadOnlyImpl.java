@@ -13,6 +13,7 @@ import io.openems.edge.common.modbusslave.ModbusSlave;
 import io.openems.edge.controller.api.Controller;
 import io.openems.edge.controller.api.modbus.AbstractModbusApi;
 import io.openems.edge.controller.api.modbus.ModbusApi;
+import io.openems.edge.controller.api.modbus.readonly.ModbusApiReadOnly;
 import org.osgi.service.cm.ConfigurationAdmin;
 import org.osgi.service.component.ComponentContext;
 import org.osgi.service.component.annotations.Activate;
@@ -25,13 +26,18 @@ import org.osgi.service.component.annotations.ReferencePolicy;
 import org.osgi.service.component.annotations.ReferencePolicyOption;
 import org.osgi.service.metatype.annotations.Designate;
 
+/**
+ * This is the extension for AbstractModbusApi to operate in RTU/serial mode, read only.
+ * A direct copy of ModbusTcpApiReadOnlyImpl except for the connection.
+ */
+
 @Designate(ocd = Config.class, factory = true)
 @Component(//
 		name = "Controller.Api.ModbusSerial.ReadOnly", //
 		immediate = true, //
 		configurationPolicy = ConfigurationPolicy.REQUIRE)
 public class ModbusSerialApiReadOnlyImpl extends AbstractModbusApi
-		implements ModbusSerialApiReadOnly, ModbusApi, Controller, OpenemsComponent, JsonApi {
+		implements ModbusApiReadOnly, ModbusApi, Controller, OpenemsComponent, JsonApi {
 
 	private SerialParameters serialParameters;
 
@@ -54,7 +60,7 @@ public class ModbusSerialApiReadOnlyImpl extends AbstractModbusApi
 				OpenemsComponent.ChannelId.values(), //
 				Controller.ChannelId.values(), //
 				ModbusApi.ChannelId.values(), //
-				ModbusSerialApiReadOnly.ChannelId.values() //
+				ModbusApiReadOnly.ChannelId.values() //
 		);
 	}
 

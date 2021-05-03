@@ -13,6 +13,7 @@ import io.openems.edge.common.modbusslave.ModbusSlave;
 import io.openems.edge.controller.api.Controller;
 import io.openems.edge.controller.api.modbus.AbstractModbusApi;
 import io.openems.edge.controller.api.modbus.ModbusApi;
+import io.openems.edge.controller.api.modbus.readwrite.ModbusApiReadWrite;
 import org.osgi.service.cm.ConfigurationAdmin;
 import org.osgi.service.component.ComponentContext;
 import org.osgi.service.component.annotations.Activate;
@@ -25,13 +26,18 @@ import org.osgi.service.component.annotations.ReferencePolicy;
 import org.osgi.service.component.annotations.ReferencePolicyOption;
 import org.osgi.service.metatype.annotations.Designate;
 
+/**
+ * This is the extension for AbstractModbusApi to operate in RTU/serial mode, read/write.
+ * A direct copy of ModbusTcpApiReadWriteImpl except for the connection.
+ */
+
 @Designate(ocd = Config.class, factory = true)
 @Component(//
 		name = "Controller.Api.ModbusSerial.ReadWrite", //
 		immediate = true, //
 		configurationPolicy = ConfigurationPolicy.REQUIRE)
 public class ModbusSerialApiReadWriteImpl extends AbstractModbusApi
-		implements ModbusSerialApiReadWrite, ModbusApi, Controller, OpenemsComponent, JsonApi {
+		implements ModbusApiReadWrite, ModbusApi, Controller, OpenemsComponent, JsonApi {
 
 	private SerialParameters serialParameters;
 
@@ -54,7 +60,7 @@ public class ModbusSerialApiReadWriteImpl extends AbstractModbusApi
 				OpenemsComponent.ChannelId.values(), //
 				Controller.ChannelId.values(), //
 				ModbusApi.ChannelId.values(), //
-				ModbusSerialApiReadWrite.ChannelId.values() //
+				ModbusApiReadWrite.ChannelId.values() //
 		);
 		this.apiWorker.setLogChannel(this.getApiWorkerLogChannel());
 	}

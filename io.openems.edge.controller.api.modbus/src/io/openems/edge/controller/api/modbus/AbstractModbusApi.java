@@ -46,6 +46,14 @@ import io.openems.edge.controller.api.modbus.jsonrpc.GetModbusProtocolExportXlsx
 import io.openems.edge.controller.api.modbus.jsonrpc.GetModbusProtocolRequest;
 import io.openems.edge.controller.api.modbus.jsonrpc.GetModbusProtocolResponse;
 
+/**
+ * This is the base class of all Modbus API modules. Supports TCP and RTU/serial connections. The connection type is
+ * decided by 'createModbusSlave()', which creates either a slave for TCP or RTU/serial.
+ * Mapping of channels to Modbus registers can be done by either using the ModbusSlaveNatureTable defined in a module or
+ * by using the custom Modbus extensions. The custom extensions allow you to enter the Modbus mapping in the Config. The
+ * custom mapping can map any channel of any module to a Modbus register of your choice.
+ */
+
 public abstract class AbstractModbusApi extends AbstractOpenemsComponent
 		implements ModbusApi, Controller, OpenemsComponent, JsonApi {
 
@@ -163,11 +171,11 @@ public abstract class AbstractModbusApi extends AbstractOpenemsComponent
 
 		@Override
 		protected void forever() {
-			//int port = AbstractModbusTcpApi.this.port;
 			if (this.slave == null) {
 				try {
-					// start new server
-					//this.slave = ModbusSlaveFactory.createTCPSlave(port, AbstractModbusTcpApi.this.maxConcurrentConnections);
+					// Start new server.
+					// Implementation of 'createModbusSlave()' is done in the specific modules. Connection type (TCP or
+					// RTU/serial) is decided by which type of slave is created.
 					this.slave = AbstractModbusApi.this.createModbusSlave();
 					this.slave.addProcessImage(UNIT_ID, AbstractModbusApi.this.processImage);
 					this.slave.open();
@@ -663,7 +671,7 @@ public abstract class AbstractModbusApi extends AbstractOpenemsComponent
 	protected abstract AccessMode getAccessMode();
 
 	/**
-	 * Creates the Modbus slave.
+	 * Creates the Modbus slave. This decides the connection type (TCP or RTU/serial).
 	 *
 	 * @return the {@link ModbusSlave}
 	 */
