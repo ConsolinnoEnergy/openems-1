@@ -132,7 +132,7 @@ public class ValveControllerStaticPositionImpl extends AbstractOpenemsComponent 
                     }
                 }
             });
-            this.controlledValve.setPowerLevelPercent().setNextValue(selectedPosition.get().getValvePosition());
+            this.controlledValve.setPointPowerLevelChannel().setNextValue(selectedPosition.get().getValvePosition());
             this.setSetPointPosition((int) selectedPosition.get().getValvePosition());
         }
 
@@ -143,9 +143,9 @@ public class ValveControllerStaticPositionImpl extends AbstractOpenemsComponent 
      *
      * @param percent the percent of requested Position.
      */
-    private void setPositionByPercent(int percent) {
+    private void setPositionByPercent(int percent) throws OpenemsError.OpenemsNamedException {
         if (this.controlledValve.readyToChange() && percent != Integer.MIN_VALUE) {
-            this.controlledValve.setPowerLevelPercent().setNextValue(percent);
+            this.controlledValve.setPointPowerLevelChannel().setNextValue(percent);
             this.setSetPointPosition(percent);
             if (this.controlledValve.powerLevelReached()) {
                 try {
@@ -163,7 +163,7 @@ public class ValveControllerStaticPositionImpl extends AbstractOpenemsComponent 
      * and control Valve by variables (See setPositionBy Percent or setPositionByTemperature for more info)
      */
     @Override
-    public void run() {
+    public void run() throws OpenemsError.OpenemsNamedException {
         //Check Requested Position
         checkComponentsStillEnabled();
         //TODO Do getNextWriteValueAndReset!
@@ -189,8 +189,8 @@ public class ValveControllerStaticPositionImpl extends AbstractOpenemsComponent 
             }
         } else {
             if (this.closeWhenNeitherAutoRunNorEnableSignal) {
-                if (this.controlledValve.getCurrentPowerLevelValue() != 0) {
-                    this.controlledValve.setPowerLevelPercent().setNextValue(0);
+                if (this.controlledValve.getPowerLevelValue() != 0) {
+                    this.controlledValve.setPointPowerLevelChannel().setNextValue(0);
                 }
             }
         }
@@ -258,14 +258,14 @@ public class ValveControllerStaticPositionImpl extends AbstractOpenemsComponent 
         }
     }
 
-    private void forceCloseValve() {
+    private void forceCloseValve() throws OpenemsError.OpenemsNamedException {
         if (this.controlledValve.readyToChange()) {
             this.controlledValve.forceClose();
             this.isForcedCloseChannel().setNextValue(false);
         }
     }
 
-    private void forceOpenValve() {
+    private void forceOpenValve() throws OpenemsError.OpenemsNamedException {
         if (this.controlledValve.readyToChange()) {
             this.controlledValve.forceOpen();
             this.isForcedOpenChannel().setNextValue(false);
@@ -318,6 +318,6 @@ public class ValveControllerStaticPositionImpl extends AbstractOpenemsComponent 
 
     @Override
     public double getCurrentPositionOfValve() {
-        return this.controlledValve.getCurrentPowerLevelValue();
+        return this.controlledValve.getPowerLevelValue();
     }
 }

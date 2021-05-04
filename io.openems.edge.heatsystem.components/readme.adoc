@@ -1,8 +1,4 @@
-# io.openems.heatsystem.components Provider
+= Heatsystem Components
 
-${Bundle-Description}
-
-## Example
-
-## References
+This Bundle provides basic Interfaces and Components that will be used in Heatsystems/Heatnetworks.
 
