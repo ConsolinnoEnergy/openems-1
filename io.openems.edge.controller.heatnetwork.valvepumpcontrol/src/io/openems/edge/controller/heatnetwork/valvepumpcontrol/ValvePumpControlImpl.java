@@ -184,7 +184,7 @@ public class ValvePumpControlImpl extends AbstractOpenemsComponent implements Op
         // Transfer channel data to local variables for better readability of logic code.
         heaterWantsToHeat = heatingController.activateHeater().value().orElse(false);    // Null in channel is counted as false.
         valveOverrideActive = activateValveOverride().value().orElse(false); // Null in channel is counted as false.
-        int actualValvePercent = valveUS01.getPowerLevel().value().get().intValue();
+        int actualValvePercent = valveUS01.getPowerLevelChannel().value().get().intValue();
         if (actualValvePercent == openedPercentLast) {
             checkRestart();
         }
@@ -227,26 +227,26 @@ public class ValvePumpControlImpl extends AbstractOpenemsComponent implements Op
 
     private void valveClose(int percent) {
         // Check if valve is already closed. If there is null in the channel, it's probably offline and closed.
-        boolean isValveBusy = valveUS01.getIsBusy().value().isDefined() && valveUS01.getIsBusy().value().get();
-        if (isValveBusy || valveUS01.getPowerLevel().value().get() < percent) {
+        boolean isValveBusy = valveUS01.getIsBusyChannel().value().isDefined() && valveUS01.getIsBusyChannel().value().get();
+        if (isValveBusy || valveUS01.getPowerLevelChannel().value().get() < percent) {
             return;
         }
 
-        valveUS01.changeByPercentage(percent - valveUS01.getPowerLevel().value().get());
+        valveUS01.changeByPercentage(percent - valveUS01.getPowerLevelChannel().value().get());
 
     }
 
     private void valveOpen() {
         // Check if valve is operational. If there is null in power level channel, something is wrong.
-        if (valveUS01.getPowerLevel().value().isDefined()) {
+        if (valveUS01.getPowerLevelChannel().value().isDefined()) {
             // Check if valve is already open.
-            if (valveUS01.getPowerLevel().value().get() < 100) {
+            if (valveUS01.getPowerLevelChannel().value().get() < 100) {
 
-                boolean isValveBusy = valveUS01.getIsBusy().value().isDefined() && valveUS01.getIsBusy().value().get();
+                boolean isValveBusy = valveUS01.getIsBusyChannel().value().isDefined() && valveUS01.getIsBusyChannel().value().get();
                 if (isValveBusy) {
                     return;
                 }
-                valveUS01.changeByPercentage(100 - valveUS01.getPowerLevel().value().get());
+                valveUS01.changeByPercentage(100 - valveUS01.getPowerLevelChannel().value().get());
             }
             this.noError().setNextValue(true);
         } else {
@@ -257,7 +257,7 @@ public class ValvePumpControlImpl extends AbstractOpenemsComponent implements Op
 
     private void stopPump() {
         // Check if pump has already stopped.
-        if (closeValvePercent == 0 && pumpHK01 != null && pumpHK01.getPowerLevel().value().orElse(0.0) > 0) {
+        if (closeValvePercent == 0 && pumpHK01 != null && pumpHK01.getPowerLevelChannel().value().orElse(0.0) > 0) {
             pumpHK01.changeByPercentage(-101); // = deactivate. Use 101 because variable is double and math with double is not accurate.
         }
     }
@@ -266,9 +266,9 @@ public class ValvePumpControlImpl extends AbstractOpenemsComponent implements Op
     private void startPump() {
         if (pumpHK01 != null) {
             // Check if pump is operational. If there is null in power level channel, something is wrong.
-            if (pumpHK01.getPowerLevel().value().isDefined()) {
+            if (pumpHK01.getPowerLevelChannel().value().isDefined()) {
                 // Check if pump is already at full power.
-                if (pumpHK01.getPowerLevel().value().get() < 100) {
+                if (pumpHK01.getPowerLevelChannel().value().get() < 100) {
                     pumpHK01.changeByPercentage(100); // = full power.
                 }
                 this.noError().setNextValue(true);

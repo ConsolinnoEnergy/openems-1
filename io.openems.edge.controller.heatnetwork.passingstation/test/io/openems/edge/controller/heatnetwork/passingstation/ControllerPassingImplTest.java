@@ -386,7 +386,7 @@ public class ControllerPassingImplTest {
             passing.activate(null, config);
             //TODO controllerTest.run();
             passing.getOnOff().setNextWriteValue(false);
-            valve.getIsBusy().setNextValue(false);
+            valve.getIsBusyChannel().setNextValue(false);
             int count = 0;
             while (count < 2) {
 

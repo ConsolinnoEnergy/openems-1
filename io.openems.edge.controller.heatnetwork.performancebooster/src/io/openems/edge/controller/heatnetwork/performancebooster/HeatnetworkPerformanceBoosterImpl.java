@@ -9,7 +9,7 @@ import io.openems.edge.controller.api.Controller;
 import io.openems.edge.controller.heatnetwork.controlcenter.api.ControlCenter;
 import io.openems.edge.controller.heatnetwork.performancebooster.api.HeatnetworkPerformanceBooster;
 import io.openems.edge.heater.Storage;
-import io.openems.edge.heatsystem.components.PassingActivateNature;
+import io.openems.edge.heatsystem.components.PassingStation;
 import io.openems.edge.heatsystem.components.Valve;
 import io.openems.edge.bridge.lucidcontrol.api.LucidControlDeviceOutput;
 import io.openems.edge.relay.api.Relay;
@@ -38,7 +38,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 @Designate(ocd = Config.class, factory = true)
 @Component(name = "Controller.Heatnetwork.Performancebooster")
-public class HeatnetworkPerformanceBoosterImpl extends AbstractOpenemsComponent implements OpenemsComponent, HeatnetworkPerformanceBooster, Controller, PassingActivateNature, Storage {
+public class HeatnetworkPerformanceBoosterImpl extends AbstractOpenemsComponent implements OpenemsComponent, HeatnetworkPerformanceBooster, Controller, PassingStation, Storage {
 
     private final Logger log = LoggerFactory.getLogger(HeatnetworkPerformanceBoosterImpl.class);
 
@@ -75,7 +75,7 @@ public class HeatnetworkPerformanceBoosterImpl extends AbstractOpenemsComponent 
         super(OpenemsComponent.ChannelId.values(),
                 Controller.ChannelId.values(),
                 HeatnetworkPerformanceBooster.ChannelId.values(),
-                PassingActivateNature.ChannelId.values(),
+                PassingStation.ChannelId.values(),
                 Storage.ChannelId.values());
 
     }
@@ -351,7 +351,7 @@ public class HeatnetworkPerformanceBoosterImpl extends AbstractOpenemsComponent 
         //Reference < SetPoint
         if (shouldActivate == true && timeIsOver == false) {
             this.isBoosterActive().setNextValue(true);
-            int openValvePercent = this.heatMixer.getPowerLevel().value().get().intValue();
+            int openValvePercent = this.heatMixer.getPowerLevelChannel().value().get().intValue();
             //Init basic Percentage for Valve and FallbackHEater
             AtomicInteger percentIncreaseValve = new AtomicInteger(this.valveSetPointStandard().value().get());
             AtomicInteger percentIncreaseFallbackHeater = new AtomicInteger(this.heaterSetPointStandard().value().get());
