@@ -11,24 +11,32 @@ import io.openems.edge.common.component.OpenemsComponent;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.joda.time.DateTimeZone;
 
-
-
-
+/**
+ * This Interface provides the MqttBridge Nature. This allows the Telemetry/Command Component to add it's task to this
+ * bridge and communicate via MQTT.
+ */
 public interface MqttBridge extends OpenemsComponent {
 
+    /**
+     * Get the Timezone set for the Bridge and therefore for all Timestamps of each payload who have a Timestamp bool set.
+     *
+     * @return the TimeZone of Joda.Time
+     */
     DateTimeZone getTimeZone();
 
     enum ChannelId implements io.openems.edge.common.channel.ChannelId {
-        SLAVE_COMMUNICATION_FAILED(Doc.of(Level.FAULT) //
-                .debounce(10, Debounce.TRUE_VALUES_IN_A_ROW_TO_SET_TRUE)), //
-        CYCLE_TIME_IS_TOO_SHORT(Doc.of(Level.WARNING) //
-                .debounce(10, Debounce.TRUE_VALUES_IN_A_ROW_TO_SET_TRUE)), //
-        EXECUTION_DURATION(Doc.of(OpenemsType.LONG)),
+        /**
+         * The Mqtt Types Available, those will be written in the Config.
+         * <ul>
+         *     <li> Interface: MqttBridge
+         *     <li> Type: String
+         * </ul>
+         */
         MQTT_TYPES(Doc.of(OpenemsType.STRING));
 
         private final Doc doc;
 
-        private ChannelId(Doc doc) {
+        ChannelId(Doc doc) {
             this.doc = doc;
         }
 
@@ -61,6 +69,12 @@ public interface MqttBridge extends OpenemsComponent {
         return this.channel(ChannelId.MQTT_TYPES);
     }
 
+    /**
+     * List of all SubscribeTasks corresponding to the given device Id.
+     *
+     * @param id the id of the corresponding Component
+     * @return the MqttTaskList.
+     */
     List<MqttTask> getSubscribeTasks(String id);
 
     /**
@@ -68,9 +82,8 @@ public interface MqttBridge extends OpenemsComponent {
      *
      * @param id        id of the MqttComponent usually from config of the Component
      * @param component the Component itself.
-     * @return false if the key is already in List. (Happens on not unique ID)
      */
-    boolean addMqttComponent(String id, MqttComponent component);
+    void addMqttComponent(String id, MqttComponent component);
 
     /**
      * Removes the Mqtt  Component and their Tasks. Usually called on deactivation of the MqttComponent
@@ -86,10 +99,6 @@ public interface MqttBridge extends OpenemsComponent {
      */
     boolean isConnected();
 
-    //NOT IN USE RN BUT ARE HERE FOR FUTURE IMPLEMENTATION
-    List<MqttTask> getPublishTasks(String id);
-
-    String getSubscribePayloadFromTopic(String topic, MqttType type);
 }
 
 

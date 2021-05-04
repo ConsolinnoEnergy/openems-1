@@ -9,12 +9,21 @@ import io.openems.edge.common.component.OpenemsComponent;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.osgi.service.cm.ConfigurationException;
 
+/**
+ * The MqttComponent Nature. This allows e.g. the TelemetryComponent to get an updated Configuration that is MQTT Specific.
+ */
 public interface MqttComponent extends OpenemsComponent {
 
     enum ChannelId implements io.openems.edge.common.channel.ChannelId {
 
         /**
-         * The ConfigurationChannel. If you want to Edit/Init your component via REST/JSON, write to this channel.
+         * The ConfigurationChannel.
+         * If you want to Edit/Init your component via REST/JSON, write to this channel.
+         * <ul>
+         *     <li>Interface: MqttComponent
+         *     <li>Type: String
+         *     <li>An example Payload can be found in the package io.openems.edge.bridge.mqtt -> genericexampleconfig.json
+         * </ul>
          */
         CONFIGURATION(Doc.of(OpenemsType.STRING).accessMode(AccessMode.READ_WRITE).onInit(
                 channel -> ((StringWriteChannel) channel).onSetNextWrite(channel::setNextValue)
@@ -23,7 +32,7 @@ public interface MqttComponent extends OpenemsComponent {
 
         private final Doc doc;
 
-        private ChannelId(Doc doc) {
+        ChannelId(Doc doc) {
             this.doc = doc;
         }
 
@@ -34,7 +43,7 @@ public interface MqttComponent extends OpenemsComponent {
     }
 
     /**
-     * Get the Configuration Channel, if configured by REST/ or json file.
+     * Get the Configuration Channel, if configured by REST or json file.
      *
      * @return the channel
      */
@@ -49,7 +58,7 @@ public interface MqttComponent extends OpenemsComponent {
     void reactToEvent();
 
     /**
-     * Called By Mqtt Bridge. Component has to implement what to do on commands set by mqtt bridge.
+     * Called By MqttBridge. Component has to implement what to do on commands set by MqttBridge.
      */
     void reactToCommand();
 
@@ -65,7 +74,7 @@ public interface MqttComponent extends OpenemsComponent {
     /**
      * Is Configuration done? --> either JSON Configuration done OR OSGi important for Bridge.
      *
-     * @return aboolean;
+     * @return aBoolean;
      */
     boolean isConfigured();
 }

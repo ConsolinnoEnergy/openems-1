@@ -10,4 +10,8 @@ public interface LineHeater {
     DateTime getLifeCycle();
 
     void setLifeCycle(DateTime lifeCycle);
+
+    void setMaxAndMin(Double max, Double min);
+
+    void onlySetMaxMin();
 }

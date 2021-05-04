@@ -4,6 +4,7 @@ import io.openems.common.channel.AccessMode;
 import io.openems.common.types.OpenemsType;
 import io.openems.edge.common.channel.Channel;
 import io.openems.edge.common.channel.Doc;
+import io.openems.edge.common.channel.DoubleWriteChannel;
 import io.openems.edge.common.channel.WriteChannel;
 import io.openems.edge.common.component.OpenemsComponent;
 
@@ -51,7 +52,34 @@ public interface HydraulicLineHeater extends OpenemsComponent {
          * <li> Unit: none
          * </ul>
          */
-        IS_RUNNING(Doc.of(OpenemsType.BOOLEAN));
+
+        IS_RUNNING(Doc.of(OpenemsType.BOOLEAN)),
+        /**
+         * Maximum value in % the Valve is allowed to be open
+         *
+         * <ul>
+         * <li>Interface: HydraulicLineHeaterApi
+         * <li>Type: Boolean
+         * <li> Unit: none
+         * </ul>
+         */
+
+        MAX_VALVE_VALUE(Doc.of(OpenemsType.DOUBLE).accessMode(AccessMode.READ_WRITE).onInit(
+                channel -> ((DoubleWriteChannel) channel).onSetNextWrite(channel::setNextValue)
+        )),
+        /**
+         * Minimum value in % the Valve has to be open
+         *
+         * <ul>
+         * <li>Interface: HydraulicLineHeaterApi
+         * <li>Type: Boolean
+         * <li> Unit: none
+         * </ul>
+         */
+
+        MIN_VALVE_VALUE(Doc.of(OpenemsType.DOUBLE).accessMode(AccessMode.READ_WRITE).onInit(
+                channel -> ((DoubleWriteChannel) channel).onSetNextWrite(channel::setNextValue)
+        ));
         private final Doc doc;
 
         ChannelId(Doc doc) {
@@ -74,6 +102,14 @@ public interface HydraulicLineHeater extends OpenemsComponent {
 
     default WriteChannel<Boolean> enableSignal() {
         return this.channel(ChannelId.ENABLE_SIGNAL);
+    }
+
+    default WriteChannel<Double> maxValue() {
+        return this.channel(ChannelId.MAX_VALVE_VALUE);
+    }
+
+    default WriteChannel<Double> minValue() {
+        return this.channel(ChannelId.MIN_VALVE_VALUE);
     }
 
 

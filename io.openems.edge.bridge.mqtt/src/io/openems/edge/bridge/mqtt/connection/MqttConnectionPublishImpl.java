@@ -4,6 +4,10 @@ import io.openems.edge.bridge.mqtt.api.MqttConnectionPublish;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 
+/**
+ * The MqttConnectionPublishImpl provides methods to send Messages via MQTT to a Cloud/Broker.
+ * This connection is used by the PublishManager.
+ */
 public class MqttConnectionPublishImpl extends AbstractMqttConnection implements MqttConnectionPublish {
 
     public MqttConnectionPublishImpl() {
@@ -27,7 +31,7 @@ public class MqttConnectionPublishImpl extends AbstractMqttConnection implements
         messageMqtt.setQos(qos);
         messageMqtt.setRetained(retainFlag);
         super.mqttClient.publish(topic, messageMqtt);
-        System.out.println("Message published: " + messageMqtt);
+        super.log.info("Message published: " + messageMqtt);
     }
 
 }

@@ -28,6 +28,7 @@ public class MqttPublishTaskImpl extends AbstractMqttTask implements MqttPublish
 
     /**
      * Updates the Payload. Usually called from MqttManager.
+     * The Style of the Payload can be configured and implemented.
      *
      * @param now the Timestamp as a string.
      */
@@ -37,7 +38,7 @@ public class MqttPublishTaskImpl extends AbstractMqttTask implements MqttPublish
 
             case STANDARD:
             default:
-                createStandardPayload(now);
+                this.createStandardPayload(now);
                 break;
         }
     }
@@ -51,7 +52,7 @@ public class MqttPublishTaskImpl extends AbstractMqttTask implements MqttPublish
 
 
         JsonObject payload = new JsonObject();
-        if (getAddTime()) {
+        if (super.getAddTime()) {
             payload.addProperty("time", now);
         }
         payload.addProperty("device", super.mqttId);
@@ -60,16 +61,17 @@ public class MqttPublishTaskImpl extends AbstractMqttTask implements MqttPublish
         if (configuredPayload[0].equals("")) {
             return;
         }
-        //the configuredPayload follows the pattern of NameInBroker:ChannelId:NameInBroker:ChannelId --> therefore key  % 2 == 0
+        //The configuredPayload follows the pattern of NameInBroker:ChannelId:NameInBroker:ChannelId --> therefore key  % 2 == 0
         Arrays.stream(configuredPayload).forEachOrdered(consumer -> {
             if (jsonCounter.get() % 2 == 0) {
                 String value = ""; //"Not Defined Yet";
-                //get the ChannelId --> since it's ordered forEach --> get correct Channel .
+                //Get the ChannelId --> since it's ordered forEach --> Get correct Channel .
                 Channel<?> channel = super.channels.get(configuredPayload[jsonCounter.incrementAndGet()]);
                 if (channel.value().isDefined()) {
                     JsonElement channelObj;
                     if (channel.getType().equals(OpenemsType.BOOLEAN)) {
                         boolean val = (Boolean) channel.value().get();
+                        //influxDb can't handle boolean values on it's own
                         channelObj = new Gson().toJsonTree(val ? 1 : 0);
                     } else {
                         channelObj = new Gson().toJsonTree(channel.value().get());

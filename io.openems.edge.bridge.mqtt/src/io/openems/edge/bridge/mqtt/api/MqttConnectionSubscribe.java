@@ -2,8 +2,10 @@ package io.openems.edge.bridge.mqtt.api;
 
 import org.eclipse.paho.client.mqttv3.MqttException;
 
-import java.util.List;
-
+/**
+ * This provides the MqttConnectionSubscribe interface. It allows the SubscribeManager to update the Tasks and the Channel.
+ * And it allows the SubscribeManager to Unsubscribe Topics (Usually called indirectly by MqttBridge)
+ */
 public interface MqttConnectionSubscribe {
 
     /**
@@ -25,18 +27,12 @@ public interface MqttConnectionSubscribe {
     String getPayload(String topic);
 
     /**
-     * In case you need an overview of topics the Component by the id subscribed to.
-     *
-     * @param id the id of the component.
-     * @return the List of Topics.
-     */
-    List<String> getTopic(String id);
-
-    /**
-     * Unsubscribe from topic if it was subscribed before.
+     * Unsubscribe from topic if it was subscribed before and no other Component is subscribed to the topic.
+     * However it removes the Subscription entry in the idTopicList in the MqttConnectionSubscribeImpl
      *
      * @param topic Topic of the subscription
+     * @param id    the Id of the Task.
      * @throws MqttException if a Problem with Mqtt (Broker missing etc) occurs.
      */
-    void unsubscribeFromTopic(String topic) throws MqttException;
+    void unsubscribeFromTopic(String topic, String id) throws MqttException;
 }
