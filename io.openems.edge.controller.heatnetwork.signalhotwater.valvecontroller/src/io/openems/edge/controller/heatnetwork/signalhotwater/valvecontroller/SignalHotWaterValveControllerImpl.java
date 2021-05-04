@@ -211,12 +211,12 @@ public class SignalHotWaterValveControllerImpl extends AbstractOpenemsComponent 
                 if (stepcounter == 1) {
                     // "If = true" is the regular code, "else" is the error handling in case things go wrong.
                     if (heatNetworkTemp >= minTempVorlauf) {
-                        boolean isValveBusy = valveTL01.getIsBusy().value().isDefined() && valveTL01.getIsBusy().value().get();
+                        boolean isValveBusy = valveTL01.getIsBusyChannel().value().isDefined() && valveTL01.getIsBusyChannel().value().get();
                         if (isValveBusy) {
                             return;
                         }
 
-                        valveTL01.changeByPercentage(valvePercentOpen - valveTL01.getPowerLevel().value().get());
+                        valveTL01.changeByPercentage(valvePercentOpen - valveTL01.getPowerLevelChannel().value().get());
 
                         controlValveUS01(false);
                         stepcounter = 2;
@@ -252,12 +252,12 @@ public class SignalHotWaterValveControllerImpl extends AbstractOpenemsComponent 
                 // Deactivate override, stop blocking ValveUS01. ValveUS01 now returns to state before override.
                 valveUS01Override(false);
 
-                boolean isValveBusy = valveTL01.getIsBusy().value().isDefined() && valveTL01.getIsBusy().value().get();
+                boolean isValveBusy = valveTL01.getIsBusyChannel().value().isDefined() && valveTL01.getIsBusyChannel().value().get();
                 if (isValveBusy) {
                     return;
                 }
 
-                valveTL01.changeByPercentage(-valveTL01.getPowerLevel().value().get());
+                valveTL01.changeByPercentage(-valveTL01.getPowerLevelChannel().value().get());
 
 
                 // Executes after heating the water tank.
@@ -312,11 +312,11 @@ public class SignalHotWaterValveControllerImpl extends AbstractOpenemsComponent 
                 // After waiting two times the timeout length, try to heat anyway.
 
                 // open valveTL01
-                boolean isValveBusy = valveTL01.getIsBusy().value().isDefined() && valveTL01.getIsBusy().value().get();
+                boolean isValveBusy = valveTL01.getIsBusyChannel().value().isDefined() && valveTL01.getIsBusyChannel().value().get();
                 if (isValveBusy) {
                     return;
                 }
-                valveTL01.changeByPercentage(valvePercentOpen - valveTL01.getPowerLevel().value().get());
+                valveTL01.changeByPercentage(valvePercentOpen - valveTL01.getPowerLevelChannel().value().get());
 
                 // close valveUS01
                 valvePumpControlChannel.setValveOverrideOpenClose().setNextWriteValue(false);

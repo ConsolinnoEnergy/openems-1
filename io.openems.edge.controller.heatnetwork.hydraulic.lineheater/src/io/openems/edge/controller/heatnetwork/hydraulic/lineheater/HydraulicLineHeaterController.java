@@ -2,6 +2,7 @@ package io.openems.edge.controller.heatnetwork.hydraulic.lineheater;
 
 import io.openems.common.exceptions.OpenemsError;
 import io.openems.common.types.ChannelAddress;
+import io.openems.edge.common.channel.WriteChannel;
 import io.openems.edge.common.component.AbstractOpenemsComponent;
 import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
@@ -59,7 +60,17 @@ public class HydraulicLineHeaterController extends AbstractOpenemsComponent impl
     private static final String CONCRETE_TYPE_VALVE_BYPASS = "valveBypass";
     private static final String CONCRETE_TYPE_DECENTRAL_HEATER_OPTIONAL = "decentralHeaterOptional";
     private static final int DEFAULT_TEMPERATURE = -127;
+    private static final int CONFIG_CHANNEL_LIST_LENGTH = 4;
+    private static final int READ_ADDRESS_INDEX = 0;
+    private static final int WRITE_ADDRESS_INDEX = 1;
+    private static final int MAX_ADDRESS_INDEX = 2;
+    private static final int MIN_ADDRESS_INDEX = 3;
     private LineHeater lineHeater;
+    private String valveId;
+    private WriteChannel<Double> maxChannel;
+    private WriteChannel<Double> minChannel;
+    private Boolean onlyMaxMin;
+    private boolean useMinMax;
     //NOTE: If more Variation comes --> create extra "LineHeater"Classes in this controller etc
 
 
@@ -79,10 +90,13 @@ public class HydraulicLineHeaterController extends AbstractOpenemsComponent impl
         if (config.valveOrChannel().equals(TYPE_VALVE)) {
             createLineHeater(config.valueToWriteIsBoolean(), config.valveBypass());
         } else {
-            if (config.channels().length != 2) {
+            if (config.useMinMax() == false && config.valueToWriteIsBoolean() && config.channels().length == 1) {
+                this.lineHeater = new ChannelLineHeater(true, ChannelAddress.fromString(config.channels()[0]), this.cpm);
+            } else if (config.channels().length != CONFIG_CHANNEL_LIST_LENGTH) {
                 throw new ConfigurationException("ChannelSize", "ChannelSize should be 2 but is : " + config.channels().length);
+            } else {
+                createLineHeater(config.valueToWriteIsBoolean(), config.channels());
             }
-            createLineHeater(config.valueToWriteIsBoolean(), config.channels());
 
         }
         if (config.useDecentralHeater()) {
@@ -96,13 +110,22 @@ public class HydraulicLineHeaterController extends AbstractOpenemsComponent impl
         this.shouldFallback = config.shouldFallback();
         this.minuteFallbackStart = config.minuteFallbackStart();
         this.minuteFallbackStop = config.minuteFallbackStop();
+        this.valveId = config.valveBypass();
+        this.maxChannel = maxValue();
+        this.minChannel = minValue();
+        this.maxChannel.setNextWriteValue(config.maxValveValue());
+        this.minChannel.setNextWriteValue(config.minValveValue());
+        this.onlyMaxMin = config.maxMinOnly();
+        this.useMinMax = config.useMinMax();
 
     }
 
     private void createLineHeater(boolean b, String[] channels) throws OpenemsError.OpenemsNamedException {
-        ChannelAddress readAddress = ChannelAddress.fromString(channels[0]);
-        ChannelAddress writeAddress = ChannelAddress.fromString(channels[1]);
-        this.lineHeater = new ChannelLineHeater(b, readAddress, writeAddress, this.cpm);
+        ChannelAddress readAddress = ChannelAddress.fromString(channels[READ_ADDRESS_INDEX]);
+        ChannelAddress writeAddress = ChannelAddress.fromString(channels[WRITE_ADDRESS_INDEX]);
+        ChannelAddress maxAddress = ChannelAddress.fromString(channels[MAX_ADDRESS_INDEX]);
+        ChannelAddress minAddress = ChannelAddress.fromString(channels[MIN_ADDRESS_INDEX]);
+        this.lineHeater = new ChannelLineHeater(b, readAddress, writeAddress, maxAddress, minAddress, this.cpm);
     }
 
     private void createLineHeater(boolean b, String s) throws Exception {
@@ -177,8 +200,15 @@ public class HydraulicLineHeaterController extends AbstractOpenemsComponent impl
 
     private void startHeating() {
         try {
-            if (this.lineHeater.startHeating()) {
-                this.isRunning().setNextValue(true);
+            if (this.useMinMax) {
+                this.lineHeater.setMaxAndMin(maxValue().value().get(), minValue().value().get());
+            }
+            if (onlyMaxMin == false) {
+                if (this.lineHeater.startHeating()) {
+                    this.isRunning().setNextValue(true);
+                }
+            } else {
+                this.lineHeater.onlySetMaxMin();
             }
         } catch (OpenemsError.OpenemsNamedException e) {
             this.log.error("Error while trying to heat!");
@@ -188,8 +218,12 @@ public class HydraulicLineHeaterController extends AbstractOpenemsComponent impl
 
     private void stopHeating(DateTime lifecycle) {
         try {
-            if (this.lineHeater.stopHeating(lifecycle)) {
-                this.isRunning().setNextValue(false);
+            if (onlyMaxMin == false) {
+                if (this.lineHeater.stopHeating(lifecycle)) {
+                    this.isRunning().setNextValue(false);
+                }
+            } else {
+                this.lineHeater.onlySetMaxMin();
             }
         } catch (OpenemsError.OpenemsNamedException e) {
             this.log.error("Error while trying to stop Heating");
@@ -223,7 +257,7 @@ public class HydraulicLineHeaterController extends AbstractOpenemsComponent impl
             this.isFallback().setNextValue(false);
         }
 
-        if (this.isFallback) {
+        if (this.isFallback && onlyMaxMin == false) {
             if (this.isMinuteFallbackStart(now.getMinuteOfHour())) {
                 this.startHeating();
             } else {
@@ -270,7 +304,7 @@ public class HydraulicLineHeaterController extends AbstractOpenemsComponent impl
     }
 
     @Deactivate
-    public void deactivate() {
+    protected void deactivate() {
         super.deactivate();
     }
 }
