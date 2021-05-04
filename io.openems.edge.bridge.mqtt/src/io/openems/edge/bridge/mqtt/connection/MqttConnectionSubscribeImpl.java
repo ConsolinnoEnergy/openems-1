@@ -14,7 +14,7 @@ import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
 
 /**
- * This Class provides the MqttConnectionSubscribeImpl, that extends the AbstractMqttconnection and provides some methods for the SubscribeManager.
+ * This Class provides the MqttConnectionSubscribeImpl, that extends the AbstractMqttConnection and provides some methods for the SubscribeManager.
  * Depending on the Tasks it has n Callbacks to the MqttBroker and maps the Payload to the MqttTask(id) to a Topic and a Topic to a Payload.
  */
 public class MqttConnectionSubscribeImpl extends AbstractMqttConnection implements MqttCallback, MqttConnectionSubscribe {

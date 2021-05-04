@@ -95,7 +95,7 @@ public abstract class AbstractMqttConnection implements MqttConnection {
     }
 
     /**
-     * Adds last will to the    Connection.
+     * Adds last will to the Connection.
      *
      * @param topicLastWill   topic of the last will.
      * @param payloadLastWill payload.

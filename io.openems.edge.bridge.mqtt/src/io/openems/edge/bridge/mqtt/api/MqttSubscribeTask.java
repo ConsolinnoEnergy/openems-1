@@ -19,11 +19,6 @@ public interface MqttSubscribeTask extends MqttTask {
      */
     void response(String payload);
 
-    /**
-     * MessageId of the MqttTask. Given by the MqttBridge.
-     *
-     * @param messageId the Number of the message.
-     */
 
     /**
      * Converts the time. Usually Called by Manager.

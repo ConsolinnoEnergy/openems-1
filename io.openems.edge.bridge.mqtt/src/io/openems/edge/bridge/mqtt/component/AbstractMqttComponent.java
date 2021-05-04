@@ -563,6 +563,11 @@ public abstract class AbstractMqttComponent {
         return now.isAfter(expiration);
     }
 
+    /**
+     * Setter to the hasBeenConfigured attribute.
+     *
+     * @param configured boolean if this is configured or not. usually called by {@link MqttConfigurationComponentImpl}
+     */
     public void setHasBeenConfigured(boolean configured) {
         this.hasBeenConfigured = configured;
     }
