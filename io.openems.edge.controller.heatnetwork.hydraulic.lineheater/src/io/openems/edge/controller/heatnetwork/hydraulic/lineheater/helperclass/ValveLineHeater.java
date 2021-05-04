@@ -18,10 +18,10 @@ public class ValveLineHeater extends AbstractLineHeater {
 
     @Override
     public boolean startHeating() throws OpenemsError.OpenemsNamedException {
-        double lastPower = this.valve.getLastPowerLevel().value().isDefined() ? this.valve.getLastPowerLevel().value().get() : DEFAULT_LAST_POWER_VALUE;
+        double lastPower = this.valve.getLastPowerLevelChannel().value().isDefined() ? this.valve.getLastPowerLevelChannel().value().get() : DEFAULT_LAST_POWER_VALUE;
         if (this.isRunning == false || this.valve.isChanging() == false || lastPower < LAST_POWER_CHECK_VALUE) {
-            this.valve.maxValue().setNextWriteValue(max);
-            this.valve.minValue().setNextWriteValue(min);
+            this.valve.maxValueChannel().setNextWriteValue(max);
+            this.valve.minValueChannel().setNextWriteValue(min);
             this.isRunning = true;
             //Either fullpower set .--> ValveManager handles OR you could change Valve directly
             //this.valveBypass.setPowerLevelPercent().setNextValue((FULL_POWER));
@@ -63,8 +63,8 @@ public class ValveLineHeater extends AbstractLineHeater {
     @Override
     public void onlySetMaxMin() {
         try {
-            this.valve.maxValue().setNextWriteValue(max);
-            this.valve.minValue().setNextWriteValue(min);
+            this.valve.maxValueChannel().setNextWriteValue(max);
+            this.valve.minValueChannel().setNextWriteValue(min);
         } catch (OpenemsError.OpenemsNamedException ignored) {
 
         }
