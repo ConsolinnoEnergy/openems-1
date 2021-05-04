@@ -37,7 +37,7 @@ public class LucidControlInputTask extends AbstractLucidControlBridgeTask implem
     }
 
     /**
-     * allocates the maxVoltage, depending on the Config of the LucidControlInputDevice.
+     * Allocates the maxVoltage, depending on the Config of the LucidControlInputDevice.
      */
     private void allocateMaxVoltage() {
         this.maxVoltage = Integer.parseInt(this.voltage.replaceAll("\\D+", ""));
@@ -59,7 +59,7 @@ public class LucidControlInputTask extends AbstractLucidControlBridgeTask implem
     }
 
     /**
-     * path of the LucidControModule.
+     * Path of the LucidControlModule.
      *
      * @return the path.
      */

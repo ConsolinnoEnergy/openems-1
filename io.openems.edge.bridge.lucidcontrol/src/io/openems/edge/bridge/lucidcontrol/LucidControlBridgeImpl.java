@@ -28,10 +28,11 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * The LucidControlBridge. Modules are adding their Paths and maxVoltage and Devices add their tasks that will be handled.
- * Important is, that this Bridge only works if you install the Software from Lucidcontrol here
+ * Note: This Bridge only works if you install the Software from LucidControl here:
  *
- * @see <a href="https://www.lucid-control.com/downloads/">https://www.lucid-control.com/downloads/</a>
- * The Bridge will open up the shell and reads / writes from/to the lucidcontrol devices.
+ * @see <a href="https://www.lucid-control.com/downloads/">https://www.lucid-control.com/downloads/</a> <br>
+ * The Bridge will open up the shell and reads/writes from/to the lucidcontrol devices.
+ * Further Note: This Bridge only works with the Linux OS NOT Windows.
  */
 @Designate(ocd = Config.class, factory = true)
 @Component(name = "Bridge.Lucid.Control",
@@ -121,7 +122,7 @@ public class LucidControlBridgeImpl extends AbstractOpenemsComponent implements 
     }
 
     /**
-     * removes the LucidControlBridge task identified via id.
+     * Removes the LucidControlBridge task identified via id.
      *
      * @param id the unique id of the task, provided by LucidControl Device(usually from super.id()).
      */
@@ -163,13 +164,13 @@ public class LucidControlBridgeImpl extends AbstractOpenemsComponent implements 
         }
 
         /**
-         * provides the command for using the linux shell.
+         * Provides the command for using the linux shell.
          * ATTENTION! No Windows support yet!
          * Output of shell provides a Voltage.
          * Always "Chip"+Number of Chip + ":" followed by Number e.g.
          * Chip0: -0.2548
-         * that's why you can split the String at :
-         * the Number Value is parsed to a double value and given to task, to calculate the Pressure value.
+         * That's why you can split the String at:
+         * The Number Value is parsed to a double value and given to task, to calculate the Pressure value.
          */
         @Override
         protected void forever() {

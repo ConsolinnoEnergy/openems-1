@@ -21,7 +21,7 @@ import org.osgi.service.component.annotations.ReferenceCardinality;
 import org.osgi.service.metatype.annotations.Designate;
 
 /**
- * This Device is the implementation of a Device that can be configured as an Input on a LucidControl Input Module.
+ * This Class is the implementation of a Device that can be configured as an Input on a LucidControl Input Module.
  * It measures the Voltage of the Input device and calculates the pressure depending on the max possible Voltage.
  * Everything will be handled by the Task.
  */

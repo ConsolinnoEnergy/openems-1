@@ -53,6 +53,11 @@ public class LucidControlModuleImpl extends AbstractOpenemsComponent implements 
         }
     }
 
+    /**
+     * This Method runs the basic setup needed by the activation or modified method.
+     *
+     * @param config the config of this class.
+     */
     private void activationOrModifiedRoutine(Config config) {
         this.lucidControlBridge.addPath(config.id(), config.path());
         this.lucidControlBridge.addVoltage(config.id(), config.voltage());
