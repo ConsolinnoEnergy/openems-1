@@ -128,7 +128,7 @@ public class RestBridgeImpl extends AbstractOpenemsComponent implements RestBrid
     }
 
     /**
-     * Checks if it's time to send/get REST Request.
+     * Checks if it's time to POST/GET REST Request.
      *
      * @return true if configured Time is up.
      */

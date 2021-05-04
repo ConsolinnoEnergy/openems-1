@@ -33,7 +33,7 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
     boolean useDutyTime() default true;
 
-    @AttributeDefinition(name = "DutyCycleTime", description = "sets the Time when RestRequests are Executed; Unit: ms")
+    @AttributeDefinition(name = "DutyCycleTime", description = "Sets the Time when RestRequests are Executed; Unit: ms")
     int dutyTime() default 5000;
 
     boolean enabled() default true;
