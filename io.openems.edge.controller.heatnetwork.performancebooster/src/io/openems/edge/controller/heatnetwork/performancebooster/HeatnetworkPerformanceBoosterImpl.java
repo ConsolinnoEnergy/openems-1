@@ -11,7 +11,7 @@ import io.openems.edge.controller.heatnetwork.performancebooster.api.Heatnetwork
 import io.openems.edge.heater.Storage;
 import io.openems.edge.heatsystem.components.PassingStation;
 import io.openems.edge.heatsystem.components.Valve;
-import io.openems.edge.lucidcontrol.device.api.LucidControlDeviceOutput;
+import io.openems.edge.bridge.lucidcontrol.api.LucidControlDeviceOutput;
 import io.openems.edge.relay.api.Relay;
 import io.openems.edge.thermometer.api.Thermometer;
 import org.osgi.service.cm.Configuration;
