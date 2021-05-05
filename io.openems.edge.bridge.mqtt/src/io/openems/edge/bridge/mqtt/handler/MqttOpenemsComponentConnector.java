@@ -94,7 +94,7 @@ public abstract class MqttOpenemsComponentConnector extends AbstractOpenemsCompo
      * @param ca                the ConfigurationAdmin, used for updating the Channel.
      * @param length            the length of the ChannelId entry -> is important to check if the Channels are updated in Config.
      * @param pathForJson       the Path for a local JSON File to configure this component.
-     * @param payloadStyle      the Payloadstyle that was configured via OSGi.
+     * @param payloadStyle      the PayloadStyle that was configured via OSGi.
      * @param configurationDone is the configuration Done -> set via OSGi -> one param to init.Tasks
      * @throws IOException            if File is not found (Not thrown if Path is either "" or is configuredByOsgi)
      * @throws MqttException          if connection fails

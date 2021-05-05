@@ -76,7 +76,7 @@ public interface MqttConfigurationComponent {
      * Updates the JsonConfig via OpenEmsChannel: Configuration.
      *
      * @param channels Parent Channel
-     * @param content        content of ConfigurationChannel
+     * @param content  content of ConfigurationChannel
      * @throws ConfigurationException if wrong Config was given.
      * @throws MqttException          if subscription fails.
      */
