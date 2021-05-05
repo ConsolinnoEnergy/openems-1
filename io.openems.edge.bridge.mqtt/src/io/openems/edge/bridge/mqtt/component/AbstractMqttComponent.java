@@ -173,12 +173,11 @@ public abstract class AbstractMqttComponent {
      * @param configList   usually from Parent config.
      * @param subTasks     is the current configList a sub/Pub task.
      * @param channelIds   all the Channels that'll be configured
-     * @param payloadStyle the Payloadstyle the component uses.
+     * @param payloadStyle the PayloadStyle the component uses.
      * @throws ConfigurationException will be thrown if config is wrong/has an Error.
      */
 
     private void createTasks(List<String> configList, boolean subTasks, List<Channel<?>> channelIds, String payloadStyle) throws ConfigurationException {
-        //
         ConfigurationException[] exConfig = {null};
 
         //For Each ConfigEntry (sub/pub) get the Channels and map them, create a task and add them at the end to the mqtt bridge.
@@ -255,8 +254,8 @@ public abstract class AbstractMqttComponent {
      * Configure a ChannelMap for the created MqttTask.
      *
      * @param givenChannels Channel List will be Reduced each time; For better Mapping usually from Device
-     * @param payloadNo     number in the playload list usually from config.
-     * @return return Map of ChannelId to Channel for the Task.
+     * @param payloadNo     number in the Payload list usually from config.
+     * @return Map of ChannelId to Channel for the Task.
      * @throws ConfigurationException if the channel is not in the map or in the channelList
      */
     private Map<String, Channel<?>> configureChannelMapForTask(List<Channel<?>> givenChannels, int payloadNo) throws ConfigurationException {
@@ -315,7 +314,7 @@ public abstract class AbstractMqttComponent {
      * @param config        config of the Component, will be updated automatically.
      * @param configTarget  target, where to put ChannelIds. Usually something like "ChannelIds".
      * @param channelsGiven Channels of the Component, collected by this.channels, filtered by "_Property"
-     * @param length        length of the configTarget entries. If Length doesn't match ChannelSize --> Update.
+     * @param length        of the configTarget entries. If Length doesn't match ChannelSize --> Update.
      */
     public void update(Configuration config, String configTarget, List<Channel<?>> channelsGiven, int length) {
         List<Channel<?>> channels =
@@ -369,7 +368,7 @@ public abstract class AbstractMqttComponent {
     }
 
     /**
-     * checks if this Component has been Configured (Channels are updated).
+     * Checks if this Component has been Configured (Channels are updated).
      *
      * @return a Boolean
      */
@@ -475,9 +474,9 @@ public abstract class AbstractMqttComponent {
                     JsonObject finalPayloads = payloads;
                     payloads.keySet().forEach(key -> {
                         try {
-                            //see if channelId exists
-                            //Look up this Map otherwise take from list and add it to Map afterwards <-- inc. performance
-                            //In the end add to channelMapForTask
+                            /* See if channelId exists
+                            Look up this Map otherwise take from list and add it to Map afterwards <-- inc. performance
+                            Finally add to channelMapForTask */
                             String channelId = finalPayloads.get(key).getAsString();
                             if (this.mapOfChannel.containsKey(channelId)) {
                                 channelMapForTask.put(channelId, this.mapOfChannel.get(channelId));
@@ -566,7 +565,7 @@ public abstract class AbstractMqttComponent {
     /**
      * Setter to the hasBeenConfigured attribute.
      *
-     * @param configured boolean if this is configured or not. usually called by {@link MqttConfigurationComponentImpl}
+     * @param configured boolean if this is configured or not. Usually called by {@link MqttConfigurationComponentImpl}
      */
     public void setHasBeenConfigured(boolean configured) {
         this.hasBeenConfigured = configured;

@@ -51,7 +51,7 @@ public class MqttConnectionSubscribeImpl extends AbstractMqttConnection implemen
     }
 
     /**
-     * Adds Topic with an id to List. May be Useful later for Controller etc who r needing the complete Topic list of
+     * Adds Topic with an id to List. May be useful later for Controller etc who are needing the complete Topic list of
      * a component.
      *
      * @param id    id of the component

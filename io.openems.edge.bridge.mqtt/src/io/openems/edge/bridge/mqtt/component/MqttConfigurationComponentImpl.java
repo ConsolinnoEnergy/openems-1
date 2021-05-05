@@ -67,7 +67,7 @@ public class MqttConfigurationComponentImpl implements MqttConfigurationComponen
      *
      * @param task MqttTask given by Parent.
      * @param key  CommandWrapper used to get Expiration and InfiniteTime Status(==never expire).
-     * @return aBoolean
+     * @return a Boolean
      */
     @Override
     public boolean expired(MqttSubscribeTask task, CommandWrapper key) {

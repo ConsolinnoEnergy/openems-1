@@ -16,7 +16,7 @@ import static io.openems.edge.bridge.mqtt.api.ConfigurationSplits.PAYLOAD_MAPPIN
 
 
 /**
- * A Mqtt Connection Created by either the mqttBridge, subscribe or publish-manager.
+ * A Mqtt Connection Created by either the MqttBridge, subscribe or publish-manager.
  */
 public abstract class AbstractMqttConnection implements MqttConnection {
     protected final Logger log = LoggerFactory.getLogger(AbstractMqttConnection.class);
