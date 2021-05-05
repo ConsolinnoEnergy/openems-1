@@ -1,6 +1,7 @@
 package io.openems.edge.bridge.mqtt;
 
 import org.osgi.service.metatype.annotations.AttributeDefinition;
+import org.osgi.service.metatype.annotations.AttributeType;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 import org.osgi.service.metatype.annotations.Option;
 
@@ -43,7 +44,7 @@ import org.osgi.service.metatype.annotations.Option;
     @AttributeDefinition(name = "Username", description = "Username for the Broker")
     String username() default "user";
 
-    @AttributeDefinition(name = "Password", description = "Password")
+    @AttributeDefinition(name = "Password", description = "Password", type = AttributeType.PASSWORD)
     String password() default "user";
 
 
