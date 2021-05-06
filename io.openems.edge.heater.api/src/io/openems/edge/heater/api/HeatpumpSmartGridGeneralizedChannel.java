@@ -20,7 +20,6 @@ public interface HeatpumpSmartGridGeneralizedChannel extends OpenemsComponent {
 
     public enum ChannelId implements io.openems.edge.common.channel.ChannelId {
 
-
         /**
          * Smart Grid state of the heat pump.
          * <ul>
@@ -32,9 +31,7 @@ public interface HeatpumpSmartGridGeneralizedChannel extends OpenemsComponent {
          *      <li> State 3: Smart Grid High
          * </ul>
          */
-
         SMART_GRID_STATE(Doc.of(SmartGridState.values()).accessMode(AccessMode.READ_WRITE)),
-
 
         /**
          * Signals if the heat pump is currently running (true) or not (false).
@@ -42,35 +39,30 @@ public interface HeatpumpSmartGridGeneralizedChannel extends OpenemsComponent {
          *      <li> Type: Boolean
          * </ul>
          */
-
         RUNNING(Doc.of(OpenemsType.BOOLEAN).accessMode(AccessMode.READ_ONLY)),
-
 
         /**
          * Signals an error (true) or no error occuring (false).
          * <ul>
-         * 		 <li>Type: boolean
+         * 		 <li>Type: Boolean
          * </ul>
          */
-
         ERROR(Doc.of(OpenemsType.BOOLEAN).accessMode(AccessMode.READ_ONLY)),
 
         /**
          * Signals a warning (true) or no warning occuring (false).
          * <ul>
-         * 		 <li>Type: boolean
+         * 		 <li>Type: Boolean
          * </ul>
          */
-
         WARNING(Doc.of(OpenemsType.BOOLEAN).accessMode(AccessMode.READ_ONLY)),
 
         /**
          * Signals that the chp is ready for operation (true) or not (false).
          * <ul>
-         * 		 <li>Type: boolean
+         * 		 <li>Type: Boolean
          * </ul>
          */
-
         READY(Doc.of(OpenemsType.BOOLEAN).accessMode(AccessMode.READ_ONLY));
 
         private final Doc doc;
@@ -94,7 +86,7 @@ public interface HeatpumpSmartGridGeneralizedChannel extends OpenemsComponent {
     default IntegerWriteChannel getSmartGridStateChannel() {
         return this.channel(ChannelId.SMART_GRID_STATE);
     }
-    
+
     /**
      * Smart Grid state of the heat pump.
      * <ul>
@@ -109,7 +101,7 @@ public interface HeatpumpSmartGridGeneralizedChannel extends OpenemsComponent {
 	 *
 	 * @return the Channel {@link Value}
 	 */
-	public default Value<Integer> getSmartGridState() {
+    public default Value<Integer> getSmartGridState() {
 		return this.getSmartGridStateChannel().value();
 	}
 	
@@ -138,7 +130,7 @@ public interface HeatpumpSmartGridGeneralizedChannel extends OpenemsComponent {
      *
      * @return the Channel
      */
-    public default BooleanReadChannel getRunningChannel(){
+    public default BooleanReadChannel getRunningChannel() {
         return this.channel(ChannelId.RUNNING);
     }
 	
@@ -158,7 +150,7 @@ public interface HeatpumpSmartGridGeneralizedChannel extends OpenemsComponent {
 	 *
 	 * @param value the next value
 	 */
-	public default void _setRunning(Boolean value) {
+    public default void _setRunning(Boolean value) {
 		this.getRunningChannel().setNextValue(value);
 	}
     
@@ -167,7 +159,7 @@ public interface HeatpumpSmartGridGeneralizedChannel extends OpenemsComponent {
      *
      * @return the Channel
      */
-    public default BooleanReadChannel getErrorChannel(){
+    public default BooleanReadChannel getErrorChannel() {
         return this.channel(ChannelId.ERROR);
     }
 	
@@ -187,7 +179,7 @@ public interface HeatpumpSmartGridGeneralizedChannel extends OpenemsComponent {
 	 *
 	 * @param value the next value
 	 */
-	public default void _setError(Boolean value) {
+    public default void _setError(Boolean value) {
 		this.getErrorChannel().setNextValue(value);
 	}
 
@@ -196,7 +188,7 @@ public interface HeatpumpSmartGridGeneralizedChannel extends OpenemsComponent {
      *
      * @return the Channel
      */
-    public default BooleanReadChannel getWarningChannel(){
+    public default BooleanReadChannel getWarningChannel() {
         return this.channel(ChannelId.WARNING);
     }
 	
@@ -216,7 +208,7 @@ public interface HeatpumpSmartGridGeneralizedChannel extends OpenemsComponent {
 	 *
 	 * @param value the next value
 	 */
-	public default void _setWarning(Boolean value) {
+    public default void _setWarning(Boolean value) {
 		this.getWarningChannel().setNextValue(value);
 	}
 
@@ -225,7 +217,7 @@ public interface HeatpumpSmartGridGeneralizedChannel extends OpenemsComponent {
      *
      * @return the Channel
      */
-    public default BooleanReadChannel getReadyChannel(){
+	public default BooleanReadChannel getReadyChannel() {
         return this.channel(ChannelId.READY);
     }
 	
@@ -245,7 +237,7 @@ public interface HeatpumpSmartGridGeneralizedChannel extends OpenemsComponent {
 	 *
 	 * @param value the next value
 	 */
-	public default void _setReady(Boolean value) {
+    public default void _setReady(Boolean value) {
 		this.getReadyChannel().setNextValue(value);
 	}
 

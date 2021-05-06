@@ -1,10 +1,11 @@
 package io.openems.edge.heater.chp.dachs;
 
 import io.openems.common.exceptions.OpenemsError;
-import io.openems.edge.heater.api.ChpBasic;
+import io.openems.edge.heater.api.Chp;
 import io.openems.edge.common.component.AbstractOpenemsComponent;
 import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.controller.api.Controller;
+import io.openems.edge.heater.api.HeaterState;
 import io.openems.edge.heater.chp.dachs.api.DachsGltInterfaceChannel;
 import org.osgi.service.cm.ConfigurationException;
 import org.osgi.service.component.ComponentContext;
@@ -38,7 +39,7 @@ import java.util.Base64;
 		configurationPolicy = ConfigurationPolicy.REQUIRE,
 		immediate = true)
 // This module uses Controller instead of EventHandler because "HttpURLConnection" does not work in "handleEvent()".
-public class DachsGltInterfaceImpl extends AbstractOpenemsComponent implements OpenemsComponent, ChpBasic, DachsGltInterfaceChannel, Controller {
+public class DachsGltInterfaceImpl extends AbstractOpenemsComponent implements OpenemsComponent, Chp, DachsGltInterfaceChannel, Controller {
 
 	private final Logger log = LoggerFactory.getLogger(DachsGltInterfaceImpl.class);
 	private InputStream is = null;
@@ -57,7 +58,7 @@ public class DachsGltInterfaceImpl extends AbstractOpenemsComponent implements O
 	public DachsGltInterfaceImpl() {
 		super(OpenemsComponent.ChannelId.values(),
 				DachsGltInterfaceChannel.ChannelId.values(),
-				ChpBasic.ChannelId.values(),
+				Chp.ChannelId.values(),
 				Controller.ChannelId.values());
 	}
 
@@ -89,20 +90,6 @@ public class DachsGltInterfaceImpl extends AbstractOpenemsComponent implements O
 		if (ChronoUnit.SECONDS.between(timestamp, LocalDateTime.now()) >= interval) {
 			updateChannels();
 			timestamp = LocalDateTime.now();
-			
-			// Transfer channel data to local variables for better readability
-			rpmChannelHasData = this.getRpm().isDefined();
-
-			// The Dachs does not have an on/off indicator. So instead the RPM readout is used to tell if the Dachs is 
-			// running or not. If the CHP is running with >1000 RPM, it is on. If not it is off. (regular RPM is ~2400).
-			if (rpmChannelHasData) {
-				rpmValue = this.getRpm().get();
-				if (rpmValue > 1000) {
-					this._setEnableSignal(true);
-				} else {
-					this._setEnableSignal(false);
-				}
-			}
 			
 			// Output to log depending on config settings.
 			printDataToLog();
@@ -169,12 +156,8 @@ public class DachsGltInterfaceImpl extends AbstractOpenemsComponent implements O
 				// stoerung should contain "0" for no error or the number of the error code(s). If stoerung contains 
 				// nothing, something went wrong.
 				errorMessage = "Failed to transmit error code, ";
-				this._setError(true);
 			} else {
-				if (stoerung.equals("0")) {
-					this._setError(false);
-				} else {
-					this._setError(true);
+				if (stoerung.equals("0") == false) {
 					errorMessage = "Code " + stoerung + ": ";
 					if (stoerung.contains("101")) {
 						errorMessage = errorMessage + "Abgasfühler HKA-Austritt - Unterbrechung/Kurzschluss, ";
@@ -448,13 +431,9 @@ public class DachsGltInterfaceImpl extends AbstractOpenemsComponent implements O
 				String warningCode = readEntryAfterString(serverMessage, "Hka_Bd.bWarnung=");
 				if (warningCode.length() == 0) {
 					// warningCode should contain "0" for no warning. If it is empty, something went wrong.
-					this._setWarning(true);
 					warningMessage = "Failed to transmit warning code, ";
 				} else {
-					if (warningCode.equals("0")) {
-						this._setWarning(false);
-					} else {
-						this._setWarning(true);
+					if (warningCode.equals("0") == false) {
 						warningMessage = "Warning code: " + warningCode + ", ";
 
 						// Would put more code here to parse warning code, but the warning codes are not yet in the manual.
@@ -462,7 +441,6 @@ public class DachsGltInterfaceImpl extends AbstractOpenemsComponent implements O
 					}
 				}
 			} else {
-				this._setWarning(true);
 				warningMessage = "Failed to transmit warning code, ";
 			}
 			
@@ -473,12 +451,10 @@ public class DachsGltInterfaceImpl extends AbstractOpenemsComponent implements O
 				try {
 					this._setEffectiveElectricPower(Double.parseDouble(wirkleistung.trim()));
 				} catch (NumberFormatException e) {		// This catches wirkleistung possibly being empty.
-					this._setError(true);
 					errorMessage = errorMessage + "Can't parse effective electrical power (Wirkleistung): " + e.getMessage() + ", ";
 					this._setEffectiveElectricPower(-1.0);	// -1 to indicate an error.
 				}
 			} else {
-				this._setError(true);
 				errorMessage = errorMessage + "Failed to transmit effective electrical power (Wirkleistung), ";
 				this._setEffectiveElectricPower(-1.0);
 			}
@@ -490,12 +466,10 @@ public class DachsGltInterfaceImpl extends AbstractOpenemsComponent implements O
 				try {
 					this._setFlowTemperature(Integer.parseInt(forwardTemp.trim())*10);	// Convert to dezidegree.
 				} catch (NumberFormatException e) {		// This catches forwardTemp possibly being empty.
-					this._setError(true);
 					errorMessage = errorMessage + "Can't parse foreward temperature (Vorlauf): " + e.getMessage() + ", ";
 					this._setFlowTemperature(-1);	// -1 to indicate an error.
 				}
 			} else {
-				this._setError(true);
 				errorMessage = errorMessage + "Failed to transmit foreward temperature (Vorlauf), ";
 				this._setFlowTemperature(-1);
 			}
@@ -507,25 +481,24 @@ public class DachsGltInterfaceImpl extends AbstractOpenemsComponent implements O
 				try {
 					this._setReturnTemperature(Integer.parseInt(rewindTemp.trim())*10);	// Convert to dezidegree.
 				} catch (NumberFormatException e) {		// This catches rewindTemp possibly being empty.
-					this._setError(true);
 					errorMessage = errorMessage + "Can't parse return temperature (Ruecklauf): " + e.getMessage() + ", ";
 					this._setReturnTemperature(-1);		// -1 to indicate an error.
 				}
 			} else {
-				this._setError(true);
 				errorMessage = errorMessage + "Failed to transmit return temperature (Ruecklauf), ";
 				this._setReturnTemperature(-1);
 			}
 			
 
+			boolean runClearance = false;
+			boolean stateUndefined = false;
 			if (serverMessage.contains("Hka_Bd.UHka_Frei.usFreigabe=")) {
 				String freigabe = "";
 				freigabe = freigabe + readEntryAfterString(serverMessage, "Hka_Bd.UHka_Frei.usFreigabe=");
 				if (freigabe.equals("65535")) {	// This is the int equivalent of hex FFFF. Manual discusses freigabe code in hex.
-					this._setReady(true);
+					runClearance = true;
 					this._setNotReadyMessage("Code FFFF: Dachs is ready to run.");
 				} else {
-					this._setReady(false);
 					try {
 						int tempInt = Integer.parseInt(freigabe.trim());
 						String inHex = Integer.toHexString(tempInt).toUpperCase();
@@ -604,26 +577,26 @@ public class DachsGltInterfaceImpl extends AbstractOpenemsComponent implements O
 						}
 						this._setNotReadyMessage(returnMessage);
 					} catch (NumberFormatException e) {
-						this._setError(true);
 						errorMessage = errorMessage + "Can't parse Chp ready indicator (Freigabe): " + e.getMessage() + ", ";
 						this.logError(this.log, "Error, can't parse NotReadyCode: " + e.getMessage());
 						this._setNotReadyMessage("Code " + freigabe + ": Error deciphering code.");
 					}
 				}
 			} else {
-				this._setError(true);
 				errorMessage = errorMessage + "Failed to transmit Chp ready indicator (Freigabe), ";
 				this._setNotReadyMessage("Failed to transmit Chp ready indicator (Freigabe).");
-				this._setReady(false);
+				stateUndefined = true;
 			}
 
 
+			boolean stateStartingUp = false;
 			if (serverMessage.contains("Hka_Bd.UHka_Anf.usAnforderung=")) {
 				String laufAnforderung = "";
 				laufAnforderung = laufAnforderung + readEntryAfterString(serverMessage, "Hka_Bd.UHka_Anf.usAnforderung=");
 				if (laufAnforderung.equals("0")) {
 					this._setRunRequestMessage("Code 0: Nothing is requesting the Dachs to run right now.");
 				} else {
+					stateStartingUp = true;
 					try {
 						int tempInt = Integer.parseInt(laufAnforderung.trim());
 						String returnMessage = "Code " + Integer.toHexString(tempInt).toUpperCase() + ": Running requested by";
@@ -663,13 +636,12 @@ public class DachsGltInterfaceImpl extends AbstractOpenemsComponent implements O
 						}
 						this._setRunRequestMessage(returnMessage);
 					} catch (NumberFormatException e) {
-						this._setWarning(true);		// This is not really needed for chp operation, so it is a warning and not an error.
+						// This is not really needed for chp operation, so it is a warning and not an error.
 						warningMessage = warningMessage + "Can't parse run request code (Lauf Anforderung): " + e.getMessage() + ", ";
 						this._setRunRequestMessage("Code " + laufAnforderung + ": Error deciphering code.");
 					}
 				}
 			} else {
-				this._setWarning(true);
 				warningMessage = warningMessage + "Failed to transmit run request code (Lauf Anforderung), ";
 				this._setRunRequestMessage("Failed to transmit run request code (Lauf Anforderung).");
 			}
@@ -681,12 +653,10 @@ public class DachsGltInterfaceImpl extends AbstractOpenemsComponent implements O
 				try {
 					this._setNumberOfModules(Integer.parseInt(modulzahl.trim()));
 				} catch (NumberFormatException e) {
-					this._setWarning(true);
 					warningMessage = warningMessage + "Can't parse requested modules (Anforderung Modul Anzahl): " + e.getMessage() + ", ";
 					this._setNumberOfModules(-1);	// -1 to indicate an error.
 				}
 			} else {
-				this._setWarning(true);
 				warningMessage = warningMessage + "Failed to transmit requested modules (Anforderung Modul Anzahl), ";
 				this._setNumberOfModules(-1);
 			}
@@ -732,13 +702,11 @@ public class DachsGltInterfaceImpl extends AbstractOpenemsComponent implements O
 						}
 						this._setElectricModeClearanceMessage(returnMessage);
 					} catch (NumberFormatException e) {
-						this._setWarning(true);
 						warningMessage = "Can't parse electricity guided mode clearance code (Freigabe Stromfuehrung): " + e.getMessage() + ", ";
 						this._setElectricModeClearanceMessage("Code " + freigabeStromfuehrung + ": Error deciphering code.");
 					}
 				}
 			} else {
-				this._setWarning(true);
 				warningMessage = warningMessage + "Failed to transmit electricity guided mode clearance code (Freigabe Stromfuehrung), ";
 				this._setElectricModeClearanceMessage("Failed to transmit electricity guided mode clearance code (Freigabe Stromfuehrung).");
 			}
@@ -752,11 +720,9 @@ public class DachsGltInterfaceImpl extends AbstractOpenemsComponent implements O
 					this._setElectricModeRunFlag(false);
 				}
 				if (anforderungStrom.length() == 0) {
-					this._setWarning(true);
 					warningMessage = warningMessage + "Failed to transmit electricity guided mode run flag (Anforderung Strom), ";
 				}
 			} else {
-				this._setWarning(true);
 				warningMessage = warningMessage + "Failed to transmit electricity guided mode run flag (Anforderung Strom), ";
 				this._setElectricModeRunFlag(false);
 			}
@@ -798,13 +764,11 @@ public class DachsGltInterfaceImpl extends AbstractOpenemsComponent implements O
 						}
 						this._setElectricModeSettingsMessage(returnMessage);
 					} catch (NumberFormatException e) {
-						this._setWarning(true);
 						warningMessage = warningMessage + "Can't parse electricity guided mode requests (Anforderungen Stromfuehrung): " + e.getMessage() + ", ";
 						this._setElectricModeSettingsMessage("Code " + stromAnforderungSettings + ": Error deciphering code.");
 					}
 				}
 			} else {
-				this._setWarning(true);
 				warningMessage = warningMessage + "Failed to transmit electricity guided mode requests (Anforderungen Stromfuehrung), ";
 				this._setElectricModeSettingsMessage("Failed to transmit electricity guided mode requests (Anforderungen Stromfuehrung).");
 			}
@@ -816,12 +780,10 @@ public class DachsGltInterfaceImpl extends AbstractOpenemsComponent implements O
 				try {
 					this._setElectricalWork(Double.parseDouble(arbeitElectr));
 				} catch (NumberFormatException e) {
-					this._setWarning(true);
 					warningMessage = warningMessage + "Can't parse generated electrical work (Erzeugte elektrische Arbeit): " + e.getMessage() + ", ";
 					this._setElectricalWork(-1.0);	// -1 to indicate an error.
 				}
 			} else {
-				this._setWarning(true);
 				warningMessage = warningMessage + "Failed to transmit generated electrical work (Erzeugte elektrische Arbeit), ";
 				this._setElectricalWork(-1.0);
 			}
@@ -833,12 +795,10 @@ public class DachsGltInterfaceImpl extends AbstractOpenemsComponent implements O
 				try {
 					this._setThermalWork(Double.parseDouble(arbeitTherm));
 				} catch (NumberFormatException e) {
-					this._setWarning(true);
 					warningMessage = warningMessage + "Can't parse generated thermal work (Erzeugte thermische Arbeit): " + e.getMessage() + ", ";
 					this._setThermalWork(-1.0);	// -1 to indicate an error.
 				}
 			} else {
-				this._setWarning(true);
 				warningMessage = warningMessage + "Failed to transmit generated thermal work (Erzeugte thermische Arbeit), ";
 				this._setThermalWork(-1.0);
 			}
@@ -850,12 +810,10 @@ public class DachsGltInterfaceImpl extends AbstractOpenemsComponent implements O
 				try {
 					this._setThermalWorkCond(Double.parseDouble(arbeitThermKon));
 				} catch (NumberFormatException e) {
-					this._setWarning(true);
 					warningMessage = warningMessage + "Can't parse generated thermal work condenser (Erzeugte thermische Arbeit Kondenser): " + e.getMessage() + ", ";
 					this._setThermalWorkCond(-1.0);	// -1 to indicate an error.
 				}
 			} else {
-				this._setWarning(true);
 				warningMessage = warningMessage + "Failed to transmit generated thermal work condenser (Erzeugte thermische Arbeit Kondenser), ";
 				this._setThermalWorkCond(-1.0);
 			}
@@ -867,29 +825,27 @@ public class DachsGltInterfaceImpl extends AbstractOpenemsComponent implements O
 				try {
 					this._setRuntimeSinceRestart(Double.parseDouble(runtimeSinceRestart));
 				} catch (NumberFormatException e) {
-					this._setWarning(true);
 					warningMessage = warningMessage + "Can't parse runtime since restart (Betriebsstunden): " + e.getMessage() + ", ";
 					this._setRuntimeSinceRestart(-1.0);	// -1 to indicate an error.
 				}
 			} else {
-				this._setWarning(true);
 				warningMessage = warningMessage + "Failed to transmit runtime since restart (Betriebsstunden), ";
 				this._setRuntimeSinceRestart(-1.0);
 			}
 
 
+			int rpmReadout = 0;
 			if (serverMessage.contains("Hka_Mw1.usDrehzahl=")) {
 				String drehzahl = "";
 				drehzahl = drehzahl + readEntryAfterString(serverMessage, "Hka_Mw1.usDrehzahl=");
 	            try {
-	                this._setRpm(Integer.parseInt(drehzahl.trim()));
+					rpmReadout = Integer.parseInt(drehzahl.trim());
+	                this._setRpm(rpmReadout);
 	            } catch (NumberFormatException e) {
-	            	this._setError(true);
 	            	errorMessage = errorMessage + "Can't parse engine rpm (Motordrehzahl): " + e.getMessage() + ", ";
 					this._setRpm(-1);	// -1 to indicate an error.
 	            }
 			} else {
-				this._setError(true);
 				errorMessage = errorMessage + "Failed to transmit engine rpm (Motordrehzahl), ";
 				this._setRpm(-1);
 			}
@@ -901,12 +857,10 @@ public class DachsGltInterfaceImpl extends AbstractOpenemsComponent implements O
 				try {
 					this._setEngineStarts(Integer.parseInt(engineStarts.trim()));
 				} catch (NumberFormatException e) {
-					this._setWarning(true);
 					warningMessage = warningMessage + "Can't parse engine starts (Anzahl Starts): " + e.getMessage() + ", ";
 					this._setEngineStarts(-1);	// -1 to indicate an error.
 				}
 			} else {
-				this._setWarning(true);
 				warningMessage = warningMessage + "Failed to transmit engine starts (Anzahl Starts), ";
 				this._setEngineStarts(-1);
 			}
@@ -916,13 +870,11 @@ public class DachsGltInterfaceImpl extends AbstractOpenemsComponent implements O
 			if (serverMessage.contains("Wartung_Cache.fStehtAn=") && wartungFlag.length() > 0) {
 				if (wartungFlag.equals("true")) {
 					this._setMaintenanceFlag(true);
-					this._setWarning(true);
 					warningMessage = warningMessage + "Maintenance needed (Wartung steht an), ";
 				} else {
 					this._setMaintenanceFlag(false);
 				}
 			} else {
-				this._setWarning(true);
 				warningMessage = warningMessage + "Failed to transmit maintenance flag (Wartung steht an), ";
 				this._setMaintenanceFlag(false);
 			}
@@ -930,17 +882,39 @@ public class DachsGltInterfaceImpl extends AbstractOpenemsComponent implements O
 			
 			if (errorMessage.length() > 0 && errorMessage.charAt(errorMessage.length() - 2) == ',') {
 				errorMessage = errorMessage.substring(0, errorMessage.length() - 2) + ".";
+			} else {
+				errorMessage = "No error";
 			}
 			this._setErrorMessage(errorMessage);
 			
 			if (warningMessage.length() > 0 && warningMessage.charAt(warningMessage.length() - 2) == ',') {
 				warningMessage = warningMessage.substring(0, warningMessage.length() - 2) + ".";
+			} else {
+				warningMessage = "No warning";
 			}
 			this._setWarningMessage(warningMessage);
 
+			// The Dachs does not have an on/off indicator. So instead the RPM readout is used to tell if the Dachs is
+			// running or not. If the CHP is running with >1000 RPM, it is on. If not it is off. (regular RPM is ~2400).
+			this._setEnableSignal(rpmReadout > 1000);
+
+			if (stateUndefined) {
+				this._setHeaterState(HeaterState.UNDEFINED.getValue());
+			} else if (rpmReadout > 2000) {
+				// Regular RPM is ~2400. An RPM > 2000 should mean normal operation.
+				this._setHeaterState(HeaterState.HEATING.getValue());
+			} else if (stateStartingUp) {
+				this._setHeaterState(HeaterState.STARTING_UP_OR_PREHEAT.getValue());
+			} else if (runClearance) {
+				this._setHeaterState(HeaterState.STANDBY.getValue());
+			} else {
+				this._setHeaterState(HeaterState.BLOCKED.getValue());
+			}
+
+
 		} else {
-			this._setError(true);
 			this._setErrorMessage("Couldn't read data from GLT interface.");
+			this._setHeaterState(HeaterState.OFF.getValue());
 		}
 	}
 
@@ -965,14 +939,14 @@ public class DachsGltInterfaceImpl extends AbstractOpenemsComponent implements O
 	}
     
     
-    protected void printDataToLog( ) {
+    protected void printDataToLog() {
     	if (basicInfo) {
     		this.logInfo(this.log, "---- CHP Senertec Dachs ----");
     		this.logInfo(this.log, "Engine rpm: " + getRpm() + " -> Chp running: " + getEnableSignal());
     		this.logInfo(this.log, "Flow temp: " + getFlowTemperature());
     		this.logInfo(this.log, "Return temp: " + getReturnTemperature());
     		this.logInfo(this.log, "Effective electric power: " + getEffectiveElectricPower());
-    		this.logInfo(this.log, "Ready: " + getReady() + ", Error: " + getError() + ", Warning: " + getWarning());
+    		this.logInfo(this.log, "Heater state: " + getHeaterState());
     		this.logInfo(this.log, "Error message: " + getErrorMessage());
     		this.logInfo(this.log, "Warning message: " + getWarningMessage());
     	}

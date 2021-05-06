@@ -10,7 +10,8 @@ import io.openems.edge.bridge.modbus.api.element.UnsignedDoublewordElement;
 import io.openems.edge.bridge.modbus.api.element.UnsignedWordElement;
 import io.openems.edge.bridge.modbus.api.task.FC16WriteRegistersTask;
 import io.openems.edge.bridge.modbus.api.task.FC3ReadRegistersTask;
-import io.openems.edge.heater.api.ChpBasic;
+import io.openems.edge.heater.api.Heater;
+import io.openems.edge.heater.api.Chp;
 import io.openems.edge.heater.chp.wolf.api.ChpWolfChannel;
 import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.common.event.EdgeEventConstants;
@@ -57,7 +58,8 @@ public class ChpWolfImpl extends AbstractOpenemsModbusComponent implements Opene
 	public ChpWolfImpl() {
 		super(OpenemsComponent.ChannelId.values(),
 				ChpWolfChannel.ChannelId.values(),
-				ChpBasic.ChannelId.values());	// Even though ChpWolfChannel extends this channel, it needs to be added separately.
+				Chp.ChannelId.values(),		// Even though ChpWolfChannel extends this channel, it needs to be added separately.
+				Heater.ChannelId.values());	// Same here.
 	}
 
 
@@ -88,9 +90,9 @@ public class ChpWolfImpl extends AbstractOpenemsModbusComponent implements Opene
 								ElementToChannelConverter.DIRECT_1_TO_1)
 				),
 				new FC3ReadRegistersTask(27, Priority.LOW,
-						m(ChpBasic.ChannelId.FLOW_TEMPERATURE, new UnsignedWordElement(0),
+						m(Heater.ChannelId.FLOW_TEMPERATURE, new UnsignedWordElement(0),
 								ElementToChannelConverter.DIRECT_1_TO_1),
-						m(ChpBasic.ChannelId.RETURN_TEMPERATURE, new UnsignedWordElement(0),
+						m(Heater.ChannelId.RETURN_TEMPERATURE, new UnsignedWordElement(0),
 								ElementToChannelConverter.DIRECT_1_TO_1)
 				),
 				new FC3ReadRegistersTask(32, Priority.LOW,
@@ -102,7 +104,7 @@ public class ChpWolfImpl extends AbstractOpenemsModbusComponent implements Opene
 								ElementToChannelConverter.DIRECT_1_TO_1)
 				),
 				new FC3ReadRegistersTask(263, Priority.HIGH,
-						m(ChpBasic.ChannelId.EFFECTIVE_ELECTRIC_POWER, new UnsignedWordElement(0),
+						m(Chp.ChannelId.EFFECTIVE_ELECTRIC_POWER, new UnsignedWordElement(0),
 								ElementToChannelConverter.DIRECT_1_TO_1)
 				),
 				new FC3ReadRegistersTask(314, Priority.HIGH,
@@ -126,7 +128,7 @@ public class ChpWolfImpl extends AbstractOpenemsModbusComponent implements Opene
 								ElementToChannelConverter.DIRECT_1_TO_1),
 						m(ChpWolfChannel.ChannelId.RESERVE_SETPOINT, new UnsignedWordElement(2),
 								ElementToChannelConverter.DIRECT_1_TO_1),
-						m(ChpBasic.ChannelId.ENABLE_SIGNAL, new UnsignedWordElement(3),
+						m(Heater.ChannelId.ENABLE_SIGNAL, new UnsignedWordElement(3),
 								ElementToChannelConverter.DIRECT_1_TO_1)
 				),
 
@@ -197,23 +199,22 @@ public class ChpWolfImpl extends AbstractOpenemsModbusComponent implements Opene
         }
         if (warnMessage.length() > 0) {
             warnMessage = warnMessage.substring(0, warnMessage.length() - 2) + ".";
-            this.channel(ChpBasic.ChannelId.WARNING).setNextValue(true);
         } else {
-            this.channel(ChpBasic.ChannelId.WARNING).setNextValue(false);
+			warnMessage = "No warning";
         }
-        this.channel(ChpWolfChannel.ChannelId.WARNING_MESSAGE).setNextValue(warnMessage);
+        this._setWarningMessage(warnMessage);
 
+        boolean statusReady = false;
         if ((statusBits40012 & 512) == 512) {
-            this.channel(ChpBasic.ChannelId.READY).setNextValue(true);
-        } else {
-            this.channel(ChpBasic.ChannelId.READY).setNextValue(false);
+			statusReady = true;
         }
 		if ((statusBits40012 & 2048) == 2048) {
-			this.channel(ChpBasic.ChannelId.ERROR).setNextValue(true);
+			this._setErrorMessage("An unknown error ocurred");
 		} else {
-			this.channel(ChpBasic.ChannelId.ERROR).setNextValue(false);
+			this._setErrorMessage("No error");
 		}
-		
+
+		// ToDo: parse status.
 		
 		// Parse on/off by checking engine rpm.
 		if (getRpm().isDefined()) {

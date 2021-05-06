@@ -9,9 +9,9 @@ import io.openems.edge.common.channel.IntegerReadChannel;
 import io.openems.edge.common.channel.IntegerWriteChannel;
 import io.openems.edge.common.channel.StringReadChannel;
 import io.openems.edge.common.channel.value.Value;
-import io.openems.edge.heater.api.ChpBasic;
+import io.openems.edge.heater.api.Chp;
 
-public interface ChpWolfChannel extends ChpBasic {
+public interface ChpWolfChannel extends Chp {
 
     public enum ChannelId implements io.openems.edge.common.channel.ChannelId {
 
@@ -172,16 +172,12 @@ public interface ChpWolfChannel extends ChpBasic {
 
         RESERVE_SETPOINT(Doc.of(OpenemsType.INTEGER).accessMode(AccessMode.READ_WRITE)),
 
-        // OnOff - Included in ChpBasic ENABLE_SIGNAL
-    	
-        /**
-         * Warning message of the chp, parsed from the status bits.
-         * <ul>
-         * <li>Type: string
-         * </ul>
-         */
+        // OnOff - Included in Heater ENABLE_SIGNAL
 
-        WARNING_MESSAGE(Doc.of(OpenemsType.STRING).accessMode(AccessMode.READ_ONLY));
+        // Warning message - included in Heater
+
+        // Error message - included in Heater
+        ;
     	
         private final Doc doc;
 
@@ -540,32 +536,4 @@ public interface ChpWolfChannel extends ChpBasic {
 	public default void setReserveSetpoint(int value) throws OpenemsNamedException {
 		this.getReserveSetpointChannel().setNextWriteValue(value);
 	}
-    
-    /**
-     * Gets the Channel for {@link ChannelId#WARNING_MESSAGE}.
-     *
-     * @return the Channel
-     */
-    public default StringReadChannel getWarningMessageChannel() {
-        return this.channel(ChannelId.WARNING_MESSAGE);
-    }
-
-    /**
-     * Warning message of the chp, parsed from the status bits.
-     * See {@link ChannelId#WARNING_MESSAGE}.
-     *
-     * @return the Channel {@link Value}
-     */
-    public default Value<String> getWarningMessage() { return this.getWarningMessageChannel().value(); }
-    
-    /**
-	 * Internal method to set the 'nextValue' on {@link ChannelId#WARNING_MESSAGE}
-	 * Channel.
-	 *
-	 * @param value the next value
-	 */
-	public default void _setWarningMessage(String value) {
-		this.getWarningMessageChannel().setNextValue(value);
-	}
-
 }

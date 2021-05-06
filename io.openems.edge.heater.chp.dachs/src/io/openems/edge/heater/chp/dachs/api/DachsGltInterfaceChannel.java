@@ -9,9 +9,9 @@ import io.openems.edge.common.channel.DoubleReadChannel;
 import io.openems.edge.common.channel.IntegerReadChannel;
 import io.openems.edge.common.channel.StringReadChannel;
 import io.openems.edge.common.channel.value.Value;
-import io.openems.edge.heater.api.ChpBasic;
+import io.openems.edge.heater.api.Chp;
 
-public interface DachsGltInterfaceChannel extends ChpBasic {
+public interface DachsGltInterfaceChannel extends Chp {
 
     public enum ChannelId implements io.openems.edge.common.channel.ChannelId {
 
@@ -171,26 +171,10 @@ public interface DachsGltInterfaceChannel extends ChpBasic {
 
         MAINTENANCE(Doc.of(OpenemsType.BOOLEAN).accessMode(AccessMode.READ_ONLY)),
 
-        /**
-         * All warning messages of the chp as a string. 
-         * Hka_Bd.bWarnung
-         * <ul>
-         * <li>Type: string
-         * </ul>
-         */
+		// Warning message, Hka_Bd.bWarnung - included in Heater
 
-        WARNING_MESSAGE(Doc.of(OpenemsType.STRING).accessMode(AccessMode.READ_ONLY)),
-
-        /**
-         * All error messages of the chp as a string. 
-         * Hka_Bd.bStoerung
-         * <ul>
-         * <li>Type: string
-         * </ul>
-         */
-
-        ERROR_MESSAGE(Doc.of(OpenemsType.STRING).accessMode(AccessMode.READ_ONLY));
-
+		// Error message, Hka_Bd.bStoerung - included in Heater
+		;
 
         private final Doc doc;
 
@@ -714,63 +698,4 @@ public interface DachsGltInterfaceChannel extends ChpBasic {
 	public default void _setMaintenanceFlag(Boolean value) {
 		this.getMaintenanceFlagChannel().setNextValue(value);
 	}
-	
-	/**
-     * Gets the Channel for {@link ChannelId#WARNING_MESSAGE}.
-     *
-     * @return the Channel
-     */
-    public default StringReadChannel getWarningMessageChannel(){
-        return this.channel(ChannelId.WARNING_MESSAGE);
-    }
-    
-    /**
-	 * If a warning occurred, get the warning messages. Hka_Bd.bWarnung
-	 * See {@link ChannelId#WARNING_MESSAGE}.
-	 *
-	 * @return the Channel {@link Value}
-	 */
-	public default Value<String> getWarningMessage() {
-		return this.getWarningMessageChannel().value();
-	}
-	
-	/**
-	 * Internal method to set the 'nextValue' on {@link ChannelId#WARNING_MESSAGE}
-	 * Channel.
-	 *
-	 * @param value the next value
-	 */
-	public default void _setWarningMessage(String value) {
-		this.getWarningMessageChannel().setNextValue(value);
-	}
-	
-	/**
-     * Gets the Channel for {@link ChannelId#ERROR_MESSAGE}.
-     *
-     * @return the Channel
-     */
-    public default StringReadChannel getErrorMessageChannel(){
-        return this.channel(ChannelId.ERROR_MESSAGE);
-    }
-    
-    /**
-	 * If an error occurred, get the error messages. Hka_Bd.bStoerung
-	 * See {@link ChannelId#ERROR_MESSAGE}.
-	 *
-	 * @return the Channel {@link Value}
-	 */
-	public default Value<String> getErrorMessage() {
-		return this.getErrorMessageChannel().value();
-	}
-	
-	/**
-	 * Internal method to set the 'nextValue' on {@link ChannelId#ERROR_MESSAGE}
-	 * Channel.
-	 *
-	 * @param value the next value
-	 */
-	public default void _setErrorMessage(String value) {
-		this.getErrorMessageChannel().setNextValue(value);
-	}
-
 }
