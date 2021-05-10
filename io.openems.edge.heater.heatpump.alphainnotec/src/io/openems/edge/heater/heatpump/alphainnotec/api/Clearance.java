@@ -2,6 +2,10 @@ package io.openems.edge.heater.heatpump.alphainnotec.api;
 
 import io.openems.common.types.OptionsEnum;
 
+/**
+ * Possible states of run clearance.
+ */
+
 public enum Clearance implements OptionsEnum {
 	UNDEFINED(-1, "Undefined"), //
 	SPERRE(0, "Sperre"), //
@@ -18,12 +22,12 @@ public enum Clearance implements OptionsEnum {
 
 	@Override
 	public int getValue() {
-		return value;
+		return this.value;
 	}
 
 	@Override
 	public String getName() {
-		return name;
+		return this.name;
 	}
 	
 	@Override

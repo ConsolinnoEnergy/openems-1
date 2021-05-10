@@ -2,6 +2,10 @@ package io.openems.edge.heater.heatpump.tecalor.api;
 
 import io.openems.common.types.OptionsEnum;
 
+/**
+ * Possible states of the operating mode.
+ */
+
 public enum OperatingMode implements OptionsEnum {
 	UNDEFINED(-1, "Undefined"), //
 	NOTBETRIEB(0, "Notbetrieb"), //
@@ -21,12 +25,12 @@ public enum OperatingMode implements OptionsEnum {
 
 	@Override
 	public int getValue() {
-		return value;
+		return this.value;
 	}
 
 	@Override
 	public String getName() {
-		return name;
+		return this.name;
 	}
 	
 	@Override

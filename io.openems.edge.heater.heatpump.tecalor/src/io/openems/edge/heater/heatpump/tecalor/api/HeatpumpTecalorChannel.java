@@ -12,21 +12,23 @@ import io.openems.edge.common.channel.Doc;
 import io.openems.edge.common.channel.value.Value;
 import io.openems.edge.heater.api.HeatpumpSmartGridGeneralizedChannel;
 
-public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChannel {
+/**
+ * Channels for the Tecalor heat pump.
+ */
 
+public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChannel {
 
     public enum ChannelId implements io.openems.edge.common.channel.ChannelId {
 
-
-        // Input Registers, read only. They are 16 bit signed numbers unless stated otherwise.
-        // Addresses are 1 based, so 40001 is the first holding register. OpenEMS Modbus is 0 based,
-        // so 40001 has address 0.
+        /* Input Registers, read only. They are 16 bit signed numbers unless stated otherwise.
+           Addresses are 1 based, so 40001 is the first holding register. OpenEMS Modbus is 0 based,
+           so 40001 has address 0. */
 
         /**
          * Outside temperature.
          * <ul>
-         *      <li> Type: Integer
-         *      <li> Unit: Decimal degree Celsius
+         *     <li> Type: Integer
+         *     <li> Unit: Decimal degree Celsius
          * </ul>
          */
         IR507_AUSSENTEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
@@ -793,7 +795,9 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getAussentemp() { return this.getAussentempChannel().value(); }
+    public default Value<Integer> getAussentemp() {
+        return this.getAussentempChannel().value();
+    }
 
     /**
      * Gets the Channel for {@link ChannelId#IR508_ISTTEMPHK1}.
@@ -809,7 +813,9 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getIstTempHk1() { return this.getIstTempHk1Channel().value(); }
+    public default Value<Integer> getIstTempHk1() {
+        return this.getIstTempHk1Channel().value();
+    }
 
     /**
      * Gets the Channel for {@link ChannelId#SOLLTEMPHK1}.
@@ -825,7 +831,9 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getSetpointTempHk1() { return this.getIstTempHk1Channel().value(); }
+    public default Value<Integer> getSetpointTempHk1() {
+        return this.getIstTempHk1Channel().value();
+    }
 
     /**
      * Gets the Channel for {@link ChannelId#IR511_ISTTEMPHK2}.
@@ -841,7 +849,9 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getIstTempHk2() { return this.getIstTempHk2Channel().value(); }
+    public default Value<Integer> getIstTempHk2() {
+        return this.getIstTempHk2Channel().value();
+    }
 
     /**
      * Gets the Channel for {@link ChannelId#IR512_SOLLTEMPHK2}.
@@ -857,7 +867,9 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getSetpointTempHk2() { return this.getSetpointTempHk2Channel().value(); }
+    public default Value<Integer> getSetpointTempHk2() {
+        return this.getSetpointTempHk2Channel().value();
+    }
 
     /**
      * Gets the Channel for {@link ChannelId#IR513_VORLAUFISTTEMPWP}.
@@ -873,7 +885,9 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getForwardTempHeatPumpActual() { return this.getForwardTempHeatPumpActualChannel().value(); }
+    public default Value<Integer> getForwardTempHeatPumpActual() {
+        return this.getForwardTempHeatPumpActualChannel().value();
+    }
 
     /**
      * Gets the Channel for {@link ChannelId#IR514_VORLAUFISTTEMPNHZ}.
@@ -889,7 +903,9 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getForwardTempBackupHeaterActual() { return this.getForwardTempBackupHeaterActualChannel().value(); }
+    public default Value<Integer> getForwardTempBackupHeaterActual() {
+        return this.getForwardTempBackupHeaterActualChannel().value();
+    }
 
     /**
      * Gets the Channel for {@link ChannelId#IR515_VORLAUFISTTEMP}.
@@ -905,7 +921,9 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getForwardTempActual() { return this.getForwardTempActualChannel().value(); }
+    public default Value<Integer> getForwardTempActual() {
+        return this.getForwardTempActualChannel().value();
+    }
 
     /**
      * Gets the Channel for {@link ChannelId#IR516_RUECKLAUFISTTEMP}.
@@ -921,7 +939,9 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getRewindTempActual() { return this.getRewindTempActualChannel().value(); }
+    public default Value<Integer> getRewindTempActual() {
+        return this.getRewindTempActualChannel().value();
+    }
 
     /**
      * Gets the Channel for {@link ChannelId#IR517_FESTWERTSOLLTEMP}.
@@ -937,7 +957,9 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getFixTempSetpoint() { return this.getFixTempSetpointChannel().value(); }
+    public default Value<Integer> getFixTempSetpoint() {
+        return this.getFixTempSetpointChannel().value();
+    }
 
     /**
      * Gets the Channel for {@link ChannelId#IR518_PUFFERISTTEMP}.
@@ -953,7 +975,9 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getBuffetTankTempActual() { return this.getBuffetTankTempActualChannel().value(); }
+    public default Value<Integer> getBuffetTankTempActual() {
+        return this.getBuffetTankTempActualChannel().value();
+    }
 
     /**
      * Gets the Channel for {@link ChannelId#IR519_PUFFERSOLLTEMP}.
@@ -969,7 +993,9 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getBuffetTankTempSetpoint() { return this.getBuffetTankTempSetpointChannel().value(); }
+    public default Value<Integer> getBuffetTankTempSetpoint() {
+        return this.getBuffetTankTempSetpointChannel().value();
+    }
 
     /**
      * Gets the Channel for {@link ChannelId#IR520_HEIZUNGSDRUCK}.
@@ -985,7 +1011,9 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getHeatingCircuitPressure() { return this.getHeatingCircuitPressureChannel().value(); }
+    public default Value<Integer> getHeatingCircuitPressure() {
+        return this.getHeatingCircuitPressureChannel().value();
+    }
 
     /**
      * Gets the Channel for {@link ChannelId#IR521_VOLUMENSTROM}.
@@ -1001,350 +1029,450 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getHeatingCircuitCurrent() { return this.getHeatingCircuitCurrentChannel().value(); }
+    public default Value<Integer> getHeatingCircuitCurrent() {
+        return this.getHeatingCircuitCurrentChannel().value();
+    }
 
     /**
      * Gets the Channel for {@link ChannelId#IR522_WWISTTEMP}.
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getWarmWaterTempActualChannel() { return this.channel(ChannelId.IR522_WWISTTEMP); }
+    public default IntegerReadChannel getWarmWaterTempActualChannel() {
+        return this.channel(ChannelId.IR522_WWISTTEMP);
+    }
 
     /**
      * Warm water temperature, actual. Unit is decimal degree Celsius.
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getWarmWaterTempActual() { return this.getWarmWaterTempActualChannel().value(); }
+    public default Value<Integer> getWarmWaterTempActual() {
+        return this.getWarmWaterTempActualChannel().value();
+    }
 
     /**
      * Gets the Channel for {@link ChannelId#IR523_WWSOLLTEMP}.
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getWarmWaterTempSetpointChannel() { return this.channel(ChannelId.IR523_WWSOLLTEMP); }
+    public default IntegerReadChannel getWarmWaterTempSetpointChannel() {
+        return this.channel(ChannelId.IR523_WWSOLLTEMP);
+    }
 
     /**
      * Warm water temperature, setpoint. Unit is decimal degree Celsius.
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getWarmWaterTempSetpoint() { return this.getWarmWaterTempSetpointChannel().value(); }
+    public default Value<Integer> getWarmWaterTempSetpoint() {
+        return this.getWarmWaterTempSetpointChannel().value();
+    }
 
     /**
      * Gets the Channel for {@link ChannelId#IR524_GEBLAESEISTTEMP}.
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getVentilationCoolingTempActualChannel() { return this.channel(ChannelId.IR524_GEBLAESEISTTEMP); }
+    public default IntegerReadChannel getVentilationCoolingTempActualChannel() {
+        return this.channel(ChannelId.IR524_GEBLAESEISTTEMP);
+    }
 
     /**
      * Ventilation cooling temperature, actual. Unit is decimal degree Celsius.
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getVentilationCoolingTempActual() { return this.getVentilationCoolingTempActualChannel().value(); }
+    public default Value<Integer> getVentilationCoolingTempActual() {
+        return this.getVentilationCoolingTempActualChannel().value();
+    }
 
     /**
      * Gets the Channel for {@link ChannelId#IR525_GEBLAESESOLLTEMP}.
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getVentilationCoolingTempSetpointChannel() { return this.channel(ChannelId.IR525_GEBLAESESOLLTEMP); }
+    public default IntegerReadChannel getVentilationCoolingTempSetpointChannel() {
+        return this.channel(ChannelId.IR525_GEBLAESESOLLTEMP);
+    }
 
     /**
      * Ventilation cooling temperature, setpoint. Unit is decimal degree Celsius.
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getVentilationCoolingTempSetpoint() { return this.getVentilationCoolingTempSetpointChannel().value(); }
+    public default Value<Integer> getVentilationCoolingTempSetpoint() {
+        return this.getVentilationCoolingTempSetpointChannel().value();
+    }
 
     /**
      * Gets the Channel for {@link ChannelId#IR526_FLAECHEISTTEMP}.
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getSurfaceCoolingTempActualChannel() { return this.channel(ChannelId.IR526_FLAECHEISTTEMP); }
+    public default IntegerReadChannel getSurfaceCoolingTempActualChannel() {
+        return this.channel(ChannelId.IR526_FLAECHEISTTEMP);
+    }
 
     /**
      * Surface cooling temperature, actual. Unit is decimal degree Celsius.
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getSurfaceCoolingTempActual() { return this.getSurfaceCoolingTempActualChannel().value(); }
+    public default Value<Integer> getSurfaceCoolingTempActual() {
+        return this.getSurfaceCoolingTempActualChannel().value();
+    }
 
     /**
      * Gets the Channel for {@link ChannelId#IR527_FLAECHESOLLTEMP}.
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getSurfaceCoolingTempSetpointChannel() { return this.channel(ChannelId.IR527_FLAECHESOLLTEMP); }
+    public default IntegerReadChannel getSurfaceCoolingTempSetpointChannel() {
+        return this.channel(ChannelId.IR527_FLAECHESOLLTEMP);
+    }
 
     /**
      * Surface cooling temperature, setpoint. Unit is decimal degree Celsius.
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getSurfaceCoolingTempSetpoint() { return this.getSurfaceCoolingTempSetpointChannel().value(); }
+    public default Value<Integer> getSurfaceCoolingTempSetpoint() {
+        return this.getSurfaceCoolingTempSetpointChannel().value();
+    }
 
     /**
      * Gets the Channel for {@link ChannelId#IR533_EINSATZGRENZEHZG}.
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getMinOperationTempHeatingCircuitChannel() { return this.channel(ChannelId.IR533_EINSATZGRENZEHZG); }
+    public default IntegerReadChannel getMinOperationTempHeatingCircuitChannel() {
+        return this.channel(ChannelId.IR533_EINSATZGRENZEHZG);
+    }
 
     /**
      * Minimum operation temperature heating circuit. Unit is decimal degree Celsius.
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getMinOperationTempHeatingCircuit() { return this.getMinOperationTempHeatingCircuitChannel().value(); }
+    public default Value<Integer> getMinOperationTempHeatingCircuit() {
+        return this.getMinOperationTempHeatingCircuitChannel().value();
+    }
 
     /**
      * Gets the Channel for {@link ChannelId#IR534_EINSATZGRENZEWW}.
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getMinOperationTempWarmWaterChannel() { return this.channel(ChannelId.IR534_EINSATZGRENZEWW); }
+    public default IntegerReadChannel getMinOperationTempWarmWaterChannel() {
+        return this.channel(ChannelId.IR534_EINSATZGRENZEWW);
+    }
 
     /**
      * Minimum operation temperature warm water. Unit is decimal degree Celsius.
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getMinOperationTempWarmWater() { return this.getMinOperationTempWarmWaterChannel().value(); }
+    public default Value<Integer> getMinOperationTempWarmWater() {
+        return this.getMinOperationTempWarmWaterChannel().value();
+    }
 
     /**
      * Gets the Channel for {@link ChannelId#IR2501_STATUSBITS}.
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getStatusBitsChannel() { return this.channel(ChannelId.IR2501_STATUSBITS); }
+    public default IntegerReadChannel getStatusBitsChannel() {
+        return this.channel(ChannelId.IR2501_STATUSBITS);
+    }
 
     /**
      * Status bits.
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getStatusBits() { return this.getStatusBitsChannel().value(); }
+    public default Value<Integer> getStatusBits() {
+        return this.getStatusBitsChannel().value();
+    }
 
     /**
      * Gets the Channel for {@link ChannelId#IR2502_EVUFREIGABE}.
      *
      * @return the Channel
      */
-    public default BooleanReadChannel getEvuClearanceChannel() { return this.channel(ChannelId.IR2502_EVUFREIGABE); }
+    public default BooleanReadChannel getEvuClearanceChannel() {
+        return this.channel(ChannelId.IR2502_EVUFREIGABE);
+    }
 
     /**
      * EVU clearance.
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Boolean> getEvuClearance() { return this.getEvuClearanceChannel().value(); }
+    public default Value<Boolean> getEvuClearance() {
+        return this.getEvuClearanceChannel().value();
+    }
 
     /**
      * Gets the Channel for {@link ChannelId#IR2504_ERRORSTATUS}.
      *
      * @return the Channel
      */
-    public default BooleanReadChannel getErrorStatusChannel() { return this.channel(ChannelId.IR2504_ERRORSTATUS); }
+    public default BooleanReadChannel getErrorStatusChannel() {
+        return this.channel(ChannelId.IR2504_ERRORSTATUS);
+    }
 
     /**
      * Error status. False for no error.
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Boolean> getErrorStatus() { return this.getErrorStatusChannel().value(); }
+    public default Value<Boolean> getErrorStatus() {
+        return this.getErrorStatusChannel().value();
+    }
 
     /**
      * Gets the Channel for {@link ChannelId#IR2505_BUSSTATUS}.
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getBusStatusChannel() { return this.channel(ChannelId.IR2505_BUSSTATUS); }
+    public default IntegerReadChannel getBusStatusChannel() {
+        return this.channel(ChannelId.IR2505_BUSSTATUS);
+    }
 
     /**
      * BUS status.
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getBusStatus() { return this.getBusStatusChannel().value(); }
+    public default Value<Integer> getBusStatus() {
+        return this.getBusStatusChannel().value();
+    }
 
     /**
      * Gets the Channel for {@link ChannelId#IR2506_DEFROST}.
      *
      * @return the Channel
      */
-    public default BooleanReadChannel getDefrostActiveChannel() { return this.channel(ChannelId.IR2506_DEFROST); }
+    public default BooleanReadChannel getDefrostActiveChannel() {
+        return this.channel(ChannelId.IR2506_DEFROST);
+    }
 
     /**
      * Defrost engaged.
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Boolean> getDefrostActive() { return this.getDefrostActiveChannel().value(); }
+    public default Value<Boolean> getDefrostActive() {
+        return this.getDefrostActiveChannel().value();
+    }
 
     /**
      * Gets the Channel for {@link ChannelId#IR2507_ERRORNUMBER}.
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getErrorNumberChannel() { return this.channel(ChannelId.IR2507_ERRORNUMBER); }
+    public default IntegerReadChannel getErrorNumberChannel() {
+        return this.channel(ChannelId.IR2507_ERRORNUMBER);
+    }
 
     /**
      * Error number.
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getErrorNumber() { return this.getErrorNumberChannel().value(); }
+    public default Value<Integer> getErrorNumber() {
+        return this.getErrorNumberChannel().value();
+    }
 
     /**
      * Gets the Channel for {@link ChannelId#IR3501_HEATPRODUCED_VDHEIZENTAG}.
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getProducedHeatForHkDailyChannel() { return this.channel(ChannelId.IR3501_HEATPRODUCED_VDHEIZENTAG); }
+    public default IntegerReadChannel getProducedHeatForHkDailyChannel() {
+        return this.channel(ChannelId.IR3501_HEATPRODUCED_VDHEIZENTAG);
+    }
 
     /**
      * Produced heat for heating circuits, all heat pumps combined for this day.
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getProducedHeatForHkDaily() { return this.getProducedHeatForHkDailyChannel().value(); }
+    public default Value<Integer> getProducedHeatForHkDaily() {
+        return this.getProducedHeatForHkDailyChannel().value();
+    }
 
     /**
      * Gets the Channel for {@link ChannelId#HEATPRODUCED_VDHEIZENSUM}.
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getProducedHeatForHkSumChannel() { return this.channel(ChannelId.HEATPRODUCED_VDHEIZENSUM); }
+    public default IntegerReadChannel getProducedHeatForHkSumChannel() {
+        return this.channel(ChannelId.HEATPRODUCED_VDHEIZENSUM);
+    }
 
     /**
      * Produced heat for heating circuits total, all heat pumps combined.
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getProducedHeatForHkSum() { return this.getProducedHeatForHkSumChannel().value(); }
+    public default Value<Integer> getProducedHeatForHkSum() {
+        return this.getProducedHeatForHkSumChannel().value();
+    }
 
     /**
      * Gets the Channel for {@link ChannelId#IR3504_HEATPRODUCED_VDWWTAG}.
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getProducedHeatForWwDailyChannel() { return this.channel(ChannelId.IR3504_HEATPRODUCED_VDWWTAG); }
+    public default IntegerReadChannel getProducedHeatForWwDailyChannel() {
+        return this.channel(ChannelId.IR3504_HEATPRODUCED_VDWWTAG);
+    }
 
     /**
      * Produced heat for warm water, all heat pumps combined for this day.
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getProducedHeatForWwDaily() { return this.getProducedHeatForWwDailyChannel().value(); }
+    public default Value<Integer> getProducedHeatForWwDaily() {
+        return this.getProducedHeatForWwDailyChannel().value();
+    }
 
     /**
      * Gets the Channel for {@link ChannelId#HEATPRODUCED_VDWWSUM}.
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getProducedHeatForWwSumChannel() { return this.channel(ChannelId.HEATPRODUCED_VDWWSUM); }
+    public default IntegerReadChannel getProducedHeatForWwSumChannel() {
+        return this.channel(ChannelId.HEATPRODUCED_VDWWSUM);
+    }
 
     /**
      * Produced heat for warm water total, all heat pumps combined.
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getProducedHeatForWwSum() { return this.getProducedHeatForWwSumChannel().value(); }
+    public default Value<Integer> getProducedHeatForWwSum() {
+        return this.getProducedHeatForWwSumChannel().value();
+    }
 
     /**
      * Gets the Channel for {@link ChannelId#HEATPRODUCED_NZHHEIZENSUM}.
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getProducedHeatNhzForHkSumChannel() { return this.channel(ChannelId.HEATPRODUCED_NZHHEIZENSUM); }
+    public default IntegerReadChannel getProducedHeatNhzForHkSumChannel() {
+        return this.channel(ChannelId.HEATPRODUCED_NZHHEIZENSUM);
+    }
 
     /**
      * Produced heat for heating circuits total, backup heater.
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getProducedHeatNhzForHkSum() { return this.getProducedHeatNhzForHkSumChannel().value(); }
+    public default Value<Integer> getProducedHeatNhzForHkSum() {
+        return this.getProducedHeatNhzForHkSumChannel().value();
+    }
 
     /**
      * Gets the Channel for {@link ChannelId#HEATPRODUCED_NZHWWSUM}.
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getProducedHeatNhzForWwSumChannel() { return this.channel(ChannelId.HEATPRODUCED_NZHWWSUM); }
+    public default IntegerReadChannel getProducedHeatNhzForWwSumChannel() {
+        return this.channel(ChannelId.HEATPRODUCED_NZHWWSUM);
+    }
 
     /**
      * Produced heat for warm water total, backup heater.
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getProducedHeatNhzForWwSum() { return this.getProducedHeatNhzForWwSumChannel().value(); }
+    public default Value<Integer> getProducedHeatNhzForWwSum() {
+        return this.getProducedHeatNhzForWwSumChannel().value();
+    }
 
     /**
      * Gets the Channel for {@link ChannelId#IR3511_CONSUMEDPOWER_VDHEIZENTAG}.
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getConsumedPowerForHkDailyChannel() { return this.channel(ChannelId.IR3511_CONSUMEDPOWER_VDHEIZENTAG); }
+    public default IntegerReadChannel getConsumedPowerForHkDailyChannel() {
+        return this.channel(ChannelId.IR3511_CONSUMEDPOWER_VDHEIZENTAG);
+    }
 
     /**
      * Consumed power for heating the heating circuits, all heat pumps combined for this day.
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getConsumedPowerForHkDaily() { return this.getConsumedPowerForHkDailyChannel().value(); }
+    public default Value<Integer> getConsumedPowerForHkDaily() {
+        return this.getConsumedPowerForHkDailyChannel().value();
+    }
 
     /**
      * Gets the Channel for {@link ChannelId#CONSUMEDPOWER_VDHEIZENSUM}.
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getConsumedPowerForHkSumChannel() { return this.channel(ChannelId.CONSUMEDPOWER_VDHEIZENSUM); }
+    public default IntegerReadChannel getConsumedPowerForHkSumChannel() {
+        return this.channel(ChannelId.CONSUMEDPOWER_VDHEIZENSUM);
+    }
 
     /**
      * Consumed power for heating the heating circuits total, all heat pumps combined.
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getConsumedPowerForHkSum() { return this.getConsumedPowerForHkSumChannel().value(); }
+    public default Value<Integer> getConsumedPowerForHkSum() {
+        return this.getConsumedPowerForHkSumChannel().value();
+    }
 
     /**
      * Gets the Channel for {@link ChannelId#IR3514_CONSUMEDPOWER_VDWWTAG}.
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getConsumedPowerForWwDailyChannel() { return this.channel(ChannelId.IR3514_CONSUMEDPOWER_VDWWTAG); }
+    public default IntegerReadChannel getConsumedPowerForWwDailyChannel() {
+        return this.channel(ChannelId.IR3514_CONSUMEDPOWER_VDWWTAG);
+    }
 
     /**
      * Consumed power for heating warm water, all heat pumps combined for this day.
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getConsumedPowerForWwDaily() { return this.getConsumedPowerForWwDailyChannel().value(); }
+    public default Value<Integer> getConsumedPowerForWwDaily() {
+        return this.getConsumedPowerForWwDailyChannel().value();
+    }
 
     /**
      * Gets the Channel for {@link ChannelId#CONSUMEDPOWER_VDWWSUM}.
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getConsumedPowerForWwSumChannel() { return this.channel(ChannelId.CONSUMEDPOWER_VDWWSUM); }
+    public default IntegerReadChannel getConsumedPowerForWwSumChannel() {
+        return this.channel(ChannelId.CONSUMEDPOWER_VDWWSUM);
+    }
 
     /**
      * Consumed power for heating warm water total, all heat pumps combined.
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getConsumedPowerForWwSum() { return this.getConsumedPowerForWwSumChannel().value(); }
+    public default Value<Integer> getConsumedPowerForWwSum() {
+        return this.getConsumedPowerForWwSumChannel().value();
+    }
 
     /**
      * Gets the Channel for {@link ChannelId#IR5001_SGREADY_OPERATINGMODE}.
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getSgReadyOperatingModeChannel() { return this.channel(ChannelId.IR5001_SGREADY_OPERATINGMODE); }
+    public default IntegerReadChannel getSgReadyOperatingModeChannel() {
+        return this.channel(ChannelId.IR5001_SGREADY_OPERATINGMODE);
+    }
 
     /**
      * SG-Ready Operating mode.
@@ -1359,14 +1487,18 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getSgReadyOperatingMode() { return this.getSgReadyOperatingModeChannel().value(); }
+    public default Value<Integer> getSgReadyOperatingMode() {
+        return this.getSgReadyOperatingModeChannel().value();
+    }
 
     /**
      * Gets the Channel for {@link ChannelId#IR5002_REGLERKENNUNG}.
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getReglerkennungChannel() { return this.channel(ChannelId.IR5002_REGLERKENNUNG); }
+    public default IntegerReadChannel getReglerkennungChannel() {
+        return this.channel(ChannelId.IR5002_REGLERKENNUNG);
+    }
 
     /**
      * Reglerkennung.
@@ -1382,7 +1514,9 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getReglerkennung() { return this.getReglerkennungChannel().value(); }
+    public default Value<Integer> getReglerkennung() {
+        return this.getReglerkennungChannel().value();
+    }
 
 
     // Holding Registers. Read/Write.
@@ -1392,7 +1526,9 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
      *
      * @return the Channel
      */
-    public default IntegerWriteChannel getOperatingModeChannel() { return this.channel(ChannelId.HR1501_BERTIEBSART); }
+    public default IntegerWriteChannel getOperatingModeChannel() {
+        return this.channel(ChannelId.HR1501_BERTIEBSART);
+    }
 
     /**
      * get operating mode.
@@ -1410,7 +1546,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
 	 *
 	 * @return the Channel {@link Value}
 	 */
-	public default Value<Integer> getOperatingMode() {
+    public default Value<Integer> getOperatingMode() {
 		return this.getOperatingModeChannel().value();
 	}
 	
@@ -1440,7 +1576,9 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
      *
      * @return the Channel
      */
-    public default IntegerWriteChannel getComfortTempHk1Channel() { return this.channel(ChannelId.HR1502_KOMFORTTEMPHK1); }
+    public default IntegerWriteChannel getComfortTempHk1Channel() {
+        return this.channel(ChannelId.HR1502_KOMFORTTEMPHK1);
+    }
     
     /**
      * Get the comfort temperature setting, heating circuit 1. Unit is dezidegree Celsius.
@@ -1448,7 +1586,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
 	 *
 	 * @return the Channel {@link Value}
 	 */
-	public default Value<Integer> getComfortTempHk1() {
+    public default Value<Integer> getComfortTempHk1() {
 		return this.getComfortTempHk1Channel().value();
 	}
 	
@@ -1468,7 +1606,9 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
      *
      * @return the Channel
      */
-    public default IntegerWriteChannel getEcoTempHk1Channel() { return this.channel(ChannelId.HR1503_ECOTEMPHK1); }
+    public default IntegerWriteChannel getEcoTempHk1Channel() {
+        return this.channel(ChannelId.HR1503_ECOTEMPHK1);
+    }
 
     /**
      * Get the ECO temperature setting, heating circuit 1. Unit is dezidegree Celsius.
@@ -1476,7 +1616,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
 	 *
 	 * @return the Channel {@link Value}
 	 */
-	public default Value<Integer> getEcoTempHk1() {
+    public default Value<Integer> getEcoTempHk1() {
 		return this.getEcoTempHk1Channel().value();
 	}
 	
@@ -1496,7 +1636,9 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
      *
      * @return the Channel
      */
-    public default IntegerWriteChannel getHeatingCurveSlopeHk1Channel() { return this.channel(ChannelId.HR1504_SLOPEHK1); }
+    public default IntegerWriteChannel getHeatingCurveSlopeHk1Channel() {
+        return this.channel(ChannelId.HR1504_SLOPEHK1);
+    }
 
     /**
      * Get the Heating curve slope setting, heating circuit 1.
@@ -1504,7 +1646,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
 	 *
 	 * @return the Channel {@link Value}
 	 */
-	public default Value<Integer> getHeatingCurveSlopeHk1() {
+    public default Value<Integer> getHeatingCurveSlopeHk1() {
 		return this.getHeatingCurveSlopeHk1Channel().value();
 	}
 	
@@ -1524,7 +1666,9 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
      *
      * @return the Channel
      */
-    public default IntegerWriteChannel getComfortTempHk2Channel() { return this.channel(ChannelId.HR1505_KOMFORTTEMPHK2); }
+    public default IntegerWriteChannel getComfortTempHk2Channel() {
+        return this.channel(ChannelId.HR1505_KOMFORTTEMPHK2);
+    }
 
     /**
      * Get the comfort temperature setting, heating circuit 2. Unit is dezidegree Celsius.
@@ -1532,7 +1676,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
 	 *
 	 * @return the Channel {@link Value}
 	 */
-	public default Value<Integer> getComfortTempHk2() {
+    public default Value<Integer> getComfortTempHk2() {
 		return this.getComfortTempHk2Channel().value();
 	}
 	
@@ -1552,7 +1696,9 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
      *
      * @return the Channel
      */
-    public default IntegerWriteChannel getEcoTempHk2Channel() { return this.channel(ChannelId.HR1506_ECOTEMPHK2); }
+    public default IntegerWriteChannel getEcoTempHk2Channel() {
+        return this.channel(ChannelId.HR1506_ECOTEMPHK2);
+    }
 
     /**
      * Get the ECO temperature setting, heating circuit 2. Unit is dezidegree Celsius.
@@ -1560,7 +1706,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
 	 *
 	 * @return the Channel {@link Value}
 	 */
-	public default Value<Integer> getEcoTempHk2() {
+    public default Value<Integer> getEcoTempHk2() {
 		return this.getEcoTempHk2Channel().value();
 	}
 	
@@ -1580,7 +1726,9 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
      *
      * @return the Channel
      */
-    public default IntegerWriteChannel getHeatingCurveSlopeHk2Channel() { return this.channel(ChannelId.HR1507_SLOPEHK2); }
+    public default IntegerWriteChannel getHeatingCurveSlopeHk2Channel() {
+        return this.channel(ChannelId.HR1507_SLOPEHK2);
+    }
 
     /**
      * Get the Heating curve slope setting, heating circuit 2.
@@ -1588,7 +1736,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
 	 *
 	 * @return the Channel {@link Value}
 	 */
-	public default Value<Integer> getHeatingCurveSlopeHk2() {
+    public default Value<Integer> getHeatingCurveSlopeHk2() {
 		return this.getHeatingCurveSlopeHk2Channel().value();
 	}
 	
@@ -1608,7 +1756,9 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
      *
      * @return the Channel
      */
-    public default IntegerWriteChannel getFixTempOperationModeChannel() { return this.channel(ChannelId.HR1508_FESTWERTBETRIEB); }
+    public default IntegerWriteChannel getFixTempOperationModeChannel() {
+        return this.channel(ChannelId.HR1508_FESTWERTBETRIEB);
+    }
 
     /**
      * Get the static temperature mode setting. A value of 0x9000 means disabled. When enabled, the value will be 
@@ -1617,7 +1767,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
 	 *
 	 * @return the Channel {@link Value}
 	 */
-	public default Value<Integer> getFixTempOperationMode() {
+    public default Value<Integer> getFixTempOperationMode() {
 		return this.getFixTempOperationModeChannel().value();
 	}
 	
@@ -1638,7 +1788,9 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
      *
      * @return the Channel
      */
-    public default IntegerWriteChannel getBackupHeaterActivationTempHkChannel() { return this.channel(ChannelId.HR1509_BIVALENZTEMPERATURHZG); }
+    public default IntegerWriteChannel getBackupHeaterActivationTempHkChannel() {
+        return this.channel(ChannelId.HR1509_BIVALENZTEMPERATURHZG);
+    }
 
     /**
      * Get the backup heater activation temperature of the heating circuit. Below this temperature the backup 
@@ -1647,7 +1799,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
 	 *
 	 * @return the Channel {@link Value}
 	 */
-	public default Value<Integer> getBackupHeaterActivationTempHk() {
+    public default Value<Integer> getBackupHeaterActivationTempHk() {
 		return this.getBackupHeaterActivationTempHkChannel().value();
 	}
 	
@@ -1668,7 +1820,9 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
      *
      * @return the Channel
      */
-    public default IntegerWriteChannel getWarmWaterComfortTempChannel() { return this.channel(ChannelId.HR1510_KOMFORTTEMPWW); }
+    public default IntegerWriteChannel getWarmWaterComfortTempChannel() {
+        return this.channel(ChannelId.HR1510_KOMFORTTEMPWW);
+    }
 
     /**
      * Get the comfort temperature setting for warm water. Unit is dezidegree Celsius.
@@ -1676,7 +1830,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
 	 *
 	 * @return the Channel {@link Value}
 	 */
-	public default Value<Integer> getWarmWaterComfortTemp() {
+    public default Value<Integer> getWarmWaterComfortTemp() {
 		return this.getWarmWaterComfortTempChannel().value();
 	}
 	
@@ -1696,7 +1850,9 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
      *
      * @return the Channel
      */
-    public default IntegerWriteChannel getWarmWaterEcoTempChannel() { return this.channel(ChannelId.HR1511_ECOTEMPWW); }
+    public default IntegerWriteChannel getWarmWaterEcoTempChannel() {
+        return this.channel(ChannelId.HR1511_ECOTEMPWW);
+    }
 
     /**
      * Get the ECO temperature setting for warm water. Unit is dezidegree Celsius.
@@ -1704,7 +1860,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
 	 *
 	 * @return the Channel {@link Value}
 	 */
-	public default Value<Integer> getWarmWaterEcoTemp() {
+    public default Value<Integer> getWarmWaterEcoTemp() {
 		return this.getWarmWaterEcoTempChannel().value();
 	}
 	
@@ -1724,7 +1880,9 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
      *
      * @return the Channel
      */
-    public default IntegerWriteChannel getWarmWaterStageNumberChannel() { return this.channel(ChannelId.HR1512_WARMWASSERSTUFEN); }
+    public default IntegerWriteChannel getWarmWaterStageNumberChannel() {
+        return this.channel(ChannelId.HR1512_WARMWASSERSTUFEN);
+    }
     
     /**
      * Get the number of stages for warm water.
@@ -1732,7 +1890,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
 	 *
 	 * @return the Channel {@link Value}
 	 */
-	public default Value<Integer> getWarmWaterStageNumber() {
+    public default Value<Integer> getWarmWaterStageNumber() {
 		return this.getWarmWaterStageNumberChannel().value();
 	}
 	
@@ -1763,7 +1921,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
 	 *
 	 * @return the Channel {@link Value}
 	 */
-	public default Value<Integer> getBackupHeaterActivationTempWw() {
+    public default Value<Integer> getBackupHeaterActivationTempWw() {
 		return this.getBackupHeaterActivationTempWwChannel().value();
 	}
 	
@@ -1794,7 +1952,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
 	 *
 	 * @return the Channel {@link Value}
 	 */
-	public default Value<Integer> getSurfaceCoolingForwardTemp() {
+    public default Value<Integer> getSurfaceCoolingForwardTemp() {
 		return this.getSurfaceCoolingForwardTempChannel().value();
 	}
 	
@@ -1824,7 +1982,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
 	 *
 	 * @return the Channel {@link Value}
 	 */
-	public default Value<Integer> getSurfaceCoolingForwardTempHysteresis() {
+    public default Value<Integer> getSurfaceCoolingForwardTempHysteresis() {
 		return this.getSurfaceCoolingForwardTempHysteresisChannel().value();
 	}
 	
@@ -1854,7 +2012,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
 	 *
 	 * @return the Channel {@link Value}
 	 */
-	public default Value<Integer> getSurfaceCoolingRoomTemp() {
+    public default Value<Integer> getSurfaceCoolingRoomTemp() {
 		return this.getSurfaceCoolingRoomTempChannel().value();
 	}
 	
@@ -1884,7 +2042,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
 	 *
 	 * @return the Channel {@link Value}
 	 */
-	public default Value<Integer> getVentilationCoolingForwardTemp() {
+    public default Value<Integer> getVentilationCoolingForwardTemp() {
 		return this.getVentilationCoolingForwardTempChannel().value();
 	}
 	
@@ -1914,7 +2072,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
 	 *
 	 * @return the Channel {@link Value}
 	 */
-	public default Value<Integer> getVentilationCoolingForwardTempHysteresis() {
+    public default Value<Integer> getVentilationCoolingForwardTempHysteresis() {
 		return this.getVentilationCoolingForwardTempHysteresisChannel().value();
 	}
 	
@@ -1944,7 +2102,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
 	 *
 	 * @return the Channel {@link Value}
 	 */
-	public default Value<Integer> getVentilationCoolingRoomTemp() {
+    public default Value<Integer> getVentilationCoolingRoomTemp() {
 		return this.getVentilationCoolingRoomTempChannel().value();
 	}
 	
@@ -1964,7 +2122,9 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
      *
      * @return the Channel
      */
-    public default IntegerWriteChannel getResetChannel() { return this.channel(ChannelId.HR1520_RESET); }
+    public default IntegerWriteChannel getResetChannel() {
+        return this.channel(ChannelId.HR1520_RESET);
+    }
     
     /**
      * Get reset function.
@@ -1979,7 +2139,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
 	 *
 	 * @return the Channel {@link Value}
 	 */
-	public default Value<Integer> getReset() {
+    public default Value<Integer> getReset() {
 		return this.getResetChannel().value();
 	}
 	
@@ -2006,7 +2166,9 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
      *
      * @return the Channel
      */
-    public default IntegerWriteChannel getRestartIsgChannel() { return this.channel(ChannelId.HR1521_RESTART_ISG); }
+    public default IntegerWriteChannel getRestartIsgChannel() {
+        return this.channel(ChannelId.HR1521_RESTART_ISG);
+    }
     
     /**
      * Get "restart internet service gateway (ISG)" function.
@@ -2021,7 +2183,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
 	 *
 	 * @return the Channel {@link Value}
 	 */
-	public default Value<Integer> getRestartIsg() {
+    public default Value<Integer> getRestartIsg() {
 		return this.getRestartIsgChannel().value();
 	}
 	
@@ -2048,7 +2210,9 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
      *
      * @return the Channel
      */
-    public default BooleanWriteChannel getSgReadyOnOffChannel() { return this.channel(ChannelId.HR4001_SGREADY_ONOFF); }
+    public default BooleanWriteChannel getSgReadyOnOffChannel() {
+        return this.channel(ChannelId.HR4001_SGREADY_ONOFF);
+    }
 
     /**
      * Get on/off state of SG-Ready capabilities. True = on, false = off. Will automatically be set to "true" when
@@ -2057,7 +2221,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
 	 *
 	 * @return the Channel {@link Value}
 	 */
-	public default Value<Boolean> getSgReadyOnOff() {
+    public default Value<Boolean> getSgReadyOnOff() {
 		return this.getSgReadyOnOffChannel().value();
 	}
 	
@@ -2078,14 +2242,18 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
      *
      * @return the Channel
      */
-    public default BooleanWriteChannel getSgReadyInput1Channel() { return this.channel(ChannelId.HR4002_SGREADY_INPUT1); }
+    public default BooleanWriteChannel getSgReadyInput1Channel() {
+        return this.channel(ChannelId.HR4002_SGREADY_INPUT1);
+    }
 
     /**
      * Gets the Channel for {@link ChannelId#HR4003_SGREADY_INPUT2}.
      *
      * @return the Channel
      */
-    public default BooleanWriteChannel getSgReadyInput2Channel() { return this.channel(ChannelId.HR4003_SGREADY_INPUT2); }
+    public default BooleanWriteChannel getSgReadyInput2Channel() {
+        return this.channel(ChannelId.HR4003_SGREADY_INPUT2);
+    }
 
 
 }

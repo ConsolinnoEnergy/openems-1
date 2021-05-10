@@ -21,13 +21,20 @@ import io.openems.edge.bridge.modbus.api.task.FC5WriteCoilTask;
 import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.common.event.EdgeEventConstants;
 import io.openems.edge.common.taskmanager.Priority;
-import io.openems.edge.heater.heatpump.alphainnotec.api.CurrentState;
+import io.openems.edge.heater.heatpump.alphainnotec.api.OperatingMode;
 import io.openems.edge.heater.heatpump.alphainnotec.api.HeatpumpAlphaInnotecChannel;
 import io.openems.edge.heater.api.HeatpumpSmartGridGeneralizedChannel;
 import io.openems.edge.heater.api.SmartGridState;
 import org.osgi.service.cm.ConfigurationAdmin;
 import org.osgi.service.component.ComponentContext;
-import org.osgi.service.component.annotations.*;
+import org.osgi.service.component.annotations.Reference;
+import org.osgi.service.component.annotations.Activate;
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.ConfigurationPolicy;
+import org.osgi.service.component.annotations.Deactivate;
+import org.osgi.service.component.annotations.ReferenceCardinality;
+import org.osgi.service.component.annotations.ReferencePolicy;
+import org.osgi.service.component.annotations.ReferencePolicyOption;
 import org.osgi.service.event.Event;
 import org.osgi.service.event.EventConstants;
 import org.osgi.service.event.EventHandler;
@@ -35,16 +42,17 @@ import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * This module reads all variables available via Modbus from an Alpha Innotec heat pump and maps them to OpenEMS
+ * channels. WriteChannels can be used to send commands to the heat pump via setter methods in
+ * HeatpumpAlphaInnotecChannel and HeatpumpSmartGridGeneralizedChannel.
+ */
+
 @Designate(ocd = Config.class, factory = true)
 @Component(name = "HeatPumpAlphaInnotec",
 		immediate = true,
 		configurationPolicy = ConfigurationPolicy.REQUIRE,
 		property = EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE)
-
-/**
- * This module reads all variables available via Modbus from an Alpha Innotec heat pump and maps them to OpenEMS
- * channels. WriteChannels can be used to send commands to the heat pump via "setNextWriteValue" method.
- */
 public class HeatPumpAlphaInnotecImpl extends AbstractOpenemsModbusComponent implements OpenemsComponent, EventHandler, HeatpumpAlphaInnotecChannel {
 
 	@Reference
@@ -66,14 +74,12 @@ public class HeatPumpAlphaInnotecImpl extends AbstractOpenemsModbusComponent imp
 				HeatpumpSmartGridGeneralizedChannel.ChannelId.values());	// Even though HeatpumpAlphaInnotecChannel extends this channel, it needs to be added separately.
 	}
 
-
 	@Activate
 	public void activate(ComponentContext context, Config config) throws OpenemsException {
 		super.activate(context, config.id(), config.alias(), config.enabled(), config.modbusUnitId(), this.cm,
 				"Modbus", config.modbus_id());
-		debug = config.debug();
+		this.debug = config.debug();
 	}
-
 
 	@Deactivate
 	public void deactivate() {
@@ -179,8 +185,8 @@ public class HeatPumpAlphaInnotecImpl extends AbstractOpenemsModbusComponent imp
 								ElementToChannelConverter.DIRECT_1_TO_1),
 						m(HeatpumpAlphaInnotecChannel.ChannelId.IR_37_STATUS, new UnsignedWordElement(37),
 								ElementToChannelConverter.DIRECT_1_TO_1),
-						// A double word combines two 16 bit registers to a 32 bit value. This reads two registers, so
-						// the next element address is +2 instead of +1 for a regular register.
+						/* A double word combines two 16 bit registers to a 32 bit value. This reads two registers, so
+						   the next element address is +2 instead of +1 for a regular register. */
 						m(HeatpumpAlphaInnotecChannel.ChannelId.IR_38_WHHEIZUNG, new UnsignedDoublewordElement(38),
 								ElementToChannelConverter.DIRECT_1_TO_1),
 						m(HeatpumpAlphaInnotecChannel.ChannelId.IR_40_WHTRINKWW, new UnsignedDoublewordElement(40),
@@ -195,9 +201,9 @@ public class HeatPumpAlphaInnotecImpl extends AbstractOpenemsModbusComponent imp
 				new FC1ReadCoilsTask(0, Priority.LOW,
 						m(HeatpumpAlphaInnotecChannel.ChannelId.COIL_0_ERRORRESET, new CoilElement(0),
 								ElementToChannelConverter.DIRECT_1_TO_1),
-						// A Modbus read commands reads everything from start address to finish address. If there is a
-						// gap, you must place a dummy element to fill the gap or end the read command there and start
-						// with a new read where you want to continue.
+						/* A Modbus read commands reads everything from start address to finish address. If there is a
+						   gap, you must place a dummy element to fill the gap or end the read command there and start
+						   with a new read where you want to continue. */
 						new DummyCoilElement(1),
 						m(HeatpumpAlphaInnotecChannel.ChannelId.COIL_2_HUP, new CoilElement(2),
 								ElementToChannelConverter.DIRECT_1_TO_1),
@@ -266,9 +272,9 @@ public class HeatPumpAlphaInnotecImpl extends AbstractOpenemsModbusComponent imp
 						ElementToChannelConverter.DIRECT_1_TO_1)),
 
 				new FC3ReadRegistersTask(0, Priority.LOW,
-						// Use SignedWordElement when the number can be negative. Signed 16bit maps every number >32767
-						// to negative. That means if the value you read is positive and <32767, there is no difference
-						// between signed and unsigned.
+						/* Use SignedWordElement when the number can be negative. Signed 16bit maps every number >32767
+						   to negative. That means if the value you read is positive and <32767, there is no difference
+						   between signed and unsigned. */
 						m(HeatpumpAlphaInnotecChannel.ChannelId.HR_0_OUTSIDETEMP, new SignedWordElement(0),
 								ElementToChannelConverter.DIRECT_1_TO_1),
 						m(HeatpumpAlphaInnotecChannel.ChannelId.HR_1_RUECKTEMPSOLL, new UnsignedWordElement(1),
@@ -318,15 +324,15 @@ public class HeatPumpAlphaInnotecImpl extends AbstractOpenemsModbusComponent imp
 						m(HeatpumpAlphaInnotecChannel.ChannelId.HR_23_TEMPPM, new SignedWordElement(23),
 								ElementToChannelConverter.DIRECT_1_TO_1)
 				),
-				// Modbus write tasks take the "setNextWriteValue" value of a channel and send them to the device.
-				// Modbus read tasks put values in the "setNextValue" field, which get automatically transferred to the
-				// "value" field of the channel. By default, the "setNextWriteValue" field is NOT copied to the
-				// "setNextValue" and "value" field. In essence, this makes "setNextWriteValue" and "setNextValue"/"value"
-				// two separate channels.
-				// That means: Modbus read tasks will not overwrite any "setNextWriteValue" values. You do not have to
-				// watch the order in which you call read and write tasks.
-				// Also: if you do not add a Modbus read task for a write channel, any "setNextWriteValue" values will
-				// not be transferred to the "value" field of the channel, unless you add code that does that.
+				/* Modbus write tasks take the "setNextWriteValue" value of a channel and send them to the device.
+				   Modbus read tasks put values in the "setNextValue" field, which get automatically transferred to the
+				   "value" field of the channel. By default, the "setNextWriteValue" field is NOT copied to the
+				   "setNextValue" and "value" field. In essence, this makes "setNextWriteValue" and "setNextValue"/"value"
+				   two separate channels.
+				   That means: Modbus read tasks will not overwrite any "setNextWriteValue" values. You do not have to
+				   watch the order in which you call read and write tasks.
+				   Also: if you do not add a Modbus read task for a write channel, any "setNextWriteValue" values will
+				   not be transferred to the "value" field of the channel, unless you add code that does that. */
 				new FC16WriteRegistersTask(0,
 						m(HeatpumpAlphaInnotecChannel.ChannelId.HR_0_OUTSIDETEMP, new SignedWordElement(0),
 								ElementToChannelConverter.DIRECT_1_TO_1),
@@ -382,19 +388,17 @@ public class HeatPumpAlphaInnotecImpl extends AbstractOpenemsModbusComponent imp
 
 	@Override
 	public void handleEvent(Event event) {
-		switch (event.getTopic()) {
-			case EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE:
-				//channeltest();	// Just for testing
-				channelmapping();
-				break;
+		if (EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE.equals(event.getTopic())) {
+			//channeltest();	// Just for testing
+			this.channelmapping();
 		}
 	}
 
 	// Put values in channels that are not directly Modbus read values but derivatives.
 	protected void channelmapping() {
 
-		CurrentState heatpumpCurrentState = getHeatpumpOperatingMode().asEnum();
-		switch (heatpumpCurrentState) {
+		OperatingMode heatpumpOperatingMode = getHeatpumpOperatingMode().asEnum();
+		switch (heatpumpOperatingMode) {
 			case OFF:
 				_setReady(true);
 				_setRunning(false);
@@ -422,8 +426,8 @@ public class HeatPumpAlphaInnotecImpl extends AbstractOpenemsModbusComponent imp
 			_setError(true);
 		}
 		
-		if (debug) {
-			this.logInfo(this.log, "--CHP Alpha Innotec--");
+		if (this.debug) {
+			this.logInfo(this.log, "--Heat pump Alpha Innotec--");
 			this.logInfo(this.log, "State: " + getHeatpumpOperatingMode().asEnum().getName());
 			this.logInfo(this.log, "Smart Grid State name: " + getSmartGridState().asEnum().getName());
 			this.logInfo(this.log, "Run clearance: " + getRunClearance().asEnum().getName());
@@ -460,18 +464,18 @@ public class HeatPumpAlphaInnotecImpl extends AbstractOpenemsModbusComponent imp
 		this.logInfo(this.log, "Wärmemenge Heizung (double): " + getHeatAmountHeizung());	// Test if 32 bit integers (doubleword) are translated correctly.
 		this.logInfo(this.log, "RBE ist: " + getRbeRaumtempIst());
 		this.logInfo(this.log, "RBE soll: " + getRbeRaumtempSoll());
-		this.logInfo(this.log, "EVU: " + getEVUactive());	// Not sure what this is doing. When testing, this was "true" when pump state said "cooling mode", even though pump state has a "EVU-Sperre" status.
-		this.logInfo(this.log, "EVU2: " + getEVU2active());	// Not sure what this is doing. I expected setting smart grid status to "off" would trigger this, but it remained "false" when smart grid state was "off". Documentation says EVU2 = "true" when smart grid state = "off".
+		this.logInfo(this.log, "EVU: " + getEvuActive());	// Not sure what this is doing. When testing, this was "true" when pump state said "cooling mode", even though pump state has a "EVU-Sperre" status.
+		this.logInfo(this.log, "EVU2: " + getEvu2Active());	// Not sure what this is doing. I expected setting smart grid status to "off" would trigger this, but it remained "false" when smart grid state was "off". Documentation says EVU2 = "true" when smart grid state = "off".
 		this.logInfo(this.log, "Verdichter1: " + getVD1active());
 		this.logInfo(this.log, "Verdichter2: " + getVD1active());
 		this.logInfo(this.log, "ZWE3 (optional): " + getVD1active());	// Test what readings you get from Modbus variables that are not supported by the heat pump model.
-		this.logInfo(this.log, "HUP: " + getForceOnHUP());
+		this.logInfo(this.log, "HUP: " + getForceOnHup());
 		this.logInfo(this.log, "Error Code: " + getErrorCode());	// Code "0" means no error. "Null" means no reading (yet).
 		this.logInfo(this.log, "");
 
 
 		// Test Modbus write. Example using Enum name field to set value. In effect, this writes an integer.
-		if (testcounter == 5) {
+		if (this.testcounter == 5) {
 			this.logInfo(this.log, "Smart Grid off");
 			this.logInfo(this.log, "");
 			try {
@@ -482,7 +486,7 @@ public class HeatPumpAlphaInnotecImpl extends AbstractOpenemsModbusComponent imp
 
 		}
 
-		if (testcounter == 10) {
+		if (this.testcounter == 10) {
 			this.logInfo(this.log, "Smart Grid standard");
 			this.logInfo(this.log, "");
 			try {
@@ -493,7 +497,7 @@ public class HeatPumpAlphaInnotecImpl extends AbstractOpenemsModbusComponent imp
 		}
 
 		// Test trying to write unsupported values (by Modbus device). Apparently nothing happens.
-		if (testcounter == 15) {
+		if (this.testcounter == 15) {
 			this.logInfo(this.log, "Smart Grid undefined");
 			this.logInfo(this.log, "");
 			try {
@@ -505,7 +509,7 @@ public class HeatPumpAlphaInnotecImpl extends AbstractOpenemsModbusComponent imp
 			this.logInfo(this.log, "");
 		}
 
-		if (testcounter == 20) {
+		if (this.testcounter == 20) {
 			this.logInfo(this.log, "Smart Grid standard");
 			this.logInfo(this.log, "");
 			try {
@@ -515,10 +519,10 @@ public class HeatPumpAlphaInnotecImpl extends AbstractOpenemsModbusComponent imp
 			}
 		}
 
-		// The channel is an Enum channel. But since Enum channels are Integer channels, you can just write an integer
-		// in them. Better to use SmartGridState.OFF.getValue(), as this gives the reader more information what the
-		// value does.
-		if (testcounter == 25) {
+		/* The channel is an Enum channel. But since Enum channels are Integer channels, you can just write an integer
+		   in them. Better to use SmartGridState.OFF.getValue(), as this gives the reader more information what the
+		   value does. */
+		if (this.testcounter == 25) {
 			this.logInfo(this.log, "Smart Grid 0");
 			this.logInfo(this.log, "");
 			try {
@@ -528,7 +532,7 @@ public class HeatPumpAlphaInnotecImpl extends AbstractOpenemsModbusComponent imp
 			}
 		}
 
-		if (testcounter == 30) {
+		if (this.testcounter == 30) {
 			this.logInfo(this.log, "Smart Grid 2");
 			this.logInfo(this.log, "");
 			try {
@@ -538,11 +542,11 @@ public class HeatPumpAlphaInnotecImpl extends AbstractOpenemsModbusComponent imp
 			}
 		}
 
-		// You can write any integer into an Enum channel. The value will be in the channel and will be sent as a
-		// Modbus write, but the device will just ignore it if it is outside the valid values.
-		// Beware that there is no warning or error message that tells you that the value is not valid. Creating
-		// the channel as an Enum channel does not limit the input to valid values.
-		if (testcounter == 35) {
+		/* You can write any integer into an Enum channel. The value will be in the channel and will be sent as a
+		   Modbus write, but the device will just ignore it if it is outside the valid values.
+		   Beware that there is no warning or error message that tells you that the value is not valid. Creating
+		   the channel as an Enum channel does not limit the input to valid values. */
+		if (this.testcounter == 35) {
 			this.logInfo(this.log, "Smart Grid 6");
 			this.logInfo(this.log, "");
 			try {
@@ -554,7 +558,7 @@ public class HeatPumpAlphaInnotecImpl extends AbstractOpenemsModbusComponent imp
 			this.logInfo(this.log, "");
 		}
 
-		if (testcounter == 40) {
+		if (this.testcounter == 40) {
 			this.logInfo(this.log, "Smart Grid standard");
 			this.logInfo(this.log, "");
 			try {
@@ -564,13 +568,6 @@ public class HeatPumpAlphaInnotecImpl extends AbstractOpenemsModbusComponent imp
 			}
 		}
 
-
-		testcounter++;
-
-
+		this.testcounter++;
 	}
-
-
-
-
 }

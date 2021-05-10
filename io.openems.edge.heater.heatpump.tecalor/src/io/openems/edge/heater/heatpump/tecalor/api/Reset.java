@@ -2,6 +2,10 @@ package io.openems.edge.heater.heatpump.tecalor.api;
 
 import io.openems.common.types.OptionsEnum;
 
+/**
+ * Possible reset states.
+ */
+
 public enum Reset implements OptionsEnum {
 	UNDEFINED(-1, "Undefined"), //
 	RESETSYSTEM(1, "Rset System"), //
@@ -19,12 +23,12 @@ public enum Reset implements OptionsEnum {
 
 	@Override
 	public int getValue() {
-		return value;
+		return this.value;
 	}
 
 	@Override
 	public String getName() {
-		return name;
+		return this.name;
 	}
 	
 	@Override

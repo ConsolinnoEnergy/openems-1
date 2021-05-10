@@ -20,7 +20,14 @@ import io.openems.edge.heater.api.HeatpumpSmartGridGeneralizedChannel;
 import java.util.Optional;
 import org.osgi.service.cm.ConfigurationAdmin;
 import org.osgi.service.component.ComponentContext;
-import org.osgi.service.component.annotations.*;
+import org.osgi.service.component.annotations.Activate;
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.ConfigurationPolicy;
+import org.osgi.service.component.annotations.Deactivate;
+import org.osgi.service.component.annotations.Reference;
+import org.osgi.service.component.annotations.ReferenceCardinality;
+import org.osgi.service.component.annotations.ReferencePolicy;
+import org.osgi.service.component.annotations.ReferencePolicyOption;
 import org.osgi.service.event.Event;
 import org.osgi.service.event.EventConstants;
 import org.osgi.service.event.EventHandler;
@@ -28,6 +35,11 @@ import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * This module reads the most important variables available via Modbus from a Tecalor heat pump and maps them to OpenEMS
+ * channels. WriteChannels can be used to send commands to the heat pump via setter methods in
+ * HeatpumpAlphaInnotecChannel and HeatpumpSmartGridGeneralizedChannel.
+ */
 
 @Designate(ocd = Config.class, factory = true)
 @Component(name = "HeatPumpTecalor",
@@ -35,11 +47,7 @@ import org.slf4j.LoggerFactory;
 		configurationPolicy = ConfigurationPolicy.REQUIRE,
 		property = EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE)
 
-/**
- * This module reads the most important variables available via Modbus from a Tecalor heat pump and maps them to OpenEMS
- * channels. WriteChannels can be used to send commands to the heat pump via "setNextWriteValue" method.
- */
-public class HeatPumpTecalorImpl extends AbstractOpenemsModbusComponent implements OpenemsComponent, EventHandler, HeatpumpTecalorChannel{
+public class HeatPumpTecalorImpl extends AbstractOpenemsModbusComponent implements OpenemsComponent, EventHandler, HeatpumpTecalorChannel {
 
 	@Reference
 	protected ConfigurationAdmin cm;
@@ -63,7 +71,7 @@ public class HeatPumpTecalorImpl extends AbstractOpenemsModbusComponent implemen
 	public void activate(ComponentContext context, Config config) throws OpenemsException {
 		super.activate(context, config.id(), config.alias(), config.enabled(), config.modbusUnitId(), this.cm,
 				"Modbus", config.modbus_id());
-		debug = config.debug();
+		this.debug = config.debug();
 
 	}
 
@@ -78,12 +86,12 @@ public class HeatPumpTecalorImpl extends AbstractOpenemsModbusComponent implemen
 
 		return new ModbusProtocol(this,
 				new FC4ReadInputRegistersTask(506, Priority.LOW,
-						// Use SignedWordElement when the number can be negative. Signed 16bit maps every number >32767
-						// to negative. That means if the value you read is positive and <32767, there is no difference
-						// between signed and unsigned.
-						// The pump sends 0x8000H (= signed -32768) when a value is not available. The
-						// ElementToChannelConverter function is used to replace that value with "null", as this is
-						// better for the visualization.
+						/* Use SignedWordElement when the number can be negative. Signed 16bit maps every number >32767
+						   to negative. That means if the value you read is positive and <32767, there is no difference
+						   between signed and unsigned.
+						   The pump sends 0x8000H (= signed -32768) when a value is not available. The
+						   ElementToChannelConverter function is used to replace that value with "null", as this is
+						   better for the visualization. */
 						m(HeatpumpTecalorChannel.ChannelId.IR507_AUSSENTEMP, new SignedWordElement(506),
 								ElementToChannelConverter.REPLACE_WITH_NULL_IF_0X8000H),
 						m(HeatpumpTecalorChannel.ChannelId.IR508_ISTTEMPHK1, new SignedWordElement(507),
@@ -240,15 +248,15 @@ public class HeatPumpTecalorImpl extends AbstractOpenemsModbusComponent implemen
 						m(HeatpumpTecalorChannel.ChannelId.HR4003_SGREADY_INPUT2, new UnsignedWordElement(4002),
 								ElementToChannelConverter.DIRECT_1_TO_1)
 				),
-				// Modbus write tasks take the "setNextWriteValue" value of a channel and send them to the device.
-				// Modbus read tasks put values in the "setNextValue" field, which get automatically transferred to the
-				// "value" field of the channel. By default, the "setNextWriteValue" field is NOT copied to the
-				// "setNextValue" and "value" field. In essence, this makes "setNextWriteValue" and "setNextValue"/"value"
-				// two separate channels.
-				// That means: Modbus read tasks will not overwrite any "setNextWriteValue" values. You do not have to
-				// watch the order in which you call read and write tasks.
-				// Also: if you do not add a Modbus read task for a write channel, any "setNextWriteValue" values will
-				// not be transferred to the "value" field of the channel, unless you add code that does that.
+				/* Modbus write tasks take the "setNextWriteValue" value of a channel and send them to the device.
+				   Modbus read tasks put values in the "setNextValue" field, which get automatically transferred to the
+				   "value" field of the channel. By default, the "setNextWriteValue" field is NOT copied to the
+				   "setNextValue" and "value" field. In essence, this makes "setNextWriteValue" and "setNextValue"/"value"
+				   two separate channels.
+				   That means: Modbus read tasks will not overwrite any "setNextWriteValue" values. You do not have to
+				   watch the order in which you call read and write tasks.
+				   Also: if you do not add a Modbus read task for a write channel, any "setNextWriteValue" values will
+				   not be transferred to the "value" field of the channel, unless you add code that does that. */
 				new FC16WriteRegistersTask(1500,
 						m(HeatpumpTecalorChannel.ChannelId.HR1501_BERTIEBSART, new UnsignedWordElement(1500),
 								ElementToChannelConverter.DIRECT_1_TO_1),
@@ -310,7 +318,7 @@ public class HeatPumpTecalorImpl extends AbstractOpenemsModbusComponent implemen
 		switch (event.getTopic()) {
 			case EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE:
 				//channeltest();	// Just for testing
-				channelmapping();
+				this.channelmapping();
 				break;
 		}
 	}
@@ -335,14 +343,14 @@ public class HeatPumpTecalorImpl extends AbstractOpenemsModbusComponent implemen
 		// Map SG generalized "Ready"
 		if (this.getErrorStatus().isDefined() && this.getEvuClearance().isDefined()) {
 			// Define "isReady" as no error and EVU clearance = true.
-			boolean Ready = !this.getErrorStatus().get() && this.getEvuClearance().get();
-			this.channel(HeatpumpSmartGridGeneralizedChannel.ChannelId.READY).setNextValue(Ready);
+			boolean ready = !this.getErrorStatus().get() && this.getEvuClearance().get();
+			this.channel(HeatpumpSmartGridGeneralizedChannel.ChannelId.READY).setNextValue(ready);
 		}
 
 		// Map SG generalized "Error"
 		if (this.getErrorStatus().isDefined()) {
-			boolean Error = this.getErrorStatus().get();
-			this.channel(HeatpumpSmartGridGeneralizedChannel.ChannelId.ERROR).setNextValue(Error);
+			boolean error = this.getErrorStatus().get();
+			this.channel(HeatpumpSmartGridGeneralizedChannel.ChannelId.ERROR).setNextValue(error);
 		}
 
 		// Map SG generalized "SmartGridState" read values.
@@ -389,8 +397,8 @@ public class HeatPumpTecalorImpl extends AbstractOpenemsModbusComponent implemen
 				e.printStackTrace();
 			}
 		}
-		// If SmartGridState is not used: Don't know if setSgReadyOnOff() needs to be turned off here or if 
-		// the pump turns that off by itself after a while.
+		/* If SmartGridState is not used: Don't know if setSgReadyOnOff() needs to be turned off here or if
+		   the pump turns that off by itself after a while. */
 
 		// Map "getSetpointTempHk1" according to WPM version.
 		if (getReglerkennung().isDefined()) {
@@ -456,8 +464,8 @@ public class HeatPumpTecalorImpl extends AbstractOpenemsModbusComponent implemen
 			this.getConsumedPowerForWwSumChannel().setNextValue(sum);
 		}
 
-		if (debug) {
-			this.logInfo(this.log, "--Heatpump Tecalor--");
+		if (this.debug) {
+			this.logInfo(this.log, "--Heat pump Tecalor--");
 			this.logInfo(this.log, "Status Bits 2501:");
 			this.logInfo(this.log, "0 - HK1 Pumpe = " + (((statusBits & 1) == 1) ? 1 : 0));
 			this.logInfo(this.log, "1 - HK2 Pumpe = " + (((statusBits & 2) == 2) ? 1 : 0));

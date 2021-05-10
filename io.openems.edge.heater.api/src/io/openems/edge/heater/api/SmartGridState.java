@@ -2,6 +2,10 @@ package io.openems.edge.heater.api;
 
 import io.openems.common.types.OptionsEnum;
 
+/**
+ * Possible smart grid states.
+ */
+
 public enum SmartGridState implements OptionsEnum {
 	UNDEFINED(-1, "Undefined"), //
 	OFF(0, "Off"), //
@@ -19,12 +23,12 @@ public enum SmartGridState implements OptionsEnum {
 
 	@Override
 	public int getValue() {
-		return value;
+		return this.value;
 	}
 
 	@Override
 	public String getName() {
-		return name;
+		return this.name;
 	}
 	
 	@Override

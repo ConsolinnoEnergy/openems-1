@@ -2,6 +2,10 @@ package io.openems.edge.heater.heatpump.tecalor.api;
 
 import io.openems.common.types.OptionsEnum;
 
+/**
+ * Possible restart states.
+ */
+
 public enum Restart implements OptionsEnum {
 	UNDEFINED(-1, "Undefined"), //
 	OFF(0, "Aus"), //
@@ -20,12 +24,12 @@ public enum Restart implements OptionsEnum {
 
 	@Override
 	public int getValue() {
-		return value;
+		return this.value;
 	}
 
 	@Override
 	public String getName() {
-		return name;
+		return this.name;
 	}
 	
 	@Override

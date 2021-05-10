@@ -2,6 +2,10 @@ package io.openems.edge.heater.heatpump.alphainnotec.api;
 
 import io.openems.common.types.OptionsEnum;
 
+/**
+ * Possible states of the cooling mode.
+ */
+
 public enum CoolingMode implements OptionsEnum {
 	UNDEFINED(-1, "Undefined"), //
 	Off(0, "Off"), //
@@ -17,12 +21,12 @@ public enum CoolingMode implements OptionsEnum {
 
 	@Override
 	public int getValue() {
-		return value;
+		return this.value;
 	}
 
 	@Override
 	public String getName() {
-		return name;
+		return this.name;
 	}
 	
 	@Override

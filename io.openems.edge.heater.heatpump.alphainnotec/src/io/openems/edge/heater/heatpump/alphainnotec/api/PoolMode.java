@@ -2,6 +2,10 @@ package io.openems.edge.heater.heatpump.alphainnotec.api;
 
 import io.openems.common.types.OptionsEnum;
 
+/**
+ * Possible states of the pool mode.
+ */
+
 public enum PoolMode implements OptionsEnum {
 	UNDEFINED(-1, "Undefined"), //
 	AUTOMATIK(0, "Automatik"), //
@@ -20,12 +24,12 @@ public enum PoolMode implements OptionsEnum {
 
 	@Override
 	public int getValue() {
-		return value;
+		return this.value;
 	}
 
 	@Override
 	public String getName() {
-		return name;
+		return this.name;
 	}
 	
 	@Override

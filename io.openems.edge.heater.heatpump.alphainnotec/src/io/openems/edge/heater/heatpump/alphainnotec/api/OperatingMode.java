@@ -2,7 +2,11 @@ package io.openems.edge.heater.heatpump.alphainnotec.api;
 
 import io.openems.common.types.OptionsEnum;
 
-public enum CurrentState implements OptionsEnum {
+/**
+ * Possible states of the operating mode.
+ */
+
+public enum OperatingMode implements OptionsEnum {
 	UNDEFINED(-1, "Undefined"), //
 	HEIZBETRIEB(0, "Heizbetrieb"), //
 	TRINKWARMWASSER(1, "Trinkwarmwasser"), //
@@ -16,19 +20,19 @@ public enum CurrentState implements OptionsEnum {
 	private int value;
 	private String name;
 
-	private CurrentState(int value, String name) {
+	private OperatingMode(int value, String name) {
 		this.value = value;
 		this.name = name;
 	}
 
 	@Override
 	public int getValue() {
-		return value;
+		return this.value;
 	}
 
 	@Override
 	public String getName() {
-		return name;
+		return this.name;
 	}
 	
 	@Override
