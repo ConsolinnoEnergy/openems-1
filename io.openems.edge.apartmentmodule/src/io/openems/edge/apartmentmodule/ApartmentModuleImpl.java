@@ -69,9 +69,12 @@ public class ApartmentModuleImpl extends AbstractOpenemsModbusComponent implemen
     private static final int DEFAULT_VALVE_MAX_SECONDS = 100;
     private static final int DEFAULT_VALVE_TIME_FOR_RELAY = DEFAULT_VALVE_MAX_SECONDS * 110;
     private boolean wasDeactivatedBefore = false;
-    private boolean relaysShutDown = true;
+    private boolean wasActivatedBefore = false;
+    private boolean relaysShutDownHappened = true;
     private boolean isOpen = false;
     private boolean isClosed = false;
+    private static final int MAX_CYCLES_TO_WAIT = 5;
+    private int relayUndefinedCounter = 0;
 
     @Reference
     protected ConfigurationAdmin cm;
@@ -230,7 +233,7 @@ public class ApartmentModuleImpl extends AbstractOpenemsModbusComponent implemen
                                     ElementToChannelConverter.DIRECT_1_TO_1)
                     ),
 
-                    new FC3ReadRegistersTask(0, Priority.LOW,
+                    new FC3ReadRegistersTask(0, Priority.HIGH,
                             m(ApartmentModule.ChannelId.HR_0_COMMUNICATION_CHECK, new UnsignedWordElement(0),
                                     ElementToChannelConverter.DIRECT_1_TO_1),
                             m(ApartmentModule.ChannelId.HR_1_EXTERNAL_REQUEST_FLAG, new UnsignedWordElement(1),
@@ -256,8 +259,9 @@ public class ApartmentModuleImpl extends AbstractOpenemsModbusComponent implemen
                 }
                 if (topAM) {
                     if (this.getStateRelay1().equals(OnOff.UNDEFINED) == false && this.getStateRelay2().equals(OnOff.UNDEFINED) == false) {
+                        this.relayUndefinedCounter = 0;
                         updateValveStatus();
-                    } else {
+                    } else if (this.relayUndefinedCounter++ < MAX_CYCLES_TO_WAIT) {
                         this.getValveStatusChannel().setNextValue(ValveStatus.UNDEFINED);
                     }
                     if (this.getTemperatureChannel().value().isDefined()) {
@@ -271,7 +275,6 @@ public class ApartmentModuleImpl extends AbstractOpenemsModbusComponent implemen
                     try {
                         this.getSetCommunicationCheckChannel().setNextWriteValue(CommunicationCheck.RECEIVED);
                     } catch (OpenemsError.OpenemsNamedException e) {
-                        // Wo ist hier n Communicationfail? der schreibt lokal? <-- wenn nix im Value nächstes mal drin steht dann...
                         this.logError(this.log, "Modbus connection to Apartment module failed.");
                     }
                     //TODO Check if still active after x Time
@@ -283,8 +286,16 @@ public class ApartmentModuleImpl extends AbstractOpenemsModbusComponent implemen
                 }
                 boolean externalRequestPresent = this.getExternalRequestCurrent().isDefined();
                 boolean externalRequest = externalRequestPresent ? this.getExternalRequestCurrent().get() : false;
-                if (externalHeatFlag.isPresent() && externalRequestPresent) {
-                    this.getLastKnownRequestStatusChannel().setNextValue(externalHeatFlag.orElse(false) || externalRequest);
+                boolean applyHeat = externalHeatFlag.orElse(false) || externalRequest;
+                if (this.getLastKnownRequestStatusChannel().value().isDefined() && this.getLastKnownRequestStatusChannel().value().get()) {
+                    if (externalHeatFlag.isPresent() && externalRequestPresent) {
+                        this.getLastKnownRequestStatusChannel().setNextValue(applyHeat);
+                    }
+                } else if (externalHeatFlag.isPresent() || externalRequestPresent) {
+                    this.getLastKnownRequestStatusChannel().setNextValue(applyHeat);
+                }
+                if (externalRequest || externalHeatFlag.isPresent() && externalHeatFlag.get()) {
+                    log.info("HeatRequest for AM : " + super.id());
                 }
 
                 this.isHeatRequestFlagChannel().setNextValue(externalHeatFlag.orElse(false));
@@ -351,17 +362,30 @@ public class ApartmentModuleImpl extends AbstractOpenemsModbusComponent implemen
     private void listenToActivation() {
         Optional<Boolean> activation = this.isActivationRequest().getNextWriteValueAndReset();
         boolean hydraulicMixerActivation = activation.orElse(false);
+        ValveStatus valveStatus = this.getValveStatusChannel().value().isDefined() ? this.getValveStatusChannel().value().asEnum() : ValveStatus.UNDEFINED;
+        boolean valveShouldOpen = this.wasActivatedBefore == false || valveStatus.equals(ValveStatus.CLOSED)
+                || valveStatus.equals(ValveStatus.UNDEFINED) || valveStatus.equals(ValveStatus.CLOSING);
+        boolean valveShouldClose = this.wasDeactivatedBefore == false || valveStatus.equals(ValveStatus.UNDEFINED)
+                || valveStatus.equals(ValveStatus.OPEN) || valveStatus.equals(ValveStatus.OPENING);
         if (hydraulicMixerActivation) {
-            turnOnHydraulicMixer();
-            this.wasDeactivatedBefore = false;
-            this.relaysShutDown = false;
-        } else {
-            if (this.wasDeactivatedBefore == false) {
-                turnOffHydraulicMixer();
-                this.wasDeactivatedBefore = true;
+            if (valveShouldOpen) {
+                turnOnHydraulicMixer();
+                this.wasActivatedBefore = true;
+                this.wasDeactivatedBefore = false;
+                this.relaysShutDownHappened = false;
                 this.initialDeactivationTime = new DateTime();
-            } else if (this.relaysShutDown == false) {
-                shutDownRelays();
+            } else if (this.relaysShutDownHappened == false) {
+                this.shutDownRelays();
+            }
+        } else {
+            if (valveShouldClose) {
+                turnOffHydraulicMixer();
+                this.wasActivatedBefore = false;
+                this.wasDeactivatedBefore = true;
+                this.relaysShutDownHappened = false;
+                this.initialDeactivationTime = new DateTime();
+            } else if (this.relaysShutDownHappened == false) {
+                this.shutDownRelays();
             }
         }
     }
@@ -372,7 +396,7 @@ public class ApartmentModuleImpl extends AbstractOpenemsModbusComponent implemen
         if (now.isAfter(compare)) {
             this.setRelay1(OnOff.OFF, DEFAULT_VALVE_PERMANENT);
             this.setRelay2(OnOff.OFF, DEFAULT_VALVE_PERMANENT);
-            this.relaysShutDown = true;
+            this.relaysShutDownHappened = true;
         }
     }
 
