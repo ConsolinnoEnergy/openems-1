@@ -29,6 +29,9 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 	@AttributeDefinition(name = "Maximum power", description = "Maximum current of the Charger in A.", required = true)
 	int maxHwCurrent() default 32;
 
+	@AttributeDefinition(name = "Phases", description = "If the Phases are physically swapped, change the order here.", required = true)
+	int[] phases() default {1,2,3};
+
 	String webconsole_configurationFactory_nameHint() default "EVCS Hardy Barth [{id}]";
 
 }

@@ -45,9 +45,14 @@ public class HardyBarthImpl extends AbstractOpenemsComponent
 
 	// Master EVCS is responsible for RFID authentication (Not implemented for now)
 	protected boolean masterEvcs = true;
+	//Order in which the Phases are physically connected
+	private int[] phaseOrder;
+
+
 
 	@Reference
 	private EvcsPower evcsPower;
+
 
 	public HardyBarthImpl() {
 		super(//
@@ -66,7 +71,7 @@ public class HardyBarthImpl extends AbstractOpenemsComponent
 		this._setMinimumHardwarePower(config.minHwCurrent() * 3 * 230);
 		this._setMaximumHardwarePower(config.maxHwCurrent() * 3 * 230);
 		this._setPowerPrecision(230);
-
+		this.phaseOrder = config.phases();
 		if (config.enabled()) {
 			this.api = new HardyBarthApi(config.ip(), this);
 			
@@ -125,5 +130,9 @@ public class HardyBarthImpl extends AbstractOpenemsComponent
 	@Override
 	public EvcsPower getEvcsPower() {
 		return this.evcsPower;
+	}
+
+	public int[] getPhaseOrder() {
+		return phaseOrder;
 	}
 }

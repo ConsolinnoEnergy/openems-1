@@ -10,6 +10,7 @@ public class MyConfig extends AbstractComponentConfig implements Config {
 		private String ip;
 		private int minHwCurrent;
 		private int maxHwCurrent;
+		private int[] phases;
 
 		private Builder() {
 		}
@@ -31,6 +32,10 @@ public class MyConfig extends AbstractComponentConfig implements Config {
 
 		public Builder setMaxHwCurrent(int maxHwCurrent) {
 			this.maxHwCurrent = maxHwCurrent;
+			return this;
+		}
+		public Builder setPhases(int[] phases) {
+			this.phases = phases;
 			return this;
 		}
 
@@ -73,5 +78,10 @@ public class MyConfig extends AbstractComponentConfig implements Config {
 	@Override
 	public int maxHwCurrent() {
 		return this.builder.maxHwCurrent;
+	}
+
+	@Override
+	public int[] phases() {
+		return this.builder.phases;
 	}
 }
