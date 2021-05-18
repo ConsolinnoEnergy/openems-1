@@ -1,0 +1,21 @@
+package io.openems.edge.evcs.keba.kecontact.simulated;
+
+import org.osgi.service.metatype.annotations.AttributeDefinition;
+import org.osgi.service.metatype.annotations.ObjectClassDefinition;
+
+@ObjectClassDefinition(name = "Simulated Keba KeContact", description = ".")
+@interface Config {
+
+    @AttributeDefinition(name = "Id", description = "Unique Id for the .")
+    String id() default "";
+
+    @AttributeDefinition(name = "Alias", description = "Human readable name of this Configurator.")
+    String alias() default "";
+
+    @AttributeDefinition(name = "Phases", description = "If the Phases are physically swapped, change the order here.", required = true)
+    int[] phases() default {1,2,3};
+
+    boolean enabled() default true;
+
+    String webconsole_configurationFactory_nameHint() default "{id}";
+}
