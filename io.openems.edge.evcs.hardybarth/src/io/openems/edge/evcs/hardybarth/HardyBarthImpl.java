@@ -132,7 +132,8 @@ public class HardyBarthImpl extends AbstractOpenemsComponent
 		return this.evcsPower;
 	}
 
-	public int[] getPhaseOrder() {
-		return phaseOrder;
+	@Override
+	public int[] getPhaseConfiguration() {
+		return this.phaseOrder;
 	}
 }

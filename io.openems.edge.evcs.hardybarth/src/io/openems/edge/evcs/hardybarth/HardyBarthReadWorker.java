@@ -163,7 +163,7 @@ public class HardyBarthReadWorker extends AbstractCycleWorker {
      * @return Assigned Phase
      */
     private Double assignPhase(int phaseNumber, JsonElement json) {
-        int[] phases = this.parent.getPhaseOrder();
+        int[] phases = this.parent.getPhaseConfiguration();
         switch (phases[phaseNumber - 1]) {
             case 1:
                 return (Double) this.getValueFromJson(HardyBarth.ChannelId.RAW_ACTIVE_POWER_L1, json,

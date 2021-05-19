@@ -112,6 +112,9 @@ public class SimulatedKebaContact extends AbstractOpenemsComponent implements Ma
     }
 
     public void applyPower(int phase, int chargePower) throws OpenemsError.OpenemsNamedException {
+        if (chargePower <= 6 && chargePower > 0) {
+            chargePower = 0;
+        }
         switch (this.phases[phase]) {
             case 1:
                 this.l1Power += chargePower;
@@ -125,7 +128,11 @@ public class SimulatedKebaContact extends AbstractOpenemsComponent implements Ma
                 this.l3Power += chargePower;
                 this.l3.setNextValue(this.l3Power);
                 break;
-
         }
+    }
+
+    @Override
+    public int[] getPhaseConfiguration() {
+        return this.phases;
     }
 }

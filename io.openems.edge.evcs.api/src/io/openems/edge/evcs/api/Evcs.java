@@ -612,4 +612,9 @@ public interface Evcs extends OpenemsComponent {
 				.channel(8, ChannelId.CHARGINGSTATION_COMMUNICATION_FAILED, ModbusType.UINT16) //
 				.build();
 	}
+	/**
+	 * Return the Phase Configuration. Only Important if the Phases are physically swapped.
+	 * @return int[] of connected Phases
+	 */
+	public int[] getPhaseConfiguration();
 }

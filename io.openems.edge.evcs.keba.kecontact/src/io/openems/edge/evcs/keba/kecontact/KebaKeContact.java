@@ -250,18 +250,24 @@ public class KebaKeContact extends AbstractOpenemsComponent
 
                 // Report 3
                 .channel(78 + this.phases[0], KebaChannelId.VOLTAGE_L1, ModbusType.UINT16)
-                .channel(78 + this.phases[0], KebaChannelId.VOLTAGE_L2, ModbusType.UINT16)
-                .channel(78 + this.phases[0], KebaChannelId.VOLTAGE_L3, ModbusType.UINT16)
+                .channel(78 + this.phases[1], KebaChannelId.VOLTAGE_L2, ModbusType.UINT16)
+                .channel(78 + this.phases[2], KebaChannelId.VOLTAGE_L3, ModbusType.UINT16)
                 .channel(81 + this.phases[0], KebaChannelId.CURRENT_L1, ModbusType.UINT16)
-                .channel(81 + this.phases[0], KebaChannelId.CURRENT_L2, ModbusType.UINT16)
-                .channel(81 + this.phases[0], KebaChannelId.CURRENT_L3, ModbusType.UINT16)
+                .channel(81 + this.phases[1], KebaChannelId.CURRENT_L2, ModbusType.UINT16)
+                .channel(81 + this.phases[2], KebaChannelId.CURRENT_L3, ModbusType.UINT16)
                 .channel(85, KebaChannelId.ACTUAL_POWER, ModbusType.UINT16)
                 .channel(86, KebaChannelId.COS_PHI, ModbusType.UINT16).uint16Reserved(87)
                 .channel(88, KebaChannelId.ENERGY_TOTAL, ModbusType.UINT16).build();
     }
 
     @Override
+    public int[] getPhaseConfiguration() {
+        return this.phases;
+    }
+
+    @Override
     public EvcsPower getEvcsPower() {
         return this.evcsPower;
     }
+
 }
