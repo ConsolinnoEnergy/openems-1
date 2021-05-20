@@ -6,7 +6,7 @@ import io.openems.edge.common.channel.Channel;
 import io.openems.edge.common.channel.Doc;
 import io.openems.edge.common.component.OpenemsComponent;
 
-public interface powerLimitChannel extends OpenemsComponent {
+public interface PowerLimitChannel extends OpenemsComponent {
 
     /**
      * <ul>

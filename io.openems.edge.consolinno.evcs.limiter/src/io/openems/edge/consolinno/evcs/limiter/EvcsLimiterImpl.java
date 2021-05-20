@@ -35,8 +35,8 @@ import java.util.Optional;
 @Component(name = "evcsLimiterImpl", immediate = true,
         configurationPolicy = ConfigurationPolicy.REQUIRE, property = EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE)
 
-public class evcsLimiterImpl extends AbstractOpenemsComponent implements OpenemsComponent, powerLimitChannel, EventHandler {
-    private final Logger log = LoggerFactory.getLogger(evcsLimiterImpl.class);
+public class EvcsLimiterImpl extends AbstractOpenemsComponent implements OpenemsComponent, PowerLimitChannel, EventHandler {
+    private final Logger log = LoggerFactory.getLogger(EvcsLimiterImpl.class);
     private ManagedEvcs[] evcss;
     private Integer powerL1;
     private Integer powerL2;
@@ -63,8 +63,8 @@ public class evcsLimiterImpl extends AbstractOpenemsComponent implements Openems
     @Reference
     ComponentManager cpm;
 
-    public evcsLimiterImpl() {
-        super(OpenemsComponent.ChannelId.values(), powerLimitChannel.ChannelId.values());
+    public EvcsLimiterImpl() {
+        super(OpenemsComponent.ChannelId.values(), PowerLimitChannel.ChannelId.values());
     }
 
     @Activate
@@ -110,11 +110,11 @@ public class evcsLimiterImpl extends AbstractOpenemsComponent implements Openems
 
     @Override
     public void handleEvent(Event event) {
-        Optional<List<ManagedEvcs[]>> problem;
-        problem = this.getRequestedPower();
         if (this.getPowerLimitValue() > 0) {
             this.powerLimit = getPowerLimitValue();
         }
+        Optional<List<ManagedEvcs[]>> problem;
+        problem = this.getRequestedPower();
         if (problem.isPresent()) {
             try {
                 this.limitPower(problem.get());
@@ -126,7 +126,11 @@ public class evcsLimiterImpl extends AbstractOpenemsComponent implements Openems
         this.updatePower(true);
         if (this.phaseLimit != 0 && this.getMaximumLoad() > this.phaseLimit) {
             this.log.info("Phase Limit has been exceeded. Rectifying in Process...");
-            this.applyPhaseLimit();
+            try {
+                this.applyPhaseLimit();
+            } catch (Exception e) {
+                this.log.error("Unable to apply Phase Limit without turning an EVCS off!");
+            }
         }
         this.updatePower(true);
         if (this.powerLimit != 0 && (this.powerL1 + this.powerL2 + this.powerL3 >= this.powerLimit / GRID_VOLTAGE)) {
@@ -134,10 +138,14 @@ public class evcsLimiterImpl extends AbstractOpenemsComponent implements Openems
             try {
                 this.applyPowerLimit();
             } catch (Exception e) {
-                this.log.error("Unable to apply Power Limit!");
+                this.log.error("Unable to apply Power Limit without turning an EVCS off!");
             }
         }
     }
+    //----------------------Limit Methods------------------------\\
+
+
+    //-------------Methods for Power Limiting------------\\
 
     /**
      * Evenly Reduces the power of all EVCS (if Possible).
@@ -188,10 +196,14 @@ public class evcsLimiterImpl extends AbstractOpenemsComponent implements Openems
         return powerToReduce;
     }
 
-
-    private void applyPhaseLimit() {
+    //---------------Methods for Phase Limiting--------------\\
+    private void applyPhaseLimit() throws Exception {
         //What phases are causing the problems
         List<Integer> problemPhases = new ArrayList<>();
+        int afterOnePhaseReduction;
+        int afterTwoPhaseReduction;
+        int afterThreePhaseReduction;
+
         for (int i = 1; i <= 3; i++) {
             switch (i) {
                 case 1:
@@ -212,15 +224,255 @@ public class evcsLimiterImpl extends AbstractOpenemsComponent implements Openems
             }
         }
         //Get all evcs on that phase
-        List<ManagedEvcs> onePhase = new ArrayList<>();
-        List<ManagedEvcs> twoPhase = new ArrayList<>();
-        List<ManagedEvcs> threePhase = new ArrayList<>();
+        // One Phase and two phase are sorted by Phase
+        List<ManagedEvcs[]> onePhase = new ArrayList<>();
+        //0=All that are on phase 1 and 2;1= All that are on Phase 2 and Three;2= All that are on phase 3 and 1
+        List<ManagedEvcs[]> twoPhase = new ArrayList<>();
+        //Three phases are already on all of them so there is only one Array
+        ManagedEvcs[] threePhase;
+        threePhase = this.getThreePhaseEvcs();
+        for (int i = 0; i < problemPhases.size(); i++) {
+            onePhase.add(i, this.getOnePhaseEvcs(problemPhases.get(i)));
+            if (i != 3) {
+                twoPhase.add(i, this.getTwoPhaseEvcs(problemPhases.get(i), i - 1));
+            }
+        }
+
         //Get the Value that has to be reduced
+        int reduceL1 = this.powerL1 - this.phaseLimit;
+        int reduceL2 = this.powerL2 - this.phaseLimit;
+        int reduceL3 = this.powerL3 - this.phaseLimit;
+        int minReduce = Math.min(Math.min(reduceL1, reduceL2), reduceL3);
         //Actual limiting
+        int previousReduceAmount = minReduce;
+        while (this.threePhasesOverPhaseLimit(reduceL1, reduceL2, reduceL3)) {
+
+
+            //The Three Phase EVCS will be reduced until at least one is under the limit
+            afterThreePhaseReduction = this.reduceThreePhaseEvcs(threePhase, threePhase.length, minReduce);
+            reduceL1 -= afterThreePhaseReduction;
+            reduceL2 -= afterThreePhaseReduction;
+            reduceL3 -= afterThreePhaseReduction;
+            minReduce = Math.min(Math.min(reduceL1, reduceL2), reduceL3);
+            if (minReduce != previousReduceAmount) {
+                previousReduceAmount = minReduce;
+            } else {
+                //if the three Phasers cant be reduced
+                throw new Exception();
+            }
+        }
+
+        //The Two Phase EVCS will be reduced until at least one is under the limit
+        if (this.twoPhasesOverPhaseLimit(reduceL1, reduceL2, reduceL3)) {
+            //Get what phase is ok
+            int phaseOkIndex = this.getOnePhaseUnderPhaseLimit(reduceL1, reduceL2, reduceL3);
+            switch (phaseOkIndex) {
+                case 1:
+                    minReduce = Math.min(reduceL2, reduceL3);
+                    break;
+                case 2:
+                    minReduce = Math.min(reduceL1, reduceL3);
+                    break;
+                case 3:
+                    minReduce = Math.min(reduceL1, reduceL2);
+                    break;
+            }
+            ManagedEvcs[] twoPhaseOverLimit;
+            if (phaseOkIndex == 3) {
+                twoPhaseOverLimit = twoPhase.get(0);
+            } else {
+                twoPhaseOverLimit = twoPhase.get(phaseOkIndex);
+            }
+            //reduce until on phase is under the limit
+            previousReduceAmount = minReduce;
+            while (minReduce > 0) {
+                afterTwoPhaseReduction = this.reduceTwoPhaseEvcs(twoPhaseOverLimit, twoPhaseOverLimit.length, minReduce);
+                switch (phaseOkIndex) {
+                    case 1:
+                        reduceL2 -= afterTwoPhaseReduction;
+                        reduceL3 -= afterTwoPhaseReduction;
+                        minReduce -= afterTwoPhaseReduction;
+                        break;
+                    case 2:
+                        reduceL1 -= afterTwoPhaseReduction;
+                        reduceL3 -= afterTwoPhaseReduction;
+                        minReduce -= afterTwoPhaseReduction;
+                        break;
+                    case 3:
+                        reduceL1 -= afterTwoPhaseReduction;
+                        reduceL2 -= afterTwoPhaseReduction;
+                        minReduce -= afterTwoPhaseReduction;
+                        break;
+                }
+                if (minReduce != previousReduceAmount) {
+                    previousReduceAmount = minReduce;
+                } else {
+                    throw new Exception();
+                }
+            }
+
+        }
+
+        //The one Phase EVCS will be reduces until the last phase is under the limit
+        if (this.onePhaseOverPhaseLimit(reduceL1, reduceL2, reduceL3)) {
+            int amountPerEvcs;
+            int phaseIndex = 0;
+            int problemOnePhase = 1;
+            switch (this.getTwoPhasesUnderPhaseLimit(reduceL1, reduceL2, reduceL3)) {
+                case 1:
+                    amountPerEvcs = reduceL1 / onePhase.get(0).length;
+                    afterOnePhaseReduction = this.reduceOnePhaseEvcs(onePhase.get(0), onePhase.get(0).length, amountPerEvcs, reduceL1);
+                    reduceL1 -= afterOnePhaseReduction;
+                    phaseIndex = 1;
+                    problemOnePhase = reduceL1;
+                    break;
+                case 2:
+                    amountPerEvcs = reduceL2 / onePhase.get(1).length;
+                    afterOnePhaseReduction = this.reduceOnePhaseEvcs(onePhase.get(1), onePhase.get(1).length, amountPerEvcs, reduceL2);
+                    reduceL2 -= afterOnePhaseReduction;
+                    phaseIndex = 2;
+                    problemOnePhase = reduceL2;
+                    break;
+                case 3:
+                    amountPerEvcs = reduceL3 / onePhase.get(2).length;
+                    afterOnePhaseReduction = this.reduceOnePhaseEvcs(onePhase.get(2), onePhase.get(2).length, amountPerEvcs, reduceL3);
+                    reduceL3 -= afterOnePhaseReduction;
+                    phaseIndex = 3;
+                    problemOnePhase = reduceL3;
+                    break;
+            }
+            if (problemOnePhase <= 0) {
+                this.log.info("Successfully applied Phase limit");
+            } else {
+                previousReduceAmount = problemOnePhase;
+                while (problemOnePhase > 0 && phaseIndex != 0) {
+                    amountPerEvcs = problemOnePhase / onePhase.get(phaseIndex - 1).length;
+                    problemOnePhase = this.reduceOnePhaseEvcs(onePhase.get(phaseIndex - 1), onePhase.get(phaseIndex - 1).length, amountPerEvcs, problemOnePhase);
+
+                    if (problemOnePhase != previousReduceAmount) {
+                        previousReduceAmount = problemOnePhase;
+                    } else {
+                        throw new Exception();
+                    }
+                }
+            }
+
+        }
     }
 
-    private void applyPhaseLimit(int powerToReduce) {
 
+    /**
+     * Checks if only One Phase is over the Phase Limit.
+     *
+     * @param reduceL1 The Amount that has to be reduced from L1
+     * @param reduceL2 The Amount that has to be reduced from L2
+     * @param reduceL3 The Amount that has to be reduced from L3
+     * @return true if only one is over the limit
+     */
+    private boolean onePhaseOverPhaseLimit(int reduceL1, int reduceL2, int reduceL3) {
+        if (reduceL1 > 0 && reduceL2 <= 0 && reduceL3 <= 0) {
+            return true;
+        } else if (reduceL1 <= 0 && reduceL2 > 0 && reduceL3 <= 0) {
+            return true;
+        } else {
+            return reduceL1 <= 0 && reduceL2 <= 0 && reduceL3 > 0;
+        }
+    }
+
+    /**
+     * Returns the Phase that is the only one that is still over the Phase Limit.
+     * NOTE: Only call after chack has been done that only one if over the limit in the first place.
+     *
+     * @param reduceL1 The Amount that has to be reduced from L1
+     * @param reduceL2 The Amount that has to be reduced from L2
+     * @param reduceL3 The Amount that has to be reduced from L3
+     * @return Index of the Phase that is over the Limit
+     */
+    private int getTwoPhasesUnderPhaseLimit(int reduceL1, int reduceL2, int reduceL3) {
+        if (reduceL1 > 0 && reduceL2 <= 0 && reduceL3 <= 0) {
+            return 1;
+        } else if (reduceL1 <= 0 && reduceL2 > 0 && reduceL3 <= 0) {
+            return 2;
+        } else {
+            return 3;
+        }
+
+    }
+
+    /**
+     * Checks if two Phases are over the Phase Limit.
+     *
+     * @param reduceL1 The Amount that has to be reduced from L1
+     * @param reduceL2 The Amount that has to be reduced from L2
+     * @param reduceL3 The Amount that has to be reduced from L3
+     * @return true if only one is over the limit
+     */
+    private boolean twoPhasesOverPhaseLimit(int reduceL1, int reduceL2, int reduceL3) {
+        if (reduceL1 > 0) {
+            if (reduceL2 > 0 && reduceL3 <= 0) {
+                return true;
+            } else {
+                return reduceL2 <= 0 && reduceL3 > 0;
+            }
+        } else {
+            if (reduceL2 <= 0) {
+                return false;
+            } else {
+                return reduceL3 > 0;
+            }
+        }
+    }
+
+    /**
+     * Returns the phase that is under the Phase Limit.
+     * NOTE: Only call after check has been done that only one is under the limit in the first place.
+     *
+     * @param reduceL1 The Amount that has to be reduced from L1
+     * @param reduceL2 The Amount that has to be reduced from L2
+     * @param reduceL3 The Amount that has to be reduced from L3
+     * @return Index of the Phase that is under the Limit
+     */
+    private int getOnePhaseUnderPhaseLimit(int reduceL1, int reduceL2, int reduceL3) {
+        if (reduceL1 <= 0) {
+            return 1;
+        }
+        if (reduceL2 <= 0) {
+            return 2;
+        } else {
+            return 3;
+        }
+    }
+
+    /**
+     * Checks if all Phases are over the Phase Limit.
+     *
+     * @param reduceL1 The Amount that has to be reduced from L1
+     * @param reduceL2 The Amount that has to be reduced from L2
+     * @param reduceL3 The Amount that has to be reduced from L3
+     * @return true if only one is over the limit
+     */
+    private boolean threePhasesOverPhaseLimit(int reduceL1, int reduceL2, int reduceL3) {
+        return (reduceL1 > 0 && reduceL2 > 0 && reduceL3 > 0);
+    }
+
+    //----------------Methods for Load Balancing-----------------\\
+
+    /**
+     * Updates the current Power consumption and returns an Array of problematic EVCS Arrays if an unbalanced load exists.
+     *
+     * @return Array of ManagedEvcs[]
+     */
+    private Optional<List<ManagedEvcs[]>> getRequestedPower() {
+        this.updatePower(false);
+        //If the load should be checked this will calculate if there is a load Delta >= the maximum allowed Delta
+        int min = this.getMinimumLoad();
+        int max = this.getMaximumLoad();
+        if (max - min >= MAXIMUM_LOAD_DELTA) {
+            if (this.symmetry) {
+                return this.unbalancedEvcsOnPhase();
+            }
+        }
+        return Optional.empty();
     }
 
     /**
@@ -308,16 +560,16 @@ public class evcsLimiterImpl extends AbstractOpenemsComponent implements Openems
             }
         }
         //If its still unbalanced this will reduce the two phase evcs until its not possible anymore
-        if (amountLeft > 0 || amountLeft2 > 0) {
+        if (amountLeft > 0 || (amountLeft2 > 0 && problem.size() > 2)) {
             int[] amountsLeft = new int[2];
             amountsLeft[0] = amountLeft;
             amountsLeft[1] = amountLeft2;
             int[] previousAmountsLeft = amountsLeft.clone();
-            while (amountLeft > 0 || amountLeft2 > 0) {
+            while (amountLeft > 0 || (amountLeft2 > 0 && problem.size() > 2)) {
                 int amountToReduceTwoPhase = 0;
                 if (amountLeft > 0) {
                     amountToReduceTwoPhase = amountLeft / twoPhaseLength;
-                } else if (problem.size() > 2 && twoPhaseLength2 != 0) {
+                } else if (twoPhaseLength2 != 0) {
                     amountToReduceTwoPhase = amountLeft2 / twoPhaseLength2;
                 }
                 if (amountToReduceTwoPhase != 0) {
@@ -337,6 +589,8 @@ public class evcsLimiterImpl extends AbstractOpenemsComponent implements Openems
 
     }
 
+    //--------------------General Methods for Limiting-------------------\\
+
     /**
      * Reduces the Power of EVCS that charge with only one Phase by a amount given.
      *
@@ -349,7 +603,12 @@ public class evcsLimiterImpl extends AbstractOpenemsComponent implements Openems
      */
     private int reduceOnePhaseEvcs(ManagedEvcs[] onePhase, int onePhaseLength, int amountToReduce, int amountLeft) throws OpenemsError.OpenemsNamedException {
         for (int i = 0; i < onePhaseLength; i++) {
-            int newPower = (onePhase[i].getChargePower().get() / GRID_VOLTAGE) - amountToReduce;
+            int newPower = 0;
+            if (onePhase[i].getSetChargePowerLimitChannel().getNextWriteValue().orElse(onePhase[i].getSetChargePowerLimitChannel().value().orElse(0)) != 0) {
+                newPower = ((onePhase[i].getSetChargePowerLimitChannel().getNextWriteValue().orElse(onePhase[i].getSetChargePowerLimitChannel().value().orElse(0)) / GRID_VOLTAGE) - amountToReduce);
+            } else {
+                newPower = (onePhase[i].getChargePower().get() / GRID_VOLTAGE) - amountToReduce;
+            }
             if (newPower > 6) {
                 onePhase[i].setChargePowerLimit(newPower * GRID_VOLTAGE);
                 amountLeft -= amountToReduce;
@@ -357,6 +616,34 @@ public class evcsLimiterImpl extends AbstractOpenemsComponent implements Openems
             }
         }
         return amountLeft;
+    }
+
+    /**
+     * Reduces the Power of EVCS that charge with two Phases by a amount given.
+     * NOTE: This Method doesn't check if its allowed to do it. This Should only be used in the Phase Limitation.
+     *
+     * @param twoPhase       Array of all EVCS that have to be reduced
+     * @param twoPhaseLength Length of that Array
+     * @param amountToReduce Amount that has to be reduced per EVCS
+     * @return How much was reduced
+     * @throws OpenemsError.OpenemsNamedException This shouldn't happen
+     */
+    private int reduceTwoPhaseEvcs(ManagedEvcs[] twoPhase, int twoPhaseLength, int amountToReduce) throws OpenemsError.OpenemsNamedException {
+        int amountReduced = 0;
+
+        for (int i = 0; i < twoPhaseLength; i++) {
+            int newPower = 0;
+            if (twoPhase[i].getSetChargePowerLimitChannel().getNextWriteValue().orElse(twoPhase[i].getSetChargePowerLimitChannel().value().orElse(0)) != 0) {
+                newPower = ((twoPhase[i].getSetChargePowerLimitChannel().getNextWriteValue().orElse(twoPhase[i].getSetChargePowerLimitChannel().value().orElse(0)) / GRID_VOLTAGE) - amountToReduce);
+            } else {
+                newPower = (twoPhase[i].getChargePower().get() / GRID_VOLTAGE) - amountToReduce;
+            }
+            if (newPower > 6) {
+                twoPhase[i].setChargePowerLimit(newPower * GRID_VOLTAGE);
+                amountReduced += amountToReduce;
+            }
+        }
+        return amountReduced;
     }
 
     /**
@@ -373,7 +660,12 @@ public class evcsLimiterImpl extends AbstractOpenemsComponent implements Openems
         for (int i = 0; i < twoPhaseLength; i++) {
             int[] phaseConfiguration = twoPhase[i].getPhaseConfiguration();
             if (this.min2Index == 0 && (phaseConfiguration[0] != this.minIndex && phaseConfiguration[1] != this.minIndex)) {
-                int newPower = (twoPhase[i].getChargePower().get() / GRID_VOLTAGE) - amountToReduce;
+                int newPower = 0;
+                if (twoPhase[i].getSetChargePowerLimitChannel().getNextWriteValue().orElse(twoPhase[i].getSetChargePowerLimitChannel().value().orElse(0)) != 0) {
+                    newPower = ((twoPhase[i].getSetChargePowerLimitChannel().getNextWriteValue().orElse(twoPhase[i].getSetChargePowerLimitChannel().value().orElse(0)) / GRID_VOLTAGE) - amountToReduce);
+                } else {
+                    newPower = (twoPhase[i].getChargePower().get() / GRID_VOLTAGE) - amountToReduce;
+                }
                 if (newPower > 6) {
                     twoPhase[i].setChargePowerLimit(newPower * GRID_VOLTAGE);
                     amountsLeft[0] -= amountToReduce;
@@ -385,7 +677,12 @@ public class evcsLimiterImpl extends AbstractOpenemsComponent implements Openems
                 }
                 //If there exists an unbalanced load and the other two phases are both the minimum
             } else if (this.min2Index != 0) {
-                int newPower = (twoPhase[i].getChargePower().get() / GRID_VOLTAGE) - amountToReduce;
+                int newPower = 0;
+                if (twoPhase[i].getSetChargePowerLimitChannel().getNextWriteValue().orElse(twoPhase[i].getSetChargePowerLimitChannel().value().orElse(0)) != 0) {
+                    newPower = ((twoPhase[i].getSetChargePowerLimitChannel().getNextWriteValue().orElse(twoPhase[i].getSetChargePowerLimitChannel().value().orElse(0)) / GRID_VOLTAGE) - amountToReduce);
+                } else {
+                    newPower = (twoPhase[i].getChargePower().get() / GRID_VOLTAGE) - amountToReduce;
+                }
                 if (newPower > 6) {
                     twoPhase[i].setChargePowerLimit(newPower * GRID_VOLTAGE);
                     amountsLeft[0] -= amountToReduce;
@@ -401,22 +698,31 @@ public class evcsLimiterImpl extends AbstractOpenemsComponent implements Openems
     }
 
     /**
-     * Updates the current Power consumption and returns an Array of problematic EVCS Arrays if an unbalanced load exists.
+     * Reduces the Power of EVCS that charge with two Phases by a amount given.
      *
-     * @return Array of ManagedEvcs[]
+     * @param threePhase       Array of all EVCS that have to be reduced
+     * @param threePhaseLength Length of that Array
+     * @param amountToReduce   Amount that has to be reduced per EVCS
+     * @return modified amountsLeft
+     * @throws OpenemsError.OpenemsNamedException This shouldn't happen
      */
-    private Optional<List<ManagedEvcs[]>> getRequestedPower() {
-        this.updatePower(false);
-        //If the load should be checked this will calculate if there is a load Delta >= the maximum allowed Delta
-        int min = this.getMinimumLoad();
-        int max = this.getMaximumLoad();
-        if (max - min >= MAXIMUM_LOAD_DELTA) {
-            if (this.symmetry) {
-                return this.unbalancedEvcsOnPhase();
+    private int reduceThreePhaseEvcs(ManagedEvcs[] threePhase, int threePhaseLength, int amountToReduce) throws OpenemsError.OpenemsNamedException {
+        int amountReduced = 0;
+        for (int i = 0; i < threePhaseLength; i++) {
+            int newPower = 0;
+            if (threePhase[i].getSetChargePowerLimitChannel().getNextWriteValue().orElse(threePhase[i].getSetChargePowerLimitChannel().value().orElse(0)) != 0) {
+                newPower = ((threePhase[i].getSetChargePowerLimitChannel().getNextWriteValue().orElse(threePhase[i].getSetChargePowerLimitChannel().value().orElse(0)) / GRID_VOLTAGE) - amountToReduce);
+            } else {
+                newPower = (threePhase[i].getChargePower().get() / GRID_VOLTAGE) - amountToReduce;
+            }
+            if (newPower > 6) {
+                threePhase[i].setChargePowerLimit(newPower * GRID_VOLTAGE);
+                amountReduced += amountToReduce;
             }
         }
-        return Optional.empty();
+        return amountReduced;
     }
+
 
     /**
      * Creates Arrays of problematic EVCS and wraps them into another Array.
@@ -446,7 +752,7 @@ public class evcsLimiterImpl extends AbstractOpenemsComponent implements Openems
     }
 
     /**
-     * Puts all EVCS that charge with one Phase on the unbalanced Phase.
+     * Puts all EVCS that charge with one Phase on the unbalanced Phase in an Array.
      *
      * @param problemPhase Number of the Phase (Note: NOT number of Phases but instead the actual Number behind the L)
      * @return ManagedEvcs[]
@@ -463,7 +769,7 @@ public class evcsLimiterImpl extends AbstractOpenemsComponent implements Openems
     }
 
     /**
-     * Puts all EVCS that charge with two Phases of which one is the unbalanced Phase.
+     * Puts all EVCS that charge with two Phases of which one is the unbalanced Phase in an Array.
      *
      * @param problemPhase Number of the Phase (Note: NOT number of Phases but instead the actual Number behind the L)
      * @return ManagedEvcs[]
@@ -478,6 +784,48 @@ public class evcsLimiterImpl extends AbstractOpenemsComponent implements Openems
         }
         return (ManagedEvcs[]) twoPhase.toArray();
     }
+
+    /**
+     * Puts all EVCS that charge with two Phases of which one is the unbalanced Phase in an Array.
+     * This is an Expansion of the above Method.
+     *
+     * @param problemPhase  Number of the Phase (Note: NOT number of Phases but instead the actual Number behind the L)
+     * @param excludedPhase The Phase that should not be one of the two phases.
+     * @return ManagedEvcs[]
+     */
+    private ManagedEvcs[] getTwoPhaseEvcs(int problemPhase, int excludedPhase) {
+        if (excludedPhase < 1) {
+            excludedPhase = 3;
+        }
+        List<ManagedEvcs> twoPhase = new ArrayList<>();
+        for (int i = 0; i < this.evcss.length; i++) {
+            int[] phaseConfiguration = this.evcss[i].getPhaseConfiguration();
+            if (this.evcss[i].getPhases().get() == 2 && (phaseConfiguration[0] == problemPhase || phaseConfiguration[1] == problemPhase)
+                    && (phaseConfiguration[0] != excludedPhase || phaseConfiguration[1] != excludedPhase)) {
+                twoPhase.add(this.evcss[i]);
+            }
+        }
+        return (ManagedEvcs[]) twoPhase.toArray();
+    }
+
+
+    /**
+     * Puts all EVCS that charge with three Phases in an Array.
+     *
+     * @return ManagedEvcs[]
+     */
+    private ManagedEvcs[] getThreePhaseEvcs() {
+        List<ManagedEvcs> threePhase = new ArrayList<>();
+        for (int i = 0; i < this.evcss.length; i++) {
+            if (this.evcss[i].getPhases().get() == 3) {
+                threePhase.add(this.evcss[i]);
+            }
+        }
+        return (ManagedEvcs[]) threePhase.toArray();
+    }
+
+
+    //---------------------General Methods-----------------------\\
 
     /**
      * Detects the Maximum Phase/s and stores the information in this Object ( max,max2,maxIndex,max2Index ).
@@ -581,16 +929,30 @@ public class evcsLimiterImpl extends AbstractOpenemsComponent implements Openems
                 int[] phases = target.getPhaseConfiguration();
                 int phaseCount = target.getPhases().get();
                 for (int n = 0; n < phaseCount; n++) {
-                    switch (phases[n]) {
-                        case 1:
-                            this.powerL1 += (target.getSetChargePowerLimit().orElse(0) / GRID_VOLTAGE);
-                            break;
-                        case 2:
-                            this.powerL2 += (target.getSetChargePowerLimit().orElse(0) / GRID_VOLTAGE);
-                            break;
-                        case 3:
-                            this.powerL3 += (target.getSetChargePowerLimit().orElse(0) / GRID_VOLTAGE);
-                            break;
+                    if (target.getSetChargePowerLimitChannel().getNextWriteValue().orElse(target.getSetChargePowerLimitChannel().value().orElse(0)) != 0) {
+                        switch (phases[n]) {
+                            case 1:
+                                this.powerL1 += (target.getSetChargePowerLimitChannel().getNextWriteValue().orElse(target.getSetChargePowerLimitChannel().value().orElse(0)) / GRID_VOLTAGE);
+                                break;
+                            case 2:
+                                this.powerL2 += (target.getSetChargePowerLimitChannel().getNextWriteValue().orElse(target.getSetChargePowerLimitChannel().value().orElse(0)) / GRID_VOLTAGE);
+                                break;
+                            case 3:
+                                this.powerL3 += (target.getSetChargePowerLimitChannel().getNextWriteValue().orElse(target.getSetChargePowerLimitChannel().value().orElse(0)) / GRID_VOLTAGE);
+                                break;
+                        }
+                    } else {
+                        switch (phases[n]) {
+                            case 1:
+                                this.powerL1 += (target.getChargePower().orElse(0) / GRID_VOLTAGE);
+                                break;
+                            case 2:
+                                this.powerL2 += (target.getChargePower().orElse(0) / GRID_VOLTAGE);
+                                break;
+                            case 3:
+                                this.powerL3 += (target.getChargePower().orElse(0) / GRID_VOLTAGE);
+                                break;
+                        }
                     }
                 }
             }
