@@ -197,6 +197,12 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
     }
 
     //---------------Methods for Phase Limiting--------------\\
+
+    /**
+     * Applies the Limit for the Phases, specified in the Config.
+     *
+     * @throws Exception If its unable to reduce the phases without Turning an EVCS off
+     */
     private void applyPhaseLimit() throws Exception {
         //What phases are causing the problems
         List<Integer> problemPhases = new ArrayList<>();
@@ -242,30 +248,46 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
         int reduceL1 = this.powerL1 - this.phaseLimit;
         int reduceL2 = this.powerL2 - this.phaseLimit;
         int reduceL3 = this.powerL3 - this.phaseLimit;
+        int amountPerEvcs;
         int minReduce = Math.min(Math.min(reduceL1, reduceL2), reduceL3);
         //Actual limiting
         int previousReduceAmount = minReduce;
-        while (this.threePhasesOverPhaseLimit(reduceL1, reduceL2, reduceL3)) {
+        if (threePhase.length > 1) {
+            while (this.threePhasesOverPhaseLimit(reduceL1, reduceL2, reduceL3)) {
 
 
-            //The Three Phase EVCS will be reduced until at least one is under the limit
-            afterThreePhaseReduction = this.reduceThreePhaseEvcs(threePhase, threePhase.length, minReduce);
-            reduceL1 -= afterThreePhaseReduction;
-            reduceL2 -= afterThreePhaseReduction;
-            reduceL3 -= afterThreePhaseReduction;
-            minReduce = Math.min(Math.min(reduceL1, reduceL2), reduceL3);
-            if (minReduce != previousReduceAmount) {
-                previousReduceAmount = minReduce;
-            } else {
-                //if the three Phasers cant be reduced
-                throw new Exception();
+                //The Three Phase EVCS will be reduced until at least one is under the limit
+                afterThreePhaseReduction = this.reduceThreePhaseEvcs(threePhase, threePhase.length, minReduce);
+                reduceL1 -= afterThreePhaseReduction;
+                reduceL2 -= afterThreePhaseReduction;
+                reduceL3 -= afterThreePhaseReduction;
+                minReduce = Math.min(Math.min(reduceL1, reduceL2), reduceL3);
+                if (minReduce != previousReduceAmount) {
+                    previousReduceAmount = minReduce;
+                } else {
+                    //if the three Phasers cant be reduced
+                    throw new Exception();
+                }
+            }
+        } else {
+            int phaseIndex = this.getPhaseByPower(reduceL1, reduceL2, reduceL3, minReduce);
+            //reduce at least one phase
+            while (minReduce > 0) {
+                amountPerEvcs = minReduce / onePhase.get(phaseIndex - 1).length;
+                minReduce = this.reduceOnePhaseEvcs(onePhase.get(phaseIndex - 1), onePhase.get(phaseIndex - 1).length, amountPerEvcs, minReduce);
+
+                if (minReduce != previousReduceAmount) {
+                    previousReduceAmount = minReduce;
+                } else {
+                    throw new Exception();
+                }
             }
         }
-
         //The Two Phase EVCS will be reduced until at least one is under the limit
         if (this.twoPhasesOverPhaseLimit(reduceL1, reduceL2, reduceL3)) {
             //Get what phase is ok
             int phaseOkIndex = this.getOnePhaseUnderPhaseLimit(reduceL1, reduceL2, reduceL3);
+            int phaseIndex;
             switch (phaseOkIndex) {
                 case 1:
                     minReduce = Math.min(reduceL2, reduceL3);
@@ -283,39 +305,53 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
             } else {
                 twoPhaseOverLimit = twoPhase.get(phaseOkIndex);
             }
-            //reduce until on phase is under the limit
-            previousReduceAmount = minReduce;
-            while (minReduce > 0) {
-                afterTwoPhaseReduction = this.reduceTwoPhaseEvcs(twoPhaseOverLimit, twoPhaseOverLimit.length, minReduce);
-                switch (phaseOkIndex) {
-                    case 1:
-                        reduceL2 -= afterTwoPhaseReduction;
-                        reduceL3 -= afterTwoPhaseReduction;
-                        minReduce -= afterTwoPhaseReduction;
-                        break;
-                    case 2:
-                        reduceL1 -= afterTwoPhaseReduction;
-                        reduceL3 -= afterTwoPhaseReduction;
-                        minReduce -= afterTwoPhaseReduction;
-                        break;
-                    case 3:
-                        reduceL1 -= afterTwoPhaseReduction;
-                        reduceL2 -= afterTwoPhaseReduction;
-                        minReduce -= afterTwoPhaseReduction;
-                        break;
+            if (twoPhaseOverLimit.length > 1) {
+                //reduce until on phase is under the limit
+                previousReduceAmount = minReduce;
+                while (minReduce > 0) {
+                    afterTwoPhaseReduction = this.reduceTwoPhaseEvcs(twoPhaseOverLimit, twoPhaseOverLimit.length, minReduce);
+                    switch (phaseOkIndex) {
+                        case 1:
+                            reduceL2 -= afterTwoPhaseReduction;
+                            reduceL3 -= afterTwoPhaseReduction;
+                            minReduce -= afterTwoPhaseReduction;
+                            break;
+                        case 2:
+                            reduceL1 -= afterTwoPhaseReduction;
+                            reduceL3 -= afterTwoPhaseReduction;
+                            minReduce -= afterTwoPhaseReduction;
+                            break;
+                        case 3:
+                            reduceL1 -= afterTwoPhaseReduction;
+                            reduceL2 -= afterTwoPhaseReduction;
+                            minReduce -= afterTwoPhaseReduction;
+                            break;
+                    }
+                    if (minReduce != previousReduceAmount) {
+                        previousReduceAmount = minReduce;
+                    } else {
+                        throw new Exception();
+                    }
                 }
-                if (minReduce != previousReduceAmount) {
-                    previousReduceAmount = minReduce;
-                } else {
-                    throw new Exception();
+            } else {
+                phaseIndex = this.getPhaseByPower(reduceL1, reduceL2, reduceL3, minReduce);
+                //reduce at least one phase
+                while (minReduce > 0) {
+                    amountPerEvcs = minReduce / onePhase.get(phaseIndex - 1).length;
+                    minReduce = this.reduceOnePhaseEvcs(onePhase.get(phaseIndex - 1), onePhase.get(phaseIndex - 1).length, amountPerEvcs, minReduce);
+
+                    if (minReduce != previousReduceAmount) {
+                        previousReduceAmount = minReduce;
+                    } else {
+                        throw new Exception();
+                    }
                 }
             }
-
         }
 
         //The one Phase EVCS will be reduces until the last phase is under the limit
         if (this.onePhaseOverPhaseLimit(reduceL1, reduceL2, reduceL3)) {
-            int amountPerEvcs;
+
             int phaseIndex = 0;
             int problemOnePhase = 1;
             switch (this.getTwoPhasesUnderPhaseLimit(reduceL1, reduceL2, reduceL3)) {
@@ -891,6 +927,26 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
             }
         }
         return this.min;
+    }
+
+    /**
+     * Returns the index of the Phase the current Power value is on.
+     *
+     * @param phasePower1 L1
+     * @param phasePower2 L2
+     * @param phasePower3 L3
+     * @param power       Power on a phase
+     * @return Index or 0 if the power is not on any phase
+     */
+    private int getPhaseByPower(int phasePower1, int phasePower2, int phasePower3, int power) {
+        if (phasePower1 == power) {
+            return 1;
+        } else if (phasePower2 == power) {
+            return 2;
+        } else if (phasePower3 == power) {
+            return 3;
+        }
+        return 0;
     }
 
     /**
