@@ -14,11 +14,10 @@ import org.osgi.service.component.annotations.ConfigurationPolicy;
 import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Modified;
 import org.osgi.service.component.annotations.Reference;
-import org.osgi.service.event.Event;
 import org.osgi.service.event.EventConstants;
-import org.osgi.service.event.EventHandler;
 import org.osgi.service.metatype.annotations.Designate;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 /**
  *
  */
@@ -32,6 +31,7 @@ public class SimulatedEV extends AbstractOpenemsComponent implements OpenemsComp
     private int chargePower;
     private int phase;
     private SimulatedKebaContact evcsId;
+    private final Logger log = LoggerFactory.getLogger(SimulatedEV.class);
     @Reference
     protected ComponentManager cpm;
 
@@ -50,8 +50,7 @@ public class SimulatedEV extends AbstractOpenemsComponent implements OpenemsComp
                 this.evcsId.applyPower(i, this.chargePower);
             }
         } catch (OpenemsError.OpenemsNamedException e) {
-
-
+            this.log.error("ApplyPower Failed.");
         }
     }
 
@@ -65,10 +64,10 @@ public class SimulatedEV extends AbstractOpenemsComponent implements OpenemsComp
     protected void deactivate() {
         try {
             for (int i = 0; i < this.phase; i++) {
-                this.evcsId.applyPower(i,this.chargePower * -1);
+                this.evcsId.applyPower(i, this.chargePower * -1);
             }
         } catch (OpenemsError.OpenemsNamedException e) {
-
+            this.log.error("ApplyPower Failed.");
         }
         super.deactivate();
     }

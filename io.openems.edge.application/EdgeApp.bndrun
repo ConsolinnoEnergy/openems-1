@@ -50,6 +50,7 @@
 	bnd.identity;id='io.openems.edge.bridge.mqtt',\
 	bnd.identity;id='io.openems.edge.bridge.onewire',\
 	bnd.identity;id='io.openems.edge.common',\
+	bnd.identity;id='io.openems.edge.consolinno.evcs.limiter',\
 	bnd.identity;id='io.openems.edge.consolinno.modbus.configurator',\
 	bnd.identity;id='io.openems.edge.consolinno.pwm',\
 	bnd.identity;id='io.openems.edge.consolinno.relay',\
@@ -200,6 +201,7 @@
 	io.openems.edge.bridge.mqtt;version=snapshot,\
 	io.openems.edge.bridge.onewire;version=snapshot,\
 	io.openems.edge.common;version=snapshot,\
+	io.openems.edge.consolinno.evcs.limiter;version=snapshot,\
 	io.openems.edge.consolinno.modbus.configurator;version=snapshot,\
 	io.openems.edge.consolinno.pwm;version=snapshot,\
 	io.openems.edge.consolinno.relay;version=snapshot,\

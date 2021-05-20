@@ -6,7 +6,6 @@ import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.common.event.EdgeEventConstants;
 import io.openems.edge.evcs.api.ManagedEvcs;
-import jdk.nashorn.internal.ir.annotations.Reference;
 import org.osgi.service.cm.ConfigurationException;
 import org.osgi.service.component.ComponentContext;
 import org.osgi.service.component.annotations.Activate;
@@ -14,6 +13,7 @@ import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.ConfigurationPolicy;
 import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Modified;
+import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.event.Event;
 import org.osgi.service.event.EventConstants;
 import org.osgi.service.event.EventHandler;
@@ -107,6 +107,10 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
         super.deactivate();
     }
 
+    @Override
+    public String debugLog() {
+        return "EVCS Power: L1: " + this.powerL1 + " | L2: " + this.powerL2 + " | L3: " + this.powerL3;
+    }
 
     @Override
     public void handleEvent(Event event) {
@@ -141,6 +145,7 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
                 this.log.error("Unable to apply Power Limit without turning an EVCS off!");
             }
         }
+        this.updatePower(true);
     }
     //----------------------Limit Methods------------------------\\
 
@@ -964,7 +969,7 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
             for (int i = 0; i < this.evcss.length; i++) {
                 ManagedEvcs target = this.evcss[i];
                 int[] phases = target.getPhaseConfiguration();
-                int phaseCount = target.getPhases().get();
+                int phaseCount = target.getPhases().orElse(0);
                 for (int n = 0; n < phaseCount; n++) {
                     switch (phases[n]) {
                         case 1:
@@ -983,7 +988,7 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
             for (int i = 0; i < this.evcss.length; i++) {
                 ManagedEvcs target = this.evcss[i];
                 int[] phases = target.getPhaseConfiguration();
-                int phaseCount = target.getPhases().get();
+                int phaseCount = target.getPhases().orElse(0);
                 for (int n = 0; n < phaseCount; n++) {
                     if (target.getSetChargePowerLimitChannel().getNextWriteValue().orElse(target.getSetChargePowerLimitChannel().value().orElse(0)) != 0) {
                         switch (phases[n]) {

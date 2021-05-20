@@ -21,10 +21,10 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     boolean symmetry() default true;
 
     @AttributeDefinition(name = "phaseLimit", description = "Maximum Power one Phase can pull from the grid.")
-    int phaseLimit();
+    int phaseLimit() default 0;
 
     @AttributeDefinition(name = "powerLimit", description = "Maximum Power the entire EVCS cluster can pull from the grid.")
-    int powerLimit();
+    int powerLimit() default 0;
 
     String webconsole_configurationFactory_nameHint() default "{id}";
 }
