@@ -18,6 +18,7 @@ import org.osgi.service.event.EventConstants;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 /**
  *
  */
@@ -40,14 +41,14 @@ public class SimulatedEV extends AbstractOpenemsComponent implements OpenemsComp
     }
 
     @Activate
-    void activate(ComponentContext context, Config config) throws ConfigurationException, OpenemsError.OpenemsNamedException {
+    void activate(ComponentContext context, Config config) throws OpenemsError.OpenemsNamedException {
         this.chargePower = config.charge();
         this.phase = config.phase();
         this.evcsId = this.cpm.getComponent(config.EVCSId());
         super.activate(context, config.id(), config.alias(), config.enabled());
         try {
             for (int i = 0; i < this.phase; i++) {
-                this.evcsId.applyPower(i, this.chargePower);
+                this.evcsId.applyPower(i, this.chargePower, this.phase);
             }
         } catch (OpenemsError.OpenemsNamedException e) {
             this.log.error("ApplyPower Failed.");
@@ -55,8 +56,25 @@ public class SimulatedEV extends AbstractOpenemsComponent implements OpenemsComp
     }
 
     @Modified
-    void modified(ComponentContext context, Config config) throws ConfigurationException {
+    void modified(ComponentContext context, Config config) throws OpenemsError.OpenemsNamedException {
+        try {
+            for (int i = 0; i < this.phase; i++) {
+                this.evcsId.applyPower(i, this.chargePower * -1, this.phase);
+            }
+        } catch (OpenemsError.OpenemsNamedException e) {
+            this.log.error("ApplyPower Failed.");
+        }
+        this.chargePower = config.charge();
+        this.phase = config.phase();
+        this.evcsId = this.cpm.getComponent(config.EVCSId());
         super.modified(context, config.id(), config.alias(), config.enabled());
+        try {
+            for (int i = 0; i < this.phase; i++) {
+                this.evcsId.applyPower(i, this.chargePower, this.phase);
+            }
+        } catch (OpenemsError.OpenemsNamedException e) {
+            this.log.error("ApplyPower Failed.");
+        }
 
     }
 
@@ -64,7 +82,7 @@ public class SimulatedEV extends AbstractOpenemsComponent implements OpenemsComp
     protected void deactivate() {
         try {
             for (int i = 0; i < this.phase; i++) {
-                this.evcsId.applyPower(i, this.chargePower * -1);
+                this.evcsId.applyPower(i, this.chargePower * -1, this.phase);
             }
         } catch (OpenemsError.OpenemsNamedException e) {
             this.log.error("ApplyPower Failed.");

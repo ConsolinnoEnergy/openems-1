@@ -3,6 +3,7 @@ package io.openems.edge.evcs.keba.kecontact.simulated;
 import io.openems.common.exceptions.OpenemsError;
 import io.openems.common.types.ChannelAddress;
 import io.openems.edge.common.channel.Channel;
+import io.openems.edge.common.channel.WriteChannel;
 import io.openems.edge.common.component.AbstractOpenemsComponent;
 import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
@@ -26,6 +27,7 @@ import org.osgi.service.event.EventHandler;
 import org.osgi.service.metatype.annotations.Designate;
 
 import java.util.Arrays;
+import java.util.Optional;
 
 /**
  * This provides a Simulated Keba KeContact EVCS.
@@ -40,8 +42,6 @@ public class SimulatedKebaContact extends AbstractOpenemsComponent implements Ma
     private Config config;
     private int[] phases;
 
-    @Reference
-    private EvcsPower evcsPower;
 
     @Reference
     protected ComponentManager cpm;
@@ -93,7 +93,7 @@ public class SimulatedKebaContact extends AbstractOpenemsComponent implements Ma
 
     @Override
     public String debugLog() {
-        return "Simulated Keba:"
+        return "Phase: " + Arrays.toString(this.phases)
                 + " L1: " + this.l1.getNextValue().orElse(0)
                 + " L2: " + this.l2.getNextValue().orElse(0)
                 + " L3: " + this.l3.getNextValue().orElse(0);
@@ -106,65 +106,68 @@ public class SimulatedKebaContact extends AbstractOpenemsComponent implements Ma
 
     @Override
     public EvcsPower getEvcsPower() {
-        return this.evcsPower;
+        return null;
     }
 
     @Override
     public void handleEvent(Event event) {
         this._setPhases(this.phaseCount);
+        WriteChannel<Integer> channel = this.channel(ManagedEvcs.ChannelId.SET_CHARGE_POWER_LIMIT);
+        Optional<Integer> valueOpt = channel.getNextWriteValueAndReset();
+        if (valueOpt.isPresent()) {
+            this.limitPower((valueOpt.get()) / 230);
+        }
         this._setChargePower((this.l1Power + this.l2Power + this.l3Power) * 230);
 
-        int chargeLimit = this.getSetChargePowerLimit().orElse(0);
-        if (chargeLimit != 0) {
-            this.limitPower((chargeLimit / 230));
-        }
     }
 
     private void limitPower(int chargeLimit) {
 
-        int amountToReduce = chargeLimit / this.phaseCount;
-        this.phaseCount = 0;
+
         for (int i = 0; i < this.phaseCount; i++) {
             switch (this.phases[i]) {
                 case 1:
+                    int amountToReduce = (this.l1Power - (chargeLimit / this.phaseCount));
                     this.l1Power -= amountToReduce;
                     this.l1.setNextValue(this.l1Power);
-                    this.phaseCount++;
+
                     break;
                 case 2:
+                    amountToReduce = (this.l2Power - (chargeLimit / this.phaseCount));
                     this.l2Power -= amountToReduce;
                     this.l2.setNextValue(this.l2Power);
-                    this.phaseCount++;
+
                     break;
                 case 3:
+                    amountToReduce = (this.l3Power - (chargeLimit / this.phaseCount));
                     this.l3Power -= amountToReduce;
                     this.l3.setNextValue(this.l3Power);
-                    this.phaseCount++;
+
                     break;
             }
         }
     }
 
-    public void applyPower(int phase, int chargePower) throws OpenemsError.OpenemsNamedException {
+    public void applyPower(int phase, int chargePower, int phaseCount) throws OpenemsError.OpenemsNamedException {
         if (chargePower <= 6 && chargePower > 0) {
             chargePower = 0;
         }
-        this.phaseCount = 0;
+        this.phaseCount = phaseCount;
         switch (this.phases[phase]) {
             case 1:
                 this.l1Power += chargePower;
                 this.l1.setNextValue(this.l1Power);
-                this.phaseCount++;
+
                 break;
             case 2:
                 this.l2Power += chargePower;
                 this.l2.setNextValue(this.l2Power);
-                this.phaseCount++;
+
                 break;
             case 3:
                 this.l3Power += chargePower;
                 this.l3.setNextValue(this.l3Power);
-                this.phaseCount++;
+
                 break;
         }
     }
