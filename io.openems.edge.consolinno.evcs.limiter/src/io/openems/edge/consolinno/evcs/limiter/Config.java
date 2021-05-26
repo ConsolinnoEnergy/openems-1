@@ -20,10 +20,13 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     @AttributeDefinition(name = "symmetry", description = "Check if the EVCS should stay balanced in their load.")
     boolean symmetry() default true;
 
-    @AttributeDefinition(name = "phaseLimit", description = "Maximum Power one Phase can pull from the grid.")
+    @AttributeDefinition(name = "offTime", description = "Time (in minutes) how long an EVCS should be turned off if the Power has to be balanced.")
+    int offTime() default 0;
+
+    @AttributeDefinition(name = "phaseLimit", description = "Maximum Power (W) one Phase can pull from the grid.")
     int phaseLimit() default 0;
 
-    @AttributeDefinition(name = "powerLimit", description = "Maximum Power the entire EVCS cluster can pull from the grid.")
+    @AttributeDefinition(name = "powerLimit", description = "Maximum Power (W) the entire EVCS cluster can pull from the grid.")
     int powerLimit() default 0;
 
     String webconsole_configurationFactory_nameHint() default "{id}";
