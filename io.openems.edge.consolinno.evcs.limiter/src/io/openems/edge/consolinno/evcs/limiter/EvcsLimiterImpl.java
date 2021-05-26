@@ -150,7 +150,12 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
                     this.applyPhaseLimit();
                 } catch (Exception e) {
                     this.log.warn("Unable to apply Phase Limit without turning an EVCS off! One or more EVCS will now be turned off for " + this.offTime + " minutes.");
-                    this.turnOffEvcsPhaseLimit();
+                    try {
+                        this.turnOffEvcsPhaseLimit();
+                    } catch (Exception emergencyStop) {
+                        this.log.error("Unable to Limit Power. All EVCS will now be turned off.");
+                        this.emergencyStop();
+                    }
                 }
             }
             this.updatePower(true);
@@ -242,6 +247,19 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
 
     /**
      * Applies the Limit for the Phases, specified in the Config.
+     * Priority List:
+     * 1. All Three Phases are over the Limit:
+     * 1.1 Three Phasers
+     * 1.2. Two Phasers IF Three Phasers don't exist / not enough to reduce at least one Phase
+     * 1.3 One Phasers IF neither Three nor Two Phasers exist / not enough to reduce at least one Phase
+     * 2. Two phases are over the Limit:
+     * 2.1 Two Phasers
+     * 2.2 Three Phasers IF no Two Phasers exist / not enough to reduce at least one Phase
+     * 2.3 One Phasers IF neither Three nor Two Phasers exist / not enough to reduce at least one Phase
+     * 3. One Phases is over the Limit:
+     * 3.1 One Phasers
+     * 3.2 Three Phasers IF no One Phasers exist / not enough to reduce at least one Phase
+     * 3.3 Two Phasers IF neither Three Phasers nor One Phasers exist / not enough to reduce at least one Phase
      *
      * @throws Exception If its unable to reduce the phases without Turning an EVCS off
      */
@@ -1134,11 +1152,201 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
         }
         return unbalanced;
     }
+    //--------------Power Off for Phase Limitation--------------\\
 
-
-    private void turnOffEvcsPhaseLimit() {
+    /**
+     * Turns off EVCS fot the Phase Limit.
+     * Priority List:
+     * 1. All Three Phases are over the Limit:
+     * 1.1 Three Phasers
+     * 1.2. Two Phasers IF Three Phasers don't exist / not enough to reduce at least one Phase
+     * 1.3 One Phasers IF neither Three nor Two Phasers exist / not enough to reduce at least one Phase
+     * 2. Two phases are over the Limit:
+     * 2.1 Two Phasers on both Phases over the Limit
+     * 2.2 Three Phasers IF no Two Phasers of the above condition exist / not enough to reduce at least one Phase
+     * 2.3 One Phasers IF neither Three nor Two Phasers of above condition exist / not enough to reduce at least one Phase
+     * 2.4 Two Phasers IF none of the above apply
+     * 3. One Phases is over the Limit:
+     * 3.1 One Phasers
+     * 3.2 Three Phasers IF no One Phasers exist / not enough to reduce at least one Phase
+     * 3.3 Two Phasers IF neither Three Phasers nor One Phasers exist / not enough to reduce at least one Phase
+     */
+    private void turnOffEvcsPhaseLimit() throws Exception {
         this.updatePower(true);
+        int powerToReduceL1 = this.powerL1 - (this.phaseLimit / GRID_VOLTAGE);
+        int powerToReduceL2 = this.powerL2 - (this.phaseLimit / GRID_VOLTAGE);
+        int powerToReduceL3 = this.powerL3 - (this.phaseLimit / GRID_VOLTAGE);
+        ManagedEvcs[] threePhases = this.getThreePhaseEvcs();
+        int minReduce = Math.min(Math.min(powerToReduceL1, powerToReduceL2), powerToReduceL3);
+        int minIndex = this.getPhaseByPower(powerToReduceL1, powerToReduceL2, powerToReduceL3, minReduce);
+        int phaseOkIndex;
 
+        //--------1. All Three Phases are over the Limit-------\\
+        if (this.threePhasesOverPhaseLimit(powerToReduceL1, powerToReduceL2, powerToReduceL3)) {
+            //--------1.1 Reduce Three Phasers if they exist----------\\
+            if (threePhases.length > 0) {
+                int reduceDelta;
+                minReduce = this.turnOffThreePhaseEvcs(threePhases, minReduce);
+                switch (minIndex) {
+                    case 1:
+                        reduceDelta = powerToReduceL1 - minReduce;
+                        break;
+                    case 2:
+                        reduceDelta = powerToReduceL2 - minReduce;
+                        break;
+                    case 3:
+                        reduceDelta = powerToReduceL3 - minReduce;
+                        break;
+                    default:
+                        reduceDelta = 0;
+                }
+                powerToReduceL1 -= reduceDelta;
+                powerToReduceL2 -= reduceDelta;
+                powerToReduceL3 -= reduceDelta;
+            }
+            //--------If there are no Three Phasers or not enough----------\\
+            if (minReduce > 0) {
+                ManagedEvcs[] twoPhases = this.getTwoPhaseEvcs(minIndex);
+
+                //-------1.2 Reduce Two Phasers if they exist--------\\
+                if (twoPhases.length > 0) {
+
+                    ManagedEvcs[] twoPhases1 = this.getTwoPhaseEvcs(twoPhases, this.maxIndex, this.middleIndex);
+                    ManagedEvcs[] twoPhases2 = this.getTwoPhaseEvcs(twoPhases, this.middleIndex, this.maxIndex);
+                    if (twoPhases1.length > 0 || twoPhases2.length > 0) {
+                        int reduceByGroup1;
+                        int reduceByGroup2;
+                        int reduce1Delta = 0;
+                        int reduce2Delta = 0;
+
+                        if (twoPhases1.length > 0 && twoPhases2.length > 0) {
+                            reduceByGroup1 = Math.floorDiv(minReduce, 2);
+                            reduceByGroup2 = Math.floorDiv(minReduce, 2) + 1;
+                            reduceByGroup1 = this.turnOffTwoPhaseEvcs(twoPhases1, reduceByGroup1);
+                            reduce1Delta = Math.floorDiv(minReduce, 2) - reduceByGroup1;
+                            reduceByGroup2 = this.turnOffTwoPhaseEvcs(twoPhases2, reduceByGroup2);
+                            reduce2Delta = (Math.floorDiv(minReduce, 2) + 1) - reduceByGroup2;
+                        } else if (twoPhases1.length > 0) {
+                            reduceByGroup1 = this.turnOffTwoPhaseEvcs(twoPhases1, minReduce);
+                            reduce1Delta = minReduce - reduceByGroup1;
+                        } else {
+                            reduceByGroup2 = this.turnOffTwoPhaseEvcs(twoPhases2, minReduce);
+                            reduce2Delta = minReduce - reduceByGroup2;
+                        }
+                        minReduce -= (reduce1Delta + reduce2Delta);
+                        powerToReduceL1 -= this.allocateReduceToPhase(1, twoPhases1, twoPhases2, reduce1Delta, reduce2Delta);
+                        powerToReduceL2 -= this.allocateReduceToPhase(2, twoPhases1, twoPhases2, reduce1Delta, reduce2Delta);
+                        powerToReduceL3 -= this.allocateReduceToPhase(3, twoPhases1, twoPhases2, reduce1Delta, reduce2Delta);
+                    }
+                }
+                //-----1.3 Reduce One Phasers. If this code is reached and they don't exist, something went wrong-----\\
+                if (minReduce > 0) {
+                    ManagedEvcs[] onePhases = this.getOnePhaseEvcs(minIndex);
+                    minReduce = this.turnOffOnePhaseEvcs(onePhases, minReduce);
+                    switch (minIndex) {
+                        case 1:
+                            powerToReduceL1 -= minReduce;
+                            break;
+                        case 2:
+                            powerToReduceL2 -= minReduce;
+                            break;
+                        case 3:
+                            powerToReduceL3 -= minReduce;
+                            break;
+
+                    }
+
+                }
+                if (minReduce > 0) {
+                    throw new Exception();
+                }
+            }
+            phaseOkIndex = minIndex;
+            //------------------2.Reduce the Second Phase--------------\\
+            if (this.twoPhasesOverPhaseLimit(powerToReduceL1, powerToReduceL2, powerToReduceL3)) {
+                minReduce = this.getMiddleReduce(powerToReduceL1, powerToReduceL2, powerToReduceL3);
+                minIndex = this.getPhaseByPower(powerToReduceL1, powerToReduceL2, powerToReduceL3, minReduce);
+
+                //---------------2.1 Reduce Two Phasers on both Phases over the Limit--------------\\
+                ManagedEvcs[] twoPhase = this.getTwoPhaseEvcs(minIndex, phaseOkIndex);
+                if (twoPhase.length > 0) {
+                    int reducedByTwoPhase = this.turnOffTwoPhaseEvcs(twoPhase, minReduce);
+                    int reduceDelta = minReduce - reducedByTwoPhase;
+                    switch (phaseOkIndex) {
+                        case 1:
+                            powerToReduceL2 -= reduceDelta;
+                            powerToReduceL3 -= reduceDelta;
+                            break;
+                        case 2:
+                            powerToReduceL1 -= reduceDelta;
+                            powerToReduceL3 -= reduceDelta;
+                            break;
+                        case 3:
+                            powerToReduceL1 -= reduceDelta;
+                            powerToReduceL2 -= reduceDelta;
+                            break;
+                    }
+
+                }
+                //--------------2.2 Three Phasers--------------\\
+                if (minReduce > 0) {
+
+                }
+
+            }
+        }
+
+
+    }
+
+    /**
+     * Returns the second highest Reduce value.
+     *
+     * @param powerToReduceL1 Reduce value of L1
+     * @param powerToReduceL2 Reduce value of L2
+     * @param powerToReduceL3 Reduce value of L3
+     * @return the second highest Reduce value
+     */
+    private int getMiddleReduce(int powerToReduceL1, int powerToReduceL2, int powerToReduceL3) {
+        if (powerToReduceL1 > powerToReduceL2 && powerToReduceL2 > powerToReduceL3) {
+            return powerToReduceL2;
+        } else if (powerToReduceL1 > powerToReduceL2 && powerToReduceL3 > powerToReduceL2) {
+            return powerToReduceL3;
+
+        } else if (powerToReduceL3 > powerToReduceL2 && powerToReduceL2 > powerToReduceL1) {
+            return powerToReduceL2;
+        } else if (powerToReduceL3 > powerToReduceL2 && powerToReduceL1 > powerToReduceL2) {
+            return powerToReduceL1;
+        } else {
+            return Math.max(powerToReduceL1, powerToReduceL3);
+        }
+
+    }
+
+    /**
+     * Allocated Reduce Amounts to the Phase it belongs to.
+     * NOTE: only for the Context where Two Phase EVCS have been turned off for the Phase Limit.
+     *
+     * @param phaseNumber  The Phase that has to be reduced
+     * @param twoPhases1   the first Group of Two Phase Evcs
+     * @param twoPhases2   the second Group of Two Phase Evcs
+     * @param reduce1Delta the power Reduced by Group 1
+     * @param reduce2Delta the power Reduced by Group 2
+     * @return the appropriate reduce amount
+     */
+    private int allocateReduceToPhase(int phaseNumber, ManagedEvcs[] twoPhases1, ManagedEvcs[] twoPhases2, int reduce1Delta, int reduce2Delta) {
+        ManagedEvcs tp1 = twoPhases1[0];
+        int[] tpPhases = tp1.getPhaseConfiguration();
+        if (tpPhases[0] == phaseNumber || tpPhases[1] == phaseNumber) {
+            return reduce1Delta;
+        }
+        ManagedEvcs tp2 = twoPhases2[0];
+        int[] tp2Phases = tp2.getPhaseConfiguration();
+        if (tp2Phases[0] == phaseNumber || tp2Phases[1] == phaseNumber) {
+            return reduce2Delta;
+        }
+
+        return reduce1Delta + reduce2Delta;
     }
 
     //--------------Power Off for Power Limitation--------------\\
@@ -1164,7 +1372,7 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
 
             //-----Power Off Three Phase EVCS because they won't create balance issues-----\\
             if (threePhases.length > 0) {
-                powerToReduce = this.turnOffThreePhaseEvcsPowerLimit(threePhases, powerToReduce);
+                powerToReduce = this.turnOffThreePhaseEvcs(threePhases, powerToReduce);
                 if (powerToReduce <= 0) {
                     this.log.info("Power is under the Limit.");
                     return;
@@ -1173,7 +1381,7 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
 
             //------------------------------Power Off Two Phase EVCS---------------------------------\\
             if (twoPhases.length > 0) {
-                powerToReduce = this.turnOffTwoPhaseEvcsPowerLimiting(twoPhases, powerToReduce);
+                powerToReduce = this.turnOffTwoPhaseEvcs(twoPhases, powerToReduce);
                 if (powerToReduce <= 0) {
                     this.log.info("Power is under the Limit.");
                     if (!this.balance(this.getMaximumLoad(), this.getMiddleLoad(), this.getMinimumLoad())) {
@@ -1190,7 +1398,7 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
             onePhases = this.getOnePhaseEvcs(this.getPhaseByPower(max));
             //-----------------------------Power Off One Phase EVCS----------------------------------\\
             if (onePhases.length > 0) {
-                powerToReduce = this.turnOffOnePhaseEvcsPowerLimiting(onePhases, powerToReduce);
+                powerToReduce = this.turnOffOnePhaseEvcs(onePhases, powerToReduce);
                 if (powerToReduce <= 0) {
                     this.log.info("Power is under the Limit.");
                     if (!this.balance(this.getMaximumLoad(), this.getMiddleLoad(), this.getMinimumLoad())) {
@@ -1208,7 +1416,7 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
 
             //-----------------------------Power Off One Phase EVCS----------------------------------\\
             if (onePhases.length > 0) {
-                powerToReduce = this.turnOffOnePhaseEvcsPowerLimiting(onePhases, powerToReduce);
+                powerToReduce = this.turnOffOnePhaseEvcs(onePhases, powerToReduce);
                 if (powerToReduce <= 0) {
                     this.log.info("Power is under the Limit.");
                     if (!this.balance(this.getMaximumLoad(), this.getMiddleLoad(), this.getMinimumLoad())) {
@@ -1223,14 +1431,17 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
         }
     }
 
+
+    //-----------------------General Turn Offs-------------------------\\
+
     /**
      * Turns off One phase EVCS until its either under the Power Limit or no EVCS are left.
      *
-     * @param onePhases      All one phase EVCS that charge on the appropriate Phase
+     * @param onePhases     All one phase EVCS that charge on the appropriate Phase
      * @param powerToReduce Power that has to be reduced to be under the Power Limit
      * @return powerToReduce that is left
      */
-    private int turnOffOnePhaseEvcsPowerLimiting(ManagedEvcs[] onePhases, int powerToReduce) {
+    private int turnOffOnePhaseEvcs(ManagedEvcs[] onePhases, int powerToReduce) {
         int powerRemoved;
         int onePhaseLength = onePhases.length;
         if (onePhaseLength > 0) {
@@ -1262,7 +1473,7 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
      * @param powerToReduce Power that has to be reduced to be under the Power Limit
      * @return powerToReduce that is left
      */
-    private int turnOffTwoPhaseEvcsPowerLimiting(ManagedEvcs[] twoPhase, int powerToReduce) {
+    private int turnOffTwoPhaseEvcs(ManagedEvcs[] twoPhase, int powerToReduce) {
         int powerRemoved;
         ManagedEvcs[] twoPhaseDoubleHit = this.getTwoPhaseEvcs(twoPhase, this.maxIndex, this.minIndex);
         int twoPhaseDoubleHitLength = twoPhaseDoubleHit.length;
@@ -1294,7 +1505,7 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
      * @param powerToReduce Power that has to be reduced to be under the Power Limit
      * @return powerToReduce that is left
      */
-    private int turnOffThreePhaseEvcsPowerLimit(ManagedEvcs[] threePhases, int powerToReduce) {
+    private int turnOffThreePhaseEvcs(ManagedEvcs[] threePhases, int powerToReduce) {
         int powerRemoved;
         int threePhaseLength = threePhases.length;
         int i = 0;
@@ -1315,9 +1526,6 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
 
         return powerToReduce;
     }
-
-
-    //-----------------------General Turn Offs-------------------------\\
 
 
     /**
@@ -1657,7 +1865,7 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
     /**
      * Returns the index of the Phase the current Power value is on.
      *
-     * @param power       Power on a phase
+     * @param power Power on a phase
      * @return Index or 0 if the power is not on any phase
      */
     private int getPhaseByPower(int power) {
