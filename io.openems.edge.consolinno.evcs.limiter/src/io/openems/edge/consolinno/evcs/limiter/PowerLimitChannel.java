@@ -9,10 +9,11 @@ import io.openems.edge.common.component.OpenemsComponent;
 public interface PowerLimitChannel extends OpenemsComponent {
 
     /**
+     * This provides the Channel to give the EVCS limiter a new Power Limit value.
      * <ul>
-     * <li>Interface:
-     * <li>Type:
-     * <li>Unit:
+     * <li>Interface: PowerLimitChannel
+     * <li>Type: Integer
+     * <li>Unit: Watt
      * </ul>
      */
     public enum ChannelId implements io.openems.edge.common.channel.ChannelId {

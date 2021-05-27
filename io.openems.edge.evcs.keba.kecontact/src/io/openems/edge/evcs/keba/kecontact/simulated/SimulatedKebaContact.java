@@ -1,7 +1,6 @@
 package io.openems.edge.evcs.keba.kecontact.simulated;
 
 import io.openems.common.exceptions.OpenemsError;
-import io.openems.common.types.ChannelAddress;
 import io.openems.edge.common.channel.Channel;
 import io.openems.edge.common.channel.WriteChannel;
 import io.openems.edge.common.component.AbstractOpenemsComponent;
