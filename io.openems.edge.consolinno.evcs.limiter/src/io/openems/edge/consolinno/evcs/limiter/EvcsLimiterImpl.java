@@ -24,6 +24,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -46,9 +47,7 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
     private Integer powerL2;
     private Integer powerL3;
     //Id and the Last known Power Request of an EVCS that was turned off.
-    private Map<String, Integer> powerWaitingList;
-    //Id and the time the EVCS was turned off.
-    private Map<String, Integer> timeStamps;
+    private final Map<String, EvcsOnHold> powerWaitingList = new HashMap<>();
     //The Maximum Power Consumptions
     private int max;
     //The phases where the maximal Consumption is on
@@ -121,6 +120,7 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
 
     @Override
     public void handleEvent(Event event) {
+        this.checkWaitingList();
         if (this.evcss[0] == null) {
             this.updateEvcss();
         } else {
@@ -176,7 +176,6 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
             this.updatePower(true);
         }
     }
-
 
     //----------------------Limit Methods------------------------\\
 
@@ -906,8 +905,7 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
             while (unbalanced && onePhaseLength > 0) {
                 try {
                     powerRemoved = this.turnOffEvcs(onePhase[i]);
-                    this.powerWaitingList.put(onePhase[i].id(), powerRemoved);
-                    this.timeStamps.put(onePhase[i].id(), new DateTime().getMinuteOfHour());
+                    this.powerWaitingList.put(onePhase[i].id(), new EvcsOnHold(powerRemoved, new DateTime().getMinuteOfHour(), 1));
                     this.updatePower(true);
                     int maximum;
                     if (phase2) {
@@ -948,8 +946,7 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
             while (unbalanced && twoPhaseLength > 0) {
                 try {
                     powerRemoved = this.turnOffEvcs(twoPhase[i]);
-                    this.powerWaitingList.put(twoPhase[i].id(), powerRemoved);
-                    this.timeStamps.put(twoPhase[i].id(), new DateTime().getMinuteOfHour());
+                    this.powerWaitingList.put(twoPhase[i].id(), new EvcsOnHold(powerRemoved, new DateTime().getMinuteOfHour(), 2));
                     this.updatePower(true);
                     int maximum = this.getMaximumLoad();
                     int middleLoad = this.getMiddleLoad();
@@ -986,8 +983,7 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
             while (unbalanced && twoPhaseDoubleHitLength > 0) {
                 try {
                     powerRemoved = this.turnOffEvcs(twoPhaseDoubleHit[i]);
-                    this.powerWaitingList.put(twoPhaseDoubleHit[i].id(), powerRemoved);
-                    this.timeStamps.put(twoPhaseDoubleHit[i].id(), new DateTime().getMinuteOfHour());
+                    this.powerWaitingList.put(twoPhaseDoubleHit[i].id(), new EvcsOnHold(powerRemoved, new DateTime().getMinuteOfHour(), 2));
                     this.updatePower(true);
                     int maximum = this.getMaximumLoad();
                     int middleLoad = this.getMiddleLoad();
@@ -1311,24 +1307,6 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
      * Allocated Reduce Amounts to the Phase it belongs to.
      * NOTE: only for the Context where Two Phase EVCS have been turned off for the Phase Limit.
      *
-     * @param phaseNumber The Phase that has to be reduced
-     * @param twoPhases   the first Group of Two Phase Evcs
-     * @param reduceDelta the power Reduced by Group 1
-     * @return the appropriate reduce amount
-     */
-    private int allocateReduceToPhase(int phaseNumber, ManagedEvcs[] twoPhases, int reduceDelta) {
-        ManagedEvcs tp1 = twoPhases[0];
-        int[] tpPhases = tp1.getPhaseConfiguration();
-        if (tpPhases[0] == phaseNumber || tpPhases[1] == phaseNumber) {
-            return reduceDelta;
-        }
-        return 0;
-    }
-
-    /**
-     * Allocated Reduce Amounts to the Phase it belongs to.
-     * NOTE: only for the Context where Two Phase EVCS have been turned off for the Phase Limit.
-     *
      * @param phaseNumber  The Phase that has to be reduced
      * @param twoPhases1   the first Group of Two Phase Evcs
      * @param twoPhases2   the second Group of Two Phase Evcs
@@ -1427,6 +1405,23 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
                     return;
                 }
             }
+            //--------Update internal Values--------\\
+            max = this.getMaximumLoad();
+            middle = this.getMiddleLoad();
+            min = this.getMinimumLoad();
+            onePhases = this.getOnePhaseEvcs(this.getPhaseByPower(min));
+
+            //-----------------------------Power Off One Phase EVCS----------------------------------\\
+            if (onePhases.length > 0) {
+                powerToReduce = this.turnOffOnePhaseEvcs(onePhases, powerToReduce);
+                if (powerToReduce <= 0) {
+                    this.log.info("Power is under the Limit.");
+                    if (!this.balance(this.getMaximumLoad(), this.getMiddleLoad(), this.getMinimumLoad())) {
+                        this.turnOffEvcsBalance();
+                    }
+                    return;
+                }
+            }
 
         } else {
             this.log.info("Already under the Power Limit. This should not have happened.");
@@ -1451,8 +1446,7 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
             while (powerToReduce > 0 && onePhaseLength > 0) {
                 try {
                     powerRemoved = this.turnOffEvcs(onePhases[i]);
-                    this.powerWaitingList.put(onePhases[i].id(), powerRemoved);
-                    this.timeStamps.put(onePhases[i].id(), new DateTime().getMinuteOfHour());
+                    this.powerWaitingList.put(onePhases[i].id(), new EvcsOnHold(powerRemoved, new DateTime().getMinuteOfHour(), 1));
                     this.updatePower(true);
                     powerToReduce -= powerRemoved;
                     onePhaseLength--;
@@ -1484,8 +1478,7 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
             while (powerToReduce > 0 && twoPhaseDoubleHitLength > 0) {
                 try {
                     powerRemoved = this.turnOffEvcs(twoPhaseDoubleHit[i]);
-                    this.powerWaitingList.put(twoPhaseDoubleHit[i].id(), powerRemoved);
-                    this.timeStamps.put(twoPhaseDoubleHit[i].id(), new DateTime().getMinuteOfHour());
+                    this.powerWaitingList.put(twoPhaseDoubleHit[i].id(), new EvcsOnHold(powerRemoved, new DateTime().getMinuteOfHour(), 2));
                     this.updatePower(true);
                     powerToReduce -= powerRemoved;
                     twoPhaseDoubleHitLength--;
@@ -1514,8 +1507,7 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
         while (powerToReduce > 0 && threePhaseLength > 0) {
             try {
                 powerRemoved = this.turnOffEvcs(threePhases[i]);
-                this.powerWaitingList.put(threePhases[i].id(), powerRemoved);
-                this.timeStamps.put(threePhases[i].id(), new DateTime().getMinuteOfHour());
+                this.powerWaitingList.put(threePhases[i].id(), new EvcsOnHold(powerRemoved, new DateTime().getMinuteOfHour(), 3));
                 this.updatePower(true);
                 powerToReduce -= powerRemoved;
                 threePhaseLength--;
@@ -2116,6 +2108,22 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
 
         }
     }
+
+    /**
+     * Checks if a EVCS is active even though its on the waiting list ( e.g a new car plugged in ).
+     */
+    private void checkWaitingList() {
+        for (int i = 0; i < this.evcss.length; i++) {
+            if (this.evcss[i] != null) {
+                if (this.powerWaitingList.containsKey(this.evcss[i].id())
+                        && (this.evcss[i].getChargePower().get() > 0
+                        || this.powerWaitingList.get(this.evcss[i].id()).getPhases() != this.evcss[i].getPhases().get())) {
+                    this.powerWaitingList.remove(this.evcss[i].id());
+                }
+            }
+        }
+    }
+
 
     /**
      * Stops all EVCS from consuming power.

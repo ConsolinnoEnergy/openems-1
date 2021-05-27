@@ -121,6 +121,10 @@ public class SimulatedKebaContact extends AbstractOpenemsComponent implements Ma
 
     }
 
+    /**
+     * Applies PowerLimit from the setChargePowerLimit Channel.
+     * @param chargeLimit Value from the channel
+     */
     private void limitPower(int chargeLimit) {
 
 
@@ -148,7 +152,25 @@ public class SimulatedKebaContact extends AbstractOpenemsComponent implements Ma
         }
     }
 
-    public void applyPower(int phase, int chargePower, int phaseCount) throws OpenemsError.OpenemsNamedException {
+    /**
+     * Resets all power back to 0.
+     */
+    public void resetPower() {
+        this.l1Power = 0;
+        this.l2Power = 0;
+        this.l3Power = 0;
+        this.l1.setNextValue(this.l1Power);
+        this.l2.setNextValue(this.l2Power);
+        this.l3.setNextValue(this.l3Power);
+    }
+
+    /**
+     * Increases charge power.
+     * @param phase the phase that has to increase
+     * @param chargePower the new power
+     * @param phaseCount the amount of phases the evcs charges with in total
+     */
+    public void applyPower(int phase, int chargePower, int phaseCount) {
         if (chargePower <= 6 && chargePower > 0) {
             chargePower = 0;
         }

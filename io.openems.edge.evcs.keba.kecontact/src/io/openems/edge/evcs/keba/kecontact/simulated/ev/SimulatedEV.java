@@ -20,7 +20,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- *
+ * This provides a Simulated Electric vehicle for the Keba KeContact EVCS.
  */
 
 @Designate(ocd = Config.class, factory = true)
@@ -46,47 +46,30 @@ public class SimulatedEV extends AbstractOpenemsComponent implements OpenemsComp
         this.phase = config.phase();
         this.evcsId = this.cpm.getComponent(config.EVCSId());
         super.activate(context, config.id(), config.alias(), config.enabled());
-        try {
-            for (int i = 0; i < this.phase; i++) {
-                this.evcsId.applyPower(i, this.chargePower, this.phase);
-            }
-        } catch (OpenemsError.OpenemsNamedException e) {
-            this.log.error("ApplyPower Failed.");
+        for (int i = 0; i < this.phase; i++) {
+            this.evcsId.applyPower(i, this.chargePower, this.phase);
         }
     }
 
     @Modified
     void modified(ComponentContext context, Config config) throws OpenemsError.OpenemsNamedException {
-        try {
-            for (int i = 0; i < this.phase; i++) {
-                this.evcsId.applyPower(i, this.chargePower * -1, this.phase);
-            }
-        } catch (OpenemsError.OpenemsNamedException e) {
-            this.log.error("ApplyPower Failed.");
-        }
+
+        this.evcsId.resetPower();
+
         this.chargePower = config.charge();
         this.phase = config.phase();
         this.evcsId = this.cpm.getComponent(config.EVCSId());
         super.modified(context, config.id(), config.alias(), config.enabled());
-        try {
-            for (int i = 0; i < this.phase; i++) {
-                this.evcsId.applyPower(i, this.chargePower, this.phase);
-            }
-        } catch (OpenemsError.OpenemsNamedException e) {
-            this.log.error("ApplyPower Failed.");
-        }
 
+        for (int i = 0; i < this.phase; i++) {
+            this.evcsId.applyPower(i, this.chargePower, this.phase);
+        }
     }
 
     @Deactivate
     protected void deactivate() {
-        try {
-            for (int i = 0; i < this.phase; i++) {
-                this.evcsId.applyPower(i, this.chargePower * -1, this.phase);
-            }
-        } catch (OpenemsError.OpenemsNamedException e) {
-            this.log.error("ApplyPower Failed.");
-        }
+        this.evcsId.resetPower();
+
         super.deactivate();
     }
 
