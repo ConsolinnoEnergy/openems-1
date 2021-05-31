@@ -135,10 +135,8 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
             //-----Reallocate Resources------\\
             this.checkWaitingList();
             this.swapWaitingEvcs();
-            /*
             this.reallocateFreeResources();
 
-             */
 
             //-----Check if the power has to be limited-----\\
             if (this.getPowerLimitValue() > 0) {
@@ -431,11 +429,7 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
                     if (minReduce != previousReduceAmount) {
                         previousReduceAmount = minReduce;
                     } else {
-                        if (afterTwoPhaseReduction / 2 == 0) {
-                            break;
-                        } else {
-                            break;
-                        }
+                        break;
                     }
                 }
             } else {
@@ -554,11 +548,7 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
                     if (minReduce != previousReduceAmount) {
                         previousReduceAmount = minReduce;
                     } else {
-                        if ((reducedByPhase1 + reducedByPhase2) / 2 == 0) {
-                            break;
-                        } else {
-                            break;
-                        }
+                        break;
                     }
 
                 }
@@ -918,14 +908,13 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
      * @return true if the Phases are now balanced
      */
     private boolean turnOffOnePhaseEvcsBalancing(int minimum, ManagedEvcs[] onePhase, boolean phase2) {
-        int powerRemoved;
         boolean unbalanced = true;
         int onePhaseLength = onePhase.length;
         if (onePhaseLength > 0) {
             int i = 0;
             while (unbalanced && onePhaseLength > 0) {
                 try {
-                    powerRemoved = this.turnOffEvcs(onePhase[i]);
+                    this.turnOffEvcs(onePhase[i]);
                     this.powerWaitingList.put(onePhase[i].id(), new EvcsOnHold(MINIMUM_POWER, new DateTime(), 1));
                     this.updatePower(true);
                     int maximum;
@@ -959,14 +948,13 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
      * @return true if the Phases are now balanced
      */
     private boolean turnOffTwoPhaseEvcsBalancing(int min, ManagedEvcs[] twoPhase) {
-        int powerRemoved;
         boolean unbalanced = true;
         int twoPhaseLength = twoPhase.length;
         if (twoPhaseLength > 0) {
             int i = 0;
             while (unbalanced && twoPhaseLength > 0) {
                 try {
-                    powerRemoved = this.turnOffEvcs(twoPhase[i]);
+                    this.turnOffEvcs(twoPhase[i]);
                     this.powerWaitingList.put(twoPhase[i].id(), new EvcsOnHold(MINIMUM_POWER, new DateTime(), 2));
                     this.updatePower(true);
                     int maximum = this.getMaximumLoad();
@@ -995,7 +983,6 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
      * @return true if the Phases are now balanced
      */
     private boolean turnOffTwoPhaseDoubleHitEvcsBalancing(int min, ManagedEvcs[] twoPhase) {
-        int powerRemoved;
         boolean unbalanced = true;
         ManagedEvcs[] twoPhaseDoubleHit = this.getTwoPhaseEvcs(twoPhase, this.maxIndex, this.minIndex);
         int twoPhaseDoubleHitLength = twoPhaseDoubleHit.length;
@@ -1003,7 +990,7 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
             int i = 0;
             while (unbalanced && twoPhaseDoubleHitLength > 0) {
                 try {
-                    powerRemoved = this.turnOffEvcs(twoPhaseDoubleHit[i]);
+                    this.turnOffEvcs(twoPhaseDoubleHit[i]);
                     this.powerWaitingList.put(twoPhaseDoubleHit[i].id(), new EvcsOnHold(MINIMUM_POWER, new DateTime(), 2));
                     this.updatePower(true);
                     int maximum = this.getMaximumLoad();
@@ -1559,22 +1546,6 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
         }
         evcs.setChargePowerLimit(0);
         return oldPower;
-    }
-
-    /**
-     * Removes an EVCS from an ManagedEvcs[] if its on the waitingList.
-     *
-     * @param evcs the ManagedEvcs[]
-     * @return modified ManagedEvcs[]
-     */
-    private ManagedEvcs[] removeEvcsFromArray(ManagedEvcs[] evcs) {
-        List<ManagedEvcs> output = new ArrayList<>();
-        for (int i = 0; i < evcs.length; i++) {
-            if (this.powerWaitingList.containsKey(evcs[i].id()) == false) {
-                output.add(evcs[i]);
-            }
-        }
-        return this.convertListIntoArray(output);
     }
 
 
@@ -2207,25 +2178,12 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
         add.forEach(this.powerWaitingList::put);
     }
 
-    /**
-     * Turns an EVCSonHold on
-     *
-     * @param id         ID of the EVCS
-     * @param evcsOnHold the EVCSonHold
-     * @throws OpenemsError.OpenemsNamedException If the ID doesn't belong to an EVCS. This shouldn't happen.
-     */
-    private void turnOnEvcs(String id, EvcsOnHold evcsOnHold) throws OpenemsError.OpenemsNamedException {
-        ManagedEvcs evcs = this.cpm.getComponent(id);
-        int newPower = evcsOnHold.getPower();
-        evcs.setChargePowerLimit(newPower * GRID_VOLTAGE);
-
-    }
 
     /**
      * Checks if the EVCS on the waiting list can activate under the given Limits, if no EVCS is active.
      *
      * @param evcs The evcs on hold from the forEach
-     * @return true if thats the case
+     * @return true if that is the case
      */
     private boolean canActivate(EvcsOnHold evcs) {
         int phaseCount = evcs.getPhases();
@@ -2248,9 +2206,16 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
     private void reallocateFreeResources() {
         if (this.powerL1 != null && this.powerL2 != null && this.powerL3 != null && (this.phaseLimit != 0 || this.powerLimit != 0)) {
             int powerSum = this.powerL1 + this.powerL2 + this.powerL3;
-            int freeResourcesPerPhase = ((Math.floorDiv(powerSum, 3) + 1) - (this.phaseLimit / GRID_VOLTAGE));
-            int freeResourcesFromGrid = (powerSum - (this.powerLimit / GRID_VOLTAGE));
-            int freeResources = Math.min(freeResourcesPerPhase, freeResourcesFromGrid);
+            int freeResourcesPerPhase = Math.abs((this.phaseLimit / GRID_VOLTAGE) - (Math.floorDiv(powerSum, 3) + 1));
+            int freeResourcesFromGrid = Math.abs((this.powerLimit / GRID_VOLTAGE) - powerSum);
+            int freeResources;
+            if (this.powerLimit == 0) {
+                freeResources = freeResourcesPerPhase;
+            } else if (this.phaseLimit == 0) {
+                freeResources = freeResourcesFromGrid;
+            } else {
+                freeResources = Math.min(freeResourcesPerPhase, freeResourcesFromGrid);
+            }
             if (freeResources > 0) {
 
                 if (freeResourcesFromGrid < freeResourcesPerPhase) {
@@ -2272,7 +2237,7 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
                             }
                             ManagedEvcs evcs = this.cpm.getComponent(waitingId.get());
                             this.powerWaitingList.remove(waitingId.get());
-                            evcs.setChargePowerLimit(7);
+                            evcs.setChargePowerLimit(7 * GRID_VOLTAGE);
                             freeResources -= 7;
 
                         } catch (OpenemsError.OpenemsNamedException e) {
@@ -2301,7 +2266,7 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
                             int resourceReduction = Math.floorDiv(freeResources, waitingPhases.get());
                             if (resourceReduction > 0) {
                                 this.powerWaitingList.remove(waitingId.get());
-                                evcs.setChargePowerLimit(resourceReduction);
+                                evcs.setChargePowerLimit(resourceReduction * GRID_VOLTAGE);
                                 freeResources -= resourceReduction;
                             }
                         } catch (OpenemsError.OpenemsNamedException e) {
@@ -2309,6 +2274,7 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
                         }
                     }
                 }
+
                 //-----------Reallocate to everyone else-------------\\
                 if (freeResources > 0 && this.powerWaitingList.isEmpty()) {
                     ManagedEvcs[] everyone = this.getEvcs();
@@ -2317,6 +2283,8 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
                         this.increasePowerBy(powerForEveryone, everyone);
                     }
                 }
+
+
             }
 
         }
@@ -2331,15 +2299,42 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
     private void increasePowerBy(int powerForEveryone, ManagedEvcs[] evcss) {
 
         for (int i = 0; i < evcss.length; i++) {
-            int oldPower = this.getPower(evcss[i]);
-            int newPower = oldPower + powerForEveryone;
-            try {
-                evcss[i].setChargePowerLimit(newPower);
-            } catch (OpenemsError.OpenemsNamedException e) {
-                this.log.error("Couldn't increase Power for " + evcss[i].id());
+            boolean allow = true;
+            boolean overLimit = ((this.getMaximumLoad() - this.getMinimumLoad()) + powerForEveryone >= MAXIMUM_LOAD_DELTA
+                    || this.getMiddleLoad() - this.getMinimumLoad() + powerForEveryone >= 20);
+            int[] phaseConfiguration = evcss[i].getPhaseConfiguration();
+            int phaseCount = evcss[i].getPhases().get();
+            switch (phaseCount) {
+                case 1:
+                    if ((phaseConfiguration[0] == this.maxIndex)
+                            && overLimit) {
+                        allow = false;
+                    }
+                    break;
+                case 2:
+                    if ((phaseConfiguration[0] == this.maxIndex || phaseConfiguration[1] == this.maxIndex)
+                            && overLimit) {
+                        allow = false;
+                    }
+                    break;
+                case 3:
+                    if ((phaseConfiguration[0] == this.maxIndex || phaseConfiguration[1] == this.maxIndex || phaseConfiguration[2] == this.maxIndex)
+                            && overLimit) {
+                        allow = false;
+                    }
+                    break;
+
+            }
+            if (allow) {
+                int oldPower = this.getPower(evcss[i]);
+                int newPower = oldPower + powerForEveryone;
+                try {
+                    evcss[i].setChargePowerLimit(newPower * GRID_VOLTAGE);
+                } catch (OpenemsError.OpenemsNamedException e) {
+                    this.log.error("Couldn't increase Power for " + evcss[i].id());
+                }
             }
         }
-
     }
 
     /**
@@ -2355,6 +2350,36 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
         } else {
             return (evcss.getChargePower().orElse(0) / GRID_VOLTAGE);
         }
+    }
+
+    /**
+     * Removes an EVCS from an ManagedEvcs[] if its on the waitingList.
+     *
+     * @param evcs the ManagedEvcs[]
+     * @return modified ManagedEvcs[]
+     */
+    private ManagedEvcs[] removeEvcsFromArray(ManagedEvcs[] evcs) {
+        List<ManagedEvcs> output = new ArrayList<>();
+        for (int i = 0; i < evcs.length; i++) {
+            if (this.powerWaitingList.containsKey(evcs[i].id()) == false) {
+                output.add(evcs[i]);
+            }
+        }
+        return this.convertListIntoArray(output);
+    }
+
+    /**
+     * Turns an EVCSonHold on.
+     *
+     * @param id         ID of the EVCS
+     * @param evcsOnHold the EVCSonHold
+     * @throws OpenemsError.OpenemsNamedException If the ID doesn't belong to an EVCS. This shouldn't happen.
+     */
+    private void turnOnEvcs(String id, EvcsOnHold evcsOnHold) throws OpenemsError.OpenemsNamedException {
+        ManagedEvcs evcs = this.cpm.getComponent(id);
+        int newPower = evcsOnHold.getPower();
+        evcs.setChargePowerLimit(newPower * GRID_VOLTAGE);
+
     }
 
 
