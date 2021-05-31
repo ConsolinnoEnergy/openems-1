@@ -1,8 +1,10 @@
 package io.openems.edge.consolinno.evcs.limiter;
 
+import org.joda.time.DateTime;
+
 class EvcsOnHold {
     private final int power;
-    private final int timestamp;
+    private final DateTime timestamp;
     private final int phases;
 
     /**
@@ -13,7 +15,7 @@ class EvcsOnHold {
      * @param timestamp time when the EVCS was turned off
      * @param phases    amount of phases the EVCS has
      */
-    public EvcsOnHold(int power, int timestamp, int phases) {
+    public EvcsOnHold(int power, DateTime timestamp, int phases) {
         this.power = power;
         this.timestamp = timestamp;
         this.phases = phases;
@@ -23,7 +25,7 @@ class EvcsOnHold {
         return this.power;
     }
 
-    public int getTimestamp() {
+    public DateTime getTimestamp() {
         return this.timestamp;
     }
 

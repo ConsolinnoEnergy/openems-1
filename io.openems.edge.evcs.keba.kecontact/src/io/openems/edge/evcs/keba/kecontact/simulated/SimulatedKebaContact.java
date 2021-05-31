@@ -51,6 +51,7 @@ public class SimulatedKebaContact extends AbstractOpenemsComponent implements Ma
     private int l2Power;
     private int l3Power;
     private int phaseCount;
+    private int initialPower;
 
     public SimulatedKebaContact() {
         super(//
@@ -114,7 +115,7 @@ public class SimulatedKebaContact extends AbstractOpenemsComponent implements Ma
         WriteChannel<Integer> channel = this.channel(ManagedEvcs.ChannelId.SET_CHARGE_POWER_LIMIT);
         Optional<Integer> valueOpt = channel.getNextWriteValueAndReset();
         if (valueOpt.isPresent()) {
-            this.limitPower((valueOpt.get()) / 230);
+            this.limitPower(((valueOpt.get()) / 230)/this.phaseCount);
         }
         this._setChargePower((this.l1Power + this.l2Power + this.l3Power) * 230);
 
@@ -122,28 +123,31 @@ public class SimulatedKebaContact extends AbstractOpenemsComponent implements Ma
 
     /**
      * Applies PowerLimit from the setChargePowerLimit Channel.
+     *
      * @param chargeLimit Value from the channel
      */
     private void limitPower(int chargeLimit) {
-
+        int newPower;
+        if (chargeLimit > this.initialPower) {
+            newPower = this.initialPower;
+        } else {
+            newPower = chargeLimit;
+        }
 
         for (int i = 0; i < this.phaseCount; i++) {
             switch (this.phases[i]) {
                 case 1:
-                    int amountToReduce = (this.l1Power - (chargeLimit / this.phaseCount));
-                    this.l1Power -= amountToReduce;
+                    this.l1Power = newPower;
                     this.l1.setNextValue(this.l1Power);
 
                     break;
                 case 2:
-                    amountToReduce = (this.l2Power - (chargeLimit / this.phaseCount));
-                    this.l2Power -= amountToReduce;
+                    this.l2Power = newPower;
                     this.l2.setNextValue(this.l2Power);
 
                     break;
                 case 3:
-                    amountToReduce = (this.l3Power - (chargeLimit / this.phaseCount));
-                    this.l3Power -= amountToReduce;
+                    this.l3Power = newPower;
                     this.l3.setNextValue(this.l3Power);
 
                     break;
@@ -165,14 +169,16 @@ public class SimulatedKebaContact extends AbstractOpenemsComponent implements Ma
 
     /**
      * Increases charge power.
-     * @param phase the phase that has to increase
+     *
+     * @param phase       the phase that has to increase
      * @param chargePower the new power
-     * @param phaseCount the amount of phases the evcs charges with in total
+     * @param phaseCount  the amount of phases the evcs charges with in total
      */
     public void applyPower(int phase, int chargePower, int phaseCount) {
         if (chargePower <= 6 && chargePower > 0) {
             chargePower = 0;
         }
+        this.initialPower = chargePower;
         this.phaseCount = phaseCount;
         switch (this.phases[phase]) {
             case 1:
