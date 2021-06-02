@@ -287,6 +287,17 @@ public interface Schneider extends OpenemsComponent {
     default Channel<Integer> getCPWStateChannel() {
         return this.channel(ChannelId.CPW_STATE);
     }
+
+    /**
+     * Gets the Value of {@link Schneider.ChannelId#CPW_STATE}.
+     *
+     * @return the value
+     */
+    default int getCPWState() {
+        Channel<Integer> channel = this.getCPWStateChannel();
+        return channel.value().orElse(channel.getNextValue().orElse(0));
+    }
+
     /**
      * Gets the Channel for {@link Schneider.ChannelId#LAST_CHARGE_STATUS}.
      *
@@ -295,6 +306,17 @@ public interface Schneider extends OpenemsComponent {
     default Channel<Integer> getLastChargeStatusChannel() {
         return this.channel(ChannelId.LAST_CHARGE_STATUS);
     }
+
+    /**
+     * Gets the Value of {@link Schneider.ChannelId#LAST_CHARGE_STATUS}.
+     *
+     * @return the value
+     */
+    default int getLastChargeStatus() {
+        Channel<Integer> channel = this.getLastChargeStatusChannel();
+        return channel.value().orElse(channel.getNextValue().orElse(0));
+    }
+
     /**
      * Gets the Channel for {@link Schneider.ChannelId#REMOTE_COMMAND_STATUS}.
      *
@@ -303,6 +325,17 @@ public interface Schneider extends OpenemsComponent {
     default Channel<Integer> getRemoteCommandStatusChannel() {
         return this.channel(ChannelId.REMOTE_COMMAND_STATUS);
     }
+
+    /**
+     * Gets the Value of {@link Schneider.ChannelId#REMOTE_COMMAND_STATUS}.
+     *
+     * @return the value
+     */
+    default int getRemoteCommandStatus() {
+        Channel<Integer> channel = this.getRemoteCommandStatusChannel();
+        return channel.value().orElse(channel.getNextValue().orElse(0));
+    }
+
     /**
      * Gets the Channel for {@link Schneider.ChannelId#ERROR_STATUS_MSB}.
      *
@@ -311,6 +344,17 @@ public interface Schneider extends OpenemsComponent {
     default Channel<Integer> getErrorStatusMSBChannel() {
         return this.channel(ChannelId.ERROR_STATUS_MSB);
     }
+
+    /**
+     * Gets the Value of {@link Schneider.ChannelId#ERROR_STATUS_MSB}.
+     *
+     * @return the value
+     */
+    default int getErrorStatusMSB() {
+        Channel<Integer> channel = this.getErrorStatusMSBChannel();
+        return channel.value().orElse(channel.getNextValue().orElse(0));
+    }
+
     /**
      * Gets the Channel for {@link Schneider.ChannelId#ERROR_STATUS_LSB}.
      *
@@ -319,6 +363,17 @@ public interface Schneider extends OpenemsComponent {
     default Channel<Integer> getErrorStatusLSBChannel() {
         return this.channel(ChannelId.ERROR_STATUS_LSB);
     }
+
+    /**
+     * Gets the Value of {@link Schneider.ChannelId#ERROR_STATUS_LSB}.
+     *
+     * @return the value
+     */
+    default int getErrorStatusLSB() {
+        Channel<Integer> channel = this.getErrorStatusLSBChannel();
+        return channel.value().orElse(channel.getNextValue().orElse(0));
+    }
+
     /**
      * Gets the Channel for {@link Schneider.ChannelId#CHARGE_TIME}.
      *
@@ -327,6 +382,17 @@ public interface Schneider extends OpenemsComponent {
     default Channel<Integer> getChargeTimeChannel() {
         return this.channel(ChannelId.CHARGE_TIME);
     }
+
+    /**
+     * Gets the Value of {@link Schneider.ChannelId#CHARGE_TIME}.
+     *
+     * @return the value
+     */
+    default int getChargeTime() {
+        Channel<Integer> channel = this.getChargeTimeChannel();
+        return channel.value().orElse(channel.getNextValue().orElse(0));
+    }
+
     /**
      * Gets the Channel for {@link Schneider.ChannelId#CHARGE_TIME_2}.
      *
@@ -335,6 +401,17 @@ public interface Schneider extends OpenemsComponent {
     default Channel<Integer> getChargeTime2Channel() {
         return this.channel(ChannelId.CHARGE_TIME_2);
     }
+
+    /**
+     * Gets the Value of {@link Schneider.ChannelId#CHARGE_TIME_2}.
+     *
+     * @return the value
+     */
+    default int getChargeTime2() {
+        Channel<Integer> channel = this.getChargeTime2Channel();
+        return channel.value().orElse(channel.getNextValue().orElse(0));
+    }
+
     /**
      * Gets the Channel for {@link Schneider.ChannelId#REMOTE_COMMAND}.
      *
@@ -343,6 +420,17 @@ public interface Schneider extends OpenemsComponent {
     default WriteChannel<Integer> getRemoteCommandChannel() {
         return this.channel(ChannelId.REMOTE_COMMAND);
     }
+
+    /**
+     * Gets the Value of {@link Schneider.ChannelId#REMOTE_COMMAND}.
+     *
+     * @return the value
+     */
+    default int getSetRemoteCommand() {
+        WriteChannel<Integer> channel = this.getRemoteCommandChannel();
+        return channel.value().orElse(channel.getNextWriteValue().orElse(0));
+    }
+
     /**
      * Gets the Channel for {@link Schneider.ChannelId#MAX_INTENSITY_SOCKET}.
      *
@@ -351,6 +439,17 @@ public interface Schneider extends OpenemsComponent {
     default WriteChannel<Integer> getMaxIntensitySocketChannel() {
         return this.channel(ChannelId.MAX_INTENSITY_SOCKET);
     }
+
+    /**
+     * Gets the Value of {@link Schneider.ChannelId#MAX_INTENSITY_SOCKET}.
+     *
+     * @return the value
+     */
+    default int getSetMaxIntensitySocket() {
+        WriteChannel<Integer> channel = this.getMaxIntensitySocketChannel();
+        return channel.value().orElse(channel.getNextWriteValue().orElse(0));
+    }
+
     /**
      * Gets the Channel for {@link Schneider.ChannelId#STATIC_MAX_INTENSITY_CLUSTER}.
      *
@@ -359,6 +458,17 @@ public interface Schneider extends OpenemsComponent {
     default WriteChannel<Integer> getStaticMaxIntensityClusterChannel() {
         return this.channel(ChannelId.STATIC_MAX_INTENSITY_CLUSTER);
     }
+
+    /**
+     * Gets the Value of {@link Schneider.ChannelId#STATIC_MAX_INTENSITY_CLUSTER}.
+     *
+     * @return the value
+     */
+    default int getSetStaticMaxIntensityCluster() {
+        WriteChannel<Integer> channel = this.getStaticMaxIntensityClusterChannel();
+        return channel.value().orElse(channel.getNextWriteValue().orElse(0));
+    }
+
     /**
      * Gets the Channel for {@link Schneider.ChannelId#STATION_INTENSITY_PHASE_X}.
      *
@@ -367,6 +477,17 @@ public interface Schneider extends OpenemsComponent {
     default WriteChannel<Float> getStationIntensityPhaseXChannel() {
         return this.channel(ChannelId.STATION_INTENSITY_PHASE_X);
     }
+
+    /**
+     * Gets the Value of {@link Schneider.ChannelId#STATION_INTENSITY_PHASE_X}.
+     *
+     * @return the value
+     */
+    default float getSetStationIntensityPhaseX() {
+        WriteChannel<Float> channel = this.getStationIntensityPhaseXChannel();
+        return channel.value().orElse(channel.getNextWriteValue().orElse(0.f));
+    }
+
     /**
      * Gets the Channel for {@link Schneider.ChannelId#STATION_INTENSITY_PHASE_2}.
      *
@@ -375,6 +496,17 @@ public interface Schneider extends OpenemsComponent {
     default WriteChannel<Float> getStationIntensityPhase2Channel() {
         return this.channel(ChannelId.STATION_INTENSITY_PHASE_2);
     }
+
+    /**
+     * Gets the Value of {@link Schneider.ChannelId#STATION_INTENSITY_PHASE_2}.
+     *
+     * @return the value
+     */
+    default float getSetStationIntensityPhase2() {
+        WriteChannel<Float> channel = this.getStationIntensityPhase2Channel();
+        return channel.value().orElse(channel.getNextWriteValue().orElse(0.f));
+    }
+
     /**
      * Gets the Channel for {@link Schneider.ChannelId#STATION_INTENSITY_PHASE_3}.
      *
@@ -383,6 +515,17 @@ public interface Schneider extends OpenemsComponent {
     default WriteChannel<Float> getStationIntensityPhase3Channel() {
         return this.channel(ChannelId.STATION_INTENSITY_PHASE_3);
     }
+
+    /**
+     * Gets the Value of {@link Schneider.ChannelId#STATION_INTENSITY_PHASE_3}.
+     *
+     * @return the value
+     */
+    default float getSetStationIntensityPhase3() {
+        WriteChannel<Float> channel = this.getStationIntensityPhase3Channel();
+        return channel.value().orElse(channel.getNextWriteValue().orElse(0.f));
+    }
+
     /**
      * Gets the Channel for {@link Schneider.ChannelId#STATION_INTENSITY_MSB}.
      *
@@ -391,6 +534,17 @@ public interface Schneider extends OpenemsComponent {
     default WriteChannel<Integer> getStationIntensityMSBChannel() {
         return this.channel(ChannelId.STATION_INTENSITY_MSB);
     }
+
+    /**
+     * Gets the Value of {@link Schneider.ChannelId#STATION_INTENSITY_MSB}.
+     *
+     * @return the value
+     */
+    default int getSetStationIntensityMSB() {
+        WriteChannel<Integer> channel = this.getStationIntensityMSBChannel();
+        return channel.value().orElse(channel.getNextWriteValue().orElse(0));
+    }
+
     /**
      * Gets the Channel for {@link Schneider.ChannelId#STATION_INTENSITY_LSB}.
      *
@@ -399,6 +553,17 @@ public interface Schneider extends OpenemsComponent {
     default WriteChannel<Integer> getStationIntensityLSBChannel() {
         return this.channel(ChannelId.STATION_INTENSITY_LSB);
     }
+
+    /**
+     * Gets the Value of {@link Schneider.ChannelId#STATION_INTENSITY_LSB}.
+     *
+     * @return the value
+     */
+    default int getSetStationIntensityLSB() {
+        WriteChannel<Integer> channel = this.getStationIntensityLSBChannel();
+        return channel.value().orElse(channel.getNextWriteValue().orElse(0));
+    }
+
     /**
      * Gets the Channel for {@link Schneider.ChannelId#STATION_POWER_TOTAL}.
      *
@@ -407,6 +572,17 @@ public interface Schneider extends OpenemsComponent {
     default WriteChannel<Float> getStationPowerTotalChannel() {
         return this.channel(ChannelId.STATION_POWER_TOTAL);
     }
+
+    /**
+     * Gets the Value of {@link Schneider.ChannelId#STATION_POWER_TOTAL}.
+     *
+     * @return the value
+     */
+    default float getSetStationPowerTotal() {
+        WriteChannel<Float> channel = this.getStationPowerTotalChannel();
+        return channel.value().orElse(channel.getNextWriteValue().orElse(0.f));
+    }
+
     /**
      * Gets the Channel for {@link Schneider.ChannelId#STN_METER_L1_L2_VOLTAGE}.
      *
@@ -415,6 +591,17 @@ public interface Schneider extends OpenemsComponent {
     default WriteChannel<Float> getStnMeterL1L2VoltageChannel() {
         return this.channel(ChannelId.STN_METER_L1_L2_VOLTAGE);
     }
+
+    /**
+     * Gets the Value of {@link Schneider.ChannelId#STN_METER_L1_L2_VOLTAGE}.
+     *
+     * @return the value
+     */
+    default float getSetStnMeterL1L2Voltage() {
+        WriteChannel<Float> channel = this.getStnMeterL1L2VoltageChannel();
+        return channel.value().orElse(channel.getNextWriteValue().orElse(0.f));
+    }
+
     /**
      * Gets the Channel for {@link Schneider.ChannelId#STN_METER_L2_L3_VOLTAGE}.
      *
@@ -423,6 +610,17 @@ public interface Schneider extends OpenemsComponent {
     default WriteChannel<Float> getStnMeterL2L3VoltageChannel() {
         return this.channel(ChannelId.STN_METER_L2_L3_VOLTAGE);
     }
+
+    /**
+     * Gets the Value of {@link Schneider.ChannelId#STN_METER_L2_L3_VOLTAGE}.
+     *
+     * @return the value
+     */
+    default float getSetStnMeterL2L3Voltage() {
+        WriteChannel<Float> channel = this.getStnMeterL2L3VoltageChannel();
+        return channel.value().orElse(channel.getNextWriteValue().orElse(0.f));
+    }
+
     /**
      * Gets the Channel for {@link Schneider.ChannelId#STN_METER_L3_L1_VOLTAGE}.
      *
@@ -431,6 +629,17 @@ public interface Schneider extends OpenemsComponent {
     default WriteChannel<Float> getStnMeterL3L1VoltageChannel() {
         return this.channel(ChannelId.STN_METER_L3_L1_VOLTAGE);
     }
+
+    /**
+     * Gets the Value of {@link Schneider.ChannelId#STN_METER_L2_L3_VOLTAGE}.
+     *
+     * @return the value
+     */
+    default float getSetStnMeterL3L1Voltage() {
+        WriteChannel<Float> channel = this.getStnMeterL3L1VoltageChannel();
+        return channel.value().orElse(channel.getNextWriteValue().orElse(0.f));
+    }
+
     /**
      * Gets the Channel for {@link Schneider.ChannelId#STN_METER_L1_N_VOLTAGE}.
      *
@@ -439,6 +648,17 @@ public interface Schneider extends OpenemsComponent {
     default WriteChannel<Float> getStnMeterL1NVoltageChannel() {
         return this.channel(ChannelId.STN_METER_L1_N_VOLTAGE);
     }
+
+    /**
+     * Gets the Value of {@link Schneider.ChannelId#STN_METER_L1_N_VOLTAGE}.
+     *
+     * @return the value
+     */
+    default float getSetStnMeterL1NVoltage() {
+        WriteChannel<Float> channel = this.getStnMeterL1NVoltageChannel();
+        return channel.value().orElse(channel.getNextWriteValue().orElse(0.f));
+    }
+
     /**
      * Gets the Channel for {@link Schneider.ChannelId#STN_METER_L2_N_VOLTAGE}.
      *
@@ -447,6 +667,17 @@ public interface Schneider extends OpenemsComponent {
     default WriteChannel<Float> getStnMeterL2NVoltageChannel() {
         return this.channel(ChannelId.STN_METER_L2_N_VOLTAGE);
     }
+
+    /**
+     * Gets the Value of {@link Schneider.ChannelId#STN_METER_L2_N_VOLTAGE}.
+     *
+     * @return the value
+     */
+    default float getSetStnMeterL2NVoltage() {
+        WriteChannel<Float> channel = this.getStnMeterL2NVoltageChannel();
+        return channel.value().orElse(channel.getNextWriteValue().orElse(0.f));
+    }
+
     /**
      * Gets the Channel for {@link Schneider.ChannelId#STN_METER_L3_N_VOLTAGE}.
      *
@@ -455,6 +686,17 @@ public interface Schneider extends OpenemsComponent {
     default WriteChannel<Float> getStnMeterL3NVoltageChannel() {
         return this.channel(ChannelId.STN_METER_L3_N_VOLTAGE);
     }
+
+    /**
+     * Gets the Value of {@link Schneider.ChannelId#STN_METER_L3_N_VOLTAGE}.
+     *
+     * @return the value
+     */
+    default float getSetStnMeterL3NVoltage() {
+        WriteChannel<Float> channel = this.getStnMeterL3NVoltageChannel();
+        return channel.value().orElse(channel.getNextWriteValue().orElse(0.f));
+    }
+
     /**
      * Gets the Channel for {@link Schneider.ChannelId#REMOTE_CONTROLLER_LIFE_BIT}.
      *
@@ -463,6 +705,17 @@ public interface Schneider extends OpenemsComponent {
     default WriteChannel<Integer> getRemoteControllerLifeBitChannel() {
         return this.channel(ChannelId.REMOTE_CONTROLLER_LIFE_BIT);
     }
+
+    /**
+     * Gets the Value of {@link Schneider.ChannelId#REMOTE_CONTROLLER_LIFE_BIT}.
+     *
+     * @return the value
+     */
+    default int getSetRemoteControllerLifeBit() {
+        WriteChannel<Integer> channel = this.getRemoteControllerLifeBitChannel();
+        return channel.value().orElse(channel.getNextWriteValue().orElse(0));
+    }
+
     /**
      * Gets the Channel for {@link Schneider.ChannelId#DEGRADED_MODE}.
      *
@@ -471,6 +724,17 @@ public interface Schneider extends OpenemsComponent {
     default Channel<Integer> getDegradedModeChannel() {
         return this.channel(ChannelId.DEGRADED_MODE);
     }
+
+    /**
+     * Gets the Value of {@link Schneider.ChannelId#DEGRADED_MODE}.
+     *
+     * @return the value
+     */
+    default int getDegradedMode() {
+        Channel<Integer> channel = this.getDegradedModeChannel();
+        return channel.value().orElse(channel.getNextValue().orElse(0));
+    }
+
     /**
      * Gets the Channel for {@link Schneider.ChannelId#SESSION_TIME}.
      *
@@ -479,6 +743,17 @@ public interface Schneider extends OpenemsComponent {
     default Channel<Integer> getSessionTimeChannel() {
         return this.channel(ChannelId.SESSION_TIME);
     }
+
+    /**
+     * Gets the Value of {@link Schneider.ChannelId#SESSION_TIME}.
+     *
+     * @return the value
+     */
+    default int getSessionTime() {
+        Channel<Integer> channel = this.getSessionTimeChannel();
+        return channel.value().orElse(channel.getNextValue().orElse(0));
+    }
+
     /**
      * Gets the Channel for {@link Schneider.ChannelId#SESSION_TIME_2}.
      *
@@ -487,13 +762,15 @@ public interface Schneider extends OpenemsComponent {
     default Channel<Integer> getSessionTime2Channel() {
         return this.channel(ChannelId.SESSION_TIME_2);
     }
-    default int getCPWState() {
-        if (this.getCPWStateChannel().value().isDefined()) {
-            return this.getCPWStateChannel().value().get();
-        } else {
-            return this.getCPWStateChannel().getNextValue().orElse(0);
-        }
 
+    /**
+     * Gets the Value of {@link Schneider.ChannelId#SESSION_TIME_2}.
+     *
+     * @return the value
+     */
+    default int getSessionTime2() {
+        Channel<Integer> channel = this.getSessionTime2Channel();
+        return channel.value().orElse(channel.getNextValue().orElse(0));
     }
 }
 
