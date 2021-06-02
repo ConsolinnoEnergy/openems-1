@@ -7,8 +7,6 @@ import io.openems.edge.bridge.modbus.api.ModbusProtocol;
 import io.openems.edge.common.component.AbstractOpenemsComponent;
 import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.common.taskmanager.Priority;
-import io.openems.edge.evcs.api.EvcsPower;
-import io.openems.edge.evcs.api.ManagedEvcs;
 import org.osgi.service.cm.ConfigurationAdmin;
 import org.osgi.service.cm.ConfigurationException;
 import org.osgi.service.component.ComponentContext;
@@ -17,32 +15,28 @@ import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.ConfigurationPolicy;
 import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Reference;
-
+import org.osgi.service.component.annotations.ReferenceCardinality;
+import org.osgi.service.component.annotations.ReferencePolicy;
+import org.osgi.service.component.annotations.ReferencePolicyOption;
 import org.osgi.service.metatype.annotations.Designate;
-
-import java.util.Arrays;
 
 
 @Designate(ocd = Config.class, factory = true)
-@Component(name = "SchneiderImpl", immediate = true,
+@Component(name = "SchneiderReadWorker", immediate = true,
         configurationPolicy = ConfigurationPolicy.REQUIRE)
-public class SchneiderImpl extends AbstractOpenemsComponent implements OpenemsComponent, ManagedEvcs {
+public class SchneiderReadWorker extends AbstractOpenemsComponent implements OpenemsComponent {
 
     @Reference
     protected ConfigurationAdmin cm;
 
-    private int[] phases;
 
 
-    public SchneiderImpl() {
-        super(OpenemsComponent.ChannelId.values(),
-                ManagedEvcs.ChannelId.values());
+    public SchneiderReadWorker() {
+        super(ChannelId.values());
     }
 
     @Activate
     void activate(ComponentContext context, Config config) throws ConfigurationException, OpenemsException {
-
-        this.phases = config.phases();
         super.activate(context, config.id(), config.alias(), config.enabled());
     }
 
@@ -52,25 +46,9 @@ public class SchneiderImpl extends AbstractOpenemsComponent implements OpenemsCo
     }
 
 
-
-    private boolean checkPhases() {
-        String phases = Arrays.toString(this.phases);
-        return phases.contains("1") && phases.contains("2") && phases.contains("3");
-    }
-
     @Override
     public String debugLog() {
         return "";
     }
 
-
-    @Override
-    public EvcsPower getEvcsPower() {
-        return null;
-    }
-
-    @Override
-    public int[] getPhaseConfiguration() {
-        return new int[0];
-    }
 }
