@@ -15,4 +15,8 @@ public enum RemoteCommand {
         this.value = value;
 
     }
+
+    public int getValue() {
+        return this.value;
+    }
 }
