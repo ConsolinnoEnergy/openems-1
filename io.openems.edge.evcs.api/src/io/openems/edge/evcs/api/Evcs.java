@@ -619,7 +619,7 @@ public interface Evcs extends OpenemsComponent {
      * @return int[] of connected Phases
      */
     public default int[] getPhaseConfiguration() {
-        return new int[0];
+        return null;
     }
 
 }

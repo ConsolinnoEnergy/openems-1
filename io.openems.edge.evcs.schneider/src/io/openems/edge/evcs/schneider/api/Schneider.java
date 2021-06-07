@@ -1,4 +1,4 @@
-package io.openems.edge.evcs.schneider;
+package io.openems.edge.evcs.schneider.api;
 
 import io.openems.common.channel.AccessMode;
 import io.openems.common.channel.Unit;
@@ -8,7 +8,7 @@ import io.openems.edge.common.channel.Channel;
 import io.openems.edge.common.channel.Doc;
 import io.openems.edge.common.channel.WriteChannel;
 import io.openems.edge.common.component.OpenemsComponent;
-import io.openems.edge.evcs.api.ManagedEvcs;
+import io.openems.edge.evcs.schneider.RemoteCommand;
 
 /**
  * This Provides the Channels for the Schneider EVCS.
@@ -142,7 +142,7 @@ public interface Schneider extends OpenemsComponent {
          * <li>Unit: Watt Hours
          * </ul>
          */
-        STATION_INTENSITY_MSB(Doc.of(OpenemsType.INTEGER).unit(Unit.WATT_HOURS).accessMode(AccessMode.READ_WRITE)),
+        STATION_ENERGY_MSB(Doc.of(OpenemsType.INTEGER).unit(Unit.WATT_HOURS).accessMode(AccessMode.READ_WRITE)),
         /**
          * TBD.
          * <ul>
@@ -151,7 +151,7 @@ public interface Schneider extends OpenemsComponent {
          * <li>Unit: Watt Hours
          * </ul>
          */
-        STATION_INTENSITY_LSB(Doc.of(OpenemsType.INTEGER).unit(Unit.WATT_HOURS).accessMode(AccessMode.READ_WRITE)),
+        STATION_ENERGY_LSB(Doc.of(OpenemsType.INTEGER).unit(Unit.WATT_HOURS).accessMode(AccessMode.READ_WRITE)),
         /**
          * Total Power Consumption of the EVCS.
          * <ul>
@@ -161,6 +161,60 @@ public interface Schneider extends OpenemsComponent {
          * </ul>
          */
         STATION_POWER_TOTAL(Doc.of(OpenemsType.FLOAT).unit(Unit.KILOWATT).accessMode(AccessMode.READ_WRITE)),
+        /**
+         * Current current load currently drawn on Phase 1.
+         * <ul>
+         * <li>Interface: Schneider
+         * <li>Type: float
+         * <li>Unit: Ampere
+         * </ul>
+         */
+        STATION_INTENSITY_PHASE_X_READ(Doc.of(OpenemsType.FLOAT).unit(Unit.AMPERE).accessMode(AccessMode.READ_ONLY)),
+        /**
+         * Current current load currently drawn on Phase 2.
+         * <ul>
+         * <li>Interface: Schneider
+         * <li>Type: float
+         * <li>Unit: Ampere
+         * </ul>
+         */
+        STATION_INTENSITY_PHASE_2_READ(Doc.of(OpenemsType.FLOAT).unit(Unit.AMPERE).accessMode(AccessMode.READ_ONLY)),
+        /**
+         * Current current load currently drawn on Phase 3.
+         * <ul>
+         * <li>Interface: Schneider
+         * <li>Type: float
+         * <li>Unit: Ampere
+         * </ul>
+         */
+        STATION_INTENSITY_PHASE_3_READ(Doc.of(OpenemsType.FLOAT).unit(Unit.AMPERE).accessMode(AccessMode.READ_ONLY)),
+        /**
+         * TBD.
+         * <ul>
+         * <li>Interface: Schneider
+         * <li>Type: Integer
+         * <li>Unit: Watt Hours
+         * </ul>
+         */
+        STATION_ENERGY_MSB_READ(Doc.of(OpenemsType.INTEGER).unit(Unit.WATT_HOURS).accessMode(AccessMode.READ_ONLY)),
+        /**
+         * TBD.
+         * <ul>
+         * <li>Interface: Schneider
+         * <li>Type: Integer
+         * <li>Unit: Watt Hours
+         * </ul>
+         */
+        STATION_ENERGY_LSB_READ(Doc.of(OpenemsType.INTEGER).unit(Unit.WATT_HOURS).accessMode(AccessMode.READ_ONLY)),
+        /**
+         * Total Power Consumption of the EVCS.
+         * <ul>
+         * <li>Interface: Schneider
+         * <li>Type: Float
+         * <li>Unit: Kilo Watt
+         * </ul>
+         */
+        STATION_POWER_TOTAL_READ(Doc.of(OpenemsType.FLOAT).unit(Unit.KILOWATT).accessMode(AccessMode.READ_ONLY)),
         /**
          * Current Voltage between L1 and L2.
          * <ul>
@@ -513,6 +567,25 @@ public interface Schneider extends OpenemsComponent {
     }
 
     /**
+     * Gets the Channel for {@link Schneider.ChannelId#STATION_INTENSITY_PHASE_X_READ}.
+     *
+     * @return the Channel
+     */
+    default Channel<Float> getStationIntensityPhaseXReadChannel() {
+        return this.channel(ChannelId.STATION_INTENSITY_PHASE_X_READ);
+    }
+
+    /**
+     * Gets the Value of {@link Schneider.ChannelId#STATION_INTENSITY_PHASE_X_READ}.
+     *
+     * @return the value
+     */
+    default float getStationIntensityPhaseX() {
+        Channel<Float> channel = this.getStationIntensityPhaseXReadChannel();
+        return channel.value().orElse(channel.getNextValue().orElse(0.f));
+    }
+
+    /**
      * Sets the Limit for Phase 1. See
      * {@link Schneider.ChannelId#STATION_INTENSITY_PHASE_X}.
      *
@@ -540,6 +613,25 @@ public interface Schneider extends OpenemsComponent {
      */
     default WriteChannel<Float> getStationIntensityPhase2Channel() {
         return this.channel(ChannelId.STATION_INTENSITY_PHASE_2);
+    }
+
+    /**
+     * Gets the Channel for {@link Schneider.ChannelId#STATION_INTENSITY_PHASE_2_READ}.
+     *
+     * @return the Channel
+     */
+    default Channel<Float> getStationIntensityPhase2ReadChannel() {
+        return this.channel(ChannelId.STATION_INTENSITY_PHASE_2_READ);
+    }
+
+    /**
+     * Gets the Value of {@link Schneider.ChannelId#STATION_INTENSITY_PHASE_2_READ}.
+     *
+     * @return the value
+     */
+    default float getStationIntensityPhase2() {
+        Channel<Float> channel = this.getStationIntensityPhase2ReadChannel();
+        return channel.value().orElse(channel.getNextValue().orElse(0.f));
     }
 
     /**
@@ -573,6 +665,25 @@ public interface Schneider extends OpenemsComponent {
     }
 
     /**
+     * Gets the Channel for {@link Schneider.ChannelId#STATION_INTENSITY_PHASE_3_READ}.
+     *
+     * @return the Channel
+     */
+    default Channel<Float> getStationIntensityPhase3ReadChannel() {
+        return this.channel(ChannelId.STATION_INTENSITY_PHASE_3_READ);
+    }
+
+    /**
+     * Gets the Value of {@link Schneider.ChannelId#STATION_INTENSITY_PHASE_3_READ}.
+     *
+     * @return the value
+     */
+    default float getStationIntensityPhase3() {
+        Channel<Float> channel = this.getStationIntensityPhase3ReadChannel();
+        return channel.value().orElse(channel.getNextValue().orElse(0.f));
+    }
+
+    /**
      * Sets the Limit for Phase 3. See
      * {@link Schneider.ChannelId#STATION_INTENSITY_PHASE_3}.
      *
@@ -594,62 +705,100 @@ public interface Schneider extends OpenemsComponent {
     }
 
     /**
-     * Gets the Channel for {@link Schneider.ChannelId#STATION_INTENSITY_MSB}.
+     * Gets the Channel for {@link Schneider.ChannelId#STATION_ENERGY_MSB}.
      *
      * @return the Channel
      */
-    default WriteChannel<Integer> getStationIntensityMSBChannel() {
-        return this.channel(ChannelId.STATION_INTENSITY_MSB);
+    default WriteChannel<Integer> getStationEnergyMSBChannel() {
+        return this.channel(ChannelId.STATION_ENERGY_MSB);
+    }
+
+    /**
+     * Gets the Channel for {@link Schneider.ChannelId#STATION_ENERGY_MSB_READ}.
+     *
+     * @return the Channel
+     */
+    default Channel<Integer> getStationEnergyMSBReadChannel() {
+        return this.channel(ChannelId.STATION_ENERGY_MSB_READ);
+    }
+
+    /**
+     * Gets the Value of {@link Schneider.ChannelId#STATION_ENERGY_MSB_READ}.
+     *
+     * @return the value
+     */
+    default float getStationEnergyMSB() {
+        Channel<Integer> channel = this.getStationEnergyMSBReadChannel();
+        return channel.value().orElse(channel.getNextValue().orElse(0));
     }
 
     /**
      * TBD. See
-     * {@link Schneider.ChannelId#STATION_INTENSITY_MSB}.
+     * {@link Schneider.ChannelId#STATION_ENERGY_MSB}.
      *
      * @param value the next write value
      * @throws OpenemsError.OpenemsNamedException on error
      */
-    default void setStationIntensityMSB(int value) throws OpenemsError.OpenemsNamedException {
-        this.getStationIntensityMSBChannel().setNextWriteValue(value);
+    default void setStationEnergyMSB(int value) throws OpenemsError.OpenemsNamedException {
+        this.getStationEnergyMSBChannel().setNextWriteValue(value);
     }
 
     /**
-     * Gets the Value of {@link Schneider.ChannelId#STATION_INTENSITY_MSB}.
+     * Gets the Value of {@link Schneider.ChannelId#STATION_ENERGY_MSB}.
      *
      * @return the value
      */
-    default int getSetStationIntensityMSB() {
-        WriteChannel<Integer> channel = this.getStationIntensityMSBChannel();
+    default int getSetStationEnergyMSB() {
+        WriteChannel<Integer> channel = this.getStationEnergyMSBChannel();
         return channel.value().orElse(channel.getNextWriteValue().orElse(0));
     }
 
     /**
-     * Gets the Channel for {@link Schneider.ChannelId#STATION_INTENSITY_LSB}.
+     * Gets the Channel for {@link Schneider.ChannelId#STATION_ENERGY_LSB}.
      *
      * @return the Channel
      */
-    default WriteChannel<Integer> getStationIntensityLSBChannel() {
-        return this.channel(ChannelId.STATION_INTENSITY_LSB);
+    default WriteChannel<Integer> getStationEnergyLSBChannel() {
+        return this.channel(ChannelId.STATION_ENERGY_LSB);
+    }
+
+    /**
+     * Gets the Channel for {@link Schneider.ChannelId#STATION_ENERGY_LSB_READ}.
+     *
+     * @return the Channel
+     */
+    default Channel<Integer> getStationEnergyLSBReadChannel() {
+        return this.channel(ChannelId.STATION_ENERGY_LSB_READ);
+    }
+
+    /**
+     * Gets the Value of {@link Schneider.ChannelId#STATION_ENERGY_LSB_READ}.
+     *
+     * @return the value
+     */
+    default float getStationEnergyLSB() {
+        Channel<Integer> channel = this.getStationEnergyLSBReadChannel();
+        return channel.value().orElse(channel.getNextValue().orElse(0));
     }
 
     /**
      * TBD. See
-     * {@link Schneider.ChannelId#STATION_INTENSITY_LSB}.
+     * {@link Schneider.ChannelId#STATION_ENERGY_LSB}.
      *
      * @param value the next write value
      * @throws OpenemsError.OpenemsNamedException on error
      */
-    default void setStationIntensityLSB(int value) throws OpenemsError.OpenemsNamedException {
-        this.getStationIntensityLSBChannel().setNextWriteValue(value);
+    default void setStationEnergyLSB(int value) throws OpenemsError.OpenemsNamedException {
+        this.getStationEnergyLSBChannel().setNextWriteValue(value);
     }
 
     /**
-     * Gets the Value of {@link Schneider.ChannelId#STATION_INTENSITY_LSB}.
+     * Gets the Value of {@link Schneider.ChannelId#STATION_ENERGY_LSB}.
      *
      * @return the value
      */
-    default int getSetStationIntensityLSB() {
-        WriteChannel<Integer> channel = this.getStationIntensityLSBChannel();
+    default int getSetStationEnergyLSB() {
+        WriteChannel<Integer> channel = this.getStationEnergyLSBChannel();
         return channel.value().orElse(channel.getNextWriteValue().orElse(0));
     }
 
@@ -660,6 +809,25 @@ public interface Schneider extends OpenemsComponent {
      */
     default WriteChannel<Float> getStationPowerTotalChannel() {
         return this.channel(ChannelId.STATION_POWER_TOTAL);
+    }
+
+    /**
+     * Gets the Channel for {@link Schneider.ChannelId#STATION_POWER_TOTAL_READ}.
+     *
+     * @return the Channel
+     */
+    default Channel<Float> getStationPowerTotalReadChannel() {
+        return this.channel(ChannelId.STATION_POWER_TOTAL_READ);
+    }
+
+    /**
+     * Gets the Value of {@link Schneider.ChannelId#STATION_POWER_TOTAL_READ}.
+     *
+     * @return the value
+     */
+    default float getStationPowerTotal() {
+        Channel<Float> channel = this.getStationPowerTotalReadChannel();
+        return channel.value().orElse(channel.getNextValue().orElse(0.f));
     }
 
     /**
@@ -721,6 +889,7 @@ public interface Schneider extends OpenemsComponent {
     default WriteChannel<Float> getStnMeterL2L3VoltageChannel() {
         return this.channel(ChannelId.STN_METER_L2_L3_VOLTAGE);
     }
+
     /**
      * Sets the Voltage between L2 and L3. See
      * {@link Schneider.ChannelId#STN_METER_L2_L3_VOLTAGE}.
@@ -731,6 +900,7 @@ public interface Schneider extends OpenemsComponent {
     default void setStnMeterL2L3Voltage(float value) throws OpenemsError.OpenemsNamedException {
         this.getStnMeterL2L3VoltageChannel().setNextWriteValue(value);
     }
+
     /**
      * Gets the Value of {@link Schneider.ChannelId#STN_METER_L2_L3_VOLTAGE}.
      *
@@ -749,6 +919,7 @@ public interface Schneider extends OpenemsComponent {
     default WriteChannel<Float> getStnMeterL3L1VoltageChannel() {
         return this.channel(ChannelId.STN_METER_L3_L1_VOLTAGE);
     }
+
     /**
      * Sets the Voltage between L3 and L1. See
      * {@link Schneider.ChannelId#STN_METER_L3_L1_VOLTAGE}.
@@ -759,6 +930,7 @@ public interface Schneider extends OpenemsComponent {
     default void setStnMeterL3L1Voltage(float value) throws OpenemsError.OpenemsNamedException {
         this.getStnMeterL3L1VoltageChannel().setNextWriteValue(value);
     }
+
     /**
      * Gets the Value of {@link Schneider.ChannelId#STN_METER_L2_L3_VOLTAGE}.
      *
@@ -777,6 +949,7 @@ public interface Schneider extends OpenemsComponent {
     default WriteChannel<Float> getStnMeterL1NVoltageChannel() {
         return this.channel(ChannelId.STN_METER_L1_N_VOLTAGE);
     }
+
     /**
      * Sets the Voltage between L1 and N. See
      * {@link Schneider.ChannelId#STN_METER_L1_N_VOLTAGE}.
@@ -806,6 +979,7 @@ public interface Schneider extends OpenemsComponent {
     default WriteChannel<Float> getStnMeterL2NVoltageChannel() {
         return this.channel(ChannelId.STN_METER_L2_N_VOLTAGE);
     }
+
     /**
      * Sets the Voltage between L2 and N. See
      * {@link Schneider.ChannelId#STN_METER_L2_N_VOLTAGE}.
@@ -835,6 +1009,7 @@ public interface Schneider extends OpenemsComponent {
     default WriteChannel<Float> getStnMeterL3NVoltageChannel() {
         return this.channel(ChannelId.STN_METER_L3_N_VOLTAGE);
     }
+
     /**
      * Sets the Voltage between L3 and N. See
      * {@link Schneider.ChannelId#STN_METER_L3_N_VOLTAGE}.
@@ -864,6 +1039,7 @@ public interface Schneider extends OpenemsComponent {
     default WriteChannel<Integer> getRemoteControllerLifeBitChannel() {
         return this.channel(ChannelId.REMOTE_CONTROLLER_LIFE_BIT);
     }
+
     /**
      * Sets Life Bit. See
      * {@link Schneider.ChannelId#REMOTE_CONTROLLER_LIFE_BIT}.
@@ -874,6 +1050,7 @@ public interface Schneider extends OpenemsComponent {
     default void setRemoteControllerLifeBit(int value) throws OpenemsError.OpenemsNamedException {
         this.getRemoteControllerLifeBitChannel().setNextWriteValue(value);
     }
+
     /**
      * Gets the Value of {@link Schneider.ChannelId#REMOTE_CONTROLLER_LIFE_BIT}.
      *

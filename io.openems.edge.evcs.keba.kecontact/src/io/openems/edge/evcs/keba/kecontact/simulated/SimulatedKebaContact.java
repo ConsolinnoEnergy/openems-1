@@ -75,6 +75,7 @@ public class SimulatedKebaContact extends AbstractOpenemsComponent implements Ma
         this.l1 = this.channel(KebaChannelId.CURRENT_L1);
         this.l2 = this.channel(KebaChannelId.CURRENT_L2);
         this.l3 = this.channel(KebaChannelId.CURRENT_L3);
+        this._setMinimumHardwarePower(config.minHwPower());
         this._setPhases(0);
         this._setPowerPrecision(0.23);
 
