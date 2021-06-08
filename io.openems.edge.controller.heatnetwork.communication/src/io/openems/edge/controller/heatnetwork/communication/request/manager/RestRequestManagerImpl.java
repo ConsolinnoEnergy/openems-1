@@ -3,6 +3,7 @@ package io.openems.edge.controller.heatnetwork.communication.request.manager;
 import io.openems.edge.controller.heatnetwork.communication.api.ManageType;
 import io.openems.edge.controller.heatnetwork.communication.api.RestRequestManager;
 import io.openems.edge.controller.heatnetwork.communication.api.RestRequest;
+import io.openems.edge.timer.api.TimerType;
 import org.joda.time.DateTime;
 
 import java.util.ArrayList;
@@ -19,14 +20,24 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 public class RestRequestManagerImpl implements RestRequestManager {
 
+
+    private enum WaitWork {
+        WAIT, WORK
+    }
+
     private boolean manageAllAtOnce;
     private int maxRequestsAtOnce;
     private ManageType manageType = ManageType.FIFO;
     private Map<Integer, List<RestRequest>> allRequests;
     private final Map<Integer, List<RestRequest>> managedRequests = new HashMap<>();
-    private final Map<Integer, DateTime> waittime = new HashMap<>();
-    private final Map<Integer, DateTime> worktime = new HashMap<>();
-    private int maxWaittime;
+    //Maps for Timer by Time
+    private final Map<Integer, DateTime> waitTime = new HashMap<>();
+    private final Map<Integer, DateTime> workTime = new HashMap<>();
+    //Maps for Timer by Cycles
+    private final Map<Integer, AtomicInteger> waitCycles = new HashMap<>();
+    private final Map<Integer, AtomicInteger> workCycles = new HashMap<>();
+    private int maxWaitTime = 10;
+    private TimerType timerType = TimerType.TIME;
     private final List<Integer> waitList = new ArrayList<>();
 
 
@@ -40,6 +51,9 @@ public class RestRequestManagerImpl implements RestRequestManager {
     @Override
     public void manageRequests(Map<Integer, List<RestRequest>> allRequests) {
         this.allRequests = allRequests;
+        if (this.timerType.equals(TimerType.CYCLES)) {
+            this.workCycles.forEach((key, value) -> value.getAndIncrement());
+        }
         manageByManageType();
 
     }
@@ -63,7 +77,7 @@ public class RestRequestManagerImpl implements RestRequestManager {
     private void manageByFiFo() {
         clearExecutedRequests();
         manageWaitList();
-        checkWaittime();
+        swapKeyIfWaitTimeIsUp();
         //only check Requests that are neither in managedRequests already nor in Waitlist <-- REMAINING REQUESTS!
         this.allRequests.keySet().stream()
                 .filter(containingKey ->
@@ -73,16 +87,40 @@ public class RestRequestManagerImpl implements RestRequestManager {
                     if (match) {
                         if (this.managedRequests.size() < this.maxRequestsAtOnce) {
                             this.managedRequests.put(key, this.allRequests.get(key));
-                            worktime.put(key, new DateTime());
+                            this.addNewTime(WaitWork.WORK, key);
                         } else {
                             if (this.waitList.contains(key) == false && this.managedRequests.containsKey(key) == false) {
                                 this.waitList.add(key);
-                                waittime.put(key, new DateTime());
+                                this.addNewTime(WaitWork.WAIT, key);
                             }
                         }
+                    } else {
+                        //Set EnableSignal of Components who have no HeatRequest to 0
+                        this.allRequests.get(key).forEach(request->{
+                            request.getCallbackRequest().setValue("0");
+                        });
                     }
                 });
         this.waitList.forEach(this::unsetEnable);
+    }
+
+    private void addNewTime(WaitWork waitWork, Integer key) {
+        switch (waitWork) {
+            case WAIT:
+                if (this.timerType.equals(TimerType.TIME)) {
+                    this.waitTime.put(key, new DateTime());
+                } else {
+                    this.waitCycles.put(key, new AtomicInteger(0));
+                }
+                break;
+            case WORK:
+                if (this.timerType.equals(TimerType.TIME)) {
+                    this.workTime.put(key, new DateTime());
+                } else {
+                    this.workCycles.put(key, new AtomicInteger(0));
+                }
+                break;
+        }
     }
 
     /**
@@ -90,20 +128,35 @@ public class RestRequestManagerImpl implements RestRequestManager {
      * If applicable the member will call the swapWaitingMember method to swap this member with the longest operating member of the
      * worklist.
      */
-    private void checkWaittime() {
-
+    private void swapKeyIfWaitTimeIsUp() {
         ArrayList<Integer> keysToSwap = new ArrayList<>();
         this.waitList.forEach(key -> {
-            DateTime now = new DateTime();
-            DateTime compare = new DateTime(waittime.get(key));
-            compare = compare.plusMinutes(maxWaittime);
-            boolean isTimeUp = now.isAfter(compare);
-            if (waittime.containsKey(key) && isTimeUp) {
+            if (this.checkWaitTime(key)) {
                 keysToSwap.add(key);
             }
         });
         keysToSwap.forEach(this::swapWaitingMember);
 
+    }
+
+    private boolean checkWaitTime(Integer key) {
+        boolean isTimeUp = false;
+        switch (this.timerType) {
+
+            case CYCLES:
+                isTimeUp = this.waitCycles.get(key).getAndIncrement() >= this.maxWaitTime;
+
+                break;
+            case TIME:
+                DateTime now = new DateTime();
+                DateTime compare = new DateTime(this.waitTime.get(key));
+                compare = compare.plusMinutes(this.maxWaitTime);
+                isTimeUp = now.isAfter(compare);
+            default:
+                break;
+        }
+
+        return isTimeUp;
     }
 
     /**
@@ -112,19 +165,34 @@ public class RestRequestManagerImpl implements RestRequestManager {
      * @param waitKey Map-key of the waiting Member
      */
     private void swapWaitingMember(int waitKey) {
-        this.waitList.remove((Integer) waitKey);
-        int workKey = getMaxWorktimeMember();
-        //---------------------------Remove old timestamps---------------------------\\
-        worktime.remove(workKey);
-        waittime.remove(waitKey);
-        managedRequests.remove(workKey);
-        //-------------------Put old workingMember in the waitList-------------------\\
-        waitList.add(workKey);
-        waittime.put(workKey, new DateTime());
-        //-------------------Put old waitingMember in the workList-------------------\\
-        managedRequests.put(waitKey, allRequests.get(waitKey));
-        worktime.put(waitKey, new DateTime());
 
+        this.waitList.remove(this.waitList.indexOf(waitKey));
+        int workKey = getMaxWorkTimeMember();
+        this.managedRequests.remove(workKey);
+        managedRequests.put(waitKey, allRequests.get(waitKey));
+        switch (this.timerType) {
+            case CYCLES:
+                this.workCycles.remove(workKey);
+                this.waitCycles.remove(waitKey);
+
+                this.waitList.add(workKey);
+                this.waitCycles.put(workKey, new AtomicInteger(0));
+                this.workCycles.put(waitKey, new AtomicInteger(0));
+                break;
+
+            case TIME:
+            default:
+
+                //---------------------------Remove old timestamps---------------------------\\
+                workTime.remove(workKey);
+                waitTime.remove(waitKey);
+                //-------------------Put old workingMember in the waitList-------------------\\
+                waitList.add(workKey);
+                waitTime.put(workKey, new DateTime());
+                //-------------------Put old waitingMember in the workList-------------------\\
+                workTime.put(waitKey, new DateTime());
+                break;
+        }
     }
 
     /**
@@ -132,19 +200,36 @@ public class RestRequestManagerImpl implements RestRequestManager {
      *
      * @return Key of the Longest running member
      */
-    private int getMaxWorktimeMember() {
-        AtomicReference<DateTime> maxTime = new AtomicReference<>();
-        AtomicInteger maxWorktimeKey = new AtomicInteger();
-        worktime.forEach((entry, value) -> {
-            if (maxTime.get() != null && value.isBefore(maxTime.get())) {
-                maxTime.set(value);
-                maxWorktimeKey.set(entry);
-            } else if (maxTime.get() == null) {
-                maxTime.set(value);
-                maxWorktimeKey.set(entry);
-            }
-        });
-        return maxWorktimeKey.intValue();
+    private int getMaxWorkTimeMember() {
+
+        AtomicInteger maxWorkTimeKey = new AtomicInteger(0);
+        switch (this.timerType) {
+
+            case CYCLES:
+                AtomicInteger maxCounter = new AtomicInteger(Integer.MIN_VALUE);
+                workCycles.forEach((key,value)->{
+                    if(value.get() > maxCounter.get()){
+                        maxCounter.set(value.get());
+                        maxWorkTimeKey.set(key);
+                    }
+                });
+                return maxWorkTimeKey.get();
+            case TIME:
+            default:
+                AtomicReference<DateTime> maxTime = new AtomicReference<>();
+
+                workTime.forEach((entry, value) -> {
+                    if (maxTime.get() != null && value.isBefore(maxTime.get())) {
+                        maxTime.set(value);
+                        maxWorkTimeKey.set(entry);
+                    } else if (maxTime.get() == null) {
+                        maxTime.set(value);
+                        maxWorkTimeKey.set(entry);
+                    }
+                });
+                return maxWorkTimeKey.intValue();
+        }
+
     }
 
     /**
@@ -255,8 +340,13 @@ public class RestRequestManagerImpl implements RestRequestManager {
     }
 
     @Override
-    public void setMaxWaittime(int maxWaittime) {
-        this.maxWaittime = maxWaittime;
+    public void setMaxWaitTime(int maxWaitTime) {
+        this.maxWaitTime = maxWaitTime;
+    }
+
+    @Override
+    public void setTimerType(TimerType type){
+        this.timerType = type;
     }
 
     private void unsetEnable(int key) {

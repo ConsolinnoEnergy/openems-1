@@ -1,5 +1,7 @@
 package io.openems.edge.controller.heatnetwork.communication.api;
 
+import io.openems.edge.timer.api.TimerType;
+
 public interface CommunicationController {
     /**
      * manually
@@ -55,5 +57,11 @@ public interface CommunicationController {
 
     RequestManager getRequestManager();
 
-    void setMaxWaittime(int maxWaittime);
+    void setMaxWaitTime(int maxWaittime);
+
+    void setTimerTypeForManaging(TimerType type);
+
+    void enableAllRequests();
+
+    void disableAllRequests();
 }

@@ -7,6 +7,7 @@ import io.openems.edge.controller.heatnetwork.communication.api.RestRequestManag
 import io.openems.edge.controller.heatnetwork.communication.api.RestRequest;
 import io.openems.edge.controller.heatnetwork.communication.api.ConnectionType;
 import io.openems.edge.controller.heatnetwork.communication.request.manager.RestRequestManagerImpl;
+import io.openems.edge.timer.api.TimerType;
 import org.osgi.service.cm.ConfigurationException;
 
 import java.util.HashMap;
@@ -26,7 +27,7 @@ public class RestLeafletCommunicationControllerImpl implements RestLeafletCommun
     private boolean start;
     private boolean isAutorun;
 
-    private Map<Integer, List<RestRequest>> allRequests = new HashMap<>();
+    private final Map<Integer, List<RestRequest>> allRequests = new HashMap<>();
     private RestRequestManager requestManager;
     private final ConnectionType connectionType;
 
@@ -132,8 +133,27 @@ public class RestLeafletCommunicationControllerImpl implements RestLeafletCommun
     }
 
     @Override
-    public void setMaxWaittime(int maxWaittime) {
-        this.requestManager.setMaxWaittime(maxWaittime);
+    public void setMaxWaitTime(int maxWaitTime) {
+        this.requestManager.setMaxWaitTime(maxWaitTime);
+    }
+
+    @Override
+    public void setTimerTypeForManaging(TimerType type) {
+        this.requestManager.setTimerType(type);
+    }
+
+    @Override
+    public void enableAllRequests() {
+        this.getAllRequests().forEach((key,value)->{
+            value.forEach(entry->entry.getCallbackRequest().setValue("1"));
+        });
+    }
+
+    @Override
+    public void disableAllRequests() {
+        this.getAllRequests().forEach((key,value)->{
+            value.forEach(entry->entry.getCallbackRequest().setValue("0"));
+        });
     }
 
     @Override

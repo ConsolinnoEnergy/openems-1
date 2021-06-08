@@ -101,6 +101,6 @@ public class ThermometerVirtualImpl extends AbstractOpenemsComponent implements 
                 returnString.set(integer.toString() + this.getTemperatureChannel().channelDoc().getUnit().getSymbol());
             }
         });
-        return returnString.get() + "\n";
+        return returnString.get() + " dC" + "\n";
     }
 }

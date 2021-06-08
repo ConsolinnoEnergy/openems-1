@@ -224,10 +224,10 @@ public class PumpImpl extends AbstractOpenemsComponent implements OpenemsCompone
      */
     @Override
     public boolean changeByPercentage(double percentage) {
-
+        double powerLevel = this.getPowerLevelValue();
         if (this.isRelay) {
             if (this.isPwm) {
-                double powerLevel = this.getPowerLevelValue();
+
                 //deactivate
                 if ((powerLevel + percentage <= 0)) {
                     if (this.controlRelay(false) && this.controlPwm(0)) {
@@ -250,15 +250,12 @@ public class PumpImpl extends AbstractOpenemsComponent implements OpenemsCompone
         }
         //sets pwm
         if (this.isPwm) {
-            double currentPowerLevel;
-            currentPowerLevel = this.getPowerLevelValue();
-            currentPowerLevel += percentage;
-            currentPowerLevel = currentPowerLevel > 100 ? 100
-                    : currentPowerLevel < 0 ? 0 : currentPowerLevel;
-
-            if (this.controlPwm(currentPowerLevel)) {
+            powerLevel += percentage;
+            powerLevel = Math.max(0, powerLevel);
+            powerLevel = Math.min(100, powerLevel);
+            if (this.controlPwm(powerLevel)) {
                 this.getLastPowerLevelChannel().setNextValue(this.getPowerLevelValue());
-                this.getPowerLevelChannel().setNextValue(currentPowerLevel);
+                this.getPowerLevelChannel().setNextValue(powerLevel);
             } else {
                 return false;
             }
@@ -344,13 +341,13 @@ public class PumpImpl extends AbstractOpenemsComponent implements OpenemsCompone
     /**
      * Sets the PowerLevel of the Pump. Values between 0-100% can be applied.
      *
-     * @param percent the PowerLevel the Pump should be set to.
+     * @param powerLevelToApply the PowerLevel the Pump should be set to.
      */
 
     @Override
-    public void setPowerLevel(double percent) {
-        if (percent >= 0) {
-            double changeByPercent = percent - getPowerLevelValue();
+    public void setPowerLevel(double powerLevelToApply) {
+        if (powerLevelToApply >= 0 && powerLevelToApply != this.getPowerLevelValue()) {
+            double changeByPercent = powerLevelToApply - getPowerLevelValue();
             this.changeByPercentage(changeByPercent);
         }
     }

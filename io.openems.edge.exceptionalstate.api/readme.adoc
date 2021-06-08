@@ -1,0 +1,4 @@
+= Timer
+
+This Bundle provides an API to automatically check if a time is up. The Timer can either use time or Cycles to tell,
+if the time to wait is up or not.
