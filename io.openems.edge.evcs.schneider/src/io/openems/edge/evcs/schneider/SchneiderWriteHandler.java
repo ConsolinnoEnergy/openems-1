@@ -15,6 +15,7 @@ public class SchneiderWriteHandler implements EventHandler {
 
     private final SchneiderImpl parent;
     private CPWState state;
+    private int energySession;
 
     @Reference
     protected ConfigurationAdmin cm;
@@ -32,6 +33,7 @@ public class SchneiderWriteHandler implements EventHandler {
 
         //--------------EVCS--------------\\
         this.setPhaseCount();
+        this.setEnergySession();
         this.detectStatus();
         //The Schneider EVCS reports in kW but OpenEms needs W so StationPower * 1000
         this.parent._setChargePower((int) (this.parent.getStationPowerTotal() * 1000));
@@ -42,6 +44,17 @@ public class SchneiderWriteHandler implements EventHandler {
 
         //----------Managed Evcs-----------\\
         this.parent._setPowerPrecision(230);
+
+    }
+
+    /**
+     * Sets all the Channels regarding Energy.
+     */
+    private void setEnergySession() {
+        int currentEnergy = this.parent.getStationEnergyLSB() + this.parent.getStationEnergyMSB();
+        this.parent._setActiveConsumptionEnergy(currentEnergy);
+        this.energySession += currentEnergy;
+        this.parent._setEnergySession(this.energySession);
 
     }
 

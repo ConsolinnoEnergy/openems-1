@@ -8,6 +8,7 @@ import io.openems.edge.common.channel.Channel;
 import io.openems.edge.common.channel.Doc;
 import io.openems.edge.common.channel.WriteChannel;
 import io.openems.edge.common.component.OpenemsComponent;
+import io.openems.edge.evcs.schneider.CPWState;
 import io.openems.edge.evcs.schneider.RemoteCommand;
 
 /**
@@ -727,7 +728,7 @@ public interface Schneider extends OpenemsComponent {
      *
      * @return the value
      */
-    default float getStationEnergyMSB() {
+    default int getStationEnergyMSB() {
         Channel<Integer> channel = this.getStationEnergyMSBReadChannel();
         return channel.value().orElse(channel.getNextValue().orElse(0));
     }
@@ -776,7 +777,7 @@ public interface Schneider extends OpenemsComponent {
      *
      * @return the value
      */
-    default float getStationEnergyLSB() {
+    default int getStationEnergyLSB() {
         Channel<Integer> channel = this.getStationEnergyLSBReadChannel();
         return channel.value().orElse(channel.getNextValue().orElse(0));
     }

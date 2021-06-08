@@ -37,8 +37,24 @@ public class SchneiderReadWorker extends AbstractWorker {
 
         if (this.errorFlag) {
             this.parent.setRemoteCommand(RemoteCommand.FORCE_STOP_CHARGE);
+            this.parent._setSetChargePowerLimit(0);
+            this.acknowledgeFlag = true;
+            this.errorFlag = false;
         }
+        this.checkEnergySession();
 
+    }
+
+    /**
+     * Checks if the EnergyLimit for the Session was reached.
+     */
+    private void checkEnergySession() {
+        if (this.parent.getSetEnergyLimit().isDefined()) {
+            int energyLimit = this.parent.getSetEnergyLimit().get();
+            if (this.parent.getEnergySession().orElse(0) > energyLimit) {
+                this.errorFlag = true;
+            }
+        }
     }
 
     /**
@@ -68,8 +84,9 @@ public class SchneiderReadWorker extends AbstractWorker {
             }
             if (!current.equals(this.lastCurrent)) {
                 this.lastCurrent = current;
-                this.parent.setStationPowerTotal(current);
+                this.parent.setStationPowerTotal(current.floatValue() * GRID_VOLTAGE / 1000);
                 this.parent._setSetChargePowerLimit(current * GRID_VOLTAGE);
+                //TODO:this may be redundant
                 if (current == 0) {
                     this.acknowledgeFlag = true;
                     this.command = RemoteCommand.SUSPEND_CHARGING;
@@ -104,6 +121,6 @@ public class SchneiderReadWorker extends AbstractWorker {
         if (now.isBefore(this.start)) {
             return 0;
         }
-       return (int) ChronoUnit.MILLIS.between(now, this.start);
+        return (int) ChronoUnit.MILLIS.between(now, this.start);
     }
 }

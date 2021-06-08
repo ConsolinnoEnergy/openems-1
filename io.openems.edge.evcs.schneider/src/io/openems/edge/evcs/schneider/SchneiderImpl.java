@@ -43,9 +43,9 @@ public class SchneiderImpl extends AbstractOpenemsModbusComponent implements Ope
     private int minPower;
     private int maxPower;
     private int[] phases;
-    private SchneiderReadWorker readWorker;
     private SchneiderWriteHandler writeHandler;
 
+    private EvcsPower evcsPower;
 
     public SchneiderImpl() {
         super(OpenemsComponent.ChannelId.values(),
@@ -67,7 +67,7 @@ public class SchneiderImpl extends AbstractOpenemsModbusComponent implements Ope
         this._setMinimumHardwarePower(8 * 230);
         this._setMaximumPower(this.maxPower);
         this._setMinimumPower(this.minPower);
-        this.readWorker = new SchneiderReadWorker(this);
+        new SchneiderReadWorker(this);
         this.writeHandler = new SchneiderWriteHandler(this);
     }
 
@@ -183,7 +183,7 @@ public class SchneiderImpl extends AbstractOpenemsModbusComponent implements Ope
 
     @Override
     public EvcsPower getEvcsPower() {
-        return null;
+        return this.evcsPower;
     }
 
     @Override
@@ -204,10 +204,20 @@ public class SchneiderImpl extends AbstractOpenemsModbusComponent implements Ope
         this.writeHandler.run();
     }
 
+    /**
+     * Returns the minimum Software Power.
+     *
+     * @return minPower
+     */
     public int getMinPower() {
         return this.minPower;
     }
 
+    /**
+     * Returns the minimum Software Power.
+     *
+     * @return minPower
+     */
     public int getMaxPower() {
         return this.maxPower;
     }
