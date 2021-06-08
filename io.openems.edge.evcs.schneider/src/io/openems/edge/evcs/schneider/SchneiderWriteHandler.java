@@ -123,13 +123,13 @@ public class SchneiderWriteHandler implements EventHandler {
     private void setPhaseCount() {
         int phases = 0;
 
-        if (this.parent.getStationIntensityPhaseX() >= 100) {
+        if (this.parent.getStationIntensityPhaseX() >= 1) {
             phases += 1;
         }
-        if (this.parent.getStationIntensityPhase2() >= 100) {
+        if (this.parent.getStationIntensityPhase2() >= 1) {
             phases += 1;
         }
-        if (this.parent.getStationIntensityPhase3() >= 100) {
+        if (this.parent.getStationIntensityPhase3() >= 1) {
             phases += 1;
         }
         this.parent._setPhases(phases);

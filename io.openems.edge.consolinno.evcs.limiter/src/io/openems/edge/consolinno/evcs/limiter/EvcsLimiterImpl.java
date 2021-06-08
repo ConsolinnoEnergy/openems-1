@@ -1591,7 +1591,7 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
             if (amountLeft == 1 && amountToReduce == 0) {
                 amountToReduce = 1;
             }
-            if (onePhase[i].getSetChargePowerLimitChannel().getNextWriteValue().orElse(onePhase[i].getSetChargePowerLimitChannel().value().orElse(0)) != 0) {
+            if (onePhase[i].getSetChargePowerLimitChannel().getNextWriteValue().orElse(onePhase[i].getSetChargePowerLimitChannel().value().orElse(-1)) != -1) {
                 newPower = ((onePhase[i].getSetChargePowerLimitChannel().getNextWriteValue().orElse(onePhase[i].getSetChargePowerLimitChannel().value().orElse(0)) / GRID_VOLTAGE) - amountToReduce);
             } else {
                 newPower = (onePhase[i].getChargePower().get() / GRID_VOLTAGE) - amountToReduce;
@@ -1599,7 +1599,7 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
             int minHwPower = onePhase[i].getMinimumHardwarePower().orElse(8);
             int minSwPower = onePhase[i].getMinimumPower().orElse(8);
             int minPower = Math.min(minHwPower, minSwPower);
-            if (newPower > minPower) {
+            if (newPower >= minPower) {
                 onePhase[i].setChargePowerLimit(newPower * GRID_VOLTAGE);
                 amountLeft -= amountToReduce;
                 this.log.info(onePhase[i].id() + " was reduced by " + amountToReduce * GRID_VOLTAGE + " W and is now at " + newPower * GRID_VOLTAGE + " W");
@@ -1633,7 +1633,7 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
             int minHwPower = twoPhase[i].getMinimumHardwarePower().orElse(8);
             int minSwPower = twoPhase[i].getMinimumPower().orElse(8);
             int minPower = Math.min(minHwPower, minSwPower);
-            if (newPower > minPower) {
+            if (newPower >= minPower) {
                 twoPhase[i].setChargePowerLimit(newPower * GRID_VOLTAGE);
                 amountReduced += amountToReduce;
             }
@@ -1667,7 +1667,7 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
                 int minHwPower = twoPhase[i].getMinimumHardwarePower().orElse(8);
                 int minSwPower = twoPhase[i].getMinimumPower().orElse(8);
                 int minPower = Math.min(minHwPower, minSwPower);
-                if (newPower > minPower) {
+                if (newPower >= minPower) {
                     twoPhase[i].setChargePowerLimit(newPower * GRID_VOLTAGE);
                     amountsLeft[0] -= amountToReduce;
                     //If the second phase happens to be the one that also has to be reduced
@@ -1687,7 +1687,7 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
                 int minHwPower = twoPhase[i].getMinimumHardwarePower().orElse(8);
                 int minSwPower = twoPhase[i].getMinimumPower().orElse(8);
                 int minPower = Math.min(minHwPower, minSwPower);
-                if (newPower > minPower) {
+                if (newPower >= minPower) {
                     twoPhase[i].setChargePowerLimit(newPower * GRID_VOLTAGE);
                     amountsLeft[0] -= amountToReduce;
                     //If the second phase happens to be the one that also has to be reduced
@@ -1725,7 +1725,7 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
             int minHwPower = threePhase[i].getMinimumHardwarePower().orElse(8);
             int minSwPower = threePhase[i].getMinimumPower().orElse(8);
             int minPower = Math.min(minHwPower, minSwPower);
-            if (newPower > minPower) {
+            if (newPower >= minPower) {
                 threePhase[i].setChargePowerLimit(newPower * GRID_VOLTAGE);
                 amountReduced += amountToReduce;
             }
@@ -2264,7 +2264,7 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
     private void reallocateFreeResources() {
         if (this.powerL1 != null && this.powerL2 != null && this.powerL3 != null && (this.phaseLimit != 0 || this.powerLimit != 0)) {
             int powerSum = this.powerL1 + this.powerL2 + this.powerL3;
-            int freeResourcesPerPhase = Math.abs((this.phaseLimit / GRID_VOLTAGE) - (Math.floorDiv(powerSum, 3) + 1));
+            int freeResourcesPerPhase = Math.abs((this.phaseLimit / GRID_VOLTAGE) - (this.getMaximumLoad()));
             int freeResourcesFromGrid = Math.abs((this.powerLimit / GRID_VOLTAGE) - powerSum);
             int freeResources;
             if (this.powerLimit == 0) {
