@@ -1,5 +1,6 @@
 package io.openems.edge.evcs.schneider;
 
+import io.openems.common.exceptions.OpenemsError;
 import io.openems.common.exceptions.OpenemsException;
 import io.openems.edge.bridge.modbus.api.AbstractOpenemsModbusComponent;
 import io.openems.edge.bridge.modbus.api.ElementToChannelConverter;
@@ -77,10 +78,12 @@ public class SchneiderImpl extends AbstractOpenemsModbusComponent implements Ope
 
     @Override
     protected ModbusProtocol defineModbusProtocol() throws OpenemsException {
-        return new ModbusProtocol(this, new FC6WriteRegisterTask(6,
-                m(Schneider.ChannelId.CPW_STATE,
-                        new SignedWordElement(6),
-                        ElementToChannelConverter.DIRECT_1_TO_1)),
+        return new ModbusProtocol(this,
+                //------------------Read_Only Register-------------------\\
+                new FC6WriteRegisterTask(6,
+                        m(Schneider.ChannelId.CPW_STATE,
+                                new SignedWordElement(6),
+                                ElementToChannelConverter.DIRECT_1_TO_1)),
                 new FC6WriteRegisterTask(9,
                         m(Schneider.ChannelId.LAST_CHARGE_STATUS,
                                 new SignedWordElement(9),
@@ -144,9 +147,21 @@ public class SchneiderImpl extends AbstractOpenemsModbusComponent implements Ope
                 new FC6WriteRegisterTask(2005,
                         m(Schneider.ChannelId.SESSION_TIME_2,
                                 new SignedWordElement(2005),
+                                ElementToChannelConverter.DIRECT_1_TO_1)),
+
+                //---------------------Write Register---------------------\\
+                new FC6WriteRegisterTask(150,
+                        m(Schneider.ChannelId.REMOTE_COMMAND,
+                                new SignedWordElement(150),
+                                ElementToChannelConverter.DIRECT_1_TO_1)),
+                new FC6WriteRegisterTask(358,
+                        m(Schneider.ChannelId.STATION_POWER_TOTAL,
+                                new SignedDoublewordElement(358),
+                                ElementToChannelConverter.DIRECT_1_TO_1)),
+                new FC6WriteRegisterTask(932,
+                        m(Schneider.ChannelId.REMOTE_CONTROLLER_LIFE_BIT,
+                                new SignedWordElement(932),
                                 ElementToChannelConverter.DIRECT_1_TO_1))
-
-
         );
     }
 
@@ -178,13 +193,21 @@ public class SchneiderImpl extends AbstractOpenemsModbusComponent implements Ope
 
     @Override
     public void handleEvent(Event event) {
+        try {
+            if (this.getRemoteControllerLifeBitChannel().getNextValue().isDefined() && this.getRemoteControllerLifeBitChannel().getNextValue().get() == 1) {
+                this._setChargingstationCommunicationFailed(true);
+            }
+            this.setRemoteControllerLifeBit(1);
+        } catch (OpenemsError.OpenemsNamedException e) {
+            this._setChargingstationCommunicationFailed(true);
+        }
         this.writeHandler.run();
-
     }
 
     public int getMinPower() {
         return this.minPower;
     }
+
     public int getMaxPower() {
         return this.maxPower;
     }

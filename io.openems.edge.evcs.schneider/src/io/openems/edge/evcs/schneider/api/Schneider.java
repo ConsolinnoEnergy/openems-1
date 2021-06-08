@@ -524,7 +524,7 @@ public interface Schneider extends OpenemsComponent {
      */
     default int getSetMaxIntensitySocket() {
         WriteChannel<Integer> channel = this.getMaxIntensitySocketChannel();
-        return channel.value().orElse(channel.getNextWriteValue().orElse(0));
+        return channel.value().orElse(channel.getNextWriteValue().orElse(channel.getNextValue().orElse(channel.value().get())));
     }
 
     /**

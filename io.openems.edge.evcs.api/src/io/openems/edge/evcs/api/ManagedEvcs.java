@@ -33,7 +33,7 @@ public interface ManagedEvcs extends Evcs {
 		 * <ul>
 		 * <li>KEBA-series allows setting of milli Ampere. It should return 0.23 W
 		 * (0.001A * 230V).
-		 * <li>Hardy Barth allows setting in Ampere. It should return 230 W (1A * 230V).
+		 * <li>Hardy Barth and Schneider allows setting in Ampere. It should return 230 W (1A * 230V).
 		 * </ul>
 		 * 
 		 * <p>
