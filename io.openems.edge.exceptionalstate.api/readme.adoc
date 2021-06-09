@@ -4,7 +4,7 @@ This Bundle provides an ExceptionalState and an ExceptionalStateHandler.
 The ExceptionalState is a Nature that allows Components to react to an ExceptionalState.
 
 == Example
-An Error occured and you need to interrupt Controller Units -> Set Exceptional State and a corresponding value
+An Error occurred, and you need to interrupt Controller Units -> Set Exceptional State and a corresponding value
 Components react to the Value if an ExceptionalState is active.
 
 == Hint
