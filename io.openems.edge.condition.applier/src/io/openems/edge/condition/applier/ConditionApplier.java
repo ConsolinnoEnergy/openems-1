@@ -9,7 +9,6 @@ import io.openems.edge.common.component.AbstractOpenemsComponent;
 import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.common.event.EdgeEventConstants;
-import org.osgi.service.cm.ConfigurationAdmin;
 import org.osgi.service.cm.ConfigurationException;
 import org.osgi.service.component.ComponentContext;
 import org.osgi.service.component.annotations.Activate;
@@ -18,9 +17,6 @@ import org.osgi.service.component.annotations.ConfigurationPolicy;
 import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Modified;
 import org.osgi.service.component.annotations.Reference;
-import org.osgi.service.component.annotations.ReferenceCardinality;
-import org.osgi.service.component.annotations.ReferencePolicy;
-import org.osgi.service.component.annotations.ReferencePolicyOption;
 import org.osgi.service.event.Event;
 import org.osgi.service.event.EventConstants;
 import org.osgi.service.event.EventHandler;
@@ -28,12 +24,26 @@ import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Arrays;
-import java.util.List;
 
 /**
- *
+ * This is a Prototype of a Condition Applier.
+ * In Future it should be a Programmable Component that can Do a:
+ * if(INPUT apply to CONDITION){
+ * APPLY ActiveValue(s) to FOO(s)
+ * } else {
+ * APPLY PassiveValue to BAR(s)
+ * }
+ * AT THE MOMENT you can have an input of a Boolean Channel and set the active/passive value and a response Channel that
+ * receives the active/passive value.
+ * This will be used for e.g. a virtual Thermometer.
+ * A Component that Activates can be monitored, and if it's active -> set a virtual temperature.
+ * Why do some may want/need this? -> the Temperature Surveillance Controller needs an ActivationThermometerReference
+ * The ActivationTemperature can change -> e.g. if a HeatProgram a min Temperature of X is needed.
+ * But if HeatStorages need to be filled a min Temperature of Y is needed.
+ * To determine if X or Y should be applied the MinMaxer can be used. However, this will not be discussed here.
+ * In Future -> this could be done here. The ConditionApplier will be a greater Project and needs Time to implement etc.
  */
+
 
 @Designate(ocd = Config.class, factory = true)
 @Component(name = "ConditionApplier", immediate = true,
@@ -47,11 +57,6 @@ public class ConditionApplier extends AbstractOpenemsComponent implements Openem
     @Reference
     ComponentManager cpm;
 
-    @Reference
-    ConfigurationAdmin ca;
-
-    private SupportedDataType currentDataType;
-    private SupportedOperation currentOperation;
     private ChannelAddress informationToGet;
     private ChannelAddress answerChannel;
     private boolean compareValue;
@@ -69,9 +74,18 @@ public class ConditionApplier extends AbstractOpenemsComponent implements Openem
 
     }
 
+    /**
+     * This method will be called if the component either activates or is modified.
+     * It splits the config in : Input Channel, if expected value should be true or false.
+     * Then the Active/Passive Value and where to put the response.
+     *
+     * @param config the config of the component.
+     * @throws OpenemsError.OpenemsNamedException if the channel cannot be found.
+     */
     private void activateOrModified(Config config) throws OpenemsError.OpenemsNamedException {
         String configuration = config.answer();
         String[] entries = configuration.split(":");
+        //NOTE: Magic numbers bc this is a prototype
         this.informationToGet = ChannelAddress.fromString(entries[0]);
         this.compareValue = entries[1].toLowerCase().equals("true");
         this.trueConditionAnswer = Integer.parseInt(entries[2]);
@@ -80,7 +94,7 @@ public class ConditionApplier extends AbstractOpenemsComponent implements Openem
     }
 
     @Modified
-    void modified(ComponentContext context, Config config) throws ConfigurationException, OpenemsError.OpenemsNamedException {
+    void modified(ComponentContext context, Config config) throws OpenemsError.OpenemsNamedException {
         super.modified(context, config.id(), config.alias(), config.enabled());
         this.activateOrModified(config);
     }
@@ -90,6 +104,12 @@ public class ConditionApplier extends AbstractOpenemsComponent implements Openem
         super.deactivate();
     }
 
+    /**
+     * Get the Input/Response Channel.
+     * check if the Condition Applies from the input channel -> Apply Active Value
+     * else apply passive Value
+     * @param event the Event -> This components reacts usually to the TopicCycleAfterControllers
+     */
     @Override
     public void handleEvent(Event event) {
         if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS)) {

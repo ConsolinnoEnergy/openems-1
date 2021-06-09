@@ -28,7 +28,18 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- *
+ * This component gets a list of Channel and sorts the Values depending if this {@link io.openems.edge.hydraulic.api.MinMax}
+ * is Min or Max. The Min/Max Value will be written into a responseChannel e.g. you can get a List of Thermometer Values
+ * and write the Max Value into a response Channel.
+ * This will be used in e.g. the TemperatureSurveillanceController ->
+ * A Temp surveillance controller can have different ActivationTemperatures.
+ * or in other words 2 Temperature Values will be defined, and if Reference < Activation Temperature then activate the temp surveillance.
+ * However this activationTemperature may change.
+ * If a Heatnetwork needs HeatRadiator usage -> use Temp X
+ * If a Heatnetwork needs to heat up HeatStorages -> use Temp Y
+ * Both active? Which one to use -> MAX
+ * Where to write the value ? -> VirtualThermometer -> Apply VirtualTemp to current Temperature
+ * This can be used anywhere, however, this works only with int values atm.
  */
 
 @Designate(ocd = Config.class, factory = true)
@@ -45,7 +56,7 @@ public class MinMaxToChannel extends AbstractOpenemsComponent implements Openems
 
     private MinMaxRoutine minMax;
     private List<ChannelAddress> channelAddresses;
-    private List<ChannelAddress> answers;
+    private List<ChannelAddress> response;
 
     public MinMaxToChannel() {
         super(ChannelId.values());
@@ -54,8 +65,8 @@ public class MinMaxToChannel extends AbstractOpenemsComponent implements Openems
     @Activate
     void activate(ComponentContext context, Config config) throws ConfigurationException, OpenemsError.OpenemsNamedException {
         super.activate(context, config.id(), config.alias(), config.enabled());
-        this.channelAddresses = this.channelStringsToAddress(Arrays.asList(config.channel()));
-        this.answers = this.channelStringsToAddress(Arrays.asList(config.answerChannel()));
+        this.channelAddresses = this.channelStringsToAddress(Arrays.asList(config.inputChannel()));
+        this.response = this.channelStringsToAddress(Arrays.asList(config.responseChannel()));
 
         switch (config.minOrMax()) {
             case MIN:
@@ -68,6 +79,13 @@ public class MinMaxToChannel extends AbstractOpenemsComponent implements Openems
 
     }
 
+    /**
+     * Get the ChannelAddress entries from the Config and add them to the channelAddresses list.
+     *
+     * @param channelStrings List of Strings containing ChannelAddresses, usually from config.
+     * @return the ChannelAddresses
+     * @throws OpenemsError.OpenemsNamedException if ChannelAddress is wrong.
+     */
     private List<ChannelAddress> channelStringsToAddress(List<String> channelStrings) throws OpenemsError.OpenemsNamedException {
         List<ChannelAddress> addresses = new ArrayList<>();
         OpenemsError.OpenemsNamedException[] ex = {null};
@@ -92,11 +110,11 @@ public class MinMaxToChannel extends AbstractOpenemsComponent implements Openems
     @Modified
     void modified(ComponentContext context, Config config) throws ConfigurationException, OpenemsError.OpenemsNamedException {
         super.modified(context, config.id(), config.alias(), config.enabled());
-        List<String> channelStrings = Arrays.asList(config.channel());
+        List<String> channelStrings = Arrays.asList(config.inputChannel());
         this.channelAddresses.clear();
-        this.answers.clear();
-        this.channelAddresses = this.channelStringsToAddress(Arrays.asList(config.channel()));
-        this.answers = this.channelStringsToAddress(Arrays.asList(config.answerChannel()));
+        this.response.clear();
+        this.channelAddresses = this.channelStringsToAddress(Arrays.asList(config.inputChannel()));
+        this.response = this.channelStringsToAddress(Arrays.asList(config.responseChannel()));
 
         switch (config.minOrMax()) {
             case MIN:
@@ -113,22 +131,33 @@ public class MinMaxToChannel extends AbstractOpenemsComponent implements Openems
         super.deactivate();
     }
 
+    /**
+     * Get all Values from the saved ChannelAddresses and get the Value that will be written in the response channel.
+     *
+     * @param event the event, usually after Controllers.
+     */
     @Override
     public void handleEvent(Event event) {
         if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS)) {
             try {
-                List<Integer> values = getIntegerValuesFromAddresses();
+                List<Integer> values = this.getIntegerValuesFromAddresses();
                 int minMaxToWrite = this.minMax.executeRoutine(values);
-                this.answerChannel(minMaxToWrite);
+                this.writeValueToResponseChannel(minMaxToWrite);
             } catch (OpenemsError.OpenemsNamedException e) {
                 this.logger.warn("Couldn't access Channel in " + super.id());
             }
         }
     }
 
-    private void answerChannel(int minMaxToWrite) throws OpenemsError.OpenemsNamedException {
+    /**
+     * This will be called in the handleEvent method and writes the Min/Max Value into the responseChannel.
+     *
+     * @param minMaxToWrite the value determined by the {@link MinMaxRoutine}
+     * @throws OpenemsError.OpenemsNamedException if write fails
+     */
+    private void writeValueToResponseChannel(int minMaxToWrite) throws OpenemsError.OpenemsNamedException {
         OpenemsError.OpenemsNamedException[] ex = {null};
-        this.answers.forEach(entry -> {
+        this.response.forEach(entry -> {
             if (ex[0] == null) {
                 Channel<?> answerChannel;
                 try {
@@ -150,10 +179,23 @@ public class MinMaxToChannel extends AbstractOpenemsComponent implements Openems
 
     }
 
+    /**
+     * Gets a channel from a channelAddress.
+     *
+     * @param channelAddress the channelAddress.
+     * @return the Channel from the Address.
+     * @throws OpenemsError.OpenemsNamedException if Channel is not available.
+     */
     private Channel<?> getChannelFromAddress(ChannelAddress channelAddress) throws OpenemsError.OpenemsNamedException {
         return this.cpm.getChannel(channelAddress);
     }
 
+    /**
+     * Gets the Integer values from the Channel of this {@link #channelAddresses}.
+     *
+     * @return the Integer Value list from the channel
+     * @throws OpenemsError.OpenemsNamedException if channel cannot be found.
+     */
     private List<Integer> getIntegerValuesFromAddresses() throws OpenemsError.OpenemsNamedException {
         OpenemsError.OpenemsNamedException[] ex = {null};
         List<Integer> values = new ArrayList<>();

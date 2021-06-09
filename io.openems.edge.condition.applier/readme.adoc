@@ -2,5 +2,10 @@
 
 == WIP
 
-Will be used to apply a result after certain configured input
-You will be able to do apply channels, basic operations etc etc, and write them into a channel or apply it within a defined method.
+ Will be used to apply a result after certain configured input
+ You will be able to do apply channels, basic operations etc etc, and write them into a channel or apply it within a defined method.
+
+
+ This Bundles provides atm only a prototype and a fraction of functionality that is planned.
+It checks if the given channel equals/greater/less than a value and then answers with a value to a channel
+if the condition applied.
