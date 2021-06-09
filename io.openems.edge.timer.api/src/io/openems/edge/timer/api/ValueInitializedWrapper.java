@@ -6,7 +6,13 @@ import java.util.Date;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-public class ValueInitializedWrapper {
+/**
+ * The ValueInitializedWrapper is a Class that stores the important data the {@link Timer} needs to work.
+ * It stores the maxWaitTime (e.g. maxCycles).
+ * If the Identifier is initialized or not.
+ * The Counter for MaxCycles and the initial DateTime.
+ */
+class ValueInitializedWrapper {
 
     private int maxValue;
     private boolean initialized;
@@ -24,27 +30,28 @@ public class ValueInitializedWrapper {
         this(maxValue, false);
     }
 
-    public int getMaxValue() {
-        return maxValue;
+
+    int getMaxValue() {
+        return this.maxValue;
     }
 
-    public void setMaxValue(int maxValue) {
+    void setMaxValue(int maxValue) {
         this.maxValue = maxValue;
     }
 
-    public boolean isInitialized() {
-        return initialized;
+    boolean isInitialized() {
+        return this.initialized;
     }
 
-    public void setInitialized(boolean initialized) {
+    void setInitialized(boolean initialized) {
         this.initialized = initialized;
     }
 
-    public AtomicInteger getCounter() {
-        return counter;
+    AtomicInteger getCounter() {
+        return this.counter;
     }
 
-    public AtomicReference<DateTime> getInitialDateTime() {
-        return initialDateTime;
+    AtomicReference<DateTime> getInitialDateTime() {
+        return this.initialDateTime;
     }
 }

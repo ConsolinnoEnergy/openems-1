@@ -8,7 +8,7 @@ import java.util.Map;
  * Usually Components instantiate a {@link TimerHandler} and add it's config to the Timerhandler. The Timerhandler
  * therefore communicates between a class and the timer itself, providing the info a class needs to determine if a certain time is up or not.
  * Key is the Id and the identifier. A class can have multiple identifier, each mapped to certain intitial Timestamps/Cyclecounts.
- * Making it possible to support "n" timer/identifier.
+ * Making it possible to support "n" identifier.
  */
 public interface Timer {
     /**
@@ -27,17 +27,6 @@ public interface Timer {
      * @return true if Time is up.
      */
     boolean checkIsTimeUp(String id, String identifier);
-
-    /**
-     * Adds a Component with it's corresponding identifier to Time Map to the Timer.
-     * e.g. if a Component ControllerFoo needs 2 separate Timer with identifier Bar and a time of 10 and Bar2 and a time of 20
-     * the Map will look something like <Bar, 10>
-     * <Bar2, 20>
-     *
-     * @param id               the OpenemsComponent ID
-     * @param identifierToTime the Map of the Identifier to a Time/CycleCount
-     */
-    void addComponentToTimer(String id, Map<String, Integer> identifierToTime);
 
     /**
      * Removes the Component from the Timer.

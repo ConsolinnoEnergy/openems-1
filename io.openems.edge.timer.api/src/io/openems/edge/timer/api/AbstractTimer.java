@@ -25,7 +25,7 @@ public abstract class AbstractTimer extends AbstractOpenemsComponent implements 
     Map<String, Map<String, ValueInitializedWrapper>> componentToIdentifierValueAndInitializedMap = new HashMap<>();
 
 
-    /**
+    /*
      * Adds a Component with it's corresponding identifier to Time Map to the Timer.
      * e.g. if a Component ControllerFoo needs 2 separate Timer with identifier Bar and a time of 10 and Bar2 and a time of 20
      * the Map will look something like Bar, 10
@@ -34,8 +34,7 @@ public abstract class AbstractTimer extends AbstractOpenemsComponent implements 
      * @param id               the OpenemsComponent ID
      * @param identifierToTime the Map of the Identifier to a Time/CycleCount
      */
-    @Override
-    public void addComponentToTimer(String id, Map<String, Integer> identifierToTime) {
+   /* public void addComponentToTimer(String id, Map<String, Integer> identifierToTime) {
         Map<String, ValueInitializedWrapper> identifierToWrapper = new HashMap<>();
         identifierToTime.forEach((key, value) -> {
             identifierToWrapper.put(key, new ValueInitializedWrapper(value));
@@ -52,6 +51,7 @@ public abstract class AbstractTimer extends AbstractOpenemsComponent implements 
             this.componentToIdentifierValueAndInitializedMap.put(id, identifierToWrapper);
         }
     }
+    */
 
     /**
      * Removes the Component from the Timer.
