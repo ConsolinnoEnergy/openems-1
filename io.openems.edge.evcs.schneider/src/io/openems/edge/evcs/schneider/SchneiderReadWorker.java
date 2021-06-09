@@ -73,8 +73,8 @@ public class SchneiderReadWorker extends AbstractWorker {
             int maxHwPower = this.parent.getMaximumHardwarePower().get();
             int maxSwPower = this.parent.getMaxPower();
             int maxPower = Math.min(maxHwPower, maxSwPower);
-            if (current > maxPower) {
-                current = maxPower;
+            if (current > maxPower / GRID_VOLTAGE) {
+                current = maxPower / GRID_VOLTAGE;
             }
             int minHwPower = this.parent.getMinimumHardwarePower().get();
             int minSwPower = this.parent.getMinPower();
@@ -84,7 +84,7 @@ public class SchneiderReadWorker extends AbstractWorker {
             }
             if (!current.equals(this.lastCurrent)) {
                 this.lastCurrent = current;
-                this.parent.setStationPowerTotal(current.floatValue() * GRID_VOLTAGE / 1000);
+                this.parent.setMaxIntensitySocket(current);
                 this.parent._setSetChargePowerLimit(current * GRID_VOLTAGE);
                 //TODO:this may be redundant
                 if (current == 0) {

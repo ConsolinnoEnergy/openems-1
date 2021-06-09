@@ -7,7 +7,7 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 @interface Config {
 
     @AttributeDefinition(name = "Id", description = "Unique Id for the EVCS.")
-    String id() default "Schneider01";
+    String id() default "evcs01";
 
     @AttributeDefinition(name = "Alias", description = "Human readable name of this Configurator.")
     String alias() default "";

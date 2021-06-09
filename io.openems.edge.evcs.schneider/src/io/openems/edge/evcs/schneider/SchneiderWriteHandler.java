@@ -38,9 +38,9 @@ public class SchneiderWriteHandler implements EventHandler {
         //The Schneider EVCS reports in kW but OpenEms needs W so StationPower * 1000
         this.parent._setChargePower((int) (this.parent.getStationPowerTotal() * 1000));
         this.parent._setChargingType(ChargingType.AC);
-        this.parent._setMaximumHardwarePower(this.parent.getSetMaxIntensitySocket());
-        this.parent._setMinimumPower(this.parent.getMinPower());
-        this.parent._setMaximumPower(this.parent.getMaxPower());
+        this.parent._setMaximumHardwarePower(this.parent.getSetMaxIntensitySocket() * 230);
+        this.parent._setMinimumPower(this.parent.getMinPower() * 230);
+        this.parent._setMaximumPower(this.parent.getMaxPower() * 230);
 
         //----------Managed Evcs-----------\\
         //The Schneider EVCS takes A and the Power Precision Channel needs W so 1 A * 230 V
