@@ -1,4 +1,11 @@
 = Timer
 
-This Bundle provides an API to automatically check if a time is up. The Timer can either use time or Cycles to tell,
-if the time to wait is up or not.
+This Bundle provides an ExceptionalState and an ExceptionalStateHandler.
+The ExceptionalState is a Nature that allows Components to react to an ExceptionalState.
+
+== Example
+An Error occured and you need to interrupt Controller Units -> Set Exceptional State and a corresponding value
+Components react to the Value if an ExceptionalState is active.
+
+== Hint
+To see if an ExceptionalState is active use the ExceptionalStateHandler

@@ -17,9 +17,24 @@ import io.openems.edge.common.component.OpenemsComponent;
 public interface ExceptionalState extends OpenemsComponent {
     enum ChannelId implements io.openems.edge.common.channel.ChannelId {
         /**
+         * Exceptional State Enable Signal.
+         * This needs to by set periodically to work.
          *
+         * <ul>
+         * <li>Interface: {@link ExceptionalState}
+         * <li>Type: Boolean
+         * </ul>
          */
         EXCEPTIONAL_STATE_ENABLE_SIGNAL(Doc.of(OpenemsType.BOOLEAN).accessMode(AccessMode.READ_WRITE)),
+        /**
+         * Exceptional State Value.
+         * The Value that will be applied/used/should be used when an exceptionalState is active.
+         *
+         * <ul>
+         *     <li> Interface: {@link ExceptionalState}
+         *     <li> Type: Integer
+         * </ul>
+         */
         EXCEPTIONAL_STATE_VALUE(Doc.of(OpenemsType.INTEGER).accessMode(AccessMode.READ_WRITE).onInit(channel ->
                 ((IntegerWriteChannel) channel).onSetNextWrite(channel::setNextValue)));
 
@@ -35,22 +50,47 @@ public interface ExceptionalState extends OpenemsComponent {
         }
     }
 
+    /**
+     * get The Enable Signal channel.
+     *
+     * @return the channel
+     */
     default WriteChannel<Boolean> getExceptionalStateEnableChannel() {
         return this.channel(ChannelId.EXCEPTIONAL_STATE_ENABLE_SIGNAL);
     }
 
+    /**
+     * The Value Channel.
+     *
+     * @return the Channel
+     */
     default WriteChannel<Integer> getExceptionalStateValueChannel() {
         return this.channel(ChannelId.EXCEPTIONAL_STATE_VALUE);
     }
 
+    /**
+     * Get the EnableSignal nextWriteValue or else false.
+     *
+     * @return a boolean.
+     */
     default boolean getExceptionalStateEnableSignal() {
         return this.getExceptionalStateEnableChannel().getNextWriteValue().orElse(false);
     }
 
-    default boolean getExceptionalStateEnableSignalAndReset(){
+    /**
+     * Get the EnableSignal NextWriteValue and Resets it. If not present set to false.
+     *
+     * @return a boolean or Else false.
+     */
+    default boolean getExceptionalStateEnableSignalAndReset() {
         return this.getExceptionalStateEnableChannel().getNextWriteValueAndReset().orElse(false);
     }
 
+    /**
+     * Get the Value of the Exceptional State or if nothing is defined -> -1.
+     *
+     * @return the value or -1 if nothings present.
+     */
     default int getExceptionalStateValue() {
         int value = -1;
         WriteChannel<Integer> channel = this.getExceptionalStateValueChannel();
@@ -64,10 +104,22 @@ public interface ExceptionalState extends OpenemsComponent {
         return value;
     }
 
+    /**
+     * Sets the EnableSignal.
+     *
+     * @param value true or false to enable/disable the exceptional state, can also be null
+     * @throws OpenemsError.OpenemsNamedException if write fails.
+     */
     default void setExceptionalStateEnableSignal(boolean value) throws OpenemsError.OpenemsNamedException {
         this.getExceptionalStateEnableChannel().setNextWriteValueFromObject(value);
     }
 
+    /**
+     * Sets the Exceptional State Value.
+     *
+     * @param value the value that will be used if exceptional state is active.
+     * @throws OpenemsError.OpenemsNamedException if write fails
+     */
     default void setExceptionalStateValue(int value) throws OpenemsError.OpenemsNamedException {
         this.getExceptionalStateValueChannel().setNextWriteValueFromObject(value);
     }
