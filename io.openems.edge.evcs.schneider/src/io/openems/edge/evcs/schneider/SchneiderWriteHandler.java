@@ -43,7 +43,8 @@ public class SchneiderWriteHandler implements EventHandler {
         this.parent._setMaximumPower(this.parent.getMaxPower());
 
         //----------Managed Evcs-----------\\
-        this.parent._setPowerPrecision(230);
+        //The Schneider EVCS takes A and the Power Precision Channel needs W so 1 A * 230 V
+        this.parent._setPowerPrecision(1 * 230);
 
     }
 
@@ -146,6 +147,9 @@ public class SchneiderWriteHandler implements EventHandler {
             phases += 1;
         }
         this.parent._setPhases(phases);
+        if (phases == 3) {
+            this.parent._setMinimumHardwarePower(14 * 230);
+        }
     }
 
     /**
