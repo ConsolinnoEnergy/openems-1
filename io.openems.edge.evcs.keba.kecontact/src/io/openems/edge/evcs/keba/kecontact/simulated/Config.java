@@ -12,6 +12,9 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     @AttributeDefinition(name = "Alias", description = "Human readable name of this Configurator.")
     String alias() default "";
 
+    @AttributeDefinition(name = "MinimumHwPower", description = "Minimum Power (in A).", required = true)
+    int minHwPower() default 6;
+
     @AttributeDefinition(name = "Phases", description = "If the Phases are physically swapped, change the order here.", required = true)
     int[] phases() default {1,2,3};
 

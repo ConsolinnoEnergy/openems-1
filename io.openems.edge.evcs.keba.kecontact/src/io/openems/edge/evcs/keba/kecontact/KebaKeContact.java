@@ -110,7 +110,7 @@ public class KebaKeContact extends AbstractOpenemsComponent
 
     private boolean checkPhases() {
         String phases = Arrays.toString(this.phases);
-        return phases.contains("1") && phases.contains("2") && phases.contains("3");
+        return phases.contains("1") && phases.contains("2") && phases.contains("3") && this.phases.length == 3;
     }
 
     @Deactivate
