@@ -19,6 +19,7 @@ import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.ConfigurationPolicy;
 import org.osgi.service.component.annotations.Deactivate;
+import org.osgi.service.component.annotations.Modified;
 import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
@@ -32,12 +33,24 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+/**
+ * The MultipleHeaterCombined controller allows the monitoring and enabling of any {@link Heater}.
+ * They are categorized in primary, secondary and tertiary heater.
+ * Each Heater gets an activation and deactivation Thermometer as well as temperature.
+ * Lets say Heater A has a Thermometer Aa and a Thermometer Ab with an activation Temperature of 400dC and a deactivation Temperature of 600dC
+ * The thermometer Ab will be checked if it's Temperature is > than the deactivation Temp. of 600 dC
+ * If so -> disable the Heater (Don't write in the enable Signal) -> set the {@link HeaterActiveWrapper#setActive(boolean)}}
+ * to false therefore don't write in the heater Channel
+ * Else if the Activation Thermometer Aa is beneath the activation Temperature of 400dC set the {@link HeaterActiveWrapper#setActive(boolean)}
+ * to true and therefore write into the heater Channel.
+ * Remember you can have n Heater in each Primary/Secondary/Tertiary Category.
+ */
 @Designate(ocd = Config.class, factory = true)
 @Component(name = "MultipleHeaterCombined",
         configurationPolicy = ConfigurationPolicy.REQUIRE,
         immediate = true)
 public class MultipleHeaterCombinedControllerImpl extends AbstractOpenemsComponent implements OpenemsComponent,
-        Controller, MultipleHeaterCombinedController, ExceptionalState {
+        Controller, MultipleHeaterCombinedController {
 
     private final Logger log = LoggerFactory.getLogger(MultipleHeaterCombinedControllerImpl.class);
 
@@ -45,22 +58,16 @@ public class MultipleHeaterCombinedControllerImpl extends AbstractOpenemsCompone
     protected ComponentManager cpm;
 
     private final Map<Heater, ThermometerWrapper> heaterTemperatureWrapperMap = new HashMap<>();
-    private final Map<HeaterHierarchy, List<Heater>> heaterHierarchyMap = new HashMap<>();
+    private final List<Heater> configuredHeater = new ArrayList<>();
     private final Map<Heater, HeaterActiveWrapper> activeStateHeaterAndHeatWrapper = new HashMap<>();
 
-    private boolean useExceptionalState;
-    private boolean exceptionalStateActiveBefore;
-    private static final String EXCEPTIONAL_STATE_IDENTIFIER = "MULTIPLE_HEATER_COMBINED_EXCEPTIONAL_STATE_IDENTIFIER";
-    private TimerHandler timer;
-    private ExceptionalStateHandler exceptionalStateHandler;
     private boolean overRideExceptionalStateActivateAllHeater;
 
     public MultipleHeaterCombinedControllerImpl() {
 
         super(OpenemsComponent.ChannelId.values(),
                 Controller.ChannelId.values(),
-                MultipleHeaterCombinedController.ChannelId.values(),
-                ExceptionalState.ChannelId.values());
+                MultipleHeaterCombinedController.ChannelId.values());
 
     }
 
@@ -69,35 +76,20 @@ public class MultipleHeaterCombinedControllerImpl extends AbstractOpenemsCompone
 
         super.activate(context, config.id(), config.alias(), config.enabled());
 
-        //Allocate Each Component, to Corresponding Heater etc if Enabled. Sorted by Hierarchy.
-        //ATM Only One Heater per Hierarchy is possible --> Future Impl to Handle multiple Heater of each Hierarchy should be rel.easy
-        //Each HeaterType is Optional.
-
-        //----------------------ALLOCATE/ CONFIGURE HEATER/TemperatureSensor/HeatmeterMbus of Heater -----------------//
-        if (config.usePrimaryHeater()) {
-            this.allocateConfig(config.primaryHeaterId(), HeaterHierarchy.PRIMARY, config.primaryTemperatureSensorMin(), config.primaryHeaterMinTemperature(),
-                    config.primaryTemperatureSensorMax(), config.primaryHeaterMaxTemperature());
-        }
-        if (config.useSecondaryHeater()) {
-            this.allocateConfig(config.secondaryHeaterId(), HeaterHierarchy.SECONDARY, config.secondaryTemperatureSensorMin(), config.secondaryTemperatureMin(),
-                    config.secondaryTemperatureSensorMax(), config.secondaryTemperatureMax());
-        }
-        if (config.useTertiaryHeater()) {
-            this.allocateConfig(config.tertiaryHeaterId(), HeaterHierarchy.TERTIARY, config.tertiaryTemperatureSensorMin(), config.tertiaryTemperatureMin(),
-                    config.tertiaryTemperatureSensorMax(), config.tertiaryTemperatureMax());
-        }
-        this.useExceptionalState = config.useExceptionalState();
-        if (this.useExceptionalState) {
-            this.timer = new TimerHandlerImpl(super.id(), this.cpm);
-            this.timer.addOneIdentifier(EXCEPTIONAL_STATE_IDENTIFIER, config.timerId(), config.waitTime());
-            this.getExceptionalStateValueChannel().setNextValue(100);
-            this.exceptionalStateHandler = new ExceptionalStateHandlerImpl(this.timer, EXCEPTIONAL_STATE_IDENTIFIER);
-
-        }
-
+        //----------------------ALLOCATE/ CONFIGURE HEATER/TemperatureSensor -----------------//
+        this.allocateConfig(config.heaterIds(), config.activationThermometers(), config.activationTemperatures(),
+                config.deactivationThermometers(), config.deactivationTemperatures());
         this.setIsHeating(false);
         this.setHasError(false);
         this.setIsOk(true);
+    }
+
+    @Modified
+    void modified(ComponentContext context, Config config) throws OpenemsError.OpenemsNamedException, ConfigurationException {
+        super.modified(context, config.id(), config.alias(), config.enabled());
+
+        this.allocateConfig(config.heaterIds(), config.activationThermometers(), config.activationTemperatures(), config.deactivationThermometers(),
+                config.deactivationTemperatures());
     }
 
     // ------------------- Config Related --------------------- //
@@ -106,7 +98,6 @@ public class MultipleHeaterCombinedControllerImpl extends AbstractOpenemsCompone
      * Allocates the config of each Heater. They will be mapped to wrapper classes for easier handling and functions etc.
      *
      * @param heater_id            the id of the heater
-     * @param hierarchy            is Primary/Secondary/Tertiary etc
      * @param temperatureSensorMin TemperatureSensor vor minimum Temperature
      * @param temperatureMin       TemperatureValue for min Temp.
      * @param temperatureSensorMax TemperatureSensor for MaximumTemp.
@@ -114,7 +105,7 @@ public class MultipleHeaterCombinedControllerImpl extends AbstractOpenemsCompone
      * @throws OpenemsError.OpenemsNamedException if Id not found
      * @throws ConfigurationException             if instanceof is wrong.
      */
-    private void allocateConfig(String[] heater_id, HeaterHierarchy hierarchy, String[] temperatureSensorMin,
+    private void allocateConfig(String[] heater_id, String[] temperatureSensorMin,
                                 int[] temperatureMin, String[] temperatureSensorMax,
                                 int[] temperatureMax) throws OpenemsError.OpenemsNamedException, ConfigurationException {
         if (this.configEntriesDifferentSize(heater_id.length, temperatureSensorMin.length, temperatureMin.length,
@@ -132,7 +123,8 @@ public class MultipleHeaterCombinedControllerImpl extends AbstractOpenemsCompone
                     if (component instanceof Heater) {
                         Heater heater = ((Heater) component);
                         this.activeStateHeaterAndHeatWrapper.put(heater, new HeaterActiveWrapper());
-                        if (this.heaterHierarchyMap.containsKey(hierarchy)) {
+                        if(this.configuredHeater.contains(heater))
+                        if (this.heater.containsKey(hierarchy)) {
                             this.heaterHierarchyMap.get(hierarchy).add(heater);
                         } else {
                             List<Heater> heaterList = new ArrayList<>();
@@ -186,10 +178,10 @@ public class MultipleHeaterCombinedControllerImpl extends AbstractOpenemsCompone
      * Creates A Thermometer Wrapper for the Corresponding Heater.
      * Thermometer wrapper Holds Information of min/max thermometer and min max Temp value as well as some helper Methods.
      *
-     * @param temperatureSensorMin the min Temperature Sensor for the heater
-     * @param temperatureMin       the min Temperature that needs to be reached at least
-     * @param temperatureSensorMax the max Temperature Sensor for the heater
-     * @param temperatureMax       the max Temperature that allowed
+     * @param temperatureSensorMin the min Temperature Sensor for the heater <- Activation Thermometer
+     * @param temperatureMin       the min Temperature that needs to be reached at least <- Activation Threshold
+     * @param temperatureSensorMax the max Temperature Sensor for the heater <- Deactivation Thermometer
+     * @param temperatureMax       the max Temperature that allowed <- Deactivation Threshold
      * @return the Thermometer Wrapper for the Heater
      * @throws OpenemsError.OpenemsNamedException if Ids cannot be found
      * @throws ConfigurationException             if ThermometerIds not an Instance of Thermometer
