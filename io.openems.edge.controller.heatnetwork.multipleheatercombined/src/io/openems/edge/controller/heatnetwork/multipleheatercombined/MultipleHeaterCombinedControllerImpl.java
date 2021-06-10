@@ -6,13 +6,8 @@ import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.controller.api.Controller;
 import io.openems.edge.controller.heatnetwork.multipleheatercombined.api.MultipleHeaterCombinedController;
-import io.openems.edge.exceptionalstate.api.ExceptionalState;
-import io.openems.edge.exceptionalstate.api.ExceptionalStateHandler;
-import io.openems.edge.exceptionalstate.api.ExceptionalStateHandlerImpl;
 import io.openems.edge.heater.Heater;
 import io.openems.edge.thermometer.api.Thermometer;
-import io.openems.edge.timer.api.TimerHandler;
-import io.openems.edge.timer.api.TimerHandlerImpl;
 import org.osgi.service.cm.ConfigurationException;
 import org.osgi.service.component.ComponentContext;
 import org.osgi.service.component.annotations.Activate;
@@ -122,21 +117,20 @@ public class MultipleHeaterCombinedControllerImpl extends AbstractOpenemsCompone
                     int index = heaterIds.indexOf(entry);
                     if (component instanceof Heater) {
                         Heater heater = ((Heater) component);
-                        this.activeStateHeaterAndHeatWrapper.put(heater, new HeaterActiveWrapper());
-                        if(this.configuredHeater.contains(heater))
-                        if (this.heater.containsKey(hierarchy)) {
-                            this.heaterHierarchyMap.get(hierarchy).add(heater);
-                        } else {
-                            List<Heater> heaterList = new ArrayList<>();
-                            heaterList.add(heater);
-                            this.heaterHierarchyMap.put(hierarchy, heaterList);
+
+                        if (this.configuredHeater.stream().anyMatch(existingHeater -> existingHeater.id().equals(heater.id()))) {
+                            this.allocateConfigHadError();
+                            throw new ConfigurationException("Allocate Config " + super.id(), "Heater already configured with id: " + heater.id() + " in : " + super.id());
                         }
+                        this.configuredHeater.add(heater);
+                        this.activeStateHeaterAndHeatWrapper.put(heater, new HeaterActiveWrapper());
                         this.heaterTemperatureWrapperMap.put(heater, this.createTemperatureWrapper(temperatureSensorMin[index], temperatureMin[index], temperatureSensorMax[index], temperatureMax[index]));
                     } else {
                         this.allocateConfigHadError();
-                        exC[0] = new ConfigurationException("MultipleHeaterCombined: AllocateConfig " + super.id(), "HeaterId not an instance of Heater");
+                        throw new ConfigurationException("MultipleHeaterCombined: AllocateConfig " + super.id(), "HeaterId not an instance of Heater");
                     }
                 }
+
             } catch (OpenemsError.OpenemsNamedException e) {
                 this.allocateConfigHadError();
                 ex[0] = e;
@@ -156,8 +150,8 @@ public class MultipleHeaterCombinedControllerImpl extends AbstractOpenemsCompone
     }
 
     private void allocateConfigHadError() {
+        this.configuredHeater.clear();
         this.heaterTemperatureWrapperMap.clear();
-        this.heaterHierarchyMap.clear();
         this.activeStateHeaterAndHeatWrapper.clear();
     }
 
@@ -227,42 +221,11 @@ public class MultipleHeaterCombinedControllerImpl extends AbstractOpenemsCompone
     @Override
     public void run() throws OpenemsError.OpenemsNamedException {
 
-        if (this.useExceptionalState) {
-            boolean exceptionalStateActive = this.exceptionalStateHandler.exceptionalStateActive(this);
-            if (exceptionalStateActive) {
-                if (this.getExceptionalStateValue() <= 0) {
-                    this.overRideExceptionalStateActivateAllHeater = false;
-                    return;
-                } else {
-                    this.overRideExceptionalStateActivateAllHeater = true;
-                }
-            }
-        }
-
         AtomicBoolean heaterError = new AtomicBoolean(false);
         AtomicBoolean isHeating = new AtomicBoolean(false);
         //Go through ordered HeaterHierarchy -> Order of declaration
-        Arrays.stream(HeaterHierarchy.values()).forEachOrdered(hierarchy -> {
-            if (this.heaterHierarchyMap.containsKey(hierarchy) && this.heaterHierarchyMap.get(hierarchy).size() > 0) {
-                this.heaterLogic(this.heaterHierarchyMap.get(hierarchy), heaterError);
-            }
-        });
-        this.setIsHeating(isHeating.get());
-        //Sets both error and ok
-        this.setHasError(heaterError.get());
-    }
 
-    /**
-     * For Each Heater in a Prio Order (Enum -> HeaterHierarchy), calculate the Provided Power and activate Heater;
-     * If Error occurred, notify by writing into AtomicBooleam.
-     * If Any Heater heats/activates -> set AtomicBoolean isHeating to true.
-     * Performance Demand will be either calculated by Heater MBus OR the calculated power given by the heater.
-     *
-     * @param allHeater   all Heater of this Prioriy.
-     * @param heaterError does a Heater has an error usually from run
-     */
-    private void heaterLogic(List<Heater> allHeater, AtomicBoolean heaterError) {
-        allHeater.forEach(heater -> {
+        this.configuredHeater.forEach(heater -> {
             if (heater.hasError()) {
                 heaterError.set(true);
             }
@@ -271,13 +234,12 @@ public class MultipleHeaterCombinedControllerImpl extends AbstractOpenemsCompone
             ThermometerWrapper thermometerWrapper = this.heaterTemperatureWrapperMap.get(heater);
             //HeatWrapper holding activeState and alwaysActive
             HeaterActiveWrapper heaterActiveWrapper = this.activeStateHeaterAndHeatWrapper.get(heater);
-            //get the Wrapperclass and check if Heater should be turned of, as well as Checking performance demand
+            //get the WrapperClass and check if Heater should be turned of, as well as Checking performance demand
             //HeatControl                                           PerformanceDemand + Time Control
-            if (thermometerWrapper.offTemperatureAboveMaxValue()
-                    && (this.useExceptionalState && this.overRideExceptionalStateActivateAllHeater) == false) {
+            if (thermometerWrapper.offTemperatureAboveMaxValue()) {
                 heaterActiveWrapper.setActive(false);
                 //Check wrapper if thermometer below min temp
-            } else if (thermometerWrapper.onTemperatureBelowMinValue() || (this.useExceptionalState && this.overRideExceptionalStateActivateAllHeater)) {
+            } else if (thermometerWrapper.onTemperatureBelowMinValue()) {
                 heaterActiveWrapper.setActive(true);
             }
             //Enable
@@ -291,11 +253,13 @@ public class MultipleHeaterCombinedControllerImpl extends AbstractOpenemsCompone
 
 
         });
+        this.setIsHeating(isHeating.get());
+        //Sets both error and ok
+        this.setHasError(heaterError.get());
     }
 
     @Deactivate
     protected void deactivate() {
-        this.timer.removeComponent();
         super.deactivate();
     }
 }

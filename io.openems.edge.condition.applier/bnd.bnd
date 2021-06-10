@@ -10,8 +10,6 @@ Bundle-Description: \
 Private-Package:  \
 	io.openems.edge.condition.applier
 
--includeresource: {readme.md}
-
 -buildpath:  \
 	${buildpath},\
 	io.openems.edge.common,\
