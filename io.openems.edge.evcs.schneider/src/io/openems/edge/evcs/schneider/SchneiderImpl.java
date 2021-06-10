@@ -6,7 +6,7 @@ import io.openems.edge.bridge.modbus.api.AbstractOpenemsModbusComponent;
 import io.openems.edge.bridge.modbus.api.BridgeModbus;
 import io.openems.edge.bridge.modbus.api.ElementToChannelConverter;
 import io.openems.edge.bridge.modbus.api.ModbusProtocol;
-import io.openems.edge.bridge.modbus.api.element.SignedDoublewordElement;
+import io.openems.edge.bridge.modbus.api.element.FloatDoublewordElement;
 import io.openems.edge.bridge.modbus.api.element.SignedWordElement;
 import io.openems.edge.bridge.modbus.api.element.UnsignedDoublewordElement;
 import io.openems.edge.bridge.modbus.api.element.UnsignedWordElement;
@@ -43,6 +43,9 @@ import java.util.Arrays;
 @Designate(ocd = Config.class, factory = true)
 @Component(name = "SchneiderImpl", immediate = true,
         configurationPolicy = ConfigurationPolicy.REQUIRE, property = EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE)
+/**
+ * This Provides the Schneider EVCS Modbus TCP implementation.
+ */
 public class SchneiderImpl extends AbstractOpenemsModbusComponent implements OpenemsComponent, ManagedEvcs, Schneider, Evcs, EventHandler {
 
     @Reference
@@ -52,6 +55,7 @@ public class SchneiderImpl extends AbstractOpenemsModbusComponent implements Ope
     private int maxPower;
     private int[] phases;
     private SchneiderWriteHandler writeHandler;
+    private SchneiderReadHandler readHandler;
 
     private EvcsPower evcsPower;
 
@@ -80,7 +84,7 @@ public class SchneiderImpl extends AbstractOpenemsModbusComponent implements Ope
         this._setMinimumHardwarePower(8 * 230);
         this._setMaximumPower(this.maxPower);
         this._setMinimumPower(this.minPower);
-        new SchneiderReadWorker(this);
+        this.readHandler = new SchneiderReadHandler(this);
         this.writeHandler = new SchneiderWriteHandler(this);
     }
 
@@ -127,15 +131,15 @@ public class SchneiderImpl extends AbstractOpenemsModbusComponent implements Ope
                                 ElementToChannelConverter.DIRECT_1_TO_1)),
                 new FC3ReadRegistersTask(350, Priority.HIGH,
                         m(Schneider.ChannelId.STATION_INTENSITY_PHASE_X_READ,
-                                new SignedDoublewordElement(350),
+                                new FloatDoublewordElement(350),
                                 ElementToChannelConverter.DIRECT_1_TO_1)),
                 new FC3ReadRegistersTask(352, Priority.HIGH,
                         m(Schneider.ChannelId.STATION_INTENSITY_PHASE_2_READ,
-                                new SignedDoublewordElement(352),
+                                new FloatDoublewordElement(352),
                                 ElementToChannelConverter.DIRECT_1_TO_1)),
                 new FC3ReadRegistersTask(354, Priority.HIGH,
                         m(Schneider.ChannelId.STATION_INTENSITY_PHASE_3_READ,
-                                new SignedDoublewordElement(354),
+                                new FloatDoublewordElement(354),
                                 ElementToChannelConverter.DIRECT_1_TO_1)),
                 new FC3ReadRegistersTask(356, Priority.HIGH,
                         m(Schneider.ChannelId.STATION_ENERGY_MSB_READ,
@@ -145,33 +149,33 @@ public class SchneiderImpl extends AbstractOpenemsModbusComponent implements Ope
                         m(Schneider.ChannelId.STATION_ENERGY_LSB_READ,
                                 new SignedWordElement(357),
                                 ElementToChannelConverter.DIRECT_1_TO_1)),
-                new FC3ReadRegistersTask(358, Priority.HIGH,
+                new FC4ReadInputRegistersTask(358, Priority.HIGH,
                         m(Schneider.ChannelId.STATION_POWER_TOTAL_READ,
-                                new SignedDoublewordElement(358),
+                                new FloatDoublewordElement(358),
                                 ElementToChannelConverter.DIRECT_1_TO_1)),
                 new FC3ReadRegistersTask(360, Priority.HIGH,
                         m(Schneider.ChannelId.STN_METER_L1_L2_VOLTAGE,
-                                new SignedDoublewordElement(360),
+                                new FloatDoublewordElement(360),
                                 ElementToChannelConverter.DIRECT_1_TO_1)),
                 new FC3ReadRegistersTask(362, Priority.HIGH,
                         m(Schneider.ChannelId.STN_METER_L2_L3_VOLTAGE,
-                                new SignedDoublewordElement(362),
+                                new FloatDoublewordElement(362),
                                 ElementToChannelConverter.DIRECT_1_TO_1)),
                 new FC3ReadRegistersTask(364, Priority.HIGH,
                         m(Schneider.ChannelId.STN_METER_L3_L1_VOLTAGE,
-                                new SignedDoublewordElement(364),
+                                new FloatDoublewordElement(364),
                                 ElementToChannelConverter.DIRECT_1_TO_1)),
                 new FC3ReadRegistersTask(366, Priority.HIGH,
                         m(Schneider.ChannelId.STN_METER_L1_N_VOLTAGE,
-                                new SignedDoublewordElement(366),
+                                new FloatDoublewordElement(366),
                                 ElementToChannelConverter.DIRECT_1_TO_1)),
                 new FC3ReadRegistersTask(368, Priority.HIGH,
                         m(Schneider.ChannelId.STN_METER_L2_N_VOLTAGE,
-                                new SignedDoublewordElement(368),
+                                new FloatDoublewordElement(368),
                                 ElementToChannelConverter.DIRECT_1_TO_1)),
                 new FC3ReadRegistersTask(370, Priority.HIGH,
                         m(Schneider.ChannelId.STN_METER_L3_N_VOLTAGE,
-                                new SignedDoublewordElement(370),
+                                new FloatDoublewordElement(370),
                                 ElementToChannelConverter.DIRECT_1_TO_1)),
                 new FC3ReadRegistersTask(933, Priority.HIGH,
                         m(Schneider.ChannelId.DEGRADED_MODE,
@@ -193,7 +197,7 @@ public class SchneiderImpl extends AbstractOpenemsModbusComponent implements Ope
                                 ElementToChannelConverter.DIRECT_1_TO_1)),
                 new FC6WriteRegisterTask(301,
                         m(Schneider.ChannelId.MAX_INTENSITY_SOCKET,
-                                new UnsignedDoublewordElement(301),
+                                new UnsignedWordElement(301),
                                 ElementToChannelConverter.DIRECT_1_TO_1)),
                 new FC6WriteRegisterTask(932,
                         m(Schneider.ChannelId.REMOTE_CONTROLLER_LIFE_BIT,
@@ -214,7 +218,7 @@ public class SchneiderImpl extends AbstractOpenemsModbusComponent implements Ope
 
     @Override
     public String debugLog() {
-        return this.getStationPowerTotal() + " " + this.getStatus().getName();
+        return "Total: " + this.getStationPowerTotal() + " W | L1 " + this.getStationIntensityPhaseX() + " A | L2 " + this.getStationIntensityPhase2() + " A | L3 " + this.getStationIntensityPhase3() + " A";
     }
 
 
@@ -239,6 +243,11 @@ public class SchneiderImpl extends AbstractOpenemsModbusComponent implements Ope
             this._setChargingstationCommunicationFailed(true);
         }
         this.writeHandler.run();
+        try {
+            this.readHandler.run();
+        } catch (Throwable throwable) {
+
+        }
     }
 
     /**

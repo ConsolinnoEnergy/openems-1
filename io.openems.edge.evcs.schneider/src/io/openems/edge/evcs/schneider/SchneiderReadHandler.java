@@ -2,19 +2,15 @@ package io.openems.edge.evcs.schneider;
 
 
 import io.openems.common.exceptions.OpenemsError;
-import io.openems.common.worker.AbstractWorker;
 import io.openems.edge.common.channel.WriteChannel;
 import io.openems.edge.evcs.api.ManagedEvcs;
-
-import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 
 /**
  * This reads the Values from the OpenEms Channels and writes them into the correct Internal Channels.
  * Internal OpenEms Channel -> External READ_WRITE REGISTER
  */
-public class SchneiderReadWorker extends AbstractWorker {
+public class SchneiderReadHandler {
 
     private final SchneiderImpl parent;
     private static final int GRID_VOLTAGE = 230;
@@ -23,16 +19,13 @@ public class SchneiderReadWorker extends AbstractWorker {
     private boolean acknowledgeFlag;
     private RemoteCommand status;
     private boolean errorFlag;
-    LocalDateTime start;
 
-    public SchneiderReadWorker(SchneiderImpl parent) {
+    public SchneiderReadHandler(SchneiderImpl parent) {
         this.parent = parent;
     }
 
 
-    @Override
-    protected void forever() throws Throwable {
-        this.start = LocalDateTime.now();
+    protected void run() throws Throwable {
         this.setPower();
 
         if (this.errorFlag) {
@@ -115,12 +108,4 @@ public class SchneiderReadWorker extends AbstractWorker {
 
     }
 
-    @Override
-    protected int getCycleTime() {
-        LocalDateTime now = LocalDateTime.now();
-        if (now.isBefore(this.start)) {
-            return 0;
-        }
-        return (int) ChronoUnit.MILLIS.between(now, this.start);
-    }
 }

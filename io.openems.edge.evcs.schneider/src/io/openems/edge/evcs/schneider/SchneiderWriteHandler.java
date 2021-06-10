@@ -4,14 +4,12 @@ import io.openems.edge.evcs.api.ChargingType;
 import io.openems.edge.evcs.api.Status;
 import org.osgi.service.cm.ConfigurationAdmin;
 import org.osgi.service.component.annotations.Reference;
-import org.osgi.service.event.Event;
-import org.osgi.service.event.EventHandler;
 
 /**
  * This WriteHandler writes the Values from the Internal Channels that where retrieved over Modbus into the correct OpenEms Channels.
  * External READ_ONLY Register -> Internal OpenEms
  */
-public class SchneiderWriteHandler implements EventHandler {
+public class SchneiderWriteHandler {
 
     private final SchneiderImpl parent;
     private CPWState state;
@@ -22,11 +20,6 @@ public class SchneiderWriteHandler implements EventHandler {
 
     public SchneiderWriteHandler(SchneiderImpl parent) {
         this.parent = parent;
-    }
-
-    @Override
-    public void handleEvent(Event event) {
-
     }
 
     void run() {

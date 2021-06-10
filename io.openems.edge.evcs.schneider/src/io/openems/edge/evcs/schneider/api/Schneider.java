@@ -289,29 +289,7 @@ public interface Schneider extends OpenemsComponent {
          * </ul>
          */
         DEGRADED_MODE(Doc.of(OpenemsType.INTEGER).accessMode(AccessMode.READ_ONLY)),
-        /**
-         * Historical Error Registers.
-         * <ul>
-         * <li>Interface: Schneider
-         * <li>Type: Integer
-         * <li>Unit:
-         * </ul>
-         */
-        PREVIOUS_ERROR_0_START_TIME(Doc.of(OpenemsType.INTEGER).unit(Unit.SECONDS).accessMode(AccessMode.READ_ONLY)),
-        PREVIOUS_ERROR_0_END_TIME(Doc.of(OpenemsType.INTEGER).unit(Unit.SECONDS).accessMode(AccessMode.READ_ONLY)),
-        PREVIOUS_ERROR_0_CODE(Doc.of(OpenemsType.INTEGER).accessMode(AccessMode.READ_ONLY)),
-        PREVIOUS_ERROR_1_START_TIME(Doc.of(OpenemsType.INTEGER).unit(Unit.SECONDS).accessMode(AccessMode.READ_ONLY)),
-        PREVIOUS_ERROR_1_END_TIME(Doc.of(OpenemsType.INTEGER).unit(Unit.SECONDS).accessMode(AccessMode.READ_ONLY)),
-        PREVIOUS_ERROR_1_CODE(Doc.of(OpenemsType.INTEGER).accessMode(AccessMode.READ_ONLY)),
-        PREVIOUS_ERROR_2_START_TIME(Doc.of(OpenemsType.INTEGER).unit(Unit.SECONDS).accessMode(AccessMode.READ_ONLY)),
-        PREVIOUS_ERROR_2_END_TIME(Doc.of(OpenemsType.INTEGER).unit(Unit.SECONDS).accessMode(AccessMode.READ_ONLY)),
-        PREVIOUS_ERROR_2_CODE(Doc.of(OpenemsType.INTEGER).accessMode(AccessMode.READ_ONLY)),
-        PREVIOUS_ERROR_3_START_TIME(Doc.of(OpenemsType.INTEGER).unit(Unit.SECONDS).accessMode(AccessMode.READ_ONLY)),
-        PREVIOUS_ERROR_3_END_TIME(Doc.of(OpenemsType.INTEGER).unit(Unit.SECONDS).accessMode(AccessMode.READ_ONLY)),
-        PREVIOUS_ERROR_3_CODE(Doc.of(OpenemsType.INTEGER).accessMode(AccessMode.READ_ONLY)),
-        PREVIOUS_ERROR_4_START_TIME(Doc.of(OpenemsType.INTEGER).unit(Unit.SECONDS).accessMode(AccessMode.READ_ONLY)),
-        PREVIOUS_ERROR_4_END_TIME(Doc.of(OpenemsType.INTEGER).unit(Unit.SECONDS).accessMode(AccessMode.READ_ONLY)),
-        PREVIOUS_ERROR_4_CODE(Doc.of(OpenemsType.INTEGER).accessMode(AccessMode.READ_ONLY)),
+
         /**
          * Time between start and stop of the current Charging process. Start with RFID and ends with RFID or command.
          * <ul>
