@@ -4,6 +4,7 @@ package io.openems.edge.evcs.schneider;
 import io.openems.common.exceptions.OpenemsError;
 import io.openems.edge.common.channel.WriteChannel;
 import io.openems.edge.evcs.api.ManagedEvcs;
+
 import java.util.Optional;
 
 /**
@@ -61,21 +62,24 @@ public class SchneiderReadHandler {
 
         if (valueOpt.isPresent()) {
             Integer power = valueOpt.get();
-            int phases = this.parent.getPhases().orElse(3);
+            int phases = this.parent.getPhases().orElse(1);
+            if (phases == 0) {
+                phases = 1;
+            }
             Integer current = (power / phases) / GRID_VOLTAGE;
             int maxHwPower = this.parent.getMaximumHardwarePower().get();
-            int maxSwPower = this.parent.getMaxPower();
-            int maxPower = Math.min(maxHwPower, maxSwPower);
-            if (current > maxPower / GRID_VOLTAGE) {
+            int maxSwPower = this.parent.getMaximumPower().get();
+            int maxPower = Math.min(maxHwPower, maxSwPower) / GRID_VOLTAGE;
+            if (current > maxPower) {
                 current = maxPower / GRID_VOLTAGE;
             }
             int minHwPower = this.parent.getMinimumHardwarePower().get();
-            int minSwPower = this.parent.getMinPower();
-            int minPower = Math.min(minHwPower, minSwPower);
+            int minSwPower = this.parent.getMinimumPower().get();
+            int minPower = Math.min(minHwPower, minSwPower) / GRID_VOLTAGE;
             if (current < minPower) {
                 current = 0;
             }
-            if (!current.equals(this.lastCurrent)) {
+            if (!current.equals(this.lastCurrent) || !current.equals((this.parent.getChargePower().get() / GRID_VOLTAGE))) {
                 this.lastCurrent = current;
                 this.parent.setMaxIntensitySocket(current);
                 this.parent._setSetChargePowerLimit(current * GRID_VOLTAGE);

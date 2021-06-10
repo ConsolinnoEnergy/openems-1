@@ -30,6 +30,9 @@ class EvcsOnHold {
     }
 
     public int getPhases() {
+        if (this.phases == 0) {
+            return 1;
+        }
         return this.phases;
     }
 }
