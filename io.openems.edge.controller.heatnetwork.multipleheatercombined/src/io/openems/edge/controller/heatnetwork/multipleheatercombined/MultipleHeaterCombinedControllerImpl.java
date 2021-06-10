@@ -30,6 +30,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Designate(ocd = Config.class, factory = true)
 @Component(name = "MultipleHeaterCombined",
@@ -113,29 +114,71 @@ public class MultipleHeaterCombinedControllerImpl extends AbstractOpenemsCompone
      * @throws OpenemsError.OpenemsNamedException if Id not found
      * @throws ConfigurationException             if instanceof is wrong.
      */
-    private void allocateConfig(String heater_id, HeaterHierarchy hierarchy, String temperatureSensorMin,
-                                int temperatureMin, String temperatureSensorMax,
-                                int temperatureMax) throws OpenemsError.OpenemsNamedException, ConfigurationException {
-        Heater heater;
-        try {
-            if (this.cpm.getComponent(heater_id) instanceof Heater) {
-                heater = this.cpm.getComponent(heater_id);
-                this.activeStateHeaterAndHeatWrapper.put(heater, new HeaterActiveWrapper());
-                if (this.heaterHierarchyMap.containsKey(hierarchy)) {
-                    this.heaterHierarchyMap.get(hierarchy).add(heater);
-                } else {
-                    List<Heater> heaterList = new ArrayList<>();
-                    heaterList.add(heater);
-                    this.heaterHierarchyMap.put(hierarchy, heaterList);
-                }
-                this.heaterTemperatureWrapperMap.put(heater, this.createTemperatureWrapper(temperatureSensorMin, temperatureMin, temperatureSensorMax, temperatureMax));
-            }
-        } catch (OpenemsError.OpenemsNamedException | ConfigurationException e) {
-            this.heaterTemperatureWrapperMap.clear();
-            this.heaterHierarchyMap.clear();
-            this.activeStateHeaterAndHeatWrapper.clear();
-            throw e;
+    private void allocateConfig(String[] heater_id, HeaterHierarchy hierarchy, String[] temperatureSensorMin,
+                                int[] temperatureMin, String[] temperatureSensorMax,
+                                int[] temperatureMax) throws OpenemsError.OpenemsNamedException, ConfigurationException {
+        if (this.configEntriesDifferentSize(heater_id.length, temperatureSensorMin.length, temperatureMin.length,
+                temperatureSensorMax.length, temperatureMax.length)) {
+            throw new ConfigurationException("allocate Config of MultipleHeaterCombined: " + super.id(), "Check Config Size Entries!");
         }
+        List<String> heaterIds = Arrays.asList(heater_id);
+        OpenemsError.OpenemsNamedException[] ex = {null};
+        ConfigurationException[] exC = {null};
+        Arrays.stream(heater_id).forEach(entry -> {
+            try {
+                if ((ex[0] == null && exC[0] == null)) {
+                    OpenemsComponent component = this.cpm.getComponent(entry);
+                    int index = heaterIds.indexOf(entry);
+                    if (component instanceof Heater) {
+                        Heater heater = ((Heater) component);
+                        this.activeStateHeaterAndHeatWrapper.put(heater, new HeaterActiveWrapper());
+                        if (this.heaterHierarchyMap.containsKey(hierarchy)) {
+                            this.heaterHierarchyMap.get(hierarchy).add(heater);
+                        } else {
+                            List<Heater> heaterList = new ArrayList<>();
+                            heaterList.add(heater);
+                            this.heaterHierarchyMap.put(hierarchy, heaterList);
+                        }
+                        this.heaterTemperatureWrapperMap.put(heater, this.createTemperatureWrapper(temperatureSensorMin[index], temperatureMin[index], temperatureSensorMax[index], temperatureMax[index]));
+                    } else {
+                        this.allocateConfigHadError();
+                        exC[0] = new ConfigurationException("MultipleHeaterCombined: AllocateConfig " + super.id(), "HeaterId not an instance of Heater");
+                    }
+                }
+            } catch (OpenemsError.OpenemsNamedException e) {
+                this.allocateConfigHadError();
+                ex[0] = e;
+            } catch (ConfigurationException e) {
+                this.allocateConfigHadError();
+                exC[0] = e;
+            }
+
+        });
+        if (ex[0] != null) {
+            throw ex[0];
+        }
+        if (exC[0] != null) {
+            throw exC[0];
+        }
+
+    }
+
+    private void allocateConfigHadError() {
+        this.heaterTemperatureWrapperMap.clear();
+        this.heaterHierarchyMap.clear();
+        this.activeStateHeaterAndHeatWrapper.clear();
+    }
+
+    private boolean configEntriesDifferentSize(Integer... entrySize) {
+        List<Integer> comparison = Arrays.asList(entrySize);
+        AtomicInteger comparedLength = new AtomicInteger(entrySize.length > 0 ? entrySize[0] : 0);
+        AtomicBoolean different = new AtomicBoolean(false);
+        comparison.forEach(entry -> {
+            if (!different.get() && comparedLength.get() != entry) {
+                different.set(true);
+            }
+        });
+        return different.get();
     }
 
 
