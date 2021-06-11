@@ -62,20 +62,16 @@ public class SchneiderReadHandler {
 
         if (valueOpt.isPresent()) {
             Integer power = valueOpt.get();
-            int phases = this.parent.getPhases().orElse(1);
-            if (phases == 0) {
-                phases = 1;
-            }
-            Integer current = (power / phases) / GRID_VOLTAGE;
-            int maxHwPower = this.parent.getMaximumHardwarePower().get();
-            int maxSwPower = this.parent.getMaximumPower().get();
-            int maxPower = Math.min(maxHwPower, maxSwPower) / GRID_VOLTAGE;
+            Integer current = power / GRID_VOLTAGE;
+            int maxHwPower = this.parent.getMaximumHardwarePower().get() / GRID_VOLTAGE;
+            int maxSwPower = this.parent.getMaximumPower().get() / GRID_VOLTAGE;
+            int maxPower = Math.min(maxHwPower, maxSwPower);
             if (current > maxPower) {
-                current = maxPower / GRID_VOLTAGE;
+                current = maxPower;
             }
-            int minHwPower = this.parent.getMinimumHardwarePower().get();
-            int minSwPower = this.parent.getMinimumPower().get();
-            int minPower = Math.min(minHwPower, minSwPower) / GRID_VOLTAGE;
+            int minHwPower = this.parent.getMinimumHardwarePower().get() / GRID_VOLTAGE;
+            int minSwPower = this.parent.getMinimumPower().get() / GRID_VOLTAGE;
+            int minPower = Math.min(minHwPower, minSwPower);
             if (current < minPower) {
                 current = 0;
             }
