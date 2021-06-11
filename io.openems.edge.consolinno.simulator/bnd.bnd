@@ -9,17 +9,17 @@ Bundle-Description: \
 
 -buildpath:  \
 	${buildpath},\
-	io.openems.common;version=latest,\
-	io.openems.edge.common;version=latest,\
-	io.openems.edge.thermometer.api;version=latest,\
-	io.openems.edge.heater;version=latest,\
-	io.openems.edge.heater.decentral;version=latest,\
-	io.openems.edge.controller.heatnetwork.multipleheatercombined;version=latest,\
-	io.openems.edge.controller.heatnetwork.master;version=latest,\
-	io.openems.edge.remote.rest.device;version=latest,\
-	io.openems.edge.controller.api;version=latest,\
-	io.openems.edge.controller.heatnetwork.hydraulic.lineheater;version=latest,\
-	joda-time;version=2.8.10,\
+	io.openems.common,\
+	io.openems.edge.common,\
+	io.openems.edge.thermometer.api,\
+	io.openems.edge.heater,\
+	io.openems.edge.heater.decentral,\
+	io.openems.edge.controller.heatnetwork.multipleheatercombined,\
+	io.openems.edge.controller.heatnetwork.master,\
+	io.openems.edge.remote.rest.device,\
+	io.openems.edge.controller.api,\
+	io.openems.edge.controller.heatnetwork.hydraulic.lineheater,\
+	joda-time;version=latest,\
 
 -testpath: \
 	${testpath}

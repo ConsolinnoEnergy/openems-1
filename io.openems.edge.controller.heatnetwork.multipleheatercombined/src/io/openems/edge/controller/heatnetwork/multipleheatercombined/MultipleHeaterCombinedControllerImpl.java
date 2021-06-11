@@ -149,11 +149,22 @@ public class MultipleHeaterCombinedControllerImpl extends AbstractOpenemsCompone
 
     }
 
+    /**
+     * This will be called if an Error Occurred while applying the Config.
+     * It clears Lists and Maps that might be initialized to prevent lingering Heater from an invalid Config.
+     */
     private void allocateConfigHadError() {
         this.configuredHeater.clear();
         this.heaterTemperatureWrapperMap.clear();
         this.activeStateHeaterAndHeatWrapper.clear();
     }
+
+    /**
+     * Get the Size from config Arrays such as HeaterIds, Temperatures, and Thermometers.
+     *
+     * @param entrySize the length of each config Array that's needed.
+     * @return true if a size difference occurred.
+     */
 
     private boolean configEntriesDifferentSize(Integer... entrySize) {
         List<Integer> comparison = Arrays.asList(entrySize);
@@ -223,38 +234,38 @@ public class MultipleHeaterCombinedControllerImpl extends AbstractOpenemsCompone
 
         AtomicBoolean heaterError = new AtomicBoolean(false);
         AtomicBoolean isHeating = new AtomicBoolean(false);
-        //Go through ordered HeaterHierarchy -> Order of declaration
 
         this.configuredHeater.forEach(heater -> {
             if (heater.hasError()) {
                 heaterError.set(true);
             }
-            //what can be provided
-            //ThermometerWrapper holding min and max values as well as Thermometer
+            //ThermometerWrapper holding min and max values as well as Thermometer corresponding to the heater
             ThermometerWrapper thermometerWrapper = this.heaterTemperatureWrapperMap.get(heater);
             //HeatWrapper holding activeState and alwaysActive
             HeaterActiveWrapper heaterActiveWrapper = this.activeStateHeaterAndHeatWrapper.get(heater);
-            //get the WrapperClass and check if Heater should be turned of, as well as Checking performance demand
+            //Get the WrapperClass and check if Heater should be turned of, as well as Checking performance demand
             //HeatControl                                           PerformanceDemand + Time Control
-            if (thermometerWrapper.offTemperatureAboveMaxValue()) {
+            if (thermometerWrapper.shouldDeactivate()) {
                 heaterActiveWrapper.setActive(false);
                 //Check wrapper if thermometer below min temp
-            } else if (thermometerWrapper.onTemperatureBelowMinValue()) {
+            } else if (thermometerWrapper.shouldActivate()) {
                 heaterActiveWrapper.setActive(true);
             }
             //Enable
             try {
                 if (heaterActiveWrapper.isActive()) {
                     heater.getEnableSignalChannel().setNextWriteValue(heaterActiveWrapper.isActive());
+                    isHeating.set(true);
                 }
             } catch (OpenemsError.OpenemsNamedException e) {
+                heaterError.set(true);
                 this.log.warn("Couldn't set the enableSignal: " + super.id() + " Reason: " + e.getMessage());
             }
 
 
         });
-        this.setIsHeating(isHeating.get());
         //Sets both error and ok
+        this.setIsHeating(isHeating.get());
         this.setHasError(heaterError.get());
     }
 
