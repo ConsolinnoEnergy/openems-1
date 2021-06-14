@@ -7,6 +7,7 @@ import io.openems.edge.common.test.DummyComponentManager;
 import io.openems.edge.common.test.TimeLeapClock;
 import io.openems.edge.controller.test.ControllerTest;
 import io.openems.edge.common.test.AbstractComponentTest.TestCase;
+import org.junit.Before;
 import org.junit.Test;
 import org.osgi.service.cm.ConfigurationException;
 
@@ -18,8 +19,13 @@ import java.time.temporal.ChronoUnit;
 public class MyControllerTest {
     private static final String id = "test";
     private static final String exampleConfigStringValue = "exampleConfigStringValue";
-    private static final ChannelAddress input = new ChannelAddress(inputComponentId, inputChannelId);
-    private static final ChannelAddress output = new ChannelAddress(outputComponentId, outputChannelId);
+
+
+    @Before
+    public void setup(){
+        
+    }
+
 
     @Test
     public void positionTest() throws Exception {
@@ -27,10 +33,9 @@ public class MyControllerTest {
         final TimeLeapClock clock = new TimeLeapClock(
                 Instant.ofEpochSecond(1577836800) /* starts at 1. January 2020 00:00:00 */, ZoneOffset.UTC);
 
-        new ControllerTest(new ControllerToTestImpl())
+        new ControllerTest(new MultipleHeaterCombinedControllerImpl())
                 .addReference("cpm", new DummyComponentManager(clock)) // "cpm" in this case is the name of the componentmanager of the controller. Note: has to be the same name as the reference in the controller
-                .addComponent(new DummyComponent(componentId) // only important if the controller actually needs other components
-                )
+
 
                 .activate(MyConfig.create()
                         .setId(id)
