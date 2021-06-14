@@ -20,12 +20,12 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     @AttributeDefinition(name = "Heating Device Primary Names", description = "Unique Ids of the primary Heating Devices.")
     String[] heaterIds() default {"Chp0", "WoodChipHeater0", "GasBoiler0"};
 
-    @AttributeDefinition(name = "Heating Device 1 Activation Temperature in dC", description = "Threshold of the primary Heating Devices, when to activate the Heater (in dC --> 1°C == 10°dC). "
+    @AttributeDefinition(name = "Heating Device Activation Temperature in dC", description = "Threshold of the primary Heating Devices, when to activate the Heater (in dC --> 1°C == 10°dC). "
             + "If measured Temperature beneath this -> Activate heater. Can also be a ChannelAddress!")
     String[] activationTemperatures() default {"600","600","VirtualThermometer0/Temperature"};
 
-    @AttributeDefinition(name = "Heating Device 1 MAX Temperature in dC",
-            description = "Threshold of the Heating Device 1 should be turned OFF(in dC --> 1°C == 10°dC). Can also be a ChannelAddress")
+    @AttributeDefinition(name = "Heating Device Deactivation Temperature in dC",
+            description = "Threshold of the Heating Devices should be turned OFF(in dC --> 1°C == 10°dC). Can also be a ChannelAddress")
     String[] deactivationTemperatures() default {"800","800", "VirtualThermometer1/Temperature"};
 
     @AttributeDefinition(name = "Activation Thermometers", description = "The Thermometer measuring the activation Temperatures.")

@@ -55,8 +55,11 @@ public class MultipleHeaterCombinedControllerImpl extends AbstractOpenemsCompone
     private final Map<Heater, ThermometerWrapper> heaterTemperatureWrapperMap = new HashMap<>();
     private final List<Heater> configuredHeater = new ArrayList<>();
     private final Map<Heater, HeaterActiveWrapper> activeStateHeaterAndHeatWrapper = new HashMap<>();
+    private boolean configurationSuccess;
+    private final AtomicInteger configurationCounter = new AtomicInteger(0);
+    private static final int MAX_WAIT_COUNT = 10;
 
-    private boolean overRideExceptionalStateActivateAllHeater;
+    private Config config;
 
     public MultipleHeaterCombinedControllerImpl() {
 
@@ -67,24 +70,36 @@ public class MultipleHeaterCombinedControllerImpl extends AbstractOpenemsCompone
     }
 
     @Activate
-    void activate(ComponentContext context, Config config) throws OpenemsError.OpenemsNamedException, ConfigurationException {
+    void activate(ComponentContext context, Config config) {
 
         super.activate(context, config.id(), config.alias(), config.enabled());
-
-        //----------------------ALLOCATE/ CONFIGURE HEATER/TemperatureSensor -----------------//
-        this.allocateConfig(config.heaterIds(), config.activationThermometers(), config.activationTemperatures(),
-                config.deactivationThermometers(), config.deactivationTemperatures());
         this.setIsHeating(false);
         this.setHasError(false);
         this.setIsOk(true);
+        this.config = config;
+
+        //----------------------ALLOCATE/ CONFIGURE HEATER/TemperatureSensor -----------------//
+        try {
+            this.allocateConfig(config.heaterIds(), config.activationThermometers(), config.activationTemperatures(),
+                    config.deactivationThermometers(), config.deactivationTemperatures());
+            this.configurationSuccess = true;
+        } catch (OpenemsError.OpenemsNamedException | ConfigurationException e) {
+            this.configurationSuccess = false;
+        }
+
     }
 
     @Modified
-    void modified(ComponentContext context, Config config) throws OpenemsError.OpenemsNamedException, ConfigurationException {
+    void modified(ComponentContext context, Config config) {
         super.modified(context, config.id(), config.alias(), config.enabled());
-
-        this.allocateConfig(config.heaterIds(), config.activationThermometers(), config.activationTemperatures(), config.deactivationThermometers(),
-                config.deactivationTemperatures());
+        this.config = config;
+        try {
+            this.allocateConfig(config.heaterIds(), config.activationThermometers(), config.activationTemperatures(), config.deactivationThermometers(),
+                    config.deactivationTemperatures());
+            this.configurationSuccess = true;
+        } catch (OpenemsError.OpenemsNamedException | ConfigurationException e) {
+            this.configurationSuccess = false;
+        }
     }
 
     // ------------------- Config Related --------------------- //
@@ -231,46 +246,61 @@ public class MultipleHeaterCombinedControllerImpl extends AbstractOpenemsCompone
      */
     @Override
     public void run() throws OpenemsError.OpenemsNamedException {
+        if (this.configurationSuccess) {
+            AtomicBoolean heaterError = new AtomicBoolean(false);
+            AtomicBoolean isHeating = new AtomicBoolean(false);
 
-        AtomicBoolean heaterError = new AtomicBoolean(false);
-        AtomicBoolean isHeating = new AtomicBoolean(false);
+            this.configuredHeater.forEach(heater -> {
+                if (heater.hasError()) {
+                    heaterError.set(true);
+                }
+                //ThermometerWrapper holding min and max values as well as Thermometer corresponding to the heater
+                ThermometerWrapper thermometerWrapper = this.heaterTemperatureWrapperMap.get(heater);
+                //HeatWrapper holding activeState and alwaysActive
+                HeaterActiveWrapper heaterActiveWrapper = this.activeStateHeaterAndHeatWrapper.get(heater);
+                //Get the WrapperClass and check if Heater should be turned of, as well as Checking performance demand
+                //HeatControl                                           PerformanceDemand + Time Control
+                //Enable
+                try {
+                    if (thermometerWrapper.shouldDeactivate()) {
+                        heaterActiveWrapper.setActive(false);
+                        //Check wrapper if thermometer below min temp
+                    } else if (thermometerWrapper.shouldActivate()) {
+                        heaterActiveWrapper.setActive(true);
+                    }
 
-        this.configuredHeater.forEach(heater -> {
-            if (heater.hasError()) {
-                heaterError.set(true);
-            }
-            //ThermometerWrapper holding min and max values as well as Thermometer corresponding to the heater
-            ThermometerWrapper thermometerWrapper = this.heaterTemperatureWrapperMap.get(heater);
-            //HeatWrapper holding activeState and alwaysActive
-            HeaterActiveWrapper heaterActiveWrapper = this.activeStateHeaterAndHeatWrapper.get(heater);
-            //Get the WrapperClass and check if Heater should be turned of, as well as Checking performance demand
-            //HeatControl                                           PerformanceDemand + Time Control
-            //Enable
+                    if (heaterActiveWrapper.isActive()) {
+                        heater.getEnableSignalChannel().setNextWriteValue(heaterActiveWrapper.isActive());
+                        isHeating.set(true);
+                    }
+                } catch (OpenemsError.OpenemsNamedException e) {
+                    heaterError.set(true);
+                    this.log.warn("Couldn't set the enableSignal: " + super.id() + " Reason: " + e.getMessage());
+                } catch (ConfigurationException e) {
+                    heaterError.set(true);
+                    this.log.warn("Couldn't read from Configured TemperatureChannel of Heater: " + heater.id());
+                }
+
+
+            });
+            //Sets both error and ok
+            this.setIsHeating(isHeating.get());
+            this.setHasError(heaterError.get());
+        } else {
             try {
-                if (thermometerWrapper.shouldDeactivate()) {
-                    heaterActiveWrapper.setActive(false);
-                    //Check wrapper if thermometer below min temp
-                } else if (thermometerWrapper.shouldActivate()) {
-                    heaterActiveWrapper.setActive(true);
-                }
-
-                if (heaterActiveWrapper.isActive()) {
-                    heater.getEnableSignalChannel().setNextWriteValue(heaterActiveWrapper.isActive());
-                    isHeating.set(true);
-                }
-            } catch (OpenemsError.OpenemsNamedException e) {
-                heaterError.set(true);
-                this.log.warn("Couldn't set the enableSignal: " + super.id() + " Reason: " + e.getMessage());
+                this.allocateConfig(this.config.heaterIds(), this.config.activationThermometers(), this.config.activationTemperatures(),
+                        this.config.deactivationThermometers(), this.config.deactivationTemperatures());
+                this.configurationSuccess = true;
             } catch (ConfigurationException e) {
-                heaterError.set(true);
-                this.log.warn("Couldn't read from Configured TemperatureChannel of Heater: " + heater.id());
+                //In the first few Cycles some Components May not be activated, only warn user when the Max Wait Count is reached.
+                //since this should only happen on restart -> no reset is necessary
+                if (this.configurationCounter.get() >= MAX_WAIT_COUNT) {
+                    this.log.warn("Couldn't set Configuration for Controller : " + super.id() + " Check the Configuration of this Controller!");
+                } else {
+                    this.configurationCounter.getAndIncrement();
+                }
             }
-
-
-        });
-        //Sets both error and ok
-        this.setIsHeating(isHeating.get());
-        this.setHasError(heaterError.get());
+        }
     }
 
     @Deactivate
