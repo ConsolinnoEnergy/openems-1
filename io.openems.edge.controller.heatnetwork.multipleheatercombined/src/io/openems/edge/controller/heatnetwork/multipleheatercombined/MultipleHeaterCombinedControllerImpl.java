@@ -101,8 +101,8 @@ public class MultipleHeaterCombinedControllerImpl extends AbstractOpenemsCompone
      * @throws ConfigurationException             if instanceof is wrong.
      */
     private void allocateConfig(String[] heater_id, String[] temperatureSensorMin,
-                                int[] temperatureMin, String[] temperatureSensorMax,
-                                int[] temperatureMax) throws OpenemsError.OpenemsNamedException, ConfigurationException {
+                                String[] temperatureMin, String[] temperatureSensorMax,
+                                String[] temperatureMax) throws OpenemsError.OpenemsNamedException, ConfigurationException {
         if (this.configEntriesDifferentSize(heater_id.length, temperatureSensorMin.length, temperatureMin.length,
                 temperatureSensorMax.length, temperatureMax.length)) {
             throw new ConfigurationException("allocate Config of MultipleHeaterCombined: " + super.id(), "Check Config Size Entries!");
@@ -192,7 +192,7 @@ public class MultipleHeaterCombinedControllerImpl extends AbstractOpenemsCompone
      * @throws ConfigurationException             if ThermometerIds not an Instance of Thermometer
      */
     private ThermometerWrapper createTemperatureWrapper(String temperatureSensorMin,
-                                                        int temperatureMin, String temperatureSensorMax, int temperatureMax)
+                                                        String temperatureMin, String temperatureSensorMax, String temperatureMax)
             throws OpenemsError.OpenemsNamedException, ConfigurationException {
         Thermometer min;
         Thermometer max;
@@ -207,7 +207,7 @@ public class MultipleHeaterCombinedControllerImpl extends AbstractOpenemsCompone
         } else {
             throw new ConfigurationException("createTemperatureWrapper", temperatureSensorMax + " is not an Instance of Thermometer");
         }
-        wrapper = new ThermometerWrapper(min, max, temperatureMin, temperatureMax);
+        wrapper = new ThermometerWrapper(min, max, temperatureMin, temperatureMax, this.cpm);
 
         return wrapper;
     }
@@ -245,14 +245,15 @@ public class MultipleHeaterCombinedControllerImpl extends AbstractOpenemsCompone
             HeaterActiveWrapper heaterActiveWrapper = this.activeStateHeaterAndHeatWrapper.get(heater);
             //Get the WrapperClass and check if Heater should be turned of, as well as Checking performance demand
             //HeatControl                                           PerformanceDemand + Time Control
-            if (thermometerWrapper.shouldDeactivate()) {
-                heaterActiveWrapper.setActive(false);
-                //Check wrapper if thermometer below min temp
-            } else if (thermometerWrapper.shouldActivate()) {
-                heaterActiveWrapper.setActive(true);
-            }
             //Enable
             try {
+                if (thermometerWrapper.shouldDeactivate()) {
+                    heaterActiveWrapper.setActive(false);
+                    //Check wrapper if thermometer below min temp
+                } else if (thermometerWrapper.shouldActivate()) {
+                    heaterActiveWrapper.setActive(true);
+                }
+
                 if (heaterActiveWrapper.isActive()) {
                     heater.getEnableSignalChannel().setNextWriteValue(heaterActiveWrapper.isActive());
                     isHeating.set(true);
@@ -260,6 +261,9 @@ public class MultipleHeaterCombinedControllerImpl extends AbstractOpenemsCompone
             } catch (OpenemsError.OpenemsNamedException e) {
                 heaterError.set(true);
                 this.log.warn("Couldn't set the enableSignal: " + super.id() + " Reason: " + e.getMessage());
+            } catch (ConfigurationException e) {
+                heaterError.set(true);
+                this.log.warn("Couldn't read from Configured TemperatureChannel of Heater: " + heater.id());
             }
 
 

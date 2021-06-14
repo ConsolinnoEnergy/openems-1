@@ -4,8 +4,8 @@ import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
 @ObjectClassDefinition(
-        name = "Controller Consolinno Multiple Heater",
-        description = "This Controller regulates the Pump and Valves for Heating."
+        name = "Controller Multiple Heater",
+        description = "This Controller regulates Heater by activation/Deactivation Temperatures and Thermometer."
 )
 @interface Config {
 
@@ -21,11 +21,12 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     String[] heaterIds() default {"Chp0", "WoodChipHeater0", "GasBoiler0"};
 
     @AttributeDefinition(name = "Heating Device 1 Activation Temperature in dC", description = "Threshold of the primary Heating Devices, when to activate the Heater (in dC --> 1°C == 10°dC). "
-            + "If measured Temperature beneath this -> Activate heater")
-    int[] activationTemperatures() default {600,600,600};
+            + "If measured Temperature beneath this -> Activate heater. Can also be a ChannelAddress!")
+    String[] activationTemperatures() default {"600","600","VirtualThermometer0/Temperature"};
 
-    @AttributeDefinition(name = "Heating Device 1 MAX Temperature in dC", description = "Threshold of the Heating Device 1 should be turned OFF(in dC --> 1°C == 10°dC).")
-    int[] deactivationTemperatures() default {800,800,800};
+    @AttributeDefinition(name = "Heating Device 1 MAX Temperature in dC",
+            description = "Threshold of the Heating Device 1 should be turned OFF(in dC --> 1°C == 10°dC). Can also be a ChannelAddress")
+    String[] deactivationTemperatures() default {"800","800", "VirtualThermometer1/Temperature"};
 
     @AttributeDefinition(name = "Activation Thermometers", description = "The Thermometer measuring the activation Temperatures.")
     String[] activationThermometers() default {"TemperatureSensor0", "TemperatureSensor2", "TemperatureSensor4"};
