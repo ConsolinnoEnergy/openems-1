@@ -85,7 +85,7 @@ public class ConditionApplier extends AbstractOpenemsComponent implements Openem
     private void activateOrModified(Config config) throws OpenemsError.OpenemsNamedException {
         String configuration = config.answer();
         String[] entries = configuration.split(":");
-        //NOTE: Magic numbers bc this is a prototype
+        //NOTE: Magic numbers because this is a prototype
         this.informationToGet = ChannelAddress.fromString(entries[0]);
         this.compareValue = entries[1].toLowerCase().equals("true");
         this.trueConditionAnswer = Integer.parseInt(entries[2]);

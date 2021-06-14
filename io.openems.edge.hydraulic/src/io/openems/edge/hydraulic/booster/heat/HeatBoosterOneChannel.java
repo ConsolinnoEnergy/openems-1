@@ -111,7 +111,7 @@ public class HeatBoosterOneChannel extends AbstractOpenemsComponent implements O
     }
 
     /**
-     * This set the Channel Value by a value.
+     * This sets the Channel Value by a given value.
      *
      * @param value the value that will be set into the channel.
      * @throws OpenemsError.OpenemsNamedException if write fails.

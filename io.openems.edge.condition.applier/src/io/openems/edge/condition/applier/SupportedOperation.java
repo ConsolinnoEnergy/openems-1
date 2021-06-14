@@ -1,7 +1,7 @@
 package io.openems.edge.condition.applier;
 
 /**
- * The SupportedOperation, like the SupportedDataType this will be used in Future, when the Condition Applier work will be
+ * The SupportedOperation, like the SupportedDataType, will be used in future versions, when the Condition Applier work will be
  * continued.
  */
 public enum SupportedOperation {
