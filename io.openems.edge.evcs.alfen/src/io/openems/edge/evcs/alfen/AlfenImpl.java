@@ -36,6 +36,8 @@ import org.osgi.service.component.annotations.ReferencePolicy;
 import org.osgi.service.component.annotations.ReferencePolicyOption;
 import org.osgi.service.metatype.annotations.Designate;
 
+import java.util.Arrays;
+
 
 @Designate(ocd = Config.class, factory = true)
 @Component(name = "AlfenImpl", immediate = true,
@@ -50,6 +52,9 @@ public class AlfenImpl extends AbstractOpenemsModbusComponent implements Openems
         super.setModbus(modbus);
     }
 
+    private int minPower;
+    private int maxPower;
+    private int[] phases;
 
     public AlfenImpl() {
         super(OpenemsComponent.ChannelId.values(), Alfen.ChannelId.values()
@@ -58,8 +63,24 @@ public class AlfenImpl extends AbstractOpenemsModbusComponent implements Openems
 
     @Activate
     void activate(ComponentContext context, Config config) throws ConfigurationException, OpenemsException {
+        this.minPower = config.minCurrent();
+        this.maxPower = config.maxCurrent();
+        this.phases = config.phases();
+        if (!this.checkPhases()) {
+            throw new ConfigurationException("Phase Configuration is not valid!", "Configuration must only contain 1,2 and 3.");
+        }
         super.activate(context, config.id(), config.alias(), config.enabled(), config.modbusUnitId(), this.cm,
                 "Modbus", config.modbusBridgeId());
+    }
+
+    /**
+     * Checks if the Phase Configuration of the Config is valid.
+     *
+     * @return true if valid
+     */
+    private boolean checkPhases() {
+        String phases = Arrays.toString(this.phases);
+        return phases.contains("1") && phases.contains("2") && phases.contains("3") && this.phases.length == 3;
     }
 
     @Deactivate
@@ -106,15 +127,16 @@ public class AlfenImpl extends AbstractOpenemsModbusComponent implements Openems
                                 ElementToChannelConverter.DIRECT_1_TO_1)),
                 new FC4ReadInputRegistersTask(316, Priority.HIGH,
                         m(Alfen.ChannelId.VOLTAGE_PHASE_L3_L1,
-                                new SignedWordElement(316),
+                                new FloatDoublewordElement(316),
                                 ElementToChannelConverter.DIRECT_1_TO_1)),
                 new FC4ReadInputRegistersTask(318, Priority.HIGH,
                         m(Alfen.ChannelId.CURRENT_N,
                                 new FloatDoublewordElement(318),
                                 ElementToChannelConverter.DIRECT_1_TO_1)),
-                new FC4ReadInputRegistersTask(320, Priority.HIGH,
+
+                new FC4ReadInputRegistersTask(320 + ((this.phases[0] * 2) - 2), Priority.HIGH,
                         m(Alfen.ChannelId.CURRENT_L1,
-                                new SignedWordElement(320),
+                                new FloatDoublewordElement(320),
                                 ElementToChannelConverter.DIRECT_1_TO_1)),
                 new FC4ReadInputRegistersTask(322, Priority.HIGH,
                         m(Alfen.ChannelId.CURRENT_L2,
@@ -124,6 +146,7 @@ public class AlfenImpl extends AbstractOpenemsModbusComponent implements Openems
                         m(Alfen.ChannelId.CURRENT_L3,
                                 new FloatDoublewordElement(324),
                                 ElementToChannelConverter.DIRECT_1_TO_1)),
+
                 new FC4ReadInputRegistersTask(326, Priority.HIGH,
                         m(Alfen.ChannelId.CURRENT_SUM,
                                 new FloatDoublewordElement(326),
@@ -299,6 +322,11 @@ public class AlfenImpl extends AbstractOpenemsModbusComponent implements Openems
                                 new FloatDoublewordElement(1210),
                                 ElementToChannelConverter.DIRECT_1_TO_1))
         );
+    }
+
+    @Override
+    public int[] getPhaseConfiguration() {
+        return this.phases;
     }
 
     @Override

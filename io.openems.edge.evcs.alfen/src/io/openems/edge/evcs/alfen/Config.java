@@ -14,6 +14,15 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
     boolean enabled() default true;
 
+    @AttributeDefinition(name = "Minimum power", description = "Minimum current of the Charger in A.", required = true)
+    int minCurrent() default 8;
+
+    @AttributeDefinition(name = "Maximum power", description = "Maximum current of the Charger in A.", required = true)
+    int maxCurrent() default 32;
+
+    @AttributeDefinition(name = "Phases", description = "If the Phases are physically swapped, change the order here.", required = true)
+    int[] phases() default {1,2,3};
+
     @AttributeDefinition(name = "ModbusUnitId", description = "Unique Id for the Modbusunit.")
     int modbusUnitId();
 
