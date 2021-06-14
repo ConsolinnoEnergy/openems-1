@@ -51,7 +51,7 @@ public interface ExceptionalState extends OpenemsComponent {
     }
 
     /**
-     * get The Enable Signal channel.
+     * Get The Enable Signal channel.
      *
      * @return the channel
      */
