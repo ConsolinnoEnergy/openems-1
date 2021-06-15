@@ -10,7 +10,6 @@ public class MyConfig extends AbstractComponentConfig implements Config {
     protected static class Builder {
         private String id;
         private String servicePid;
-        private String alias;
         private String valveToControl;
         private String[] temperaturePositionMap;
         private String controlType;
