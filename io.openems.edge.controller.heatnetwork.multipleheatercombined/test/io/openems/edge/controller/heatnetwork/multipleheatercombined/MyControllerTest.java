@@ -8,6 +8,7 @@ import io.openems.edge.common.test.TimeLeapClock;
 import io.openems.edge.controller.test.ControllerTest;
 import io.openems.edge.heater.test.DummyHeater;
 import io.openems.edge.thermometer.api.test.DummyThermometer;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -19,6 +20,17 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Tests most of the Code in the {@link MultipleHeaterCombinedControllerImpl}.
+ * The TestCases includes:
+ * <ul>
+ * <li> Everything is correct, and the Controller is working as intended.</li>
+ * <li>A Component is not configured, but is active in another cycle -> work as intended</li>
+ * <li>A Component is not configured for too long|configuration is wrong/Temperature is not defined so the hasErrorChannel is true</li>
+ * <li>The Configuration is wrong -> Channel is not existing -> throws an error </li>
+ * </ul>
+ * -
+ */
 public class MyControllerTest {
     private static final String id = "test";
     private static final String[] correctHeaterIds = {"Heater0", "Heater1", "Heater2"};
@@ -68,156 +80,182 @@ public class MyControllerTest {
         });
     }
 
-
+    /**
+     * The Configuration is correct and the Controller is running/Heating as expected.
+     */
     @Test
-    public void everythingsFineAndHeating() throws Exception {
-        this.cpm.addComponent(this.dummyHeaterMap.get("Heater2"));
-        OpenemsComponent[] components = new OpenemsComponent[this.cpm.getAllComponents().size()];
-        this.cpm.getAllComponents().toArray(components);
-        new ControllerTest(new MultipleHeaterCombinedControllerImpl(), components)
-                .addReference("cpm", this.cpm)
-                .activate(MyConfig.create()
-                        .setId(id)
-                        .setHeaterIds(correctHeaterIds)
-                        .setActivationTemperatures(activationTemperatures)
-                        .setEnabled(true)
-                        .setDeactivationTemperatures(deactivationTemperatures)
-                        .setActivationThermometer(activationThermometer)
-                        .setDeactivationThermometer(deactivationThermometer)
-                        .setServicePid("EverythingsFine")
-                        .build())
-                //Everythings heating
-                .next(new TestCase()
-                        .timeleap(this.clock, 1, ChronoUnit.SECONDS)
-                        .input(this.channelAddresses.get("Thermometer0"), 500)
-                        .input(this.channelAddresses.get("Thermometer1"), 400)
-                        .input(this.channelAddresses.get("Thermometer2"), 400)
-                        .input(this.channelAddresses.get("Thermometer3"), 400)
-                        .input(this.channelAddresses.get("Thermometer4"), 300)
-                        .input(this.channelAddresses.get("Thermometer5"), 300)
-                        .input(this.channelAddresses.get("Thermometer6"), 300)
-                )
-                .next(new TestCase()
-                        .output(this.channelAddresses.get("Heater0"), true)
-                        .output(this.channelAddresses.get("Heater1"), true)
-                        .output(this.channelAddresses.get("Heater2"), true))
-                //Should still Heat heater2
-                .next(new TestCase()
-                        .timeleap(this.clock, 1, ChronoUnit.SECONDS)
-                        .input(this.channelAddresses.get("Thermometer0"), 200)
-                        .input(this.channelAddresses.get("Heater2"), null)
-                        .output(this.channelAddresses.get("Heater2"), true))
-                //Heater 2 should deactivate
-                .next(new TestCase()
-                        .timeleap(this.clock, 1, ChronoUnit.SECONDS)
-                        .input(this.channelAddresses.get("Thermometer6"), 1000)
-                        .input(this.channelAddresses.get("Heater2"), null)
-                        .output(this.channelAddresses.get("Heater2"), null))
-                .getSut().run();
-
+    public void everythingsFineAndHeating() {
+        try {
+            this.cpm.addComponent(this.dummyHeaterMap.get("Heater2"));
+            OpenemsComponent[] components = new OpenemsComponent[this.cpm.getAllComponents().size()];
+            this.cpm.getAllComponents().toArray(components);
+            new ControllerTest(new MultipleHeaterCombinedControllerImpl(), components)
+                    .addReference("cpm", this.cpm)
+                    .activate(MyConfig.create()
+                            .setId(id)
+                            .setHeaterIds(correctHeaterIds)
+                            .setActivationTemperatures(activationTemperatures)
+                            .setEnabled(true)
+                            .setDeactivationTemperatures(deactivationTemperatures)
+                            .setActivationThermometer(activationThermometer)
+                            .setDeactivationThermometer(deactivationThermometer)
+                            .setServicePid("EverythingsFine")
+                            .build())
+                    //Everythings heating
+                    .next(new TestCase()
+                            .timeleap(this.clock, 1, ChronoUnit.SECONDS)
+                            .input(this.channelAddresses.get("Thermometer0"), 500)
+                            .input(this.channelAddresses.get("Thermometer1"), 400)
+                            .input(this.channelAddresses.get("Thermometer2"), 400)
+                            .input(this.channelAddresses.get("Thermometer3"), 400)
+                            .input(this.channelAddresses.get("Thermometer4"), 300)
+                            .input(this.channelAddresses.get("Thermometer5"), 300)
+                            .input(this.channelAddresses.get("Thermometer6"), 300)
+                    )
+                    .next(new TestCase()
+                            .output(this.channelAddresses.get("Heater0"), true)
+                            .output(this.channelAddresses.get("Heater1"), true)
+                            .output(this.channelAddresses.get("Heater2"), true))
+                    //Should still Heat heater2
+                    .next(new TestCase()
+                            .timeleap(this.clock, 1, ChronoUnit.SECONDS)
+                            .input(this.channelAddresses.get("Thermometer0"), 200)
+                            .input(this.channelAddresses.get("Heater2"), null)
+                            .output(this.channelAddresses.get("Heater2"), true))
+                    //Heater 2 should deactivate
+                    .next(new TestCase()
+                            .timeleap(this.clock, 1, ChronoUnit.SECONDS)
+                            .input(this.channelAddresses.get("Thermometer6"), 1000)
+                            .input(this.channelAddresses.get("Heater2"), null)
+                            .output(this.channelAddresses.get("Heater2"), null))
+                    .getSut().run();
+        } catch (Exception e) {
+            Assert.fail();
+        }
     }
 
     @Test
-    public void configurationAtFirstWrong() throws Exception {
-        OpenemsComponent[] components = new OpenemsComponent[this.cpm.getAllComponents().size()];
-        this.cpm.getAllComponents().toArray(components);
-        new ControllerTest(new MultipleHeaterCombinedControllerImpl(), components)
-                .addReference("cpm", this.cpm)
-                .activate(MyConfig.create()
-                        .setId(id)
-                        .setHeaterIds(correctHeaterIds)
-                        .setActivationTemperatures(activationTemperatures)
-                        .setEnabled(true)
-                        .setDeactivationTemperatures(deactivationTemperatures)
-                        .setActivationThermometer(activationThermometer)
-                        .setDeactivationThermometer(deactivationThermometer)
-                        .setServicePid("EverythingsFine")
-                        .build())
-                //Everythings heating
-                .addComponent(this.getAndAddPreviouslyToCpm("Heater2"))
-                .next(new TestCase()
-                        .timeleap(this.clock, 1, ChronoUnit.SECONDS)
-                        .input(this.channelAddresses.get("Thermometer0"), 500)
-                        .input(this.channelAddresses.get("Thermometer1"), 400)
-                        .input(this.channelAddresses.get("Thermometer2"), 400)
-                        .input(this.channelAddresses.get("Thermometer3"), 400)
-                        .input(this.channelAddresses.get("Thermometer4"), 300)
-                        .input(this.channelAddresses.get("Thermometer5"), 300)
-                        .input(this.channelAddresses.get("Thermometer6"), 300)
-                )
-                .next(new TestCase()
-                        .output(this.channelAddresses.get("Heater0"), true)
-                        .output(this.channelAddresses.get("Heater1"), true)
-                        .output(this.channelAddresses.get("Heater2"), true))
-                .getSut().run();
+    public void configurationAtFirstWrong() {
+        try {
+            OpenemsComponent[] components = new OpenemsComponent[this.cpm.getAllComponents().size()];
+            this.cpm.getAllComponents().toArray(components);
+            new ControllerTest(new MultipleHeaterCombinedControllerImpl(), components)
+                    .addReference("cpm", this.cpm)
+                    .activate(MyConfig.create()
+                            .setId(id)
+                            .setHeaterIds(correctHeaterIds)
+                            .setActivationTemperatures(activationTemperatures)
+                            .setEnabled(true)
+                            .setDeactivationTemperatures(deactivationTemperatures)
+                            .setActivationThermometer(activationThermometer)
+                            .setDeactivationThermometer(deactivationThermometer)
+                            .setServicePid("FineAfterFirstRun")
+                            .build())
+                    //Everythings heating
+                    .addComponent(this.getAndAddPreviouslyToCpm("Heater2"))
+                    .next(new TestCase()
+                            .timeleap(this.clock, 1, ChronoUnit.SECONDS)
+                            .input(this.channelAddresses.get("Thermometer0"), 500)
+                            .input(this.channelAddresses.get("Thermometer1"), 400)
+                            .input(this.channelAddresses.get("Thermometer2"), 400)
+                            .input(this.channelAddresses.get("Thermometer3"), 400)
+                            .input(this.channelAddresses.get("Thermometer4"), 300)
+                            .input(this.channelAddresses.get("Thermometer5"), 300)
+                            .input(this.channelAddresses.get("Thermometer6"), 300)
+                    )
+                    .next(new TestCase()
+                            .output(this.channelAddresses.get("Heater0"), true)
+                            .output(this.channelAddresses.get("Heater1"), true)
+                            .output(this.channelAddresses.get("Heater2"), true))
+                    .getSut().run();
+        } catch (Exception e) {
+            Assert.fail();
+        }
+
     }
 
+    /**
+     * Check if the Controller responds correctly to wrong Configuration.
+     */
     @Test
-    public void hasErrorAfterWrongConfigurationForTooLong() throws Exception {
-        OpenemsComponent[] components = new OpenemsComponent[this.cpm.getAllComponents().size()];
-        this.cpm.getAllComponents().toArray(components);
-        new ControllerTest(new MultipleHeaterCombinedControllerImpl(), components)
-                .addReference("cpm", this.cpm)
-                .activate(MyConfig.create()
-                        .setId(id)
-                        .setHeaterIds(correctHeaterIds)
-                        .setActivationTemperatures(activationTemperatures)
-                        .setEnabled(true)
-                        .setDeactivationTemperatures(deactivationTemperatures)
-                        .setActivationThermometer(activationThermometer)
-                        .setDeactivationThermometer(deactivationThermometer)
-                        .setServicePid("EverythingsFine")
-                        .build())
-                .next(new TestCase())
-                .next(new TestCase())
-                .next(new TestCase())
-                .next(new TestCase())
-                .next(new TestCase())
-                .next(new TestCase())
-                .next(new TestCase())
-                .next(new TestCase())
-                .next(new TestCase())
-                .next(new TestCase())
-                .next(new TestCase()
-                        .output(ChannelAddress.fromString(id + "/Error"), true)
-                ).getSut().run();
+    public void hasErrorAfterWrongConfigurationForTooLong() {
+        try {
+            OpenemsComponent[] components = new OpenemsComponent[this.cpm.getAllComponents().size()];
+            this.cpm.getAllComponents().toArray(components);
+            new ControllerTest(new MultipleHeaterCombinedControllerImpl(), components)
+                    .addReference("cpm", this.cpm)
+                    .activate(MyConfig.create()
+                            .setId(id)
+                            .setHeaterIds(correctHeaterIds)
+                            .setActivationTemperatures(activationTemperatures)
+                            .setEnabled(true)
+                            .setDeactivationTemperatures(deactivationTemperatures)
+                            .setActivationThermometer(activationThermometer)
+                            .setDeactivationThermometer(deactivationThermometer)
+                            .setServicePid("ConfigurationWrongForTooLong")
+                            .build())
+                    .next(new TestCase())
+                    .next(new TestCase())
+                    .next(new TestCase())
+                    .next(new TestCase())
+                    .next(new TestCase())
+                    .next(new TestCase())
+                    .next(new TestCase())
+                    .next(new TestCase())
+                    .next(new TestCase())
+                    .next(new TestCase())
+                    .next(new TestCase()
+                            .output(ChannelAddress.fromString(id + "/Error"), true)
+                    ).getSut().run();
+        } catch (Exception e) {
+            Assert.fail();
+        }
     }
 
+    /**
+     * Check if the Controller reacts properly to the wrong Config.
+     */
     @Test
-    public void testWrongHeater() throws Exception {
-        this.cpm.addComponent(this.dummyHeaterMap.get("Heater2"));
-        OpenemsComponent[] components = new OpenemsComponent[this.cpm.getAllComponents().size()];
-        this.cpm.getAllComponents().toArray(components);
-        new ControllerTest(new MultipleHeaterCombinedControllerImpl(), components)
-                .addReference("cpm", this.cpm)
-                .activate(MyConfig.create()
-                        .setId(id)
-                        .setHeaterIds(wrongHeaterIds)
-                        .setActivationTemperatures(activationTemperatures)
-                        .setEnabled(true)
-                        .setDeactivationTemperatures(deactivationTemperatures)
-                        .setActivationThermometer(activationThermometer)
-                        .setDeactivationThermometer(deactivationThermometer)
-                        .setServicePid("EverythingsFine")
-                        .build())
-                .next(new TestCase())
-                .next(new TestCase())
-                .next(new TestCase())
-                .next(new TestCase())
-                .next(new TestCase())
-                .next(new TestCase())
-                .next(new TestCase())
-                .next(new TestCase())
-                .next(new TestCase())
-                .next(new TestCase())
-                .next(new TestCase()
-                        .output(ChannelAddress.fromString(id + "/Error"), true)
-                ).getSut().run();
-
+    public void testWrongHeater() {
+        try {
+            this.cpm.addComponent(this.dummyHeaterMap.get("Heater2"));
+            OpenemsComponent[] components = new OpenemsComponent[this.cpm.getAllComponents().size()];
+            this.cpm.getAllComponents().toArray(components);
+            new ControllerTest(new MultipleHeaterCombinedControllerImpl(), components)
+                    .addReference("cpm", this.cpm)
+                    .activate(MyConfig.create()
+                            .setId(id)
+                            .setHeaterIds(wrongHeaterIds)
+                            .setActivationTemperatures(activationTemperatures)
+                            .setEnabled(true)
+                            .setDeactivationTemperatures(deactivationTemperatures)
+                            .setActivationThermometer(activationThermometer)
+                            .setDeactivationThermometer(deactivationThermometer)
+                            .setServicePid("wrongHeaterForTooLong")
+                            .build())
+                    .next(new TestCase())
+                    .next(new TestCase())
+                    .next(new TestCase())
+                    .next(new TestCase())
+                    .next(new TestCase())
+                    .next(new TestCase())
+                    .next(new TestCase())
+                    .next(new TestCase())
+                    .next(new TestCase())
+                    .next(new TestCase())
+                    .next(new TestCase()
+                            .output(ChannelAddress.fromString(id + "/Error"), true)
+                    ).getSut().run();
+        } catch (Exception e) {
+            Assert.fail();
+        }
     }
 
+    /**
+     * The Configuration contains a wrong Channel / ChannelAddress -> throws IllegalArgumentException
+     */
     @Test(expected = IllegalArgumentException.class)
-    public void wrongTemperaturesAndNotExistingChannel() throws Throwable {
+    public void wrongTemperaturesAndNotExistingChannel() {
         try {
             this.cpm.addComponent(this.dummyHeaterMap.get("Heater2"));
             OpenemsComponent[] components = new OpenemsComponent[this.cpm.getAllComponents().size()];
@@ -232,87 +270,107 @@ public class MyControllerTest {
                             .setDeactivationTemperatures(deactivationTemperatures)
                             .setActivationThermometer(activationThermometer)
                             .setDeactivationThermometer(deactivationThermometer)
-                            .setServicePid("EverythingsFine")
+                            .setServicePid("IllegalChannel")
                             .build())
                     .getSut().run();
         } catch (InvocationTargetException e) {
             if (e.getTargetException() instanceof IllegalArgumentException) {
-                throw e.getTargetException();
+                throw (IllegalArgumentException) e.getTargetException();
             } else {
-                throw e;
+                Assert.fail();
             }
+        } catch (Exception e) {
+            Assert.fail();
         }
     }
 
+    /**
+     * Check if the Controller reacts correctly, if an activation Thermometer is wrong.
+     */
     @Test
-    public void wrongThermometer() throws Exception{
-        this.cpm.addComponent(this.dummyHeaterMap.get("Heater2"));
-        OpenemsComponent[] components = new OpenemsComponent[this.cpm.getAllComponents().size()];
-        this.cpm.getAllComponents().toArray(components);
-        new ControllerTest(new MultipleHeaterCombinedControllerImpl(), components)
-                .addReference("cpm", this.cpm)
-                .activate(MyConfig.create()
-                        .setId(id)
-                        .setHeaterIds(wrongHeaterIds)
-                        .setActivationTemperatures(activationTemperatures)
-                        .setEnabled(true)
-                        .setDeactivationTemperatures(deactivationTemperatures)
-                        .setActivationThermometer(wrongActivationThermometer)
-                        .setDeactivationThermometer(deactivationThermometer)
-                        .setServicePid("EverythingsFine")
-                        .build())
-                .next(new TestCase())
-                .next(new TestCase())
-                .next(new TestCase())
-                .next(new TestCase())
-                .next(new TestCase())
-                .next(new TestCase())
-                .next(new TestCase())
-                .next(new TestCase())
-                .next(new TestCase())
-                .next(new TestCase())
-                .next(new TestCase()
-                        .output(ChannelAddress.fromString(id + "/Error"), true)
-                ).getSut().run();
+    public void wrongThermometer() {
+        try {
+            this.cpm.addComponent(this.dummyHeaterMap.get("Heater2"));
+            OpenemsComponent[] components = new OpenemsComponent[this.cpm.getAllComponents().size()];
+            this.cpm.getAllComponents().toArray(components);
+            new ControllerTest(new MultipleHeaterCombinedControllerImpl(), components)
+                    .addReference("cpm", this.cpm)
+                    .activate(MyConfig.create()
+                            .setId(id)
+                            .setHeaterIds(wrongHeaterIds)
+                            .setActivationTemperatures(activationTemperatures)
+                            .setEnabled(true)
+                            .setDeactivationTemperatures(deactivationTemperatures)
+                            .setActivationThermometer(wrongActivationThermometer)
+                            .setDeactivationThermometer(deactivationThermometer)
+                            .setServicePid("wrongThermometer")
+                            .build())
+                    .next(new TestCase())
+                    .next(new TestCase())
+                    .next(new TestCase())
+                    .next(new TestCase())
+                    .next(new TestCase())
+                    .next(new TestCase())
+                    .next(new TestCase())
+                    .next(new TestCase())
+                    .next(new TestCase())
+                    .next(new TestCase())
+                    .next(new TestCase()
+                            .output(ChannelAddress.fromString(id + "/Error"), true)
+                    ).getSut().run();
+        } catch (Exception e) {
+            Assert.fail();
+        }
 
     }
 
+    /**
+     * Checks if the Controller acts correctly if a Thermometer has no value.
+     */
     @Test
-    public void ThermometerWithoutValue() throws Exception {
-        this.cpm.addComponent(this.dummyHeaterMap.get("Heater2"));
-        OpenemsComponent[] components = new OpenemsComponent[this.cpm.getAllComponents().size()];
-        this.cpm.getAllComponents().toArray(components);
-        new ControllerTest(new MultipleHeaterCombinedControllerImpl(), components)
-                .addReference("cpm", this.cpm)
-                .activate(MyConfig.create()
-                        .setId(id)
-                        .setHeaterIds(correctHeaterIds)
-                        .setActivationTemperatures(activationTemperatures)
-                        .setEnabled(true)
-                        .setDeactivationTemperatures(deactivationTemperatures)
-                        .setActivationThermometer(activationThermometer)
-                        .setDeactivationThermometer(deactivationThermometer)
-                        .setServicePid("EverythingsFine")
-                        .build())
-                .next(new TestCase())
-                .next(new TestCase())
-                .next(new TestCase())
-                .next(new TestCase())
-                .next(new TestCase())
-                .next(new TestCase())
-                .next(new TestCase())
-                .next(new TestCase())
-                .next(new TestCase())
-                .next(new TestCase())
-                .next(new TestCase()
-                        .output(ChannelAddress.fromString(id + "/Error"), true)
-                ).getSut().run();
-
+    public void ThermometerWithoutValue() {
+        try {
+            this.cpm.addComponent(this.dummyHeaterMap.get("Heater2"));
+            OpenemsComponent[] components = new OpenemsComponent[this.cpm.getAllComponents().size()];
+            this.cpm.getAllComponents().toArray(components);
+            new ControllerTest(new MultipleHeaterCombinedControllerImpl(), components)
+                    .addReference("cpm", this.cpm)
+                    .activate(MyConfig.create()
+                            .setId(id)
+                            .setHeaterIds(correctHeaterIds)
+                            .setActivationTemperatures(activationTemperatures)
+                            .setEnabled(true)
+                            .setDeactivationTemperatures(deactivationTemperatures)
+                            .setActivationThermometer(activationThermometer)
+                            .setDeactivationThermometer(deactivationThermometer)
+                            .setServicePid("ThermometerNoValue")
+                            .build())
+                    .next(new TestCase())
+                    .next(new TestCase())
+                    .next(new TestCase())
+                    .next(new TestCase())
+                    .next(new TestCase())
+                    .next(new TestCase())
+                    .next(new TestCase())
+                    .next(new TestCase())
+                    .next(new TestCase())
+                    .next(new TestCase())
+                    .next(new TestCase()
+                            .output(ChannelAddress.fromString(id + "/Error"), true)
+                    ).getSut().run();
+        } catch (Exception e) {
+            Assert.fail();
+        }
     }
 
-
-    private OpenemsComponent getAndAddPreviouslyToCpm(String heaterId) {
-        OpenemsComponent component = this.dummyHeaterMap.get(heaterId);
+    /**
+     * This is a Helper method, to simulate that a Component is activated/configured later.
+     *
+     * @param componentId the componentId that will be added to the cpm
+     * @return the OpenEmsComponent seems to be activated later.
+     */
+    private OpenemsComponent getAndAddPreviouslyToCpm(String componentId) {
+        OpenemsComponent component = this.dummyHeaterMap.get(componentId);
         this.cpm.addComponent(component);
         return component;
     }
