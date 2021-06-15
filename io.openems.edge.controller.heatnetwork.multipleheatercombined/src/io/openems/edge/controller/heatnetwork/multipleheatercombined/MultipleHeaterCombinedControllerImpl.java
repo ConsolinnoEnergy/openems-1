@@ -245,7 +245,7 @@ public class MultipleHeaterCombinedControllerImpl extends AbstractOpenemsCompone
      * </p>
      */
     @Override
-    public void run() throws OpenemsError.OpenemsNamedException {
+    public void run() {
         if (this.configurationSuccess) {
             AtomicBoolean heaterError = new AtomicBoolean(false);
             AtomicBoolean isHeating = new AtomicBoolean(false);
@@ -291,11 +291,12 @@ public class MultipleHeaterCombinedControllerImpl extends AbstractOpenemsCompone
                 this.allocateConfig(this.config.heaterIds(), this.config.activationThermometers(), this.config.activationTemperatures(),
                         this.config.deactivationThermometers(), this.config.deactivationTemperatures());
                 this.configurationSuccess = true;
-            } catch (ConfigurationException e) {
+            } catch (ConfigurationException | OpenemsError.OpenemsNamedException e) {
                 //In the first few Cycles some Components May not be activated, only warn user when the Max Wait Count is reached.
                 //since this should only happen on restart -> no reset is necessary
                 if (this.configurationCounter.get() >= MAX_WAIT_COUNT) {
                     this.log.warn("Couldn't set Configuration for Controller : " + super.id() + " Check the Configuration of this Controller!");
+                    this.getHasErrorChannel().setNextValue(true);
                 } else {
                     this.configurationCounter.getAndIncrement();
                 }

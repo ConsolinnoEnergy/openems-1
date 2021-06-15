@@ -18,7 +18,7 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 
-public class MyControllerTest {
+public class  MyControllerTest {
     private static final String id = "test";
 
     private static final String valveToControl = "testValve";

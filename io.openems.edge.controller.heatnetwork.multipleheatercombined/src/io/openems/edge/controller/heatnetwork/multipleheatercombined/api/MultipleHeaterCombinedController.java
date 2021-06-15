@@ -75,21 +75,6 @@ public interface MultipleHeaterCombinedController extends OpenemsComponent {
     }
 
     /**
-     * Check if the Controller is ok.
-     *
-     * @return a boolean
-     */
-    default boolean getIsOk() {
-        if (this.getOkChannel().value().isDefined()) {
-            return this.getOkChannel().value().get();
-        } else if (this.getOkChannel().getNextValue().isDefined()) {
-            return this.getOkChannel().getNextValue().get();
-        } else {
-            return true;
-        }
-    }
-
-    /**
      * Get the Error Channel.
      *
      * @return the channel.

@@ -13,6 +13,12 @@ public class MyConfig extends AbstractComponentConfig implements Config {
         private String id;
         private String alias;
         private boolean enabled = true;
+        private String[] heaterIds;
+        private String[] activationTemperatures;
+        private String[] deactivationTemperatures;
+        private String[] activationThermometers;
+        private String[] deactivationThermometers;
+        private String servicePid;
 
         private Builder() {
         }
@@ -28,8 +34,33 @@ public class MyConfig extends AbstractComponentConfig implements Config {
             return this;
         }
 
+        public Builder setHeaterIds(String[] heaterIds) {
+            this.heaterIds = heaterIds;
+            return this;
+        }
+        public Builder setActivationTemperatures(String[] activationTemperatures){
+            this.activationTemperatures = activationTemperatures;
+            return this;
+        }
+        public Builder setDeactivationTemperatures(String[] deactivationTemperatures){
+            this.deactivationTemperatures = deactivationTemperatures;
+            return this;
+        }
+        public Builder setActivationThermometer(String[] activationThermometers){
+            this.activationThermometers = activationThermometers;
+            return this;
+        }
+        public Builder setDeactivationThermometer(String[] deactivationThermometers){
+            this.deactivationThermometers = deactivationThermometers;
+            return this;
+        }
         public MyConfig build() {
             return new MyConfig(this);
+        }
+
+        public Builder setServicePid(String pid) {
+            this.servicePid = pid;
+            return this;
         }
     }
 
@@ -52,32 +83,32 @@ public class MyConfig extends AbstractComponentConfig implements Config {
 
     @Override
     public String service_pid() {
-        return null;
+        return this.builder.servicePid;
     }
 
     @Override
     public String[] heaterIds() {
-        return new String[0];
+        return this.builder.heaterIds;
     }
 
     @Override
     public String[] activationTemperatures() {
-        return new String[0];
+        return this.builder.activationTemperatures;
     }
 
     @Override
     public String[] deactivationTemperatures() {
-        return new String[0];
+        return this.builder.deactivationTemperatures;
     }
 
     @Override
     public String[] activationThermometers() {
-        return new String[0];
+        return this.builder.activationThermometers;
     }
 
     @Override
     public String[] deactivationThermometers() {
-        return new String[0];
+        return this.builder.deactivationThermometers;
     }
 
     @Override

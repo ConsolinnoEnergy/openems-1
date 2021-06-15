@@ -11,7 +11,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * This class helps to get the Correct Thermometer of the corresponding Heater as well as "setpoints" for the Thermometer.
+ * This class helps to get the Correct Thermometer of the corresponding Heater as well as "setPoints" for the Thermometer.
  * Provides the methods to check, if min or max temperature is reached --> therefore heater can activate/deactivate correctly.
  */
 
@@ -36,7 +36,7 @@ class ThermometerWrapper {
 
     }
 
-    private class ThermometerValue {
+    private static class ThermometerValue {
         private int temperatureValue;
         private ChannelAddress temperatureValueAddress;
         private boolean usesChannel;
