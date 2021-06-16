@@ -5,6 +5,8 @@ import io.openems.edge.common.component.AbstractOpenemsComponent;
 import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.common.event.EdgeEventConstants;
+import io.openems.edge.ess.api.AsymmetricEss;
+import io.openems.edge.ess.api.SymmetricEss;
 import io.openems.edge.evcs.api.ManagedEvcs;
 import org.joda.time.DateTime;
 import org.osgi.service.cm.ConfigurationException;
@@ -73,6 +75,8 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
     private int powerLimit;
     private int offTime;
     private boolean symmetry;
+    private boolean useMeter;
+    private AsymmetricEss meter;
 
     @Reference
     ComponentManager cpm;
@@ -85,6 +89,10 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
     @Activate
     void activate(ComponentContext context, Config config) throws ConfigurationException {
         super.activate(context, config.id(), config.alias(), config.enabled());
+        this.useMeter = config.useMeter();
+        if (this.useMeter && !this.checkMeter(config.meter())) {
+            throw new ConfigurationException("Configured Meter is not an Asymmetric Meter.", "Check config");
+        }
         this.ids = config.evcss();
         this.evcss = new ManagedEvcs[this.ids.length];
         this.symmetry = config.symmetry();
@@ -96,11 +104,32 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
 
     }
 
+    private boolean checkMeter(String meter) {
+
+        try {
+            OpenemsComponent component = this.cpm.getComponent(meter);
+            if (component instanceof AsymmetricEss) {
+                this.meter = (AsymmetricEss) component;
+                return true;
+            } else if (component instanceof SymmetricEss) {
+                return false;
+            }
+
+        } catch (OpenemsError.OpenemsNamedException e) {
+            return false;
+        }
+        return false;
+    }
+
     @Modified
-    void modified(ComponentContext context, Config config) throws ConfigurationException, OpenemsError.OpenemsNamedException {
+    void modified(ComponentContext context, Config config) throws ConfigurationException {
         super.modified(context, config.id(), config.alias(), config.enabled());
         String[] ids = config.evcss();
         this.evcss = new ManagedEvcs[ids.length];
+        this.useMeter = config.useMeter();
+        if (this.useMeter && !this.checkMeter(config.meter())) {
+            throw new ConfigurationException("Configured Meter is not an Asymmetric Meter.", "Check config");
+        }
         this.symmetry = config.symmetry();
         this.phaseLimit = config.phaseLimit();
         this.powerLimit = config.powerLimit();
@@ -108,6 +137,7 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
         this.updateEvcss();
 
     }
+
 
     @Deactivate
     protected void deactivate() {
@@ -2096,9 +2126,21 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
      */
     private void updatePower(boolean tempered) {
 
-        this.powerL1 = 0;
-        this.powerL2 = 0;
-        this.powerL3 = 0;
+        int l1Offset = 0;
+        int l2Offset = 0;
+        int l3Offset = 0;
+        if (this.useMeter) {
+            int l1 = this.meter.getActivePowerL1().orElse(0) / GRID_VOLTAGE;
+            int l2 = this.meter.getActivePowerL2().orElse(0) / GRID_VOLTAGE;
+            int l3 = this.meter.getActivePowerL3().orElse(0) / GRID_VOLTAGE;
+            int minPower = Math.min(Math.min(l1, l2), l3);
+            l1Offset = l1 - minPower;
+            l2Offset = l2 - minPower;
+            l3Offset = l3 - minPower;
+        }
+        this.powerL1 = l1Offset;
+        this.powerL2 = l2Offset;
+        this.powerL3 = l3Offset;
         //Updates current Power Consumption
         if (!tempered) {
             for (int i = 0; i < this.evcss.length; i++) {
@@ -2451,7 +2493,7 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
                 if (!this.powerWaitingList.containsKey(this.evcss[i].id())) {
                     int minHwPower = this.evcss[i].getMinimumHardwarePower().orElse(8);
                     int minSwPower = this.evcss[i].getMinimumPower().orElse(8);
-                    int minPower = Math.min(minHwPower,minSwPower);
+                    int minPower = Math.min(minHwPower, minSwPower);
                     this.powerWaitingList.put(this.evcss[i].id(), new EvcsOnHold(minPower, new DateTime(), this.evcss[i].getPhases().orElse(0)));
                 }
             } catch (OpenemsError.OpenemsNamedException e) {

@@ -17,6 +17,11 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     @AttributeDefinition(name = "evcsIDs", description = "Ids of the EVCS that have to be managed.")
     String[] evcss() default {"evcs0","evcs1"};
 
+    @AttributeDefinition(name = "MeterID", description = "Id of the Meter.")
+    boolean useMeter() default true;
+    @AttributeDefinition(name = "MeterID", description = "Id of the Meter.")
+    String meter() default "";
+
     @AttributeDefinition(name = "symmetry", description = "Check if the EVCS should stay balanced in their load.")
     boolean symmetry() default true;
 
