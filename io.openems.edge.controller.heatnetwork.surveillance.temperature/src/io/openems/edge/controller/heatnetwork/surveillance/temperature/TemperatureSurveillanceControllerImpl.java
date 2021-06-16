@@ -11,6 +11,8 @@ import io.openems.edge.controller.heatnetwork.valve.api.ValveController;
 import io.openems.edge.heater.Heater;
 import io.openems.edge.thermometer.api.Thermometer;
 import io.openems.edge.thermometer.api.ThermometerThreshold;
+import io.openems.edge.timer.api.TimerHandler;
+import io.openems.edge.timer.api.TimerHandlerImpl;
 import org.joda.time.DateTime;
 import org.osgi.service.cm.ConfigurationException;
 import org.osgi.service.component.ComponentContext;
@@ -18,22 +20,34 @@ import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.ConfigurationPolicy;
 import org.osgi.service.component.annotations.Deactivate;
+import org.osgi.service.component.annotations.Modified;
 import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 
 @Designate(ocd = Config.class, factory = true)
 @Component(name = "controller.temperature.surveillance",
         immediate = true,
         configurationPolicy = ConfigurationPolicy.REQUIRE)
-public class TemperatureSurveillanceControllerImpl extends AbstractOpenemsComponent implements OpenemsComponent, Controller, TemperatureSurveillanceController {
+public class TemperatureSurveillanceControllerImpl extends AbstractOpenemsComponent implements OpenemsComponent,
+        Controller, TemperatureSurveillanceController {
 
     private final Logger log = LoggerFactory.getLogger(TemperatureSurveillanceControllerImpl.class);
 
     @Reference
     ComponentManager cpm;
+
+    private Config config;
+    private boolean configSuccess;
+    private AtomicInteger cycleCount;
+    private static final int MAX_CYCLE_FOR_CONFIG = 10;
     //Different ThresholdThermometer
     private Thermometer referenceThermometer;
     private Thermometer activationThermometer;
@@ -44,9 +58,10 @@ public class TemperatureSurveillanceControllerImpl extends AbstractOpenemsCompon
     private Heater optionalHeater;
     private TemperatureSurveillanceType surveillanceType;
     private DateTime initialWaitTimeStamp;
-    private int waitTimeInSeconds;
-    private boolean hadToWaitBefore;
     private boolean isRunning;
+    private static final String VALVE_IDENTIFIER = "TEMP_SURVEILLANCE_VALVE_IDENTIFIER";
+    private TimerHandler timer;
+
 
     public TemperatureSurveillanceControllerImpl() {
         super(OpenemsComponent.ChannelId.values(),
@@ -55,34 +70,88 @@ public class TemperatureSurveillanceControllerImpl extends AbstractOpenemsCompon
 
 
     @Activate
-    public void activate(ComponentContext context, Config config) throws ConfigurationException, OpenemsError.OpenemsNamedException {
+    void activate(ComponentContext context, Config config) throws ConfigurationException {
         super.activate(context, config.id(), config.alias(), config.enabled());
-        if (config.thermometerActivateId().equals(config.thermometerDeactivateId()) || config.thermometerActivateId().equals(config.referenceThermometerId())) {
+        this.activationOrModifiedRoutine(config);
+    }
+
+    private void activationOrModifiedRoutine(Config config) throws ConfigurationException {
+        this.config = config;
+        if (this.configContainsSameThermometerIds(config.thermometerActivateId(), config.thermometerDeactivateId(), config.referenceThermometerId())) {
+            this.configSuccess = false;
             throw new ConfigurationException("Activate - TemperatureSurveillanceController",
                     "Activate and Deactivate and Reference Thermometer are not allowed to be the same! "
                             + config.thermometerActivateId() + config.thermometerDeactivateId() + config.referenceThermometerId());
         }
-        allocateComponents(config);
-        //other config setup
-        this.activationOffset = config.offsetActivate();
-        this.deactivationOffset = config.offsetDeactivate();
-        this.waitTimeInSeconds = config.timeToWait();
-        if (config.useHeater() && config.useValveController()) {
-            this.surveillanceType = TemperatureSurveillanceType.HEATER_AND_VALVE_CONTROLLER;
-        } else if (config.useValveController()) {
-            this.surveillanceType = TemperatureSurveillanceType.VALVE_CONTROLLER_ONLY;
-        } else if (config.useHeater()) {
-            this.surveillanceType = TemperatureSurveillanceType.HEATER_ONLY;
-        } else {
-            this.surveillanceType = TemperatureSurveillanceType.NOTHING;
+        try {
+            this.allocateComponents(config);
+            //other config setup
+            this.activationOffset = config.offsetActivate();
+            this.deactivationOffset = config.offsetDeactivate();
+            if (config.useHeater() && config.useValveController()) {
+                this.surveillanceType = TemperatureSurveillanceType.HEATER_AND_VALVE_CONTROLLER;
+            } else if (config.useValveController()) {
+                this.surveillanceType = TemperatureSurveillanceType.VALVE_CONTROLLER_ONLY;
+            } else if (config.useHeater()) {
+                this.surveillanceType = TemperatureSurveillanceType.HEATER_ONLY;
+            } else {
+                this.surveillanceType = TemperatureSurveillanceType.NOTHING;
+            }
+            this.initializeTimer(config);
+            this.configSuccess = true;
+        } catch (OpenemsError.OpenemsNamedException | ConfigurationException e) {
+            this.log.warn("Couldn't allocate Components, this Controller will try again later " + super.id());
         }
-
-
     }
 
+    /**
+     * Init the Timer to the identifier.
+     *
+     * @param config the config of this component
+     * @throws OpenemsError.OpenemsNamedException if the timer couldn't be found
+     * @throws ConfigurationException             if id is found but they're not instances of a Timer
+     */
+
+    private void initializeTimer(Config config) throws OpenemsError.OpenemsNamedException, ConfigurationException {
+        if (this.surveillanceType.equals(TemperatureSurveillanceType.HEATER_AND_VALVE_CONTROLLER)) {
+            this.timer = new TimerHandlerImpl(super.id(), this.cpm);
+            this.timer.addOneIdentifier(VALVE_IDENTIFIER, config.timerTypeValve(), config.timeToWaitValveOpen());
+        }
+    }
+
+    @Modified
+    void modified(ComponentContext context, Config config) throws ConfigurationException {
+        super.modified(context, config.id(), config.alias(), config.enabled());
+        this.activationOrModifiedRoutine(config);
+    }
+
+    private boolean configContainsSameThermometerIds(String... ids) {
+        List<String> idList = new ArrayList<>();
+        List<String> doubleIds = new ArrayList<>();
+        Arrays.stream(ids).forEach(entry -> {
+            if (idList.contains(entry)) {
+                doubleIds.add(entry);
+            } else {
+                idList.add(entry);
+            }
+        });
+        if (doubleIds.size() > 0) {
+            this.log.error("Duplicated Thermometer ids found: " + doubleIds.toString());
+            return false;
+        } else {
+            return true;
+        }
+    }
+
+    /**
+     * Allocates the Components corresponding to the Config.
+     * @param config the config of the Component
+     * @throws ConfigurationException if the componentIds are available in the OpenEMS Edge but not an instance of the correct Class
+     * @throws OpenemsError.OpenemsNamedException if the id couldn't be found at all.
+     */
     private void allocateComponents(Config config) throws ConfigurationException, OpenemsError.OpenemsNamedException {
         OpenemsComponent openemsComponentToAllocate;
-        openemsComponentToAllocate = cpm.getComponent(config.referenceThermometerId());
+        openemsComponentToAllocate = this.cpm.getComponent(config.referenceThermometerId());
         if (openemsComponentToAllocate instanceof Thermometer) {
             this.referenceThermometer = (Thermometer) openemsComponentToAllocate;
         } else {
@@ -91,14 +160,14 @@ public class TemperatureSurveillanceControllerImpl extends AbstractOpenemsCompon
         }
 
 
-        openemsComponentToAllocate = cpm.getComponent(config.thermometerActivateId());
+        openemsComponentToAllocate = this.cpm.getComponent(config.thermometerActivateId());
         if (openemsComponentToAllocate instanceof Thermometer) {
             this.activationThermometer = (Thermometer) openemsComponentToAllocate;
         } else {
             throw new ConfigurationException("AllocateComponents", "ThresholdThermometerId: "
                     + config.thermometerActivateId() + " Not an Instance of ThresholdThermometer");
         }
-        openemsComponentToAllocate = cpm.getComponent(config.thermometerDeactivateId());
+        openemsComponentToAllocate = this.cpm.getComponent(config.thermometerDeactivateId());
         if (openemsComponentToAllocate instanceof Thermometer) {
             this.deactivationThermometer = (Thermometer) openemsComponentToAllocate;
         } else {
@@ -106,7 +175,7 @@ public class TemperatureSurveillanceControllerImpl extends AbstractOpenemsCompon
                     + config.thermometerDeactivateId() + " Not an Instance of ThresholdThermometer");
         }
         if (config.useHeater()) {
-            openemsComponentToAllocate = cpm.getComponent(config.heaterId());
+            openemsComponentToAllocate = this.cpm.getComponent(config.heaterId());
             if (openemsComponentToAllocate instanceof Heater) {
                 this.optionalHeater = (Heater) openemsComponentToAllocate;
             } else {
@@ -115,7 +184,7 @@ public class TemperatureSurveillanceControllerImpl extends AbstractOpenemsCompon
             }
         }
         if (config.useValveController()) {
-            openemsComponentToAllocate = cpm.getComponent(config.valveControllerId());
+            openemsComponentToAllocate = this.cpm.getComponent(config.valveControllerId());
             if (openemsComponentToAllocate instanceof ValveController) {
                 this.optionalValveController = (ValveController) openemsComponentToAllocate;
             } else {
@@ -126,19 +195,19 @@ public class TemperatureSurveillanceControllerImpl extends AbstractOpenemsCompon
     }
 
     @Deactivate
-    public void deactivate() {
+    protected void deactivate() {
         super.deactivate();
     }
 
     /**
      * Depending on SurveillanceType Different "Controlling" applies
-     * If AcitvationConditions apply (Same for every SurveillanceType).
+     * If ActivationConditions apply (Same for every SurveillanceType).
      * <p>
      * Either: Enable HEATER (on Heater ONLY mode)
      * OR
      * Enable ValveController (on ValveController ONLY Mode
      * OR
-     * First Enable Heater and then after certain WaitTime Enable ValveController (HEATER_AND_VALVE_CONTROLLER.
+     * First Enable Heater and then after certain WaitTime Enable ValveController (HEATER_AND_VALVE_CONTROLLER).
      * on deactivation: Disable corresponding Components
      * </p>
      *
@@ -146,36 +215,49 @@ public class TemperatureSurveillanceControllerImpl extends AbstractOpenemsCompon
      */
     @Override
     public void run() throws OpenemsError.OpenemsNamedException {
-        try {
-            checkForMissingComponents();
-        } catch (OpenemsError.OpenemsNamedException e) {
-            this.log.warn("Couldn't reallocate All components: " + e.getMessage());
-        }
-        if (activationConditionsApply() || isRunning) {
-            isRunning = true;
-            switch (this.surveillanceType) {
-                case HEATER_ONLY:
-                    this.optionalHeater.getEnableSignalChannel().setNextWriteValue(true);
-                    break;
-                case VALVE_CONTROLLER_ONLY:
-                    this.optionalValveController.setEnableSignal(true);
-                    this.optionalValveController.setControlType(ControlType.TEMPERATURE);
-                    break;
-                case HEATER_AND_VALVE_CONTROLLER:
-                    this.optionalHeater.getEnableSignalChannel().setNextWriteValue(true);
-                    if (checkIsTimeUp()) {
-                        this.hadToWaitBefore = false;
+        if (this.configSuccess) {
+            try {
+                this.checkForMissingComponents();
+            } catch (OpenemsError.OpenemsNamedException e) {
+                this.log.warn("Couldn't reallocate All components: " + e.getMessage());
+            }
+            if (this.activationConditionsApply() || this.isRunning) {
+                this.isRunning = true;
+                switch (this.surveillanceType) {
+                    case HEATER_ONLY:
+                        this.optionalHeater.getEnableSignalChannel().setNextWriteValue(true);
+                        break;
+                    case VALVE_CONTROLLER_ONLY:
                         this.optionalValveController.setEnableSignal(true);
                         this.optionalValveController.setControlType(ControlType.TEMPERATURE);
-                    } else {
-                        this.optionalValveController.setEnableSignal(false);
-                    }
-                    break;
-                case NOTHING:
-                    break;
+                        break;
+                    case HEATER_AND_VALVE_CONTROLLER:
+                        this.optionalHeater.getEnableSignalChannel().setNextWriteValue(true);
+                        if (this.timer.checkTimeIsUp(VALVE_IDENTIFIER)) {
+                            this.optionalValveController.setEnableSignal(true);
+                            this.optionalValveController.setControlType(ControlType.TEMPERATURE);
+                        } else {
+                            this.optionalValveController.setEnableSignal(false);
+                        }
+                        break;
+                    case NOTHING:
+                        break;
+                }
+            } else if (this.deactivationConditionsApply()) {
+                this.isRunning = false;
             }
-        } else if (deactivationConditionsApply()) {
-            isRunning = false;
+        } else {
+            try {
+                this.allocateComponents(this.config);
+                this.configSuccess = true;
+            } catch (ConfigurationException e) {
+                if (this.cycleCount.get() > MAX_CYCLE_FOR_CONFIG) {
+                    this.log.warn("Couldn't allocate Configuration for component: " + super.id());
+                } else {
+                    this.cycleCount.getAndIncrement();
+                }
+                this.configSuccess = false;
+            }
         }
     }
 
@@ -187,13 +269,13 @@ public class TemperatureSurveillanceControllerImpl extends AbstractOpenemsCompon
     private void checkForMissingComponents() throws OpenemsError.OpenemsNamedException {
         OpenemsComponent allocatedOpenemsComponent;
         if (this.activationThermometer.isEnabled() == false) {
-            allocatedOpenemsComponent = cpm.getComponent(this.activationThermometer.id());
+            allocatedOpenemsComponent = this.cpm.getComponent(this.activationThermometer.id());
             if (allocatedOpenemsComponent instanceof ThermometerThreshold) {
                 this.activationThermometer = (ThermometerThreshold) allocatedOpenemsComponent;
             }
         }
         if (this.deactivationThermometer.isEnabled() == false) {
-            allocatedOpenemsComponent = cpm.getComponent(this.deactivationThermometer.id());
+            allocatedOpenemsComponent = this.cpm.getComponent(this.deactivationThermometer.id());
             if (allocatedOpenemsComponent instanceof ThermometerThreshold) {
                 this.deactivationThermometer = (ThermometerThreshold) allocatedOpenemsComponent;
             }
@@ -204,7 +286,7 @@ public class TemperatureSurveillanceControllerImpl extends AbstractOpenemsCompon
         if (this.surveillanceType.equals(TemperatureSurveillanceType.HEATER_ONLY)
                 || this.surveillanceType.equals(TemperatureSurveillanceType.HEATER_AND_VALVE_CONTROLLER)) {
             if (this.optionalHeater.isEnabled() == false) {
-                allocatedOpenemsComponent = cpm.getComponent(this.optionalHeater.id());
+                allocatedOpenemsComponent = this.cpm.getComponent(this.optionalHeater.id());
                 if (allocatedOpenemsComponent instanceof Heater) {
                     this.optionalHeater = (Heater) allocatedOpenemsComponent;
                 }
@@ -214,32 +296,12 @@ public class TemperatureSurveillanceControllerImpl extends AbstractOpenemsCompon
         if (this.surveillanceType.equals(TemperatureSurveillanceType.VALVE_CONTROLLER_ONLY)
                 || this.surveillanceType.equals(TemperatureSurveillanceType.HEATER_AND_VALVE_CONTROLLER)) {
             if (this.optionalValveController.isEnabled() == false) {
-                allocatedOpenemsComponent = cpm.getComponent(this.optionalValveController.id());
+                allocatedOpenemsComponent = this.cpm.getComponent(this.optionalValveController.id());
                 if (allocatedOpenemsComponent instanceof ValveController) {
                     this.optionalValveController = (ValveController) allocatedOpenemsComponent;
                 }
             }
         }
-    }
-
-    /**
-     * Check if Time To Wait is up by creating initialTimeStamp first; return false
-     * And after that, check if TimeStamp + Waittime is after current Time.
-     *
-     * @return the TimeStampCheck
-     */
-    private boolean checkIsTimeUp() {
-        if (hadToWaitBefore == false) {
-            this.hadToWaitBefore = true;
-            this.initialWaitTimeStamp = DateTime.now();
-            return false;
-        } else {
-            DateTime now = DateTime.now();
-            DateTime compare = new DateTime(this.initialWaitTimeStamp);
-            compare = compare.plusSeconds(this.waitTimeInSeconds);
-            return now.isAfter(compare);
-        }
-
     }
 
     /**

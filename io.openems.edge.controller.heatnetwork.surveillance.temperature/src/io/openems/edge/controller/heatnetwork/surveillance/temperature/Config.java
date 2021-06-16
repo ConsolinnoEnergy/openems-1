@@ -42,8 +42,11 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     @AttributeDefinition(name = "Heater Id")
     String heaterId() default "Heater0";
 
-    @AttributeDefinition(name = "WaitTime in seconds", description = "How long to Wait till Valve Opens (after Heat activation) t in seconds")
-    int timeToWait() default 120;
+    @AttributeDefinition(name = "Timer for Valve", description = "Timer Id either TimerByTime or TimerByCycles Id")
+    String timerTypeValve() default "TimerByCycles";
+
+    @AttributeDefinition(name = "WaitTime or WaitCycles ValveOpen", description = "How long to wait till Valve Opens (after Heat activation) t in seconds")
+    int timeToWaitValveOpen() default 120;
 
     boolean enabled() default true;
 
