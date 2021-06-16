@@ -84,19 +84,11 @@ public class TemperatureSurveillanceControllerImpl extends AbstractOpenemsCompon
                             + config.thermometerActivateId() + config.thermometerDeactivateId() + config.referenceThermometerId());
         }
         try {
-            this.allocateComponents(config);
-            //other config setup
+            this.surveillanceType = config.surveillanceType();
             this.activationOffset = config.offsetActivate();
             this.deactivationOffset = config.offsetDeactivate();
-            if (config.useHeater() && config.useValveController()) {
-                this.surveillanceType = TemperatureSurveillanceType.HEATER_AND_VALVE_CONTROLLER;
-            } else if (config.useValveController()) {
-                this.surveillanceType = TemperatureSurveillanceType.VALVE_CONTROLLER_ONLY;
-            } else if (config.useHeater()) {
-                this.surveillanceType = TemperatureSurveillanceType.HEATER_ONLY;
-            } else {
-                this.surveillanceType = TemperatureSurveillanceType.NOTHING;
-            }
+            this.allocateComponents(config);
+            //other config setup
             this.initializeTimer(config);
             this.configSuccess = true;
         } catch (OpenemsError.OpenemsNamedException | ConfigurationException e) {
@@ -115,7 +107,7 @@ public class TemperatureSurveillanceControllerImpl extends AbstractOpenemsCompon
     private void initializeTimer(Config config) throws OpenemsError.OpenemsNamedException, ConfigurationException {
         if (this.surveillanceType.equals(TemperatureSurveillanceType.HEATER_AND_VALVE_CONTROLLER)) {
             this.timer = new TimerHandlerImpl(super.id(), this.cpm);
-            this.timer.addOneIdentifier(VALVE_IDENTIFIER, config.timerTypeValve(), config.timeToWaitValveOpen());
+            this.timer.addOneIdentifier(VALVE_IDENTIFIER, config.timerId(), config.timeToWaitValveOpen());
         }
     }
 
@@ -174,7 +166,8 @@ public class TemperatureSurveillanceControllerImpl extends AbstractOpenemsCompon
             throw new ConfigurationException("AllocateComponents", "ThresholdThermometerId: "
                     + config.thermometerDeactivateId() + " Not an Instance of ThresholdThermometer");
         }
-        if (config.useHeater()) {
+        if (this.surveillanceType.equals(TemperatureSurveillanceType.HEATER_AND_VALVE_CONTROLLER)
+                || this.surveillanceType.equals(TemperatureSurveillanceType.HEATER_ONLY)) {
             openemsComponentToAllocate = this.cpm.getComponent(config.heaterId());
             if (openemsComponentToAllocate instanceof Heater) {
                 this.optionalHeater = (Heater) openemsComponentToAllocate;
@@ -183,7 +176,8 @@ public class TemperatureSurveillanceControllerImpl extends AbstractOpenemsCompon
                         + config.heaterId() + " Not an Instance of Heater");
             }
         }
-        if (config.useValveController()) {
+        if (this.surveillanceType.equals(TemperatureSurveillanceType.HEATER_AND_VALVE_CONTROLLER)
+                || this.surveillanceType.equals(TemperatureSurveillanceType.VALVE_CONTROLLER_ONLY)) {
             openemsComponentToAllocate = this.cpm.getComponent(config.valveControllerId());
             if (openemsComponentToAllocate instanceof ValveController) {
                 this.optionalValveController = (ValveController) openemsComponentToAllocate;

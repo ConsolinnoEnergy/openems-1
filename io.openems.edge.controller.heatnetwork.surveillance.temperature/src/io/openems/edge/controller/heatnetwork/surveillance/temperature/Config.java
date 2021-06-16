@@ -22,28 +22,24 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     @AttributeDefinition(name = "TemperatureOffset Activate", description = "If Reference < ActivateThermometer + Offset --> Control Components; Offset in dC")
     int offsetActivate() default 100;
 
-
-
     @AttributeDefinition(name = "Thermometer Deactivate", description = "Deactivation Thermometer")
     String thermometerDeactivateId() default "ThresholdThermometer1";
 
     @AttributeDefinition(name = "TemperatureOffset Deactivate", description = "If Reference > Deactivate thermometer + Offset --> Deactivate: Unit dC")
     int offsetDeactivate() default -100;
 
-    @AttributeDefinition(name = "Use ValveController")
-    boolean useValveController() default true;
+    @AttributeDefinition(name = "SurveillanceType", description = "Set the Surveillance Type")
+    TemperatureSurveillanceType surveillanceType() default TemperatureSurveillanceType.HEATER_AND_VALVE_CONTROLLER;
 
     @AttributeDefinition(name = "ValveControllerId", description = "Unique Id of the ValveController you want to use")
     String valveControllerId() default "ValveController0";
 
-    @AttributeDefinition(name = "Use Heater")
-    boolean useHeater() default true;
 
     @AttributeDefinition(name = "Heater Id")
     String heaterId() default "Heater0";
 
     @AttributeDefinition(name = "Timer for Valve", description = "Timer Id either TimerByTime or TimerByCycles Id")
-    String timerTypeValve() default "TimerByCycles";
+    String timerId() default "TimerByCycles";
 
     @AttributeDefinition(name = "WaitTime or WaitCycles ValveOpen", description = "How long to wait till Valve Opens (after Heat activation) t in seconds")
     int timeToWaitValveOpen() default 120;
