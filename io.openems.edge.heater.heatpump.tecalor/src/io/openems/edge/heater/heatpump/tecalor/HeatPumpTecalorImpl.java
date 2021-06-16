@@ -16,7 +16,7 @@ import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.common.event.EdgeEventConstants;
 import io.openems.edge.common.taskmanager.Priority;
 import io.openems.edge.heater.heatpump.tecalor.api.HeatpumpTecalorChannel;
-import io.openems.edge.heater.api.HeatpumpSmartGridGeneralizedChannel;
+import io.openems.edge.heater.api.HeatpumpSmartGrid;
 import java.util.Optional;
 import org.osgi.service.cm.ConfigurationAdmin;
 import org.osgi.service.component.ComponentContext;
@@ -64,7 +64,7 @@ public class HeatPumpTecalorImpl extends AbstractOpenemsModbusComponent implemen
 	public HeatPumpTecalorImpl() {
 		super(OpenemsComponent.ChannelId.values(),
 				HeatpumpTecalorChannel.ChannelId.values(),
-				HeatpumpSmartGridGeneralizedChannel.ChannelId.values());
+				HeatpumpSmartGrid.ChannelId.values());
 	}
 
 	@Activate
@@ -337,26 +337,26 @@ public class HeatPumpTecalorImpl extends AbstractOpenemsModbusComponent implemen
 			boolean verdichterAktiv = (statusBits & 64) == 64;
 			boolean kuehlbetrieb = (statusBits & 256) == 256;
 			boolean isRunning = aufheizprogramm || nhzAktiv || heizbetrieb || warmwasserbetrieb || verdichterAktiv || kuehlbetrieb;
-			this.channel(HeatpumpSmartGridGeneralizedChannel.ChannelId.RUNNING).setNextValue(isRunning);
+			this.channel(HeatpumpSmartGrid.ChannelId.RUNNING).setNextValue(isRunning);
 		}
 
 		// Map SG generalized "Ready"
 		if (this.getErrorStatus().isDefined() && this.getEvuClearance().isDefined()) {
 			// Define "isReady" as no error and EVU clearance = true.
 			boolean ready = !this.getErrorStatus().get() && this.getEvuClearance().get();
-			this.channel(HeatpumpSmartGridGeneralizedChannel.ChannelId.READY).setNextValue(ready);
+			this.channel(HeatpumpSmartGrid.ChannelId.READY).setNextValue(ready);
 		}
 
 		// Map SG generalized "Error"
 		if (this.getErrorStatus().isDefined()) {
 			boolean error = this.getErrorStatus().get();
-			this.channel(HeatpumpSmartGridGeneralizedChannel.ChannelId.ERROR).setNextValue(error);
+			this.channel(HeatpumpSmartGrid.ChannelId.ERROR).setNextValue(error);
 		}
 
 		// Map SG generalized "SmartGridState" read values.
 		if (this.getSgReadyOperatingMode().isDefined()) {
 			int generalizedSgState = this.getSgReadyOperatingMode().get() - 1;
-			this.channel(HeatpumpSmartGridGeneralizedChannel.ChannelId.SMART_GRID_STATE).setNextValue(generalizedSgState);
+			this.channel(HeatpumpSmartGrid.ChannelId.SMART_GRID_STATE).setNextValue(generalizedSgState);
 		}
 
 		// Map SG generalized "SmartGridState" write values.

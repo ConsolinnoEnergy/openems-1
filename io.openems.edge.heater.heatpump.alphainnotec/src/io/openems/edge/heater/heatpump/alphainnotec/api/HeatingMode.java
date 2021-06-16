@@ -8,10 +8,10 @@ import io.openems.common.types.OptionsEnum;
 
 public enum HeatingMode implements OptionsEnum {
 	UNDEFINED(-1, "Undefined"), //
-	AUTOMATIK(0, "Automatik"), //
-	ZUSAETZLICHER_WAERMEERZEUGER(1, "Zusätzlicher Wärmeerzeuger"), //
-	PARTY(2, "Party"), //
-	FERIEN(3, "Ferien"), //
+	AUTOMATIC(0, "Automatic"), //
+	AUXILIARY_HEATER(1, "Auxiliary heater (Zusätzlicher Wärmeerzeuger)"), //
+	PARTY(2, "No late night throttling (Party)"), //
+	VACATION(3, "Vacation, full time throttling (Ferien)"), //
 	OFF(4, "Off"); //
 
 	private int value;

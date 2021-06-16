@@ -10,20 +10,20 @@ import io.openems.edge.common.channel.Doc;
 import io.openems.edge.common.channel.IntegerReadChannel;
 import io.openems.edge.common.channel.IntegerWriteChannel;
 import io.openems.edge.common.channel.value.Value;
-import io.openems.edge.heater.api.HeatpumpSmartGridGeneralizedChannel;
+import io.openems.edge.heater.api.HeatpumpSmartGrid;
 
 /**
  * Channels for the Alpha Innotec heat pump.
  */
 
-public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGridGeneralizedChannel {
+public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
 
     public enum ChannelId implements io.openems.edge.common.channel.ChannelId {
 
         // Discrete Inputs (DI) 0 to 7, read only. 0 = Off, 1 = On. Represented as boolean
 
         /**
-         * Scheduled off time (EVU, Energie Versorger Unterbrechung).
+         * El.Sup.bl., electric supplier block (EVU, Energie Versorger Unterbrechung).
          * <ul>
          *      <li> Type: Boolean
          * </ul>
@@ -31,7 +31,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGridGeneralize
         DI_0_EVU(Doc.of(OpenemsType.BOOLEAN).unit(Unit.ON_OFF)),
 
         /**
-         * Smart grid scheduled off time (EVU2). Like EVU, but triggered because of smart grid setting.
+         * El.Sup.bl.2, electric supplier block 2 (EVU2). Like El.Sup.bl., but triggered because of smart grid setting.
          * <ul>
          *      <li> Type: Boolean
          * </ul>
@@ -63,7 +63,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGridGeneralize
         DI_4_VD2(Doc.of(OpenemsType.BOOLEAN).unit(Unit.ON_OFF)),
 
         /**
-         * Fallback heater 1 (ZWE1, zusätzlicher Wärmeerzeuger 1).
+         * 2nd heat generator 1 (ZWE1, zusätzlicher Wärmeerzeuger 1).
          * <ul>
          *      <li> Type: Boolean
          * </ul>
@@ -71,7 +71,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGridGeneralize
         DI_5_ZWE1(Doc.of(OpenemsType.BOOLEAN).unit(Unit.ON_OFF)),
 
         /**
-         * Fallback heater 2 (ZWE2, zusätzlicher Wärmeerzeuger 2).
+         * 2nd heat generator 2 (ZWE2, zusätzlicher Wärmeerzeuger 2).
          * <ul>
          *      <li> Type: Boolean
          * </ul>
@@ -79,7 +79,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGridGeneralize
         DI_6_ZWE2(Doc.of(OpenemsType.BOOLEAN).unit(Unit.ON_OFF)),
 
         /**
-         * Fallback heater 3 (ZWE3, zusätzlicher Wärmeerzeuger 3). Optional, depends on heat pump model if available.
+         * 2nd heat generator 3 (ZWE3, zusätzlicher Wärmeerzeuger 3). Optional, depends on heat pump model if available.
          * <ul>
          *      <li> Type: Boolean
          * </ul>
@@ -90,7 +90,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGridGeneralize
         // Input Registers (IR) 0 to 46, read only. They are 16 bit unsigned numbers unless stated otherwise.
 
         /**
-         * Median temperature (Mitteltemperatur).
+         * Average temperature (Mitteltemperatur).
          * <ul>
          *     <li> Type: Integer
          *     <li> Unit: decimal degree Celsius
@@ -105,7 +105,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGridGeneralize
          *     <li> Unit: decimal degree Celsius
          * </ul>
          */
-        IR_1_VORLAUFTEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
+        // IR_1_VORLAUFTEMP - use FLOW_TEMPERATURE from heater interface
 
         /**
          * Return temperature (Rücklauftemperatur).
@@ -114,7 +114,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGridGeneralize
          *     <li> Unit: decimal degree Celsius
          * </ul>
          */
-        IR_2_RUECKLAUFTEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
+        // IR_2_RUECKLAUFTEMP - use RETURN_TEMPERATURE from heater interface
 
         /**
          * External return temperature (Rücklauf extern).
@@ -126,7 +126,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGridGeneralize
         IR_3_RUECKEXTERN(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
 
         /**
-         * Hot tap water temperature (Trinkwarmwassertemperatur).
+         * Domestic hot water temperature (Trinkwarmwassertemperatur).
          * <ul>
          *     <li> Type: Integer
          *     <li> Unit: decimal degree Celsius
@@ -135,7 +135,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGridGeneralize
         IR_4_TRINKWWTEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
 
         /**
-         * Heating circuit 1 flow temperature (Mischkreis 1 Vorlauf).
+         * Mixing circuit 1 flow temperature (Mischkreis 1 Vorlauf).
          * <ul>
          *     <li> Type: Integer
          *     <li> Unit: decimal degree Celsius
@@ -144,7 +144,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGridGeneralize
         IR_5_MK1VORLAUF(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
 
         /**
-         * Heating circuit 2 flow temperature (Mischkreis 2 Vorlauf).
+         * Mixing circuit 2 flow temperature (Mischkreis 2 Vorlauf).
          * Optional, depends on heat pump model if available.
          * <ul>
          *     <li> Type: Integer
@@ -154,7 +154,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGridGeneralize
         IR_6_MK2VORLAUF(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
 
         /**
-         * Heating circuit 3 flow temperature (Mischkreis 3 Vorlauf).
+         * Mixing circuit 3 flow temperature (Mischkreis 3 Vorlauf).
          * Optional, depends on heat pump model if available.
          * <ul>
          *     <li> Type: Integer
@@ -191,7 +191,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGridGeneralize
         IR_10_WQAUSTRITT(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
 
         /**
-         * Room temperature remote controller 1 (Raumfernversteller 1).
+         * Room remote adjuster 1 (Raumfernversteller 1).
          * <ul>
          *     <li> Type: Integer
          *     <li> Unit: decimal degree Celsius
@@ -200,7 +200,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGridGeneralize
         IR_11_RAUMFV1(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
 
         /**
-         * Room temperature remote controller 2 (Raumfernversteller 2). Optional, depends on heat pump model if
+         * Room remote adjuster 2 (Raumfernversteller 2). Optional, depends on heat pump model if
          * available.
          * <ul>
          *     <li> Type: Integer
@@ -210,7 +210,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGridGeneralize
         IR_12_RAUMFV2(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
 
         /**
-         * Room temperature remote controller 3 (Raumfernversteller 3). Optional, depends on heat pump model if
+         * Room remote adjuster 3 (Raumfernversteller 3). Optional, depends on heat pump model if
          * available.
          * <ul>
          *     <li> Type: Integer
@@ -229,7 +229,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGridGeneralize
         IR_14_SOLARKOLLEKTOR(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
 
         /**
-         * Solar collector buffer tank (Solarspeicher). Optional, depends on heat pump model if available.
+         * Solar collector storage tank (Solarspeicher). Optional, depends on heat pump model if available.
          * <ul>
          *     <li> Type: Integer
          *     <li> Unit: decimal degree Celsius
@@ -238,7 +238,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGridGeneralize
         IR_15_SOLARSPEICHER(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
 
         /**
-         * External heat source (Externe Energiequelle). Optional, depends on heat pump model if available.
+         * External energy source (Externe Energiequelle). Optional, depends on heat pump model if available.
          * <ul>
          *     <li> Type: Integer
          *     <li> Unit: decimal degree Celsius
@@ -433,9 +433,9 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGridGeneralize
          * <ul>
          *      <li> Type: Integer
          *      <li> Possible values: 0 ... 7
-         *      <li> State 0: Heating (Heizbetrieb)
-         *      <li> State 1: Heating tap water (Trinkwarmwasser)
-         *      <li> State 2: Swimming pool (Schwimmbad)
+         *      <li> State 0: Room heating (Heizbetrieb)
+         *      <li> State 1: Tap water heating (Trinkwarmwasser)
+         *      <li> State 2: Swimming pool heating (Schwimmbad)
          *      <li> State 3: Forced off by energy supplier (EVU-Sperre)
          *      <li> State 4: Defrost (Abtauen)
          *      <li> State 5: Off
@@ -665,9 +665,9 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGridGeneralize
          * <ul>
          *      <li> Type: Integer
          *      <li> Possible values: 0 ... 2
-         *      <li> State 0: Sperre / Off
-         *      <li> State 1: Freigabe 1 Verdichter / Clearance 1 compressor
-         *      <li> State 2: Freigabe 2 Verdichter / Clearance 2 compressors
+         *      <li> State 0: Blocked (Sperre)
+         *      <li> State 1: Clearance 1 compressor (Freigabe 1 Verdichter)
+         *      <li> State 2: Clearance 2 compressors (Freigabe 2 Verdichter)
          * </ul>
          */
         HR_6_RUNCLEARANCE(Doc.of(Clearance.values()).accessMode(AccessMode.READ_WRITE)),
@@ -677,10 +677,10 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGridGeneralize
          * <ul>
          *      <li> Type: Integer
          *      <li> Possible values: 0 ... 4
-         *      <li> State 0: Automatik
-         *      <li> State 1: Zusätzlicher Wärmeerzeuger / Additional heater
-         *      <li> State 2: Party / No late night throttling
-         *      <li> State 3: Ferien / Vacation, full time throttling
+         *      <li> State 0: Automatic
+         *      <li> State 1: Auxiliary heater (Zusätzlicher Wärmeerzeuger)
+         *      <li> State 2: No late night throttling (Party)
+         *      <li> State 3: Vacation, full time throttling (Ferien)
          *      <li> State 4: Off
          * </ul>
          */
@@ -691,10 +691,10 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGridGeneralize
          * <ul>
          *      <li> Type: Integer
          *      <li> Possible values: 0 ... 4
-         *      <li> State 0: Automatik
-         *      <li> State 1: Zusätzlicher Wärmeerzeuger / Additional heater
-         *      <li> State 2: Party / No late night throttling
-         *      <li> State 3: Ferien / Vacation, full time throttling
+         *      <li> State 0: Automatic
+         *      <li> State 1: Auxiliary heater (Zusätzlicher Wärmeerzeuger)
+         *      <li> State 2: No late night throttling (Party)
+         *      <li> State 3: Vacation, full time throttling (Ferien)
          *      <li> State 4: Off
          * </ul>
          */
@@ -706,10 +706,10 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGridGeneralize
          * <ul>
          *      <li> Type: Integer
          *      <li> Possible values: 0 ... 4
-         *      <li> State 0: Automatik
-         *      <li> State 1: Zusätzlicher Wärmeerzeuger / Additional heater
-         *      <li> State 2: Party / No late night throttling
-         *      <li> State 3: Ferien / Vacation, full time throttling
+         *      <li> State 0: Automatic
+         *      <li> State 1: Auxiliary heater (Zusätzlicher Wärmeerzeuger)
+         *      <li> State 2: No late night throttling (Party)
+         *      <li> State 3: Vacation, full time throttling (Ferien)
          *      <li> State 4: Off
          * </ul>
          */
@@ -721,10 +721,10 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGridGeneralize
          * <ul>
          *      <li> Type: Integer
          *      <li> Possible values: 0 ... 4
-         *      <li> State 0: Automatik
-         *      <li> State 1: Zusätzlicher Wärmeerzeuger / Additional heater
-         *      <li> State 2: Party / No late night throttling
-         *      <li> State 3: Ferien / Vacation, full time throttling
+         *      <li> State 0: Automatic
+         *      <li> State 1: Auxiliary heater (Zusätzlicher Wärmeerzeuger)
+         *      <li> State 2: No late night throttling (Party)
+         *      <li> State 3: Vacation, full time throttling (Ferien)
          *      <li> State 4: Off
          * </ul>
          */
@@ -736,7 +736,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGridGeneralize
          *      <li> Type: Integer
          *      <li> Possible values: 0 ... 1
          *      <li> State 0: Off
-         *      <li> State 1: Automatik
+         *      <li> State 1: Automatic
          * </ul>
          */
         HR_11_COOLINGRUNSTATE(Doc.of(CoolingMode.values()).accessMode(AccessMode.READ_WRITE)),
@@ -747,9 +747,9 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGridGeneralize
          * <ul>
          *      <li> Type: Integer
          *      <li> Possible values: 0 ... 3
-         *      <li> State 0: Automatik
-         *      <li> State 1: Party / No late night throttling
-         *      <li> State 2: Ferien / Vacation, full time throttling
+         *      <li> State 0: Automatic
+         *      <li> State 1: No late night throttling (Party)
+         *      <li> State 2: Vacation, full time throttling (Ferien)
          *      <li> State 3: Off
          * </ul>
          */
@@ -761,10 +761,10 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGridGeneralize
          * <ul>
          *      <li> Type: Integer
          *      <li> Possible values: 0 ... 4
-         *      <li> State 0: Automatik
-         *      <li> State 1: Wert nicht benutzt / Value not in use
-         *      <li> State 2: Party / No late night throttling
-         *      <li> State 3: Ferien / Vacation, full time throttling
+         *      <li> State 0: Automatic
+         *      <li> State 1: Value not in use (Wert nicht benutzt)
+         *      <li> State 2: No late night throttling (Party)
+         *      <li> State 3: Vacation, full time throttling (Ferien)
          *      <li> State 4: Off
          * </ul>
          */
@@ -885,7 +885,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGridGeneralize
     }
     
     /**
-     * Scheduled off time (EVU, Energie Versorger Unterbrechung).
+     * El.Sup.bl., electric supplier block (EVU, Energie Versorger Unterbrechung).
      *
      * @return the Channel {@link Value}
      */
@@ -903,7 +903,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGridGeneralize
     }
     
     /**
-     * Smart grid scheduled off time (EVU2). Like EVU, but triggered because of smart grid setting.
+     * El.Sup.bl.2, electric supplier block 2 (EVU2). Like El.Sup.bl., but triggered because of smart grid setting.
      *
      * @return the Channel {@link Value}
      */
@@ -975,7 +975,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGridGeneralize
     }
     
     /**
-     * Fallback heater 1 (ZWE1, zusätzlicher Wärmeerzeuger 1).
+     * 2nd heat generator 1 (ZWE1, zusätzlicher Wärmeerzeuger 1).
      *
      * @return the Channel {@link Value}
      */
@@ -993,7 +993,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGridGeneralize
     }
     
     /**
-     * Fallback heater 2 (ZWE2, zusätzlicher Wärmeerzeuger 2).
+     * 2nd heat generator 2 (ZWE2, zusätzlicher Wärmeerzeuger 2).
      *
      * @return the Channel {@link Value}
      */
@@ -1011,7 +1011,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGridGeneralize
     }
     
     /**
-     * Fallback heater 3 (ZWE3, zusätzlicher Wärmeerzeuger 3). Optional, depends on heat pump model if available.
+     * 2nd heat generator 3 (ZWE3, zusätzlicher Wärmeerzeuger 3). Optional, depends on heat pump model if available.
      *
      * @return the Channel {@link Value}
      */
@@ -1032,48 +1032,12 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGridGeneralize
     }
     
     /**
-     * Gets the median temperature (Mitteltemperatur), unit is decimal degree Celsius.
+     * Gets the average temperature (Mitteltemperatur), unit is decimal degree Celsius.
      *
      * @return the Channel {@link Value}
      */
     public default Value<Integer> getMittelTemp() {
         return this.getMittelTempChannel().value();
-    }
-    
-    /**
-     * Gets the Channel for {@link ChannelId#IR_1_VORLAUFTEMP}.
-     *
-     * @return the Channel
-     */
-    public default IntegerReadChannel getFlowTempChannel() {
-        return this.channel(ChannelId.IR_1_VORLAUFTEMP);
-    }
-    
-    /**
-     * Gets the flow temperature (Vorlauftemperatur), unit is decimal degree Celsius.
-     *
-     * @return the Channel {@link Value}
-     */
-    public default Value<Integer> getFlowTemp() {
-        return this.getFlowTempChannel().value();
-    }
-
-    /**
-     * Gets the Channel for {@link ChannelId#IR_2_RUECKLAUFTEMP}.
-     *
-     * @return the Channel
-     */
-    public default IntegerReadChannel getReturnTempChannel() {
-        return this.channel(ChannelId.IR_2_RUECKLAUFTEMP);
-    }
-    
-    /**
-     * Gets the return temperature (Rücklauftemperatur), unit is decimal degree Celsius.
-     *
-     * @return the Channel {@link Value}
-     */
-    public default Value<Integer> getReturnTemp() {
-        return this.getReturnTempChannel().value();
     }
 
     /**
@@ -1104,7 +1068,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGridGeneralize
     }
     
     /**
-     * Gets the hot tap water temperature (Trinkwarmwassertemperatur), unit is decimal degree Celsius.
+     * Gets the domestic hot water temperature (Trinkwarmwassertemperatur), unit is decimal degree Celsius.
      *
      * @return the Channel {@link Value}
      */
@@ -1122,7 +1086,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGridGeneralize
     }
     
     /**
-     * Get the heating circuit 1 flow temperature (Mischkreis 1 Vorlauf), unit is decimal degree Celsius.
+     * Get the mixing circuit 1 flow temperature (Mischkreis 1 Vorlauf), unit is decimal degree Celsius.
      *
      * @return the Channel {@link Value}
      */
@@ -1140,7 +1104,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGridGeneralize
     }
     
     /**
-     * Get the heating circuit 2 flow temperature (Mischkreis 2 Vorlauf), unit is decimal degree Celsius.
+     * Get the mixing circuit 2 flow temperature (Mischkreis 2 Vorlauf), unit is decimal degree Celsius.
      *
      * @return the Channel {@link Value}
      */
@@ -1158,7 +1122,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGridGeneralize
     }
     
     /**
-     * Get the heating circuit 3 flow temperature (Mischkreis 3 Vorlauf), unit is decimal degree Celsius.
+     * Get the mixing circuit 3 flow temperature (Mischkreis 3 Vorlauf), unit is decimal degree Celsius.
      * Optional, depends on heat pump model if available.
      *
      * @return the Channel {@link Value}
@@ -1231,7 +1195,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGridGeneralize
     }
     
     /**
-     * Gets the temperature at the remote controller 1 (Raumfernversteller 1), unit is decimal degree Celsius.
+     * Gets the temperature at the room remote adjuster 1 (Raumfernversteller 1), unit is decimal degree Celsius.
      *
      * @return the Channel {@link Value}
      */
@@ -1249,7 +1213,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGridGeneralize
     }
     
     /**
-     * Gets the temperature at the remote controller 2 (Raumfernversteller 2), unit is decimal degree Celsius.
+     * Gets the temperature at the room remote adjuster 2 (Raumfernversteller 2), unit is decimal degree Celsius.
      * Optional, depends on heat pump model if available.
      *
      * @return the Channel {@link Value}
@@ -1268,7 +1232,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGridGeneralize
     }
     
     /**
-     * Gets the temperature at the remote controller 3 (Raumfernversteller 3), unit is decimal degree Celsius.
+     * Gets the temperature at the room remote adjuster 3 (Raumfernversteller 3), unit is decimal degree Celsius.
      * Optional, depends on heat pump model if available.
      *
      * @return the Channel {@link Value}
@@ -1306,7 +1270,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGridGeneralize
     }
     
     /**
-     * Gets the temperature of the solar collector buffer tank (Solarspeicher), unit is decimal degree Celsius.
+     * Gets the temperature of the solar collector storage tank (Solarspeicher), unit is decimal degree Celsius.
      * Optional, depends on heat pump model if available.
      *
      * @return the Channel {@link Value}
@@ -1325,7 +1289,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGridGeneralize
     }
     
     /**
-     * Gets the temperature of the external heat source (Externe Energiequelle), unit is decimal degree Celsius.
+     * Gets the temperature of the external energy source (Externe Energiequelle), unit is decimal degree Celsius.
      * Optional, depends on heat pump model if available.
      *
      * @return the Channel {@link Value}
@@ -2484,9 +2448,9 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGridGeneralize
      * <ul>
      *      <li> Type: Integer
      *      <li> Possible values: 0 ... 2
-     *      <li> State 0: Sperre / Off
-     *      <li> State 1: Freigabe 1 Verdichter / Clearance 1 compressor
-     *      <li> State 2: Freigabe 2 Verdichter / Clearance 2 compressors
+     *      <li> State 0: Blocked (Sperre)
+     *      <li> State 1: Clearance 1 compressor (Freigabe 1 Verdichter)
+     *      <li> State 2: Clearance 2 compressors (Freigabe 2 Verdichter)
      * </ul>
 	 * See {@link ChannelId#HR_6_RUNCLEARANCE}.
 	 *
@@ -2546,10 +2510,10 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGridGeneralize
      * <ul>
      *      <li> Type: Integer
      *      <li> Possible values: 0 ... 4
-     *      <li> State 0: Automatik
-     *      <li> State 1: Zusätzlicher Wärmeerzeuger / Additional heater
-     *      <li> State 2: Party / No late night throttling
-     *      <li> State 3: Ferien / Vacation, full time throttling
+     *      <li> State 0: Automatic
+     *      <li> State 1: Auxiliary heater (Zusätzlicher Wärmeerzeuger)
+     *      <li> State 2: No late night throttling (Party)
+     *      <li> State 3: Vacation, full time throttling (Ferien)
      *      <li> State 4: Off
      * </ul>
 	 * See {@link ChannelId#HR_7_HEIZUNGRUNSTATE}.
@@ -2565,10 +2529,10 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGridGeneralize
      * <ul>
      *      <li> Type: Integer
      *      <li> Possible values: 0 ... 4
-     *      <li> State 0: Automatik
-     *      <li> State 1: Zusätzlicher Wärmeerzeuger / Additional heater
-     *      <li> State 2: Party / No late night throttling
-     *      <li> State 3: Ferien / Vacation, full time throttling
+     *      <li> State 0: Automatic
+     *      <li> State 1: Auxiliary heater (Zusätzlicher Wärmeerzeuger)
+     *      <li> State 2: No late night throttling (Party)
+     *      <li> State 3: Vacation, full time throttling (Ferien)
      *      <li> State 4: Off
      * </ul>
 	 * See {@link ChannelId#HR_7_HEIZUNGRUNSTATE}.
@@ -2585,10 +2549,10 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGridGeneralize
      * <ul>
      *      <li> Type: Integer
      *      <li> Possible values: 0 ... 4
-     *      <li> State 0: Automatik
-     *      <li> State 1: Zusätzlicher Wärmeerzeuger / Additional heater
-     *      <li> State 2: Party / No late night throttling
-     *      <li> State 3: Ferien / Vacation, full time throttling
+     *      <li> State 0: Automatic
+     *      <li> State 1: Auxiliary heater (Zusätzlicher Wärmeerzeuger)
+     *      <li> State 2: No late night throttling (Party)
+     *      <li> State 3: Vacation, full time throttling (Ferien)
      *      <li> State 4: Off
      * </ul>
 	 * See {@link ChannelId#HR_7_HEIZUNGRUNSTATE}.
@@ -2614,10 +2578,10 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGridGeneralize
      * <ul>
      *      <li> Type: Integer
      *      <li> Possible values: 0 ... 4
-     *      <li> State 0: Automatik
-     *      <li> State 1: Zusätzlicher Wärmeerzeuger / Additional heater
-     *      <li> State 2: Party / No late night throttling
-     *      <li> State 3: Ferien / Vacation, full time throttling
+     *      <li> State 0: Automatic
+     *      <li> State 1: Auxiliary heater (Zusätzlicher Wärmeerzeuger)
+     *      <li> State 2: No late night throttling (Party)
+     *      <li> State 3: Vacation, full time throttling (Ferien)
      *      <li> State 4: Off
      * </ul>
 	 * See {@link ChannelId#HR_8_TRINKWWRUNSTATE}.
@@ -2633,10 +2597,10 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGridGeneralize
      * <ul>
      *      <li> Type: Integer
      *      <li> Possible values: 0 ... 4
-     *      <li> State 0: Automatik
-     *      <li> State 1: Zusätzlicher Wärmeerzeuger / Additional heater
-     *      <li> State 2: Party / No late night throttling
-     *      <li> State 3: Ferien / Vacation, full time throttling
+     *      <li> State 0: Automatic
+     *      <li> State 1: Auxiliary heater (Zusätzlicher Wärmeerzeuger)
+     *      <li> State 2: No late night throttling (Party)
+     *      <li> State 3: Vacation, full time throttling (Ferien)
      *      <li> State 4: Off
      * </ul>
 	 * See {@link ChannelId#HR_8_TRINKWWRUNSTATE}.
@@ -2653,10 +2617,10 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGridGeneralize
      * <ul>
      *      <li> Type: Integer
      *      <li> Possible values: 0 ... 4
-     *      <li> State 0: Automatik
-     *      <li> State 1: Zusätzlicher Wärmeerzeuger / Additional heater
-     *      <li> State 2: Party / No late night throttling
-     *      <li> State 3: Ferien / Vacation, full time throttling
+     *      <li> State 0: Automatic
+     *      <li> State 1: Auxiliary heater (Zusätzlicher Wärmeerzeuger)
+     *      <li> State 2: No late night throttling (Party)
+     *      <li> State 3: Vacation, full time throttling (Ferien)
      *      <li> State 4: Off
      * </ul>
 	 * See {@link ChannelId#HR_8_TRINKWWRUNSTATE}.
@@ -2683,10 +2647,10 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGridGeneralize
      * <ul>
      *      <li> Type: Integer
      *      <li> Possible values: 0 ... 4
-     *      <li> State 0: Automatik
-     *      <li> State 1: Zusätzlicher Wärmeerzeuger / Additional heater
-     *      <li> State 2: Party / No late night throttling
-     *      <li> State 3: Ferien / Vacation, full time throttling
+     *      <li> State 0: Automatic
+     *      <li> State 1: Auxiliary heater (Zusätzlicher Wärmeerzeuger)
+     *      <li> State 2: No late night throttling (Party)
+     *      <li> State 3: Vacation, full time throttling (Ferien)
      *      <li> State 4: Off
      * </ul>
 	 * See {@link ChannelId#HR_9_MK2RUNSTATE}.
@@ -2703,10 +2667,10 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGridGeneralize
      * <ul>
      *      <li> Type: Integer
      *      <li> Possible values: 0 ... 4
-     *      <li> State 0: Automatik
-     *      <li> State 1: Zusätzlicher Wärmeerzeuger / Additional heater
-     *      <li> State 2: Party / No late night throttling
-     *      <li> State 3: Ferien / Vacation, full time throttling
+     *      <li> State 0: Automatic
+     *      <li> State 1: Auxiliary heater (Zusätzlicher Wärmeerzeuger)
+     *      <li> State 2: No late night throttling (Party)
+     *      <li> State 3: Vacation, full time throttling (Ferien)
      *      <li> State 4: Off
      * </ul>
 	 * See {@link ChannelId#HR_9_MK2RUNSTATE}.
@@ -2724,10 +2688,10 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGridGeneralize
      * <ul>
      *      <li> Type: Integer
      *      <li> Possible values: 0 ... 4
-     *      <li> State 0: Automatik
-     *      <li> State 1: Zusätzlicher Wärmeerzeuger / Additional heater
-     *      <li> State 2: Party / No late night throttling
-     *      <li> State 3: Ferien / Vacation, full time throttling
+     *      <li> State 0: Automatic
+     *      <li> State 1: Auxiliary heater (Zusätzlicher Wärmeerzeuger)
+     *      <li> State 2: No late night throttling (Party)
+     *      <li> State 3: Vacation, full time throttling (Ferien)
      *      <li> State 4: Off
      * </ul>
 	 * See {@link ChannelId#HR_9_MK2RUNSTATE}.
@@ -2754,10 +2718,10 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGridGeneralize
      * <ul>
      *      <li> Type: Integer
      *      <li> Possible values: 0 ... 4
-     *      <li> State 0: Automatik
-     *      <li> State 1: Zusätzlicher Wärmeerzeuger / Additional heater
-     *      <li> State 2: Party / No late night throttling
-     *      <li> State 3: Ferien / Vacation, full time throttling
+     *      <li> State 0: Automatic
+     *      <li> State 1: Auxiliary heater (Zusätzlicher Wärmeerzeuger)
+     *      <li> State 2: No late night throttling (Party)
+     *      <li> State 3: Vacation, full time throttling (Ferien)
      *      <li> State 4: Off
      * </ul>
 	 * See {@link ChannelId#HR_10_MK3RUNSTATE}.
@@ -2774,10 +2738,10 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGridGeneralize
      * <ul>
      *      <li> Type: Integer
      *      <li> Possible values: 0 ... 4
-     *      <li> State 0: Automatik
-     *      <li> State 1: Zusätzlicher Wärmeerzeuger / Additional heater
-     *      <li> State 2: Party / No late night throttling
-     *      <li> State 3: Ferien / Vacation, full time throttling
+     *      <li> State 0: Automatic
+     *      <li> State 1: Auxiliary heater (Zusätzlicher Wärmeerzeuger)
+     *      <li> State 2: No late night throttling (Party)
+     *      <li> State 3: Vacation, full time throttling (Ferien)
      *      <li> State 4: Off
      * </ul>
 	 * See {@link ChannelId#HR_10_MK3RUNSTATE}.
@@ -2795,10 +2759,10 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGridGeneralize
      * <ul>
      *      <li> Type: Integer
      *      <li> Possible values: 0 ... 4
-     *      <li> State 0: Automatik
-     *      <li> State 1: Zusätzlicher Wärmeerzeuger / Additional heater
-     *      <li> State 2: Party / No late night throttling
-     *      <li> State 3: Ferien / Vacation, full time throttling
+     *      <li> State 0: Automatic
+     *      <li> State 1: Auxiliary heater (Zusätzlicher Wärmeerzeuger)
+     *      <li> State 2: No late night throttling (Party)
+     *      <li> State 3: Vacation, full time throttling (Ferien)
      *      <li> State 4: Off
      * </ul>
 	 * See {@link ChannelId#HR_10_MK3RUNSTATE}.
@@ -2825,7 +2789,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGridGeneralize
      *      <li> Type: Integer
      *      <li> Possible values: 0 ... 1
      *      <li> State 0: Off
-     *      <li> State 1: Automatik
+     *      <li> State 1: Automatic
      * </ul>
 	 * See {@link ChannelId#HR_11_COOLINGRUNSTATE}.
 	 *
@@ -2841,7 +2805,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGridGeneralize
      *      <li> Type: Integer
      *      <li> Possible values: 0 ... 1
      *      <li> State 0: Off
-     *      <li> State 1: Automatik
+     *      <li> State 1: Automatic
      * </ul>
 	 * See {@link ChannelId#HR_11_COOLINGRUNSTATE}.
 	 * 
@@ -2858,7 +2822,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGridGeneralize
      *      <li> Type: Integer
      *      <li> Possible values: 0 ... 1
      *      <li> State 0: Off
-     *      <li> State 1: Automatik
+     *      <li> State 1: Automatic
      * </ul>
 	 * See {@link ChannelId#HR_11_COOLINGRUNSTATE}.
 	 * 
@@ -2884,11 +2848,11 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGridGeneralize
      * <ul>
      *      <li> Type: Integer
      *      <li> Possible values: 0 ... 3
-     *      <li> State 0: Automatik
-     *      <li> State 1: Party / No late night throttling
-     *      <li> State 2: Ferien / Vacation, full time throttling
+     *      <li> State 0: Automatic
+     *      <li> State 1: No late night throttling (Party)
+     *      <li> State 2: Vacation, full time throttling (Ferien)
      *      <li> State 3: Off
-     * </ul>>
+     * </ul>
 	 * See {@link ChannelId#HR_12_VENTILATIONRUNSTATE}.
 	 *
 	 * @return the Channel {@link Value}
@@ -2903,9 +2867,9 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGridGeneralize
      * <ul>
      *      <li> Type: Integer
      *      <li> Possible values: 0 ... 3
-     *      <li> State 0: Automatik
-     *      <li> State 1: Party / No late night throttling
-     *      <li> State 2: Ferien / Vacation, full time throttling
+     *      <li> State 0: Automatic
+     *      <li> State 1: No late night throttling (Party)
+     *      <li> State 2: Vacation, full time throttling (Ferien)
      *      <li> State 3: Off
      * </ul>
 	 * See {@link ChannelId#HR_12_VENTILATIONRUNSTATE}.
@@ -2923,9 +2887,9 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGridGeneralize
      * <ul>
      *      <li> Type: Integer
      *      <li> Possible values: 0 ... 3
-     *      <li> State 0: Automatik
-     *      <li> State 1: Party / No late night throttling
-     *      <li> State 2: Ferien / Vacation, full time throttling
+     *      <li> State 0: Automatic
+     *      <li> State 1: No late night throttling (Party)
+     *      <li> State 2: Vacation, full time throttling (Ferien)
      *      <li> State 3: Off
      * </ul>
 	 * See {@link ChannelId#HR_12_VENTILATIONRUNSTATE}.
@@ -2952,10 +2916,10 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGridGeneralize
      * <ul>
      *      <li> Type: Integer
      *      <li> Possible values: 0 ... 4
-     *      <li> State 0: Automatik
-     *      <li> State 1: Wert nicht benutzt / Value not in use
-     *      <li> State 2: Party / No late night throttling
-     *      <li> State 3: Ferien / Vacation, full time throttling
+     *      <li> State 0: Automatic
+     *      <li> State 1: Value not in use (Wert nicht benutzt)
+     *      <li> State 2: No late night throttling (Party)
+     *      <li> State 3: Vacation, full time throttling (Ferien)
      *      <li> State 4: Off
      * </ul>
 	 * See {@link ChannelId#HR_13_POOLRUNSTATE}.
@@ -2972,10 +2936,10 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGridGeneralize
      * <ul>
      *      <li> Type: Integer
      *      <li> Possible values: 0 ... 4
-     *      <li> State 0: Automatik
-     *      <li> State 1: Wert nicht benutzt / Value not in use
-     *      <li> State 2: Party / No late night throttling
-     *      <li> State 3: Ferien / Vacation, full time throttling
+     *      <li> State 0: Automatic
+     *      <li> State 1: Value not in use (Wert nicht benutzt)
+     *      <li> State 2: No late night throttling (Party)
+     *      <li> State 3: Vacation, full time throttling (Ferien)
      *      <li> State 4: Off
      * </ul>
 	 * See {@link ChannelId#HR_13_POOLRUNSTATE}.
@@ -2993,10 +2957,10 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGridGeneralize
      * <ul>
      *      <li> Type: Integer
      *      <li> Possible values: 0 ... 4
-     *      <li> State 0: Automatik
-     *      <li> State 1: Wert nicht benutzt / Value not in use
-     *      <li> State 2: Party / No late night throttling
-     *      <li> State 3: Ferien / Vacation, full time throttling
+     *      <li> State 0: Automatic
+     *      <li> State 1: Value not in use (Wert nicht benutzt)
+     *      <li> State 2: No late night throttling (Party)
+     *      <li> State 3: Vacation, full time throttling (Ferien)
      *      <li> State 4: Off
      * </ul>
 	 * See {@link ChannelId#HR_13_POOLRUNSTATE}.

@@ -8,9 +8,9 @@ import io.openems.common.types.OptionsEnum;
 
 public enum VentilationMode implements OptionsEnum {
 	UNDEFINED(-1, "Undefined"), //
-	AUTOMATIK(0, "Automatik"), //
-	PARTY(1, "Party"), //
-	FERIEN(2, "Ferien"), //
+	AUTOMATIC(0, "Automatic"), //
+	PARTY(1, "No late night throttling (Party)"), //
+	VACATION(2, "Vacation, full time throttling (Ferien)"), //
 	OFF(3, "Off"); //
 
 	private int value;

@@ -9,7 +9,7 @@ import io.openems.common.types.OptionsEnum;
 public enum CoolingMode implements OptionsEnum {
 	UNDEFINED(-1, "Undefined"), //
 	Off(0, "Off"), //
-	AUTOMATIK(1, "Automatik"); //
+	AUTOMATIC(1, "Automatic"); //
 
 	private int value;
 	private String name;

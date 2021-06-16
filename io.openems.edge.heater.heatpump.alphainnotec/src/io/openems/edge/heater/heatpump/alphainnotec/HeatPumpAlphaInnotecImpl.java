@@ -21,9 +21,17 @@ import io.openems.edge.bridge.modbus.api.task.FC5WriteCoilTask;
 import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.common.event.EdgeEventConstants;
 import io.openems.edge.common.taskmanager.Priority;
+import io.openems.edge.exceptionalstate.api.ExceptionalState;
+import io.openems.edge.exceptionalstate.api.ExceptionalStateHandler;
+import io.openems.edge.exceptionalstate.api.ExceptionalStateHandlerImpl;
+import io.openems.edge.heater.api.EnableSignalHandler;
+import io.openems.edge.heater.api.EnableSignalHandlerImpl;
+import io.openems.edge.heater.api.Heater;
+import io.openems.edge.heater.api.HeaterState;
+import io.openems.edge.heater.heatpump.alphainnotec.api.HeatingMode;
 import io.openems.edge.heater.heatpump.alphainnotec.api.OperatingMode;
 import io.openems.edge.heater.heatpump.alphainnotec.api.HeatpumpAlphaInnotecChannel;
-import io.openems.edge.heater.api.HeatpumpSmartGridGeneralizedChannel;
+import io.openems.edge.heater.api.HeatpumpSmartGrid;
 import io.openems.edge.heater.api.SmartGridState;
 import org.osgi.service.cm.ConfigurationAdmin;
 import org.osgi.service.component.ComponentContext;
@@ -53,13 +61,23 @@ import org.slf4j.LoggerFactory;
 		immediate = true,
 		configurationPolicy = ConfigurationPolicy.REQUIRE,
 		property = EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE)
-public class HeatPumpAlphaInnotecImpl extends AbstractOpenemsModbusComponent implements OpenemsComponent, EventHandler, HeatpumpAlphaInnotecChannel {
+public class HeatPumpAlphaInnotecImpl extends AbstractOpenemsModbusComponent implements OpenemsComponent, EventHandler,
+		ExceptionalState, HeatpumpAlphaInnotecChannel {
 
 	@Reference
 	protected ConfigurationAdmin cm;
 	
 	private final Logger log = LoggerFactory.getLogger(HeatPumpAlphaInnotecImpl.class);
 	private boolean debug;
+	private boolean componentEnabled;
+	private boolean readOnly;
+
+	private boolean turnOnHeatpump;
+	private boolean useEnableSignal;
+	private EnableSignalHandler enableSignalHandler;
+	private boolean useExceptionalState;
+	private ExceptionalStateHandler exceptionalStateHandler;
+
 	private int testcounter = 0;
 
 	// This is essential for Modbus to work, but the compiler does not warn you when it is missing!
@@ -71,7 +89,8 @@ public class HeatPumpAlphaInnotecImpl extends AbstractOpenemsModbusComponent imp
 	public HeatPumpAlphaInnotecImpl() {
 		super(OpenemsComponent.ChannelId.values(),
 				HeatpumpAlphaInnotecChannel.ChannelId.values(),
-				HeatpumpSmartGridGeneralizedChannel.ChannelId.values());	// Even though HeatpumpAlphaInnotecChannel extends this channel, it needs to be added separately.
+				HeatpumpSmartGrid.ChannelId.values(),	// Even though HeatpumpAlphaInnotecChannel extends this channel, it needs to be added separately.
+				Heater.ChannelId.values());		// Even though HeatpumpSmartGrid extends this channel, it needs to be added separately.
 	}
 
 	@Activate
@@ -79,6 +98,17 @@ public class HeatPumpAlphaInnotecImpl extends AbstractOpenemsModbusComponent imp
 		super.activate(context, config.id(), config.alias(), config.enabled(), config.modbusUnitId(), this.cm,
 				"Modbus", config.modbus_id());
 		this.debug = config.debug();
+		this.componentEnabled = config.enabled();
+		this.readOnly = config.readOnly();
+		this.useEnableSignal = config.useEnableSignalChannel();
+		if (this.useEnableSignal) {
+			this.enableSignalHandler = new EnableSignalHandlerImpl(config.waitTimeEnableSignal(), config.enableSignalTimerIsCyclesNotSeconds());
+		}
+		this.useExceptionalState = config.useExceptionalState();
+		if (this.useExceptionalState) {
+			this.exceptionalStateHandler = new ExceptionalStateHandlerImpl(config.waitTimeExceptionalState(), config.exceptionalStateTimerIsCyclesNotSeconds());
+		}
+
 	}
 
 	@Deactivate
@@ -111,9 +141,9 @@ public class HeatPumpAlphaInnotecImpl extends AbstractOpenemsModbusComponent imp
 				new FC4ReadInputRegistersTask(0, Priority.LOW,
 						m(HeatpumpAlphaInnotecChannel.ChannelId.IR_0_MITTELTEMP, new UnsignedWordElement(0),
 								ElementToChannelConverter.DIRECT_1_TO_1),
-						m(HeatpumpAlphaInnotecChannel.ChannelId.IR_1_VORLAUFTEMP, new UnsignedWordElement(1),
+						m(Heater.ChannelId.FLOW_TEMPERATURE, new UnsignedWordElement(1),
 								ElementToChannelConverter.DIRECT_1_TO_1),
-						m(HeatpumpAlphaInnotecChannel.ChannelId.IR_2_RUECKLAUFTEMP, new UnsignedWordElement(2),
+						m(Heater.ChannelId.RETURN_TEMPERATURE, new UnsignedWordElement(2),
 								ElementToChannelConverter.DIRECT_1_TO_1),
 						m(HeatpumpAlphaInnotecChannel.ChannelId.IR_3_RUECKEXTERN, new UnsignedWordElement(3),
 								ElementToChannelConverter.DIRECT_1_TO_1),
@@ -388,7 +418,7 @@ public class HeatPumpAlphaInnotecImpl extends AbstractOpenemsModbusComponent imp
 
 	@Override
 	public void handleEvent(Event event) {
-		if (EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE.equals(event.getTopic())) {
+		if (this.componentEnabled && EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE.equals(event.getTopic())) {
 			//channeltest();	// Just for testing
 			this.channelmapping();
 		}
@@ -396,35 +426,87 @@ public class HeatPumpAlphaInnotecImpl extends AbstractOpenemsModbusComponent imp
 
 	// Put values in channels that are not directly Modbus read values but derivatives.
 	protected void channelmapping() {
+		this.enableSignalHandler.increaseCycleCounter();
+		this.exceptionalStateHandler.increaseCycleCounter();
 
 		OperatingMode heatpumpOperatingMode = getHeatpumpOperatingMode().asEnum();
 		switch (heatpumpOperatingMode) {
-			case OFF:
-				_setReady(true);
-				_setRunning(false);
-				break;
-			case EVU_SPERRE:
 			case UNDEFINED:
-				_setReady(false);
-				_setRunning(false);
+				_setHeaterState(HeaterState.UNDEFINED.getValue());
 				break;
-			case ABTAUEN:
-			case KUEHLUNG:
-			case SCHWIMMBAD:
-			case HEIZBETRIEB:
-			case TRINKWARMWASSER:
-			case EXTERNE_ENERGIEQUELLE:
-				_setReady(true);
-				_setRunning(true);
+			case OFF:
+				_setHeaterState(HeaterState.OFF.getValue());
+				break;
+			case BLOCKED:
+				_setHeaterState(HeaterState.BLOCKED.getValue());
+				break;
+			case DEFROST:
+			case COOLING:
+			case POOL_HEATING:
+			case ROOM_HEATING:
+			case TAP_WATER_HEATING:
+			case EXTERNAL_ENERGY_SOURCE:
+				_setHeaterState(HeaterState.HEATING.getValue());
 				break;
 		}
 
 		// The value in the channel can be null. Use "orElse" to avoid null pointer exception.
-		if (getErrorCode().orElse(0) != 0) {
-			_setError(false);
+		int errorCode = getErrorCode().orElse(0);
+		if (errorCode != 0) {
+			_setErrorMessage("Error code: " + errorCode);
 		} else {
-			_setError(true);
+			_setErrorMessage("No error");
 		}
+
+		if (readOnly == false) {
+
+			// Handle EnableSignal.
+			if (this.useEnableSignal) {
+				this.turnOnHeatpump = this.enableSignalHandler.enableSignalActive(this);
+			}
+
+			// Handle ExceptionalState. ExceptionalState overwrites EnableSignal.
+			int exceptionalStateValue = 0;
+			boolean exceptionalStateActive = false;
+			if (this.useExceptionalState) {
+				exceptionalStateActive = this.exceptionalStateHandler.exceptionalStateActive(this);
+				if (exceptionalStateActive) {
+					exceptionalStateValue = this.getExceptionalStateValue();
+					if (exceptionalStateValue <= 0) {
+						// Turn off Chp when ExceptionalStateValue = 0.
+						this.turnOnHeatpump = false;
+					} else {
+						// When ExceptionalStateValue is between 0 and 100, set Chp to this PowerPercentage.
+						this.turnOnHeatpump = true;
+						if (exceptionalStateValue > 100) {
+							exceptionalStateValue = 100;
+						}
+					}
+				}
+			}
+
+			if (this.useEnableSignal || this.useExceptionalState) {
+				if (this.turnOnHeatpump) {
+					try {
+						setRunClearance(2);
+						setHeatingOperationMode(HeatingMode.AUTOMATIC.getValue());
+
+						// Todo: den exceptionalStateValue berücksichtigen.
+					} catch (OpenemsError.OpenemsNamedException e) {
+						e.printStackTrace();
+					}
+				} else {
+					try {
+						// Todo: Nachsehen, ob damit Frostschutz gewährleistet ist.
+						setRunClearance(0);	// Switches off heat pump.
+					} catch (OpenemsError.OpenemsNamedException e) {
+						e.printStackTrace();
+					}
+				}
+			}
+
+		}
+
 		
 		if (this.debug) {
 			this.logInfo(this.log, "--Heat pump Alpha Innotec--");
@@ -433,10 +515,10 @@ public class HeatPumpAlphaInnotecImpl extends AbstractOpenemsModbusComponent imp
 			this.logInfo(this.log, "Run clearance: " + getRunClearance().asEnum().getName());
 			this.logInfo(this.log, "Heating State: " + getHeatingOperationMode().asEnum().getName());
 			this.logInfo(this.log, "Cooling State: " + getCoolingOperationMode().asEnum().getName());
-			this.logInfo(this.log, "Flow temperature: " + getFlowTemp());
+			this.logInfo(this.log, "Flow temperature: " + getFlowTemperature());
 			this.logInfo(this.log, "Flow temp circuit 1: " + getCircuit1FlowTemp());
 			this.logInfo(this.log, "Flow temp circuit 1 setpoint: " + getCircuit1FlowTempSetpoint());
-			this.logInfo(this.log, "Return temperature: " + getReturnTemp());
+			this.logInfo(this.log, "Return temperature: " + getReturnTemperature());
 			this.logInfo(this.log, "Return temp setpoint: " + getReturnTempSetpoint());
 			this.logInfo(this.log, "Outside temperature: " + getOutsideTemp());
 			this.logInfo(this.log, "Error Code: " + getErrorCode().get());	// Code "0" means no error. "Null" means no reading (yet).
@@ -457,8 +539,8 @@ public class HeatPumpAlphaInnotecImpl extends AbstractOpenemsModbusComponent imp
 		this.logInfo(this.log, "Heizkurve MK1 Parallelversch.: " + getHeatingCurveCircuit1ParallelTranslation());
 		this.logInfo(this.log, "Temp +- (signed): " + getTempPlusMinus());
 		this.logInfo(this.log, "Mitteltemp: " + getMittelTemp().get());
-		this.logInfo(this.log, "Vorlauftemp: " + getFlowTemp());
-		this.logInfo(this.log, "Rücklauftemp: " + getReturnTemp());
+		this.logInfo(this.log, "Vorlauftemp: " + getFlowTemperature());
+		this.logInfo(this.log, "Rücklauftemp: " + getReturnTemperature());
 		this.logInfo(this.log, "Aussentemp (signed): " + getOutsideTemp());	// Test if variables that can be negative (signed) display correctly. Could not test as temperature was not negative.
 		this.logInfo(this.log, "Rücklauftemp soll (unsigned): " + getReturnTempSetpoint());
 		this.logInfo(this.log, "Wärmemenge Heizung (double): " + getHeatAmountHeizung());	// Test if 32 bit integers (doubleword) are translated correctly.
@@ -479,7 +561,7 @@ public class HeatPumpAlphaInnotecImpl extends AbstractOpenemsModbusComponent imp
 			this.logInfo(this.log, "Smart Grid off");
 			this.logInfo(this.log, "");
 			try {
-				setSmartGridState(SmartGridState.OFF.getValue());
+				setSmartGridState(SmartGridState.SG1_BLOCKED.getValue());
 			} catch (OpenemsError.OpenemsNamedException e) {
 				this.logError(this.log, "Unable to set SmartGridState to OFF.");
 			}
@@ -490,7 +572,7 @@ public class HeatPumpAlphaInnotecImpl extends AbstractOpenemsModbusComponent imp
 			this.logInfo(this.log, "Smart Grid standard");
 			this.logInfo(this.log, "");
 			try {
-				setSmartGridState(SmartGridState.STANDARD.getValue());
+				setSmartGridState(SmartGridState.SG3_STANDARD.getValue());
 			} catch (OpenemsError.OpenemsNamedException e) {
 				this.logError(this.log, "Unable to set SmartGridState to Standard.");
 			}
@@ -513,7 +595,7 @@ public class HeatPumpAlphaInnotecImpl extends AbstractOpenemsModbusComponent imp
 			this.logInfo(this.log, "Smart Grid standard");
 			this.logInfo(this.log, "");
 			try {
-				setSmartGridState(SmartGridState.STANDARD.getValue());
+				setSmartGridState(SmartGridState.SG3_STANDARD.getValue());
 			} catch (OpenemsError.OpenemsNamedException e) {
 				this.logError(this.log, "Unable to set SmartGridState to Standard.");
 			}
@@ -562,7 +644,7 @@ public class HeatPumpAlphaInnotecImpl extends AbstractOpenemsModbusComponent imp
 			this.logInfo(this.log, "Smart Grid standard");
 			this.logInfo(this.log, "");
 			try {
-				setSmartGridState(SmartGridState.STANDARD.getValue());
+				setSmartGridState(SmartGridState.SG3_STANDARD.getValue());
 			} catch (OpenemsError.OpenemsNamedException e) {
 				this.logError(this.log, "Unable to set SmartGridState to Standard.");
 			}

@@ -8,14 +8,14 @@ import io.openems.common.types.OptionsEnum;
 
 public enum OperatingMode implements OptionsEnum {
 	UNDEFINED(-1, "Undefined"), //
-	HEIZBETRIEB(0, "Heizbetrieb"), //
-	TRINKWARMWASSER(1, "Trinkwarmwasser"), //
-	SCHWIMMBAD(2, "Schwimmbad"), //
-	EVU_SPERRE(3, "EVU-Sperre"), //
-	ABTAUEN(4, "Abtauen"), //
+	ROOM_HEATING(0, "Room heating (Heizbetrieb)"), //
+	TAP_WATER_HEATING(1, "Tap water heating (Trinkwarmwasser)"), //
+	POOL_HEATING(2, "Swimming pool heating (Schwimmbad)"), //
+	BLOCKED(3, "Blocked (EVU-Sperre)"), //
+	DEFROST(4, "Defrost (Abtauen)"), //
 	OFF(5, "Off"), //
-	EXTERNE_ENERGIEQUELLE(6, "Externe Energiequelle"), //
-	KUEHLUNG(7, "Kühlung"); //
+	EXTERNAL_ENERGY_SOURCE(6, " External energy source (Externe Energiequelle)"), //
+	COOLING(7, "Cooling (Kühlung)"); //
 
 	private int value;
 	private String name;

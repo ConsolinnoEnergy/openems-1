@@ -8,9 +8,9 @@ import io.openems.common.types.OptionsEnum;
 
 public enum Clearance implements OptionsEnum {
 	UNDEFINED(-1, "Undefined"), //
-	SPERRE(0, "Sperre"), //
-	FREIGABE_1_VERDICHTER(1, "Freigabe 1 Verdichter"), //
-	FREIGABE_2_VERDICHTER(2, "Freigabe 2 Verdichter"); //
+	BLOCKED(0, "Blocked (Sperre)"), //
+	CLEARANCE_1_COMPRESSOR(1, "Clearance 1 compressor (Freigabe 1 Verdichter)"), //
+	CLEARANCE_2_COMPRESSORS(2, "Clearance 2 compressors (Freigabe 2 Verdichter)"); //
 
 	private int value;
 	private String name;

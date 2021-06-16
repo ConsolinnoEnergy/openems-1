@@ -10,13 +10,13 @@ import io.openems.edge.common.channel.BooleanReadChannel;
 import io.openems.edge.common.channel.BooleanWriteChannel;
 import io.openems.edge.common.channel.Doc;
 import io.openems.edge.common.channel.value.Value;
-import io.openems.edge.heater.api.HeatpumpSmartGridGeneralizedChannel;
+import io.openems.edge.heater.api.HeatpumpSmartGrid;
 
 /**
  * Channels for the Tecalor heat pump.
  */
 
-public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChannel {
+public interface HeatpumpTecalorChannel extends HeatpumpSmartGrid {
 
     public enum ChannelId implements io.openems.edge.common.channel.ChannelId {
 
@@ -97,7 +97,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
         IR513_VORLAUFISTTEMPWP(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
 
         /**
-         * Forward temperature backup heater, actual.
+         * Forward temperature auxiliary heater, actual.
          * <ul>
          *      <li> Type: Integer
          *      <li> Unit: Decimal degree Celsius

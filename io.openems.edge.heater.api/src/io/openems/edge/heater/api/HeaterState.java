@@ -3,20 +3,21 @@ package io.openems.edge.heater.api;
 import io.openems.common.types.OptionsEnum;
 
 /**
- * Possible smart grid states.
+ * The possible states of a heater.
  */
 
-public enum SmartGridState implements OptionsEnum {
+public enum HeaterState implements OptionsEnum {
 	UNDEFINED(-1, "Undefined"), //
-	SG1_BLOCKED(1, "Smart Grid state 1: Electric supplier block"), //
-	SG2_LOW(2, "Smart Grid state 2: Low energy consumption"), //
-	SG3_STANDARD(3, "Smart Grid state 3: Standard"), //
-	SG4_HIGH(4, "Smart Grid state 4: High energy consumption"); //
+	BLOCKED(0, "Heater operation is blocked by something"), //
+	OFF(1, "Off"), //
+	STANDBY(2, "Standby, waiting for commands"), //
+	STARTING_UP_OR_PREHEAT(3, "Command to heat received, preparing to start heating"),
+	HEATING(4, "Heater is heating"); //
 
 	private int value;
 	private String name;
 
-	private SmartGridState(int value, String name) {
+	private HeaterState(int value, String name) {
 		this.value = value;
 		this.name = name;
 	}
