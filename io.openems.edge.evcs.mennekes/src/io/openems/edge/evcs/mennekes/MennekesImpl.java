@@ -242,7 +242,7 @@ public class MennekesImpl extends AbstractOpenemsModbusComponent implements Open
 
     @Override
     public String debugLog() {
-        return "";
+        return "Total: " + this.getChargePower().get() + " W | L1 " + this.getPowerL1() / 230 + " A | L2 " + this.getPowerL2() / 230 + " A | L3 " + this.getPowerL3() / 230 + " A";
     }
 
     @Override

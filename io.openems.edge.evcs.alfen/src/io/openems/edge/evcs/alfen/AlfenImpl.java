@@ -345,7 +345,7 @@ public class AlfenImpl extends AbstractOpenemsModbusComponent implements Openems
 
     @Override
     public String debugLog() {
-        return "";
+        return "Total: " + this.getApparentPowerSum() + " W | L1 " + this.getCurrentL1() + " A | L2 " + this.getCurrentL2() + " A | L3 " + this.getCurrentL3() + " A";
     }
 
     @Override
