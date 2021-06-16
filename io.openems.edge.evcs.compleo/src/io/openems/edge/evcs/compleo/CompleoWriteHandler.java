@@ -11,9 +11,9 @@ public class CompleoWriteHandler {
 
     void run() {
         this.setPhaseCount();
-        this.parent._setChargePower(this.parent.getPower());
+        this.parent._setChargePower(this.parent.getPower() / 100);
         this.parent._setChargingType(ChargingType.AC);
-        this.parent._setEnergySession(this.parent.getEnergy());
+        this.parent._setEnergySession(this.parent.getEnergy() / 100);
     }
 
     /**

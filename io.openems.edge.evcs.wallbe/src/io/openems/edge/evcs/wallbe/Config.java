@@ -1,9 +1,9 @@
-package io.openems.edge.evcs.mennekes;
+package io.openems.edge.evcs.wallbe;
 
 import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
-@ObjectClassDefinition(name = "Mennekes EVCS", description = ".")
+@ObjectClassDefinition(name = "Wallbe Evcs", description = ".")
 @interface Config {
 
     @AttributeDefinition(name = "Id", description = "Unique Id for the .")

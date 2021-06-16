@@ -1,4 +1,4 @@
-package io.openems.edge.evcs.compleo;
+package io.openems.edge.evcs.wallbe;
 
 import io.openems.common.exceptions.OpenemsError;
 import io.openems.edge.common.channel.WriteChannel;
@@ -11,12 +11,12 @@ import java.util.Optional;
  * Internal OpenEms Channel -> External READ_WRITE REGISTER
  */
 
-public class CompleoReadHandler {
-    private final CompleoImpl parent;
+public class WallbeReadHandler {
+    private final WallbeImpl parent;
     private static final int GRID_VOLTAGE = 230;
     private boolean overLimit;
 
-    CompleoReadHandler(CompleoImpl parent) {
+    WallbeReadHandler(WallbeImpl parent) {
         this.parent = parent;
     }
 
@@ -50,7 +50,7 @@ public class CompleoReadHandler {
         if (valueOpt.isPresent()) {
             Integer power = valueOpt.get();
             int phases = this.parent.getPhases().orElse(3);
-            int current = ((power / phases) / GRID_VOLTAGE);
+            int current = (power / phases) / GRID_VOLTAGE;
             int maxHwPower = this.parent.getMaximumHardwarePower().get();
             int maxSwPower = this.parent.getMaxPower();
             int maxPower = Math.min(maxHwPower, maxSwPower);
@@ -64,10 +64,10 @@ public class CompleoReadHandler {
                 current = 0;
             }
             if (this.overLimit) {
-                this.parent.setMaxPower((short) 0);
+                this.parent.setMaximumChargeCurrent((short) 0);
                 this.parent._setSetChargePowerLimit(0);
             } else {
-                this.parent.setMaxPower((short) (current * 10));
+                this.parent.setMaximumChargeCurrent((short) (current * 10));
                 this.parent._setSetChargePowerLimit(current * GRID_VOLTAGE);
             }
         }
