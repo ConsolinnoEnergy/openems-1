@@ -11,7 +11,11 @@ Include-Resource: \
 Import-Package: \
 	!com.github.snksoft.crc.*,\
 	!org.openmuc.jrxtx.*,\
+    *
 
+Export-Package: \
+    io.openems.edge.bridge.genibus.api.task,\
+    io.openems.edge.bridge.genibus.api,\
 
 -buildpath:  \
 	${buildpath},\
