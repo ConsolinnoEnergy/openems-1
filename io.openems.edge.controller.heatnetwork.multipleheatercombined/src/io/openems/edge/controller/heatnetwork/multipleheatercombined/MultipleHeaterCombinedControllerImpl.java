@@ -30,15 +30,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * The MultipleHeaterCombined controller allows the monitoring and enabling of any {@link Heater}.
- * They are categorized in primary, secondary and tertiary heater.
  * Each Heater gets an activation and deactivation Thermometer as well as temperature.
- * Lets say Heater A has a Thermometer Aa and a Thermometer Ab with an activation Temperature of 400dC and a deactivation Temperature of 600dC
+ * For Example: Heater A has a Thermometer Aa and a Thermometer Ab with an activation Temperature of 400dC and a deactivation Temperature of 600dC
  * The thermometer Ab will be checked if it's Temperature is > than the deactivation Temp. of 600 dC
  * If so -> disable the Heater (Don't write in the enable Signal) -> set the {@link HeaterActiveWrapper#setActive(boolean)}}
  * to false therefore don't write in the heater Channel
  * Else if the Activation Thermometer Aa is beneath the activation Temperature of 400dC set the {@link HeaterActiveWrapper#setActive(boolean)}
  * to true and therefore write into the heater Channel.
- * Remember you can have n Heater in each Primary/Secondary/Tertiary Category.
  */
 @Designate(ocd = Config.class, factory = true)
 @Component(name = "MultipleHeaterCombined",
@@ -229,19 +227,14 @@ public class MultipleHeaterCombinedControllerImpl extends AbstractOpenemsCompone
 
 
     /**
-     * MultipleHeaterCombined logic to activate Primary-->secondary--->Fallback Heater depending on demand.
+     * MultipleHeaterCombined logic.
      * <p>
-     * Via AverageConsumption from the HeatMeter a performance demand is calculated.
-     * Each Heater got a Temperature where they should activate and deactivate (Saving energy).
-     * For HeatOnly:
-     * If the temperature threshold is met either deactivate (above max temperature) or activate (below min Temperature)
-     * the Heater. In Order -> Primary --> secondary --> fallback.
-     * Else check ConsumptionMeter and calculate Heatdemand.
-     * update the Heatdemand by either Heatmeter value OR the returned performance value of the Heater
-     * (Heatmeter is more accurate due to the fact, that Heater are slow in Heating)
-     * In Addition a BufferValue is needed and calculated; depending on the Average Temperature in the System.
-     * Meaning either More or Less Performance than needed is calculated/provided.
-     * The Buffer Values are set via Config. As Well as all the TemperatureSensors Heaters etc etc.
+     * Each Heater got a Temperature where they should activate and deactivate.
+     * When the activationThermometer reaches the activationTemperature, the Heater activates / {@link Heater#getEnableSignalChannel()}
+     * will receive a nextWriteValue of true.
+     * The Heater stays active, till the deactivationThermometer reaches the deactivationTemperature.
+     * When the Deactivation Temperature is reached, the {@link Heater#getEnableSignalChannel()} won't be set in any way.
+     * This way the Heater stays deactivated, until the activationTemperature is reached again.
      * </p>
      */
     @Override

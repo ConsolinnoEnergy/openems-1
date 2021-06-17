@@ -88,7 +88,7 @@ public class MyControllerTest {
         try {
             this.cpm.addComponent(this.dummyHeaterMap.get("Heater2"));
             OpenemsComponent[] components = new OpenemsComponent[this.cpm.getAllComponents().size()];
-            this.cpm.getAllComponents().toArray(components);
+            components = this.cpm.getAllComponents().toArray(components);
             new ControllerTest(new MultipleHeaterCombinedControllerImpl(), components)
                     .addReference("cpm", this.cpm)
                     .activate(MyConfig.create()
@@ -138,7 +138,7 @@ public class MyControllerTest {
     public void configurationAtFirstWrong() {
         try {
             OpenemsComponent[] components = new OpenemsComponent[this.cpm.getAllComponents().size()];
-            this.cpm.getAllComponents().toArray(components);
+            components = this.cpm.getAllComponents().toArray(components);
             new ControllerTest(new MultipleHeaterCombinedControllerImpl(), components)
                     .addReference("cpm", this.cpm)
                     .activate(MyConfig.create()
@@ -181,7 +181,7 @@ public class MyControllerTest {
     public void hasErrorAfterWrongConfigurationForTooLong() {
         try {
             OpenemsComponent[] components = new OpenemsComponent[this.cpm.getAllComponents().size()];
-            this.cpm.getAllComponents().toArray(components);
+            components = this.cpm.getAllComponents().toArray(components);
             new ControllerTest(new MultipleHeaterCombinedControllerImpl(), components)
                     .addReference("cpm", this.cpm)
                     .activate(MyConfig.create()
@@ -220,7 +220,7 @@ public class MyControllerTest {
         try {
             this.cpm.addComponent(this.dummyHeaterMap.get("Heater2"));
             OpenemsComponent[] components = new OpenemsComponent[this.cpm.getAllComponents().size()];
-            this.cpm.getAllComponents().toArray(components);
+            components =  this.cpm.getAllComponents().toArray(components);
             new ControllerTest(new MultipleHeaterCombinedControllerImpl(), components)
                     .addReference("cpm", this.cpm)
                     .activate(MyConfig.create()
@@ -259,7 +259,7 @@ public class MyControllerTest {
         try {
             this.cpm.addComponent(this.dummyHeaterMap.get("Heater2"));
             OpenemsComponent[] components = new OpenemsComponent[this.cpm.getAllComponents().size()];
-            this.cpm.getAllComponents().toArray(components);
+            components = this.cpm.getAllComponents().toArray(components);
             new ControllerTest(new MultipleHeaterCombinedControllerImpl(), components)
                     .addReference("cpm", this.cpm)
                     .activate(MyConfig.create()
@@ -292,7 +292,7 @@ public class MyControllerTest {
         try {
             this.cpm.addComponent(this.dummyHeaterMap.get("Heater2"));
             OpenemsComponent[] components = new OpenemsComponent[this.cpm.getAllComponents().size()];
-            this.cpm.getAllComponents().toArray(components);
+            components = this.cpm.getAllComponents().toArray(components);
             new ControllerTest(new MultipleHeaterCombinedControllerImpl(), components)
                     .addReference("cpm", this.cpm)
                     .activate(MyConfig.create()
@@ -332,7 +332,7 @@ public class MyControllerTest {
         try {
             this.cpm.addComponent(this.dummyHeaterMap.get("Heater2"));
             OpenemsComponent[] components = new OpenemsComponent[this.cpm.getAllComponents().size()];
-            this.cpm.getAllComponents().toArray(components);
+            components = this.cpm.getAllComponents().toArray(components);
             new ControllerTest(new MultipleHeaterCombinedControllerImpl(), components)
                     .addReference("cpm", this.cpm)
                     .activate(MyConfig.create()
