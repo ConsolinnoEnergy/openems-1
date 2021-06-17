@@ -7,13 +7,11 @@ import io.openems.edge.common.test.AbstractComponentTest;
 import io.openems.edge.common.test.DummyComponentManager;
 import io.openems.edge.common.test.TimeLeapClock;
 import io.openems.edge.controller.heatnetwork.valve.api.DummyValveController;
-import io.openems.edge.controller.heatnetwork.valve.api.ValveController;
 import io.openems.edge.controller.test.ControllerTest;
-import io.openems.edge.heater.Heater;
 import io.openems.edge.heater.test.DummyHeater;
-import io.openems.edge.heatsystem.components.test.DummyValve;
 import io.openems.edge.thermometer.api.Thermometer;
 import io.openems.edge.thermometer.api.test.DummyThermometer;
+import io.openems.edge.timer.api.DummyTimer;
 import io.openems.edge.timer.api.TimerType;
 import org.junit.Assert;
 import org.junit.Before;
@@ -42,7 +40,10 @@ public class MyControllerTest {
     private static final boolean notUseHeater = false;
     private static final String heaterId = "Heater0";
     private static final String wrongHeaterId = "Valve0";
-    private static final String[] componentStringsToActivate = {referenceThermometerId, thermometerActivateId, thermometerDeactivateId, valveControllerId, heaterId};
+    private static final String timerTime = "TimerByTime";
+    private static final String timerCycles = "TimerByCycles";
+    private static final String[] componentStringsToActivate = {referenceThermometerId, thermometerActivateId,
+            thermometerDeactivateId, valveControllerId, heaterId, timerTime, timerCycles};
     private static final int timeToWaitValveOpen = 3;
     final Map<String, Thermometer> thermometerMap = new HashMap<>();
     private final Map<String, ChannelAddress> channelAddresses = new HashMap<>();
@@ -56,16 +57,22 @@ public class MyControllerTest {
         this.cpm.addComponent(new DummyHeater(heaterId));
         Arrays.stream(componentStringsToActivate).forEach(entry -> {
             String channelId = "EnableSignal";
-          if(entry.contains("Thermometer")){
-              Thermometer th  = new DummyThermometer(entry);
-              this.cpm.addComponent(th);
-              this.thermometerMap.put(entry, th);
-              channelId = "Temperature";
-          } else if(entry.contains("Heat")){
-              this.cpm.addComponent(new DummyHeater(entry));
-          } else if (entry.contains("Valve")){
-              this.cpm.addComponent(new DummyValveController(entry));
-          }
+            if (entry.contains("Thermometer")) {
+                Thermometer th = new DummyThermometer(entry);
+                this.cpm.addComponent(th);
+                this.thermometerMap.put(entry, th);
+                channelId = "Temperature";
+            } else if (entry.contains("Heat")) {
+                this.cpm.addComponent(new DummyHeater(entry));
+            } else if (entry.contains("Valve")) {
+                this.cpm.addComponent(new DummyValveController(entry));
+            } else if (entry.contains("Timer")) {
+                TimerType type = TimerType.TIME;
+                if (entry.contains("Cycles")) {
+                    type = TimerType.CYCLES;
+                }
+                this.cpm.addComponent(new DummyTimer(entry, type));
+            }
             this.channelAddresses.put(entry, new ChannelAddress(entry, channelId));
         });
     }
@@ -74,7 +81,7 @@ public class MyControllerTest {
      * The Configuration is correct and the Controller is running/Heating as expected.
      */
     @Test
-    public void everythingsFineAndHeating() {
+    public void heaterRunsAndValveControllerEnabledAfterTimeIsUp() {
         try {
             OpenemsComponent[] components = new OpenemsComponent[this.cpm.getAllComponents().size()];
             this.cpm.getAllComponents().toArray(components);
@@ -91,36 +98,36 @@ public class MyControllerTest {
                             .setThermometerDeactivateId(thermometerDeactivateId)
                             .setValveControllerId(valveControllerId)
                             .setSurveillanceType(TemperatureSurveillanceType.HEATER_AND_VALVE_CONTROLLER)
+                            .setTimeToWaitValveOpen(timeToWaitValveOpen)
                             .setService_pid("EverythingsFineHeaterAndValve")
-                            .setTimerId("TimerByCycles")
+                            .setTimerId(timerTime)
                             .build())
                     //Everythings heating
                     .next(new AbstractComponentTest.TestCase()
                             .timeleap(this.clock, 1, ChronoUnit.SECONDS)
-                            .input(this.channelAddresses.get("Thermometer0"), 500)
-                            .input(this.channelAddresses.get("Thermometer1"), 400)
-                            .input(this.channelAddresses.get("Thermometer2"), 400)
-                            .input(this.channelAddresses.get("Thermometer3"), 400)
-                            .input(this.channelAddresses.get("Thermometer4"), 300)
-                            .input(this.channelAddresses.get("Thermometer5"), 300)
-                            .input(this.channelAddresses.get("Thermometer6"), 300)
+                            .input(this.channelAddresses.get("Thermometer0"), 400)
+                            .input(this.channelAddresses.get("Thermometer1"), 650)
+                            .input(this.channelAddresses.get("Thermometer2"), 650)
+                            .output(this.channelAddresses.get("Thermometer0"),400)
                     )
                     .next(new AbstractComponentTest.TestCase()
                             .output(this.channelAddresses.get("Heater0"), true)
-                            .output(this.channelAddresses.get("Heater1"), true)
-                            .output(this.channelAddresses.get("Heater2"), true))
+                    )
                     //Should still Heat heater2
                     .next(new AbstractComponentTest.TestCase()
                             .timeleap(this.clock, 1, ChronoUnit.SECONDS)
-                            .input(this.channelAddresses.get("Thermometer0"), 200)
-                            .input(this.channelAddresses.get("Heater2"), null)
-                            .output(this.channelAddresses.get("Heater2"), true))
+                            .output(this.channelAddresses.get("Heater0"), true)
+                    )
+
                     //Heater 2 should deactivate
                     .next(new AbstractComponentTest.TestCase()
                             .timeleap(this.clock, 1, ChronoUnit.SECONDS)
-                            .input(this.channelAddresses.get("Thermometer6"), 1000)
-                            .input(this.channelAddresses.get("Heater2"), null)
-                            .output(this.channelAddresses.get("Heater2"), null))
+                            .output(this.channelAddresses.get("Heater0"), true)
+                    )
+                    .next(new AbstractComponentTest.TestCase()
+                            .timeleap(this.clock, 1, ChronoUnit.SECONDS)
+                            .output(this.channelAddresses.get("Valve0"), true)
+                    )
                     .getSut().run();
         } catch (Exception e) {
             Assert.fail();

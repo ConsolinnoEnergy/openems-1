@@ -88,8 +88,7 @@ public class TemperatureSurveillanceControllerImpl extends AbstractOpenemsCompon
             this.activationOffset = config.offsetActivate();
             this.deactivationOffset = config.offsetDeactivate();
             this.allocateComponents(config);
-            //other config setup
-            this.initializeTimer(config);
+
             this.configSuccess = true;
         } catch (OpenemsError.OpenemsNamedException | ConfigurationException e) {
             this.log.warn("Couldn't allocate Components, this Controller will try again later " + super.id());
@@ -129,9 +128,9 @@ public class TemperatureSurveillanceControllerImpl extends AbstractOpenemsCompon
         });
         if (doubleIds.size() > 0) {
             this.log.error("Duplicated Thermometer ids found: " + doubleIds.toString());
-            return false;
-        } else {
             return true;
+        } else {
+            return false;
         }
     }
 
@@ -186,6 +185,7 @@ public class TemperatureSurveillanceControllerImpl extends AbstractOpenemsCompon
                         + config.valveControllerId() + " Not an Instance of ValveController");
             }
         }
+        this.initializeTimer(config);
     }
 
     @Deactivate
@@ -219,14 +219,14 @@ public class TemperatureSurveillanceControllerImpl extends AbstractOpenemsCompon
                 this.isRunning = true;
                 switch (this.surveillanceType) {
                     case HEATER_ONLY:
-                        this.optionalHeater.getEnableSignalChannel().setNextWriteValue(true);
+                        this.optionalHeater.getEnableSignalChannel().setNextWriteValueFromObject(true);
                         break;
                     case VALVE_CONTROLLER_ONLY:
                         this.optionalValveController.setEnableSignal(true);
                         this.optionalValveController.setControlType(ControlType.TEMPERATURE);
                         break;
                     case HEATER_AND_VALVE_CONTROLLER:
-                        this.optionalHeater.getEnableSignalChannel().setNextWriteValue(true);
+                        this.optionalHeater.getEnableSignalChannel().setNextWriteValueFromObject(true);
                         if (this.timer.checkTimeIsUp(VALVE_IDENTIFIER)) {
                             this.optionalValveController.setEnableSignal(true);
                             this.optionalValveController.setControlType(ControlType.TEMPERATURE);
