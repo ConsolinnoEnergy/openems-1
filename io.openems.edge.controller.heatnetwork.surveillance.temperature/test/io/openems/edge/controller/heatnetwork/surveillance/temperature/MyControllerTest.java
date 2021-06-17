@@ -100,7 +100,7 @@ public class MyControllerTest {
                             .setSurveillanceType(TemperatureSurveillanceType.HEATER_AND_VALVE_CONTROLLER)
                             .setTimeToWaitValveOpen(timeToWaitValveOpen)
                             .setService_pid("EverythingsFineHeaterAndValve")
-                            .setTimerId(timerTime)
+                            .setTimerId(timerCycles)
                             .build())
                     //Everythings heating
                     .next(new TestCase()
@@ -133,5 +133,46 @@ public class MyControllerTest {
             Assert.fail();
         }
     }
+
+    /**
+     * The Configuration is correct and the Controller is running/Heating as expected.
+     */
+    @Test
+    public void heaterRuns() {
+        try {
+            OpenemsComponent[] components = new OpenemsComponent[this.cpm.getAllComponents().size()];
+            this.cpm.getAllComponents().toArray(components);
+            new ControllerTest(new TemperatureSurveillanceControllerImpl(), components)
+                    .addReference("cpm", this.cpm)
+                    .activate(MyConfig.create()
+                            .setId(id)
+                            .setHeaterId(heaterId)
+                            .setEnabled(enabled)
+                            .setOffsetActivate(offsetActivate)
+                            .setOffsetDeactivate(offsetDeactivate)
+                            .setReferenceThermometerId(referenceThermometerId)
+                            .setThermometerActivateId(thermometerActivateId)
+                            .setThermometerDeactivateId(thermometerDeactivateId)
+                            .setValveControllerId(valveControllerId)
+                            .setSurveillanceType(TemperatureSurveillanceType.HEATER_ONLY)
+                            .setTimeToWaitValveOpen(timeToWaitValveOpen)
+                            .setService_pid("EverythingsFineHeater")
+                            .setTimerId(timerCycles)
+                            .build())
+                    //Everythings heating
+                    .next(new TestCase()
+                            .timeleap(this.clock, 1, ChronoUnit.SECONDS)
+                            .input(this.channelAddresses.get("Thermometer0"), 400)
+                            .input(this.channelAddresses.get("Thermometer1"), 650)
+                            .input(this.channelAddresses.get("Thermometer2"), 650)
+                            .output(this.channelAddresses.get(heaterId), true)
+                    )
+                    .getSut().run();
+        } catch (Exception e) {
+            Assert.fail();
+        }
+    }
+
+    
 
 }

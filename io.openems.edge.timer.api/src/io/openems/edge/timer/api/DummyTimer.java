@@ -33,10 +33,10 @@ public class DummyTimer extends AbstractOpenemsComponent implements OpenemsCompo
             case CYCLES:
                wrapper = this.getWrapper(identifier);
                 if (wrapper.isInitialized()) {
-                    return wrapper.getCounter().getAndIncrement() > wrapper.getMaxValue();
+                    return wrapper.getCounter().getAndIncrement() >= wrapper.getMaxValue();
                 } else {
                     wrapper.setInitialized(true);
-                    wrapper.getCounter().set(0);
+                    wrapper.getCounter().set(1);
                 }
                 return false;
             case TIME:
