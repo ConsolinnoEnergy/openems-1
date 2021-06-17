@@ -8,6 +8,7 @@ import io.openems.edge.common.test.DummyComponentManager;
 import io.openems.edge.common.test.TimeLeapClock;
 import io.openems.edge.controller.heatnetwork.valve.api.DummyValveController;
 import io.openems.edge.controller.test.ControllerTest;
+import io.openems.edge.common.test.AbstractComponentTest.TestCase;
 import io.openems.edge.heater.test.DummyHeater;
 import io.openems.edge.thermometer.api.Thermometer;
 import io.openems.edge.thermometer.api.test.DummyThermometer;
@@ -54,7 +55,6 @@ public class MyControllerTest {
     public void setup() {
 
         this.cpm = new DummyComponentManager(clock);
-        this.cpm.addComponent(new DummyHeater(heaterId));
         Arrays.stream(componentStringsToActivate).forEach(entry -> {
             String channelId = "EnableSignal";
             if (entry.contains("Thermometer")) {
@@ -103,18 +103,18 @@ public class MyControllerTest {
                             .setTimerId(timerTime)
                             .build())
                     //Everythings heating
-                    .next(new AbstractComponentTest.TestCase()
+                    .next(new TestCase()
                             .timeleap(this.clock, 1, ChronoUnit.SECONDS)
                             .input(this.channelAddresses.get("Thermometer0"), 400)
                             .input(this.channelAddresses.get("Thermometer1"), 650)
                             .input(this.channelAddresses.get("Thermometer2"), 650)
-                            .output(this.channelAddresses.get("Thermometer0"),400)
                     )
-                    .next(new AbstractComponentTest.TestCase()
-                            .output(this.channelAddresses.get("Heater0"), true)
+                    .next(new TestCase()
+                            .timeleap(this.clock, 1, ChronoUnit.SECONDS)
+                            .output(this.channelAddresses.get(heaterId), true)
                     )
                     //Should still Heat heater2
-                    .next(new AbstractComponentTest.TestCase()
+                    .next(new TestCase()
                             .timeleap(this.clock, 1, ChronoUnit.SECONDS)
                             .output(this.channelAddresses.get("Heater0"), true)
                     )
