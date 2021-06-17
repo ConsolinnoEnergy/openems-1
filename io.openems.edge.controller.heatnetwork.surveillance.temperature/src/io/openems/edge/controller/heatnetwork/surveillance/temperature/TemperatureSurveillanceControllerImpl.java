@@ -136,8 +136,9 @@ public class TemperatureSurveillanceControllerImpl extends AbstractOpenemsCompon
 
     /**
      * Allocates the Components corresponding to the Config.
+     *
      * @param config the config of the Component
-     * @throws ConfigurationException if the componentIds are available in the OpenEMS Edge but not an instance of the correct Class
+     * @throws ConfigurationException             if the componentIds are available in the OpenEMS Edge but not an instance of the correct Class
      * @throws OpenemsError.OpenemsNamedException if the id couldn't be found at all.
      */
     private void allocateComponents(Config config) throws ConfigurationException, OpenemsError.OpenemsNamedException {
@@ -215,6 +216,11 @@ public class TemperatureSurveillanceControllerImpl extends AbstractOpenemsCompon
             } catch (OpenemsError.OpenemsNamedException e) {
                 this.log.warn("Couldn't reallocate All components: " + e.getMessage());
             }
+            if (this.deactivationConditionsApply()) {
+                this.isRunning = false;
+                this.disableComponents();
+            }
+            
             if (this.activationConditionsApply() || this.isRunning) {
                 this.isRunning = true;
                 switch (this.surveillanceType) {
@@ -237,8 +243,6 @@ public class TemperatureSurveillanceControllerImpl extends AbstractOpenemsCompon
                     case NOTHING:
                         break;
                 }
-            } else if (this.deactivationConditionsApply()) {
-                this.isRunning = false;
             }
         } else {
             try {
@@ -252,6 +256,14 @@ public class TemperatureSurveillanceControllerImpl extends AbstractOpenemsCompon
                 }
                 this.configSuccess = false;
             }
+        }
+    }
+
+    private void disableComponents() throws OpenemsError.OpenemsNamedException {
+        switch (this.surveillanceType) {
+            case VALVE_CONTROLLER_ONLY:
+            case HEATER_AND_VALVE_CONTROLLER:
+                this.optionalValveController.setEnableSignal(false);
         }
     }
 
