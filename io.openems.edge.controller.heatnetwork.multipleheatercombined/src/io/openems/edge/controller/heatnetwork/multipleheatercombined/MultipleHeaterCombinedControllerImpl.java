@@ -31,12 +31,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * The MultipleHeaterCombined controller allows the monitoring and enabling of any {@link Heater}.
  * Each Heater gets an activation and deactivation Thermometer as well as temperature.
- * For Example: Heater A has a Thermometer Aa and a Thermometer Ab with an activation Temperature of 400dC and a deactivation Temperature of 600dC
- * The thermometer Ab will be checked if it's Temperature is > than the deactivation Temp. of 600 dC
+ * For Example: Heater A has an (activation) Thermometer B and a (deactivation) Thermometer C with an activation Temperature
+ * of 400dC and a deactivation Temperature of 600dC.
+ * The thermometer C will be checked if it's Temperature is > than the deactivation Temp. of 600 dC.
  * If so -> disable the Heater (Don't write in the enable Signal) -> set the {@link HeaterActiveWrapper#setActive(boolean)}}
- * to false therefore don't write in the heater Channel
- * Else if the Activation Thermometer Aa is beneath the activation Temperature of 400dC set the {@link HeaterActiveWrapper#setActive(boolean)}
- * to true and therefore write into the heater Channel.
+ * to false therefore don't write in the corresponding heater EnableSignal Channel.
+ * Else if the Activation Thermometer B is beneath the activation Temperature of 400dC set the {@link HeaterActiveWrapper#setActive(boolean)}
+ * to true and therefore write into the heater EnableSignal Channel.
  */
 @Designate(ocd = Config.class, factory = true)
 @Component(name = "MultipleHeaterCombined",
