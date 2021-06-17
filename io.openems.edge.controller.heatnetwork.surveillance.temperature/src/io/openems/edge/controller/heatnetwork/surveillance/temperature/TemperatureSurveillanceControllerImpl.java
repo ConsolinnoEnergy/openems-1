@@ -75,6 +75,15 @@ public class TemperatureSurveillanceControllerImpl extends AbstractOpenemsCompon
         this.activationOrModifiedRoutine(config);
     }
 
+    /**
+     * Checks the configuration.
+     * If the ThermometerId's have duplications -> throw an exception (Because config will never work).
+     * Otherwise check if the Configuration might succeed. If not -> Wait until the run method is called.
+     * Some Components might be enabled later.
+     *
+     * @param config the config of this Component.
+     * @throws ConfigurationException if the Thermometer id's are duplicated.
+     */
     private void activationOrModifiedRoutine(Config config) throws ConfigurationException {
         this.config = config;
         if (this.configContainsSameThermometerIds(config.thermometerActivateId(), config.thermometerDeactivateId(), config.referenceThermometerId())) {
@@ -115,6 +124,13 @@ public class TemperatureSurveillanceControllerImpl extends AbstractOpenemsCompon
         super.modified(context, config.id(), config.alias(), config.enabled());
         this.activationOrModifiedRoutine(config);
     }
+
+    /**
+     * Check fur duplicated Thermometer ids.
+     *
+     * @param ids the Thermometer ids.
+     * @return a boolean.
+     */
 
     private boolean configContainsSameThermometerIds(String... ids) {
         List<String> idList = new ArrayList<>();
@@ -256,6 +272,11 @@ public class TemperatureSurveillanceControllerImpl extends AbstractOpenemsCompon
 
     }
 
+    /**
+     * Disables the Component if the {@link TemperatureSurveillanceType} matches.
+     *
+     * @throws OpenemsError.OpenemsNamedException if the write fails.
+     */
     private void disableComponents() throws OpenemsError.OpenemsNamedException {
         switch (this.surveillanceType) {
             case VALVE_CONTROLLER_ONLY:
