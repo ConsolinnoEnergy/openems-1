@@ -12,7 +12,7 @@ import java.util.Map;
 
 /**
  * This class helps to get the Correct Thermometer of the corresponding Heater as well as "setPoints" for the Thermometer.
- * Provides the methods to check, if min or max temperature is reached --> therefore heater can activate/deactivate correctly.
+ * Provides the methods to check if min or max temperature is reached --> therefore heater can activate/deactivate correctly.
  */
 
 class ThermometerWrapper {

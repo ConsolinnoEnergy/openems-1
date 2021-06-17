@@ -9,8 +9,9 @@ import org.osgi.annotation.versioning.ProviderType;
 
 /**
  * The MultipleHeaterCombined controller manages Heater by Temperature. Each heater gets an activation and deactivation
- * Thermometer as well as Temperature. When Heater is <= the Activation Threshold activate the Heater till the Thermometer
- * reaches the Deactivation Temperature. Disable the Heater and wait till the Activation Temperature is reached again.
+ * Thermometer as well as Temperature. When an allocated activationThermometer is <= the Activation Threshold an allocated Heater
+ * activates till the deactivationThermometer reaches the Deactivation Temperature.
+ * Disable the Heater and wait till the Activation Temperature is reached again.
  */
 public interface MultipleHeaterCombinedController extends OpenemsComponent {
 
@@ -127,7 +128,7 @@ public interface MultipleHeaterCombinedController extends OpenemsComponent {
     }
 
     /**
-     * getter for the isHeating channel.
+     * Getter for the isHeating channel.
      *
      * @return a boolean.
      */
