@@ -1,7 +1,7 @@
 package io.openems.edge.controller.heatnetwork.multipleheatercombined;
 
 /**
- * This class is a Wrapper to save the active value of a Heater / if the heater should run.
+ * This class is a Wrapper to to save the active value AND check if this heater should always run on Full power.
  */
 class HeaterActiveWrapper {
 
@@ -16,22 +16,9 @@ class HeaterActiveWrapper {
         this(false);
     }
 
-    /**
-     * Should the Heater corresponding to this be activated.
-     * Determined previously by {@link ThermometerWrapper}
-     *
-     * @return {@link #active}
-     */
-
     boolean isActive() {
-        return this.active;
+        return active;
     }
-
-    /**
-     * Setter for the {@link #active} boolean.
-     *
-     * @param active true or false determined by {@link ThermometerWrapper}.
-     */
 
     void setActive(boolean active) {
         this.active = active;

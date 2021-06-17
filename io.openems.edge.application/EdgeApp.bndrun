@@ -44,7 +44,6 @@
 	bnd.identity;id='io.openems.edge.batteryinverter.sunspec',\
 	bnd.identity;id='io.openems.edge.battery.soltaro',\
 	bnd.identity;id='io.openems.edge.bridge.communication.remote.rest',\
-	bnd.identity;id='io.openems.edge.bridge.genibus',\
 	bnd.identity;id='io.openems.edge.bridge.lucidcontrol',\
 	bnd.identity;id='io.openems.edge.bridge.mbus',\
 	bnd.identity;id='io.openems.edge.bridge.modbus',\
@@ -54,7 +53,6 @@
 	bnd.identity;id='io.openems.edge.consolinno.modbus.configurator',\
 	bnd.identity;id='io.openems.edge.consolinno.pwm',\
 	bnd.identity;id='io.openems.edge.consolinno.relay',\
-	bnd.identity;id='io.openems.edge.consolinno.simulator',\
 	bnd.identity;id='io.openems.edge.consolinno.sensor.signal',\
 	bnd.identity;id='io.openems.edge.consolinno.sensor.temperature',\
 	bnd.identity;id='io.openems.edge.controller.api.backend',\
@@ -86,11 +84,7 @@
 	bnd.identity;id='io.openems.edge.controller.ess.selltogridlimit',\
 	bnd.identity;id='io.openems.edge.controller.evcs',\
 	bnd.identity;id='io.openems.edge.controller.evcs.fixactivepower',\
-    bnd.identity;id='io.openems.edge.exceptionalstate.api',\
 	bnd.identity;id='io.openems.edge.controller.generic.jsonlogic',\
-	bnd.identity;id='io.openems.edge.controller.heatnetwork.hydraulic.lineheater',\
-	bnd.identity;id='io.openems.edge.controller.heatnetwork.multipleheatercombined',\
-	bnd.identity;id='io.openems.edge.controller.heatnetwork.valve',\
 	bnd.identity;id='io.openems.edge.controller.highloadtimeslot',\
 	bnd.identity;id='io.openems.edge.controller.io.alarm',\
 	bnd.identity;id='io.openems.edge.controller.io.channelsinglethreshold',\
@@ -130,13 +124,11 @@
 	bnd.identity;id='io.openems.edge.fenecon.mini',\
 	bnd.identity;id='io.openems.edge.fenecon.pro',\
 	bnd.identity;id='io.openems.edge.goodwe',\
-	bnd.identity;id='io.openems.edge.heater',\
 	bnd.identity;id='io.openems.edge.heater.api',\
 	bnd.identity;id='io.openems.edge.heater.chp.dachs',\
 	bnd.identity;id='io.openems.edge.heater.chp.wolf',\
-	bnd.identity;id='io.openems.edge.heater.decentral',\
 	bnd.identity;id='io.openems.edge.heater.heatpump.tecalor',\
-	bnd.identity;id='io.openems.edge.heatsystem.componentsheatsystem.components',\
+	bnd.identity;id='io.openems.edge.heatsystem.components',\
 	bnd.identity;id='io.openems.edge.io.kmtronic',\
 	bnd.identity;id='io.openems.edge.io.revpi',\
 	bnd.identity;id='io.openems.edge.io.shelly',\
@@ -178,7 +170,6 @@
 	bnd.identity;id='io.openems.edge.tesla.powerwall2',\
 	bnd.identity;id='io.openems.edge.thermometer.threshold',\
 	bnd.identity;id='io.openems.edge.thermometer.virtual',\
-	bnd.identity;id='io.openems.edge.timer.api',\
 	bnd.identity;id='io.openems.edge.timedata.influxdb',\
 	bnd.identity;id='io.openems.edge.timedata.rrd4j',\
 
@@ -204,13 +195,11 @@
 	io.openems.edge.batteryinverter.sunspec;version=snapshot,\
 	io.openems.edge.bridge.communcation.remote.rest;version=snapshot,\
 	io.openems.edge.bridge.lucidcontrol;version=snapshot,\
-	io.openems.edge.bridge.genibus;version=snapshot,\
 	io.openems.edge.bridge.mbus;version=snapshot,\
 	io.openems.edge.bridge.modbus;version=snapshot,\
 	io.openems.edge.bridge.mqtt;version=snapshot,\
 	io.openems.edge.bridge.onewire;version=snapshot,\
 	io.openems.edge.common;version=snapshot,\
-	io.openems.edge.consolinno.simulator;version=snapshot,\
 	io.openems.edge.consolinno.modbus.configurator;version=snapshot,\
 	io.openems.edge.consolinno.pwm;version=snapshot,\
 	io.openems.edge.consolinno.relay;version=snapshot,\
@@ -247,9 +236,6 @@
 	io.openems.edge.controller.evcs;version=snapshot,\
 	io.openems.edge.controller.evcs.fixactivepower;version=snapshot,\
 	io.openems.edge.controller.generic.jsonlogic;version=snapshot,\
-	io.openems.edge.controller.heatnetwork.hydraulic.lineheater;version=snapshot,\
-	io.openems.edge.controller.heatnetwork.multipleheatercombined;version=snapshot,\
-	io.openems.edge.controller.heatnetwork.valve;version=snapshot,\
 	io.openems.edge.controller.highloadtimeslot;version=snapshot,\
 	io.openems.edge.controller.io.alarm;version=snapshot,\
 	io.openems.edge.controller.io.channelsinglethreshold;version=snapshot,\
@@ -287,16 +273,13 @@
 	io.openems.edge.evcs.ocpp.common;version=snapshot,\
 	io.openems.edge.evcs.ocpp.ies.keywatt.singleccs;version=snapshot,\
 	io.openems.edge.evcs.ocpp.server;version=snapshot,\
-	io.openems.edge.exceptionalstate.api;version=snapshot,\
 	io.openems.edge.fenecon.dess;version=snapshot,\
 	io.openems.edge.fenecon.mini;version=snapshot,\
 	io.openems.edge.fenecon.pro;version=snapshot,\
 	io.openems.edge.goodwe;version=snapshot,\
-	io.openems.edge.heater;version=snapshot,\
 	io.openems.edge.heater.api;version=snapshot,\
 	io.openems.edge.heater.chp.dachs;version=snapshot,\
 	io.openems.edge.heater.chp.wolf;version=snapshot,\
-	io.openems.edge.heater.decentral;version=snapshot,\
 	io.openems.edge.heater.heatpump.tecalor;version=snapshot,\
 	io.openems.edge.heatsystem.components;version=snapshot,\
 	io.openems.edge.io.api;version=snapshot,\
@@ -349,7 +332,6 @@
 	io.openems.edge.timedata.api;version=snapshot,\
 	io.openems.edge.timedata.influxdb;version=snapshot,\
 	io.openems.edge.timedata.rrd4j;version=snapshot,\
-	io.openems.edge.timer.api;version=snapshot,\
 	io.openems.shared.influxdb;version=snapshot,\
 	io.openems.wrapper.eu.chargetime.ocpp;version=snapshot,\
 	io.openems.wrapper.fastexcel;version=snapshot,\

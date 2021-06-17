@@ -1,133 +1,57 @@
 package io.openems.edge.controller.heatnetwork.multipleheatercombined;
 
-import io.openems.common.exceptions.OpenemsError;
-import io.openems.common.types.ChannelAddress;
-import io.openems.edge.common.channel.Channel;
-import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.thermometer.api.Thermometer;
-import org.osgi.service.cm.ConfigurationException;
 
 import java.util.HashMap;
 import java.util.Map;
 
 /**
- * This class helps to get the Correct Thermometer of the corresponding Heater as well as "setPoints" for the Thermometer.
+ * This class helps to get the Correct Thermometer of the corresponding Heater as well as "setpoints" for the Thermometer
  * Provides the methods to check, if min or max temperature is reached --> therefore heater can activate/deactivate correctly.
  */
 
 class ThermometerWrapper {
 
-    private final ComponentManager cpm;
     //Map the Thermometer to their min/max Value
-    private final Map<Thermometer, ThermometerValue> thermometerAndValue = new HashMap<>();
+    private Map<Thermometer, Integer> thermometerAndValue = new HashMap<>();
     //ThermometerKind == Activate/Deactivate on Heatcontrol. Mapped thermometerkind to Thermometer
-    private final Map<ThermometerKind, Thermometer> thermometerKindThermometerMap = new HashMap<>();
+    private Map<ThermometerKind, Thermometer> thermometerKindThermometerMap = new HashMap<>();
 
 
-    ThermometerWrapper(Thermometer minThermometer, Thermometer maxThermometer, String minValue, String maxValue, ComponentManager cpm)
-            throws OpenemsError.OpenemsNamedException, ConfigurationException {
-        this.cpm = cpm;
+    ThermometerWrapper(Thermometer minThermometer, Thermometer maxThermometer, int minValue, int maxValue) {
+
         this.thermometerKindThermometerMap.put(ThermometerKind.ACTIVATE_THERMOMETER, minThermometer);
-        this.thermometerAndValue.put(minThermometer, new ThermometerValue(minValue));
+        this.thermometerAndValue.put(minThermometer, minValue);
         this.thermometerKindThermometerMap.put(ThermometerKind.DEACTIVATE_THERMOMETER, maxThermometer);
-        this.thermometerAndValue.put(maxThermometer, new ThermometerValue(maxValue));
-        this.thermometerAndValue.get(minThermometer).validateChannelAndGetValue(this.cpm);
-        this.thermometerAndValue.get(maxThermometer).validateChannelAndGetValue(this.cpm);
-
+        this.thermometerAndValue.put(maxThermometer, maxValue);
     }
 
-    private static class ThermometerValue {
-        private int temperatureValue;
-        private ChannelAddress temperatureValueAddress;
-        private boolean usesChannel;
-
-        private ThermometerValue(String channelAddressOrValue) throws OpenemsError.OpenemsNamedException {
-            if (this.containsOnlyValidNumbers(channelAddressOrValue)) {
-                this.temperatureValue = Integer.parseInt(channelAddressOrValue);
-            } else {
-                this.temperatureValueAddress = ChannelAddress.fromString(channelAddressOrValue);
-                this.usesChannel = true;
-
-            }
-        }
-
-        private boolean containsOnlyValidNumbers(String value) {
-            return value.matches("[-+]?([0-9]*[.][0-9]+|[0-9]+)");
-        }
-
-        public int validateChannelAndGetValue(ComponentManager cpm) throws OpenemsError.OpenemsNamedException, ConfigurationException {
-            if (this.usesChannel) {
-                Channel<?> channel = cpm.getChannel(this.temperatureValueAddress);
-                if (channel.value().isDefined() && this.containsOnlyValidNumbers(channel.value().get().toString())) {
-                    return (Integer) channel.value().get();
-                } else {
-                    throw new ConfigurationException("ValidateChannelAndGetValue", "Either Channel does not contain a value or is not valid!");
-                }
-
-            } else {
-                return this.temperatureValue;
-            }
-        }
-    }
-
-    /**
-     * Getter for the deactivation Thermometer.
-     *
-     * @return the Deactivation {@link Thermometer}
-     */
-    Thermometer getDeactivationThermometer() {
+    //Thermometer where heater should deactivate --> Max Temperature
+    Thermometer getMaxThermometer() {
         return this.thermometerKindThermometerMap.get(ThermometerKind.DEACTIVATE_THERMOMETER);
     }
 
-    /**
-     * Getter for the activation Thermometer.
-     *
-     * @return the Activation {@link Thermometer}
-     */
-    Thermometer getActivationThermometer() {
+    //Thermometer where heeater should activate --> Min Temperature
+    Thermometer getMinThermometer() {
         return this.thermometerKindThermometerMap.get(ThermometerKind.ACTIVATE_THERMOMETER);
     }
 
-    /**
-     * Internal Method to get the Activation Temperature.
-     *
-     * @return the ActivationTemperature value.
-     */
-    private int getActivationTemperature() throws OpenemsError.OpenemsNamedException, ConfigurationException {
-        return this.thermometerAndValue.get(this.thermometerKindThermometerMap.get(ThermometerKind.ACTIVATE_THERMOMETER))
-                .validateChannelAndGetValue(this.cpm);
+    private int minThermometerValue() {
+        return this.thermometerAndValue.get(this.thermometerKindThermometerMap.get(ThermometerKind.ACTIVATE_THERMOMETER));
     }
 
-    /**
-     * Internal Method to get the Deactivation Temperature.
-     *
-     * @return the DeactivationTemperature value.
-     */
-    private int getDeactivationTemperature() throws OpenemsError.OpenemsNamedException, ConfigurationException {
-        return this.thermometerAndValue.get(this.thermometerKindThermometerMap.get(ThermometerKind.DEACTIVATE_THERMOMETER))
-                .validateChannelAndGetValue(this.cpm);
+    private int maxThermometerValue() {
+        return this.thermometerAndValue.get(this.thermometerKindThermometerMap.get(ThermometerKind.DEACTIVATE_THERMOMETER));
     }
 
-    /**
-     * Method, usually called by the {@link MultipleHeaterCombinedControllerImpl}
-     * to determine if the {@link HeaterActiveWrapper#setActive(boolean)} with value false should be called.
-     *
-     * @return the result of the Comparison of the DeactivationThermometer Temperature Value and the stored deactivation Temperature.
-     */
-
-    boolean shouldDeactivate() throws OpenemsError.OpenemsNamedException, ConfigurationException {
-        return this.getDeactivationThermometer().getTemperatureValue() >= this.getDeactivationTemperature();
+    //Current Temperature above max allowed Temp.
+    boolean offTemperatureAboveMaxValue() {
+        return this.getMaxThermometer().getTemperatureValue() > this.maxThermometerValue();
     }
 
-    /**
-     * Method, usually called by the {@link MultipleHeaterCombinedControllerImpl}
-     * to determine if the {@link HeaterActiveWrapper#setActive(boolean)} with value true should be called.
-     *
-     * @return the result of the Comparison of the ActivationThermometer Temperature Value and the stored activation Temperature.
-     */
-
-    boolean shouldActivate() throws OpenemsError.OpenemsNamedException, ConfigurationException {
-        return this.getActivationThermometer().getTemperatureValue() <= this.getActivationTemperature();
+    //current Temp. beneath min Temp.
+    boolean onTemperatureBelowMinValue() {
+        return this.getMinThermometer().getTemperatureValue() < this.minThermometerValue();
     }
 
 }

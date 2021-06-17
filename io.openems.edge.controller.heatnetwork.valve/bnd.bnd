@@ -11,7 +11,6 @@ Bundle-Version: 1.0.0.${tstamp}
 	io.openems.edge.heater.api,\
 	io.openems.edge.heatsystem.components,\
 	io.openems.edge.thermometer.api,\
-	io.openems.edge.relay.api,\
 	joda-time;version=2.10.8,\
 
 
