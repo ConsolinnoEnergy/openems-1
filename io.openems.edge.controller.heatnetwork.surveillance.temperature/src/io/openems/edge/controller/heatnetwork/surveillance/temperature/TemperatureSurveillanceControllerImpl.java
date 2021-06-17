@@ -46,7 +46,7 @@ public class TemperatureSurveillanceControllerImpl extends AbstractOpenemsCompon
 
     private Config config;
     private boolean configSuccess;
-    private AtomicInteger cycleCount;
+    private final AtomicInteger cycleCount = new AtomicInteger(0);
     private static final int MAX_CYCLE_FOR_CONFIG = 10;
     //Different ThresholdThermometer
     private Thermometer referenceThermometer;
@@ -209,61 +209,60 @@ public class TemperatureSurveillanceControllerImpl extends AbstractOpenemsCompon
      * @throws OpenemsError.OpenemsNamedException if controller couldn't write next Value of Heater enableSignalChannel.
      */
     @Override
-    public void run() throws OpenemsError.OpenemsNamedException {
-        if (this.configSuccess) {
-            try {
+    public void run() {
+        try {
+            if (this.configSuccess) {
                 this.checkForMissingComponents();
-            } catch (OpenemsError.OpenemsNamedException e) {
-                this.log.warn("Couldn't reallocate All components: " + e.getMessage());
-            }
-            if (this.deactivationConditionsApply()) {
-                this.isRunning = false;
-                this.disableComponents();
-            }
-            
-            if (this.activationConditionsApply() || this.isRunning) {
-                this.isRunning = true;
-                switch (this.surveillanceType) {
-                    case HEATER_ONLY:
-                        this.optionalHeater.getEnableSignalChannel().setNextWriteValueFromObject(true);
-                        break;
-                    case VALVE_CONTROLLER_ONLY:
-                        this.optionalValveController.setEnableSignal(true);
-                        this.optionalValveController.setControlType(ControlType.TEMPERATURE);
-                        break;
-                    case HEATER_AND_VALVE_CONTROLLER:
-                        this.optionalHeater.getEnableSignalChannel().setNextWriteValueFromObject(true);
-                        if (this.timer.checkTimeIsUp(VALVE_IDENTIFIER)) {
+                if (this.deactivationConditionsApply()) {
+                    this.isRunning = false;
+                    this.disableComponents();
+                }
+
+                if (this.activationConditionsApply() || this.isRunning) {
+                    this.isRunning = true;
+                    switch (this.surveillanceType) {
+                        case HEATER_ONLY:
+                            this.optionalHeater.getEnableSignalChannel().setNextWriteValueFromObject(true);
+                            break;
+                        case VALVE_CONTROLLER_ONLY:
                             this.optionalValveController.setEnableSignal(true);
                             this.optionalValveController.setControlType(ControlType.TEMPERATURE);
-                        } else {
-                            this.optionalValveController.setEnableSignal(false);
-                        }
-                        break;
-                    case NOTHING:
-                        break;
+                            break;
+                        case HEATER_AND_VALVE_CONTROLLER:
+                            this.optionalHeater.getEnableSignalChannel().setNextWriteValueFromObject(true);
+                            if (this.timer.checkTimeIsUp(VALVE_IDENTIFIER)) {
+                                this.optionalValveController.setEnableSignal(true);
+                                this.optionalValveController.setControlType(ControlType.TEMPERATURE);
+                            } else {
+                                this.optionalValveController.setEnableSignal(false);
+                            }
+                            break;
+                        case NOTHING:
+                            break;
+                    }
                 }
-            }
-        } else {
-            try {
+            } else {
                 this.allocateComponents(this.config);
                 this.configSuccess = true;
-            } catch (ConfigurationException e) {
-                if (this.cycleCount.get() > MAX_CYCLE_FOR_CONFIG) {
-                    this.log.warn("Couldn't allocate Configuration for component: " + super.id());
-                } else {
-                    this.cycleCount.getAndIncrement();
-                }
-                this.configSuccess = false;
             }
+        } catch (ConfigurationException | OpenemsError.OpenemsNamedException e) {
+            if (this.cycleCount.get() > MAX_CYCLE_FOR_CONFIG) {
+                this.log.warn("Couldn't allocate Configuration for component: " + super.id());
+            } else {
+                this.cycleCount.getAndIncrement();
+            }
+            this.configSuccess = false;
         }
+
     }
 
     private void disableComponents() throws OpenemsError.OpenemsNamedException {
         switch (this.surveillanceType) {
             case VALVE_CONTROLLER_ONLY:
             case HEATER_AND_VALVE_CONTROLLER:
-                this.optionalValveController.setEnableSignal(false);
+                if (this.optionalValveController != null) {
+                    this.optionalValveController.setEnableSignal(false);
+                }
         }
     }
 
