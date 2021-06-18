@@ -59,7 +59,7 @@ public abstract class AbstractComponentTest<SELF extends AbstractComponentTest<S
 
 		/**
 		 * Gets the {@link ChannelAddress}.
-		 * 
+		 *
 		 * @return the {@link ChannelAddress}
 		 */
 		public ChannelAddress getAddress() {
@@ -68,7 +68,7 @@ public abstract class AbstractComponentTest<SELF extends AbstractComponentTest<S
 
 		/**
 		 * Gets the value {@link Object}.
-		 * 
+		 *
 		 * @return the {@link Object}
 		 */
 		public Object getValue() {
@@ -126,7 +126,7 @@ public abstract class AbstractComponentTest<SELF extends AbstractComponentTest<S
 
 		/**
 		 * Create a TestCase with a description.
-		 * 
+		 *
 		 * @param description the description
 		 */
 		public TestCase(String description) {
@@ -135,7 +135,7 @@ public abstract class AbstractComponentTest<SELF extends AbstractComponentTest<S
 
 		/**
 		 * Adds an input value for a Channel.
-		 * 
+		 *
 		 * @param address the {@link ChannelAddress}
 		 * @param value   the value {@link Object}
 		 * @return myself
@@ -147,7 +147,7 @@ public abstract class AbstractComponentTest<SELF extends AbstractComponentTest<S
 
 		/**
 		 * Adds an expected output value for a Channel.
-		 * 
+		 *
 		 * @param address the {@link ChannelAddress}
 		 * @param value   the value {@link Object}
 		 * @return myself
@@ -159,7 +159,7 @@ public abstract class AbstractComponentTest<SELF extends AbstractComponentTest<S
 
 		/**
 		 * Adds a simulated timeleap, i.e. simulates that a given amount of time passed.
-		 * 
+		 *
 		 * @param clock       the active {@link TimeLeapClock}, i.e. provided to the
 		 *                    system-under-test by a {@link ClockProvider} like
 		 *                    {@link ComponentManager}.
@@ -176,7 +176,7 @@ public abstract class AbstractComponentTest<SELF extends AbstractComponentTest<S
 		/**
 		 * Adds a Callback that is called on
 		 * {@link EdgeEventConstants#TOPIC_CYCLE_BEFORE_PROCESS_IMAGE} event.
-		 * 
+		 *
 		 * @param callback the callback
 		 * @return myself
 		 */
@@ -188,7 +188,7 @@ public abstract class AbstractComponentTest<SELF extends AbstractComponentTest<S
 		/**
 		 * Adds a Callback that is called on
 		 * {@link EdgeEventConstants#TOPIC_CYCLE_AFTER_PROCESS_IMAGE} event.
-		 * 
+		 *
 		 * @param callback the callback
 		 * @return myself
 		 */
@@ -200,7 +200,7 @@ public abstract class AbstractComponentTest<SELF extends AbstractComponentTest<S
 		/**
 		 * Adds a Callback that is called on
 		 * {@link EdgeEventConstants#TOPIC_CYCLE_BEFORE_CONTROLLERS} event.
-		 * 
+		 *
 		 * @param callback the callback
 		 * @return myself
 		 */
@@ -213,7 +213,7 @@ public abstract class AbstractComponentTest<SELF extends AbstractComponentTest<S
 		 * Adds a Callback that is called after
 		 * {@link EdgeEventConstants#TOPIC_CYCLE_BEFORE_CONTROLLERS} and before
 		 * {@link EdgeEventConstants#TOPIC_CYCLE_AFTER_CONTROLLERS}. events.
-		 * 
+		 *
 		 * @param callback the callback
 		 * @return myself
 		 */
@@ -225,7 +225,7 @@ public abstract class AbstractComponentTest<SELF extends AbstractComponentTest<S
 		/**
 		 * Adds a Callback that is called on
 		 * {@link EdgeEventConstants#TOPIC_CYCLE_AFTER_CONTROLLERS} event.
-		 * 
+		 *
 		 * @param callback the callback
 		 * @return myself
 		 */
@@ -237,7 +237,7 @@ public abstract class AbstractComponentTest<SELF extends AbstractComponentTest<S
 		/**
 		 * Adds a Callback that is called on
 		 * {@link EdgeEventConstants#TOPIC_CYCLE_BEFORE_WRITE} event.
-		 * 
+		 *
 		 * @param callback the callback
 		 * @return myself
 		 */
@@ -249,7 +249,7 @@ public abstract class AbstractComponentTest<SELF extends AbstractComponentTest<S
 		/**
 		 * Adds a Callback that is called on
 		 * {@link EdgeEventConstants#TOPIC_CYCLE_EXECUTE_WRITE} event.
-		 * 
+		 *
 		 * @param callback the callback
 		 * @return myself
 		 */
@@ -261,7 +261,7 @@ public abstract class AbstractComponentTest<SELF extends AbstractComponentTest<S
 		/**
 		 * Adds a Callback that is called on
 		 * {@link EdgeEventConstants#TOPIC_CYCLE_AFTER_WRITE} event.
-		 * 
+		 *
 		 * @param callback the callback
 		 * @return myself
 		 */
@@ -281,7 +281,7 @@ public abstract class AbstractComponentTest<SELF extends AbstractComponentTest<S
 
 		/**
 		 * Applies the values for input channels.
-		 * 
+		 *
 		 * @param components Referenced components
 		 * @throws OpenemsNamedException    on error
 		 * @throws IllegalArgumentException on error
@@ -306,7 +306,7 @@ public abstract class AbstractComponentTest<SELF extends AbstractComponentTest<S
 
 		/**
 		 * Validates the output values.
-		 * 
+		 *
 		 * @param components Referenced components
 		 * @throws Exception on validation failure
 		 */
@@ -357,7 +357,7 @@ public abstract class AbstractComponentTest<SELF extends AbstractComponentTest<S
 
 	/**
 	 * Constructs the Component-Test and validates the implemented Channel-IDs.
-	 * 
+	 *
 	 * @param sut the 'system-under-test'
 	 * @throws OpenemsException on error
 	 */
@@ -390,7 +390,7 @@ public abstract class AbstractComponentTest<SELF extends AbstractComponentTest<S
 
 	/**
 	 * Gets the 'system-under-test', i.e. the tested {@link OpenemsComponent}.
-	 * 
+	 *
 	 * @return the tested Component
 	 */
 	public SUT getSut() {
@@ -399,17 +399,17 @@ public abstract class AbstractComponentTest<SELF extends AbstractComponentTest<S
 
 	/**
 	 * Gets an instance of the correct subclass of myself.
-	 * 
+	 *
 	 * @return myself
 	 */
 	protected abstract SELF self();
 
 	/**
 	 * Adds a OSGi Declarative Services @Reference via java reflection.
-	 * 
+	 *
 	 * <p>
 	 * Can also be used to set any other private field via reflection.
-	 * 
+	 *
 	 * @param memberName the name of the field or method
 	 * @param object     the reference object
 	 * @return itself, to use as a builder
@@ -468,10 +468,10 @@ public abstract class AbstractComponentTest<SELF extends AbstractComponentTest<S
 
 	/**
 	 * Adds an available {@link OpenemsComponent}.
-	 * 
+	 *
 	 * <p>
 	 * If the provided Component is a {@link DummyComponentManager}.
-	 * 
+	 *
 	 * @param component the {@link OpenemsComponent}s
 	 * @return itself, to use as a builder
 	 */
@@ -489,11 +489,11 @@ public abstract class AbstractComponentTest<SELF extends AbstractComponentTest<S
 
 	/**
 	 * Calls the 'activate()' method of the 'system-under-test'.
-	 * 
+	 *
 	 * <p>
 	 * If 'activate()' changes the configuration, the OSGi behavior is simulated by
 	 * calling 'deactivate()' and then again 'activate()'
-	 * 
+	 *
 	 * @param config the configuration
 	 * @return itself, to use as a builder
 	 * @throws Exception on error
@@ -509,6 +509,40 @@ public abstract class AbstractComponentTest<SELF extends AbstractComponentTest<S
 
 		int configChangeCount = this.getConfigChangeCount();
 		this.callActivate(config);
+
+		if (configChangeCount != this.getConfigChangeCount()) {
+			// deactivate + recursive call
+			this.callDeactivate();
+			this.activate(config);
+		}
+
+		// Now SUT can be added to the list, as it does have an ID now
+		this.addComponent(this.sut);
+		return this.self();
+	}
+
+    /**
+     * Calls the 'modified()' method of the 'system-under-test'.
+     *
+     * <p>
+     * If 'modified()' changes the configuration, the OSGi behavior is simulated by
+     * calling 'deactivate()' and then again 'activate()'
+     *
+     * @param config the configuration
+     * @return itself, to use as a builder
+     * @throws Exception on error
+     */
+	public SELF modified(AbstractComponentConfig config) throws Exception {
+		// Add the configuration to ConfigurationAdmin
+		for (Object object : this.references) {
+			if (object instanceof DummyConfigurationAdmin) {
+				DummyConfigurationAdmin cm = (DummyConfigurationAdmin) object;
+				cm.addConfig(config);
+			}
+		}
+
+		int configChangeCount = this.getConfigChangeCount();
+		this.callModified(config);
 
 		if (configChangeCount != this.getConfigChangeCount()) {
 			// deactivate + recursive call
@@ -541,6 +575,39 @@ public abstract class AbstractComponentTest<SELF extends AbstractComponentTest<S
 		Method[] methods = clazz.getDeclaredMethods();
 		for (Method method : methods) {
 			if (!method.getName().equals("activate")) {
+				continue;
+			}
+			Object[] args = new Object[method.getParameterCount()];
+			for (int i = 0; i < method.getParameterCount(); i++) {
+				Parameter parameter = method.getParameters()[i];
+				Object arg;
+
+				if (ComponentContext.class.isAssignableFrom(parameter.getType())) {
+					// ComponentContext
+					arg = DummyComponentContext.from(config);
+
+				} else if (parameter.getType().isInstance(config)) {
+					// Config
+					arg = config;
+
+				} else {
+					throw new IllegalArgumentException("Unknown activate() parameter " + parameter);
+
+				}
+				args[i] = arg;
+			}
+			method.setAccessible(true);
+			method.invoke(this.sut, args);
+			return;
+		}
+	}
+
+	private void callModified(AbstractComponentConfig config)
+			throws IllegalAccessException, IllegalArgumentException, InvocationTargetException {
+		Class<?> clazz = this.sut.getClass();
+		Method[] methods = clazz.getDeclaredMethods();
+		for (Method method : methods) {
+			if (!method.getName().equals("modified")) {
 				continue;
 			}
 			Object[] args = new Object[method.getParameterCount()];
@@ -603,7 +670,7 @@ public abstract class AbstractComponentTest<SELF extends AbstractComponentTest<S
 
 	/**
 	 * Runs a Test-Case.
-	 * 
+	 *
 	 * @param testCase The TestCase
 	 * @return itself, to use as a builder
 	 * @throws Exception on error
@@ -650,10 +717,10 @@ public abstract class AbstractComponentTest<SELF extends AbstractComponentTest<S
 	/**
 	 * If the 'system-under-test' is a {@link EventHandler} call the
 	 * {@link EventHandler#handleEvent(Event)} method.
-	 * 
+	 *
 	 * @param topic the {@link Event} topic
 	 * @throws Exception on error
-	 * 
+	 *
 	 */
 	protected void handleEvent(String topic) throws Exception {
 		if (this.sut instanceof EventHandler) {
@@ -665,7 +732,7 @@ public abstract class AbstractComponentTest<SELF extends AbstractComponentTest<S
 	/**
 	 * This method is executed before the
 	 * {@link EdgeEventConstants#TOPIC_CYCLE_BEFORE_PROCESS_IMAGE} event.
-	 * 
+	 *
 	 * @throws OpenemsNamedException on error
 	 */
 	protected void onBeforeProcessImage() throws OpenemsNamedException {
@@ -674,7 +741,7 @@ public abstract class AbstractComponentTest<SELF extends AbstractComponentTest<S
 	/**
 	 * This method is executed before the
 	 * {@link EdgeEventConstants#TOPIC_CYCLE_AFTER_PROCESS_IMAGE} event.
-	 * 
+	 *
 	 * @throws OpenemsNamedException on error
 	 */
 	protected void onAfterProcessImage() throws OpenemsNamedException {
@@ -683,7 +750,7 @@ public abstract class AbstractComponentTest<SELF extends AbstractComponentTest<S
 	/**
 	 * This method is executed before the
 	 * {@link EdgeEventConstants#TOPIC_CYCLE_BEFORE_CONTROLLERS} event.
-	 * 
+	 *
 	 * @throws OpenemsNamedException on error
 	 */
 	protected void onBeforeControllers() throws OpenemsNamedException {
@@ -693,7 +760,7 @@ public abstract class AbstractComponentTest<SELF extends AbstractComponentTest<S
 	 * This method is executed after
 	 * {@link EdgeEventConstants#TOPIC_CYCLE_BEFORE_CONTROLLERS} and before
 	 * {@link EdgeEventConstants#TOPIC_CYCLE_AFTER_CONTROLLERS}.
-	 * 
+	 *
 	 * @throws OpenemsNamedException on error
 	 */
 	protected void onExecuteControllers() throws OpenemsNamedException {
@@ -702,7 +769,7 @@ public abstract class AbstractComponentTest<SELF extends AbstractComponentTest<S
 	/**
 	 * This method is executed before the
 	 * {@link EdgeEventConstants#TOPIC_CYCLE_AFTER_CONTROLLERS} event.
-	 * 
+	 *
 	 * @throws OpenemsNamedException on error
 	 */
 	protected void onAfterControllers() throws OpenemsNamedException {
@@ -711,7 +778,7 @@ public abstract class AbstractComponentTest<SELF extends AbstractComponentTest<S
 	/**
 	 * This method is executed before the
 	 * {@link EdgeEventConstants#TOPIC_CYCLE_BEFORE_WRITE} event.
-	 * 
+	 *
 	 * @throws OpenemsNamedException on error
 	 */
 	protected void onBeforeWrite() throws OpenemsNamedException {
@@ -720,7 +787,7 @@ public abstract class AbstractComponentTest<SELF extends AbstractComponentTest<S
 	/**
 	 * This method is executed before the
 	 * {@link EdgeEventConstants#TOPIC_CYCLE_EXECUTE_WRITE} event.
-	 * 
+	 *
 	 * @throws OpenemsNamedException on error
 	 */
 	protected void onExecuteWrite() throws OpenemsNamedException {
@@ -729,7 +796,7 @@ public abstract class AbstractComponentTest<SELF extends AbstractComponentTest<S
 	/**
 	 * This method is executed before
 	 * {@link EdgeEventConstants#TOPIC_CYCLE_AFTER_WRITE}.
-	 * 
+	 *
 	 * @throws OpenemsNamedException on error
 	 */
 	protected void onAfterWrite() throws OpenemsNamedException {
