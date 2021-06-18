@@ -91,7 +91,7 @@ public class MyConfig extends AbstractComponentConfig implements Config {
     }
 
     @Override
-    public String manageType() {
+    public ManageType manageType() {
         return null;
     }
 

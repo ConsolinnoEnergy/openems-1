@@ -1,7 +1,9 @@
 package io.openems.edge.controller.heatnetwork.communication.master;
 
 
+import io.openems.edge.controller.heatnetwork.communication.api.ConnectionType;
 import io.openems.edge.controller.heatnetwork.communication.api.FallbackHandling;
+import io.openems.edge.controller.heatnetwork.communication.api.ManageType;
 import io.openems.edge.timer.api.TimerType;
 import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
@@ -23,11 +25,8 @@ import java.util.Arrays;
     @AttributeDefinition(name = "Alias", description = "Human readable Name.")
     String alias() default "";
 
-    @AttributeDefinition(name = "ConnectionType", description = "ConnectionTypes",
-            options = {
-                    @Option(label = "REST", value = "REST")
-            })
-    String connectionType();
+    @AttributeDefinition(name = "ConnectionType", description = "ConnectionTypes, that are supported by the Communicationmaster")
+    ConnectionType connectionType() default ConnectionType.REST;
 
     @AttributeDefinition(name = "Maximum Requests", description = "Maximum requests handled at once, mapped to Connection type")
     int maxRequestAllowedAtOnce() default 3;
@@ -41,7 +40,7 @@ import java.util.Arrays;
 
     @AttributeDefinition(name = "ManagingType", description = "How To Manage Requests Each Entry will be Mapped to Connection type. "
             + "Available ManageRequests are: FIFO")
-    String manageType() default "FIFO";
+    ManageType manageType() default ManageType.FIFO;
 
     @AttributeDefinition(name = "Timer Id", description = "Timer by Cycles or Timer by Time for keepAlive Count till fallback activates")
     String timerId() default "TimerByCycles";

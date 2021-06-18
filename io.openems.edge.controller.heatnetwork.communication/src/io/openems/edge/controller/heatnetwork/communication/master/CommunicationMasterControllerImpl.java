@@ -1,7 +1,6 @@
 package io.openems.edge.controller.heatnetwork.communication.master;
 
 import io.openems.common.exceptions.OpenemsError;
-import io.openems.common.types.ChannelAddress;
 import io.openems.edge.common.component.AbstractOpenemsComponent;
 import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
@@ -11,7 +10,6 @@ import io.openems.edge.controller.heatnetwork.communication.api.CommunicationCon
 import io.openems.edge.controller.heatnetwork.communication.api.CommunicationMasterController;
 import io.openems.edge.controller.heatnetwork.communication.api.ConnectionType;
 import io.openems.edge.controller.heatnetwork.communication.api.FallbackHandling;
-import io.openems.edge.controller.heatnetwork.communication.api.ManageType;
 import io.openems.edge.controller.heatnetwork.communication.api.Request;
 import io.openems.edge.controller.heatnetwork.communication.api.RequestType;
 import io.openems.edge.controller.heatnetwork.communication.api.RestLeafletCommunicationController;
@@ -33,7 +31,6 @@ import io.openems.edge.heatsystem.components.Pump;
 import io.openems.edge.remote.rest.device.api.RestRemoteDevice;
 import io.openems.edge.timer.api.TimerHandler;
 import io.openems.edge.timer.api.TimerHandlerImpl;
-import org.joda.time.DateTime;
 import org.osgi.service.cm.Configuration;
 import org.osgi.service.cm.ConfigurationAdmin;
 import org.osgi.service.cm.ConfigurationException;
@@ -42,6 +39,7 @@ import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.ConfigurationPolicy;
 import org.osgi.service.component.annotations.Deactivate;
+import org.osgi.service.component.annotations.Modified;
 import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
@@ -66,7 +64,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class CommunicationMasterControllerImpl extends AbstractOpenemsComponent implements OpenemsComponent, Controller,
         CommunicationMasterController, ExceptionalState {
 
-    private final Logger logger = LoggerFactory.getLogger(CommunicationMasterControllerImpl.class);
+    private final Logger log = LoggerFactory.getLogger(CommunicationMasterControllerImpl.class);
     @Reference
     ComponentManager cpm;
 
@@ -74,14 +72,10 @@ public class CommunicationMasterControllerImpl extends AbstractOpenemsComponent 
     ConfigurationAdmin cm;
     //Configured communicationController handling one remoteCommunication
     CommunicationController communicationController;
-    //ThresholdTemperature to Write into so another Component can react in response correctly
-    private ChannelAddress answer;
     //The Optional HydraulicLineHeater
     private HydraulicLineHeater hydraulicLineHeater;
     //The Optional HeatPump
     private Pump heatPump;
-    //Will be Set if Connection not ok
-    private DateTime initalTimeStampFallback;
     //For Subclasses -> CommunicationController and manager
     private boolean forcing;
     private static final int REMOTE_REQUEST_CONFIGURATION_SIZE = 4;
@@ -91,6 +85,10 @@ public class CommunicationMasterControllerImpl extends AbstractOpenemsComponent 
     //Is declared as an Integer bc. of future implementation : Do XYZ at Certain Size
     //resets every run
     private final AtomicInteger requestSizeThisRun = new AtomicInteger(0);
+    private final AtomicInteger configFailCounter = new AtomicInteger(0);
+    private static final int MAX_FAIL_COUNTER = 10;
+    private Config config;
+    private boolean configSucceed;
     private TimerHandler timer;
     private boolean useExceptionalStateHandling;
     private ExceptionalStateHandler exceptionalStateHandler;
@@ -112,17 +110,46 @@ public class CommunicationMasterControllerImpl extends AbstractOpenemsComponent 
 
 
     @Activate
-    void activate(ComponentContext context, Config config) throws Exception {
+    void activate(ComponentContext context, Config config) {
         super.activate(context, config.id(), config.alias(), config.enabled());
-        if (config.requestTypes().length != RequestType.values().length) {
-            this.updateConfig();
+        this.config = config;
+        if (config.requestTypes().length != RequestType.values().length || config.methodTypes().length != MethodTypes.values().length) {
+            this.updateApacheConfig();
             return;
         }
+        try {
+            this.configureController(config);
+        } catch (ConfigurationException | OpenemsError.OpenemsNamedException e) {
+            this.log.warn("Couldn't apply config, try again later " + super.id());
+            this.clearReferences();
+        }
+    }
+
+    @Modified
+    void modified(ComponentContext context, Config config) {
+        super.modified(context, config.id(), config.alias(), config.enabled());
+        this.config = config;
+        this.clearReferences();
+        try {
+            this.configureController(config);
+        } catch (OpenemsError.OpenemsNamedException | ConfigurationException e) {
+            this.log.warn("Couldn't apply modified Configuration : " + super.id());
+            this.configSucceed = false;
+        }
+    }
+
+    /**
+     * Configures Controller after activation/modification/in run() method if configuration failed.
+     *
+     * @param config the config of this component
+     * @throws ConfigurationException             if somethings wrong with the Config.
+     * @throws OpenemsError.OpenemsNamedException if applied Id's aren't available.
+     */
+    private void configureController(Config config) throws ConfigurationException, OpenemsError.OpenemsNamedException {
         //ForceHeating == Heat ALL remote Heater/handle ALL requests/Enable all requests even if they don't have a request
         this.configurationDone = config.configurationDone();
         if (this.configurationDone) {
             this.setForceHeating(config.forceHeating());
-            this.setAutoRun(true);
             this.maxWaitTime = config.maxWaitTimeAllowed();
             this.forcing = this.getForceHeating();
             //Creates the Controller responsible for handling RemoteRequests (REST requests)
@@ -153,7 +180,6 @@ public class CommunicationMasterControllerImpl extends AbstractOpenemsComponent 
             });
 
             this.setForceHeating(config.forceHeating());
-            this.setAutoRun(true);
             this.timer = new TimerHandlerImpl(this.id(), this.cpm);
             this.addTimer(config.timerId(), config.keepAlive(), KEEP_ALIVE_IDENTIFIER);
             this.useExceptionalStateHandling = config.useExceptionalStateHandling();
@@ -169,6 +195,7 @@ public class CommunicationMasterControllerImpl extends AbstractOpenemsComponent 
             this.maxAllowedRequests = config.maxRequestAllowedAtOnce();
             this.getMaximumRequestChannel().setNextValue(this.maxAllowedRequests);
             this.communicationController.setTimerTypeForManaging(config.timerForManager());
+            this.configSucceed = true;
         }
     }
 
@@ -229,7 +256,7 @@ public class CommunicationMasterControllerImpl extends AbstractOpenemsComponent 
         }
     }
 
-    private void updateConfig() {
+    private void updateApacheConfig() {
         Configuration c;
 
         try {
@@ -363,35 +390,30 @@ public class CommunicationMasterControllerImpl extends AbstractOpenemsComponent 
 
     /**
      * Creates The CommunicationController by Config.
-     * First get the Connection Type and Manage type as well as the maximumRequest
+     * <p>
+     * First get the Connection Type and Manage type as well as the maximumRequest.
      * (how many Requests are allowed at once-->Integer count NOT Listentry; Integer represents a Heatstorage/Heater etc)
      * (Map<Integer, List< ? super Request>).
+     * </p>
      *
      * @param config config of this component
-     * @throws Exception thrown if somethings wrong with
+     * @throws ConfigurationException thrown if somethings wrong within the Constructor
      */
-    private void createCommunicationController(Config config) throws Exception {
-        String connectionTypeString = config.connectionType().trim().toUpperCase();
-        String manageTypeString = config.manageType().toUpperCase().trim();
-        int maxRequestsAllowedAtOnce = config.maxRequestAllowedAtOnce();
-        if (ConnectionType.contains(connectionTypeString) && ManageType.contains(manageTypeString)) {
-            ConnectionType connectionType = ConnectionType.valueOf(connectionTypeString);
-            ManageType manageType = ManageType.valueOf(manageTypeString);
-            switch (connectionType) {
-                case REST:
-                default:
-                    this.communicationController = new RestLeafletCommunicationControllerImpl(connectionType,
-                            manageType, maxRequestsAllowedAtOnce,
-                            this.forcing, true);
-                    this.communicationController.setMaxWaitTime(this.maxWaitTime);
-            }
-        }
+    private void createCommunicationController(Config config) throws ConfigurationException {
 
+        switch (config.connectionType()) {
+            case REST:
+            default:
+                this.communicationController = new RestLeafletCommunicationControllerImpl(config.connectionType(),
+                        config.manageType(), config.maxRequestAllowedAtOnce(),
+                        this.forcing, true);
+                this.communicationController.setMaxWaitTime(this.maxWaitTime);
+        }
     }
 
     @Deactivate
     protected void deactivate() {
-        this.deactivateAllComponents();
+        this.deactivateAllResponses();
         this.communicationController.setAutoRun(false);
         this.communicationController.stop();
         this.timer.removeComponent();
@@ -400,39 +422,51 @@ public class CommunicationMasterControllerImpl extends AbstractOpenemsComponent 
 
     @Override
     public void run() throws OpenemsError.OpenemsNamedException {
-        if (this.configurationDone) {
-            //Check if Requests have to be added/removed and if components are still enabled
-            this.checkChangesAndApply();
-            //Connections ok?
-            AtomicBoolean connectionOk = new AtomicBoolean(true);
+        if (this.configSucceed) {
+            if (this.configurationDone) {
+                //Check if Requests have to be added/removed and if components are still enabled
+                this.checkChangesAndApply();
+                //Connections ok?
+                AtomicBoolean connectionOk = new AtomicBoolean(true);
 
-            connectionOk.getAndSet(this.communicationController.communicationAvailable());
-            if (this.useExceptionalStateHandling) {
-                boolean useExceptionalState = this.exceptionalStateHandler.exceptionalStateActive(this);
-                if (useExceptionalState) {
-                    int exceptionalStateValue = this.getExceptionalStateValue();
-                    if (exceptionalStateValue > 0) {
-                        this.communicationController.enableAllRequests();
-                        this.activateAllComponents();
-                    } else {
-                        this.communicationController.disableAllRequests();
-                        this.deactivateAllComponents();
+                connectionOk.getAndSet(this.communicationController.communicationAvailable());
+                if (this.useExceptionalStateHandling) {
+                    boolean useExceptionalState = this.exceptionalStateHandler.exceptionalStateActive(this);
+                    if (useExceptionalState) {
+                        int exceptionalStateValue = this.getExceptionalStateValue();
+                        if (exceptionalStateValue > 0) {
+                            this.communicationController.enableAllRequests();
+                            this.activateAllResponses();
+                        } else {
+                            this.communicationController.disableAllRequests();
+                            this.deactivateAllResponses();
+                        }
+                        return;
                     }
-                    return;
+                }
+                if (connectionOk.get()) {
+                    this.timer.resetTimer(KEEP_ALIVE_IDENTIFIER);
+                    this.checkRequestSizeAndEnableCallbackActivateComponents();
+                } else if (this.timer.checkTimeIsUp(KEEP_ALIVE_IDENTIFIER)) {
+                    this.fallbackLogic();
+                }
+                this.requestSizeThisRun.set(0);
+            }
+        } else {
+            try {
+                this.configureController(this.config);
+            } catch (ConfigurationException | OpenemsError.OpenemsNamedException e) {
+                if (this.configFailCounter.get() >= MAX_FAIL_COUNTER) {
+                    this.log.error("Failed to assign config!");
+                } else {
+                    this.configFailCounter.getAndIncrement();
                 }
             }
-            if (connectionOk.get()) {
-                this.timer.resetTimer(KEEP_ALIVE_IDENTIFIER);
-                this.checkRequestSizeAndEnableCallbackActivateComponents();
-            } else if (this.timer.checkTimeIsUp(KEEP_ALIVE_IDENTIFIER)) {
-                this.fallbackLogic();
-            }
-            this.requestSizeThisRun.set(0);
         }
     }
 
     /**
-     * Checks if hydraulicHeater and Pump are still enabled (if Present).
+     * Checks if hydraulicHeater and Pump are still enabled (if Present and configured).
      */
     private void checkChangesAndApply() {
         //Check if Components are still enabled
@@ -454,7 +488,7 @@ public class CommunicationMasterControllerImpl extends AbstractOpenemsComponent 
 
             }
         } catch (OpenemsError.OpenemsNamedException e) {
-            this.logger.warn("Couldn't acquire all Components in " + super.id() + " Reason: " + e.getMessage());
+            this.log.warn("Couldn't acquire all Components in " + super.id() + " Reason: " + e.getMessage());
         }
 
         Optional<Integer> isSetMaximumWritten = this.getSetMaximumRequestChannel().getNextWriteValueAndReset();
@@ -491,7 +525,7 @@ public class CommunicationMasterControllerImpl extends AbstractOpenemsComponent 
                 this.requestTypeIsSet.forEach((key, value) -> {
                     value.set(true);
                 });
-                this.activateAllComponents();
+                this.activateAllResponses();
         }
     }
 
@@ -529,13 +563,15 @@ public class CommunicationMasterControllerImpl extends AbstractOpenemsComponent 
         if (this.requestSizeThisRun.get() > 0) {
             this.handleComponents();
         } else {
-            this.deactivateAllComponents();
+            this.deactivateAllResponses();
         }
         this.getCurrentRequestsChannel().setNextValue(this.requestSizeThisRun.get());
 
     }
 
-
+    /**
+     * Get all the Responses and activate/Deactivate them depending if the requestType is set.
+     */
     private void handleComponents() {
 
         this.requestTypeIsSet.forEach((key, value) -> {
@@ -549,27 +585,39 @@ public class CommunicationMasterControllerImpl extends AbstractOpenemsComponent 
                             this.deactivateTheWrapper(wrapper);
                         }
                     } catch (OpenemsError.OpenemsNamedException e) {
-                        this.logger.warn("Couldn't activate Components: " + super.id() + ". Reason: " + e.getMessage());
+                        this.log.warn("Couldn't activate Components: " + super.id() + ". Reason: " + e.getMessage());
                     }
                 });
             }
         });
     }
 
-    private void deactivateAllComponents() {
+    /**
+     * Internal method, to deactivate all Responses.
+     */
+    private void deactivateAllResponses() {
         this.requestTypeIsSet.forEach((key, value) -> {
             value.set(false);
         });
         this.handleComponents();
     }
 
-    private void activateAllComponents() {
+    /**
+     * Internal method, to activate all Responses.
+     */
+    private void activateAllResponses() {
         this.requestTypeIsSet.forEach((key, value) -> {
             value.set(true);
         });
         this.handleComponents();
     }
 
+    /**
+     * Deactivates the Response corresponding to the Wrapper. Exact handling is determined by the {@link MethodResponse}.
+     *
+     * @param wrapper the Wrapper stored in the {@link #requestTypeAndResponses}
+     * @throws OpenemsError.OpenemsNamedException if setNext(Write)Value fails.
+     */
     private void deactivateTheWrapper(ResponseWrapper wrapper) throws OpenemsError.OpenemsNamedException {
         if (wrapper instanceof MethodResponse) {
             this.reactToMethodOfWrapper(((MethodResponse) wrapper).getMethod(), ((MethodResponse) wrapper).getPassiveValue());
@@ -577,6 +625,13 @@ public class CommunicationMasterControllerImpl extends AbstractOpenemsComponent 
             ((ChannelAddressResponse) wrapper).passiveResponse();
         }
     }
+
+    /**
+     * Activates the Response corresponding to the Wrapper.Exact handling is determined by the {@link MethodResponse}.
+     *
+     * @param wrapper the Wrapper stored in the {@link #requestTypeAndResponses}
+     * @throws OpenemsError.OpenemsNamedException if setNext(Write)Value fails.
+     */
 
     private void activateTheWrapper(ResponseWrapper wrapper) throws OpenemsError.OpenemsNamedException {
         if (wrapper instanceof MethodResponse) {
@@ -586,16 +641,22 @@ public class CommunicationMasterControllerImpl extends AbstractOpenemsComponent 
         }
     }
 
+    /**
+     * If the Wrapper is of RequestType {@link MethodTypes}, this method will be called and handles the rest, depending on the value.
+     * @param type the MethodType
+     * @param value the value to write.
+     * @throws OpenemsError.OpenemsNamedException if somethings wrong.
+     */
     private void reactToMethodOfWrapper(MethodTypes type, String value) throws OpenemsError.OpenemsNamedException {
         switch (type) {
             case LOG_INFO:
-                this.logger.info(value);
+                this.log.info(value);
                 break;
             case ACTIVATE_PUMP:
                 if (this.heatPump != null) {
                     this.heatPump.setPowerLevel(Double.parseDouble(value));
                 } else {
-                    this.logger.warn("Wanted to set Heatpump to value: " + value + " But it is not instantiated! " + super.id());
+                    this.log.warn("Wanted to set Heatpump to value: " + value + " But it is not instantiated! " + super.id());
                 }
                 break;
             case ACTIVATE_LINEHEATER:
@@ -606,15 +667,22 @@ public class CommunicationMasterControllerImpl extends AbstractOpenemsComponent 
                     }
                     this.hydraulicLineHeater.enableSignal().setNextWriteValueFromObject(lineHeaterActivation);
                 } else {
-                    this.logger.warn("Wanted to set HydraulicLineHeater to : " + value + " But it is not instantiated! " + super.id());
+                    this.log.warn("Wanted to set HydraulicLineHeater to : " + value + " But it is not instantiated! " + super.id());
                 }
                 break;
         }
     }
 
-
-    @Override
-    public CommunicationController getCommunicationController() {
-        return this.communicationController;
+    /**
+     * This Method is called, if an error while configuring Components.
+     */
+    private void clearReferences() {
+        this.communicationController = null;
+        this.hydraulicLineHeater = null;
+        this.heatPump = null;
+        this.requestTypeAndResponses.clear();
+        this.requestTypeIsSet.clear();
     }
+
+
 }

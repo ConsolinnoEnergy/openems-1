@@ -4,7 +4,8 @@ package io.openems.edge.controller.heatnetwork.communication.api;
  * Possible Connection Types.
  */
 public enum ConnectionType {
-    WEBSOCKET, MODBUS, MBUS, REST, MQTT, WMBUS, I2C, SPI;
+    REST//, MQTT, WMBUS, I2C, SPI, WEBSOCKET, MODBUS, MBUS;
+    ;
 
     public static boolean contains(String requestedConnection) {
 

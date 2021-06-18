@@ -14,12 +14,6 @@ public interface CommunicationMasterController extends OpenemsComponent {
 
     enum ChannelId implements io.openems.edge.common.channel.ChannelId {
         /**
-         * Set Autorun for this, and containing CommunicationController.
-         */
-        AUTO_RUN(Doc.of(OpenemsType.BOOLEAN).accessMode(AccessMode.READ_WRITE).onInit(
-                channel -> ((BooleanWriteChannel) channel).onSetNextWrite(channel::setNextValue)
-        )),
-        /**
          * ForceHeating. Sets The CallbackValue of each containing Requests to True.
          */
         FORCE_HEATING(Doc.of(OpenemsType.BOOLEAN).accessMode(AccessMode.READ_WRITE).onInit(
@@ -77,25 +71,6 @@ public interface CommunicationMasterController extends OpenemsComponent {
         @Override
         public Doc doc() {
             return this.doc;
-        }
-    }
-
-    default WriteChannel<Boolean> getAutoRunChannel() {
-        return this.channel(ChannelId.AUTO_RUN);
-    }
-
-
-    default void setAutoRun(boolean autoRun) {
-        this.getAutoRunChannel().setNextValue(autoRun);
-    }
-
-    default boolean getAutoRun() {
-        if (this.getAutoRunChannel().value().isDefined()) {
-            return this.getAutoRunChannel().value().get();
-        } else if (this.getAutoRunChannel().getNextValue().isDefined()) {
-            return this.getAutoRunChannel().getNextValue().get();
-        } else {
-            return true;
         }
     }
 
@@ -164,7 +139,7 @@ public interface CommunicationMasterController extends OpenemsComponent {
     }
 
     default FallbackHandling getExecutionOnFallback() {
-            return this.getExecutionOnFallbackChannel().value().asEnum();
+        return this.getExecutionOnFallbackChannel().value().asEnum();
     }
 
     default void setFallbackLogic(FallbackHandling logic) {
@@ -246,6 +221,4 @@ public interface CommunicationMasterController extends OpenemsComponent {
         }
         return null;
     }
-
-    CommunicationController getCommunicationController();
 }
