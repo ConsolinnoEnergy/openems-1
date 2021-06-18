@@ -1,6 +1,7 @@
 package io.openems.edge.controller.heatnetwork.communication.master;
 
 import io.openems.edge.common.test.AbstractComponentConfig;
+import io.openems.edge.controller.heatnetwork.communication.api.ConnectionType;
 import io.openems.edge.controller.heatnetwork.communication.api.FallbackHandling;
 import io.openems.edge.controller.heatnetwork.communication.api.ManageType;
 import io.openems.edge.timer.api.TimerType;
@@ -71,7 +72,7 @@ public class MyConfig extends AbstractComponentConfig implements Config {
     }
 
     @Override
-    public String connectionType() {
+    public ConnectionType connectionType() {
         return null;
     }
 

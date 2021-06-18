@@ -65,6 +65,7 @@ public class CommunicationMasterControllerImpl extends AbstractOpenemsComponent 
         CommunicationMasterController, ExceptionalState {
 
     private final Logger log = LoggerFactory.getLogger(CommunicationMasterControllerImpl.class);
+    private static final CommunicationControllerHelper HELPER = new CommunicationControllerHelper();
     @Reference
     ComponentManager cpm;
 
@@ -119,8 +120,12 @@ public class CommunicationMasterControllerImpl extends AbstractOpenemsComponent 
         }
         try {
             this.configureController(config);
+            if (this.communicationController != null) {
+                this.communicationController.enable();
+            }
         } catch (ConfigurationException | OpenemsError.OpenemsNamedException e) {
             this.log.warn("Couldn't apply config, try again later " + super.id());
+            this.configSucceed = false;
             this.clearReferences();
         }
     }
@@ -150,11 +155,15 @@ public class CommunicationMasterControllerImpl extends AbstractOpenemsComponent 
         this.configurationDone = config.configurationDone();
         if (this.configurationDone) {
             this.setForceHeating(config.forceHeating());
+            this.setMaximumRequests(config.maxRequestAllowedAtOnce());
             this.maxWaitTime = config.maxWaitTimeAllowed();
             this.forcing = this.getForceHeating();
+            this.maxAllowedRequests = this.getMaximumRequests();
+            this.communicationController = HELPER.createCommunicationControllerWithRequests(config, this.cpm);
+            this.communicationController.setMaxWaitTime(this.maxWaitTime);
+            this.communicationController.setTimerTypeForManaging(config.timerForManager());
+            this.communicationController.setMaxRequests(this.maxAllowedRequests);
             //Creates the Controller responsible for handling RemoteRequests (REST requests)
-            this.createCommunicationController(config);
-            this.createRemoteRequestsAndAddToCommunicationController(config);
             OpenemsComponent optionalComponent;
 
             if (config.usePump()) {
@@ -194,7 +203,6 @@ public class CommunicationMasterControllerImpl extends AbstractOpenemsComponent 
             this.setFallbackLogic(fallback);
             this.maxAllowedRequests = config.maxRequestAllowedAtOnce();
             this.getMaximumRequestChannel().setNextValue(this.maxAllowedRequests);
-            this.communicationController.setTimerTypeForManaging(config.timerForManager());
             this.configSucceed = true;
         }
     }
@@ -291,137 +299,16 @@ public class CommunicationMasterControllerImpl extends AbstractOpenemsComponent 
         this.timer.addOneIdentifier(identifier, timerId, keepAlive);
     }
 
-    /**
-     * Creates the RemoteRequests from Config. --> e.g. RestRemoteComponents will be handled bei a RestCommunicationController
-     * get the RequestConfig, and split them.
-     * Map the Configured Requests to the corresponding requestMaps.
-     * add them to the CommunicationController if they are correct. Else throw Exception.
-     *
-     * @param config config of the Component
-     * @throws ConfigurationException             if there's an error within config
-     * @throws OpenemsError.OpenemsNamedException if cpm couldn't find OpenemsComponent
-     */
-    private void createRemoteRequestsAndAddToCommunicationController(Config config) throws ConfigurationException, OpenemsError.OpenemsNamedException {
-        //ErrorHandling in Streams..you can't simply throw exceptions in Streams in Java 8
-        ConfigurationException[] ex = {null};
-        OpenemsError.OpenemsNamedException[] exceptions = {null};
-        List<String> requestConfig = Arrays.asList(config.requestMap());
-        //Collection of all Requests, can be any  (sub) Type of request, important for future impl. -> Different RequestTypes
-        Map<Integer, List<? super Request>> requestMap = new HashMap<>();
-
-        requestConfig.forEach(entry -> {
-            try {
-                if (ex[0] == null) {
-                    this.createRequestFromConfigEntry(entry, requestMap, this.communicationController.getConnectionType());
-                }
-            } catch (ConfigurationException e) {
-                ex[0] = e;
-            } catch (OpenemsError.OpenemsNamedException e) {
-                exceptions[0] = e;
-            }
-        });
-        if (ex[0] != null) {
-            throw ex[0];
-        }
-        if (exceptions[0] != null) {
-            throw exceptions[0];
-        }
-        //Add RestRequests to RestCommunicationController
-        if (this.communicationController.getConnectionType().equals(ConnectionType.REST)) {
-            Map<Integer, List<RestRequest>> createdRestRequests = new HashMap<>();
-            requestMap.forEach((key, value) -> {
-                List<RestRequest> requestsOfKey = new ArrayList<>();
-                value.forEach(entry -> requestsOfKey.add((RestRequest) entry));
-                createdRestRequests.put(key, requestsOfKey);
-            });
-            ((RestLeafletCommunicationController) this.communicationController).addRestRequests(createdRestRequests);
-        } else {
-            throw new ConfigurationException(this.communicationController.getConnectionType().toString(), "Is not supported by this controller");
-        }
-
-    }
-
-    /**
-     * Creates a Requests from a configuration and puts it into the requestMap.
-     * First Split the entires by ":", then check each split param if correct, if params are ok, create corresponding RestRequest.
-     *
-     * @param entry          the entry usually from Config or Channel.
-     * @param requestMap     the requestMap coming from calling method (if config done it will be added to the controller)
-     * @param connectionType the connection Type that is configured.
-     * @throws ConfigurationException             if Somethings wrong with the configuration.
-     * @throws OpenemsError.OpenemsNamedException if the cpm couldn't find the component.
-     */
-    private void createRequestFromConfigEntry(String entry, Map<Integer, List<? super Request>> requestMap, ConnectionType connectionType)
-            throws ConfigurationException, OpenemsError.OpenemsNamedException {
-        String[] entries = entry.split(":");
-        if (entries.length != REMOTE_REQUEST_CONFIGURATION_SIZE) {
-            throw new ConfigurationException("" + entries.length, "Length not ok expected " + REMOTE_REQUEST_CONFIGURATION_SIZE);
-        }
-        AtomicInteger configurationCounter = new AtomicInteger(0);
-        //REQUEST (Pos 0), CALLBACK (Pos 1), KEY (Pos 2)
-        OpenemsComponent request = this.cpm.getComponent(entries[configurationCounter.getAndIncrement()]);
-        OpenemsComponent callback = this.cpm.getComponent(entries[configurationCounter.getAndIncrement()]);
-        int keyForMap = Integer.parseInt(entries[configurationCounter.getAndIncrement()]);
-        String requestTypeString = entries[configurationCounter.getAndIncrement()].toUpperCase().trim();
-        RequestType type;
-        if (RequestType.contains(requestTypeString)) {
-            type = RequestType.valueOf(requestTypeString);
-        } else {
-            throw new ConfigurationException(requestTypeString, "Wrong request Type, allowed Request types are: " + Arrays.toString(RequestType.values()));
-        }
-        if (connectionType == ConnectionType.REST) {
-            if (request instanceof RestRemoteDevice && callback instanceof RestRemoteDevice) {
-                RestRequest requestToAdd = new RestRequestImpl((RestRemoteDevice) request, (RestRemoteDevice) callback, type);
-                if (requestMap.containsKey(keyForMap)) {
-                    requestMap.get(keyForMap).add(requestToAdd);
-                } else {
-                    List<Request> requestListForMap = new ArrayList<>();
-                    requestListForMap.add(requestToAdd);
-                    requestMap.put(keyForMap, requestListForMap);
-                }
-            } else {
-                throw new ConfigurationException("ConfigurationError",
-                        "Request and Callback have to be from the same type");
-            }
-        }
-
-    }
-
-
-    /**
-     * Creates The CommunicationController by Config.
-     * <p>
-     * First get the Connection Type and Manage type as well as the maximumRequest.
-     * (how many Requests are allowed at once-->Integer count NOT Listentry; Integer represents a Heatstorage/Heater etc)
-     * (Map<Integer, List< ? super Request>).
-     * </p>
-     *
-     * @param config config of this component
-     * @throws ConfigurationException thrown if somethings wrong within the Constructor
-     */
-    private void createCommunicationController(Config config) throws ConfigurationException {
-
-        switch (config.connectionType()) {
-            case REST:
-            default:
-                this.communicationController = new RestLeafletCommunicationControllerImpl(config.connectionType(),
-                        config.manageType(), config.maxRequestAllowedAtOnce(),
-                        this.forcing, true);
-                this.communicationController.setMaxWaitTime(this.maxWaitTime);
-        }
-    }
-
     @Deactivate
     protected void deactivate() {
         this.deactivateAllResponses();
-        this.communicationController.setAutoRun(false);
-        this.communicationController.stop();
+        this.communicationController.disable();
         this.timer.removeComponent();
         super.deactivate();
     }
 
     @Override
-    public void run() throws OpenemsError.OpenemsNamedException {
+    public void run() {
         if (this.configSucceed) {
             if (this.configurationDone) {
                 //Check if Requests have to be added/removed and if components are still enabled
@@ -456,6 +343,7 @@ public class CommunicationMasterControllerImpl extends AbstractOpenemsComponent 
             try {
                 this.configureController(this.config);
             } catch (ConfigurationException | OpenemsError.OpenemsNamedException e) {
+                this.clearReferences();
                 if (this.configFailCounter.get() >= MAX_FAIL_COUNTER) {
                     this.log.error("Failed to assign config!");
                 } else {
@@ -465,40 +353,6 @@ public class CommunicationMasterControllerImpl extends AbstractOpenemsComponent 
         }
     }
 
-    /**
-     * Checks if hydraulicHeater and Pump are still enabled (if Present and configured).
-     */
-    private void checkChangesAndApply() {
-        //Check if Components are still enabled
-        try {
-            if (this.hydraulicLineHeater != null && this.hydraulicLineHeater.isEnabled() == false) {
-                if (this.cpm.getComponent(this.hydraulicLineHeater.id()) instanceof HydraulicLineHeater) {
-                    this.hydraulicLineHeater = this.cpm.getComponent(this.hydraulicLineHeater.id());
-                }
-            }
-            if (this.heatPump != null && this.heatPump.isEnabled() == false) {
-                if (this.cpm.getComponent(this.heatPump.id()) instanceof Pump) {
-                    this.heatPump = this.cpm.getComponent(this.heatPump.id());
-                }
-            }
-            if (this.getSetMaximumRequestChannel().value().isDefined()) {
-                this.setMaximumRequests(this.getSetMaximumRequestChannel().value().get());
-
-                this.getSetMaximumRequestChannel().setNextWriteValue(null);
-
-            }
-        } catch (OpenemsError.OpenemsNamedException e) {
-            this.log.warn("Couldn't acquire all Components in " + super.id() + " Reason: " + e.getMessage());
-        }
-
-        Optional<Integer> isSetMaximumWritten = this.getSetMaximumRequestChannel().getNextWriteValueAndReset();
-        isSetMaximumWritten.ifPresent(integer -> this.getMaximumRequestChannel().setNextValue(integer));
-        //Sets the Maximum allowed Requests at once in Master and Manager.
-        this.maxAllowedRequests = this.getMaximumRequests();
-        if (this.maxAllowedRequests != this.communicationController.getRequestManager().getMaxRequestsAtOnce()) {
-            this.communicationController.getRequestManager().setMaxManagedRequests(this.maxAllowedRequests);
-        }
-    }
 
     /**
      * Fallback Logic of this controller, depending on the set FallbackLogic.
@@ -544,21 +398,10 @@ public class CommunicationMasterControllerImpl extends AbstractOpenemsComponent 
             cleanRequestTypeMap.put(request, new AtomicBoolean(false));
         });
 
-        if (this.communicationController instanceof RestLeafletCommunicationController) {
-            Map<Integer, List<RestRequest>> currentRestRequests =
-                    ((RestLeafletCommunicationController) this.communicationController).getRestManager().getManagedRequests();
-            if (currentRestRequests.size() > 0) {
-                currentRestRequests.forEach((key, value) -> {
-                    value.forEach(restRequest -> {
-                        if (restRequest.getRequest().getValue().equals("1") || this.forcing) {
-                            restRequest.getCallbackRequest().setValue("1");
-                            cleanRequestTypeMap.get(restRequest.getRequestType()).set(true);
-                        }
-                    });
-                });
-            }
-            this.requestSizeThisRun.getAndAdd(currentRestRequests.size());
-        }
+        int currentRequestSize = this.communicationController.enableManagedRequestsAndReturnSizeOfManagedRequests(this.forcing, cleanRequestTypeMap);
+
+        this.requestSizeThisRun.set(currentRequestSize);
+        //Sets the current Values of the RequestTypes, set by the CommunicationController
         cleanRequestTypeMap.forEach((key, value) -> this.requestTypeIsSet.get(key).set(value.get()));
         if (this.requestSizeThisRun.get() > 0) {
             this.handleComponents();
@@ -566,7 +409,6 @@ public class CommunicationMasterControllerImpl extends AbstractOpenemsComponent 
             this.deactivateAllResponses();
         }
         this.getCurrentRequestsChannel().setNextValue(this.requestSizeThisRun.get());
-
     }
 
     /**
@@ -643,7 +485,8 @@ public class CommunicationMasterControllerImpl extends AbstractOpenemsComponent 
 
     /**
      * If the Wrapper is of RequestType {@link MethodTypes}, this method will be called and handles the rest, depending on the value.
-     * @param type the MethodType
+     *
+     * @param type  the MethodType
      * @param value the value to write.
      * @throws OpenemsError.OpenemsNamedException if somethings wrong.
      */
@@ -684,5 +527,175 @@ public class CommunicationMasterControllerImpl extends AbstractOpenemsComponent 
         this.requestTypeIsSet.clear();
     }
 
+    /**
+     * Checks if hydraulicHeater and Pump are still enabled (if Present and configured).
+     */
+    private void checkChangesAndApply() {
+        //Check if Components are still enabled
+        try {
+            if (this.hydraulicLineHeater != null && this.hydraulicLineHeater.isEnabled() == false) {
+                if (this.cpm.getComponent(this.hydraulicLineHeater.id()) instanceof HydraulicLineHeater) {
+                    this.hydraulicLineHeater = this.cpm.getComponent(this.hydraulicLineHeater.id());
+                }
+            }
+            if (this.heatPump != null && this.heatPump.isEnabled() == false) {
+                if (this.cpm.getComponent(this.heatPump.id()) instanceof Pump) {
+                    this.heatPump = this.cpm.getComponent(this.heatPump.id());
+                }
+            }
+            if (this.getSetMaximumRequestChannel().value().isDefined()) {
+                this.setMaximumRequests(this.getSetMaximumRequestChannel().value().get());
+
+                this.getSetMaximumRequestChannel().setNextWriteValue(null);
+
+            }
+        } catch (OpenemsError.OpenemsNamedException e) {
+            this.log.warn("Couldn't acquire all Components in " + super.id() + " Reason: " + e.getMessage());
+        }
+
+        Optional<Integer> isSetMaximumWritten = this.getSetMaximumRequestChannel().getNextWriteValueAndReset();
+        isSetMaximumWritten.ifPresent(integer -> this.getMaximumRequestChannel().setNextValue(integer));
+        //Sets the Maximum allowed Requests at once in Master and Manager.
+        this.maxAllowedRequests = this.getMaximumRequests();
+        if (this.maxAllowedRequests != this.communicationController.getRequestManager().getMaxRequestsAtOnce()) {
+            this.communicationController.getRequestManager().setMaxManagedRequests(this.maxAllowedRequests);
+        }
+    }
+
+    /**
+     * This static class helps the CommunicationMaster to Create a correct CommunicationController.
+     */
+    private static class CommunicationControllerHelper {
+
+        /**
+         * Creates a CommunicationController and adds the the Requests to it.
+         *
+         * @param config the Config of the CommunicationMaster.
+         * @param cpm    the ComponentManager of the CommunicationMaster
+         * @return a CommunicationController
+         * @throws ConfigurationException             if the Config is wrong
+         * @throws OpenemsError.OpenemsNamedException if a ComponentId cannot be found at all.
+         */
+        public CommunicationController createCommunicationControllerWithRequests(Config config, ComponentManager cpm)
+                throws ConfigurationException, OpenemsError.OpenemsNamedException {
+            CommunicationController controller;
+            switch (config.connectionType()) {
+                case REST:
+                default:
+                    controller = new RestLeafletCommunicationControllerImpl(config.connectionType(),
+                            config.manageType(), config.maxRequestAllowedAtOnce(),
+                            config.forceHeating());
+                    controller.setMaxWaitTime(config.maxWaitTimeAllowed());
+            }
+            this.createRemoteRequestsAndAddToCommunicationController(config, controller, cpm);
+            return controller;
+        }
+
+        /**
+         * Creates the RemoteRequests from Config. --> e.g. RestRemoteComponents will be handled bei a RestCommunicationController
+         * get the RequestConfig, and split them.
+         * Map the Configured Requests to the corresponding requestMaps.
+         * add them to the CommunicationController if they are correct. Else throw Exception.
+         *
+         * @param config     config of the Component
+         * @param controller the controller created before
+         *                   at {@link #createCommunicationControllerWithRequests(Config, ComponentManager)}
+         * @param cpm        the ComponentManager of the CommunicationMaster
+         * @throws ConfigurationException             if there's an error within config
+         * @throws OpenemsError.OpenemsNamedException if cpm couldn't find OpenemsComponent
+         */
+
+        private void createRemoteRequestsAndAddToCommunicationController(Config config,
+                                                                         CommunicationController controller, ComponentManager cpm)
+                throws ConfigurationException, OpenemsError.OpenemsNamedException {
+            //ErrorHandling in Streams..you can't simply throw exceptions in Streams in Java 8
+            ConfigurationException[] ex = {null};
+            OpenemsError.OpenemsNamedException[] exceptions = {null};
+            List<String> requestConfig = Arrays.asList(config.requestMap());
+            //Collection of all Requests, can be any  (sub) Type of request, important for future impl. -> Different RequestTypes
+            Map<Integer, List<? super Request>> requestMap = new HashMap<>();
+
+            requestConfig.forEach(entry -> {
+                try {
+                    if (ex[0] == null) {
+                        this.createRequestFromConfigEntry(entry, requestMap, controller.getConnectionType(), cpm);
+                    }
+                } catch (ConfigurationException e) {
+                    ex[0] = e;
+                } catch (OpenemsError.OpenemsNamedException e) {
+                    exceptions[0] = e;
+                }
+            });
+            if (ex[0] != null) {
+                throw ex[0];
+            }
+            if (exceptions[0] != null) {
+                throw exceptions[0];
+            }
+            //Add RestRequests to RestCommunicationController
+            if (controller.getConnectionType().equals(ConnectionType.REST)) {
+                Map<Integer, List<RestRequest>> createdRestRequests = new HashMap<>();
+                requestMap.forEach((key, value) -> {
+                    List<RestRequest> requestsOfKey = new ArrayList<>();
+                    value.forEach(entry -> requestsOfKey.add((RestRequest) entry));
+                    createdRestRequests.put(key, requestsOfKey);
+                });
+                ((RestLeafletCommunicationController) controller).addRestRequests(createdRestRequests);
+            } else {
+                throw new ConfigurationException(controller.getConnectionType().toString(), "Is not supported by this controller");
+            }
+
+        }
+
+        /**
+         * Creates a Requests from a configuration and puts it into the requestMap.
+         * First Split the entires by ":", then check each split param if correct, if params are ok, create corresponding RestRequest.
+         *
+         * @param entry          the entry usually from Config or Channel.
+         * @param requestMap     the requestMap coming from calling method (if config done it will be added to the controller)
+         * @param connectionType the connection Type that is configured.
+         * @param cpm            the ComponentManager of the CommunicationMaster
+         * @throws ConfigurationException             if Somethings wrong with the configuration.
+         * @throws OpenemsError.OpenemsNamedException if the cpm couldn't find the component.
+         */
+        private void createRequestFromConfigEntry(String entry, Map<Integer, List<? super Request>> requestMap,
+                                                  ConnectionType connectionType, ComponentManager cpm)
+                throws ConfigurationException, OpenemsError.OpenemsNamedException {
+            String[] entries = entry.split(":");
+            if (entries.length != REMOTE_REQUEST_CONFIGURATION_SIZE) {
+                throw new ConfigurationException("" + entries.length, "Length not ok expected " + REMOTE_REQUEST_CONFIGURATION_SIZE);
+            }
+            AtomicInteger configurationCounter = new AtomicInteger(0);
+            //REQUEST (Pos 0), CALLBACK (Pos 1), KEY (Pos 2)
+            OpenemsComponent request = cpm.getComponent(entries[configurationCounter.getAndIncrement()]);
+            OpenemsComponent callback = cpm.getComponent(entries[configurationCounter.getAndIncrement()]);
+            int keyForMap = Integer.parseInt(entries[configurationCounter.getAndIncrement()]);
+            String requestTypeString = entries[configurationCounter.getAndIncrement()].toUpperCase().trim();
+            RequestType type;
+            if (RequestType.contains(requestTypeString)) {
+                type = RequestType.valueOf(requestTypeString);
+            } else {
+                throw new ConfigurationException(requestTypeString, "Wrong request Type, allowed Request types are: " + Arrays.toString(RequestType.values()));
+            }
+            if (connectionType == ConnectionType.REST) {
+                if (request instanceof RestRemoteDevice && callback instanceof RestRemoteDevice) {
+                    RestRequest requestToAdd = new RestRequestImpl((RestRemoteDevice) request, (RestRemoteDevice) callback, type);
+                    if (requestMap.containsKey(keyForMap)) {
+                        requestMap.get(keyForMap).add(requestToAdd);
+                    } else {
+                        List<Request> requestListForMap = new ArrayList<>();
+                        requestListForMap.add(requestToAdd);
+                        requestMap.put(keyForMap, requestListForMap);
+                    }
+                } else {
+                    throw new ConfigurationException("ConfigurationError",
+                            "Request and Callback have to be from the same type");
+                }
+            }
+
+        }
+
+
+    }
 
 }

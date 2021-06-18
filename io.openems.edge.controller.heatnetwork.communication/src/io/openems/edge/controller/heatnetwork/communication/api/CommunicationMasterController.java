@@ -74,6 +74,10 @@ public interface CommunicationMasterController extends OpenemsComponent {
         }
     }
 
+    /**
+     * Getter Method for the ForceHeating Channel
+     * @return
+     */
     default WriteChannel<Boolean> getForceHeatingChannel() {
         return this.channel(ChannelId.FORCE_HEATING);
     }
