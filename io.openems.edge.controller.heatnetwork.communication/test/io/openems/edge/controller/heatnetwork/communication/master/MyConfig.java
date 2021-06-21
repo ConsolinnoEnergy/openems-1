@@ -16,7 +16,7 @@ public class MyConfig extends AbstractComponentConfig implements Config {
 
         private String id;
         private boolean enabled = true;
-        private String connectionType;
+        private ConnectionType connectionType;
         private int maxRequestsAllowedAtOnce;
         private TimerType timerForManager;
         private int maxWaitTimeAllowed;
@@ -28,7 +28,18 @@ public class MyConfig extends AbstractComponentConfig implements Config {
         private String[] requestTypes;
         private String[] methodTypes;
         private String[] requestTypeToResponse;
+        private String[] masterResponseTypes;
         private boolean useHydraulicLineHeater;
+        private String hydraulicLineHeaterId;
+        private boolean usePump;
+        private String pumpId;
+        private String service_pid;
+        private boolean useExceptionalStateHandling;
+        private String timerIdExceptionalState;
+        private int exceptioalStateTime;
+        private boolean forceHeating;
+        private boolean configurationDone;
+
 
         private Builder() {
         }
@@ -41,6 +52,122 @@ public class MyConfig extends AbstractComponentConfig implements Config {
 
         public Builder setEnabled(boolean enabled) {
             this.enabled = enabled;
+            return this;
+        }
+
+        public Builder setConnectionType(ConnectionType connectionType) {
+            this.connectionType = connectionType;
+
+            return this;
+        }
+
+        public Builder setMaxRequestsAllowedAtOnce(int maxRequestsAllowedAtOnce) {
+            this.maxRequestsAllowedAtOnce = maxRequestsAllowedAtOnce;
+            return this;
+        }
+
+        public Builder setTimerForManager(TimerType timerForManager) {
+            this.timerForManager = timerForManager;
+            return this;
+        }
+
+        public Builder setMaxWaitTimeAllowed(int maxWaitTimeAllowed) {
+            this.maxWaitTimeAllowed = maxWaitTimeAllowed;
+            return this;
+        }
+
+        public Builder setManageType(ManageType manageType) {
+            this.manageType = manageType;
+            return this;
+        }
+
+        public Builder setTimerId(String timerId) {
+            this.timerId = timerId;
+            return this;
+        }
+
+        public Builder setKeepAlive(int keepAlive) {
+            this.keepAlive = keepAlive;
+            return this;
+        }
+
+        public Builder setFallback(FallbackHandling fallback) {
+            this.fallback = fallback;
+            return this;
+        }
+
+        public Builder setRequestMap(String[] requestMap) {
+            this.requestMap = requestMap;
+            return this;
+        }
+
+        public Builder setRequestTypes(String[] requestTypes) {
+            this.requestTypes = requestTypes;
+            return this;
+        }
+
+        public Builder setMethodTypes(String[] methodTypes) {
+            this.methodTypes = methodTypes;
+            return this;
+        }
+
+        public Builder setRequestTypeToResponse(String[] requestTypeToResponse) {
+            this.requestTypeToResponse = requestTypeToResponse;
+            return this;
+        }
+
+        public Builder setMasterResponseTypes(String[] masterResponseTypes) {
+            this.masterResponseTypes = masterResponseTypes;
+            return this;
+        }
+
+        public Builder setUseHydraulicLineHeater(boolean useHydraulicLineHeater) {
+            this.useHydraulicLineHeater = useHydraulicLineHeater;
+            return this;
+        }
+
+        public Builder setUsePumpId(boolean usePump) {
+            this.usePump = usePump;
+            return this;
+        }
+
+        public Builder setPumpId(String pumpId) {
+            this.pumpId = pumpId;
+            return this;
+        }
+
+        public Builder setHydraulicLineHeaterId(String hydraulicLineHeaterId) {
+            this.hydraulicLineHeaterId = hydraulicLineHeaterId;
+            return this;
+        }
+
+        public Builder setService_pid(String service_pid) {
+            this.service_pid = service_pid;
+            return this;
+        }
+
+        public Builder setUsePump(boolean usePump) {
+            this.usePump = usePump;
+            return this;
+        }
+
+        public Builder setUseExceptionalStateHandling(boolean useExceptionalStateHandling) {
+            this.useExceptionalStateHandling = useExceptionalStateHandling;
+            return this;
+        }
+
+        public Builder setTimerIdExceptionalState(String timerIdExceptionalState) {
+            this.timerIdExceptionalState = timerIdExceptionalState;
+            return this;
+        }
+
+        public Builder setExceptioalStateTime(int exceptioalStateTime) {
+            this.exceptioalStateTime = exceptioalStateTime;
+            return this;
+        }
+
+        public Builder setForceHeating(boolean forceHeating) {
+            this.forceHeating = forceHeating;
             return this;
         }
 
@@ -68,102 +195,107 @@ public class MyConfig extends AbstractComponentConfig implements Config {
 
     @Override
     public String service_pid() {
-        return null;
+        return this.builder.service_pid;
     }
 
     @Override
     public ConnectionType connectionType() {
-        return null;
+        return this.builder.connectionType;
     }
 
     @Override
     public int maxRequestAllowedAtOnce() {
-        return 0;
+        return this.builder.maxRequestsAllowedAtOnce;
     }
 
     @Override
     public TimerType timerForManager() {
-        return null;
+        return this.builder.timerForManager;
     }
 
     @Override
     public int maxWaitTimeAllowed() {
-        return 0;
+        return this.builder.maxWaitTimeAllowed;
     }
 
     @Override
     public ManageType manageType() {
-        return null;
+        return this.builder.manageType;
     }
 
     @Override
     public String timerId() {
-        return null;
+        return this.builder.timerId;
     }
 
     @Override
     public int keepAlive() {
-        return 0;
+        return this.builder.keepAlive;
     }
 
     @Override
     public FallbackHandling fallback() {
-        return null;
+        return this.builder.fallback;
     }
 
     @Override
     public String[] requestMap() {
-        return new String[0];
+        return this.builder.requestMap;
     }
 
     @Override
     public String[] requestTypes() {
-        return new String[0];
+        return this.builder.requestTypes;
     }
 
     @Override
     public String[] methodTypes() {
-        return new String[0];
+        return this.builder.methodTypes;
+    }
+
+    @Override
+    public String[] masterResponseTypes() {
+        return this.builder.masterResponseTypes;
     }
 
     @Override
     public String[] requestTypeToResponse() {
-        return new String[0];
+        return this.builder.requestTypeToResponse;
     }
 
     @Override
     public boolean useHydraulicLineHeater() {
-        return false;
+        return this.builder.useHydraulicLineHeater;
     }
 
     @Override
     public String hydraulicLineHeaterId() {
-        return null;
+        return this.builder.hydraulicLineHeaterId;
     }
 
     @Override
     public boolean usePump() {
-        return false;
+        return this.builder.usePump;
     }
 
     @Override
     public String pumpId() {
-        return null;
+        return this.builder.pumpId;
     }
 
     @Override
     public boolean useExceptionalStateHandling() {
-        return false;
+        return this.builder.useExceptionalStateHandling;
     }
 
     @Override
     public String timerIdExceptionalState() {
-        return null;
+        return this.builder.timerIdExceptionalState;
     }
 
     @Override
     public int exceptionalStateTime() {
-        return 0;
+        return this.builder.exceptioalStateTime;
     }
 
     @Override
@@ -173,11 +305,11 @@ public class MyConfig extends AbstractComponentConfig implements Config {
 
     @Override
     public boolean forceHeating() {
-        return false;
+        return this.builder.forceHeating;
     }
 
     @Override
     public boolean configurationDone() {
-        return false;
+        return this.builder.configurationDone;
     }
 }
