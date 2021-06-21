@@ -9,7 +9,7 @@ public enum RequestType {
     HEAT, MORE_HEAT, GENERIC;
 
 
-    public static boolean contains(String type) {
+    protected static boolean contains(String type) {
         for (RequestType requestType : RequestType.values()) {
             if (requestType.name().equals(type)) {
                 return true;

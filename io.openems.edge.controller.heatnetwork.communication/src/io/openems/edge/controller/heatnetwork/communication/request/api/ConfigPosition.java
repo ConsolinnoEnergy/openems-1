@@ -9,13 +9,18 @@ public enum ConfigPosition {
     REQUEST_NOT_ACTIVE_VALUE_POSITION(4);
 
 
-    private final int value;
+    final int value;
 
     ConfigPosition(int value) {
         this.value = value;
     }
 
+    /**
+     * Getter for the Value of this Enum.
+     *
+     * @return the value.
+     */
     public int getValue() {
-        return value;
+        return this.value;
     }
 }

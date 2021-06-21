@@ -14,8 +14,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * Get Requests as Input, Determined by Position and List<Request>  (Map <Integer, List<Request>)
- * getManagedRequests (After Request handling these will be the current Requests)
+ * Get Requests as Input, Determined by Position and List<Request>  (Map <Integer, List<Request>).
+ * GetManagedRequests (After Request handling these will be the current Requests)
  * setMaximumAllowedRequests
  */
 public class RestRequestManagerImpl implements RestRequestManager {
@@ -54,7 +54,7 @@ public class RestRequestManagerImpl implements RestRequestManager {
         if (this.timerType.equals(TimerType.CYCLES)) {
             this.workCycles.forEach((key, value) -> value.getAndIncrement());
         }
-        manageByManageType();
+        this.manageByManageType();
 
     }
 
@@ -64,7 +64,7 @@ public class RestRequestManagerImpl implements RestRequestManager {
      */
     private void manageByManageType() {
         if (this.manageType.equals(ManageType.FIFO)) {
-            manageByFiFo();
+            this.manageByFiFo();
         }
     }
 
@@ -75,9 +75,9 @@ public class RestRequestManagerImpl implements RestRequestManager {
      * If Request is available --> Put into Managed Requests if Size ok. else put into waitList.
      */
     private void manageByFiFo() {
-        clearExecutedRequests();
-        manageWaitList();
-        swapKeyIfWaitTimeIsUp();
+        this.clearExecutedRequests();
+        this.manageWaitList();
+        this.swapKeyIfWaitTimeIsUp();
         //only check Requests that are neither in managedRequests already nor in Waitlist <-- REMAINING REQUESTS!
         this.allRequests.keySet().stream()
                 .filter(containingKey ->
@@ -96,7 +96,7 @@ public class RestRequestManagerImpl implements RestRequestManager {
                         }
                     } else {
                         //Set EnableSignal of Components who have no HeatRequest to 0
-                        this.allRequests.get(key).forEach(request->{
+                        this.allRequests.get(key).forEach(request -> {
                             request.getCallbackRequest().setValue("0");
                         });
                     }
@@ -207,8 +207,8 @@ public class RestRequestManagerImpl implements RestRequestManager {
 
             case CYCLES:
                 AtomicInteger maxCounter = new AtomicInteger(Integer.MIN_VALUE);
-                workCycles.forEach((key,value)->{
-                    if(value.get() > maxCounter.get()){
+                workCycles.forEach((key, value) -> {
+                    if (value.get() > maxCounter.get()) {
                         maxCounter.set(value.get());
                         maxWorkTimeKey.set(key);
                     }
@@ -345,7 +345,7 @@ public class RestRequestManagerImpl implements RestRequestManager {
     }
 
     @Override
-    public void setTimerType(TimerType type){
+    public void setTimerType(TimerType type) {
         this.timerType = type;
     }
 

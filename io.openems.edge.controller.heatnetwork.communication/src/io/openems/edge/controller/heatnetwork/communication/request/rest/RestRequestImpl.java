@@ -11,11 +11,11 @@ import org.osgi.service.cm.ConfigurationException;
  */
 public class RestRequestImpl implements RestRequest {
     //Request input
-    private RestRemoteDevice request;
+    private final RestRemoteDevice request;
     //Write to/Signal/Callback/Allow
-    private RestRemoteDevice callback;
+    private final RestRemoteDevice callback;
 
-    private RequestType requestType;
+    private final RequestType requestType;
 
 
     public RestRequestImpl(RestRemoteDevice request, RestRemoteDevice callback, RequestType type) throws ConfigurationException {
@@ -59,7 +59,5 @@ public class RestRequestImpl implements RestRequest {
                     && otherObject.getRequestType().equals(this.requestType);
         }
         return false;
-
-
     }
 }

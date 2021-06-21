@@ -5,7 +5,7 @@ public enum MasterResponseType {
 
 
 
-    public static boolean contains(String type) {
+    protected static boolean contains(String type) {
         for (MasterResponseType masterResponseType : MasterResponseType.values()) {
             if (masterResponseType.name().equals(type)) {
                 return true;

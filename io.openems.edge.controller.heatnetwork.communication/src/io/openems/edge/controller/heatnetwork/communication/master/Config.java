@@ -7,9 +7,6 @@ import io.openems.edge.controller.heatnetwork.communication.api.ManageType;
 import io.openems.edge.timer.api.TimerType;
 import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
-import org.osgi.service.metatype.annotations.Option;
-
-import java.util.Arrays;
 
 
 @ObjectClassDefinition(

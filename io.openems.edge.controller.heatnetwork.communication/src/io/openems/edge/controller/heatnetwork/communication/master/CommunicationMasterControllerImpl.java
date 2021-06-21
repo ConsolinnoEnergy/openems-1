@@ -79,9 +79,7 @@ public class CommunicationMasterControllerImpl extends AbstractOpenemsComponent 
     private Pump heatPump;
     //For Subclasses -> CommunicationController and manager
     private boolean forcing;
-    private static final int REMOTE_REQUEST_CONFIGURATION_SIZE = 4;
     private int maxAllowedRequests;
-    private int maxWaitTime;
     //Current request size --> IF Size is empty -> deactivate extra component else activate them.
     //Is declared as an Integer bc. of future implementation : Do XYZ at Certain Size
     //resets every run
@@ -95,7 +93,6 @@ public class CommunicationMasterControllerImpl extends AbstractOpenemsComponent 
     private ExceptionalStateHandler exceptionalStateHandler;
     private static final String KEEP_ALIVE_IDENTIFIER = "COMMUNICATION_MASTER_CONTROLLER_KEEP_ALIVE_IDENTIFIER";
     private static final String EXCEPTIONAL_STATE_IDENTIFIER = "COMMUNICATION_MASTER_CONTROLLER_EXCEPTIONAL_STATE_IDENTIFIER";
-
     private final Map<RequestType, List<ResponseWrapper>> requestTypeAndResponses = new HashMap<>();
     private final Map<RequestType, AtomicBoolean> requestTypeIsSet = new HashMap<>();
 
@@ -156,11 +153,10 @@ public class CommunicationMasterControllerImpl extends AbstractOpenemsComponent 
         if (this.configurationDone) {
             this.setForceHeating(config.forceHeating());
             this.setMaximumRequests(config.maxRequestAllowedAtOnce());
-            this.maxWaitTime = config.maxWaitTimeAllowed();
             this.forcing = this.getForceHeating();
             this.maxAllowedRequests = this.getMaximumRequests();
             this.communicationController = HELPER.createCommunicationControllerWithRequests(config, this.cpm);
-            this.communicationController.setMaxWaitTime(this.maxWaitTime);
+            this.communicationController.setMaxWaitTime(config.maxWaitTimeAllowed());
             this.communicationController.setTimerTypeForManaging(config.timerForManager());
             this.communicationController.setMaxRequests(this.maxAllowedRequests);
             //Creates the Controller responsible for handling RemoteRequests (REST requests)
@@ -184,9 +180,7 @@ public class CommunicationMasterControllerImpl extends AbstractOpenemsComponent 
                 }
             }
             this.setResponsesToRequests(Arrays.asList(config.requestTypeToResponse()));
-            Arrays.asList(RequestType.values()).forEach(requestType -> {
-                this.requestTypeIsSet.put(requestType, new AtomicBoolean(false));
-            });
+            Arrays.asList(RequestType.values()).forEach(requestType -> this.requestTypeIsSet.put(requestType, new AtomicBoolean(false)));
 
             this.setForceHeating(config.forceHeating());
             this.timer = new TimerHandlerImpl(this.id(), this.cpm);
@@ -197,7 +191,6 @@ public class CommunicationMasterControllerImpl extends AbstractOpenemsComponent 
                 this.exceptionalStateHandler = new ExceptionalStateHandlerImpl(this.timer, EXCEPTIONAL_STATE_IDENTIFIER);
                 this.getExceptionalStateValueChannel().setNextValue(100);
             }
-            this.setKeepAlive(config.keepAlive());
             FallbackHandling fallback = config.fallback();
 
             this.setFallbackLogic(fallback);
@@ -376,9 +369,7 @@ public class CommunicationMasterControllerImpl extends AbstractOpenemsComponent 
             case DEFAULT:
             default:
                 this.communicationController.enableAllRequests();
-                this.requestTypeIsSet.forEach((key, value) -> {
-                    value.set(true);
-                });
+                this.requestTypeIsSet.forEach((key, value) -> value.set(true));
                 this.activateAllResponses();
         }
     }
@@ -394,9 +385,7 @@ public class CommunicationMasterControllerImpl extends AbstractOpenemsComponent 
         //Handle Requests
         this.communicationController.executeLogic();
         Map<RequestType, AtomicBoolean> cleanRequestTypeMap = new HashMap<>();
-        Arrays.asList(RequestType.values()).forEach(request -> {
-            cleanRequestTypeMap.put(request, new AtomicBoolean(false));
-        });
+        Arrays.asList(RequestType.values()).forEach(request -> cleanRequestTypeMap.put(request, new AtomicBoolean(false)));
 
         int currentRequestSize = this.communicationController.enableManagedRequestsAndReturnSizeOfManagedRequests(this.forcing, cleanRequestTypeMap);
 
@@ -438,9 +427,7 @@ public class CommunicationMasterControllerImpl extends AbstractOpenemsComponent 
      * Internal method, to deactivate all Responses.
      */
     private void deactivateAllResponses() {
-        this.requestTypeIsSet.forEach((key, value) -> {
-            value.set(false);
-        });
+        this.requestTypeIsSet.forEach((key, value) -> value.set(false));
         this.handleComponents();
     }
 
@@ -448,9 +435,7 @@ public class CommunicationMasterControllerImpl extends AbstractOpenemsComponent 
      * Internal method, to activate all Responses.
      */
     private void activateAllResponses() {
-        this.requestTypeIsSet.forEach((key, value) -> {
-            value.set(true);
-        });
+        this.requestTypeIsSet.forEach((key, value) -> value.set(true));
         this.handleComponents();
     }
 
@@ -502,7 +487,7 @@ public class CommunicationMasterControllerImpl extends AbstractOpenemsComponent 
                     this.log.warn("Wanted to set Heatpump to value: " + value + " But it is not instantiated! " + super.id());
                 }
                 break;
-            case ACTIVATE_LINEHEATER:
+            case ACTIVATE_LINE_HEATER:
                 if (this.hydraulicLineHeater != null) {
                     Boolean lineHeaterActivation = null;
                     if (value != null || value.equals("null") == false) {
@@ -567,6 +552,15 @@ public class CommunicationMasterControllerImpl extends AbstractOpenemsComponent 
      */
     private static class CommunicationControllerHelper {
 
+        private enum ConfigPositionForRequests {
+            REQUEST(0), CALLBACK(1), KEY_FOR_MAP(2), REQUEST_TYPE(3);
+            int position;
+
+            ConfigPositionForRequests(int position) {
+                this.position = position;
+            }
+        }
+
         /**
          * Creates a CommunicationController and adds the the Requests to it.
          *
@@ -579,13 +573,14 @@ public class CommunicationMasterControllerImpl extends AbstractOpenemsComponent 
         public CommunicationController createCommunicationControllerWithRequests(Config config, ComponentManager cpm)
                 throws ConfigurationException, OpenemsError.OpenemsNamedException {
             CommunicationController controller;
-            switch (config.connectionType()) {
-                case REST:
-                default:
-                    controller = new RestLeafletCommunicationControllerImpl(config.connectionType(),
-                            config.manageType(), config.maxRequestAllowedAtOnce(),
-                            config.forceHeating());
-                    controller.setMaxWaitTime(config.maxWaitTimeAllowed());
+            if (config.connectionType() == ConnectionType.REST) {
+                controller = new RestLeafletCommunicationControllerImpl(config.connectionType(),
+                        config.manageType(), config.maxRequestAllowedAtOnce(),
+                        config.forceHeating());
+                controller.setMaxWaitTime(config.maxWaitTimeAllowed());
+            } else {
+                throw new ConfigurationException("CreateCommunicationControllerWithRequests",
+                        "ConnectionType is not supported yet! " + config.connectionType());
             }
             this.createRemoteRequestsAndAddToCommunicationController(config, controller, cpm);
             return controller;
@@ -662,15 +657,14 @@ public class CommunicationMasterControllerImpl extends AbstractOpenemsComponent 
                                                   ConnectionType connectionType, ComponentManager cpm)
                 throws ConfigurationException, OpenemsError.OpenemsNamedException {
             String[] entries = entry.split(":");
-            if (entries.length != REMOTE_REQUEST_CONFIGURATION_SIZE) {
-                throw new ConfigurationException("" + entries.length, "Length not ok expected " + REMOTE_REQUEST_CONFIGURATION_SIZE);
+            if (entries.length != ConfigPositionForRequests.values().length) {
+                throw new ConfigurationException("" + entries.length, "Length not ok expected " + ConfigPositionForRequests.values().length);
             }
-            AtomicInteger configurationCounter = new AtomicInteger(0);
-            //REQUEST (Pos 0), CALLBACK (Pos 1), KEY (Pos 2)
-            OpenemsComponent request = cpm.getComponent(entries[configurationCounter.getAndIncrement()]);
-            OpenemsComponent callback = cpm.getComponent(entries[configurationCounter.getAndIncrement()]);
-            int keyForMap = Integer.parseInt(entries[configurationCounter.getAndIncrement()]);
-            String requestTypeString = entries[configurationCounter.getAndIncrement()].toUpperCase().trim();
+            //REQUEST (Pos 0), CALLBACK (Pos 1), KEY (Pos 2), REQUEST_TYPE(3)
+            OpenemsComponent request = cpm.getComponent(entries[ConfigPositionForRequests.REQUEST.position]);
+            OpenemsComponent callback = cpm.getComponent(entries[ConfigPositionForRequests.CALLBACK.position]);
+            int keyForMap = Integer.parseInt(entries[ConfigPositionForRequests.KEY_FOR_MAP.position]);
+            String requestTypeString = entries[ConfigPositionForRequests.REQUEST_TYPE.position].toUpperCase().trim();
             RequestType type;
             if (RequestType.contains(requestTypeString)) {
                 type = RequestType.valueOf(requestTypeString);
