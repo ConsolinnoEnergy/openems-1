@@ -1,11 +1,19 @@
 package io.openems.edge.controller.heatnetwork.communication.master;
 
+import io.openems.edge.common.test.DummyComponentManager;
+import io.openems.edge.common.test.TimeLeapClock;
 import io.openems.edge.controller.heatnetwork.communication.api.ConnectionType;
 import io.openems.edge.controller.heatnetwork.communication.api.FallbackHandling;
 import io.openems.edge.controller.heatnetwork.communication.api.ManageType;
+import io.openems.edge.controller.heatnetwork.communication.request.api.RequestType;
+import io.openems.edge.heatsystem.components.test.DummyPump;
 import io.openems.edge.remote.rest.device.simulator.RestRemoteTestDevice;
+import io.openems.edge.thermometer.api.test.DummyThermometer;
 import io.openems.edge.timer.api.TimerType;
 
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.util.Arrays;
 import java.util.List;
 
 public class MyControllerTest {
@@ -36,4 +44,9 @@ public class MyControllerTest {
     private boolean forceHeating;
     private boolean configurationDone;
     private List<RestRemoteTestDevice> list;
+    private DummyPump pump;
+    private DummyThermometer dummyThermometer;
+    private String virtualThermometer;
+    private DummyComponentManager cpm;
+    private final TimeLeapClock clock = new TimeLeapClock(Instant.ofEpochSecond(1577836800), ZoneOffset.UTC);
 }
