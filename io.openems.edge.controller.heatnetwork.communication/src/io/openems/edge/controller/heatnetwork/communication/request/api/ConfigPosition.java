@@ -1,5 +1,8 @@
 package io.openems.edge.controller.heatnetwork.communication.request.api;
 
+/**
+ * An Enum Class for easier Maintenance, if the ConfigPosition for Request and Response may change.
+ */
 public enum ConfigPosition {
 
     REQUEST_TYPE_POSITION(0),

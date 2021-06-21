@@ -10,32 +10,46 @@ import io.openems.edge.common.channel.StringWriteChannel;
 import io.openems.edge.common.channel.WriteChannel;
 import io.openems.edge.common.component.OpenemsComponent;
 
+/**
+ * The Nature of the CommunicationMasterController. Holds Information Channel, as well as the ability to Force Heating.
+ */
 public interface CommunicationMasterController extends OpenemsComponent {
 
     enum ChannelId implements io.openems.edge.common.channel.ChannelId {
+
         /**
          * ForceHeating. Sets The CallbackValue of each containing Requests to True.
          */
+
         FORCE_HEATING(Doc.of(OpenemsType.BOOLEAN).accessMode(AccessMode.READ_WRITE).onInit(
                 channel -> ((BooleanWriteChannel) channel).onSetNextWrite(channel::setNextValue)
         )),
+
         /**
          * Type of Execution on Fallback.
          */
+
         EXECUTION_ON_FALLBACK(Doc.of(FallbackHandling.values()).accessMode(AccessMode.READ_WRITE).onInit(
                 channel -> ((WriteChannel<?>) channel).onSetNextWrite(channel::setNextValue)
         )),
+
+
         /**
-         * Maximum allowed Request for the current Communication
+         * Maximum allowed Request for the current Communication.
          */
+
         MAXIMUM_REQUESTS(Doc.of(OpenemsType.INTEGER)),
+
         /**
-         * Set the Maximum allowed Requests
+         * Set the Maximum allowed Requests.
          */
+
         SET_MAXIMUM_REQUESTS(Doc.of(OpenemsType.INTEGER).accessMode(AccessMode.READ_WRITE)),
+
         /**
-         * Is Extra Heat Requests by Remote Components
+         * Is Extra Heat Requests by Remote Components.
          */
+
         CURRENT_REQUESTS(Doc.of(OpenemsType.INTEGER));
         private final Doc doc;
 

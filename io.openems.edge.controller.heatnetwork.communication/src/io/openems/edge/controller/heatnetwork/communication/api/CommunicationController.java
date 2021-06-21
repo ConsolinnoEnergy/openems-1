@@ -1,10 +1,14 @@
 package io.openems.edge.controller.heatnetwork.communication.api;
 
+import io.openems.edge.controller.heatnetwork.communication.request.api.RequestType;
 import io.openems.edge.timer.api.TimerType;
 
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+/**
+ * An Interface for all CommunicationController. E.g. Communicating with other Leaflets via REST.
+ */
 public interface CommunicationController {
     /**
      * Enables a CommunicationController initially.
@@ -89,5 +93,9 @@ public interface CommunicationController {
      */
     int enableManagedRequestsAndReturnSizeOfManagedRequests(boolean forcing, Map<RequestType, AtomicBoolean> cleanRequestTypeMap);
 
+    /**
+     * Sets the Maximum Requests allowed, that can be handled at once.
+     * @param maxAllowedRequests the new amount that can be handled
+     */
     void setMaxRequests(int maxAllowedRequests);
 }

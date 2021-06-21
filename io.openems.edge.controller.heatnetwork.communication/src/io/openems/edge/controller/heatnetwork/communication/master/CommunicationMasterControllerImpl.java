@@ -11,12 +11,12 @@ import io.openems.edge.controller.heatnetwork.communication.api.CommunicationMas
 import io.openems.edge.controller.heatnetwork.communication.api.ConnectionType;
 import io.openems.edge.controller.heatnetwork.communication.api.FallbackHandling;
 import io.openems.edge.controller.heatnetwork.communication.api.Request;
-import io.openems.edge.controller.heatnetwork.communication.api.RequestType;
 import io.openems.edge.controller.heatnetwork.communication.api.RestLeafletCommunicationController;
 import io.openems.edge.controller.heatnetwork.communication.api.RestRequest;
 import io.openems.edge.controller.heatnetwork.communication.request.api.ConfigPosition;
 import io.openems.edge.controller.heatnetwork.communication.request.api.MasterResponseType;
 import io.openems.edge.controller.heatnetwork.communication.request.api.MethodTypes;
+import io.openems.edge.controller.heatnetwork.communication.request.api.RequestType;
 import io.openems.edge.controller.heatnetwork.communication.request.rest.RestRequestImpl;
 import io.openems.edge.controller.heatnetwork.communication.responsewrapper.ChannelAddressResponse;
 import io.openems.edge.controller.heatnetwork.communication.responsewrapper.ChannelAddressResponseImpl;
@@ -56,7 +56,18 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-
+/**
+ * The CommunicationMasterController.
+ * It Responses to Remote Requests and determined by the RequestType of the Request, it calls methods or writes into Channels,
+ * depending on the Configuration.
+ * Example:
+ * The MasterConfiguration awaits the RequestType HEAT. On HEAT Requests it starts a HeatPump.
+ * If any of it's stored RemoteRequests are from the Type HEAT, and
+ * the Remote Requests requesting heat, the MasterController enables the HeatPump.
+ * Same goes for MoreHeat or any other configurable request.
+ * See: {@link RequestType} {@link ConnectionType} for supported RequestTypes and Connection Types, as well as
+ * {@link MasterResponseType} and {@link MethodTypes} for supported Responses.
+ */
 @Designate(ocd = Config.class, factory = true)
 @Component(name = "Controller.CommunicationMaster",
         immediate = true,
@@ -111,7 +122,9 @@ public class CommunicationMasterControllerImpl extends AbstractOpenemsComponent 
     void activate(ComponentContext context, Config config) {
         super.activate(context, config.id(), config.alias(), config.enabled());
         this.config = config;
-        if (config.requestTypes().length != RequestType.values().length || config.methodTypes().length != MethodTypes.values().length) {
+        if (config.requestTypes().length != RequestType.values().length
+                || config.methodTypes().length != MethodTypes.values().length
+                || config.masterResponseTypes().length != MasterResponseType.values().length) {
             this.updateApacheConfig();
             return;
         }
@@ -184,10 +197,10 @@ public class CommunicationMasterControllerImpl extends AbstractOpenemsComponent 
 
             this.setForceHeating(config.forceHeating());
             this.timer = new TimerHandlerImpl(this.id(), this.cpm);
-            this.addTimer(config.timerId(), config.keepAlive(), KEEP_ALIVE_IDENTIFIER);
+            this.timer.addOneIdentifier(config.timerId(), KEEP_ALIVE_IDENTIFIER, config.keepAlive());
             this.useExceptionalStateHandling = config.useExceptionalStateHandling();
             if (this.useExceptionalStateHandling) {
-                this.addTimer(config.timerIdExceptionalState(), config.exceptionalStateTime(), EXCEPTIONAL_STATE_IDENTIFIER);
+                this.timer.addOneIdentifier(config.timerIdExceptionalState(),  EXCEPTIONAL_STATE_IDENTIFIER, config.exceptionalStateTime());
                 this.exceptionalStateHandler = new ExceptionalStateHandlerImpl(this.timer, EXCEPTIONAL_STATE_IDENTIFIER);
                 this.getExceptionalStateValueChannel().setNextValue(100);
             }
@@ -200,6 +213,14 @@ public class CommunicationMasterControllerImpl extends AbstractOpenemsComponent 
         }
     }
 
+    /**
+     * Sets up the Responses by the RequestType.
+     * It splits up each entry of the requestType and gets depending on the {@link ConfigPosition} the corresponding configuration entries,
+     * such as the {@link RequestType} or the {@link MasterResponseType}.
+     *
+     * @param requestTypeToResponse the List of the Configuration for responses, usually from {@link Config}
+     * @throws ConfigurationException if any error occurred.
+     */
     private void setResponsesToRequests(List<String> requestTypeToResponse) throws ConfigurationException {
         ConfigurationException[] ex = {null};
         requestTypeToResponse.forEach(entry -> {
@@ -257,6 +278,9 @@ public class CommunicationMasterControllerImpl extends AbstractOpenemsComponent 
         }
     }
 
+    /**
+     * Updates the Config in the Apache Web Config and fills the Request and MethodsTypes.
+     */
     private void updateApacheConfig() {
         Configuration c;
 
@@ -268,10 +292,13 @@ public class CommunicationMasterControllerImpl extends AbstractOpenemsComponent 
 
             types = Arrays.toString(MethodTypes.values());
             properties.put("methodTypes", this.propertyInput(types));
+            types = Arrays.toString(MasterResponseType.values());
+            properties.put("masterResponseTypes", this.propertyInput(types));
+
             c.update(properties);
 
         } catch (IOException e) {
-            e.printStackTrace();
+            this.log.warn("Couldn't update Config, in CommunicationMaster: " + super.id() + " Reason: " + e.getCause());
         }
     }
 
@@ -288,9 +315,6 @@ public class CommunicationMasterControllerImpl extends AbstractOpenemsComponent 
         return types.split(",");
     }
 
-    private void addTimer(String timerId, int keepAlive, String identifier) throws OpenemsError.OpenemsNamedException, ConfigurationException {
-        this.timer.addOneIdentifier(identifier, timerId, keepAlive);
-    }
 
     @Deactivate
     protected void deactivate() {
@@ -300,6 +324,12 @@ public class CommunicationMasterControllerImpl extends AbstractOpenemsComponent 
         super.deactivate();
     }
 
+    /**
+     * If Config is ok (Happens on e.g. restart of OpenEms or if some Components aren't available yet)
+     * And the Configuration is Done (Boolean in Config)
+     * Check for ExceptionalStates -> What to Do
+     * Otherwise -> Check if the Connection is ok and if that's the case, handle the Requests and the Responses.
+     */
     @Override
     public void run() {
         if (this.configSucceed) {
@@ -353,25 +383,18 @@ public class CommunicationMasterControllerImpl extends AbstractOpenemsComponent 
      * set the ThresholdTemperature as well as enabling/activate it, set The Id to this Component.
      */
     private void fallbackLogic() {
-        FallbackHandling fallback = this.getExecutionOnFallback();
+        switch (this.getExecutionOnFallback()) {
 
-        if (fallback == null || fallback.equals(FallbackHandling.UNDEFINED)) {
-            fallback = FallbackHandling.DEFAULT;
-        }
-        switch (fallback) {
-
-            case HEAT:
-                break;
-            case OPEN:
-                break;
-            case CLOSE:
+            case UNDEFINED:
                 break;
             case DEFAULT:
             default:
                 this.communicationController.enableAllRequests();
                 this.requestTypeIsSet.forEach((key, value) -> value.set(true));
                 this.activateAllResponses();
+                break;
         }
+
     }
 
     /**
@@ -644,7 +667,7 @@ public class CommunicationMasterControllerImpl extends AbstractOpenemsComponent 
 
         /**
          * Creates a Requests from a configuration and puts it into the requestMap.
-         * First Split the entires by ":", then check each split param if correct, if params are ok, create corresponding RestRequest.
+         * First Split the entries by ":", then check each split param if correct, if params are ok, create corresponding RestRequest.
          *
          * @param entry          the entry usually from Config or Channel.
          * @param requestMap     the requestMap coming from calling method (if config done it will be added to the controller)

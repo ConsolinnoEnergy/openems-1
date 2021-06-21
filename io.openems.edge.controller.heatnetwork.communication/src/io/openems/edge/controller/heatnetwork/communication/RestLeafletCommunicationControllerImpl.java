@@ -1,12 +1,13 @@
 package io.openems.edge.controller.heatnetwork.communication;
 
-import io.openems.edge.controller.heatnetwork.communication.api.RequestType;
+
 import io.openems.edge.controller.heatnetwork.communication.api.RestLeafletCommunicationController;
 import io.openems.edge.controller.heatnetwork.communication.api.ManageType;
 import io.openems.edge.controller.heatnetwork.communication.api.RequestManager;
 import io.openems.edge.controller.heatnetwork.communication.api.RestRequestManager;
 import io.openems.edge.controller.heatnetwork.communication.api.RestRequest;
 import io.openems.edge.controller.heatnetwork.communication.api.ConnectionType;
+import io.openems.edge.controller.heatnetwork.communication.request.api.RequestType;
 import io.openems.edge.controller.heatnetwork.communication.request.manager.RestRequestManagerImpl;
 import io.openems.edge.timer.api.TimerType;
 import org.osgi.service.cm.ConfigurationException;
@@ -122,6 +123,10 @@ public class RestLeafletCommunicationControllerImpl implements RestLeafletCommun
     public ConnectionType getConnectionType() {
         return this.connectionType;
     }
+    /**
+     * Map that stores all Request. It's Key is a simple int, grouping the collection of {@link RestRequest}s
+     * @return the Map with all grouped Requests.
+     */
 
     @Override
     public Map<Integer, List<RestRequest>> getAllRequests() {
@@ -182,6 +187,17 @@ public class RestLeafletCommunicationControllerImpl implements RestLeafletCommun
         });
     }
 
+    /**
+     * Called by CommunicationMaster, managed Requests will be handled/enabled.
+     * The CommunicationController stores the true/false value within the map, instantiated by the CommunicationMaster.
+     * The CommunicationMaster will handle them later and reacts to them, like configured.
+     *
+     * @param forcing             if this is true -> all responses and callbacks will be set to true.
+     * @param cleanRequestTypeMap the Map created by the CommunicationMaster.
+     *                            Important to check if the Responses of the Controller should be activated or deactivated
+     * @return the size of the managedRequests.
+     */
+
     @Override
     public int enableManagedRequestsAndReturnSizeOfManagedRequests(boolean forcing, Map<RequestType, AtomicBoolean> cleanRequestTypeMap) {
         Map<Integer, List<RestRequest>> currentRestRequests =
@@ -199,10 +215,19 @@ public class RestLeafletCommunicationControllerImpl implements RestLeafletCommun
         return currentRestRequests.size();
     }
 
+    /**
+     * Sets the Maximum Requests allowed, that can be handled at once.
+     * @param maxAllowedRequests the new amount that can be handled
+     */
+
     @Override
     public void setMaxRequests(int maxAllowedRequests) {
         this.requestManager.setMaxManagedRequests(maxAllowedRequests);
     }
+    /**
+     * Gets the {@link RestRequestManager} of this CommunicationController.
+     * @return the {@link RestRequestManager}.
+     */
 
     @Override
     public RestRequestManager getRestManager() {

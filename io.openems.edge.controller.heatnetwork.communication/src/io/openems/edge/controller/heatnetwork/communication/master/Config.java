@@ -56,6 +56,8 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
     String[] methodTypes() default {};
 
+    String[] masterResponseTypes() default {};
+
 
     @AttributeDefinition(name = "RequestType to Response", description = "Map an available RequestType to a Response, if no Request of this type is active -> set to default Value,"
             + "If supported you can either use a ChannelAddress or an implemented Method for response "
