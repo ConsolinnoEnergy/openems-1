@@ -17,7 +17,7 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     @AttributeDefinition(name = "evcsIDs", description = "Ids of the EVCS that have to be managed.")
     String[] evcss() default {"evcs0","evcs1"};
 
-    @AttributeDefinition(name = "MeterID", description = "Id of the Meter.")
+    @AttributeDefinition(name = "useMeter", description = "Tick if the controller should offset its calculation based on an existing Meter.")
     boolean useMeter() default true;
     @AttributeDefinition(name = "MeterID", description = "Id of the Meter.")
     String meter() default "";

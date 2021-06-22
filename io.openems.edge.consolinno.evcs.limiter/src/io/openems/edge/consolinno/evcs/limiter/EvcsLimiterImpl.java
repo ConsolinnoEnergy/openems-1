@@ -40,7 +40,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 @Designate(ocd = Config.class, factory = true)
 @Component(name = "evcsLimiterImpl", immediate = true,
-        configurationPolicy = ConfigurationPolicy.REQUIRE, property = EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE)
+        configurationPolicy = ConfigurationPolicy.REQUIRE, property = EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE)
 
 public class EvcsLimiterImpl extends AbstractOpenemsComponent implements OpenemsComponent, PowerLimitChannel, EventHandler {
     private final Logger log = LoggerFactory.getLogger(EvcsLimiterImpl.class);
@@ -87,7 +87,7 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
     }
 
     @Activate
-    void activate(ComponentContext context, Config config) throws ConfigurationException {
+    void activate(ComponentContext context, Config config) throws ConfigurationException, OpenemsError.OpenemsNamedException {
         super.activate(context, config.id(), config.alias(), config.enabled());
         this.useMeter = config.useMeter();
         if (this.useMeter && !this.checkMeter(config.meter())) {
@@ -122,7 +122,7 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
     }
 
     @Modified
-    void modified(ComponentContext context, Config config) throws ConfigurationException {
+    void modified(ComponentContext context, Config config) throws ConfigurationException, OpenemsError.OpenemsNamedException {
         super.modified(context, config.id(), config.alias(), config.enabled());
         String[] ids = config.evcss();
         this.evcss = new ManagedEvcs[ids.length];
@@ -159,7 +159,11 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
     @Override
     public void handleEvent(Event event) {
         if (this.evcss[0] == null) {
-            this.updateEvcss();
+            try {
+                this.updateEvcss();
+            } catch (ConfigurationException | OpenemsError.OpenemsNamedException e) {
+                this.log.error("EVCS given are not EVCS.");
+            }
         } else {
 
             //-----Reallocate Resources------\\
@@ -1970,16 +1974,13 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
     /**
      * Update the Array of EVCSS.
      */
-    private void updateEvcss() {
+    private void updateEvcss() throws ConfigurationException, OpenemsError.OpenemsNamedException {
         for (int i = 0; i < this.ids.length; i++) {
-            try {
-                if (this.cpm.getComponent(this.ids[i]) instanceof ManagedEvcs) {
-                    this.evcss[i] = this.cpm.getComponent(this.ids[i]);
-                } else {
-                    throw new ConfigurationException("The EVCSsId list contains a wrong ID: ", this.ids[i] + " is not a EVCS");
-                }
-            } catch (OpenemsError.OpenemsNamedException | ConfigurationException ignored) {
-                this.log.info("Unable to find Components. Retrying...");
+
+            if (this.cpm.getComponent(this.ids[i]) instanceof ManagedEvcs) {
+                this.evcss[i] = this.cpm.getComponent(this.ids[i]);
+            } else {
+                throw new ConfigurationException("The EVCSsId list contains a wrong ID: ", this.ids[i] + " is not a EVCS");
             }
         }
     }

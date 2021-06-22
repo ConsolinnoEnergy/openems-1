@@ -10,3 +10,6 @@ Bundle-Version: 1.0.0.${tstamp}
     io.openems.edge.evcs.api,\
     io.openems.edge.ess.api,\
     joda-time;version=2.10.8,\
+
+-testpath: \
+    ${testpath}

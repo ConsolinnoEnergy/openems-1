@@ -33,4 +33,9 @@ public class DummyManagedEvcs extends AbstractOpenemsComponent implements Evcs, 
 	public EvcsPower getEvcsPower() {
 		return this.evcsPower;
 	}
+
+	@Override
+	public int[] getPhaseConfiguration() {
+		return new int[]{1, 2, 3};
+	}
 }
