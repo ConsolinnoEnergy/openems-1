@@ -7,8 +7,8 @@ import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.common.filter.PidFilter;
 import io.openems.edge.controller.api.Controller;
 import io.openems.edge.controller.heatnetwork.pid.heatsystem.api.PidHeatsystemController;
-import io.openems.edge.heatsystem.components.PassingActivateNature;
-import io.openems.edge.heatsystem.components.PassingForPid;
+import io.openems.edge.heatsystem.components.HeatsystemComponent;
+import io.openems.edge.heatsystem.components.PassingStation;
 import io.openems.edge.heatsystem.components.Pump;
 import io.openems.edge.thermometer.api.Thermometer;
 import org.osgi.service.cm.ConfigurationException;
@@ -33,9 +33,9 @@ public class PidHeatsystemControllerImpl extends AbstractOpenemsComponent implem
     @Reference
     ComponentManager cpm;
 
-    private PassingForPid passingForPid;
+    private HeatsystemComponent heatSystemComponent;
     private Thermometer thermometer;
-    private PassingActivateNature passing;
+    private PassingStation passing;
     private boolean isPump;
     private PidFilter pidFilter;
     private int offPercentage = 0;
@@ -91,14 +91,14 @@ public class PidHeatsystemControllerImpl extends AbstractOpenemsComponent implem
      * @throws ConfigurationException             when cpm tries to access device but it's not correct instance.
      */
     private void allocateComponent(String Device) throws OpenemsError.OpenemsNamedException, ConfigurationException {
-        if (cpm.getComponent(Device) instanceof PassingForPid) {
+        if (cpm.getComponent(Device) instanceof HeatsystemComponent) {
             if (cpm.getComponent(Device) instanceof Pump) {
                 this.isPump = true;
             }
-            this.passingForPid = cpm.getComponent(Device);
+            this.heatSystemComponent = cpm.getComponent(Device);
         } else if (cpm.getComponent(Device) instanceof Thermometer) {
             this.thermometer = cpm.getComponent(Device);
-        } else if (cpm.getComponent(Device) instanceof PassingActivateNature) {
+        } else if (cpm.getComponent(Device) instanceof PassingStation) {
             this.passing = cpm.getComponent(Device);
         } else {
             throw new ConfigurationException("The configured Component is neither Valve, Pump, PassingController nor TemperatureSensor! Please Check "
@@ -155,31 +155,31 @@ public class PidHeatsystemControllerImpl extends AbstractOpenemsComponent implem
                     this.timestamp = System.currentTimeMillis();
                     double output = pidFilter.applyPidFilter(this.thermometer.getTemperatureChannel().getNextValue().get(), this.setMinTemperature().value().get());
                     // is percentage value fix if so substract from current powerlevel?
-                    output -= this.passingForPid.getPowerLevel().getNextValue().get();
+                    output -= this.heatSystemComponent.getPowerLevelChannel().getNextValue().get();
 
                     if (this.isPump) {
                         output *= -1;
                     }
-                    if (this.passingForPid.readyToChange()) {
-                        this.passingForPid.changeByPercentage(output / 10);
+                    if (this.heatSystemComponent.readyToChange()) {
+                        this.heatSystemComponent.changeByPercentage(output / 10);
                     }
 
                 }
-            } else if (this.passingForPid.readyToChange()) {
-                if (this.passingForPid.getPowerLevel().value().isDefined()) {
-                    int percentToChange = offPercentage - this.passingForPid.getPowerLevel().value().get().intValue();
-                    this.passingForPid.changeByPercentage(percentToChange);
+            } else if (this.heatSystemComponent.readyToChange()) {
+                if (this.heatSystemComponent.getPowerLevelChannel().value().isDefined()) {
+                    int percentToChange = offPercentage - this.heatSystemComponent.getPowerLevelChannel().value().get().intValue();
+                    this.heatSystemComponent.changeByPercentage(percentToChange);
                 } else {
-                    this.passingForPid.changeByPercentage(offPercentage);
+                    this.heatSystemComponent.changeByPercentage(offPercentage);
                 }
             }
         } else {
-            if (this.passingForPid.readyToChange()) {
-                if (this.passingForPid.getPowerLevel().value().isDefined()) {
-                    int percentToChange = offPercentage - this.passingForPid.getPowerLevel().value().get().intValue();
-                    this.passingForPid.changeByPercentage(percentToChange);
+            if (this.heatSystemComponent.readyToChange()) {
+                if (this.heatSystemComponent.getPowerLevelChannel().value().isDefined()) {
+                    int percentToChange = offPercentage - this.heatSystemComponent.getPowerLevelChannel().value().get().intValue();
+                    this.heatSystemComponent.changeByPercentage(percentToChange);
                 } else {
-                    this.passingForPid.changeByPercentage(offPercentage);
+                    this.heatSystemComponent.changeByPercentage(offPercentage);
                 }
             }
         }
@@ -187,8 +187,8 @@ public class PidHeatsystemControllerImpl extends AbstractOpenemsComponent implem
 
     private boolean componentIsMissing() {
         try {
-            if (this.passingForPid.isEnabled() == false) {
-                this.passingForPid = cpm.getComponent(config.allocatedPassingDevice());
+            if (this.heatSystemComponent.isEnabled() == false) {
+                this.heatSystemComponent = cpm.getComponent(config.allocatedPassingDevice());
             }
             if (config.useDependency() == true && this.passing.isEnabled() == false) {
                 this.passing = cpm.getComponent(config.passingControllerId());

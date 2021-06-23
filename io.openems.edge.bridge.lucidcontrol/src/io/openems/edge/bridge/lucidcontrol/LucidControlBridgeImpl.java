@@ -11,6 +11,7 @@ import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.ConfigurationPolicy;
 import org.osgi.service.component.annotations.Deactivate;
+import org.osgi.service.component.annotations.Modified;
 import org.osgi.service.event.Event;
 import org.osgi.service.event.EventConstants;
 import org.osgi.service.event.EventHandler;
@@ -25,7 +26,14 @@ import java.util.Map;
 
 import java.util.concurrent.ConcurrentHashMap;
 
-
+/**
+ * The LucidControlBridge. Modules are adding their Paths and maxVoltage and Devices add their tasks that will be handled.
+ * Note: This Bridge only works if you install the Software from LucidControl here:
+ *
+ * @see <a href="https://www.lucid-control.com/downloads/">https://www.lucid-control.com/downloads/</a> <br>
+ * The Bridge will open up the shell and reads/writes from/to the lucidcontrol devices.
+ * Further Note: This Bridge only works with the Linux OS NOT Windows.
+ */
 @Designate(ocd = Config.class, factory = true)
 @Component(name = "Bridge.Lucid.Control",
         immediate = true,
@@ -35,13 +43,13 @@ public class LucidControlBridgeImpl extends AbstractOpenemsComponent implements 
 
 
     //String Key : Module Id, String Value  = Address
-    private Map<String, String> pathMap = new ConcurrentHashMap<>();
+    private final Map<String, String> pathMap = new ConcurrentHashMap<>();
     //String Key: Module Id; Integer Value : Voltage of Module
-    private Map<String, String> voltageMap = new ConcurrentHashMap<>();
+    private final Map<String, String> voltageMap = new ConcurrentHashMap<>();
 
-    private Map<String, LucidControlBridgeTask> tasks = new ConcurrentHashMap<>();
+    Map<String, LucidControlBridgeTask> tasks = new ConcurrentHashMap<>();
 
-    private LucidControlWorker worker = new LucidControlWorker();
+    private final LucidControlWorker worker = new LucidControlWorker();
 
     private String lucidIoPath;
 
@@ -51,7 +59,7 @@ public class LucidControlBridgeImpl extends AbstractOpenemsComponent implements 
 
 
     @Activate
-    public void activate(ComponentContext context, Config config) {
+    void activate(ComponentContext context, Config config) {
         super.activate(context, config.id(), config.alias(), config.enabled());
         this.lucidIoPath = config.lucidIoPath();
         if (config.enabled()) {
@@ -61,17 +69,40 @@ public class LucidControlBridgeImpl extends AbstractOpenemsComponent implements 
 
 
     @Deactivate
-    public void deactivate() {
+    protected void deactivate() {
         super.deactivate();
         this.worker.deactivate();
         //shouldn't be necessary but just to make sure
         this.voltageMap.keySet().forEach(this::removeModule);
     }
 
+    @Modified
+    void modified(ComponentContext context, Config config) {
+        super.modified(context, config.id(), config.alias(), config.enabled());
+        this.lucidIoPath = config.lucidIoPath();
+        if (config.enabled()) {
+            this.worker.activate(super.id());
+        }
+    }
+
+    /**
+     * Adds the Path of the LucidControl Module.
+     *
+     * @param id   id of the module, usually from config.id()
+     * @param path path of the Module, usually from config.path()
+     */
+
     @Override
     public void addPath(String id, String path) {
         this.pathMap.put(id, path);
     }
+
+    /**
+     * Adds the max Voltage the LucidControl Module provides.
+     *
+     * @param id      id of the module, usually from config.id()
+     * @param voltage max voltage of module, usually from config.voltage()
+     */
 
     @Override
     public void addVoltage(String id, String voltage) {
@@ -91,7 +122,7 @@ public class LucidControlBridgeImpl extends AbstractOpenemsComponent implements 
     }
 
     /**
-     * removes the LucidControlBridge task identified via id.
+     * Removes the LucidControlBridge task identified via id.
      *
      * @param id the unique id of the task, provided by LucidControl Device(usually from super.id()).
      */
@@ -133,21 +164,21 @@ public class LucidControlBridgeImpl extends AbstractOpenemsComponent implements 
         }
 
         /**
-         * provides the command for using the linux shell.
+         * Provides the command for using the linux shell.
          * ATTENTION! No Windows support yet!
          * Output of shell provides a Voltage.
          * Always "Chip"+Number of Chip + ":" followed by Number e.g.
          * Chip0: -0.2548
-         * that's why you can split the String at :
-         * the Number Value is parsed to a double value and given to task, to calculate the Pressure value.
+         * That's why you can split the String at:
+         * The Number Value is parsed to a double value and given to task, to calculate the Pressure value.
          */
         @Override
-        protected void forever() throws Throwable {
+        protected void forever() {
 
-            tasks.values().forEach(task -> {
-                if (task.isRead() || task.writeTaskDefined()) {
+            LucidControlBridgeImpl.this.tasks.values().forEach(task -> {
+                if (task.isRead() || task.isWriteDefined()) {
 
-                    String[] command = {"bash", "-c", lucidIoPath + " -d" + task.getPath() + task.getRequest()};
+                    String[] command = {"bash", "-c", LucidControlBridgeImpl.this.lucidIoPath + " -d" + task.getPath() + task.getRequest()};
 
                     String value = execCmd(command, task.isRead());
                     if (task.isRead()) {
@@ -206,7 +237,6 @@ public class LucidControlBridgeImpl extends AbstractOpenemsComponent implements 
         }
         return "Not Readable";
     }
-
 
     @Override
     public void handleEvent(Event event) {

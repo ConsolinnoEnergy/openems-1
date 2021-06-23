@@ -1,6 +1,7 @@
 package io.openems.edge.bridge.mqtt;
 
 import org.osgi.service.metatype.annotations.AttributeDefinition;
+import org.osgi.service.metatype.annotations.AttributeType;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 import org.osgi.service.metatype.annotations.Option;
 
@@ -17,6 +18,8 @@ import org.osgi.service.metatype.annotations.Option;
 
     @AttributeDefinition(name = "Alias", description = "Human readable name for this Component.")
     String alias() default "";
+
+    boolean useCoreCycleTime();
 
     @AttributeDefinition(name = "Broker URL", description = "URL of the Broker (if any given)..if you set a URL, you do NOT need to enter IP+ Port+ basepath + connection")
     String brokerUrl() default "";
@@ -41,7 +44,7 @@ import org.osgi.service.metatype.annotations.Option;
     @AttributeDefinition(name = "Username", description = "Username for the Broker")
     String username() default "user";
 
-    @AttributeDefinition(name = "Password", description = "Password")
+    @AttributeDefinition(name = "Password", description = "Password", type = AttributeType.PASSWORD)
     String password() default "user";
 
 

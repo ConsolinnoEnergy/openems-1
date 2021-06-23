@@ -231,7 +231,8 @@ public interface ApartmentModule extends OpenemsComponent {
         EXTERNAL_HEAT_FLAG(Doc.of(OpenemsType.BOOLEAN)),
         VALVE_STATUS(Doc.of(ValveStatus.values())),
         LAST_KNOWN_TEMPERATURE(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
-        LAST_KNOWN_REQUEST_STATUS(Doc.of(OpenemsType.BOOLEAN));
+        LAST_KNOWN_REQUEST_STATUS(Doc.of(OpenemsType.BOOLEAN)),
+        IS_TOP_AM(Doc.of(OpenemsType.BOOLEAN));
 
 
         private final Doc doc;
@@ -572,4 +573,5 @@ public interface ApartmentModule extends OpenemsComponent {
         return this.channel(ChannelId.LAST_KNOWN_REQUEST_STATUS);
     }
 
+    boolean isTopAm();
 }

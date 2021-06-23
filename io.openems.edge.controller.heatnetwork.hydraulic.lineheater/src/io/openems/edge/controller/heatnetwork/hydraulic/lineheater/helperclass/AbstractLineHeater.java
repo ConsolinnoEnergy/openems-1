@@ -4,15 +4,17 @@ import org.joda.time.DateTime;
 
 public abstract class AbstractLineHeater implements LineHeater {
 
+    protected boolean useMinMax;
     private boolean booleanControlled;
     private DateTime lifeCycle;
-    protected static final int LAST_POWER_CHECK_VALUE = 50;
+    protected double previouslyCheckedPowerLevel = 0;
     protected static final int FULL_POWER = 100;
     protected static final int DEFAULT_LAST_POWER_VALUE = 0;
     protected boolean isRunning;
 
-    protected AbstractLineHeater(boolean booleanControlled) {
+    protected AbstractLineHeater(boolean booleanControlled, boolean useMinMax) {
         this.booleanControlled = booleanControlled;
+        this.useMinMax = useMinMax;
     }
 
     protected boolean isBooleanControlled() {

@@ -2,6 +2,10 @@ package io.openems.edge.bridge.mqtt.api;
 
 import org.eclipse.paho.client.mqttv3.MqttException;
 
+/**
+ * Provides the Interface for the PublishConnection.
+ * It allows the PublishManager to send updates messages via mqtt over MqttConnectionPublish.
+ */
 public interface MqttConnectionPublish {
 
     /**

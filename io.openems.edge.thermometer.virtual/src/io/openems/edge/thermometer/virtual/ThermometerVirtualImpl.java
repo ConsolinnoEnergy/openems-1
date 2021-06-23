@@ -1,6 +1,10 @@
 package io.openems.edge.thermometer.virtual;
 
+import io.openems.common.exceptions.OpenemsError;
+import io.openems.common.types.ChannelAddress;
+import io.openems.edge.common.channel.Channel;
 import io.openems.edge.common.component.AbstractOpenemsComponent;
+import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.common.event.EdgeEventConstants;
 import io.openems.edge.thermometer.api.Thermometer;
@@ -10,11 +14,14 @@ import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.ConfigurationPolicy;
 import org.osgi.service.component.annotations.Deactivate;
+import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.component.annotations.Modified;
 import org.osgi.service.event.Event;
 import org.osgi.service.event.EventConstants;
 import org.osgi.service.event.EventHandler;
 import org.osgi.service.metatype.annotations.Designate;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
@@ -30,6 +37,14 @@ import java.util.concurrent.atomic.AtomicReference;
         property = {EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE})
 public class ThermometerVirtualImpl extends AbstractOpenemsComponent implements OpenemsComponent, ThermometerVirtual, Thermometer, EventHandler {
 
+    private final Logger log = LoggerFactory.getLogger(ThermometerVirtualImpl.class);
+
+    @Reference
+    ComponentManager cpm;
+
+    ChannelAddress refThermometer;
+    boolean useAnotherChannelAsTemp;
+
     public ThermometerVirtualImpl() {
         super(OpenemsComponent.ChannelId.values(),
                 ThermometerVirtual.ChannelId.values(),
@@ -38,9 +53,14 @@ public class ThermometerVirtualImpl extends AbstractOpenemsComponent implements 
 
 
     @Activate
-    void activate(ComponentContext context, Config config) {
+    void activate(ComponentContext context, Config config) throws OpenemsError.OpenemsNamedException {
         super.activate(context, config.id(), config.alias(), config.enabled());
         this.getTemperatureChannel().setNextValue(Integer.MIN_VALUE);
+        this.useAnotherChannelAsTemp = config.useAnotherChannelAsTemperature();
+        if (this.useAnotherChannelAsTemp) {
+            this.refThermometer = ChannelAddress.fromString(config.channelAddress());
+        }
+
     }
 
     @Deactivate
@@ -58,6 +78,17 @@ public class ThermometerVirtualImpl extends AbstractOpenemsComponent implements 
         if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE)) {
             Optional<Integer> currentTemp = this.getVirtualTemperature();
             currentTemp.ifPresent(integer -> this.getTemperatureChannel().setNextValue(integer));
+            if (currentTemp.isPresent() == false && this.useAnotherChannelAsTemp) {
+                try {
+                    Channel<?> temperature = this.cpm.getChannel(this.refThermometer);
+                    if (temperature.value().isDefined()) {
+                        this.getTemperatureChannel().setNextValue(temperature.value().get());
+                    }
+                } catch (OpenemsError.OpenemsNamedException e) {
+                    this.log.warn("Couldn't find Channel: " + this.refThermometer.toString());
+                }
+            }
+
         }
     }
 
@@ -70,6 +101,6 @@ public class ThermometerVirtualImpl extends AbstractOpenemsComponent implements 
                 returnString.set(integer.toString() + this.getTemperatureChannel().channelDoc().getUnit().getSymbol());
             }
         });
-        return returnString.get() + "\n";
+        return returnString.get() + " dC" + "\n";
     }
 }

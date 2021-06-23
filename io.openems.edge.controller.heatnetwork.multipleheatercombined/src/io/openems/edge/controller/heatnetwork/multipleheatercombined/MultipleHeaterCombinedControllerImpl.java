@@ -6,8 +6,13 @@ import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.controller.api.Controller;
 import io.openems.edge.controller.heatnetwork.multipleheatercombined.api.MultipleHeaterCombinedController;
+import io.openems.edge.exceptionalstate.api.ExceptionalState;
+import io.openems.edge.exceptionalstate.api.ExceptionalStateHandler;
+import io.openems.edge.exceptionalstate.api.ExceptionalStateHandlerImpl;
 import io.openems.edge.heater.Heater;
 import io.openems.edge.thermometer.api.Thermometer;
+import io.openems.edge.timer.api.TimerHandler;
+import io.openems.edge.timer.api.TimerHandlerImpl;
 import org.osgi.service.cm.ConfigurationException;
 import org.osgi.service.component.ComponentContext;
 import org.osgi.service.component.annotations.Activate;
@@ -30,7 +35,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @Component(name = "MultipleHeaterCombined",
         configurationPolicy = ConfigurationPolicy.REQUIRE,
         immediate = true)
-public class MultipleHeaterCombinedControllerImpl extends AbstractOpenemsComponent implements OpenemsComponent, Controller, MultipleHeaterCombinedController {
+public class MultipleHeaterCombinedControllerImpl extends AbstractOpenemsComponent implements OpenemsComponent,
+        Controller, MultipleHeaterCombinedController, ExceptionalState {
 
     private final Logger log = LoggerFactory.getLogger(MultipleHeaterCombinedControllerImpl.class);
 
@@ -41,16 +47,24 @@ public class MultipleHeaterCombinedControllerImpl extends AbstractOpenemsCompone
     private final Map<HeaterHierarchy, List<Heater>> heaterHierarchyMap = new HashMap<>();
     private final Map<Heater, HeaterActiveWrapper> activeStateHeaterAndHeatWrapper = new HashMap<>();
 
+    private boolean useExceptionalState;
+    private boolean exceptionalStateActiveBefore;
+    private static final String EXCEPTIONAL_STATE_IDENTIFIER = "MULTIPLE_HEATER_COMBINED_EXCEPTIONAL_STATE_IDENTIFIER";
+    private TimerHandler timer;
+    private ExceptionalStateHandler exceptionalStateHandler;
+    private boolean overRideExceptionalStateActivateAllHeater;
+
     public MultipleHeaterCombinedControllerImpl() {
 
         super(OpenemsComponent.ChannelId.values(),
                 Controller.ChannelId.values(),
-                MultipleHeaterCombinedController.ChannelId.values());
+                MultipleHeaterCombinedController.ChannelId.values(),
+                ExceptionalState.ChannelId.values());
 
     }
 
     @Activate
-    public void activate(ComponentContext context, Config config) throws OpenemsError.OpenemsNamedException, ConfigurationException {
+    void activate(ComponentContext context, Config config) throws OpenemsError.OpenemsNamedException, ConfigurationException {
 
         super.activate(context, config.id(), config.alias(), config.enabled());
 
@@ -60,18 +74,26 @@ public class MultipleHeaterCombinedControllerImpl extends AbstractOpenemsCompone
 
         //----------------------ALLOCATE/ CONFIGURE HEATER/TemperatureSensor/HeatmeterMbus of Heater -----------------//
         if (config.usePrimaryHeater()) {
-            allocateConfig(config.primaryHeaterId(), HeaterHierarchy.PRIMARY, config.primaryTemperatureSensorMin(), config.primaryHeaterMinTemperature(),
+            this.allocateConfig(config.primaryHeaterId(), HeaterHierarchy.PRIMARY, config.primaryTemperatureSensorMin(), config.primaryHeaterMinTemperature(),
                     config.primaryTemperatureSensorMax(), config.primaryHeaterMaxTemperature());
         }
         if (config.useSecondaryHeater()) {
-            allocateConfig(config.secondaryHeaterId(), HeaterHierarchy.SECONDARY, config.secondaryTemperatureSensorMin(), config.secondaryTemperatureMin(),
+            this.allocateConfig(config.secondaryHeaterId(), HeaterHierarchy.SECONDARY, config.secondaryTemperatureSensorMin(), config.secondaryTemperatureMin(),
                     config.secondaryTemperatureSensorMax(), config.secondaryTemperatureMax());
         }
         if (config.useTertiaryHeater()) {
-            allocateConfig(config.tertiaryHeaterId(), HeaterHierarchy.TERTIARY, config.tertiaryTemperatureSensorMin(), config.tertiaryTemperatureMin(),
+            this.allocateConfig(config.tertiaryHeaterId(), HeaterHierarchy.TERTIARY, config.tertiaryTemperatureSensorMin(), config.tertiaryTemperatureMin(),
                     config.tertiaryTemperatureSensorMax(), config.tertiaryTemperatureMax());
         }
-        //Don't use consumption meter, only temperature
+        this.useExceptionalState = config.useExceptionalState();
+        if (this.useExceptionalState) {
+            this.timer = new TimerHandlerImpl(super.id(), this.cpm);
+            this.timer.addOneIdentifier(EXCEPTIONAL_STATE_IDENTIFIER, config.timerId(), config.waitTime());
+            this.getExceptionalStateValueChannel().setNextValue(100);
+            this.exceptionalStateHandler = new ExceptionalStateHandlerImpl(this.timer, EXCEPTIONAL_STATE_IDENTIFIER);
+
+        }
+
         this.setIsHeating(false);
         this.setHasError(false);
         this.setIsOk(true);
@@ -96,8 +118,8 @@ public class MultipleHeaterCombinedControllerImpl extends AbstractOpenemsCompone
                                 int temperatureMax) throws OpenemsError.OpenemsNamedException, ConfigurationException {
         Heater heater;
         try {
-            if (cpm.getComponent(heater_id) instanceof Heater) {
-                heater = cpm.getComponent(heater_id);
+            if (this.cpm.getComponent(heater_id) instanceof Heater) {
+                heater = this.cpm.getComponent(heater_id);
                 this.activeStateHeaterAndHeatWrapper.put(heater, new HeaterActiveWrapper());
                 if (this.heaterHierarchyMap.containsKey(hierarchy)) {
                     this.heaterHierarchyMap.get(hierarchy).add(heater);
@@ -106,7 +128,7 @@ public class MultipleHeaterCombinedControllerImpl extends AbstractOpenemsCompone
                     heaterList.add(heater);
                     this.heaterHierarchyMap.put(hierarchy, heaterList);
                 }
-                this.heaterTemperatureWrapperMap.put(heater, createTemperatureWrapper(temperatureSensorMin, temperatureMin, temperatureSensorMax, temperatureMax));
+                this.heaterTemperatureWrapperMap.put(heater, this.createTemperatureWrapper(temperatureSensorMin, temperatureMin, temperatureSensorMax, temperatureMax));
             }
         } catch (OpenemsError.OpenemsNamedException | ConfigurationException e) {
             this.heaterTemperatureWrapperMap.clear();
@@ -169,13 +191,25 @@ public class MultipleHeaterCombinedControllerImpl extends AbstractOpenemsCompone
      */
     @Override
     public void run() throws OpenemsError.OpenemsNamedException {
-        //@Pauli soll wieder ne Methode rein die die Komponenten refreshed, wenn sie disabled sind?
+
+        if (this.useExceptionalState) {
+            boolean exceptionalStateActive = this.exceptionalStateHandler.exceptionalStateActive(this);
+            if (exceptionalStateActive) {
+                if (this.getExceptionalStateValue() <= 0) {
+                    this.overRideExceptionalStateActivateAllHeater = false;
+                    return;
+                } else {
+                    this.overRideExceptionalStateActivateAllHeater = true;
+                }
+            }
+        }
+
         AtomicBoolean heaterError = new AtomicBoolean(false);
         AtomicBoolean isHeating = new AtomicBoolean(false);
         //Go through ordered HeaterHierarchy -> Order of declaration
         Arrays.stream(HeaterHierarchy.values()).forEachOrdered(hierarchy -> {
             if (this.heaterHierarchyMap.containsKey(hierarchy) && this.heaterHierarchyMap.get(hierarchy).size() > 0) {
-                heaterLogic(this.heaterHierarchyMap.get(hierarchy), heaterError);
+                this.heaterLogic(this.heaterHierarchyMap.get(hierarchy), heaterError);
             }
         });
         this.setIsHeating(isHeating.get());
@@ -185,7 +219,7 @@ public class MultipleHeaterCombinedControllerImpl extends AbstractOpenemsCompone
 
     /**
      * For Each Heater in a Prio Order (Enum -> HeaterHierarchy), calculate the Provided Power and activate Heater;
-     * If Error occured, notify by writing into AtomicBooleam.
+     * If Error occurred, notify by writing into AtomicBooleam.
      * If Any Heater heats/activates -> set AtomicBoolean isHeating to true.
      * Performance Demand will be either calculated by Heater MBus OR the calculated power given by the heater.
      *
@@ -204,25 +238,29 @@ public class MultipleHeaterCombinedControllerImpl extends AbstractOpenemsCompone
             HeaterActiveWrapper heaterActiveWrapper = this.activeStateHeaterAndHeatWrapper.get(heater);
             //get the Wrapperclass and check if Heater should be turned of, as well as Checking performance demand
             //HeatControl                                           PerformanceDemand + Time Control
-            if (thermometerWrapper.offTemperatureAboveMaxValue()) {
+            if (thermometerWrapper.offTemperatureAboveMaxValue()
+                    && (this.useExceptionalState && this.overRideExceptionalStateActivateAllHeater) == false) {
                 heaterActiveWrapper.setActive(false);
                 //Check wrapper if thermometer below min temp
-            } else if (thermometerWrapper.onTemperatureBelowMinValue()) {
+            } else if (thermometerWrapper.onTemperatureBelowMinValue() || (this.useExceptionalState && this.overRideExceptionalStateActivateAllHeater)) {
                 heaterActiveWrapper.setActive(true);
-                //Enable
-                try {
-                    if (heaterActiveWrapper.isActive()) {
-                        heater.getEnableSignalChannel().setNextWriteValue(heaterActiveWrapper.isActive());
-                    }
-                } catch (OpenemsError.OpenemsNamedException ignored) {
-                }
             }
+            //Enable
+            try {
+                if (heaterActiveWrapper.isActive()) {
+                    heater.getEnableSignalChannel().setNextWriteValue(heaterActiveWrapper.isActive());
+                }
+            } catch (OpenemsError.OpenemsNamedException e) {
+                this.log.warn("Couldn't set the enableSignal: " + super.id() + " Reason: " + e.getMessage());
+            }
+
 
         });
     }
 
     @Deactivate
-    public void deactivate() {
+    protected void deactivate() {
+        this.timer.removeComponent();
         super.deactivate();
     }
 }

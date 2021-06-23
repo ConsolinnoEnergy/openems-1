@@ -41,12 +41,6 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
             "LOW!Topic!0!true!false!0!10"
     };
 
-    @AttributeDefinition(name = "PublishConfig", description = "This List is for configuring publishes, accepted form is: "
-            + "Priority!Topic!QoS!RetainFlag!TimestampUseBoolean!PayloadNo!TimeToWait")
-    String[] publishList() default {
-            "LOW!Topic!0!true!true!0!10"
-    };
-
     @AttributeDefinition(name = "PayloadStyle", description = "PayloadStyle you want to use (See Mqtt Information Component for more options)")
     String payloadStyle() default "STANDARD";
 
