@@ -92,12 +92,12 @@ public class MyControllerTest {
                 )
 
                 .next(new TestCase()
-                        .input(PHASES, 1)
-                        .input(CHARGE_POWER, 30 * 230)
+                        .input(PHASES, 2)
+                        .input(CHARGE_POWER, 60 * 230)
                 )
                 .next(new TestCase()
-                        .input(PHASES, 1)
-                        .input(CHARGE_POWER, 30 * 230))
+                        .input(PHASES, 3)
+                        .input(CHARGE_POWER, 90 * 230))
         ;
 
     }
