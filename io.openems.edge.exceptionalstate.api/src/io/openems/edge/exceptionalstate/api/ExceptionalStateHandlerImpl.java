@@ -29,9 +29,14 @@ public class ExceptionalStateHandlerImpl implements ExceptionalStateHandler {
     @Override
     public boolean exceptionalStateActive(ExceptionalState exceptionalStateComponent) {
         if (exceptionalStateComponent.getExceptionalStateEnableChannel().getNextWriteValue().isPresent()) {
-            this.exceptionalStateActiveBefore = true;
-            this.timer.resetTimer(this.exceptionalStateIdentifier);
-            return exceptionalStateComponent.getExceptionalStateEnableSignalAndReset();
+            if (exceptionalStateComponent.getExceptionalStateEnableSignalAndReset()) {
+                this.exceptionalStateActiveBefore = true;
+                this.timer.resetTimer(this.exceptionalStateIdentifier);
+                return true;
+            } else {
+                this.exceptionalStateActiveBefore = false;
+                return false;
+            }
         } else {
             if (this.exceptionalStateActiveBefore
                     && this.timer.checkTimeIsUp(this.exceptionalStateIdentifier) == false) {
