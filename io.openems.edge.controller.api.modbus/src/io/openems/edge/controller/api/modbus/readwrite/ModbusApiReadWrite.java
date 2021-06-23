@@ -5,7 +5,7 @@ import io.openems.edge.common.channel.Doc;
 import io.openems.edge.common.channel.StringReadChannel;
 import io.openems.edge.common.component.OpenemsComponent;
 
-public interface ModbusTcpApiReadWrite extends OpenemsComponent {
+public interface ModbusApiReadWrite extends OpenemsComponent {
 
 	public enum ChannelId implements io.openems.edge.common.channel.ChannelId {
 		API_WORKER_LOG(Doc.of(OpenemsType.STRING) //
