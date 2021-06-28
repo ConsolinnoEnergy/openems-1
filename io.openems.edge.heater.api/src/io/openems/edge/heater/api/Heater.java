@@ -14,9 +14,10 @@ import io.openems.edge.common.channel.value.Value;
 import io.openems.edge.common.component.OpenemsComponent;
 
 /**
- * A generalized interface for a heater.
+ * A generalized interface for a heater. designed to use the EnableSignal channel to switch the heater on or off.
  * Contains the most important functions that should be available on all heaters, allowing a vendor agnostic
  * implementation. Vendor specific interfaces should extend this interface.
+ * This interface is designed to use the EnableSignal channel to switch the heater on or off.
  * Warning: Not all functionality is supported by every device using this interface.
  */
 
@@ -29,10 +30,16 @@ public interface Heater extends OpenemsComponent {
     	/**
          * Write: Turn the heater on (true) or off (write nothing).
          * Read: The heater is running (true) or not (false).
-		 * The heater fetches the nextWriteValue of this channel with getNextWriteValueAndReset()
-		 * To turn the heater on, continuously write true into this channel. The heater fetches the nextWriteValue
-		 * There is no explicit off command, the
-		 * heater will turn off when there is no true
+		 * It is recommended to use the EnableSignalHandlerImpl in the heater component for a correct usage of this
+		 * channel (see {@link io.openems.edge.heater.api.EnableSignalHandlerImpl}).
+		 * The EnableSignalHandlerImpl fetches the nextWriteValue of this channel with getNextWriteValueAndReset(). If
+		 * the collected value is ’true’, the heater is turned on and a configurable timer is started. As long as the
+		 * timer has not finished counting down, the heater stays on. When the timer runs out, the heater stops heating.
+		 * To keep the heater heating, ’true’ must be regularly written in the nextWriteValue of this channel.
+		 * It is not needed to write ’false’ to turn off the heater. This way multiple controllers can turn on the heater
+		 * without needing a controller hierarchy.
+		 * Writing ’false’ is possible (interpreted as ’no value’), but this will overwrite any ’true’ another controller
+		 * may have written that cycle.
 		 *
 		 * <ul>
 		 *     <li> Interface: Heater
@@ -199,7 +206,15 @@ public interface Heater extends OpenemsComponent {
 	}
 	
 	/**
-	 * Turn the heater on (true) or off (false). See {@link ChannelId#ENABLE_SIGNAL}.
+	 * Turn the heater on (regularly write true) or off (write nothing).
+	 * When ’true’ is written, the heater is turned on and a configurable timer is started. Writing ’true’ again will
+	 * reset the timer. As long as the timer has not finished counting down, the heater stays on. When the timer runs
+	 * out, the heater stops heating. To keep the heater heating, ’true’ must be regularly written.
+	 * It is not needed to write ’false’ to turn off the heater. This way multiple controllers can turn on the heater
+	 * without needing a controller hierarchy.
+	 * Writing ’false’ is possible (interpreted as ’no value’), but this will overwrite any ’true’ another controller
+	 * may have written that cycle.
+	 * See {@link ChannelId#ENABLE_SIGNAL}.
 	 * 
 	 * @param value the next write value
 	 * @throws OpenemsNamedException on error

@@ -8,7 +8,7 @@ import io.openems.common.types.OptionsEnum;
 
 public enum CoolingMode implements OptionsEnum {
 	UNDEFINED(-1, "Undefined"), //
-	Off(0, "Off"), //
+	OFF(0, "Off"), //
 	AUTOMATIC(1, "Automatic"); //
 
 	private int value;

@@ -1,26 +1,20 @@
 package io.openems.edge.exceptionalstate.api;
 
-import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
+import io.openems.edge.timer.api.TimerHandler;
 
 /**
- * The concrete Implementation of the ExceptionalState Handler.
- * It allows easier use of the Exceptional State.
+ * The concrete Implementation of the ExceptionalState Handler. It allows for easier use of the Exceptional State.
  * It checks if the Enable Signal of the Exceptional State is Active, or if it was active before and the Enable Signal is missing
- * allows further running of the exceptional State until the configured time is up.
- *
- *
+ * allows further running of the exceptional State until the configured Time is up (look up {@link io.openems.edge.timer.api.Timer}
  */
 public class ExceptionalStateHandlerImpl implements ExceptionalStateHandler {
-    private int timer;
-    private LocalDateTime timestamp;
-    private boolean useCyclesNotSeconds;
-    private int cycleCounter;
+    private final TimerHandler timer;
+    private final String exceptionalStateIdentifier;
     private boolean exceptionalStateActiveBefore;
 
-    public ExceptionalStateHandlerImpl(int timer, boolean useCyclesNotSeconds) {
+    public ExceptionalStateHandlerImpl(TimerHandler timer, String exceptionalStateIdentifier) {
         this.timer = timer;
-        this.useCyclesNotSeconds = useCyclesNotSeconds;
+        this.exceptionalStateIdentifier = exceptionalStateIdentifier;
     }
 
     /**
@@ -31,41 +25,21 @@ public class ExceptionalStateHandlerImpl implements ExceptionalStateHandler {
      */
     @Override
     public boolean exceptionalStateActive(ExceptionalState exceptionalStateComponent) {
+
+        // ToDo: Wert in nextValue kopieren, auf Felix warten ob der Code hier richtig ist.
+
         if (exceptionalStateComponent.getExceptionalStateEnableChannel().getNextWriteValue().isPresent()) {
             this.exceptionalStateActiveBefore = true;
-            this.resetTimer();
+            this.timer.resetTimer(this.exceptionalStateIdentifier);
             return exceptionalStateComponent.getExceptionalStateEnableSignalAndReset();
         } else {
             if (this.exceptionalStateActiveBefore
-                    && this.checkTimeIsUp() == false) {
+                    && this.timer.checkTimeIsUp(this.exceptionalStateIdentifier) == false) {
                 return true;
             } else {
                 this.exceptionalStateActiveBefore = false;
                 return false;
             }
-        }
-    }
-
-    private void resetTimer() {
-        if (this.useCyclesNotSeconds) {
-            this.cycleCounter = 0;
-        } else {
-            this.timestamp = LocalDateTime.now();
-        }
-    }
-
-    private boolean checkTimeIsUp() {
-        if (this.useCyclesNotSeconds) {
-            return this.cycleCounter >= this.timer;
-        } else {
-            return ChronoUnit.SECONDS.between(this.timestamp, LocalDateTime.now()) >= this.timer;
-        }
-    }
-
-    @Override
-    public void increaseCycleCounter() {
-        if (this.cycleCounter < this.timer) {   // Overflow protection.
-            this.cycleCounter++;
         }
     }
 }

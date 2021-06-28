@@ -18,7 +18,7 @@ public interface ExceptionalState extends OpenemsComponent {
     enum ChannelId implements io.openems.edge.common.channel.ChannelId {
         /**
          * Exceptional State Enable Signal.
-         * This needs to by set periodically to work.
+         * This needs to be set periodically to work.
          *
          * <ul>
          * <li>Interface: {@link ExceptionalState}
@@ -26,6 +26,7 @@ public interface ExceptionalState extends OpenemsComponent {
          * </ul>
          */
         EXCEPTIONAL_STATE_ENABLE_SIGNAL(Doc.of(OpenemsType.BOOLEAN).accessMode(AccessMode.READ_WRITE)),
+
         /**
          * Exceptional State Value.
          * The Value that will be applied/used/should be used when an exceptionalState is active.

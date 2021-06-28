@@ -2,6 +2,7 @@ package io.openems.edge.heater.heatpump.alphainnotec;
 
 import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
+import org.osgi.service.metatype.annotations.Option;
 
 @ObjectClassDefinition(//
 		name = "Heat Pump Alpha Innotec", //
@@ -44,6 +45,19 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 	@AttributeDefinition(name = "ExceptionalState timer unit is cycles not seconds", description = "Use OpenEMS cycles "
 			+ "instead of seconds as the unit for the timer.")
 	boolean exceptionalStateTimerIsCyclesNotSeconds() default false;
+
+	@AttributeDefinition(name = "Default mode of operation", description = "When EnableSignal or ExceptionalState turns "
+			+ "on the heat pump, switch these modes to \"automatic\".",
+	options = {
+		@Option(label = "Heating", value = "Heating"),
+		@Option(label = "DomesticHotWater", value = "DomesticHotWater"),
+		@Option(label = "MixingCircuit2", value = "MixingCircuit2"),
+		@Option(label = "MixingCircuit3", value = "MixingCircuit3"),
+		@Option(label = "Cooling", value = "Cooling"),
+		@Option(label = "Ventilation", value = "Ventilation"),
+		@Option(label = "SwimmingPool", value = "SwimmingPool")
+	})
+	String[] defaultModesOfOperation();
 
 	@AttributeDefinition(name = "Read only", description = "Only read values from Modbus, don't send commands.")
 	boolean readOnly() default false;
