@@ -14,7 +14,7 @@ import io.openems.edge.common.channel.value.Value;
 import io.openems.edge.common.component.OpenemsComponent;
 
 /**
- * A generalized interface for a heater. designed to use the EnableSignal channel to switch the heater on or off.
+ * A generalized interface for a heater.
  * Contains the most important functions that should be available on all heaters, allowing a vendor agnostic
  * implementation. Vendor specific interfaces should extend this interface.
  * This interface is designed to use the EnableSignal channel to switch the heater on or off.
@@ -30,14 +30,16 @@ public interface Heater extends OpenemsComponent {
     	/**
          * Write: Turn the heater on (true) or off (write nothing).
          * Read: The heater is running (true) or not (false).
-		 * It is recommended to use the EnableSignalHandlerImpl in the heater component for a correct usage of this
-		 * channel (see {@link io.openems.edge.heater.api.EnableSignalHandlerImpl}).
+		 * It is recommended to use the EnableSignalHandlerImpl in the component using the Heater interface (see
+		 * {@link io.openems.edge.heater.api.EnableSignalHandlerImpl}). This way the handling of the EnableSignal is the
+		 * same in all Heater devices.
 		 * The EnableSignalHandlerImpl fetches the nextWriteValue of this channel with getNextWriteValueAndReset(). If
 		 * the collected value is ’true’, the heater is turned on and a configurable timer is started. As long as the
 		 * timer has not finished counting down, the heater stays on. When the timer runs out, the heater stops heating.
 		 * To keep the heater heating, ’true’ must be regularly written in the nextWriteValue of this channel.
-		 * It is not needed to write ’false’ to turn off the heater. This way multiple controllers can turn on the heater
-		 * without needing a controller hierarchy.
+		 * It is not needed to write ’false’ to turn off the heater. Simply stop writing ’true’, and the heater will
+		 * turn off after the timer runs out. This way multiple controllers can turn on the heater without needing a
+		 * controller hierarchy.
 		 * Writing ’false’ is possible (interpreted as ’no value’), but this will overwrite any ’true’ another controller
 		 * may have written that cycle.
 		 *

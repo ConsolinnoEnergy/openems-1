@@ -2,12 +2,9 @@ package io.openems.edge.heater.api;
 
 import io.openems.common.channel.AccessMode;
 import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
-import io.openems.common.types.OpenemsType;
-import io.openems.edge.common.channel.BooleanReadChannel;
 import io.openems.edge.common.channel.Doc;
 import io.openems.edge.common.channel.IntegerWriteChannel;
 import io.openems.edge.common.channel.value.Value;
-import io.openems.edge.common.component.OpenemsComponent;
 
 /**
  * A generalized interface for smart grid operation of a heat pump. Vendor specific interfaces should extend this

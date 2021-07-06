@@ -34,7 +34,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGrid {
         IR507_AUSSENTEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
 
         /**
-         * Heating circuit 1 actual temperature.
+         * Heating circuit 1 temperature.
          * <ul>
          *      <li> Type: Integer
          *      <li> Unit: Decimal degree Celsius
@@ -43,7 +43,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGrid {
         IR508_ISTTEMPHK1(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
 
         /**
-         * Heating circuit 1 setpoint temperature. Software version WPM 3i
+         * Heating circuit 1 setpoint temperature, if software version is WPM 3i.
          * <ul>
          *      <li> Type: Integer
          *      <li> Unit: Decimal degree Celsius
@@ -52,7 +52,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGrid {
         IR509_SOLLTEMPHK1(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
 
         /**
-         * Heating circuit 1 setpoint temperature. Software version WPMsystem and WPM 3
+         * Heating circuit 1 setpoint temperature, if software version is WPMsystem and WPM 3.
          * <ul>
          *      <li> Type: Integer
          *      <li> Unit: Decimal degree Celsius
@@ -61,7 +61,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGrid {
         IR510_SOLLTEMPHK1(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
 
         /**
-         * Heating circuit 1 setpoint temperature. Channel that is independent of software version.
+         * Heating circuit 1 setpoint temperature. (Mapped from the software dependent channels)
          * <ul>
          *      <li> Type: Integer
          *      <li> Unit: Decimal degree Celsius
@@ -70,7 +70,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGrid {
         SOLLTEMPHK1(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
 
         /**
-         * Heating circuit 2 actual temperature.
+         * Heating circuit 2 temperature.
          * <ul>
          *      <li> Type: Integer
          *      <li> Unit: Decimal degree Celsius
@@ -88,7 +88,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGrid {
         IR512_SOLLTEMPHK2(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
 
         /**
-         * Forward temperature heat pump, actual.
+         * Flow temperature heat pump.
          * <ul>
          *      <li> Type: Integer
          *      <li> Unit: Decimal degree Celsius
@@ -97,7 +97,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGrid {
         IR513_VORLAUFISTTEMPWP(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
 
         /**
-         * Forward temperature auxiliary heater, actual.
+         * Flow temperature auxiliary heater.
          * <ul>
          *      <li> Type: Integer
          *      <li> Unit: Decimal degree Celsius
@@ -105,26 +105,12 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGrid {
          */
         IR514_VORLAUFISTTEMPNHZ(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
 
-        /**
-         * Forward temperature, actual.
-         * <ul>
-         *      <li> Type: Integer
-         *      <li> Unit: Decimal degree Celsius
-         * </ul>
-         */
-        IR515_VORLAUFISTTEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
+        //IR515_VORLAUFISTTEMP -> Heater FLOW_TEMPERATURE
+
+        //IR516_RUECKLAUFISTTEMP -> Heater RETURN_TEMPERATURE
 
         /**
-         * Rewind temperature, actual.
-         * <ul>
-         *      <li> Type: Integer
-         *      <li> Unit: Decimal degree Celsius
-         * </ul>
-         */
-        IR516_RUECKLAUFISTTEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
-
-        /**
-         * Fix temperature setpoint.
+         * Constant temperature setpoint.
          * <ul>
          *      <li> Type: Integer
          *      <li> Unit: Decimal degree Celsius
@@ -133,7 +119,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGrid {
         IR517_FESTWERTSOLLTEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
 
         /**
-         * Buffer tank temperature, actual.
+         * Storage tank temperature.
          * <ul>
          *      <li> Type: Integer
          *      <li> Unit: Decimal degree Celsius
@@ -142,7 +128,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGrid {
         IR518_PUFFERISTTEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
 
         /**
-         * Buffer tank temperature, setpoint.
+         * Storage tank temperature, setpoint.
          * <ul>
          *      <li> Type: Integer
          *      <li> Unit: Decimal degree Celsius
@@ -169,7 +155,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGrid {
         IR521_VOLUMENSTROM(Doc.of(OpenemsType.INTEGER).unit(Unit.DECILITER_PER_MINUTE)),
 
         /**
-         * Warm water temperature, actual.
+         * Domestic hot water temperature.
          * <ul>
          *      <li> Type: Integer
          *      <li> Unit: Decimal degree Celsius
@@ -178,7 +164,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGrid {
         IR522_WWISTTEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
 
         /**
-         * Warm water temperature, setpoint.
+         * Domestic hot water temperature, setpoint.
          * <ul>
          *      <li> Type: Integer
          *      <li> Unit: Decimal degree Celsius
@@ -187,7 +173,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGrid {
         IR523_WWSOLLTEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
 
         /**
-         * Ventilation cooling temperature, actual.
+         * Ventilation cooling temperature.
          * <ul>
          *      <li> Type: Integer
          *      <li> Unit: Decimal degree Kelvin
@@ -205,7 +191,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGrid {
         IR525_GEBLAESESOLLTEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_KELVIN)),
 
         /**
-         * Surface cooling temperature, actual.
+         * Surface cooling temperature.
          * <ul>
          *      <li> Type: Integer
          *      <li> Unit: Decimal degree Kelvin
@@ -232,7 +218,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGrid {
         IR533_EINSATZGRENZEHZG(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
 
         /**
-         * Minimum operation temperature warm water.
+         * Minimum operation temperature domestic hot water.
          * <ul>
          *      <li> Type: Integer
          *      <li> Unit: Decimal degree Celsius
@@ -786,17 +772,17 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGrid {
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getAussentempChannel() {
+    public default IntegerReadChannel getOutsideTempChannel() {
         return this.channel(ChannelId.IR507_AUSSENTEMP);
     }
 
     /**
-     * Outside temperature. Unit is decimal degree Celsius.
+     * Gets the outside temperature. Unit is decimal degree Celsius.
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getAussentemp() {
-        return this.getAussentempChannel().value();
+    public default Value<Integer> getOutsideTemp() {
+        return this.getOutsideTempChannel().value();
     }
 
     /**
@@ -804,17 +790,17 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGrid {
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getIstTempHk1Channel() {
+    public default IntegerReadChannel getCircuit1TempChannel() {
         return this.channel(ChannelId.IR508_ISTTEMPHK1);
     }
 
     /**
-     * Heating circuit 1 actual temperature. Unit is decimal degree Celsius.
+     * Gets the heating circuit 1 temperature. Unit is decimal degree Celsius.
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getIstTempHk1() {
-        return this.getIstTempHk1Channel().value();
+    public default Value<Integer> getCircuit1Temp() {
+        return this.getCircuit1TempChannel().value();
     }
 
     /**
@@ -822,17 +808,17 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGrid {
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getSetpointTempHk1Channel() {
+    public default IntegerReadChannel getCircuit1SetpointTempChannel() {
         return this.channel(ChannelId.SOLLTEMPHK1);
     }
 
     /**
-     * Heating circuit 1 setpoint temperature. Unit is decimal degree Celsius.
+     * Gets the heating circuit 1 setpoint temperature. Unit is decimal degree Celsius.
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getSetpointTempHk1() {
-        return this.getIstTempHk1Channel().value();
+    public default Value<Integer> getCircuit1SetpointTemp() {
+        return this.getCircuit1TempChannel().value();
     }
 
     /**
@@ -840,17 +826,17 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGrid {
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getIstTempHk2Channel() {
+    public default IntegerReadChannel getCircuit2TempChannel() {
         return this.channel(ChannelId.IR511_ISTTEMPHK2);
     }
 
     /**
-     * Heating circuit 2 actual temperature. Unit is decimal degree Celsius.
+     * Gets the heating circuit 2 temperature. Unit is decimal degree Celsius.
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getIstTempHk2() {
-        return this.getIstTempHk2Channel().value();
+    public default Value<Integer> getCircuit2Temp() {
+        return this.getCircuit2TempChannel().value();
     }
 
     /**
@@ -858,17 +844,17 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGrid {
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getSetpointTempHk2Channel() {
+    public default IntegerReadChannel getCircuit2SetpointTempChannel() {
         return this.channel(ChannelId.IR512_SOLLTEMPHK2);
     }
 
     /**
-     * Heating circuit 2 setpoint temperature. Unit is decimal degree Celsius.
+     * Gets the heating circuit 2 setpoint temperature. Unit is decimal degree Celsius.
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getSetpointTempHk2() {
-        return this.getSetpointTempHk2Channel().value();
+    public default Value<Integer> getCircuit2SetpointTemp() {
+        return this.getCircuit2SetpointTempChannel().value();
     }
 
     /**
@@ -876,17 +862,17 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGrid {
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getForwardTempHeatPumpActualChannel() {
+    public default IntegerReadChannel getFlowTempHeatPumpChannel() {
         return this.channel(ChannelId.IR513_VORLAUFISTTEMPWP);
     }
 
     /**
-     * Forward temperature heat pump, actual. Unit is decimal degree Celsius.
+     * Gets the flow temperature heat pump. Unit is decimal degree Celsius.
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getForwardTempHeatPumpActual() {
-        return this.getForwardTempHeatPumpActualChannel().value();
+    public default Value<Integer> getFlowTempHeatPump() {
+        return this.getFlowTempHeatPumpChannel().value();
     }
 
     /**
@@ -894,53 +880,17 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGrid {
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getForwardTempBackupHeaterActualChannel() {
+    public default IntegerReadChannel getFlowTempAuxHeaterChannel() {
         return this.channel(ChannelId.IR514_VORLAUFISTTEMPNHZ);
     }
 
     /**
-     * Forward temperature backup heater, actual. Unit is decimal degree Celsius.
+     * Gets the flow temperature auxiliary heater. Unit is decimal degree Celsius.
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getForwardTempBackupHeaterActual() {
-        return this.getForwardTempBackupHeaterActualChannel().value();
-    }
-
-    /**
-     * Gets the Channel for {@link ChannelId#IR515_VORLAUFISTTEMP}.
-     *
-     * @return the Channel
-     */
-    public default IntegerReadChannel getForwardTempActualChannel() {
-        return this.channel(ChannelId.IR515_VORLAUFISTTEMP);
-    }
-
-    /**
-     * Forward temperature, actual. Unit is decimal degree Celsius.
-     *
-     * @return the Channel {@link Value}
-     */
-    public default Value<Integer> getForwardTempActual() {
-        return this.getForwardTempActualChannel().value();
-    }
-
-    /**
-     * Gets the Channel for {@link ChannelId#IR516_RUECKLAUFISTTEMP}.
-     *
-     * @return the Channel
-     */
-    public default IntegerReadChannel getRewindTempActualChannel() {
-        return this.channel(ChannelId.IR516_RUECKLAUFISTTEMP);
-    }
-
-    /**
-     * Rewind temperature, actual. Unit is decimal degree Celsius.
-     *
-     * @return the Channel {@link Value}
-     */
-    public default Value<Integer> getRewindTempActual() {
-        return this.getRewindTempActualChannel().value();
+    public default Value<Integer> getFlowTempAuxHeater() {
+        return this.getFlowTempAuxHeaterChannel().value();
     }
 
     /**
@@ -948,17 +898,17 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGrid {
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getFixTempSetpointChannel() {
+    public default IntegerReadChannel getConstTempSetpointChannel() {
         return this.channel(ChannelId.IR517_FESTWERTSOLLTEMP);
     }
 
     /**
-     * Fix temperature setpoint. Unit is decimal degree Celsius.
+     * Gets the constant temperature setpoint. Unit is decimal degree Celsius.
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getFixTempSetpoint() {
-        return this.getFixTempSetpointChannel().value();
+    public default Value<Integer> getConstTempSetpoint() {
+        return this.getConstTempSetpointChannel().value();
     }
 
     /**
@@ -966,17 +916,17 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGrid {
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getBuffetTankTempActualChannel() {
+    public default IntegerReadChannel getStorageTankTempChannel() {
         return this.channel(ChannelId.IR518_PUFFERISTTEMP);
     }
 
     /**
-     * Buffer tank temperature, actual. Unit is decimal degree Celsius.
+     * Gets the storage tank temperature. Unit is decimal degree Celsius.
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getBuffetTankTempActual() {
-        return this.getBuffetTankTempActualChannel().value();
+    public default Value<Integer> getStorageTankTemp() {
+        return this.getStorageTankTempChannel().value();
     }
 
     /**
@@ -984,17 +934,17 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGrid {
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getBuffetTankTempSetpointChannel() {
+    public default IntegerReadChannel getStorageTankTempSetpointChannel() {
         return this.channel(ChannelId.IR519_PUFFERSOLLTEMP);
     }
 
     /**
-     * Buffer tank temperature, setpoint. Unit is decimal degree Celsius.
+     * Gets the storage tank temperature setpoint. Unit is decimal degree Celsius.
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getBuffetTankTempSetpoint() {
-        return this.getBuffetTankTempSetpointChannel().value();
+    public default Value<Integer> getStorageTankTempSetpoint() {
+        return this.getStorageTankTempSetpointChannel().value();
     }
 
     /**
@@ -1007,7 +957,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGrid {
     }
 
     /**
-     * Heating circuit pressure. Unit is centi bar (bar e-2).
+     * Gets the heating circuit pressure. Unit is centi bar (bar e-2).
      *
      * @return the Channel {@link Value}
      */
@@ -1025,7 +975,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGrid {
     }
 
     /**
-     * Heating circuit current. Unit is decimal liters per minute (l/min e-1).
+     * Gets the heating circuit current. Unit is decimal liters per minute (l/min e-1).
      *
      * @return the Channel {@link Value}
      */
@@ -1038,17 +988,17 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGrid {
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getWarmWaterTempActualChannel() {
+    public default IntegerReadChannel getDomesticHotWaterTempChannel() {
         return this.channel(ChannelId.IR522_WWISTTEMP);
     }
 
     /**
-     * Warm water temperature, actual. Unit is decimal degree Celsius.
+     * Gets the domestic hot water temperature. Unit is decimal degree Celsius.
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getWarmWaterTempActual() {
-        return this.getWarmWaterTempActualChannel().value();
+    public default Value<Integer> getDomesticHotWaterTemp() {
+        return this.getDomesticHotWaterTempChannel().value();
     }
 
     /**
@@ -1056,17 +1006,17 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGrid {
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getWarmWaterTempSetpointChannel() {
+    public default IntegerReadChannel getDomesticHotWaterTempSetpointChannel() {
         return this.channel(ChannelId.IR523_WWSOLLTEMP);
     }
 
     /**
-     * Warm water temperature, setpoint. Unit is decimal degree Celsius.
+     * Gets the domestic hot water temperature setpoint. Unit is decimal degree Celsius.
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getWarmWaterTempSetpoint() {
-        return this.getWarmWaterTempSetpointChannel().value();
+    public default Value<Integer> getDomesticHotWaterTempSetpoint() {
+        return this.getDomesticHotWaterTempSetpointChannel().value();
     }
 
     /**
@@ -1074,17 +1024,17 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGrid {
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getVentilationCoolingTempActualChannel() {
+    public default IntegerReadChannel getVentilationCoolingTempChannel() {
         return this.channel(ChannelId.IR524_GEBLAESEISTTEMP);
     }
 
     /**
-     * Ventilation cooling temperature, actual. Unit is decimal degree Celsius.
+     * Gets the ventilation cooling temperature. Unit is decimal degree Kelvin.
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getVentilationCoolingTempActual() {
-        return this.getVentilationCoolingTempActualChannel().value();
+    public default Value<Integer> getVentilationCoolingTemp() {
+        return this.getVentilationCoolingTempChannel().value();
     }
 
     /**
@@ -1097,7 +1047,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGrid {
     }
 
     /**
-     * Ventilation cooling temperature, setpoint. Unit is decimal degree Celsius.
+     * Gets the ventilation cooling temperature setpoint. Unit is decimal degree Kelvin.
      *
      * @return the Channel {@link Value}
      */
@@ -1110,17 +1060,17 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGrid {
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getSurfaceCoolingTempActualChannel() {
+    public default IntegerReadChannel getSurfaceCoolingTempChannel() {
         return this.channel(ChannelId.IR526_FLAECHEISTTEMP);
     }
 
     /**
-     * Surface cooling temperature, actual. Unit is decimal degree Celsius.
+     * Gets the surface cooling temperature. Unit is decimal degree Kelvin.
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getSurfaceCoolingTempActual() {
-        return this.getSurfaceCoolingTempActualChannel().value();
+    public default Value<Integer> getSurfaceCoolingTemp() {
+        return this.getSurfaceCoolingTempChannel().value();
     }
 
     /**
@@ -1133,7 +1083,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGrid {
     }
 
     /**
-     * Surface cooling temperature, setpoint. Unit is decimal degree Celsius.
+     * Gets the surface cooling temperature setpoint. Unit is decimal degree Kelvin.
      *
      * @return the Channel {@link Value}
      */

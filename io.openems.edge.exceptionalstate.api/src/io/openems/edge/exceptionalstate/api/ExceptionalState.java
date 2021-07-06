@@ -1,24 +1,40 @@
 package io.openems.edge.exceptionalstate.api;
 
 import io.openems.common.channel.AccessMode;
-import io.openems.common.exceptions.OpenemsError;
+import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
 import io.openems.common.types.OpenemsType;
+import io.openems.edge.common.channel.BooleanWriteChannel;
 import io.openems.edge.common.channel.Doc;
 import io.openems.edge.common.channel.IntegerWriteChannel;
 import io.openems.edge.common.channel.WriteChannel;
+import io.openems.edge.common.channel.value.Value;
 import io.openems.edge.common.component.OpenemsComponent;
 
 /**
- * The ExceptionalState Nature. It Provides 2 Basic Channel. The First one is the EnableSignal.
- * That notifies the component if the enable signal is set and the Value Channel, which tells the Component what to do.
- * Example: If a Heater receives the Enable signal and the Value is > 0 -> it activates/starts to heat, otherwise it won't heat.
- * Ignoring all the other controller/enableSignal of the heater interface etc etc.
+ * The ExceptionalState Nature. The ExceptionalState, when active, overrides any other commands to the device.
+ * There are two channels. The first one is ExceptionalStateEnableSignal, which decides if the ExceptionalState is
+ * active or not. The second channel is ExceptionalStateValue, which sets the behaviour of the device when the
+ * ExceptionalState is active.
+ * The basic interpretation of the ExceptionalStateValue is that 0 <= off, and any value > 0 means on.
+ * The advanced interpretation is that ExceptionalStateValue is a power percent value, meaning 0 = off and 100 = full
+ * power. The implementation is dependent on the device, since not all devices allow a power percent control.
+ * Components implementing the ExceptionalState should use the ExceptionalStateHandlerImpl to process the
+ * ExceptionalStateEnableSignal (see {@link io.openems.edge.exceptionalstate.api.ExceptionalStateHandlerImpl}).
  */
 public interface ExceptionalState extends OpenemsComponent {
     enum ChannelId implements io.openems.edge.common.channel.ChannelId {
+
         /**
-         * Exceptional State Enable Signal.
-         * This needs to be set periodically to work.
+         * Write: activate (true) or deactivate (false) the ExceptionalState.
+         * Read: The ExceptionalState is active (true) or not (false).
+         * Components implementing the ExceptionalState should use the ExceptionalStateHandlerImpl to process the
+         * ExceptionalStateEnableSignal (see {@link io.openems.edge.exceptionalstate.api.ExceptionalStateHandlerImpl}).
+         * This way the handling of the ExceptionalStateEnableSignal is the same in all devices.
+         * The ExceptionalStateHandlerImpl fetches the nextWriteValue of this channel with getNextWriteValueAndReset().
+         * If the collected value is ’true’, the ExceptionalState is activated and a configurable timer is started. As
+         * long as the timer has not finished counting down, the ExceptionalState stays active. When the timer runs out,
+         * the ExceptionalStateHandlerImpl stops the ExceptionalState.
+         * To keep the ExceptionalState active, ’true’ must be regularly written in the nextWriteValue of this channel.
          *
          * <ul>
          * <li>Interface: {@link ExceptionalState}
@@ -28,8 +44,11 @@ public interface ExceptionalState extends OpenemsComponent {
         EXCEPTIONAL_STATE_ENABLE_SIGNAL(Doc.of(OpenemsType.BOOLEAN).accessMode(AccessMode.READ_WRITE)),
 
         /**
-         * Exceptional State Value.
-         * The Value that will be applied/used/should be used when an exceptionalState is active.
+         * The ExceptionalStateValue controls the behaviour of the device when the ExceptionalState is active.
+         * The basic interpretation of the ExceptionalStateValue is that 0 <= off, and any value > 0 means on.
+         * The advanced interpretation is that ExceptionalStateValue is a power percent value, meaning 0 = off and
+         * 100 = full power.
+         * The implementation is dependent on the device, since not all devices allow a power percent control.
          *
          * <ul>
          *     <li> Interface: {@link ExceptionalState}
@@ -52,45 +71,62 @@ public interface ExceptionalState extends OpenemsComponent {
     }
 
     /**
-     * Get The Enable Signal channel.
-     *
-     * @return the channel
-     */
-    default WriteChannel<Boolean> getExceptionalStateEnableChannel() {
-        return this.channel(ChannelId.EXCEPTIONAL_STATE_ENABLE_SIGNAL);
-    }
-
-    /**
-     * The Value Channel.
+     * Gets the Channel for {@link ChannelId#EXCEPTIONAL_STATE_ENABLE_SIGNAL}.
      *
      * @return the Channel
      */
-    default WriteChannel<Integer> getExceptionalStateValueChannel() {
+    public default BooleanWriteChannel getExceptionalStateEnableSignalChannel() {
+        return this.channel((ChannelId.EXCEPTIONAL_STATE_ENABLE_SIGNAL));
+    }
+
+    /**
+     * Gets the ExceptionalStateEnableSignal, indicating if the ExceptionalState is active (true) or not (false).
+     * See {@link ChannelId#EXCEPTIONAL_STATE_ENABLE_SIGNAL}.
+     *
+     * @return the Channel {@link Value}
+     */
+    public default Value<Boolean> getExceptionalStateEnableSignal() {
+        return this.getExceptionalStateEnableSignalChannel().value();
+    }
+
+    /**
+     * Internal method to set the 'nextValue' on {@link ChannelId#EXCEPTIONAL_STATE_ENABLE_SIGNAL}
+     * Channel.
+     *
+     * @param value the next value
+     */
+    public default void _setExceptionalStateEnableSignal(Boolean value) {
+        this.getExceptionalStateEnableSignalChannel().setNextValue(value);
+    }
+
+    /**
+     * Activate the ExceptionalState (regularly write true) or deactivate it (write false).
+     * When ’true’ is written, the ExceptionalState is activated and a configurable timer is started. Writing ’true’
+     * again will reset the timer. When no further command is received, the ExceptionalState will deactivate when the
+     * timer runs out (signal loss fallback).
+     * See {@link ChannelId#EXCEPTIONAL_STATE_ENABLE_SIGNAL}.
+     *
+     * @param value the next write value
+     * @throws OpenemsNamedException on error
+     */
+    public default void setExceptionalStateEnableSignal(Boolean value) throws OpenemsNamedException {
+        this.getExceptionalStateEnableSignalChannel().setNextWriteValue(value);
+    }
+
+    /**
+     * Gets the Channel for {@link ChannelId#EXCEPTIONAL_STATE_VALUE}.
+     *
+     * @return the Channel
+     */
+    default IntegerWriteChannel getExceptionalStateValueChannel() {
         return this.channel(ChannelId.EXCEPTIONAL_STATE_VALUE);
     }
 
     /**
-     * Get the EnableSignal nextWriteValue or else false.
+     * Get the ExceptionalStateValue or if nothing is defined -> -1.
+     * See {@link ChannelId#EXCEPTIONAL_STATE_VALUE}.
      *
-     * @return a boolean.
-     */
-    default boolean getExceptionalStateEnableSignal() {
-        return this.getExceptionalStateEnableChannel().getNextWriteValue().orElse(false);
-    }
-
-    /**
-     * Get the EnableSignal NextWriteValue and Resets it. If not present set to false.
-     *
-     * @return a boolean or Else false.
-     */
-    default boolean getExceptionalStateEnableSignalAndReset() {
-        return this.getExceptionalStateEnableChannel().getNextWriteValueAndReset().orElse(false);
-    }
-
-    /**
-     * Get the Value of the Exceptional State or if nothing is defined -> -1.
-     *
-     * @return the value or -1 if nothings present.
+     * @return the Channel {@link Value} or -1 if nothing is defined.
      */
     default int getExceptionalStateValue() {
         int value = -1;
@@ -106,22 +142,32 @@ public interface ExceptionalState extends OpenemsComponent {
     }
 
     /**
-     * Sets the EnableSignal.
+     * Sets the ExceptionalStateValue.
+     * The ExceptionalStateValue controls the behaviour of the device when the ExceptionalState is active.
+     * The basic interpretation of the ExceptionalStateValue is that 0 <= off, and any value > 0 means on.
+     * The advanced interpretation is that ExceptionalStateValue is a power percent value, meaning 0 = off and
+     * 100 = full power.
+     * The implementation is dependent on the device, since not all devices allow a power percent control.
      *
-     * @param value true or false to enable/disable the exceptional state, can also be null
-     * @throws OpenemsError.OpenemsNamedException if write fails.
+     * @param value the next write value
+     * @throws OpenemsNamedException on error
      */
-    default void setExceptionalStateEnableSignal(boolean value) throws OpenemsError.OpenemsNamedException {
-        this.getExceptionalStateEnableChannel().setNextWriteValueFromObject(value);
+    default void setExceptionalStateValue(int value) throws OpenemsNamedException {
+        this.getExceptionalStateValueChannel().setNextWriteValue(value);
     }
 
     /**
-     * Sets the Exceptional State Value.
+     * Sets the ExceptionalStateValue.
+     * The ExceptionalStateValue controls the behaviour of the device when the ExceptionalState is active.
+     * The basic interpretation of the ExceptionalStateValue is that 0 <= off, and any value > 0 means on.
+     * The advanced interpretation is that ExceptionalStateValue is a power percent value, meaning 0 = off and
+     * 100 = full power.
+     * The implementation is dependent on the device, since not all devices allow a power percent control.
      *
-     * @param value the value that will be used if exceptional state is active.
-     * @throws OpenemsError.OpenemsNamedException if write fails
+     * @param value the next write value
+     * @throws OpenemsNamedException on error
      */
-    default void setExceptionalStateValue(int value) throws OpenemsError.OpenemsNamedException {
-        this.getExceptionalStateValueChannel().setNextWriteValueFromObject(value);
+    default void setExceptionalStateValue(Integer value) throws OpenemsNamedException {
+        this.getExceptionalStateValueChannel().setNextWriteValue(value);
     }
 }

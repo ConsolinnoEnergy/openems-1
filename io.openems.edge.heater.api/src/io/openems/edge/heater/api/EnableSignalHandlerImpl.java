@@ -62,23 +62,19 @@ public class EnableSignalHandlerImpl implements EnableSignalHandler {
         if (enabledSignal.isPresent() && enabledSignal.get()) {
             this.currentlyEnabled = true;
             this.timer.resetTimer(this.enableSignalTimerIdentifier);
-            heaterComponent._setEnableSignal(true);     // Set status in ’naxtValue’ and ’value’ part of the channel.
+            heaterComponent._setEnableSignal(true);     // Set status in ’nextValue’ and ’value’ part of the channel.
             return true;    // enabledSignal is 'true’. Return true, meaning ’turn on device’.
         } else {
             // No value in the Optional or enabledSignal = false.
-            if (this.currentlyEnabled) {
-                /* Wait configured amount of time. If the timer runs out, turn off the device.
-                   If enabledSignal contains true before the timer runs out, the timer
-                   is restarted. If that is not the case and the timer runs out, turn off the device. */
-                if (this.timer.checkTimeIsUp(this.enableSignalTimerIdentifier)) {
-                    this.currentlyEnabled = false;
-                    heaterComponent._setEnableSignal(false);
-                    return false;   // Timer has run out. Return false, meaning ’turn off device’.
-                }
-                return true;    // Timer has not run out yet. Return true, meaning the device should stay on.
+            if (this.currentlyEnabled
+                    && this.timer.checkTimeIsUp(this.enableSignalTimerIdentifier) == false) {
+                // Timer has not run out yet. Return true, meaning the device should stay on.
+                return true;
+            } else {
+                // No ’true’ in enabledSignal and no timer running. Return false, meaning device should be off.
+                heaterComponent._setEnableSignal(false);
+                return false;
             }
         }
-        heaterComponent._setEnableSignal(false);
-        return false;   // No ’true’ in enabledSignal and no timer running. Return false, meaning device should be off.
     }
 }

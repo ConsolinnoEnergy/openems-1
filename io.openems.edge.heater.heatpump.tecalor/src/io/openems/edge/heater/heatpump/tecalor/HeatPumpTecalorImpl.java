@@ -15,6 +15,7 @@ import io.openems.edge.bridge.modbus.api.task.FC4ReadInputRegistersTask;
 import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.common.event.EdgeEventConstants;
 import io.openems.edge.common.taskmanager.Priority;
+import io.openems.edge.heater.api.Heater;
 import io.openems.edge.heater.heatpump.tecalor.api.HeatpumpTecalorChannel;
 import io.openems.edge.heater.api.HeatpumpSmartGrid;
 import java.util.Optional;
@@ -64,7 +65,8 @@ public class HeatPumpTecalorImpl extends AbstractOpenemsModbusComponent implemen
 	public HeatPumpTecalorImpl() {
 		super(OpenemsComponent.ChannelId.values(),
 				HeatpumpTecalorChannel.ChannelId.values(),
-				HeatpumpSmartGrid.ChannelId.values());
+				HeatpumpSmartGrid.ChannelId.values(),
+				Heater.ChannelId.values());
 	}
 
 	@Activate
@@ -108,9 +110,9 @@ public class HeatPumpTecalorImpl extends AbstractOpenemsModbusComponent implemen
 								ElementToChannelConverter.REPLACE_WITH_NULL_IF_0X8000H),
 						m(HeatpumpTecalorChannel.ChannelId.IR514_VORLAUFISTTEMPNHZ, new SignedWordElement(513),
 								ElementToChannelConverter.REPLACE_WITH_NULL_IF_0X8000H),
-						m(HeatpumpTecalorChannel.ChannelId.IR515_VORLAUFISTTEMP, new SignedWordElement(514),
+						m(Heater.ChannelId.FLOW_TEMPERATURE, new SignedWordElement(514),
 								ElementToChannelConverter.REPLACE_WITH_NULL_IF_0X8000H),
-						m(HeatpumpTecalorChannel.ChannelId.IR516_RUECKLAUFISTTEMP, new SignedWordElement(515),
+						m(Heater.ChannelId.RETURN_TEMPERATURE, new SignedWordElement(515),
 								ElementToChannelConverter.REPLACE_WITH_NULL_IF_0X8000H),
 						m(HeatpumpTecalorChannel.ChannelId.IR517_FESTWERTSOLLTEMP, new SignedWordElement(516),
 								ElementToChannelConverter.REPLACE_WITH_NULL_IF_0X8000H),
@@ -408,13 +410,13 @@ public class HeatPumpTecalorImpl extends AbstractOpenemsModbusComponent implemen
 				case 449:	// WPMsystem
 					if (this.channel(HeatpumpTecalorChannel.ChannelId.IR510_SOLLTEMPHK1).value().isDefined()) {
 						int setpointHk1 = (Integer) this.channel(HeatpumpTecalorChannel.ChannelId.IR510_SOLLTEMPHK1).value().get();
-						this.getSetpointTempHk1Channel().setNextValue(setpointHk1);
+						this.getCircuit1SetpointTempChannel().setNextValue(setpointHk1);
 					}
 					break;
 				case 391:	// WPM 3i
 					if (this.channel(HeatpumpTecalorChannel.ChannelId.IR509_SOLLTEMPHK1).value().isDefined()) {
 						int setpointHk1 = (Integer) this.channel(HeatpumpTecalorChannel.ChannelId.IR509_SOLLTEMPHK1).value().get();
-						this.getSetpointTempHk1Channel().setNextValue(setpointHk1);
+						this.getCircuit1SetpointTempChannel().setNextValue(setpointHk1);
 					}
 					break;
 			}
@@ -486,13 +488,13 @@ public class HeatPumpTecalorImpl extends AbstractOpenemsModbusComponent implemen
 			this.logInfo(this.log, "Fehlerstatus: " + getErrorStatus());
 			this.logInfo(this.log, "Fehlernummer: " + getErrorNumber());
 			this.logInfo(this.log, "");
-			this.logInfo(this.log, "Aussentemp: " + getAussentemp());
-			this.logInfo(this.log, "Pufferspeicher Temp: " + getBuffetTankTempActual());
-			this.logInfo(this.log, "Heizkreis1 Temp: " + getIstTempHk1());
-			this.logInfo(this.log, "Heizkreis2 Temp: " + getIstTempHk2());
+			this.logInfo(this.log, "Aussentemp: " + getOutsideTemp());
+			this.logInfo(this.log, "Pufferspeicher Temp: " + getStorageTankTemp());
+			this.logInfo(this.log, "Heizkreis1 Temp: " + getCircuit1Temp());
+			this.logInfo(this.log, "Heizkreis2 Temp: " + getCircuit2Temp());
 			this.logInfo(this.log, "Vorlauf Temp: " + getForwardTempActual());
 			this.logInfo(this.log, "Rücklauf Temp: " + getRewindTempActual());
-			this.logInfo(this.log, "Warmwasser Temp: " + getWarmWaterTempActual());
+			this.logInfo(this.log, "Warmwasser Temp: " + getDomesticHotWaterTemp());
 			this.logInfo(this.log, "");
 			this.logInfo(this.log, "--Schreibbare Parameter--");
 			this.logInfo(this.log, "Betriebsart: " + getOperatingModeChannel().value().asEnum().getName());
