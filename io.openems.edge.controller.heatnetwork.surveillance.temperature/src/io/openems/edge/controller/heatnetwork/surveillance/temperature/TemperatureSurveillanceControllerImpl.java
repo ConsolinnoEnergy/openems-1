@@ -31,7 +31,16 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
-
+/**
+ * The TemperatureSurveillanceController is a Controller that monitores 3 different Temperatures and enables/disables it's
+ * Components, depending on the Configuration.
+ * There are 3 "valid" SurveillanceTypes.
+ * HEATER_ONLY, VALVE_CONTROLLER_ONLY, HEATER_AND_VALVE_CONTROLLER
+ * HeaterOnly enables the Heater if the activationConditions apply.
+ * Equivalent thing happen for the valveControllerOnly setting, enabling a ValveController.
+ * If HeaterAndValveController setting is enabled, the Heater will be enabled at first, and after a configured WaitTime
+ * The ValveController will be additionally enabled.
+ */
 @Designate(ocd = Config.class, factory = true)
 @Component(name = "controller.temperature.surveillance",
         immediate = true,
@@ -126,7 +135,7 @@ public class TemperatureSurveillanceControllerImpl extends AbstractOpenemsCompon
     }
 
     /**
-     * Check fur duplicated Thermometer ids.
+     * Check for duplicated Thermometer ids.
      *
      * @param ids the Thermometer ids.
      * @return a boolean.
@@ -221,8 +230,6 @@ public class TemperatureSurveillanceControllerImpl extends AbstractOpenemsCompon
      * First Enable Heater and then after certain WaitTime Enable ValveController (HEATER_AND_VALVE_CONTROLLER).
      * on deactivation: Disable corresponding Components
      * </p>
-     *
-     * @throws OpenemsError.OpenemsNamedException if controller couldn't write next Value of Heater enableSignalChannel.
      */
     @Override
     public void run() {
