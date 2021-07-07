@@ -18,7 +18,7 @@ public interface MultipleHeaterCombinedController extends OpenemsComponent {
 
     enum ChannelId implements io.openems.edge.common.channel.ChannelId {
         /**
-         * Is the MultipleHeaterCombined Controller ok or did an error occurred while Heating.
+         * Is the MultipleHeaterCombined Controller ok or did an error occur while Heating.
          *
          * <ul>
          * <li>Interface: MultipleHeaterCombinedController

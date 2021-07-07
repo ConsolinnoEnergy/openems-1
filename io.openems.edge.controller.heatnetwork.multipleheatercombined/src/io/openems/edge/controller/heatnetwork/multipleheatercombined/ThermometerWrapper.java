@@ -20,16 +20,16 @@ class ThermometerWrapper {
     private final ComponentManager cpm;
     //Map the Thermometer to their min/max Value
     private final Map<Thermometer, ThermometerValue> thermometerAndValue = new HashMap<>();
-    //ThermometerKind == Activate/Deactivate on Heatcontrol. Mapped thermometerkind to Thermometer
-    private final Map<ThermometerKind, Thermometer> thermometerKindThermometerMap = new HashMap<>();
+    //thermometerType == Activate/Deactivate on Heatcontrol. Mapped thermometerType to Thermometer
+    private final Map<ThermometerType, Thermometer> thermometerTypeThermometerMap = new HashMap<>();
 
 
     ThermometerWrapper(Thermometer minThermometer, Thermometer maxThermometer, String minValue, String maxValue, ComponentManager cpm)
             throws OpenemsError.OpenemsNamedException, ConfigurationException {
         this.cpm = cpm;
-        this.thermometerKindThermometerMap.put(ThermometerKind.ACTIVATE_THERMOMETER, minThermometer);
+        this.thermometerTypeThermometerMap.put(ThermometerType.ACTIVATE_THERMOMETER, minThermometer);
         this.thermometerAndValue.put(minThermometer, new ThermometerValue(minValue));
-        this.thermometerKindThermometerMap.put(ThermometerKind.DEACTIVATE_THERMOMETER, maxThermometer);
+        this.thermometerTypeThermometerMap.put(ThermometerType.DEACTIVATE_THERMOMETER, maxThermometer);
         this.thermometerAndValue.put(maxThermometer, new ThermometerValue(maxValue));
         this.thermometerAndValue.get(minThermometer).validateChannelAndGetValue(this.cpm);
         this.thermometerAndValue.get(maxThermometer).validateChannelAndGetValue(this.cpm);
@@ -100,7 +100,7 @@ class ThermometerWrapper {
      * @return the Deactivation {@link Thermometer}
      */
     Thermometer getDeactivationThermometer() {
-        return this.thermometerKindThermometerMap.get(ThermometerKind.DEACTIVATE_THERMOMETER);
+        return this.thermometerTypeThermometerMap.get(ThermometerType.DEACTIVATE_THERMOMETER);
     }
 
     /**
@@ -109,7 +109,7 @@ class ThermometerWrapper {
      * @return the Activation {@link Thermometer}
      */
     Thermometer getActivationThermometer() {
-        return this.thermometerKindThermometerMap.get(ThermometerKind.ACTIVATE_THERMOMETER);
+        return this.thermometerTypeThermometerMap.get(ThermometerType.ACTIVATE_THERMOMETER);
     }
 
     /**
@@ -118,7 +118,7 @@ class ThermometerWrapper {
      * @return the ActivationTemperature value.
      */
     private int getActivationTemperature() throws OpenemsError.OpenemsNamedException, ConfigurationException {
-        return this.thermometerAndValue.get(this.thermometerKindThermometerMap.get(ThermometerKind.ACTIVATE_THERMOMETER))
+        return this.thermometerAndValue.get(this.thermometerTypeThermometerMap.get(ThermometerType.ACTIVATE_THERMOMETER))
                 .validateChannelAndGetValue(this.cpm);
     }
 
@@ -128,7 +128,7 @@ class ThermometerWrapper {
      * @return the DeactivationTemperature value.
      */
     private int getDeactivationTemperature() throws OpenemsError.OpenemsNamedException, ConfigurationException {
-        return this.thermometerAndValue.get(this.thermometerKindThermometerMap.get(ThermometerKind.DEACTIVATE_THERMOMETER))
+        return this.thermometerAndValue.get(this.thermometerTypeThermometerMap.get(ThermometerType.DEACTIVATE_THERMOMETER))
                 .validateChannelAndGetValue(this.cpm);
     }
 

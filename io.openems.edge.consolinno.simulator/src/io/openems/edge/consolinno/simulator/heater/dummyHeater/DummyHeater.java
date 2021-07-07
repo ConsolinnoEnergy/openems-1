@@ -11,16 +11,12 @@ import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.ConfigurationPolicy;
 import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Modified;
-import org.osgi.service.component.annotations.Reference;
-import org.osgi.service.component.annotations.ReferenceCardinality;
-import org.osgi.service.component.annotations.ReferencePolicy;
-import org.osgi.service.component.annotations.ReferencePolicyOption;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- *
+ * TestDevice for Heater. If you want to test Controller without having "Real" Heater you can configure and use this one.
  */
 
 @Designate(ocd = Config.class, factory = true)
@@ -29,7 +25,7 @@ import org.slf4j.LoggerFactory;
 
 public class DummyHeater extends AbstractOpenemsComponent implements OpenemsComponent, Heater {
 
-    private Logger log = LoggerFactory.getLogger(DummyHeater.class);
+    private final Logger log = LoggerFactory.getLogger(DummyHeater.class);
 
     public DummyHeater() {
         super(OpenemsComponent.ChannelId.values(),

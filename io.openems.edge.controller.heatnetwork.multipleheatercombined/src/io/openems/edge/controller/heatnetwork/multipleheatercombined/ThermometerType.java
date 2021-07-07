@@ -5,6 +5,6 @@ package io.openems.edge.controller.heatnetwork.multipleheatercombined;
  *  ACTIVATE_THERMOMETER == Thermometer measuring Activation temp., DEACTIVATE_THERMOMETER == Thermometer measuring max allowed temp.
  *
  */
-public enum ThermometerKind {
+public enum ThermometerType {
     ACTIVATE_THERMOMETER, DEACTIVATE_THERMOMETER
 }

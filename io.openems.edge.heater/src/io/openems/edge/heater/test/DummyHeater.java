@@ -6,8 +6,11 @@ import io.openems.edge.common.component.AbstractOpenemsComponent;
 import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.heater.Heater;
 
+/**
+ * A DummyHeater used in UnitTests for test cases.
+ */
 public class DummyHeater extends AbstractOpenemsComponent implements Heater {
-    public DummyHeater(String id){
+    public DummyHeater(String id) {
         super(
                 OpenemsComponent.ChannelId.values(),
                 Heater.ChannelId.values()
