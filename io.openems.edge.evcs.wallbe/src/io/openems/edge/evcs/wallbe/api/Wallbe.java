@@ -42,7 +42,7 @@ public interface Wallbe extends OpenemsComponent {
          * <li>Unit: Na
          * </ul>
          */
-        STATUS(Doc.of(OpenemsType.STRING).accessMode(AccessMode.READ_ONLY)),
+        WALLBE_STATUS(Doc.of(OpenemsType.STRING).accessMode(AccessMode.READ_ONLY)),
         /**
          * The Time for how long the current EV is connected to the station.
          * <ul>
@@ -167,16 +167,16 @@ public interface Wallbe extends OpenemsComponent {
     }
 
     /**
-     * Gets the Channel for {@link Wallbe.ChannelId#STATUS}.
+     * Gets the Channel for {@link Wallbe.ChannelId#WALLBE_STATUS}.
      *
      * @return the Channel
      */
     default Channel<String> getWallbeStatusChannel() {
-        return this.channel(ChannelId.STATUS);
+        return this.channel(ChannelId.WALLBE_STATUS);
     }
 
     /**
-     * Gets the Value of {@link Wallbe.ChannelId#STATUS}.
+     * Gets the Value of {@link Wallbe.ChannelId#WALLBE_STATUS}.
      *
      * @return the value
      */

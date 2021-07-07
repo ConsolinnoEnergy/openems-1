@@ -3,11 +3,11 @@ package io.openems.edge.evcs.mennekes;
 import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
-@ObjectClassDefinition(name = "Mennekes EVCS", description = ".")
+@ObjectClassDefinition(name = "EVCS Mennekes", description = "Implements the Mennekes Charging Station.")
 @interface Config {
 
-    @AttributeDefinition(name = "Id", description = "Unique Id for the .")
-    String id() default "";
+    @AttributeDefinition(name = "Id", description = "Unique Id for the EVCS.")
+    String id() default "Mennekes1";
 
     @AttributeDefinition(name = "Alias", description = "Human readable name of this Configurator.")
     String alias() default "";

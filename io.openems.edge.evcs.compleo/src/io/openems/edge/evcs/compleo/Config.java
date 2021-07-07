@@ -4,11 +4,11 @@ import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 import org.osgi.service.metatype.annotations.Option;
 
-@ObjectClassDefinition(name = "Consolinno ", description = ".")
+@ObjectClassDefinition(name = "EVCS Compleo", description = "Implements the Compleo Charging Station.")
 @interface Config {
 
-    @AttributeDefinition(name = "Id", description = "Unique Id for the .")
-    String id() default "";
+    @AttributeDefinition(name = "Id", description = "Unique Id for the EVCS.")
+    String id() default "Compleo1";
 
     @AttributeDefinition(name = "Alias", description = "Human readable name of this Configurator.")
     String alias() default "";

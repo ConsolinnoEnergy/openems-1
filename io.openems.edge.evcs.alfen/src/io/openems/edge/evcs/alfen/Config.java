@@ -3,11 +3,11 @@ package io.openems.edge.evcs.alfen;
 import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
-@ObjectClassDefinition(name = "Alfen EVCS", description = ".")
+@ObjectClassDefinition(name = "EVCS Alfen", description = "Implements the Alfen Charging Station.")
 @interface Config {
 
-    @AttributeDefinition(name = "Id", description = "Unique Id for the .")
-    String id() default "";
+    @AttributeDefinition(name = "Id", description = "Unique Id for the EVCS.")
+    String id() default "Alfen1";
 
     @AttributeDefinition(name = "Alias", description = "Human readable name of this Configurator.")
     String alias() default "";

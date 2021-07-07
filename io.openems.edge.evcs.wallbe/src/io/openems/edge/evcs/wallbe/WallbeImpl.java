@@ -12,6 +12,7 @@ import io.openems.edge.bridge.modbus.api.element.SignedWordElement;
 import io.openems.edge.bridge.modbus.api.element.StringWordElement;
 import io.openems.edge.bridge.modbus.api.element.UnsignedDoublewordElement;
 import io.openems.edge.bridge.modbus.api.element.UnsignedWordElement;
+import io.openems.edge.bridge.modbus.api.task.FC3ReadRegistersTask;
 import io.openems.edge.bridge.modbus.api.task.FC4ReadInputRegistersTask;
 import io.openems.edge.bridge.modbus.api.task.FC5WriteCoilTask;
 import io.openems.edge.bridge.modbus.api.task.FC6WriteRegisterTask;
@@ -108,7 +109,7 @@ public class WallbeImpl extends AbstractOpenemsModbusComponent implements Openem
     protected ModbusProtocol defineModbusProtocol() throws OpenemsException {
         return new ModbusProtocol(this,
                 new FC4ReadInputRegistersTask(100, Priority.HIGH,
-                        m(Wallbe.ChannelId.STATUS,
+                        m(Wallbe.ChannelId.WALLBE_STATUS,
                                 new StringWordElement(100, 1),
                                 ElementToChannelConverter.DIRECT_1_TO_1)),
                 new FC4ReadInputRegistersTask(102, Priority.HIGH,
@@ -135,9 +136,9 @@ public class WallbeImpl extends AbstractOpenemsModbusComponent implements Openem
                         m(Wallbe.ChannelId.CURRENT_L3,
                                 new SignedDoublewordElement(118),
                                 ElementToChannelConverter.DIRECT_1_TO_1)),
-                new FC4ReadInputRegistersTask(124, Priority.HIGH,
+                new FC4ReadInputRegistersTask(120, Priority.HIGH,
                         m(Wallbe.ChannelId.APPARENT_POWER,
-                                new SignedDoublewordElement(124),
+                                new SignedDoublewordElement(120),
                                 ElementToChannelConverter.DIRECT_1_TO_1)),
                 new FC4ReadInputRegistersTask(132, Priority.HIGH,
                         m(Wallbe.ChannelId.ENERGY,

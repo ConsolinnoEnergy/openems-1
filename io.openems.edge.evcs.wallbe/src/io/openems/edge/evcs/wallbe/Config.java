@@ -3,11 +3,11 @@ package io.openems.edge.evcs.wallbe;
 import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
-@ObjectClassDefinition(name = "Wallbe Evcs", description = ".")
+@ObjectClassDefinition(name = "EVCS Wallbe", description = "Implements the Wallbe Charging Station.")
 @interface Config {
 
-    @AttributeDefinition(name = "Id", description = "Unique Id for the .")
-    String id() default "";
+    @AttributeDefinition(name = "Id", description = "Unique Id for the EVCS.")
+    String id() default "Wallbe1";
 
     @AttributeDefinition(name = "Alias", description = "Human readable name of this Configurator.")
     String alias() default "";
