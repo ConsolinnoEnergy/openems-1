@@ -5,10 +5,13 @@ import io.openems.edge.common.channel.Channel;
 import io.openems.edge.common.component.AbstractOpenemsComponent;
 import io.openems.edge.common.component.OpenemsComponent;
 
-public class DummyRestDevice extends AbstractOpenemsComponent implements OpenemsComponent, RestRemoteDevice {
-    private boolean isWrite;
+import java.util.Random;
 
-    public DummyRestDevice(String id, boolean isWrite) {
+public class DummyRestDevice extends AbstractOpenemsComponent implements OpenemsComponent, RestRemoteDevice {
+    private final boolean isWrite;
+    private final boolean disturbanceActive;
+
+    public DummyRestDevice(String id, boolean isWrite, boolean disturbanceActive) {
         super(
                 OpenemsComponent.ChannelId.values(),
                 RestRemoteDevice.ChannelId.values()
@@ -20,10 +23,19 @@ public class DummyRestDevice extends AbstractOpenemsComponent implements Openems
             this.getTypeSetChannel().setNextValue("Read");
         }
         this.isWrite = isWrite;
+        this.disturbanceActive = disturbanceActive;
         for (Channel<?> channel : this.channels()) {
             channel.nextProcessImage();
         }
         super.activate(null, id, "", true);
+    }
+
+    public DummyRestDevice(String id, boolean isWrite) {
+        this(id, isWrite, false);
+    }
+
+    public DummyRestDevice(String id) {
+        this(id, false);
     }
 
     @Override
@@ -66,6 +78,6 @@ public class DummyRestDevice extends AbstractOpenemsComponent implements Openems
 
     @Override
     public boolean connectionOk() {
-        return true;
+        return !this.disturbanceActive;
     }
 }
