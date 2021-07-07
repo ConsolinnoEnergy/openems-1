@@ -171,6 +171,11 @@ public class MyConfig extends AbstractComponentConfig implements Config {
             return this;
         }
 
+        public Builder setConfigurationDone(boolean done) {
+            this.configurationDone = done;
+            return this;
+        }
+
         public MyConfig build() {
             return new MyConfig(this);
         }

@@ -192,6 +192,7 @@ public class CommunicationMasterControllerTest {
                             .setRequestTypes(this.requestTypes)
                             .setMasterResponseTypes(this.masterResponseTypes)
                             .setMethodTypes(this.methodTypes)
+                            .setConfigurationDone(true)
                             .build())
                     //Everythings heating
                     .next(new AbstractComponentTest.TestCase()
