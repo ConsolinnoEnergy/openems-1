@@ -5,7 +5,11 @@ import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.heatsystem.components.Pump;
 import io.openems.edge.heatsystem.components.HeatsystemComponent;
 import io.openems.edge.pwm.api.Pwm;
+import io.openems.edge.pwm.api.test.DummyPwm;
 import io.openems.edge.relay.api.Relay;
+import io.openems.edge.relay.api.test.DummyRelay;
+
+import java.util.Random;
 
 /**
  * This Device acts as a Dummy for Unittests.
@@ -44,6 +48,10 @@ public class DummyPump extends AbstractOpenemsComponent implements OpenemsCompon
         this.getPowerLevelChannel().setNextValue(0);
         this.getLastPowerLevelChannel().setNextValue(0);
 
+    }
+
+    public DummyPump(String id, String type) {
+        this(id, new DummyRelay(String.valueOf(new Random().nextInt())), new DummyPwm(String.valueOf(new Random().nextInt())), type);
     }
 
     @Override

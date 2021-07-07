@@ -1,4 +1,4 @@
-package io.openems.edge.thermometer.virtual.test;
+package io.openems.edge.thermometer.api.test;
 
 import io.openems.edge.common.component.AbstractOpenemsComponent;
 import io.openems.edge.common.component.OpenemsComponent;
