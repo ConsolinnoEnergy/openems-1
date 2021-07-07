@@ -62,8 +62,8 @@ import java.util.Arrays;
 import java.util.Optional;
 
 /**
- * This module reads all variables available via Modbus from an Alpha Innotec heat pump and maps them to OpenEMS
- * channels. WriteChannels can be used to send commands to the heat pump via setter methods in
+ * This module reads the most important variables available via Modbus from an Alpha Innotec heat pump and maps them to
+ * OpenEMS channels. WriteChannels can be used to send commands to the heat pump via setter methods in
  * HeatpumpAlphaInnotecChannel, HeatpumpSmartGrid and Heater.
  */
 
@@ -111,7 +111,7 @@ public class HeatPumpAlphaInnotecImpl extends AbstractOpenemsModbusComponent imp
 	}
 
 	@Activate
-	public void activate(ComponentContext context, Config config) throws OpenemsError.OpenemsNamedException, ConfigurationException {
+	void activate(ComponentContext context, Config config) throws OpenemsError.OpenemsNamedException, ConfigurationException {
 		super.activate(context, config.id(), config.alias(), config.enabled(), config.modbusUnitId(), this.cm,
 				"Modbus", config.modbus_id());
 		this.debug = config.debug();
@@ -145,7 +145,7 @@ public class HeatPumpAlphaInnotecImpl extends AbstractOpenemsModbusComponent imp
 	}
 
 	@Deactivate
-	public void deactivate() {
+	protected void deactivate() {
 		super.deactivate();
 	}
 
@@ -506,7 +506,7 @@ public class HeatPumpAlphaInnotecImpl extends AbstractOpenemsModbusComponent imp
 					_setSmartGridState(SmartGridState.SG4_HIGH.getValue());
 					break;
 				default:
-					_setSmartGridState(SmartGridState.UNDEFINED.getValue());
+					this._setSmartGridState(SmartGridState.UNDEFINED.getValue());
 			}
 		} else {
 			_setSmartGridState(SmartGridState.UNDEFINED.getValue());

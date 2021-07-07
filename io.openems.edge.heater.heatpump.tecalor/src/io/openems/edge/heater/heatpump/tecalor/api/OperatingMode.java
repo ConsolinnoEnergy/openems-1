@@ -8,12 +8,12 @@ import io.openems.common.types.OptionsEnum;
 
 public enum OperatingMode implements OptionsEnum {
 	UNDEFINED(-1, "Undefined"), //
-	NOTBETRIEB(0, "Notbetrieb"), //
-	BEREITSCHAFTSBETRIEB(1, "Bereitschaftsbetrieb"), //
-	PROGRAMMBETRIEB(2, "Programmbetrieb"), //
-	KOMFORTBETRIEB(3, "Komfortbetrieb"), //
-	ECOBETRIEB(4, "ECO-Betrieb"), //
-	WARMWASSERBETRIEB(5, "Warmwasserbetrieb"); //
+	ANTIFREEZE(0, "Antifreeze protection only (Notbetrieb)"), //
+	STANDBY(1, "Standby mode (Bereitschaftsbetrieb)"), //
+	PROGRAM_MODE(2, "Program mode (Programmbetrieb)"), //
+	COMFORT_MODE(3, "Comfort mode (Komfortbetrieb)"), //
+	ECO_MODE(4, "ECO mode (ECO-Betrieb)"), //
+	DOMESTIC_HOT_WATER(5, "Domestic hot water (Warmwasserbetrieb)"); //
 
 	private int value;
 	private String name;
