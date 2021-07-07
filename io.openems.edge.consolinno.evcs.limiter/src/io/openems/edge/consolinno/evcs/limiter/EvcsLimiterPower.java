@@ -6,18 +6,28 @@ import io.openems.edge.common.channel.Channel;
 import io.openems.edge.common.channel.Doc;
 import io.openems.edge.common.component.OpenemsComponent;
 
-public interface PowerLimitChannel extends OpenemsComponent {
+public interface EvcsLimiterPower extends OpenemsComponent {
 
-    /**
-     * This provides the Channel to give the EVCS limiter a new Power Limit value.
-     * <ul>
-     * <li>Interface: PowerLimitChannel
-     * <li>Type: Integer
-     * <li>Unit: Watt
-     * </ul>
-     */
     public enum ChannelId implements io.openems.edge.common.channel.ChannelId {
-        POWER_LIMIT(Doc.of(OpenemsType.INTEGER).unit(Unit.WATT));
+        /**
+         * This provides the Channel to give the EVCS limiter a new Power Limit value.
+         * <ul>
+         * <li>Interface: PowerLimitChannel
+         * <li>Type: Integer
+         * <li>Unit: Watt
+         * </ul>
+         */
+        POWER_LIMIT(Doc.of(OpenemsType.INTEGER).unit(Unit.WATT)),
+        /**
+         * Current Power being drawn by all EVCS.
+         * <ul>
+         * <li>Interface: PowerLimitChannel
+         * <li>Type: Integer
+         * <li>Unit: Watt
+         * </ul>
+         */
+        CURRENT_POWER(Doc.of(OpenemsType.INTEGER).unit(Unit.WATT)),
+        ;
         private final Doc doc;
 
         ChannelId(Doc doc) {
@@ -28,6 +38,13 @@ public interface PowerLimitChannel extends OpenemsComponent {
             return this.doc;
         }
 
+    }
+    default Channel<Integer> getCurrentPowerChannel() {
+        return this.channel(ChannelId.CURRENT_POWER);
+    }
+
+    default void setCurrentPower(int power) {
+        this.getCurrentPowerChannel().setNextValue(power);
     }
 
     default Channel<Integer> getPowerLimitChannel() {

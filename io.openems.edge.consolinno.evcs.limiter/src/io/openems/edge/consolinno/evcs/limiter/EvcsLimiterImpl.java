@@ -42,7 +42,7 @@ import java.util.concurrent.atomic.AtomicReference;
 @Component(name = "evcsLimiterImpl", immediate = true,
         configurationPolicy = ConfigurationPolicy.REQUIRE, property = EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE)
 
-public class EvcsLimiterImpl extends AbstractOpenemsComponent implements OpenemsComponent, PowerLimitChannel, EventHandler {
+public class EvcsLimiterImpl extends AbstractOpenemsComponent implements OpenemsComponent, EvcsLimiterPower, EventHandler {
     private final Logger log = LoggerFactory.getLogger(EvcsLimiterImpl.class);
     private String[] ids;
     private ManagedEvcs[] evcss;
@@ -83,7 +83,7 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
 
 
     public EvcsLimiterImpl() {
-        super(OpenemsComponent.ChannelId.values(), PowerLimitChannel.ChannelId.values());
+        super(OpenemsComponent.ChannelId.values(), EvcsLimiterPower.ChannelId.values());
     }
 
     @Activate
@@ -104,6 +104,12 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
 
     }
 
+    /**
+     * Checks if the Connected Meter is an AsymmetricESS.
+     *
+     * @param meter Id of the Configured Meter.
+     * @return true if AsymmetricEss
+     */
     private boolean checkMeter(String meter) {
 
         try {
@@ -125,7 +131,7 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
     void modified(ComponentContext context, Config config) throws ConfigurationException, OpenemsError.OpenemsNamedException {
         super.modified(context, config.id(), config.alias(), config.enabled());
         this.ids = config.evcss();
-        this.evcss = new ManagedEvcs[ids.length];
+        this.evcss = new ManagedEvcs[this.ids.length];
         this.useMeter = config.useMeter();
         if (this.useMeter && !this.checkMeter(config.meter())) {
             throw new ConfigurationException("Configured Meter is not an Asymmetric Meter.", "Check config");
@@ -223,7 +229,16 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
                 }
             }
             this.updatePower(true);
+            this.updateChannel();
         }
+    }
+
+    /**
+     * Updates the Current Power Channel with the Sum of the Phases.
+     */
+    private void updateChannel() {
+        int powerSum = (this.powerL1 + this.powerL2 + this.powerL3) * GRID_VOLTAGE;
+        this.setCurrentPower(powerSum);
     }
 
 
