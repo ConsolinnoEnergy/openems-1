@@ -36,6 +36,14 @@ class ThermometerWrapper {
 
     }
 
+    /**
+     * The inner static Class Thermometer Value, containing  a temperature Value or a ChannelAddress depending what is configured.
+     * This is determined, if the channelAddressOrValue String (usually from MultiHeaterConfig) contains only numbers,
+     * the TemperatureValue will be set, otherwise the class tries to get a ChannelAddress from the given String.
+     * This class helps the Thermometerwrapper to determine, if the Temperature is above/below activation/deactivation SetPoint.
+     * The benefit of having a ChannelAddress as an activation/deactivation SetPoint is, to dynamically change the SetPoints.
+     * (E.g. Using a virtualThermometer).
+     */
     private static class ThermometerValue {
         private int temperatureValue;
         private ChannelAddress temperatureValueAddress;
@@ -43,7 +51,7 @@ class ThermometerWrapper {
 
         private ThermometerValue(String channelAddressOrValue) throws OpenemsError.OpenemsNamedException {
             if (this.containsOnlyValidNumbers(channelAddressOrValue)) {
-                this.temperatureValue = Integer.parseInt(channelAddressOrValue);
+                this.temperatureValue = (int) Double.parseDouble(channelAddressOrValue);
             } else {
                 this.temperatureValueAddress = ChannelAddress.fromString(channelAddressOrValue);
                 this.usesChannel = true;
@@ -51,10 +59,26 @@ class ThermometerWrapper {
             }
         }
 
+        /**
+         * Small helper method to determine if a String contains only numbers with decimals.
+         *
+         * @param value the String that will be checked, if it's only containing numbers.
+         * @return the result oft the match with the regex that describes only numbers.
+         */
         private boolean containsOnlyValidNumbers(String value) {
             return value.matches("[-+]?([0-9]*[.][0-9]+|[0-9]+)");
         }
 
+        /**
+         * If the static class ThermometerValue uses a ChannelAddress:
+         * The method helps to validate the configured ChannelAddress and get the value from it.
+         * If the Thermometer does not use a channelAddress, it returns the stored temperatureValue.
+         *
+         * @param cpm the ComponentManager
+         * @return the value of the channel or the stored value {@link #temperatureValue};
+         * @throws OpenemsError.OpenemsNamedException if the channelAddress is false/cannot be found
+         * @throws ConfigurationException             if the ChannelValue is not defined/not containing only numbers
+         */
         public int validateChannelAndGetValue(ComponentManager cpm) throws OpenemsError.OpenemsNamedException, ConfigurationException {
             if (this.usesChannel) {
                 Channel<?> channel = cpm.getChannel(this.temperatureValueAddress);

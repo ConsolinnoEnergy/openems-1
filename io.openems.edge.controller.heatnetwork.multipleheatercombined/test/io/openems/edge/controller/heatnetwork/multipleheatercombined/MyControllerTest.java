@@ -35,7 +35,7 @@ public class MyControllerTest {
     private static final String id = "test";
     private static final String[] correctHeaterIds = {"Heater0", "Heater1", "Heater2"};
     private static final String[] wrongHeaterIds = {"Heater0", "Thermometer0", "Heater1"};
-    private static final String[] activationTemperatures = {"400", "400", "Thermometer0/Temperature"};
+    private static final String[] activationTemperatures = {"400.154", "400", "Thermometer0/Temperature"};
     private static final String[] wrongActivationTemperatures = {"Heater0/Temperature", "400", "400"};
     private static final String[] deactivationTemperatures = {"650", "650", "650"};
     private static final String[] activationThermometer = {"Thermometer1", "Thermometer2", "Thermometer3"};
