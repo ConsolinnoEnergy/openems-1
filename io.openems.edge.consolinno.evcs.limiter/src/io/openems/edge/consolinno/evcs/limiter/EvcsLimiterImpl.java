@@ -124,7 +124,7 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
     @Modified
     void modified(ComponentContext context, Config config) throws ConfigurationException, OpenemsError.OpenemsNamedException {
         super.modified(context, config.id(), config.alias(), config.enabled());
-        String[] ids = config.evcss();
+        this.ids = config.evcss();
         this.evcss = new ManagedEvcs[ids.length];
         this.useMeter = config.useMeter();
         if (this.useMeter && !this.checkMeter(config.meter())) {
