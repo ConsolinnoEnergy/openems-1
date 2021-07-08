@@ -9,6 +9,7 @@ import io.openems.edge.common.channel.BooleanWriteChannel;
 import io.openems.edge.common.channel.Doc;
 import io.openems.edge.common.channel.DoubleReadChannel;
 import io.openems.edge.common.channel.IntegerReadChannel;
+import io.openems.edge.common.channel.IntegerWriteChannel;
 import io.openems.edge.common.channel.value.Value;
 import io.openems.edge.common.component.OpenemsComponent;
 
@@ -32,7 +33,18 @@ public interface Chp extends Heater {
 		 *     <li> Unit: kilowatt
 		 * </ul>
          */
-        EFFECTIVE_ELECTRIC_POWER(Doc.of(OpenemsType.DOUBLE).unit(Unit.KILOWATT).accessMode(AccessMode.READ_ONLY));
+        EFFECTIVE_ELECTRIC_POWER(Doc.of(OpenemsType.DOUBLE).unit(Unit.KILOWATT).accessMode(AccessMode.READ_ONLY)),
+
+		/**
+		 * Set point for the generated electrical power.
+		 *
+		 * <ul>
+		 *     <li> Interface: Chp
+		 *     <li> Type: Integer
+		 *     <li> Unit: kilowatt
+		 * </ul>
+		 */
+		EFFECTIVE_ELECTRIC_POWER_SETPOINT(Doc.of(OpenemsType.INTEGER).unit(Unit.KILOWATT).accessMode(AccessMode.READ_WRITE));
     	
         private final Doc doc;
 
@@ -83,5 +95,43 @@ public interface Chp extends Heater {
 	 */
 	public default void _setEffectiveElectricPower(double value) {
 		this.getEffectiveElectricPowerChannel().setNextValue(value);
+	}
+
+	/**
+	 * Gets the Channel for {@link ChannelId#EFFECTIVE_ELECTRIC_POWER_SETPOINT}.
+	 *
+	 * @return the Channel
+	 */
+	public default IntegerWriteChannel getElectricPowerSetpointChannel() {
+		return this.channel(ChannelId.EFFECTIVE_ELECTRIC_POWER_SETPOINT);
+	}
+
+	/**
+	 * Electric power set point. See {@link ChannelId#EFFECTIVE_ELECTRIC_POWER_SETPOINT}.
+	 *
+	 * @return the Channel {@link Value}
+	 */
+	public default Value<Integer> getElectricPowerSetpoint() {
+		return this.getElectricPowerSetpointChannel().value();
+	}
+
+	/**
+	 * Set electric power set point. See {@link ChannelId#EFFECTIVE_ELECTRIC_POWER_SETPOINT}.
+	 *
+	 * @param value the next write value
+	 * @throws OpenemsNamedException on error
+	 */
+	public default void setElectricPowerSetpoint(Integer value) throws OpenemsNamedException {
+		this.getElectricPowerSetpointChannel().setNextWriteValue(value);
+	}
+
+	/**
+	 * Set electric power set point. See {@link ChannelId#EFFECTIVE_ELECTRIC_POWER_SETPOINT}.
+	 *
+	 * @param value the next write value
+	 * @throws OpenemsNamedException on error
+	 */
+	public default void setElectricPowerSetpoint(int value) throws OpenemsNamedException {
+		this.getElectricPowerSetpointChannel().setNextWriteValue(value);
 	}
 }

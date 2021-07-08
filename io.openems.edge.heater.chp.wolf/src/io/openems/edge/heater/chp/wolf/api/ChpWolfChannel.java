@@ -16,14 +16,13 @@ public interface ChpWolfChannel extends Chp {
     public enum ChannelId implements io.openems.edge.common.channel.ChannelId {
 
         // Holding registers, read/write
-    	
-    	/**
+
+        /**
          * Write commands sent to the chp need to be encoded in these bits.
          * <ul>
          * <li>Type: long
          * </ul>
          */
-
         HR6358_WRITE_BITS1(Doc.of(OpenemsType.INTEGER).unit(Unit.NONE).accessMode(AccessMode.WRITE_ONLY)),
         
         /**
@@ -32,7 +31,6 @@ public interface ChpWolfChannel extends Chp {
          * <li>Type: long
          * </ul>
          */
-
         HR6359_WRITE_BITS2(Doc.of(OpenemsType.INTEGER).unit(Unit.NONE).accessMode(AccessMode.WRITE_ONLY)),
         
         /**
@@ -41,7 +39,6 @@ public interface ChpWolfChannel extends Chp {
          * <li>Type: long
          * </ul>
          */
-
         HR6360_WRITE_BITS3(Doc.of(OpenemsType.INTEGER).unit(Unit.NONE).accessMode(AccessMode.WRITE_ONLY)),
 
 
@@ -53,7 +50,6 @@ public interface ChpWolfChannel extends Chp {
          * <li>Type: integer
          * </ul>
          */
-
         HR2_STATUS_BITS1(Doc.of(OpenemsType.INTEGER).unit(Unit.NONE).accessMode(AccessMode.READ_ONLY)),
 
         /**
@@ -62,7 +58,6 @@ public interface ChpWolfChannel extends Chp {
          * <li>Type: integer
          * </ul>
          */
-
         HR11_STATUS_BITS2(Doc.of(OpenemsType.INTEGER).unit(Unit.NONE).accessMode(AccessMode.READ_ONLY)),
 
         // HR27_FLOW_TEMP - Included in ChpBasic
@@ -76,7 +71,6 @@ public interface ChpWolfChannel extends Chp {
          * <li>Unit: Decimal degree Celsius
          * </ul>
          */
-
         HR32_BUFFERTANK_TEMP_UPPER(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_ONLY)),
 
         /**
@@ -86,7 +80,6 @@ public interface ChpWolfChannel extends Chp {
          * <li>Unit: Decimal degree Celsius
          * </ul>
          */
-
         HR33_BUFFERTANK_TEMP_MIDDLE(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_ONLY)),
 
         /**
@@ -96,7 +89,6 @@ public interface ChpWolfChannel extends Chp {
          * <li>Unit: Decimal degree Celsius
          * </ul>
          */
-
         HR34_BUFFERTANK_TEMP_LOWER(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_ONLY)),
 
         // HR263_ELECTRICAL_POWER - Included in ChpBasic
@@ -105,10 +97,9 @@ public interface ChpWolfChannel extends Chp {
          * Rotations per minute of the chp engine.
          * <ul>
          * <li>Type: integer
-         * <li>Unit: rotation per minute
+         * <li>Unit: rotations per minute
          * </ul>
          */
-
         HR314_RPM(Doc.of(OpenemsType.INTEGER).unit(Unit.ROTATION_PER_MINUTE).accessMode(AccessMode.READ_ONLY)),
 
         /**
@@ -118,7 +109,6 @@ public interface ChpWolfChannel extends Chp {
          * <li>Unit: hours
          * </ul>
          */
-
         HR3588_RUNTIME(Doc.of(OpenemsType.INTEGER).unit(Unit.HOUR).accessMode(AccessMode.READ_ONLY)),
 
         /**
@@ -127,7 +117,6 @@ public interface ChpWolfChannel extends Chp {
          * <li>Type: integer
          * </ul>
          */
-
         HR3590_ENGINE_STARTS(Doc.of(OpenemsType.INTEGER).unit(Unit.NONE).accessMode(AccessMode.READ_ONLY)),
 
         /**
@@ -137,21 +126,19 @@ public interface ChpWolfChannel extends Chp {
          * <li>Unit: kilowatt hours
          * </ul>
          */
-
         HR3596_ELECTRICAL_WORK(Doc.of(OpenemsType.INTEGER).unit(Unit.KILOWATT_HOURS).accessMode(AccessMode.READ_ONLY)),
 
 
     	// Non Modbus Channels
     	
     	/**
-         * Setpoint for the generated electrical power.
+         * Set point for the generated electrical power.
          * <ul>
          * <li>Type: integer
          * <li>Unit: kilowatt
          * </ul>
          */
-
-        ELECTRIC_POWER_SETPOINT(Doc.of(OpenemsType.INTEGER).unit(Unit.KILOWATT).accessMode(AccessMode.READ_WRITE)),
+    	ELECTRIC_POWER_SETPOINT(Doc.of(OpenemsType.INTEGER).unit(Unit.KILOWATT).accessMode(AccessMode.READ_WRITE)),
 
         /**
          * Einspeisemanagement setpoint. Manual does not say what unit.
@@ -159,7 +146,6 @@ public interface ChpWolfChannel extends Chp {
          * <li>Type: integer
          * </ul>
          */
-
         EINSPEISEMANAGEMENT_SETPOINT(Doc.of(OpenemsType.INTEGER).accessMode(AccessMode.READ_WRITE)),
 
         /**
@@ -169,7 +155,6 @@ public interface ChpWolfChannel extends Chp {
          * <li>Unit: kilowatt
          * </ul>
          */
-
         RESERVE_SETPOINT(Doc.of(OpenemsType.INTEGER).accessMode(AccessMode.READ_WRITE)),
 
         // OnOff - Included in Heater ENABLE_SIGNAL
@@ -207,7 +192,7 @@ public interface ChpWolfChannel extends Chp {
 	 * @param value the next write value
 	 * @throws OpenemsNamedException on error
 	 */
-	public default void setWriteBits1(Integer value) throws OpenemsNamedException {
+    public default void setWriteBits1(Integer value) throws OpenemsNamedException {
 		this.getWriteBits1Channel().setNextWriteValue(value);
 	}
 	
@@ -226,7 +211,7 @@ public interface ChpWolfChannel extends Chp {
      *
      * @return the Channel
      */
-    public default IntegerWriteChannel getWriteBits2Channel() {
+	public default IntegerWriteChannel getWriteBits2Channel() {
         return this.channel(ChannelId.HR6359_WRITE_BITS2);
     }
     
@@ -236,7 +221,7 @@ public interface ChpWolfChannel extends Chp {
 	 * @param value the next write value
 	 * @throws OpenemsNamedException on error
 	 */
-	public default void setWriteBits2(Integer value) throws OpenemsNamedException {
+    public default void setWriteBits2(Integer value) throws OpenemsNamedException {
 		this.getWriteBits2Channel().setNextWriteValue(value);
 	}
 	
@@ -255,7 +240,7 @@ public interface ChpWolfChannel extends Chp {
      *
      * @return the Channel
      */
-    public default IntegerWriteChannel getWriteBits3Channel() {
+	public default IntegerWriteChannel getWriteBits3Channel() {
         return this.channel(ChannelId.HR6360_WRITE_BITS3);
     }
     
@@ -265,7 +250,7 @@ public interface ChpWolfChannel extends Chp {
 	 * @param value the next write value
 	 * @throws OpenemsNamedException on error
 	 */
-	public default void setWriteBits3(Integer value) throws OpenemsNamedException {
+    public default void setWriteBits3(Integer value) throws OpenemsNamedException {
 		this.getWriteBits3Channel().setNextWriteValue(value);
 	}
 	
@@ -293,7 +278,9 @@ public interface ChpWolfChannel extends Chp {
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getStatusBits40003() { return this.getStatusBits40003Channel().value(); }
+    public default Value<Integer> getStatusBits40003() {
+        return this.getStatusBits40003Channel().value();
+    }
 
     /**
      * Gets the Channel for {@link ChannelId#HR11_STATUS_BITS2}.
@@ -309,7 +296,9 @@ public interface ChpWolfChannel extends Chp {
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getStatusBits40012() { return this.getStatusBits40012Channel().value(); }
+    public default Value<Integer> getStatusBits40012() {
+        return this.getStatusBits40012Channel().value();
+    }
 
     /**
      * Gets the Channel for {@link ChannelId#HR32_BUFFERTANK_TEMP_UPPER}.
@@ -325,7 +314,9 @@ public interface ChpWolfChannel extends Chp {
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getBufferTankTempUpper() { return this.getBufferTankTempUpperChannel().value(); }
+    public default Value<Integer> getBufferTankTempUpper() {
+        return this.getBufferTankTempUpperChannel().value();
+    }
 
     /**
      * Gets the Channel for {@link ChannelId#HR33_BUFFERTANK_TEMP_MIDDLE}.
@@ -341,7 +332,9 @@ public interface ChpWolfChannel extends Chp {
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getBufferTankTempMiddle() { return this.getBufferTankTempMiddleChannel().value(); }
+    public default Value<Integer> getBufferTankTempMiddle() {
+        return this.getBufferTankTempMiddleChannel().value();
+    }
 
     /**
      * Gets the Channel for {@link ChannelId#HR34_BUFFERTANK_TEMP_LOWER}.
@@ -357,7 +350,9 @@ public interface ChpWolfChannel extends Chp {
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getBufferTankTempLower() { return this.getBufferTankTempLowerChannel().value(); }
+    public default Value<Integer> getBufferTankTempLower() {
+        return this.getBufferTankTempLowerChannel().value();
+    }
 
     /**
      * Gets the Channel for {@link ChannelId#HR314_RPM}.
@@ -373,7 +368,9 @@ public interface ChpWolfChannel extends Chp {
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getRpm() { return this.getRpmChannel().value(); }
+    public default Value<Integer> getRpm() {
+        return this.getRpmChannel().value();
+    }
 
     /**
      * Gets the Channel for {@link ChannelId#HR3588_RUNTIME}.
@@ -389,7 +386,9 @@ public interface ChpWolfChannel extends Chp {
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getRuntime() { return this.getRuntimeChannel().value(); }
+    public default Value<Integer> getRuntime() {
+        return this.getRuntimeChannel().value();
+    }
 
     /**
      * Gets the Channel for {@link ChannelId#HR3590_ENGINE_STARTS}.
@@ -405,7 +404,9 @@ public interface ChpWolfChannel extends Chp {
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getEngineStarts() { return this.getEngineStartsChannel().value(); }
+    public default Value<Integer> getEngineStarts() {
+        return this.getEngineStartsChannel().value();
+    }
 
     /**
      * Gets the Channel for {@link ChannelId#HR3596_ELECTRICAL_WORK}.
@@ -421,7 +422,9 @@ public interface ChpWolfChannel extends Chp {
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getElectricalWork() { return this.getElectricalWorkChannel().value(); }
+    public default Value<Integer> getElectricalWork() {
+        return this.getElectricalWorkChannel().value();
+    }
     
     /**
      * Gets the Channel for {@link ChannelId#ELECTRIC_POWER_SETPOINT}.
@@ -433,7 +436,7 @@ public interface ChpWolfChannel extends Chp {
     }
     
     /**
-     * Electric power setpoint. See {@link ChannelId#ELECTRIC_POWER_SETPOINT}.
+     * Electric power set point. See {@link ChannelId#ELECTRIC_POWER_SETPOINT}.
      *
      * @return the Channel {@link Value}
      */
@@ -442,17 +445,17 @@ public interface ChpWolfChannel extends Chp {
     }
     
     /**
-	 * Set electric power setpoint. See {@link ChannelId#ELECTRIC_POWER_SETPOINT}.
+	 * Set electric power set point. See {@link ChannelId#ELECTRIC_POWER_SETPOINT}.
 	 * 
 	 * @param value the next write value
 	 * @throws OpenemsNamedException on error
 	 */
-	public default void setElectricPowerSetpoint(Integer value) throws OpenemsNamedException {
+    public default void setElectricPowerSetpoint(Integer value) throws OpenemsNamedException {
 		this.getElectricPowerSetpointChannel().setNextWriteValue(value);
 	}
 	
 	/**
-	 * Set electric power setpoint. See {@link ChannelId#ELECTRIC_POWER_SETPOINT}.
+	 * Set electric power set point. See {@link ChannelId#ELECTRIC_POWER_SETPOINT}.
 	 * 
 	 * @param value the next write value
 	 * @throws OpenemsNamedException on error
@@ -471,7 +474,7 @@ public interface ChpWolfChannel extends Chp {
     }
     
     /**
-     * Get Einspeisemanagement setpoint. See {@link ChannelId#EINSPEISEMANAGEMENT_SETPOINT}.
+     * Get Einspeisemanagement set point. See {@link ChannelId#EINSPEISEMANAGEMENT_SETPOINT}.
      *
      * @return the Channel {@link Value}
      */
@@ -480,17 +483,17 @@ public interface ChpWolfChannel extends Chp {
     }
     
     /**
-	 * Set Einspeisemanagement setpoint. See {@link ChannelId#EINSPEISEMANAGEMENT_SETPOINT}.
+	 * Set Einspeisemanagement set point. See {@link ChannelId#EINSPEISEMANAGEMENT_SETPOINT}.
 	 * 
 	 * @param value the next write value
 	 * @throws OpenemsNamedException on error
 	 */
-	public default void setEinspeisemanagementSetpoint(Integer value) throws OpenemsNamedException {
+    public default void setEinspeisemanagementSetpoint(Integer value) throws OpenemsNamedException {
 		this.getEinspeisemanagementSetpointChannel().setNextWriteValue(value);
 	}
 	
 	/**
-	 * Set Einspeisemanagement setpoint. See {@link ChannelId#EINSPEISEMANAGEMENT_SETPOINT}.
+	 * Set Einspeisemanagement set point. See {@link ChannelId#EINSPEISEMANAGEMENT_SETPOINT}.
 	 * 
 	 * @param value the next write value
 	 * @throws OpenemsNamedException on error
@@ -509,7 +512,7 @@ public interface ChpWolfChannel extends Chp {
     }
     
     /**
-     * Get Reserve setpoint. See {@link ChannelId#RESERVE_SETPOINT}.
+     * Get Reserve set point. See {@link ChannelId#RESERVE_SETPOINT}.
      *
      * @return the Channel {@link Value}
      */
@@ -518,17 +521,17 @@ public interface ChpWolfChannel extends Chp {
     }
     
     /**
-	 * Set Reserve setpoint. See {@link ChannelId#RESERVE_SETPOINT}.
+	 * Set Reserve set point. See {@link ChannelId#RESERVE_SETPOINT}.
 	 * 
 	 * @param value the next write value
 	 * @throws OpenemsNamedException on error
 	 */
-	public default void setReserveSetpoint(Integer value) throws OpenemsNamedException {
+    public default void setReserveSetpoint(Integer value) throws OpenemsNamedException {
 		this.getReserveSetpointChannel().setNextWriteValue(value);
 	}
 	
 	/**
-	 * Set Reserve setpoint. See {@link ChannelId#RESERVE_SETPOINT}.
+	 * Set Reserve set point. See {@link ChannelId#RESERVE_SETPOINT}.
 	 * 
 	 * @param value the next write value
 	 * @throws OpenemsNamedException on error

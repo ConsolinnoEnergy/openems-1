@@ -6,7 +6,7 @@ import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.controller.api.Controller;
 import io.openems.edge.controller.heatnetwork.multipleheatercombined.api.MultipleHeaterCombinedController;
-import io.openems.edge.heater.Heater;
+import io.openems.edge.heater.api.Heater;
 import io.openems.edge.thermometer.api.Thermometer;
 import org.osgi.service.cm.ConfigurationException;
 import org.osgi.service.component.ComponentContext;
@@ -194,7 +194,7 @@ public class MultipleHeaterCombinedControllerImpl extends AbstractOpenemsCompone
      */
     private void heaterLogic(List<Heater> allHeater, AtomicBoolean heaterError) {
         allHeater.forEach(heater -> {
-            if (heater.hasError()) {
+            if (heater.getErrorMessage().get().equals("No error") == false) {
                 heaterError.set(true);
             }
             //what can be provided
