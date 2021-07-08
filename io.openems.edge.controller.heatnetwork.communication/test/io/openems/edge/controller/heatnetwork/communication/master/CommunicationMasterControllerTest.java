@@ -116,18 +116,18 @@ public class CommunicationMasterControllerTest {
         requestMap = new String[]{"Rest0:Rest1:1:HEAT", "Rest2:Rest3:1:MORE_HEAT",
                 "Rest4:Rest5:2:HEAT", "Rest6:Rest7:2:MORE_HEAT",
                 "Rest8:Rest9:3:HEAT", "Rest10:Rest11:3:MORE_HEAT"};
-        requestTypeToResponse = new String[]{"HEAT:CHANNEL_ADDRESS:Pump0/SetPowerLevel:100:0",
+        requestTypeToResponse = new String[]{"HEAT:CHANNEL_ADDRESS:Pump0/SetPointPowerLevel:100:0",
                 "HEAT:CHANNEL_ADDRESS:VirtualThermometer0/VirtualTemperature:70:0",
-                "MORE_HEAT:METHOD:ACTIVATE_LINEHEATER:true:null"};
+                "MORE_HEAT:METHOD:ACTIVATE_LINE_HEATER:true:null"};
         AtomicInteger counter = new AtomicInteger(0);
         Arrays.stream(restDeviceIds).forEach(entry -> {
             DummyRestDevice device;
             String channel = "ValueRead";
             if (counter.get() % 2 == 1) {
-                device = new DummyRestDevice(entry);
-            } else {
                 device = new DummyRestDevice(entry, true);
                 channel = "ValueWrite";
+            } else {
+                device = new DummyRestDevice(entry);
             }
             deviceList.add(device);
             this.cpm.addComponent(device);
@@ -203,10 +203,10 @@ public class CommunicationMasterControllerTest {
                             .input(this.channelAddressMap.get("Rest4"), 1)
                             .input(this.channelAddressMap.get("Rest6"), 1)
                             //Callback
-                            .output(this.channelAddressMap.get("Rest1"), 1)
-                            .output(this.channelAddressMap.get("Rest3"), 1)
-                            .output(this.channelAddressMap.get("Rest5"), 1)
-                            .output(this.channelAddressMap.get("Rest7"), 1)
+                            .output(this.channelAddressMap.get("Rest1"), "1")
+                            .output(this.channelAddressMap.get("Rest3"), "1")
+                            .output(this.channelAddressMap.get("Rest5"), "1")
+                            .output(this.channelAddressMap.get("Rest7"), "1")
                     )
                     .getSut().run();
         } catch (Exception e) {

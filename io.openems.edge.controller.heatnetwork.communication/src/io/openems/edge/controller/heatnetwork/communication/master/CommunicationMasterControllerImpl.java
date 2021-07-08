@@ -198,10 +198,10 @@ public class CommunicationMasterControllerImpl extends AbstractOpenemsComponent 
 
             this.setForceHeating(config.forceHeating());
             this.timer = new TimerHandlerImpl(this.id(), this.cpm);
-            this.timer.addOneIdentifier(config.timerId(), KEEP_ALIVE_IDENTIFIER, config.keepAlive());
+            this.timer.addOneIdentifier(KEEP_ALIVE_IDENTIFIER, config.timerId(), config.keepAlive());
             this.useExceptionalStateHandling = config.useExceptionalStateHandling();
             if (this.useExceptionalStateHandling) {
-                this.timer.addOneIdentifier(config.timerIdExceptionalState(), EXCEPTIONAL_STATE_IDENTIFIER, config.exceptionalStateTime());
+                this.timer.addOneIdentifier(EXCEPTIONAL_STATE_IDENTIFIER, config.timerIdExceptionalState(), config.exceptionalStateTime());
                 this.exceptionalStateHandler = new ExceptionalStateHandlerImpl(this.timer, EXCEPTIONAL_STATE_IDENTIFIER);
                 this.getExceptionalStateValueChannel().setNextValue(100);
             }
