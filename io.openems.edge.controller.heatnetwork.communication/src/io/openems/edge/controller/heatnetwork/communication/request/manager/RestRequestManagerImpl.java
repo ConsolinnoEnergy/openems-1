@@ -116,14 +116,14 @@ public class RestRequestManagerImpl implements RestRequestManager {
                 if (this.timerType.equals(TimerType.TIME)) {
                     this.waitTime.put(key, new DateTime());
                 } else {
-                    this.waitCycles.put(key, new AtomicInteger(0));
+                    this.waitCycles.put(key, new AtomicInteger(1));
                 }
                 break;
             case WORK:
                 if (this.timerType.equals(TimerType.TIME)) {
                     this.workTime.put(key, new DateTime());
                 } else {
-                    this.workCycles.put(key, new AtomicInteger(0));
+                    this.workCycles.put(key, new AtomicInteger(1));
                 }
                 break;
         }

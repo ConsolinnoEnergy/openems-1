@@ -2,7 +2,7 @@ package io.openems.edge.controller.heatnetwork.communication.master;
 
 import io.openems.common.types.ChannelAddress;
 import io.openems.edge.common.component.OpenemsComponent;
-import io.openems.edge.common.test.AbstractComponentTest;
+import io.openems.edge.common.test.AbstractComponentTest.TestCase;
 import io.openems.edge.common.test.DummyComponentManager;
 import io.openems.edge.common.test.TimeLeapClock;
 import io.openems.edge.controller.heatnetwork.communication.api.ConnectionType;
@@ -17,8 +17,6 @@ import io.openems.edge.controller.test.ControllerTest;
 import io.openems.edge.heatsystem.components.test.DummyPump;
 import io.openems.edge.remote.rest.device.api.DummyRestDevice;
 import io.openems.edge.remote.rest.device.api.RestRemoteDevice;
-import io.openems.edge.remote.rest.device.simulator.RestRemoteTestDevice;
-import io.openems.edge.thermometer.api.test.DummyThermometer;
 import io.openems.edge.thermometer.api.test.DummyVirtualThermometer;
 import io.openems.edge.timer.api.DummyTimer;
 import io.openems.edge.timer.api.TimerType;
@@ -41,9 +39,9 @@ public class CommunicationMasterControllerTest {
     private static final String exampleConfigStringValue = "exampleConfigStringValue";
     private boolean enabled = true;
     private ConnectionType connectionType = ConnectionType.REST;
-    private int maxRequestsAllowedAtOnce = 3;
+    private int maxRequestsAllowedAtOnce = 2;
     private TimerType timerForManager = TimerType.CYCLES;
-    private int maxWaitTimeAllowed = 5;
+    private int maxWaitTimeAllowed = 2;
     private ManageType manageType = ManageType.FIFO;
     private String timerId = TIMER_ID;
     private int keepAlive = 2;
@@ -195,7 +193,7 @@ public class CommunicationMasterControllerTest {
                             .setConfigurationDone(true)
                             .build())
                     //Everythings heating
-                    .next(new AbstractComponentTest.TestCase()
+                    .next(new TestCase()
                             .timeleap(this.clock, 1, ChronoUnit.SECONDS)
                             //Request
                             .input(this.channelAddressMap.get("Rest0"), 1)
@@ -207,6 +205,75 @@ public class CommunicationMasterControllerTest {
                             .output(this.channelAddressMap.get("Rest3"), "1")
                             .output(this.channelAddressMap.get("Rest5"), "1")
                             .output(this.channelAddressMap.get("Rest7"), "1")
+                    )
+                    .next(new TestCase()
+                            //Request
+                            .input(this.channelAddressMap.get("Rest0"), 1)
+                            .input(this.channelAddressMap.get("Rest2"), 1)
+                            .input(this.channelAddressMap.get("Rest4"), 1)
+                            .input(this.channelAddressMap.get("Rest6"), 1)
+                            .input(this.channelAddressMap.get("Rest8"), 1)
+                            //Callback
+                            .output(this.channelAddressMap.get("Rest1"), "1")
+                            .output(this.channelAddressMap.get("Rest3"), "1")
+                            .output(this.channelAddressMap.get("Rest5"), "1")
+                            .output(this.channelAddressMap.get("Rest7"), "1")
+                            .output(this.channelAddressMap.get("Rest9"), "0")
+                    )
+                    .next(new TestCase()
+                            .timeleap(this.clock, 1, ChronoUnit.SECONDS)
+                            //Request
+                            .input(this.channelAddressMap.get("Rest0"), 1)
+                            .input(this.channelAddressMap.get("Rest2"), 1)
+                            .input(this.channelAddressMap.get("Rest4"), 1)
+                            .input(this.channelAddressMap.get("Rest6"), 1)
+                            .input(this.channelAddressMap.get("Rest8"), 1)
+                            //Callback
+                            .output(this.channelAddressMap.get("Rest1"), "1")
+                            .output(this.channelAddressMap.get("Rest3"), "1")
+                            .output(this.channelAddressMap.get("Rest5"), "1")
+                            .output(this.channelAddressMap.get("Rest7"), "1")
+                            .output(this.channelAddressMap.get("Rest9"), "0")
+                    )
+                    .next(new TestCase()
+                            .timeleap(this.clock, 1, ChronoUnit.SECONDS)
+                            //Request
+                            .input(this.channelAddressMap.get("Rest0"), 1)
+                            .input(this.channelAddressMap.get("Rest2"), 1)
+                            .input(this.channelAddressMap.get("Rest4"), 1)
+                            .input(this.channelAddressMap.get("Rest6"), 1)
+                            .input(this.channelAddressMap.get("Rest8"), 1)
+                            //Callback
+                            .output(this.channelAddressMap.get("Rest9"), "1")
+
+                            .output(this.channelAddressMap.get("Rest1"), "0")
+                            .output(this.channelAddressMap.get("Rest3"), "0")
+                    )
+                    .next(new TestCase()
+                            .timeleap(this.clock, 1, ChronoUnit.SECONDS)
+                            //Request
+                            .input(this.channelAddressMap.get("Rest0"), 1)
+                            .input(this.channelAddressMap.get("Rest2"), 1)
+                            .input(this.channelAddressMap.get("Rest4"), 1)
+                            .input(this.channelAddressMap.get("Rest6"), 1)
+                            .input(this.channelAddressMap.get("Rest8"), 1)
+                            //Callback
+                            .output(this.channelAddressMap.get("Rest9"), "1")
+
+                            .output(this.channelAddressMap.get("Rest1"), "0")
+                            .output(this.channelAddressMap.get("Rest3"), "0")
+                    )
+                    .next(new TestCase()
+                            .timeleap(this.clock, 1, ChronoUnit.SECONDS)
+                            //Request
+                            .input(this.channelAddressMap.get("Rest0"), 1)
+                            .input(this.channelAddressMap.get("Rest2"), 1)
+                            .input(this.channelAddressMap.get("Rest4"), 1)
+                            .input(this.channelAddressMap.get("Rest6"), 1)
+                            .input(this.channelAddressMap.get("Rest8"), 1)
+                            //Callback
+                            .output(this.channelAddressMap.get("Rest9"), "1")
+                            .output(this.channelAddressMap.get("Rest0"), "1")
                     )
                     .getSut().run();
         } catch (Exception e) {
