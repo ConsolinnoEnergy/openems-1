@@ -1,6 +1,11 @@
 package io.openems.edge.controller.heatnetwork.multipleheatercombined;
 
+import io.openems.common.exceptions.OpenemsError;
+import io.openems.common.types.ChannelAddress;
+import io.openems.edge.common.channel.Channel;
+import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.thermometer.api.Thermometer;
+import org.osgi.service.cm.ConfigurationException;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -12,6 +17,7 @@ import java.util.Map;
 
 class ThermometerWrapper {
 
+    private final ComponentManager cpm;
     //Map the Thermometer to their min/max Value
     private final Map<Thermometer, ThermometerValue> thermometerAndValue = new HashMap<>();
     //thermometerType == Activate/Deactivate on Heatcontrol. Mapped thermometerType to Thermometer
@@ -126,14 +132,26 @@ class ThermometerWrapper {
                 .validateChannelAndGetValue(this.cpm);
     }
 
-    //Current Temperature above max allowed Temp.
-    boolean offTemperatureAboveMaxValue() {
-        return this.getMaxThermometer().getTemperatureValue() > this.maxThermometerValue();
+    /**
+     * Method, usually called by the {@link MultipleHeaterCombinedControllerImpl}
+     * to determine if the {@link HeaterActiveWrapper#setActive(boolean)} with value false should be called.
+     *
+     * @return the result of the Comparison of the DeactivationThermometer Temperature Value and the stored deactivation Temperature.
+     */
+
+    boolean shouldDeactivate() throws OpenemsError.OpenemsNamedException, ConfigurationException {
+        return this.getDeactivationThermometer().getTemperatureValue() >= this.getDeactivationTemperature();
     }
 
-    //current Temp. beneath min Temp.
-    boolean onTemperatureBelowMinValue() {
-        return this.getMinThermometer().getTemperatureValue() < this.minThermometerValue();
+    /**
+     * Method, usually called by the {@link MultipleHeaterCombinedControllerImpl}
+     * to determine if the {@link HeaterActiveWrapper#setActive(boolean)} with value true should be called.
+     *
+     * @return the result of the Comparison of the ActivationThermometer Temperature Value and the stored activation Temperature.
+     */
+
+    boolean shouldActivate() throws OpenemsError.OpenemsNamedException, ConfigurationException {
+        return this.getActivationThermometer().getTemperatureValue() <= this.getActivationTemperature();
     }
 
 }
