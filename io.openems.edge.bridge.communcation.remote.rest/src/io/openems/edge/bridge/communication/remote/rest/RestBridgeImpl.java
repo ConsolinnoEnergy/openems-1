@@ -53,6 +53,10 @@ public class RestBridgeImpl extends AbstractOpenemsComponent implements RestBrid
     private String loginData;
     private String ipAddressAndPort;
     private int keepAlive;
+    private int dutyTime;
+    private DateTime initialDutyTime;
+    private boolean initialDutyTimeSet;
+    private boolean useDutyTime;
     AtomicBoolean connectionOk = new AtomicBoolean(true);
     DateTime initialDateTime;
     private boolean initialDateTimeSet = false;
@@ -68,6 +72,8 @@ public class RestBridgeImpl extends AbstractOpenemsComponent implements RestBrid
             this.loginData = "Basic " + Base64.getEncoder().encodeToString((config.username() + ":" + config.password()).getBytes());
             this.ipAddressAndPort = config.ipAddress() + ":" + config.port();
             this.keepAlive = config.keepAlive();
+            this.dutyTime = config.dutyTime();
+            this.useDutyTime = config.useDutyTime();
         }
     }
 
@@ -77,6 +83,8 @@ public class RestBridgeImpl extends AbstractOpenemsComponent implements RestBrid
         this.loginData = "Basic " + Base64.getEncoder().encodeToString((config.username() + ":" + config.password()).getBytes());
         this.ipAddressAndPort = config.ipAddress() + ":" + config.port();
         this.keepAlive = config.keepAlive();
+        this.dutyTime = config.dutyTime() >= 0 ? config.dutyTime() : 0;
+        this.useDutyTime = config.useDutyTime();
     }
 
     /**
@@ -87,6 +95,10 @@ public class RestBridgeImpl extends AbstractOpenemsComponent implements RestBrid
      */
     @Override
     public void handleEvent(Event event) {
+        if (this.isEnabled() == false || (this.useDutyTime && this.timeToHandleEvent() == false)) {
+            return;
+        }
+        this.initialDutyTimeSet = false;
         switch (event.getTopic()) {
             case EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE:
                 if (this.initialDateTimeSet == false) {
@@ -112,8 +124,30 @@ public class RestBridgeImpl extends AbstractOpenemsComponent implements RestBrid
                 break;
 
         }
+
     }
 
+    /**
+     * Checks if it's time to POST/GET REST Request.
+     *
+     * @return true if configured Time is up.
+     */
+
+    private boolean timeToHandleEvent() {
+        if (this.initialDutyTimeSet == false) {
+            this.initialDutyTime = new DateTime();
+            this.initialDutyTimeSet = true;
+            return false;
+        }
+        return DateTime.now().isAfter(this.initialDutyTime.plusMillis(this.dutyTime));
+    }
+
+    /**
+     * Check if the Connection is ok with given Id and Channel.
+     *
+     * @param value any Task.
+     * @return responseCode == HTTP_OK
+     */
     private boolean checkConnection(RestRequest value) {
         try {
             URL url = new URL("http://" + this.ipAddressAndPort + "/rest/channel/" + value.getRequest());
@@ -193,7 +227,7 @@ public class RestBridgeImpl extends AbstractOpenemsComponent implements RestBrid
             os.write(msg.getBytes());
             os.flush();
             os.close();
-            //Task can check if everythings ok --> good for Controller etc; ---> Check Channel
+            //Task can check if everything's ok --> good for Controller etc; ---> Check Channel
             int responseCode = connection.getResponseCode();
 
             if (responseCode == HttpURLConnection.HTTP_OK) {

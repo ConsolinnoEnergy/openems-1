@@ -20,8 +20,8 @@ public interface Pwm extends OpenemsComponent {
          * <li>Type: Integer
          * </ul>
          */
-        WRITE_POWER_LEVEL(Doc.of(OpenemsType.INTEGER).accessMode(AccessMode.READ_WRITE)),
-        READ_POWER_LEVEL(Doc.of(OpenemsType.INTEGER).accessMode(AccessMode.READ_ONLY)), //
+        WRITE_POWER_LEVEL(Doc.of(OpenemsType.INTEGER).accessMode(AccessMode.READ_WRITE).unit(Unit.THOUSANDTH)),
+        READ_POWER_LEVEL(Doc.of(OpenemsType.INTEGER).accessMode(AccessMode.READ_ONLY).unit(Unit.THOUSANDTH)), //
         /**
          * Inverts the Power Level Logic.
          * <ul>

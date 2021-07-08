@@ -44,6 +44,7 @@
 	bnd.identity;id='io.openems.edge.batteryinverter.sunspec',\
 	bnd.identity;id='io.openems.edge.battery.soltaro',\
 	bnd.identity;id='io.openems.edge.bridge.communication.remote.rest',\
+	bnd.identity;id='io.openems.edge.bridge.lucidcontrol',\
 	bnd.identity;id='io.openems.edge.bridge.mbus',\
 	bnd.identity;id='io.openems.edge.bridge.modbus',\
 	bnd.identity;id='io.openems.edge.bridge.mqtt',\
@@ -129,10 +130,13 @@
 	bnd.identity;id='io.openems.edge.heater.chp.wolf',\
 	bnd.identity;id='io.openems.edge.heater.heatpump.alphainnotec',\
 	bnd.identity;id='io.openems.edge.heater.heatpump.tecalor',\
+	bnd.identity;id='io.openems.edge.heatsystem.components',\
 	bnd.identity;id='io.openems.edge.io.kmtronic',\
 	bnd.identity;id='io.openems.edge.io.revpi',\
 	bnd.identity;id='io.openems.edge.io.shelly',\
 	bnd.identity;id='io.openems.edge.io.wago',\
+	bnd.identity;id='io.openems.edge.lucidcontrol.module',\
+	bnd.identity;id='io.openems.edge.lucidcontrol.device',\
 	bnd.identity;id='io.openems.edge.kostal.piko',\
 	bnd.identity;id='io.openems.edge.meter.abb',\
 	bnd.identity;id='io.openems.edge.meter.artemes.am2',\
@@ -193,6 +197,7 @@
 	io.openems.edge.batteryinverter.refu88k;version=snapshot,\
 	io.openems.edge.batteryinverter.sunspec;version=snapshot,\
 	io.openems.edge.bridge.communcation.remote.rest;version=snapshot,\
+	io.openems.edge.bridge.lucidcontrol;version=snapshot,\
 	io.openems.edge.bridge.mbus;version=snapshot,\
 	io.openems.edge.bridge.modbus;version=snapshot,\
 	io.openems.edge.bridge.mqtt;version=snapshot,\
@@ -281,12 +286,15 @@
 	io.openems.edge.heater.chp.wolf;version=snapshot,\
 	io.openems.edge.heater.heatpump.alphainnotec;version=snapshot,\
 	io.openems.edge.heater.heatpump.tecalor;version=snapshot,\
+	io.openems.edge.heatsystem.components;version=snapshot,\
 	io.openems.edge.io.api;version=snapshot,\
 	io.openems.edge.io.kmtronic;version=snapshot,\
 	io.openems.edge.io.revpi;version=snapshot,\
 	io.openems.edge.io.shelly;version=snapshot,\
 	io.openems.edge.io.wago;version=snapshot,\
 	io.openems.edge.kostal.piko;version=snapshot,\
+	io.openems.edge.lucidcontrol.device;version=snapshot,\
+	io.openems.edge.lucidcontrol.module;version=snapshot,\
 	io.openems.edge.meter.abb;version=snapshot,\
 	io.openems.edge.meter.api;version=snapshot,\
 	io.openems.edge.meter.artemes.am2;version=snapshot,\

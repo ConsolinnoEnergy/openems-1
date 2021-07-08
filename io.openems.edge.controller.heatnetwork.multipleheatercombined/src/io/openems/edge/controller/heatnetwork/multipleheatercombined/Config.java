@@ -68,6 +68,16 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     @AttributeDefinition(name = "HeatingDevice 3 TemperatureSensor MAX", description = "The Temperature-Sensor for the Heating Device 3 Temperature MAX.")
     String tertiaryTemperatureSensorMax() default "TemperatureSensor5";
 
+    boolean useExceptionalState() default false;
+
+    @AttributeDefinition(name = "Timer Id", description = "TimerByCycles or TimerByTime")
+    String timerId() default "TimerByCycles";
+
+    @AttributeDefinition(name = "Max WaitTime", description = "Given Time sets the limit, how long to wait after "
+            + "Exceptional State is missing after Exceptional State activation to go back to normal control behaviour")
+    int waitTime() default 30;
+
+
     boolean enabled() default true;
 
     String webconsole_configurationFactory_nameHint() default "Controller Multiple Heater Combined [{id}]";

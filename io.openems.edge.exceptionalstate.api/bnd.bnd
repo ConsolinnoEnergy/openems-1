@@ -5,11 +5,11 @@ Bundle-Version: 1.0.0.${tstamp}
 Bundle-Description: \
            A module to provide the exceptional State Nature.
 
--buildpath: \
+-buildpath:  \
 	${buildpath},\
 	io.openems.common,\
 	io.openems.edge.common,\
-    io.openems.edge.timer.api,\
+	io.openems.edge.timer.api,\
 
 -testpath: \
-	${testpath}
+	${testpath},\

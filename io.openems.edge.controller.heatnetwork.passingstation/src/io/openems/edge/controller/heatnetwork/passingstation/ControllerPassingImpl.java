@@ -9,8 +9,8 @@ import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.controller.api.Controller;
 import io.openems.edge.controller.heatnetwork.passingstation.api.ControllerPassing;
-import io.openems.edge.heatsystem.components.PassingActivateNature;
-import io.openems.edge.heatsystem.components.PassingChannel;
+import io.openems.edge.heatsystem.components.PassingStation;
+import io.openems.edge.heatsystem.components.HeatsystemComponent;
 import io.openems.edge.heatsystem.components.Pump;
 import io.openems.edge.heatsystem.components.Valve;
 import io.openems.edge.thermometer.api.Thermometer;
@@ -25,7 +25,7 @@ import org.osgi.service.metatype.annotations.Designate;
 
 @Designate(ocd = Config.class, factory = true)
 @Component(name = "Controller.Passing.Main")
-public class ControllerPassingImpl extends AbstractOpenemsComponent implements OpenemsComponent, ControllerPassing, PassingActivateNature, Controller {
+public class ControllerPassingImpl extends AbstractOpenemsComponent implements OpenemsComponent, ControllerPassing, PassingStation, Controller {
 
     @Reference
     protected ComponentManager cpm;
@@ -65,7 +65,7 @@ public class ControllerPassingImpl extends AbstractOpenemsComponent implements O
 
         super(OpenemsComponent.ChannelId.values(),
                 ControllerPassing.ChannelId.values(),
-                PassingActivateNature.ChannelId.values(),
+                PassingStation.ChannelId.values(),
                 Controller.ChannelId.values());
     }
 
@@ -99,7 +99,7 @@ public class ControllerPassingImpl extends AbstractOpenemsComponent implements O
             this.startingTemperature = 0;
         }
         valve.changeByPercentage(-100);
-        this.pump.controlRelays(false, "");
+        this.pump.setPowerLevel(0);
     }
 
     @Deactivate
@@ -195,7 +195,7 @@ public class ControllerPassingImpl extends AbstractOpenemsComponent implements O
             } else {
 
                 if (!isClosed) {
-                    if (!valve.getIsBusy().getNextValue().get()) {
+                    if (!valve.getIsBusyChannel().getNextValue().get()) {
                         if (valve.changeByPercentage(-100)) {
                             pump.changeByPercentage(-100);
                             pumpActive = false;
@@ -263,14 +263,14 @@ public class ControllerPassingImpl extends AbstractOpenemsComponent implements O
 
                 break;
             case "Pump":
-                if (cpm.getComponent(id) instanceof PassingChannel) {
+                if (cpm.getComponent(id) instanceof HeatsystemComponent) {
                     this.pump = cpm.getComponent(id);
                 } else {
                     throw new ConfigurationException(id, "The Pump " + id + " Is not a (configured) Pump.");
                 }
                 break;
             case "Valve":
-                if (cpm.getComponent(id) instanceof PassingChannel) {
+                if (cpm.getComponent(id) instanceof HeatsystemComponent) {
                     this.valve = cpm.getComponent(id);
                 } else {
                     throw new ConfigurationException(id, "The Valve " + id + " Is not a (configured) Valve.");

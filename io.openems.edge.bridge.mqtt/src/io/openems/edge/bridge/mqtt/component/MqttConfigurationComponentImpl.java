@@ -30,6 +30,14 @@ public class MqttConfigurationComponentImpl implements MqttConfigurationComponen
                 Arrays.asList(payloads), createdByOsgi, mqttBridge, mqttId, mqttType);
     }
 
+    /**
+     * Initiates the Tasks by Channel and PayloadStyle. IMPORTANT: Only called/exec if it was created by OSGi!
+     *
+     * @param channels     The Channel of the parent.
+     * @param payloadStyle payloadStyle usually from config.
+     * @throws MqttException          Throws MqttException if subscription fails.
+     * @throws ConfigurationException If the Configuration has errors.
+     */
     @Override
     public void initTasks(List<Channel<?>> channels, String payloadStyle) throws MqttException, ConfigurationException {
         try {
@@ -41,6 +49,11 @@ public class MqttConfigurationComponentImpl implements MqttConfigurationComponen
         }
     }
 
+    /**
+     * Check if the Components Configuration is done. (OSGi Config)
+     *
+     * @return a Boolean.
+     */
     @Override
     public boolean hasBeenConfigured() {
         if (this.mqttComponent != null) {
@@ -49,7 +62,13 @@ public class MqttConfigurationComponentImpl implements MqttConfigurationComponen
         return false;
     }
 
-
+    /**
+     * Tells the parent if the Command is expired.
+     *
+     * @param task MqttTask given by Parent.
+     * @param key  CommandWrapper used to get Expiration and InfiniteTime Status(==never expire).
+     * @return a Boolean
+     */
     @Override
     public boolean expired(MqttSubscribeTask task, CommandWrapper key) {
         if (key.isInfinite()) {
@@ -61,25 +80,63 @@ public class MqttConfigurationComponentImpl implements MqttConfigurationComponen
         return this.mqttComponent.expired(task, Integer.parseInt(key.getExpiration()));
     }
 
+    /**
+     * Update OSGi UI.
+     *
+     * @param configuration The Configuration of the parent.
+     * @param channelIdList Name in Configuration --> where to put Channel.
+     * @param channels      ChannelList (used for size)
+     * @param length        Entry size of ChannelList (In Config)
+     */
     @Override
     public void update(Configuration configuration, String channelIdList, List<Channel<?>> channels, int length) {
         this.mqttComponent.update(configuration, channelIdList, channels, length);
     }
 
+    /**
+     * Tells if the Component is ready and configured.
+     *
+     * @return a Boolean
+     */
     @Override
     public boolean isConfigured() {
         return this.mqttComponent.hasBeenConfigured();
     }
 
+    /**
+     * Init Json via JsonFile.
+     *
+     * @param channels    channels of Parent.
+     * @param pathForJson Path to Json Config File.
+     * @throws IOException            thrown if JsonFile does not exist.
+     * @throws ConfigurationException if JsonFile has wrong config.
+     * @throws MqttException          If subscription fails.
+     */
     @Override
     public void initJson(ArrayList<Channel<?>> channels, String pathForJson) throws IOException, ConfigurationException, MqttException {
         this.mqttComponent.initJsonFromFile(channels, pathForJson);
     }
 
+    /**
+     * Updates the JsonConfig via OpenEmsChannel: Configuration.
+     *
+     * @param channels Parent Channel
+     * @param content  content of ConfigurationChannel
+     * @throws ConfigurationException if wrong Config was given.
+     * @throws MqttException          if subscription fails.
+     */
     @Override
     public void updateJsonByChannel(ArrayList<Channel<?>> channels, String content) throws ConfigurationException, MqttException {
         this.mqttComponent.initJson(channels, content);
     }
+
+    /**
+     * Checks if the Value is legitimate.
+     * E.g. if it is "NotDefined" (No Value read yet) or "NaN" (Happens if a new Schedule is called by broker).
+     *
+     * @param value value of CommandWrapper in Parent Task.
+     * @return a Boolean
+     */
 
     @Override
     public boolean valueLegit(String value) {
