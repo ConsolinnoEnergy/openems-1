@@ -193,8 +193,8 @@ public interface ValveController extends OpenemsComponent {
         return this.channel(ChannelId.ENABLE_SIGNAL);
     }
 
-    default void setEnableSignal(boolean enable) {
-        this.getEnableSignalChannel().setNextValue(enable);
+    default void setEnableSignal(boolean enable) throws OpenemsError.OpenemsNamedException {
+        this.getEnableSignalChannel().setNextWriteValueFromObject(enable);
     }
 
     //----------------------------------------------------//
@@ -212,7 +212,7 @@ public interface ValveController extends OpenemsComponent {
     }
 
 
-    default boolean isAutorun(){
+    default boolean isAutorun() {
         Boolean enabledSignal = (Boolean) this.getCurrentChannelValue(this.autoRunChannel());
         if (enabledSignal == null) {
             enabledSignal = (Boolean) this.getNextChannelValue(this.autoRunChannel());
