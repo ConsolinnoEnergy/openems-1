@@ -11,7 +11,13 @@ import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Modified;
 import org.osgi.service.metatype.annotations.Designate;
 
-
+/**
+ * This Timer is one of the concrete Implementations of the {@link AbstractTimer} and the {@link Timer}.
+ * It gets the {@link ValueInitializedWrapper} and checks if the the current Time is after the initTime+MaxTimeInSeconds.
+ * Remember on init -> Timer will be initialized and sets the Time.
+ * If you wish to Reset: {@link Timer#reset(String id, String identifier)}
+ * (this will do: {@link ValueInitializedWrapper#setInitialized(boolean)} (false)}
+ */
 @Designate(ocd = TimerByTimeConfig.class, factory = true)
 @Component(name = "Timer.TimerByTime",
         configurationPolicy = ConfigurationPolicy.REQUIRE,
@@ -19,7 +25,7 @@ import org.osgi.service.metatype.annotations.Designate;
 )
 public class TimerByTimeImpl extends AbstractTimer implements OpenemsComponent {
 
-    public TimerByTimeImpl(){
+    public TimerByTimeImpl() {
         super(OpenemsComponent.ChannelId.values());
     }
 
@@ -38,7 +44,13 @@ public class TimerByTimeImpl extends AbstractTimer implements OpenemsComponent {
         super.modified(context, config.id(), config.alias(), config.enabled());
     }
 
-
+    /**
+     * Check if the Time for this Component is up.
+     *
+     * @param id         the OpenemsComponent Id.
+     * @param identifier the identifier the component uses.
+     * @return true if Time is up.
+     */
     @Override
     public boolean checkIsTimeUp(String id, String identifier) {
         ValueInitializedWrapper wrapper = super.getWrapper(id, identifier);

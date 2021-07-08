@@ -3,7 +3,7 @@ package io.openems.edge.timer.api;
 import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
-@ObjectClassDefinition(name = "TimerByCycles ", description = ".")
+@ObjectClassDefinition(name = "Timer By Cycles ", description = ".")
 @interface TimerByCyclesConfig {
 
     @AttributeDefinition(name = "Id", description = "Unique Id for the Timer. You only need one though.")

@@ -4,7 +4,6 @@ import io.openems.common.types.OpenemsType;
 import io.openems.edge.common.channel.Channel;
 import io.openems.edge.common.channel.Doc;
 import io.openems.edge.common.component.OpenemsComponent;
-import io.openems.edge.thermometer.api.Thermometer;
 import org.osgi.annotation.versioning.ProviderType;
 
 /**
@@ -26,21 +25,7 @@ public interface MultipleHeaterCombinedController extends OpenemsComponent {
          * </ul>
          */
         OK(Doc.of(OpenemsType.BOOLEAN)),
-        /**
-         * Has an Error occurred while executing the heatRoutine within the MultipleHeaterCombined.
-         * <ul>
-         *     <li>Interface: MultipleHeaterCombinedController
-         *     <li>Type: Boolean
-         * </ul>
-         */
         ERROR(Doc.of(OpenemsType.BOOLEAN)),
-        /**
-         * Is the Controller Heating up any Heater.
-         * <ul>
-         *     <li> Interface: MultipleHeaterCombinedController
-         *     <li> Type: Boolean
-         * </ul>
-         */
         IS_HEATING(Doc.of(OpenemsType.BOOLEAN));
 
         private final Doc doc;
@@ -55,50 +40,35 @@ public interface MultipleHeaterCombinedController extends OpenemsComponent {
         }
     }
 
-    /**
-     * Get the Ok Channel.
-     *
-     * @return the channel
-     */
+
     default Channel<Boolean> getOkChannel() {
         return this.channel(ChannelId.OK);
     }
-
-    /**
-     * Set the Ok Channel by a boolean value.
-     *
-     * @param ok is everything's ok in the heating routine or not.
-     */
 
     default void setIsOk(boolean ok) {
         this.getOkChannel().setNextValue(ok);
         this.getHasErrorChannel().setNextValue(!ok);
     }
 
-    /**
-     * Get the Error Channel.
-     *
-     * @return the channel.
-     */
+    default boolean getIsOk() {
+        if (this.getOkChannel().value().isDefined()) {
+            return this.getOkChannel().value().get();
+        } else if (this.getOkChannel().getNextValue().isDefined()) {
+            return this.getOkChannel().getNextValue().get();
+        } else {
+            return true;
+        }
+    }
+
     default Channel<Boolean> getHasErrorChannel() {
         return this.channel(ChannelId.ERROR);
     }
 
-    /**
-     * Setter for the Error Channel.
-     *
-     * @param error true or false
-     */
     default void setHasError(boolean error) {
         this.getHasErrorChannel().setNextValue(error);
         this.getOkChannel().setNextValue(!error);
     }
 
-    /**
-     * Has an error occurred within the Controller.
-     *
-     * @return a boolean.
-     */
     default boolean errorInHeater() {
         if (this.getHasErrorChannel().value().isDefined()) {
             return this.getHasErrorChannel().value().get();
@@ -109,20 +79,11 @@ public interface MultipleHeaterCombinedController extends OpenemsComponent {
         }
     }
 
-    /**
-     * Is Heating Channel.
-     *
-     * @return the Channel
-     */
+
     default Channel<Boolean> getIsHeatingChannel() {
         return this.channel(ChannelId.IS_HEATING);
     }
 
-    /**
-     * Setter for the isHeating channel.
-     *
-     * @param isHeating true or false
-     */
     default void setIsHeating(boolean isHeating) {
         this.getIsHeatingChannel().setNextValue(isHeating);
     }
