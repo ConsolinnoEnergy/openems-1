@@ -10,29 +10,31 @@ import io.openems.edge.common.channel.BooleanReadChannel;
 import io.openems.edge.common.channel.BooleanWriteChannel;
 import io.openems.edge.common.channel.Doc;
 import io.openems.edge.common.channel.value.Value;
-import io.openems.edge.heater.api.HeatpumpSmartGridGeneralizedChannel;
+import io.openems.edge.heater.api.HeatpumpSmartGrid;
 
-public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChannel {
+/**
+ * Channels for the Tecalor heat pump.
+ */
 
+public interface HeatpumpTecalorChannel extends HeatpumpSmartGrid {
 
     public enum ChannelId implements io.openems.edge.common.channel.ChannelId {
 
-
-        // Input Registers, read only. They are 16 bit signed numbers unless stated otherwise.
-        // Addresses are 1 based, so 40001 is the first holding register. OpenEMS Modbus is 0 based,
-        // so 40001 has address 0.
+        /* Input Registers, read only. They are 16 bit signed numbers unless stated otherwise.
+           Addresses are 1 based, so 40001 is the first holding register. OpenEMS Modbus is 0 based,
+           so 40001 has address 0. */
 
         /**
          * Outside temperature.
          * <ul>
-         *      <li> Type: Integer
-         *      <li> Unit: Decimal degree Celsius
+         *     <li> Type: Integer
+         *     <li> Unit: Decimal degree Celsius
          * </ul>
          */
         IR507_AUSSENTEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
 
         /**
-         * Heating circuit 1 actual temperature.
+         * Heating circuit 1 temperature.
          * <ul>
          *      <li> Type: Integer
          *      <li> Unit: Decimal degree Celsius
@@ -41,7 +43,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
         IR508_ISTTEMPHK1(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
 
         /**
-         * Heating circuit 1 setpoint temperature. Software version WPM 3i
+         * Heating circuit 1 setpoint temperature, if software version is WPM 3i.
          * <ul>
          *      <li> Type: Integer
          *      <li> Unit: Decimal degree Celsius
@@ -50,7 +52,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
         IR509_SOLLTEMPHK1(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
 
         /**
-         * Heating circuit 1 setpoint temperature. Software version WPMsystem and WPM 3
+         * Heating circuit 1 setpoint temperature, if software version is WPMsystem and WPM 3.
          * <ul>
          *      <li> Type: Integer
          *      <li> Unit: Decimal degree Celsius
@@ -59,7 +61,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
         IR510_SOLLTEMPHK1(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
 
         /**
-         * Heating circuit 1 setpoint temperature. Channel that is independent of software version.
+         * Heating circuit 1 setpoint temperature. (Mapped from the software dependent channels)
          * <ul>
          *      <li> Type: Integer
          *      <li> Unit: Decimal degree Celsius
@@ -68,7 +70,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
         SOLLTEMPHK1(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
 
         /**
-         * Heating circuit 2 actual temperature.
+         * Heating circuit 2 temperature.
          * <ul>
          *      <li> Type: Integer
          *      <li> Unit: Decimal degree Celsius
@@ -86,7 +88,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
         IR512_SOLLTEMPHK2(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
 
         /**
-         * Forward temperature heat pump, actual.
+         * Flow temperature heat pump.
          * <ul>
          *      <li> Type: Integer
          *      <li> Unit: Decimal degree Celsius
@@ -95,7 +97,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
         IR513_VORLAUFISTTEMPWP(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
 
         /**
-         * Forward temperature backup heater, actual.
+         * Flow temperature auxiliary heater.
          * <ul>
          *      <li> Type: Integer
          *      <li> Unit: Decimal degree Celsius
@@ -103,26 +105,12 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
          */
         IR514_VORLAUFISTTEMPNHZ(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
 
-        /**
-         * Forward temperature, actual.
-         * <ul>
-         *      <li> Type: Integer
-         *      <li> Unit: Decimal degree Celsius
-         * </ul>
-         */
-        IR515_VORLAUFISTTEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
+        //IR515_VORLAUFISTTEMP -> Heater FLOW_TEMPERATURE
+
+        //IR516_RUECKLAUFISTTEMP -> Heater RETURN_TEMPERATURE
 
         /**
-         * Rewind temperature, actual.
-         * <ul>
-         *      <li> Type: Integer
-         *      <li> Unit: Decimal degree Celsius
-         * </ul>
-         */
-        IR516_RUECKLAUFISTTEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
-
-        /**
-         * Fix temperature setpoint.
+         * Constant temperature setpoint.
          * <ul>
          *      <li> Type: Integer
          *      <li> Unit: Decimal degree Celsius
@@ -131,7 +119,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
         IR517_FESTWERTSOLLTEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
 
         /**
-         * Buffer tank temperature, actual.
+         * Storage tank temperature.
          * <ul>
          *      <li> Type: Integer
          *      <li> Unit: Decimal degree Celsius
@@ -140,7 +128,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
         IR518_PUFFERISTTEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
 
         /**
-         * Buffer tank temperature, setpoint.
+         * Storage tank temperature, setpoint.
          * <ul>
          *      <li> Type: Integer
          *      <li> Unit: Decimal degree Celsius
@@ -167,7 +155,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
         IR521_VOLUMENSTROM(Doc.of(OpenemsType.INTEGER).unit(Unit.DECILITER_PER_MINUTE)),
 
         /**
-         * Warm water temperature, actual.
+         * Domestic hot water temperature.
          * <ul>
          *      <li> Type: Integer
          *      <li> Unit: Decimal degree Celsius
@@ -176,7 +164,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
         IR522_WWISTTEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
 
         /**
-         * Warm water temperature, setpoint.
+         * Domestic hot water temperature, setpoint.
          * <ul>
          *      <li> Type: Integer
          *      <li> Unit: Decimal degree Celsius
@@ -185,7 +173,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
         IR523_WWSOLLTEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
 
         /**
-         * Ventilation cooling temperature, actual.
+         * Ventilation cooling temperature.
          * <ul>
          *      <li> Type: Integer
          *      <li> Unit: Decimal degree Kelvin
@@ -203,7 +191,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
         IR525_GEBLAESESOLLTEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_KELVIN)),
 
         /**
-         * Surface cooling temperature, actual.
+         * Surface cooling temperature.
          * <ul>
          *      <li> Type: Integer
          *      <li> Unit: Decimal degree Kelvin
@@ -221,24 +209,6 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
         IR527_FLAECHESOLLTEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_KELVIN)),
 
         /**
-         * Minimum operation temperature heating circuit.
-         * <ul>
-         *      <li> Type: Integer
-         *      <li> Unit: Decimal degree Celsius
-         * </ul>
-         */
-        IR533_EINSATZGRENZEHZG(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
-
-        /**
-         * Minimum operation temperature warm water.
-         * <ul>
-         *      <li> Type: Integer
-         *      <li> Unit: Decimal degree Celsius
-         * </ul>
-         */
-        IR534_EINSATZGRENZEWW(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
-
-        /**
          * Status bits.
          * <ul>
          *      <li> Type: Integer
@@ -247,7 +217,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
         IR2501_STATUSBITS(Doc.of(OpenemsType.INTEGER)),
 
         /**
-         * EVU clearance.
+         * EVU block/release. True = release.
          * <ul>
          *      <li> Type: Boolean
          * </ul>
@@ -271,7 +241,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
         IR2505_BUSSTATUS(Doc.of(OpenemsType.INTEGER)),
 
         /**
-         * Defrost engaged.
+         * Defrost active.
          * <ul>
          *      <li> Type: Boolean
          * </ul>
@@ -279,12 +249,12 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
         IR2506_DEFROST(Doc.of(OpenemsType.BOOLEAN)),
 
         /**
-         * Error number.
+         * Error code.
          * <ul>
          *      <li> Type: Integer
          * </ul>
          */
-        IR2507_ERRORNUMBER(Doc.of(OpenemsType.INTEGER)),
+        IR2507_ERROR_CODE(Doc.of(OpenemsType.INTEGER)),
 
         /**
          * Produced heat for heating circuits, all heat pumps combined for this day.
@@ -327,7 +297,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
         HEATPRODUCED_VDHEIZENSUM(Doc.of(OpenemsType.INTEGER).unit(Unit.KILOWATT_HOURS)),
 
         /**
-         * Produced heat for warm water, all heat pumps combined for this day.
+         * Produced heat for domestic hot water, all heat pumps combined for this day.
          * <ul>
          *      <li> Type: Integer
          *      <li> Unit: kilowatt hours
@@ -336,7 +306,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
         IR3504_HEATPRODUCED_VDWWTAG(Doc.of(OpenemsType.INTEGER).unit(Unit.KILOWATT_HOURS)),
 
         /**
-         * Produced heat for warm water total, all heat pumps combined. Low value.
+         * Produced heat for domestic hot water total, all heat pumps combined. Low value.
          * This is the kWh value. Anything above 999 is transferred to the MWh value.
          * This is just for modbus, don't use this.
          * <ul>
@@ -347,7 +317,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
         IR3505_HEATPRODUCED_VDWWSUMKWH(Doc.of(OpenemsType.INTEGER).unit(Unit.KILOWATT_HOURS)),
 
         /**
-         * Produced heat for warm water total, all heat pumps combined. High value.
+         * Produced heat for domestic hot water total, all heat pumps combined. High value.
          * The kWh value needs to be added to this value.
          * This is just for modbus, don't use this.
          * <ul>
@@ -358,7 +328,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
         IR3506_HEATPRODUCED_VDWWSUMMWH(Doc.of(OpenemsType.INTEGER).unit(Unit.MEGAWATT_HOURS)),
 
         /**
-         * Produced heat for warm water total, all heat pumps combined.
+         * Produced heat for domestic hot water total, all heat pumps combined.
          * <ul>
          *      <li> Type: Integer
          *      <li> Unit: kilowatt hours
@@ -367,7 +337,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
         HEATPRODUCED_VDWWSUM(Doc.of(OpenemsType.INTEGER).unit(Unit.KILOWATT_HOURS)),
 
         /**
-         * Produced heat for heating circuits total, backup heater. Low value.
+         * Produced heat for heating circuits total, auxiliary heater. Low value.
          * This is the kWh value. Anything above 999 is transferred to the MWh value.
          * This is just for modbus, don't use this.
          * <ul>
@@ -378,7 +348,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
         IR3507_HEATPRODUCED_NZHHEIZENSUMKWH(Doc.of(OpenemsType.INTEGER).unit(Unit.KILOWATT_HOURS)),
 
         /**
-         * Produced heat for heating circuits total, backup heater. High value.
+         * Produced heat for heating circuits total, auxiliary heater. High value.
          * The kWh value needs to be added to this value.
          * This is just for modbus, don't use this.
          * <ul>
@@ -389,7 +359,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
         IR3508_HEATPRODUCED_NZHHEIZENSUMMWH(Doc.of(OpenemsType.INTEGER).unit(Unit.MEGAWATT_HOURS)),
 
         /**
-         * Produced heat for heating circuits total, backup heater.
+         * Produced heat for heating circuits total, auxiliary heater.
          * <ul>
          *      <li> Type: Integer
          *      <li> Unit: kilowatt hours
@@ -398,7 +368,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
         HEATPRODUCED_NZHHEIZENSUM(Doc.of(OpenemsType.INTEGER).unit(Unit.KILOWATT_HOURS)),
 
         /**
-         * Produced heat for warm water total, backup heater. Low value.
+         * Produced heat for warm water total, auxiliary heater. Low value.
          * This is the kWh value. Anything above 999 is transferred to the MWh value.
          * This is just for modbus, don't use this.
          * <ul>
@@ -409,7 +379,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
         IR3509_HEATPRODUCED_NZHWWSUMKWH(Doc.of(OpenemsType.INTEGER).unit(Unit.KILOWATT_HOURS)),
 
         /**
-         * Produced heat for warm water total, backup heater. High value.
+         * Produced heat for warm water total, auxiliary heater. High value.
          * The kWh value needs to be added to this value.
          * This is just for modbus, don't use this.
          * <ul>
@@ -420,7 +390,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
         IR3510_HEATPRODUCED_NZHWWSUMMWH(Doc.of(OpenemsType.INTEGER).unit(Unit.MEGAWATT_HOURS)),
 
         /**
-         * Produced heat for warm water total, backup heater.
+         * Produced heat for warm water total, auxiliary heater.
          * <ul>
          *      <li> Type: Integer
          *      <li> Unit: kilowatt hours
@@ -469,7 +439,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
         CONSUMEDPOWER_VDHEIZENSUM(Doc.of(OpenemsType.INTEGER).unit(Unit.KILOWATT_HOURS)),
 
         /**
-         * Consumed power for heating warm water, all heat pumps combined for this day.
+         * Consumed power for heating domestic hot water, all heat pumps combined for this day.
          * <ul>
          *      <li> Type: Integer
          *      <li> Unit: kilowatt hours
@@ -478,7 +448,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
         IR3514_CONSUMEDPOWER_VDWWTAG(Doc.of(OpenemsType.INTEGER).unit(Unit.KILOWATT_HOURS)),
 
         /**
-         * Consumed power for heating warm water total, all heat pumps combined. Low value.
+         * Consumed power for heating domestic hot water total, all heat pumps combined. Low value.
          * This is the kWh value. Anything above 999 is transferred to the MWh value.
          * This is just for modbus, don't use this.
          * <ul>
@@ -489,7 +459,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
         IR3515_CONSUMEDPOWER_VDWWSUMKWH(Doc.of(OpenemsType.INTEGER).unit(Unit.KILOWATT_HOURS)),
 
         /**
-         * Consumed power for heating warm water total, all heat pumps combined. High value.
+         * Consumed power for heating domestic hot water total, all heat pumps combined. High value.
          * The kWh value needs to be added to this value.
          * This is just for modbus, don't use this.
          * <ul>
@@ -500,7 +470,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
         IR3516_CONSUMEDPOWER_VDWWSUMMWH(Doc.of(OpenemsType.INTEGER).unit(Unit.MEGAWATT_HOURS)),
 
         /**
-         * Consumed power for heating warm water total, all heat pumps combined.
+         * Consumed power for heating domestic hot water total, all heat pumps combined.
          * <ul>
          *      <li> Type: Integer
          *      <li> Unit: kilowatt hours
@@ -522,7 +492,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
         IR5001_SGREADY_OPERATINGMODE(Doc.of(OpenemsType.INTEGER)),
 
         /**
-         * Reglerkennung.
+         * Controller model (Reglerkennung).
          * <ul>
          *      <li> Type: Integer
          *      <li> Value 103: THZ 303, 403 (Integral/SOL), THD 400 AL, THZ 304 eco, 404 eco, THZ 304/404 FLEX,
@@ -544,12 +514,12 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
          * <ul>
          *      <li> Type: Integer
          *      <li> Possible values: 0 ... 5
-         *      <li> State 0: Notbetrieb
-         *      <li> State 1: Bereitschaftsbetrieb
-         *      <li> State 2: Programmbetrieb
-         *      <li> State 3: Komfortbetrieb
-         *      <li> State 4: ECO-Betrieb
-         *      <li> State 5: Warmwasserbetrieb
+         *      <li> State 0: Antifreeze protection only (Notbetrieb)
+         *      <li> State 1: Standby mode (Bereitschaftsbetrieb)
+         *      <li> State 2: Program mode (Programmbetrieb)
+         *      <li> State 3: Comfort mode (Komfortbetrieb)
+         *      <li> State 4: ECO mode (ECO-Betrieb)
+         *      <li> State 5: Domestic hot water (Warmwasserbetrieb)
          * </ul>
          */
         HR1501_BERTIEBSART(Doc.of(OperatingMode.values()).accessMode(AccessMode.READ_WRITE)),
@@ -607,7 +577,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
         HR1507_SLOPEHK2(Doc.of(OpenemsType.INTEGER).accessMode(AccessMode.READ_WRITE)),
 
         /**
-         * Static temperature mode setting. 0x9000 disables this mode, a temperature value between 200 and 700 enables
+         * Constant temperature mode setting. 0x9000 disables this mode, a temperature value between 200 and 700 enables
          * this mode.
          * <ul>
          *      <li> Type: Integer
@@ -617,7 +587,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
         HR1508_FESTWERTBETRIEB(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
 
         /**
-         * Backup heater activation temperature, heating circuit. Below this temperature the backup heater will
+         * Auxiliary heater activation temperature, heating circuit. Below this temperature the auxiliary heater will
          * activate, depending on heat demand.
          * <ul>
          *      <li> Type: Integer
@@ -627,7 +597,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
         HR1509_BIVALENZTEMPERATURHZG(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
 
         /**
-         * Comfort temperature setting, warm water.
+         * Comfort temperature setting, domestic hot water.
          * <ul>
          *      <li> Type: Integer
          *      <li> Unit: Decimal degree Celsius
@@ -636,7 +606,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
         HR1510_KOMFORTTEMPWW(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
 
         /**
-         * ECO temperature setting, warm water.
+         * ECO temperature setting, domestic hot water.
          * <ul>
          *      <li> Type: Integer
          *      <li> Unit: Decimal degree Celsius
@@ -645,7 +615,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
         HR1511_ECOTEMPWW(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
 
         /**
-         * Number of stages, warm water.
+         * Number of stages, domestic hot water.
          * <ul>
          *      <li> Type: Integer
          * </ul>
@@ -653,7 +623,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
         HR1512_WARMWASSERSTUFEN(Doc.of(OpenemsType.INTEGER).accessMode(AccessMode.READ_WRITE)),
 
         /**
-         * Backup heater activation temperature, warm water. Below this temperature the backup heater will
+         * Auxiliary heater activation temperature, domestic hot water. Below this temperature the auxiliary heater will
          * activate, depending on heat demand.
          * <ul>
          *      <li> Type: Integer
@@ -663,7 +633,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
         HR1513_BIVALENZTEMPERATURWW(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
 
         /**
-         * Cooling: Forward temperature, setpoint, surface cooling.
+         * Cooling: Flow temperature setpoint, surface cooling.
          * <ul>
          *      <li> Type: Integer
          *      <li> Unit: Decimal degree Celsius
@@ -672,7 +642,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
         HR1514_VORLAUFSOLLTEMPFLAECHENKUEHLUNG(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
 
         /**
-         * Cooling: Forward temperature hysteresis, surface cooling.
+         * Cooling: Flow temperature hysteresis, surface cooling.
          * <ul>
          *      <li> Type: Integer
          *      <li> Unit: Decimal degree Kelvin
@@ -681,7 +651,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
         HR1515_HYSTERESEVORLAUFTEMPFLAECHENKUEHLUNG(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_KELVIN).accessMode(AccessMode.READ_WRITE)),
 
         /**
-         * Cooling: Room temperature, setpoint, surface cooling.
+         * Cooling: Room temperature setpoint, surface cooling.
          * <ul>
          *      <li> Type: Integer
          *      <li> Unit: Decimal degree Celsius
@@ -690,7 +660,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
         HR1516_RAUMSOLLTEMPFLAECHENKUEHLUNG(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
 
         /**
-         * Cooling: Forward temperature, setpoint, ventilation cooling.
+         * Cooling: Flow temperature setpoint, ventilation cooling.
          * <ul>
          *      <li> Type: Integer
          *      <li> Unit: Decimal degree Celsius
@@ -699,7 +669,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
         HR1517_VORLAUFSOLLTEMPGEBLAESEKUEHLUNG(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
 
         /**
-         * Cooling: Forward temperature hysteresis, ventilation cooling.
+         * Cooling: Flow temperature hysteresis, ventilation cooling.
          * <ul>
          *      <li> Type: Integer
          *      <li> Unit: Decimal degree Kelvin
@@ -708,7 +678,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
         HR1518_HYSTERESEVORLAUFTEMPGEBLAESEKUEHLUNG(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_KELVIN).accessMode(AccessMode.READ_WRITE)),
 
         /**
-         * Cooling: Room temperature, setpoint, ventilation cooling.
+         * Cooling: Room temperature setpoint, ventilation cooling.
          * <ul>
          *      <li> Type: Integer
          *      <li> Unit: Decimal degree Celsius
@@ -717,31 +687,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
         HR1519_RAUMSOLLTEMPGEBLAESEKUEHLUNG(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
 
         /**
-         * Reset.
-         * <ul>
-         *      <li> Type: Integer
-         *      <li> Possible values: 1 ... 3
-         *      <li> State 1: Reset System
-         *      <li> State 2: Reset Error
-         *      <li> State 3: Reset Heatpump
-         * </ul>
-         */
-        HR1520_RESET(Doc.of(Reset.values()).accessMode(AccessMode.READ_WRITE)),
-
-        /**
-         * Restart internet service gateway (ISG).
-         * <ul>
-         *      <li> Type: Integer
-         *      <li> Possible values: 0 ... 2
-         *      <li> State 0: Off
-         *      <li> State 1: Restart
-         *      <li> State 2: Service button
-         * </ul>
-         */
-        HR1521_RESTART_ISG(Doc.of(Restart.values()).accessMode(AccessMode.READ_WRITE)),
-
-        /**
-         * Turn on/off SG-Ready capabilities.
+         * Turn on/off SG-Ready mode.
          * <ul>
          *      <li> Type: Boolean
          * </ul>
@@ -784,192 +730,180 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getAussentempChannel() {
+    public default IntegerReadChannel getOutsideTempChannel() {
         return this.channel(ChannelId.IR507_AUSSENTEMP);
     }
 
     /**
-     * Outside temperature. Unit is decimal degree Celsius.
+     * Gets the outside temperature. Unit is decimal degree Celsius.
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getAussentemp() { return this.getAussentempChannel().value(); }
+    public default Value<Integer> getOutsideTemp() {
+        return this.getOutsideTempChannel().value();
+    }
 
     /**
      * Gets the Channel for {@link ChannelId#IR508_ISTTEMPHK1}.
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getIstTempHk1Channel() {
+    public default IntegerReadChannel getCircuit1TempChannel() {
         return this.channel(ChannelId.IR508_ISTTEMPHK1);
     }
 
     /**
-     * Heating circuit 1 actual temperature. Unit is decimal degree Celsius.
+     * Gets the heating circuit 1 temperature. Unit is decimal degree Celsius.
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getIstTempHk1() { return this.getIstTempHk1Channel().value(); }
+    public default Value<Integer> getCircuit1Temp() {
+        return this.getCircuit1TempChannel().value();
+    }
 
     /**
      * Gets the Channel for {@link ChannelId#SOLLTEMPHK1}.
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getSetpointTempHk1Channel() {
+    public default IntegerReadChannel getCircuit1SetpointTempChannel() {
         return this.channel(ChannelId.SOLLTEMPHK1);
     }
 
     /**
-     * Heating circuit 1 setpoint temperature. Unit is decimal degree Celsius.
+     * Gets the heating circuit 1 setpoint temperature. Unit is decimal degree Celsius.
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getSetpointTempHk1() { return this.getIstTempHk1Channel().value(); }
+    public default Value<Integer> getCircuit1SetpointTemp() {
+        return this.getCircuit1TempChannel().value();
+    }
 
     /**
      * Gets the Channel for {@link ChannelId#IR511_ISTTEMPHK2}.
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getIstTempHk2Channel() {
+    public default IntegerReadChannel getCircuit2TempChannel() {
         return this.channel(ChannelId.IR511_ISTTEMPHK2);
     }
 
     /**
-     * Heating circuit 2 actual temperature. Unit is decimal degree Celsius.
+     * Gets the heating circuit 2 temperature. Unit is decimal degree Celsius.
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getIstTempHk2() { return this.getIstTempHk2Channel().value(); }
+    public default Value<Integer> getCircuit2Temp() {
+        return this.getCircuit2TempChannel().value();
+    }
 
     /**
      * Gets the Channel for {@link ChannelId#IR512_SOLLTEMPHK2}.
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getSetpointTempHk2Channel() {
+    public default IntegerReadChannel getCircuit2SetpointTempChannel() {
         return this.channel(ChannelId.IR512_SOLLTEMPHK2);
     }
 
     /**
-     * Heating circuit 2 setpoint temperature. Unit is decimal degree Celsius.
+     * Gets the heating circuit 2 setpoint temperature. Unit is decimal degree Celsius.
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getSetpointTempHk2() { return this.getSetpointTempHk2Channel().value(); }
+    public default Value<Integer> getCircuit2SetpointTemp() {
+        return this.getCircuit2SetpointTempChannel().value();
+    }
 
     /**
      * Gets the Channel for {@link ChannelId#IR513_VORLAUFISTTEMPWP}.
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getForwardTempHeatPumpActualChannel() {
+    public default IntegerReadChannel getFlowTempHeatPumpChannel() {
         return this.channel(ChannelId.IR513_VORLAUFISTTEMPWP);
     }
 
     /**
-     * Forward temperature heat pump, actual. Unit is decimal degree Celsius.
+     * Gets the flow temperature heat pump. Unit is decimal degree Celsius.
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getForwardTempHeatPumpActual() { return this.getForwardTempHeatPumpActualChannel().value(); }
+    public default Value<Integer> getFlowTempHeatPump() {
+        return this.getFlowTempHeatPumpChannel().value();
+    }
 
     /**
      * Gets the Channel for {@link ChannelId#IR514_VORLAUFISTTEMPNHZ}.
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getForwardTempBackupHeaterActualChannel() {
+    public default IntegerReadChannel getFlowTempAuxHeaterChannel() {
         return this.channel(ChannelId.IR514_VORLAUFISTTEMPNHZ);
     }
 
     /**
-     * Forward temperature backup heater, actual. Unit is decimal degree Celsius.
+     * Gets the flow temperature auxiliary heater. Unit is decimal degree Celsius.
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getForwardTempBackupHeaterActual() { return this.getForwardTempBackupHeaterActualChannel().value(); }
-
-    /**
-     * Gets the Channel for {@link ChannelId#IR515_VORLAUFISTTEMP}.
-     *
-     * @return the Channel
-     */
-    public default IntegerReadChannel getForwardTempActualChannel() {
-        return this.channel(ChannelId.IR515_VORLAUFISTTEMP);
+    public default Value<Integer> getFlowTempAuxHeater() {
+        return this.getFlowTempAuxHeaterChannel().value();
     }
-
-    /**
-     * Forward temperature, actual. Unit is decimal degree Celsius.
-     *
-     * @return the Channel {@link Value}
-     */
-    public default Value<Integer> getForwardTempActual() { return this.getForwardTempActualChannel().value(); }
-
-    /**
-     * Gets the Channel for {@link ChannelId#IR516_RUECKLAUFISTTEMP}.
-     *
-     * @return the Channel
-     */
-    public default IntegerReadChannel getRewindTempActualChannel() {
-        return this.channel(ChannelId.IR516_RUECKLAUFISTTEMP);
-    }
-
-    /**
-     * Rewind temperature, actual. Unit is decimal degree Celsius.
-     *
-     * @return the Channel {@link Value}
-     */
-    public default Value<Integer> getRewindTempActual() { return this.getRewindTempActualChannel().value(); }
 
     /**
      * Gets the Channel for {@link ChannelId#IR517_FESTWERTSOLLTEMP}.
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getFixTempSetpointChannel() {
+    public default IntegerReadChannel getConstTempSetpointChannel() {
         return this.channel(ChannelId.IR517_FESTWERTSOLLTEMP);
     }
 
     /**
-     * Fix temperature setpoint. Unit is decimal degree Celsius.
+     * Gets the constant temperature setpoint. Unit is decimal degree Celsius.
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getFixTempSetpoint() { return this.getFixTempSetpointChannel().value(); }
+    public default Value<Integer> getConstTempSetpoint() {
+        return this.getConstTempSetpointChannel().value();
+    }
 
     /**
      * Gets the Channel for {@link ChannelId#IR518_PUFFERISTTEMP}.
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getBuffetTankTempActualChannel() {
+    public default IntegerReadChannel getStorageTankTempChannel() {
         return this.channel(ChannelId.IR518_PUFFERISTTEMP);
     }
 
     /**
-     * Buffer tank temperature, actual. Unit is decimal degree Celsius.
+     * Gets the storage tank temperature. Unit is decimal degree Celsius.
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getBuffetTankTempActual() { return this.getBuffetTankTempActualChannel().value(); }
+    public default Value<Integer> getStorageTankTemp() {
+        return this.getStorageTankTempChannel().value();
+    }
 
     /**
      * Gets the Channel for {@link ChannelId#IR519_PUFFERSOLLTEMP}.
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getBuffetTankTempSetpointChannel() {
+    public default IntegerReadChannel getStorageTankTempSetpointChannel() {
         return this.channel(ChannelId.IR519_PUFFERSOLLTEMP);
     }
 
     /**
-     * Buffer tank temperature, setpoint. Unit is decimal degree Celsius.
+     * Gets the storage tank temperature setpoint. Unit is decimal degree Celsius.
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getBuffetTankTempSetpoint() { return this.getBuffetTankTempSetpointChannel().value(); }
+    public default Value<Integer> getStorageTankTempSetpoint() {
+        return this.getStorageTankTempSetpointChannel().value();
+    }
 
     /**
      * Gets the Channel for {@link ChannelId#IR520_HEIZUNGSDRUCK}.
@@ -981,11 +915,13 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
     }
 
     /**
-     * Heating circuit pressure. Unit is centi bar (bar e-2).
+     * Gets the heating circuit pressure. Unit is centi bar (bar e-2).
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getHeatingCircuitPressure() { return this.getHeatingCircuitPressureChannel().value(); }
+    public default Value<Integer> getHeatingCircuitPressure() {
+        return this.getHeatingCircuitPressureChannel().value();
+    }
 
     /**
      * Gets the Channel for {@link ChannelId#IR521_VOLUMENSTROM}.
@@ -997,357 +933,421 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
     }
 
     /**
-     * Heating circuit current. Unit is decimal liters per minute (l/min e-1).
+     * Gets the heating circuit current. Unit is decimal liters per minute (l/min e-1).
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getHeatingCircuitCurrent() { return this.getHeatingCircuitCurrentChannel().value(); }
+    public default Value<Integer> getHeatingCircuitCurrent() {
+        return this.getHeatingCircuitCurrentChannel().value();
+    }
 
     /**
      * Gets the Channel for {@link ChannelId#IR522_WWISTTEMP}.
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getWarmWaterTempActualChannel() { return this.channel(ChannelId.IR522_WWISTTEMP); }
+    public default IntegerReadChannel getDomesticHotWaterTempChannel() {
+        return this.channel(ChannelId.IR522_WWISTTEMP);
+    }
 
     /**
-     * Warm water temperature, actual. Unit is decimal degree Celsius.
+     * Gets the domestic hot water temperature. Unit is decimal degree Celsius.
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getWarmWaterTempActual() { return this.getWarmWaterTempActualChannel().value(); }
+    public default Value<Integer> getDomesticHotWaterTemp() {
+        return this.getDomesticHotWaterTempChannel().value();
+    }
 
     /**
      * Gets the Channel for {@link ChannelId#IR523_WWSOLLTEMP}.
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getWarmWaterTempSetpointChannel() { return this.channel(ChannelId.IR523_WWSOLLTEMP); }
+    public default IntegerReadChannel getDomesticHotWaterTempSetpointChannel() {
+        return this.channel(ChannelId.IR523_WWSOLLTEMP);
+    }
 
     /**
-     * Warm water temperature, setpoint. Unit is decimal degree Celsius.
+     * Gets the domestic hot water temperature setpoint. Unit is decimal degree Celsius.
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getWarmWaterTempSetpoint() { return this.getWarmWaterTempSetpointChannel().value(); }
+    public default Value<Integer> getDomesticHotWaterTempSetpoint() {
+        return this.getDomesticHotWaterTempSetpointChannel().value();
+    }
 
     /**
      * Gets the Channel for {@link ChannelId#IR524_GEBLAESEISTTEMP}.
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getVentilationCoolingTempActualChannel() { return this.channel(ChannelId.IR524_GEBLAESEISTTEMP); }
+    public default IntegerReadChannel getVentilationCoolingTempChannel() {
+        return this.channel(ChannelId.IR524_GEBLAESEISTTEMP);
+    }
 
     /**
-     * Ventilation cooling temperature, actual. Unit is decimal degree Celsius.
+     * Gets the ventilation cooling temperature. Unit is decimal degree Kelvin.
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getVentilationCoolingTempActual() { return this.getVentilationCoolingTempActualChannel().value(); }
+    public default Value<Integer> getVentilationCoolingTemp() {
+        return this.getVentilationCoolingTempChannel().value();
+    }
 
     /**
      * Gets the Channel for {@link ChannelId#IR525_GEBLAESESOLLTEMP}.
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getVentilationCoolingTempSetpointChannel() { return this.channel(ChannelId.IR525_GEBLAESESOLLTEMP); }
+    public default IntegerReadChannel getVentilationCoolingTempSetpointChannel() {
+        return this.channel(ChannelId.IR525_GEBLAESESOLLTEMP);
+    }
 
     /**
-     * Ventilation cooling temperature, setpoint. Unit is decimal degree Celsius.
+     * Gets the ventilation cooling temperature setpoint. Unit is decimal degree Kelvin.
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getVentilationCoolingTempSetpoint() { return this.getVentilationCoolingTempSetpointChannel().value(); }
+    public default Value<Integer> getVentilationCoolingTempSetpoint() {
+        return this.getVentilationCoolingTempSetpointChannel().value();
+    }
 
     /**
      * Gets the Channel for {@link ChannelId#IR526_FLAECHEISTTEMP}.
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getSurfaceCoolingTempActualChannel() { return this.channel(ChannelId.IR526_FLAECHEISTTEMP); }
+    public default IntegerReadChannel getSurfaceCoolingTempChannel() {
+        return this.channel(ChannelId.IR526_FLAECHEISTTEMP);
+    }
 
     /**
-     * Surface cooling temperature, actual. Unit is decimal degree Celsius.
+     * Gets the surface cooling temperature. Unit is decimal degree Kelvin.
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getSurfaceCoolingTempActual() { return this.getSurfaceCoolingTempActualChannel().value(); }
+    public default Value<Integer> getSurfaceCoolingTemp() {
+        return this.getSurfaceCoolingTempChannel().value();
+    }
 
     /**
      * Gets the Channel for {@link ChannelId#IR527_FLAECHESOLLTEMP}.
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getSurfaceCoolingTempSetpointChannel() { return this.channel(ChannelId.IR527_FLAECHESOLLTEMP); }
+    public default IntegerReadChannel getSurfaceCoolingTempSetpointChannel() {
+        return this.channel(ChannelId.IR527_FLAECHESOLLTEMP);
+    }
 
     /**
-     * Surface cooling temperature, setpoint. Unit is decimal degree Celsius.
+     * Gets the surface cooling temperature setpoint. Unit is decimal degree Kelvin.
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getSurfaceCoolingTempSetpoint() { return this.getSurfaceCoolingTempSetpointChannel().value(); }
-
-    /**
-     * Gets the Channel for {@link ChannelId#IR533_EINSATZGRENZEHZG}.
-     *
-     * @return the Channel
-     */
-    public default IntegerReadChannel getMinOperationTempHeatingCircuitChannel() { return this.channel(ChannelId.IR533_EINSATZGRENZEHZG); }
-
-    /**
-     * Minimum operation temperature heating circuit. Unit is decimal degree Celsius.
-     *
-     * @return the Channel {@link Value}
-     */
-    public default Value<Integer> getMinOperationTempHeatingCircuit() { return this.getMinOperationTempHeatingCircuitChannel().value(); }
-
-    /**
-     * Gets the Channel for {@link ChannelId#IR534_EINSATZGRENZEWW}.
-     *
-     * @return the Channel
-     */
-    public default IntegerReadChannel getMinOperationTempWarmWaterChannel() { return this.channel(ChannelId.IR534_EINSATZGRENZEWW); }
-
-    /**
-     * Minimum operation temperature warm water. Unit is decimal degree Celsius.
-     *
-     * @return the Channel {@link Value}
-     */
-    public default Value<Integer> getMinOperationTempWarmWater() { return this.getMinOperationTempWarmWaterChannel().value(); }
+    public default Value<Integer> getSurfaceCoolingTempSetpoint() {
+        return this.getSurfaceCoolingTempSetpointChannel().value();
+    }
 
     /**
      * Gets the Channel for {@link ChannelId#IR2501_STATUSBITS}.
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getStatusBitsChannel() { return this.channel(ChannelId.IR2501_STATUSBITS); }
+    public default IntegerReadChannel getStatusBitsChannel() {
+        return this.channel(ChannelId.IR2501_STATUSBITS);
+    }
 
     /**
-     * Status bits.
+     * Gets the status bits.
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getStatusBits() { return this.getStatusBitsChannel().value(); }
+    public default Value<Integer> getStatusBits() {
+        return this.getStatusBitsChannel().value();
+    }
 
     /**
      * Gets the Channel for {@link ChannelId#IR2502_EVUFREIGABE}.
      *
      * @return the Channel
      */
-    public default BooleanReadChannel getEvuClearanceChannel() { return this.channel(ChannelId.IR2502_EVUFREIGABE); }
+    public default BooleanReadChannel getElSupBlockReleaseChannel() {
+        return this.channel(ChannelId.IR2502_EVUFREIGABE);
+    }
 
     /**
-     * EVU clearance.
+     * Gets the electric supplier block/release status (EVU Freigabe). True = release.
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Boolean> getEvuClearance() { return this.getEvuClearanceChannel().value(); }
+    public default Value<Boolean> getElSupBlockRelease() {
+        return this.getElSupBlockReleaseChannel().value();
+    }
 
     /**
      * Gets the Channel for {@link ChannelId#IR2504_ERRORSTATUS}.
      *
      * @return the Channel
      */
-    public default BooleanReadChannel getErrorStatusChannel() { return this.channel(ChannelId.IR2504_ERRORSTATUS); }
+    public default BooleanReadChannel getErrorStatusChannel() {
+        return this.channel(ChannelId.IR2504_ERRORSTATUS);
+    }
 
     /**
-     * Error status. False for no error.
+     * Gets the error status. False for no error.
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Boolean> getErrorStatus() { return this.getErrorStatusChannel().value(); }
+    public default Value<Boolean> getErrorStatus() {
+        return this.getErrorStatusChannel().value();
+    }
 
     /**
      * Gets the Channel for {@link ChannelId#IR2505_BUSSTATUS}.
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getBusStatusChannel() { return this.channel(ChannelId.IR2505_BUSSTATUS); }
+    public default IntegerReadChannel getBusStatusChannel() {
+        return this.channel(ChannelId.IR2505_BUSSTATUS);
+    }
 
     /**
-     * BUS status.
+     * Gets the BUS status.
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getBusStatus() { return this.getBusStatusChannel().value(); }
+    public default Value<Integer> getBusStatus() {
+        return this.getBusStatusChannel().value();
+    }
 
     /**
      * Gets the Channel for {@link ChannelId#IR2506_DEFROST}.
      *
      * @return the Channel
      */
-    public default BooleanReadChannel getDefrostActiveChannel() { return this.channel(ChannelId.IR2506_DEFROST); }
+    public default BooleanReadChannel getDefrostActiveChannel() {
+        return this.channel(ChannelId.IR2506_DEFROST);
+    }
 
     /**
-     * Defrost engaged.
+     * Defrost active.
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Boolean> getDefrostActive() { return this.getDefrostActiveChannel().value(); }
+    public default Value<Boolean> getDefrostActive() {
+        return this.getDefrostActiveChannel().value();
+    }
 
     /**
-     * Gets the Channel for {@link ChannelId#IR2507_ERRORNUMBER}.
+     * Gets the Channel for {@link ChannelId#IR2507_ERROR_CODE}.
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getErrorNumberChannel() { return this.channel(ChannelId.IR2507_ERRORNUMBER); }
+    public default IntegerReadChannel getErrorCodeChannel() {
+        return this.channel(ChannelId.IR2507_ERROR_CODE);
+    }
 
     /**
-     * Error number.
+     * Gets the error code.
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getErrorNumber() { return this.getErrorNumberChannel().value(); }
+    public default Value<Integer> getErrorCode() {
+        return this.getErrorCodeChannel().value();
+    }
 
     /**
      * Gets the Channel for {@link ChannelId#IR3501_HEATPRODUCED_VDHEIZENTAG}.
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getProducedHeatForHkDailyChannel() { return this.channel(ChannelId.IR3501_HEATPRODUCED_VDHEIZENTAG); }
+    public default IntegerReadChannel getProducedHeatCircuitDailyChannel() {
+        return this.channel(ChannelId.IR3501_HEATPRODUCED_VDHEIZENTAG);
+    }
 
     /**
      * Produced heat for heating circuits, all heat pumps combined for this day.
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getProducedHeatForHkDaily() { return this.getProducedHeatForHkDailyChannel().value(); }
+    public default Value<Integer> getProducedHeatCircuitDaily() {
+        return this.getProducedHeatCircuitDailyChannel().value();
+    }
 
     /**
      * Gets the Channel for {@link ChannelId#HEATPRODUCED_VDHEIZENSUM}.
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getProducedHeatForHkSumChannel() { return this.channel(ChannelId.HEATPRODUCED_VDHEIZENSUM); }
+    public default IntegerReadChannel getProducedHeatCircuitTotalChannel() {
+        return this.channel(ChannelId.HEATPRODUCED_VDHEIZENSUM);
+    }
 
     /**
      * Produced heat for heating circuits total, all heat pumps combined.
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getProducedHeatForHkSum() { return this.getProducedHeatForHkSumChannel().value(); }
+    public default Value<Integer> getProducedHeatCircuitTotal() {
+        return this.getProducedHeatCircuitTotalChannel().value();
+    }
 
     /**
      * Gets the Channel for {@link ChannelId#IR3504_HEATPRODUCED_VDWWTAG}.
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getProducedHeatForWwDailyChannel() { return this.channel(ChannelId.IR3504_HEATPRODUCED_VDWWTAG); }
+    public default IntegerReadChannel getProducedHeatWaterDailyChannel() {
+        return this.channel(ChannelId.IR3504_HEATPRODUCED_VDWWTAG);
+    }
 
     /**
-     * Produced heat for warm water, all heat pumps combined for this day.
+     * Produced heat for domestic hot water, all heat pumps combined for this day.
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getProducedHeatForWwDaily() { return this.getProducedHeatForWwDailyChannel().value(); }
+    public default Value<Integer> getProducedHeatWaterDaily() {
+        return this.getProducedHeatWaterDailyChannel().value();
+    }
 
     /**
      * Gets the Channel for {@link ChannelId#HEATPRODUCED_VDWWSUM}.
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getProducedHeatForWwSumChannel() { return this.channel(ChannelId.HEATPRODUCED_VDWWSUM); }
+    public default IntegerReadChannel getProducedHeatWaterTotalChannel() {
+        return this.channel(ChannelId.HEATPRODUCED_VDWWSUM);
+    }
 
     /**
-     * Produced heat for warm water total, all heat pumps combined.
+     * Produced heat for domestic hot water total, all heat pumps combined.
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getProducedHeatForWwSum() { return this.getProducedHeatForWwSumChannel().value(); }
+    public default Value<Integer> getProducedHeatWaterTotal() {
+        return this.getProducedHeatWaterTotalChannel().value();
+    }
 
     /**
      * Gets the Channel for {@link ChannelId#HEATPRODUCED_NZHHEIZENSUM}.
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getProducedHeatNhzForHkSumChannel() { return this.channel(ChannelId.HEATPRODUCED_NZHHEIZENSUM); }
+    public default IntegerReadChannel getProducedHeatCircuitTotalAuxChannel() {
+        return this.channel(ChannelId.HEATPRODUCED_NZHHEIZENSUM);
+    }
 
     /**
-     * Produced heat for heating circuits total, backup heater.
+     * Produced heat for heating circuits total, auxiliary heater.
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getProducedHeatNhzForHkSum() { return this.getProducedHeatNhzForHkSumChannel().value(); }
+    public default Value<Integer> getProducedHeatCircuitTotalAux() {
+        return this.getProducedHeatCircuitTotalAuxChannel().value();
+    }
 
     /**
      * Gets the Channel for {@link ChannelId#HEATPRODUCED_NZHWWSUM}.
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getProducedHeatNhzForWwSumChannel() { return this.channel(ChannelId.HEATPRODUCED_NZHWWSUM); }
+    public default IntegerReadChannel getProducedHeatWaterTotalAuxChannel() {
+        return this.channel(ChannelId.HEATPRODUCED_NZHWWSUM);
+    }
 
     /**
-     * Produced heat for warm water total, backup heater.
+     * Produced heat for domestic hot water total, auxiliary heater.
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getProducedHeatNhzForWwSum() { return this.getProducedHeatNhzForWwSumChannel().value(); }
+    public default Value<Integer> getProducedHeatWaterTotalAux() {
+        return this.getProducedHeatWaterTotalAuxChannel().value();
+    }
 
     /**
      * Gets the Channel for {@link ChannelId#IR3511_CONSUMEDPOWER_VDHEIZENTAG}.
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getConsumedPowerForHkDailyChannel() { return this.channel(ChannelId.IR3511_CONSUMEDPOWER_VDHEIZENTAG); }
+    public default IntegerReadChannel getConsumedPowerCircuitDailyChannel() {
+        return this.channel(ChannelId.IR3511_CONSUMEDPOWER_VDHEIZENTAG);
+    }
 
     /**
      * Consumed power for heating the heating circuits, all heat pumps combined for this day.
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getConsumedPowerForHkDaily() { return this.getConsumedPowerForHkDailyChannel().value(); }
+    public default Value<Integer> getConsumedPowerCircuitDaily() {
+        return this.getConsumedPowerCircuitDailyChannel().value();
+    }
 
     /**
      * Gets the Channel for {@link ChannelId#CONSUMEDPOWER_VDHEIZENSUM}.
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getConsumedPowerForHkSumChannel() { return this.channel(ChannelId.CONSUMEDPOWER_VDHEIZENSUM); }
+    public default IntegerReadChannel getConsumedPowerCircuitTotalChannel() {
+        return this.channel(ChannelId.CONSUMEDPOWER_VDHEIZENSUM);
+    }
 
     /**
      * Consumed power for heating the heating circuits total, all heat pumps combined.
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getConsumedPowerForHkSum() { return this.getConsumedPowerForHkSumChannel().value(); }
+    public default Value<Integer> getConsumedPowerCircuitTotal() {
+        return this.getConsumedPowerCircuitTotalChannel().value();
+    }
 
     /**
      * Gets the Channel for {@link ChannelId#IR3514_CONSUMEDPOWER_VDWWTAG}.
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getConsumedPowerForWwDailyChannel() { return this.channel(ChannelId.IR3514_CONSUMEDPOWER_VDWWTAG); }
+    public default IntegerReadChannel getConsumedPowerWaterDailyChannel() {
+        return this.channel(ChannelId.IR3514_CONSUMEDPOWER_VDWWTAG);
+    }
 
     /**
-     * Consumed power for heating warm water, all heat pumps combined for this day.
+     * Consumed power for heating domestic hot water, all heat pumps combined for this day.
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getConsumedPowerForWwDaily() { return this.getConsumedPowerForWwDailyChannel().value(); }
+    public default Value<Integer> getConsumedPowerWaterDaily() {
+        return this.getConsumedPowerWaterDailyChannel().value();
+    }
 
     /**
      * Gets the Channel for {@link ChannelId#CONSUMEDPOWER_VDWWSUM}.
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getConsumedPowerForWwSumChannel() { return this.channel(ChannelId.CONSUMEDPOWER_VDWWSUM); }
+    public default IntegerReadChannel getConsumedPowerWaterTotalChannel() {
+        return this.channel(ChannelId.CONSUMEDPOWER_VDWWSUM);
+    }
 
     /**
-     * Consumed power for heating warm water total, all heat pumps combined.
+     * Consumed power for heating domestic hot water total, all heat pumps combined.
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getConsumedPowerForWwSum() { return this.getConsumedPowerForWwSumChannel().value(); }
+    public default Value<Integer> getConsumedPowerWaterTotal() {
+        return this.getConsumedPowerWaterTotalChannel().value();
+    }
 
     /**
      * Gets the Channel for {@link ChannelId#IR5001_SGREADY_OPERATINGMODE}.
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getSgReadyOperatingModeChannel() { return this.channel(ChannelId.IR5001_SGREADY_OPERATINGMODE); }
+    public default IntegerReadChannel getSgReadyOperatingModeChannel() {
+        return this.channel(ChannelId.IR5001_SGREADY_OPERATINGMODE);
+    }
 
     /**
-     * SG-Ready Operating mode.
+     * SG-Ready Operating mode, read. Mapped to SmartGridState of HeatpumpSmartGrid interface.
      * <ul>
      *      <li> Type: Integer
      *      <li> Possible values: 1 ... 4
@@ -1359,17 +1359,21 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getSgReadyOperatingMode() { return this.getSgReadyOperatingModeChannel().value(); }
+    public default Value<Integer> getSgReadyOperatingMode() {
+        return this.getSgReadyOperatingModeChannel().value();
+    }
 
     /**
      * Gets the Channel for {@link ChannelId#IR5002_REGLERKENNUNG}.
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getReglerkennungChannel() { return this.channel(ChannelId.IR5002_REGLERKENNUNG); }
+    public default IntegerReadChannel getControllerModelChannel() {
+        return this.channel(ChannelId.IR5002_REGLERKENNUNG);
+    }
 
     /**
-     * Reglerkennung.
+     * Controller model (Reglerkennung).
      * <ul>
      *      <li> Type: Integer
      *      <li> Value 103: THZ 303, 403 (Integral/SOL), THD 400 AL, THZ 304 eco, 404 eco, THZ 304/404 FLEX,
@@ -1382,7 +1386,9 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getReglerkennung() { return this.getReglerkennungChannel().value(); }
+    public default Value<Integer> getControllerModel() {
+        return this.getControllerModelChannel().value();
+    }
 
 
     // Holding Registers. Read/Write.
@@ -1392,55 +1398,80 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
      *
      * @return the Channel
      */
-    public default IntegerWriteChannel getOperatingModeChannel() { return this.channel(ChannelId.HR1501_BERTIEBSART); }
+    public default IntegerWriteChannel getOperatingModeChannel() {
+        return this.channel(ChannelId.HR1501_BERTIEBSART);
+    }
 
     /**
-     * get operating mode.
+     * Get the operating mode.
      * <ul>
      *      <li> Type: Integer
      *      <li> Possible values: 0 ... 5
-     *      <li> State 0: Notbetrieb
-     *      <li> State 1: Bereitschaftsbetrieb
-     *      <li> State 2: Programmbetrieb
-     *      <li> State 3: Komfortbetrieb
-     *      <li> State 4: ECO-Betrieb
-     *      <li> State 5: Warmwasserbetrieb
+     *      <li> State 0: Antifreeze protection only (Notbetrieb)
+     *      <li> State 1: Standby mode (Bereitschaftsbetrieb)
+     *      <li> State 2: Program mode (Programmbetrieb)
+     *      <li> State 3: Comfort mode (Komfortbetrieb)
+     *      <li> State 4: ECO mode (ECO-Betrieb)
+     *      <li> State 5: Domestic hot water (Warmwasserbetrieb)
      * </ul>
 	 * See {@link ChannelId#HR1501_BERTIEBSART}.
 	 *
 	 * @return the Channel {@link Value}
 	 */
-	public default Value<Integer> getOperatingMode() {
+    public default Value<Integer> getOperatingMode() {
 		return this.getOperatingModeChannel().value();
 	}
 	
 	/**
-     * Set operating mode.
+     * Set the operating mode.
      * <ul>
      *      <li> Type: Integer
      *      <li> Possible values: 0 ... 5
-     *      <li> State 0: Notbetrieb
-     *      <li> State 1: Bereitschaftsbetrieb
-     *      <li> State 2: Programmbetrieb
-     *      <li> State 3: Komfortbetrieb
-     *      <li> State 4: ECO-Betrieb
-     *      <li> State 5: Warmwasserbetrieb
+     *      <li> State 0: Antifreeze protection only (Notbetrieb)
+     *      <li> State 1: Standby mode (Bereitschaftsbetrieb)
+     *      <li> State 2: Program mode (Programmbetrieb)
+     *      <li> State 3: Comfort mode (Komfortbetrieb)
+     *      <li> State 4: ECO mode (ECO-Betrieb)
+     *      <li> State 5: Domestic hot water (Warmwasserbetrieb)
      * </ul> 
 	 * See {@link ChannelId#HR1501_BERTIEBSART}.
 	 * 
 	 * @param value the next write value
 	 * @throws OpenemsNamedException on error
 	 */
-	public default void setOperatingMode(Integer value) throws OpenemsNamedException {
+	public default void setOperatingMode(int value) throws OpenemsNamedException {
 		this.getOperatingModeChannel().setNextWriteValue(value);
 	}
+
+    /**
+     * Set the operating mode.
+     * <ul>
+     *      <li> Type: Integer
+     *      <li> Possible values: 0 ... 5
+     *      <li> State 0: Antifreeze protection only (Notbetrieb)
+     *      <li> State 1: Standby mode (Bereitschaftsbetrieb)
+     *      <li> State 2: Program mode (Programmbetrieb)
+     *      <li> State 3: Comfort mode (Komfortbetrieb)
+     *      <li> State 4: ECO mode (ECO-Betrieb)
+     *      <li> State 5: Domestic hot water (Warmwasserbetrieb)
+     * </ul>
+     * See {@link ChannelId#HR1501_BERTIEBSART}.
+     *
+     * @param value the next write value
+     * @throws OpenemsNamedException on error
+     */
+    public default void setOperatingMode(Integer value) throws OpenemsNamedException {
+        this.getOperatingModeChannel().setNextWriteValue(value);
+    }
     
     /**
      * Gets the Channel for {@link ChannelId#HR1502_KOMFORTTEMPHK1}.
      *
      * @return the Channel
      */
-    public default IntegerWriteChannel getComfortTempHk1Channel() { return this.channel(ChannelId.HR1502_KOMFORTTEMPHK1); }
+    public default IntegerWriteChannel getComfortTempCircuit1Channel() {
+        return this.channel(ChannelId.HR1502_KOMFORTTEMPHK1);
+    }
     
     /**
      * Get the comfort temperature setting, heating circuit 1. Unit is dezidegree Celsius.
@@ -1448,8 +1479,8 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
 	 *
 	 * @return the Channel {@link Value}
 	 */
-	public default Value<Integer> getComfortTempHk1() {
-		return this.getComfortTempHk1Channel().value();
+    public default Value<Integer> getComfortTempCircuit1() {
+		return this.getComfortTempCircuit1Channel().value();
 	}
 	
 	/**
@@ -1459,16 +1490,29 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
 	 * @param value the next write value
 	 * @throws OpenemsNamedException on error
 	 */
-	public default void setComfortTempHk1(Integer value) throws OpenemsNamedException {
-		this.getComfortTempHk1Channel().setNextWriteValue(value);
+	public default void setComfortTempCircuit1(int value) throws OpenemsNamedException {
+		this.getComfortTempCircuit1Channel().setNextWriteValue(value);
 	}
+
+    /**
+     * Set the comfort temperature setting, heating circuit 1. Unit is dezidegree Celsius.
+     * See {@link ChannelId#HR1502_KOMFORTTEMPHK1}.
+     *
+     * @param value the next write value
+     * @throws OpenemsNamedException on error
+     */
+    public default void setComfortTempCircuit1(Integer value) throws OpenemsNamedException {
+        this.getComfortTempCircuit1Channel().setNextWriteValue(value);
+    }
 
     /**
      * Gets the Channel for {@link ChannelId#HR1503_ECOTEMPHK1}.
      *
      * @return the Channel
      */
-    public default IntegerWriteChannel getEcoTempHk1Channel() { return this.channel(ChannelId.HR1503_ECOTEMPHK1); }
+    public default IntegerWriteChannel getEcoTempCircuit1Channel() {
+        return this.channel(ChannelId.HR1503_ECOTEMPHK1);
+    }
 
     /**
      * Get the ECO temperature setting, heating circuit 1. Unit is dezidegree Celsius.
@@ -1476,8 +1520,8 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
 	 *
 	 * @return the Channel {@link Value}
 	 */
-	public default Value<Integer> getEcoTempHk1() {
-		return this.getEcoTempHk1Channel().value();
+    public default Value<Integer> getEcoTempCircuit1() {
+		return this.getEcoTempCircuit1Channel().value();
 	}
 	
 	/**
@@ -1487,44 +1531,70 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
 	 * @param value the next write value
 	 * @throws OpenemsNamedException on error
 	 */
-	public default void setEcoTempHk1(Integer value) throws OpenemsNamedException {
-		this.getEcoTempHk1Channel().setNextWriteValue(value);
+	public default void setEcoTempCircuit1(int value) throws OpenemsNamedException {
+		this.getEcoTempCircuit1Channel().setNextWriteValue(value);
 	}
+
+    /**
+     * Set the ECO temperature setting, heating circuit 1. Unit is dezidegree Celsius.
+     * See {@link ChannelId#HR1503_ECOTEMPHK1}.
+     *
+     * @param value the next write value
+     * @throws OpenemsNamedException on error
+     */
+    public default void setEcoTempCircuit1(Integer value) throws OpenemsNamedException {
+        this.getEcoTempCircuit1Channel().setNextWriteValue(value);
+    }
     
     /**
      * Gets the Channel for {@link ChannelId#HR1504_SLOPEHK1}.
      *
      * @return the Channel
      */
-    public default IntegerWriteChannel getHeatingCurveSlopeHk1Channel() { return this.channel(ChannelId.HR1504_SLOPEHK1); }
+    public default IntegerWriteChannel getHeatingCurveSlopeCircuit1Channel() {
+        return this.channel(ChannelId.HR1504_SLOPEHK1);
+    }
 
     /**
-     * Get the Heating curve slope setting, heating circuit 1.
+     * Get the heating curve slope setting, heating circuit 1.
 	 * See {@link ChannelId#HR1504_SLOPEHK1}.
 	 *
 	 * @return the Channel {@link Value}
 	 */
-	public default Value<Integer> getHeatingCurveSlopeHk1() {
-		return this.getHeatingCurveSlopeHk1Channel().value();
+    public default Value<Integer> getHeatingCurveSlopeCircuit1() {
+		return this.getHeatingCurveSlopeCircuit1Channel().value();
 	}
 	
 	/**
-     * Set the Heating curve slope setting, heating circuit 1.
+     * Set the heating curve slope setting, heating circuit 1.
 	 * See {@link ChannelId#HR1504_SLOPEHK1}.
 	 * 
 	 * @param value the next write value
 	 * @throws OpenemsNamedException on error
 	 */
-	public default void setHeatingCurveSlopeHk1(Integer value) throws OpenemsNamedException {
-		this.getHeatingCurveSlopeHk1Channel().setNextWriteValue(value);
+	public default void setHeatingCurveSlopeCircuit1(int value) throws OpenemsNamedException {
+		this.getHeatingCurveSlopeCircuit1Channel().setNextWriteValue(value);
 	}
+
+    /**
+     * Set the heating curve slope setting, heating circuit 1.
+     * See {@link ChannelId#HR1504_SLOPEHK1}.
+     *
+     * @param value the next write value
+     * @throws OpenemsNamedException on error
+     */
+    public default void setHeatingCurveSlopeCircuit1(Integer value) throws OpenemsNamedException {
+        this.getHeatingCurveSlopeCircuit1Channel().setNextWriteValue(value);
+    }
     
     /**
      * Gets the Channel for {@link ChannelId#HR1505_KOMFORTTEMPHK2}.
      *
      * @return the Channel
      */
-    public default IntegerWriteChannel getComfortTempHk2Channel() { return this.channel(ChannelId.HR1505_KOMFORTTEMPHK2); }
+    public default IntegerWriteChannel getComfortTempCircuit2Channel() {
+        return this.channel(ChannelId.HR1505_KOMFORTTEMPHK2);
+    }
 
     /**
      * Get the comfort temperature setting, heating circuit 2. Unit is dezidegree Celsius.
@@ -1532,8 +1602,8 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
 	 *
 	 * @return the Channel {@link Value}
 	 */
-	public default Value<Integer> getComfortTempHk2() {
-		return this.getComfortTempHk2Channel().value();
+    public default Value<Integer> getComfortTempCircuit2() {
+		return this.getComfortTempCircuit2Channel().value();
 	}
 	
 	/**
@@ -1543,16 +1613,29 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
 	 * @param value the next write value
 	 * @throws OpenemsNamedException on error
 	 */
-	public default void setComfortTempHk2(Integer value) throws OpenemsNamedException {
-		this.getComfortTempHk2Channel().setNextWriteValue(value);
+	public default void setComfortTempCircuit2(int value) throws OpenemsNamedException {
+		this.getComfortTempCircuit2Channel().setNextWriteValue(value);
 	}
+
+    /**
+     * Set the comfort temperature setting, heating circuit 2. Unit is dezidegree Celsius.
+     * See {@link ChannelId#HR1505_KOMFORTTEMPHK2}.
+     *
+     * @param value the next write value
+     * @throws OpenemsNamedException on error
+     */
+    public default void setComfortTempCircuit2(Integer value) throws OpenemsNamedException {
+        this.getComfortTempCircuit2Channel().setNextWriteValue(value);
+    }
     
     /**
      * Gets the Channel for {@link ChannelId#HR1506_ECOTEMPHK2}.
      *
      * @return the Channel
      */
-    public default IntegerWriteChannel getEcoTempHk2Channel() { return this.channel(ChannelId.HR1506_ECOTEMPHK2); }
+    public default IntegerWriteChannel getEcoTempCircuit2Channel() {
+        return this.channel(ChannelId.HR1506_ECOTEMPHK2);
+    }
 
     /**
      * Get the ECO temperature setting, heating circuit 2. Unit is dezidegree Celsius.
@@ -1560,8 +1643,8 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
 	 *
 	 * @return the Channel {@link Value}
 	 */
-	public default Value<Integer> getEcoTempHk2() {
-		return this.getEcoTempHk2Channel().value();
+    public default Value<Integer> getEcoTempCircuit2() {
+		return this.getEcoTempCircuit2Channel().value();
 	}
 	
 	/**
@@ -1571,16 +1654,29 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
 	 * @param value the next write value
 	 * @throws OpenemsNamedException on error
 	 */
-	public default void setEcoTempHk2(Integer value) throws OpenemsNamedException {
-		this.getEcoTempHk2Channel().setNextWriteValue(value);
+	public default void setEcoTempCircuit2(int value) throws OpenemsNamedException {
+		this.getEcoTempCircuit2Channel().setNextWriteValue(value);
 	}
+
+    /**
+     * Set the ECO temperature setting, heating circuit 2. Unit is dezidegree Celsius.
+     * See {@link ChannelId#HR1506_ECOTEMPHK2}.
+     *
+     * @param value the next write value
+     * @throws OpenemsNamedException on error
+     */
+    public default void setEcoTempCircuit2(Integer value) throws OpenemsNamedException {
+        this.getEcoTempCircuit2Channel().setNextWriteValue(value);
+    }
     
     /**
      * Gets the Channel for {@link ChannelId#HR1507_SLOPEHK2}.
      *
      * @return the Channel
      */
-    public default IntegerWriteChannel getHeatingCurveSlopeHk2Channel() { return this.channel(ChannelId.HR1507_SLOPEHK2); }
+    public default IntegerWriteChannel getHeatingCurveSlopeCircuit2Channel() {
+        return this.channel(ChannelId.HR1507_SLOPEHK2);
+    }
 
     /**
      * Get the Heating curve slope setting, heating circuit 2.
@@ -1588,8 +1684,8 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
 	 *
 	 * @return the Channel {@link Value}
 	 */
-	public default Value<Integer> getHeatingCurveSlopeHk2() {
-		return this.getHeatingCurveSlopeHk2Channel().value();
+    public default Value<Integer> getHeatingCurveSlopeCircuit2() {
+		return this.getHeatingCurveSlopeCircuit2Channel().value();
 	}
 	
 	/**
@@ -1599,245 +1695,357 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
 	 * @param value the next write value
 	 * @throws OpenemsNamedException on error
 	 */
-	public default void setHeatingCurveSlopeHk2(Integer value) throws OpenemsNamedException {
-		this.getHeatingCurveSlopeHk2Channel().setNextWriteValue(value);
+	public default void setHeatingCurveSlopeCircuit2(int value) throws OpenemsNamedException {
+		this.getHeatingCurveSlopeCircuit2Channel().setNextWriteValue(value);
 	}
+
+    /**
+     * Set the Heating curve slope setting, heating circuit 2.
+     * See {@link ChannelId#HR1507_SLOPEHK2}.
+     *
+     * @param value the next write value
+     * @throws OpenemsNamedException on error
+     */
+    public default void setHeatingCurveSlopeCircuit2(Integer value) throws OpenemsNamedException {
+        this.getHeatingCurveSlopeCircuit2Channel().setNextWriteValue(value);
+    }
     
     /**
      * Gets the Channel for {@link ChannelId#HR1508_FESTWERTBETRIEB}.
      *
      * @return the Channel
      */
-    public default IntegerWriteChannel getFixTempOperationModeChannel() { return this.channel(ChannelId.HR1508_FESTWERTBETRIEB); }
+    public default IntegerWriteChannel getConstTempOperationModeChannel() {
+        return this.channel(ChannelId.HR1508_FESTWERTBETRIEB);
+    }
 
     /**
-     * Get the static temperature mode setting. A value of 0x9000 means disabled. When enabled, the value will be 
+     * Get the constant temperature mode setting. A value of 0x9000 means disabled. When enabled, the value will be
      * a temperature value between 200 and 700. Unit is dezidegree Celsius.
 	 * See {@link ChannelId#HR1508_FESTWERTBETRIEB}.
 	 *
 	 * @return the Channel {@link Value}
 	 */
-	public default Value<Integer> getFixTempOperationMode() {
-		return this.getFixTempOperationModeChannel().value();
+    public default Value<Integer> getConstTempOperationMode() {
+		return this.getConstTempOperationModeChannel().value();
 	}
 	
 	/**
-     * Set the static temperature mode setting. 0x9000 disables this mode, a temperature value between 200 and 700
+     * Set the constant temperature mode setting. 0x9000 disables this mode, a temperature value between 200 and 700
      * enables this mode. Unit is dezidegree Celsius.
 	 * See {@link ChannelId#HR1508_FESTWERTBETRIEB}.
 	 * 
 	 * @param value the next write value
 	 * @throws OpenemsNamedException on error
 	 */
-	public default void setFixTempOperationMode(Integer value) throws OpenemsNamedException {
-		this.getFixTempOperationModeChannel().setNextWriteValue(value);
+	public default void setConstTempOperationMode(Integer value) throws OpenemsNamedException {
+		this.getConstTempOperationModeChannel().setNextWriteValue(value);
 	}
+
+    /**
+     * Set the constant temperature mode setting. 0x9000 disables this mode, a temperature value between 200 and 700
+     * enables this mode. Unit is dezidegree Celsius.
+     * See {@link ChannelId#HR1508_FESTWERTBETRIEB}.
+     *
+     * @param value the next write value
+     * @throws OpenemsNamedException on error
+     */
+    public default void setConstTempOperationMode(int value) throws OpenemsNamedException {
+        this.getConstTempOperationModeChannel().setNextWriteValue(value);
+    }
     
     /**
      * Gets the Channel for {@link ChannelId#HR1509_BIVALENZTEMPERATURHZG}.
      *
      * @return the Channel
      */
-    public default IntegerWriteChannel getBackupHeaterActivationTempHkChannel() { return this.channel(ChannelId.HR1509_BIVALENZTEMPERATURHZG); }
+    public default IntegerWriteChannel getAuxHeaterActivationTempCircuitChannel() {
+        return this.channel(ChannelId.HR1509_BIVALENZTEMPERATURHZG);
+    }
 
     /**
-     * Get the backup heater activation temperature of the heating circuit. Below this temperature the backup 
+     * Get the auxiliary heater activation temperature of the heating circuit. Below this temperature the auxiliary
      * heater will activate, depending on heat demand. Unit is dezidegree Celsius.
 	 * See {@link ChannelId#HR1509_BIVALENZTEMPERATURHZG}.
 	 *
 	 * @return the Channel {@link Value}
 	 */
-	public default Value<Integer> getBackupHeaterActivationTempHk() {
-		return this.getBackupHeaterActivationTempHkChannel().value();
+    public default Value<Integer> getAuxHeaterActivationTempCircuit() {
+		return this.getAuxHeaterActivationTempCircuitChannel().value();
 	}
 	
 	/**
-     * Set the backup heater activation temperature of the heating circuit. Below this temperature the backup 
+     * Set the auxiliary heater activation temperature of the heating circuit. Below this temperature the auxiliary
      * heater will activate, depending on heat demand. Unit is dezidegree Celsius.
 	 * See {@link ChannelId#HR1509_BIVALENZTEMPERATURHZG}.
 	 * 
 	 * @param value the next write value
 	 * @throws OpenemsNamedException on error
 	 */
-	public default void setBackupHeaterActivationTempHk(Integer value) throws OpenemsNamedException {
-		this.getBackupHeaterActivationTempHkChannel().setNextWriteValue(value);
+	public default void setAuxHeaterActivationTempCircuit(int value) throws OpenemsNamedException {
+		this.getAuxHeaterActivationTempCircuitChannel().setNextWriteValue(value);
 	}
+
+    /**
+     * Set the auxiliary heater activation temperature of the heating circuit. Below this temperature the auxiliary
+     * heater will activate, depending on heat demand. Unit is dezidegree Celsius.
+     * See {@link ChannelId#HR1509_BIVALENZTEMPERATURHZG}.
+     *
+     * @param value the next write value
+     * @throws OpenemsNamedException on error
+     */
+    public default void setAuxHeaterActivationTempCircuit(Integer value) throws OpenemsNamedException {
+        this.getAuxHeaterActivationTempCircuitChannel().setNextWriteValue(value);
+    }
     
     /**
      * Gets the Channel for {@link ChannelId#HR1510_KOMFORTTEMPWW}.
      *
      * @return the Channel
      */
-    public default IntegerWriteChannel getWarmWaterComfortTempChannel() { return this.channel(ChannelId.HR1510_KOMFORTTEMPWW); }
+    public default IntegerWriteChannel getDomesticHotWaterComfortTempChannel() {
+        return this.channel(ChannelId.HR1510_KOMFORTTEMPWW);
+    }
 
     /**
-     * Get the comfort temperature setting for warm water. Unit is dezidegree Celsius.
+     * Get the comfort temperature setting for domestic hot water. Unit is dezidegree Celsius.
 	 * See {@link ChannelId#HR1510_KOMFORTTEMPWW}.
 	 *
 	 * @return the Channel {@link Value}
 	 */
-	public default Value<Integer> getWarmWaterComfortTemp() {
-		return this.getWarmWaterComfortTempChannel().value();
+    public default Value<Integer> getDomesticHotWaterComfortTemp() {
+		return this.getDomesticHotWaterComfortTempChannel().value();
 	}
 	
 	/**
-     * Set the comfort temperature setting for warm water. Unit is dezidegree Celsius.
+     * Set the comfort temperature setting for domestic hot water. Unit is dezidegree Celsius.
 	 * See {@link ChannelId#HR1510_KOMFORTTEMPWW}.
 	 * 
 	 * @param value the next write value
 	 * @throws OpenemsNamedException on error
 	 */
-	public default void setWarmWaterComfortTemp(Integer value) throws OpenemsNamedException {
-		this.getWarmWaterComfortTempChannel().setNextWriteValue(value);
+	public default void setDomesticHotWaterComfortTemp(int value) throws OpenemsNamedException {
+		this.getDomesticHotWaterComfortTempChannel().setNextWriteValue(value);
 	}
+
+    /**
+     * Set the comfort temperature setting for domestic hot water. Unit is dezidegree Celsius.
+     * See {@link ChannelId#HR1510_KOMFORTTEMPWW}.
+     *
+     * @param value the next write value
+     * @throws OpenemsNamedException on error
+     */
+    public default void setDomesticHotWaterComfortTemp(Integer value) throws OpenemsNamedException {
+        this.getDomesticHotWaterComfortTempChannel().setNextWriteValue(value);
+    }
     
     /**
      * Gets the Channel for {@link ChannelId#HR1511_ECOTEMPWW}.
      *
      * @return the Channel
      */
-    public default IntegerWriteChannel getWarmWaterEcoTempChannel() { return this.channel(ChannelId.HR1511_ECOTEMPWW); }
+    public default IntegerWriteChannel getDomesticHotWaterEcoTempChannel() {
+        return this.channel(ChannelId.HR1511_ECOTEMPWW);
+    }
 
     /**
-     * Get the ECO temperature setting for warm water. Unit is dezidegree Celsius.
+     * Get the ECO temperature setting for domestic hot water. Unit is dezidegree Celsius.
 	 * See {@link ChannelId#HR1511_ECOTEMPWW}.
 	 *
 	 * @return the Channel {@link Value}
 	 */
-	public default Value<Integer> getWarmWaterEcoTemp() {
-		return this.getWarmWaterEcoTempChannel().value();
+    public default Value<Integer> getDomesticHotWaterEcoTemp() {
+		return this.getDomesticHotWaterEcoTempChannel().value();
 	}
 	
 	/**
-     * Set the ECO temperature setting for warm water. Unit is dezidegree Celsius.
+     * Set the ECO temperature setting for domestic hot water. Unit is dezidegree Celsius.
 	 * See {@link ChannelId#HR1511_ECOTEMPWW}.
 	 * 
 	 * @param value the next write value
 	 * @throws OpenemsNamedException on error
 	 */
-	public default void setWarmWaterEcoTemp(Integer value) throws OpenemsNamedException {
-		this.getWarmWaterEcoTempChannel().setNextWriteValue(value);
+	public default void setDomesticHotWaterEcoTemp(int value) throws OpenemsNamedException {
+		this.getDomesticHotWaterEcoTempChannel().setNextWriteValue(value);
 	}
+
+    /**
+     * Set the ECO temperature setting for domestic hot water. Unit is dezidegree Celsius.
+     * See {@link ChannelId#HR1511_ECOTEMPWW}.
+     *
+     * @param value the next write value
+     * @throws OpenemsNamedException on error
+     */
+    public default void setDomesticHotWaterEcoTemp(Integer value) throws OpenemsNamedException {
+        this.getDomesticHotWaterEcoTempChannel().setNextWriteValue(value);
+    }
     
     /**
      * Gets the Channel for {@link ChannelId#HR1512_WARMWASSERSTUFEN}.
      *
      * @return the Channel
      */
-    public default IntegerWriteChannel getWarmWaterStageNumberChannel() { return this.channel(ChannelId.HR1512_WARMWASSERSTUFEN); }
+    public default IntegerWriteChannel getDomesticHotWaterStagesChannel() {
+        return this.channel(ChannelId.HR1512_WARMWASSERSTUFEN);
+    }
     
     /**
-     * Get the number of stages for warm water.
+     * Get the number of stages for domestic hot water.
 	 * See {@link ChannelId#HR1512_WARMWASSERSTUFEN}.
 	 *
 	 * @return the Channel {@link Value}
 	 */
-	public default Value<Integer> getWarmWaterStageNumber() {
-		return this.getWarmWaterStageNumberChannel().value();
+    public default Value<Integer> getDomesticHotWaterStages() {
+		return this.getDomesticHotWaterStagesChannel().value();
 	}
 	
 	/**
-     * Set the Number of stages for warm water.
+     * Set the Number of stages for domestic hot water.
 	 * See {@link ChannelId#HR1512_WARMWASSERSTUFEN}.
 	 * 
 	 * @param value the next write value
 	 * @throws OpenemsNamedException on error
 	 */
-	public default void setWarmWaterStageNumber(Integer value) throws OpenemsNamedException {
-		this.getWarmWaterStageNumberChannel().setNextWriteValue(value);
+	public default void setDomesticHotWaterStages(int value) throws OpenemsNamedException {
+		this.getDomesticHotWaterStagesChannel().setNextWriteValue(value);
 	}
+
+    /**
+     * Set the Number of stages for domestic hot water.
+     * See {@link ChannelId#HR1512_WARMWASSERSTUFEN}.
+     *
+     * @param value the next write value
+     * @throws OpenemsNamedException on error
+     */
+    public default void setDomesticHotWaterStages(Integer value) throws OpenemsNamedException {
+        this.getDomesticHotWaterStagesChannel().setNextWriteValue(value);
+    }
 
     /**
      * Gets the Channel for {@link ChannelId#HR1513_BIVALENZTEMPERATURWW}.
      *
      * @return the Channel
      */
-    public default IntegerWriteChannel getBackupHeaterActivationTempWwChannel() {
+    public default IntegerWriteChannel getAuxHeaterActivationTempWaterChannel() {
         return this.channel(ChannelId.HR1513_BIVALENZTEMPERATURWW);
     }
     
     /**
-     * Get the backup heater activation temperature of the warm water. Below this temperature the backup 
+     * Get the auxiliary heater activation temperature of the domestic hot water. Below this temperature the auxiliary
      * heater will activate, depending on heat demand. Unit is dezidegree Celsius.
 	 * See {@link ChannelId#HR1513_BIVALENZTEMPERATURWW}.
 	 *
 	 * @return the Channel {@link Value}
 	 */
-	public default Value<Integer> getBackupHeaterActivationTempWw() {
-		return this.getBackupHeaterActivationTempWwChannel().value();
+    public default Value<Integer> getAuxHeaterActivationTempWater() {
+		return this.getAuxHeaterActivationTempWaterChannel().value();
 	}
 	
 	/**
-     * Set the backup heater activation temperature of the warm water. Below this temperature the backup 
+     * Set the auxiliary heater activation temperature of the domestic hot water. Below this temperature the auxiliary
      * heater will activate, depending on heat demand. Unit is dezidegree Celsius.
 	 * See {@link ChannelId#HR1513_BIVALENZTEMPERATURWW}.
 	 * 
 	 * @param value the next write value
 	 * @throws OpenemsNamedException on error
 	 */
-	public default void setBackupHeaterActivationTempWw(Integer value) throws OpenemsNamedException {
-		this.getBackupHeaterActivationTempWwChannel().setNextWriteValue(value);
+	public default void setAuxHeaterActivationTempWater(int value) throws OpenemsNamedException {
+		this.getAuxHeaterActivationTempWaterChannel().setNextWriteValue(value);
 	}
+
+    /**
+     * Set the auxiliary heater activation temperature of the domestic hot water. Below this temperature the auxiliary
+     * heater will activate, depending on heat demand. Unit is dezidegree Celsius.
+     * See {@link ChannelId#HR1513_BIVALENZTEMPERATURWW}.
+     *
+     * @param value the next write value
+     * @throws OpenemsNamedException on error
+     */
+    public default void setAuxHeaterActivationTempWater(Integer value) throws OpenemsNamedException {
+        this.getAuxHeaterActivationTempWaterChannel().setNextWriteValue(value);
+    }
 
     /**
      * Gets the Channel for {@link ChannelId#HR1514_VORLAUFSOLLTEMPFLAECHENKUEHLUNG}.
      *
      * @return the Channel
      */
-    public default IntegerWriteChannel getSurfaceCoolingForwardTempChannel() {
+    public default IntegerWriteChannel getSurfaceCoolingFlowTempChannel() {
         return this.channel(ChannelId.HR1514_VORLAUFSOLLTEMPFLAECHENKUEHLUNG);
     }
     
     /**
-     * Get the cooling mode forward temperature setpoint (surface cooling). Unit is dezidegree Celsius.
+     * Get the flow temperature setpoint, surface cooling. Unit is dezidegree Celsius.
 	 * See {@link ChannelId#HR1514_VORLAUFSOLLTEMPFLAECHENKUEHLUNG}.
 	 *
 	 * @return the Channel {@link Value}
 	 */
-	public default Value<Integer> getSurfaceCoolingForwardTemp() {
-		return this.getSurfaceCoolingForwardTempChannel().value();
+    public default Value<Integer> getSurfaceCoolingFlowTemp() {
+		return this.getSurfaceCoolingFlowTempChannel().value();
 	}
 	
 	/**
-     * Set the cooling mode forward temperature setpoint (surface cooling). Unit is dezidegree Celsius.
+     * Set the flow temperature setpoint, surface cooling. Unit is dezidegree Celsius.
 	 * See {@link ChannelId#HR1514_VORLAUFSOLLTEMPFLAECHENKUEHLUNG}.
 	 * 
 	 * @param value the next write value
 	 * @throws OpenemsNamedException on error
 	 */
-	public default void setSurfaceCoolingForwardTemp(Integer value) throws OpenemsNamedException {
-		this.getSurfaceCoolingForwardTempChannel().setNextWriteValue(value);
+	public default void setSurfaceCoolingFlowTemp(int value) throws OpenemsNamedException {
+		this.getSurfaceCoolingFlowTempChannel().setNextWriteValue(value);
 	}
+
+    /**
+     * Set the flow temperature setpoint, surface cooling. Unit is dezidegree Celsius.
+     * See {@link ChannelId#HR1514_VORLAUFSOLLTEMPFLAECHENKUEHLUNG}.
+     *
+     * @param value the next write value
+     * @throws OpenemsNamedException on error
+     */
+    public default void setSurfaceCoolingFlowTemp(Integer value) throws OpenemsNamedException {
+        this.getSurfaceCoolingFlowTempChannel().setNextWriteValue(value);
+    }
 
     /**
      * Gets the Channel for {@link ChannelId#HR1515_HYSTERESEVORLAUFTEMPFLAECHENKUEHLUNG}.
      *
      * @return the Channel
      */
-    public default IntegerWriteChannel getSurfaceCoolingForwardTempHysteresisChannel() {
+    public default IntegerWriteChannel getSurfaceCoolingFlowTempHysteresisChannel() {
         return this.channel(ChannelId.HR1515_HYSTERESEVORLAUFTEMPFLAECHENKUEHLUNG);
     }
     
     /**
-     * Get the cooling mode forward temperature hysteresis (surface cooling). Unit is dezidegree Kelvin.
+     * Get the flow temperature hysteresis, surface cooling. Unit is dezidegree Kelvin.
 	 * See {@link ChannelId#HR1515_HYSTERESEVORLAUFTEMPFLAECHENKUEHLUNG}.
 	 *
 	 * @return the Channel {@link Value}
 	 */
-	public default Value<Integer> getSurfaceCoolingForwardTempHysteresis() {
-		return this.getSurfaceCoolingForwardTempHysteresisChannel().value();
+    public default Value<Integer> getSurfaceCoolingFlowTempHysteresis() {
+		return this.getSurfaceCoolingFlowTempHysteresisChannel().value();
 	}
 	
 	/**
-     * Set the cooling mode forward temperature hysteresis (surface cooling). Unit is dezidegree Kelvin.
+     * Set the flow temperature hysteresis, surface cooling. Unit is dezidegree Kelvin.
 	 * See {@link ChannelId#HR1515_HYSTERESEVORLAUFTEMPFLAECHENKUEHLUNG}.
 	 * 
 	 * @param value the next write value
 	 * @throws OpenemsNamedException on error
 	 */
-	public default void setSurfaceCoolingForwardTempHysteresis(Integer value) throws OpenemsNamedException {
-		this.getSurfaceCoolingForwardTempHysteresisChannel().setNextWriteValue(value);
+	public default void setSurfaceCoolingFlowTempHysteresis(int value) throws OpenemsNamedException {
+		this.getSurfaceCoolingFlowTempHysteresisChannel().setNextWriteValue(value);
 	}
+
+    /**
+     * Set the flow temperature hysteresis, surface cooling. Unit is dezidegree Kelvin.
+     * See {@link ChannelId#HR1515_HYSTERESEVORLAUFTEMPFLAECHENKUEHLUNG}.
+     *
+     * @param value the next write value
+     * @throws OpenemsNamedException on error
+     */
+    public default void setSurfaceCoolingFlowTempHysteresis(Integer value) throws OpenemsNamedException {
+        this.getSurfaceCoolingFlowTempHysteresisChannel().setNextWriteValue(value);
+    }
 
     /**
      * Gets the Channel for {@link ChannelId#HR1516_RAUMSOLLTEMPFLAECHENKUEHLUNG}.
@@ -1849,85 +2057,118 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
     }
     
     /**
-     * Get the cooling mode forward temperature setpoint (surface cooling). Unit is dezidegree Celsius.
+     * Get the room temperature setpoint, surface cooling. Unit is dezidegree Celsius.
 	 * See {@link ChannelId#HR1516_RAUMSOLLTEMPFLAECHENKUEHLUNG}.
 	 *
 	 * @return the Channel {@link Value}
 	 */
-	public default Value<Integer> getSurfaceCoolingRoomTemp() {
+    public default Value<Integer> getSurfaceCoolingRoomTemp() {
 		return this.getSurfaceCoolingRoomTempChannel().value();
 	}
 	
 	/**
-     * Set the cooling mode forward temperature setpoint (surface cooling). Unit is dezidegree Celsius.
+     * Set the room temperature setpoint, surface cooling. Unit is dezidegree Celsius.
 	 * See {@link ChannelId#HR1516_RAUMSOLLTEMPFLAECHENKUEHLUNG}.
 	 * 
 	 * @param value the next write value
 	 * @throws OpenemsNamedException on error
 	 */
-	public default void setSurfaceCoolingRoomTemp(Integer value) throws OpenemsNamedException {
+	public default void setSurfaceCoolingRoomTemp(int value) throws OpenemsNamedException {
 		this.getSurfaceCoolingRoomTempChannel().setNextWriteValue(value);
 	}
+
+    /**
+     * Set the room temperature setpoint, surface cooling. Unit is dezidegree Celsius.
+     * See {@link ChannelId#HR1516_RAUMSOLLTEMPFLAECHENKUEHLUNG}.
+     *
+     * @param value the next write value
+     * @throws OpenemsNamedException on error
+     */
+    public default void setSurfaceCoolingRoomTemp(Integer value) throws OpenemsNamedException {
+        this.getSurfaceCoolingRoomTempChannel().setNextWriteValue(value);
+    }
 
     /**
      * Gets the Channel for {@link ChannelId#HR1517_VORLAUFSOLLTEMPGEBLAESEKUEHLUNG}.
      *
      * @return the Channel
      */
-    public default IntegerWriteChannel getVentilationCoolingForwardTempChannel() {
+    public default IntegerWriteChannel getVentilationCoolingFlowTempChannel() {
         return this.channel(ChannelId.HR1517_VORLAUFSOLLTEMPGEBLAESEKUEHLUNG);
     }
     
     /**
-     * Get the cooling mode forward temperature setpoint (fan cooling). Unit is dezidegree Celsius.
+     * Get the flow temperature setpoint, ventilation cooling. Unit is dezidegree Celsius.
 	 * See {@link ChannelId#HR1517_VORLAUFSOLLTEMPGEBLAESEKUEHLUNG}.
 	 *
 	 * @return the Channel {@link Value}
 	 */
-	public default Value<Integer> getVentilationCoolingForwardTemp() {
-		return this.getVentilationCoolingForwardTempChannel().value();
+    public default Value<Integer> getVentilationCoolingFlowTemp() {
+		return this.getVentilationCoolingFlowTempChannel().value();
 	}
 	
 	/**
-     * Set the cooling mode forward temperature setpoint (fan cooling). Unit is dezidegree Celsius.
+     * Set the flow temperature setpoint, ventilation cooling. Unit is dezidegree Celsius.
 	 * See {@link ChannelId#HR1517_VORLAUFSOLLTEMPGEBLAESEKUEHLUNG}.
 	 * 
 	 * @param value the next write value
 	 * @throws OpenemsNamedException on error
 	 */
-	public default void setVentilationCoolingForwardTemp(Integer value) throws OpenemsNamedException {
-		this.getVentilationCoolingForwardTempChannel().setNextWriteValue(value);
+	public default void setVentilationCoolingFlowTemp(int value) throws OpenemsNamedException {
+		this.getVentilationCoolingFlowTempChannel().setNextWriteValue(value);
 	}
+
+    /**
+     * Set the flow temperature setpoint, ventilation cooling. Unit is dezidegree Celsius.
+     * See {@link ChannelId#HR1517_VORLAUFSOLLTEMPGEBLAESEKUEHLUNG}.
+     *
+     * @param value the next write value
+     * @throws OpenemsNamedException on error
+     */
+    public default void setVentilationCoolingFlowTemp(Integer value) throws OpenemsNamedException {
+        this.getVentilationCoolingFlowTempChannel().setNextWriteValue(value);
+    }
 
     /**
      * Gets the Channel for {@link ChannelId#HR1518_HYSTERESEVORLAUFTEMPGEBLAESEKUEHLUNG}.
      *
      * @return the Channel
      */
-    public default IntegerWriteChannel getVentilationCoolingForwardTempHysteresisChannel() {
+    public default IntegerWriteChannel getVentilationCoolingFlowTempHysteresisChannel() {
         return this.channel(ChannelId.HR1518_HYSTERESEVORLAUFTEMPGEBLAESEKUEHLUNG);
     }
 
     /**
-     * Get the cooling mode forward temperature hysteresis (fan cooling). Unit is dezidegree Kelvin.
+     * Get the flow temperature hysteresis, ventilation cooling. Unit is dezidegree Kelvin.
 	 * See {@link ChannelId#HR1518_HYSTERESEVORLAUFTEMPGEBLAESEKUEHLUNG}.
 	 *
 	 * @return the Channel {@link Value}
 	 */
-	public default Value<Integer> getVentilationCoolingForwardTempHysteresis() {
-		return this.getVentilationCoolingForwardTempHysteresisChannel().value();
+    public default Value<Integer> getVentilationCoolingFlowTempHysteresis() {
+		return this.getVentilationCoolingFlowTempHysteresisChannel().value();
 	}
 	
 	/**
-     * Set the cooling mode forward temperature hysteresis (fan cooling). Unit is dezidegree Kelvin.
+     * Set the flow temperature hysteresis, ventilation cooling. Unit is dezidegree Kelvin.
 	 * See {@link ChannelId#HR1518_HYSTERESEVORLAUFTEMPGEBLAESEKUEHLUNG}.
 	 * 
 	 * @param value the next write value
 	 * @throws OpenemsNamedException on error
 	 */
-	public default void setVentilationCoolingForwardTempHysteresis(Integer value) throws OpenemsNamedException {
-		this.getVentilationCoolingForwardTempHysteresisChannel().setNextWriteValue(value);
+	public default void setVentilationCoolingFlowTempHysteresis(int value) throws OpenemsNamedException {
+		this.getVentilationCoolingFlowTempHysteresisChannel().setNextWriteValue(value);
 	}
+
+    /**
+     * Set the flow temperature hysteresis, ventilation cooling. Unit is dezidegree Kelvin.
+     * See {@link ChannelId#HR1518_HYSTERESEVORLAUFTEMPGEBLAESEKUEHLUNG}.
+     *
+     * @param value the next write value
+     * @throws OpenemsNamedException on error
+     */
+    public default void setVentilationCoolingFlowTempHysteresis(Integer value) throws OpenemsNamedException {
+        this.getVentilationCoolingFlowTempHysteresisChannel().setNextWriteValue(value);
+    }
     
     /**
      * Gets the Channel for {@link ChannelId#HR1519_RAUMSOLLTEMPGEBLAESEKUEHLUNG}.
@@ -1939,131 +2180,58 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
     }
 
     /**
-     * Get the cooling mode forward temperature setpoint (fan cooling). Unit is dezidegree Celsius.
+     * Get the room temperature setpoint, ventilation cooling. Unit is dezidegree Celsius.
 	 * See {@link ChannelId#HR1519_RAUMSOLLTEMPGEBLAESEKUEHLUNG}.
 	 *
 	 * @return the Channel {@link Value}
 	 */
-	public default Value<Integer> getVentilationCoolingRoomTemp() {
+    public default Value<Integer> getVentilationCoolingRoomTemp() {
 		return this.getVentilationCoolingRoomTempChannel().value();
 	}
 	
 	/**
-     * Set the cooling mode forward temperature setpoint (fan cooling). Unit is dezidegree Celsius.
+     * Set the room temperature setpoint, ventilation cooling. Unit is dezidegree Celsius.
 	 * See {@link ChannelId#HR1519_RAUMSOLLTEMPGEBLAESEKUEHLUNG}.
 	 * 
 	 * @param value the next write value
 	 * @throws OpenemsNamedException on error
 	 */
-	public default void setVentilationCoolingRoomTemp(Integer value) throws OpenemsNamedException {
+	public default void setVentilationCoolingRoomTemp(int value) throws OpenemsNamedException {
 		this.getVentilationCoolingRoomTempChannel().setNextWriteValue(value);
-	}
-    
-    /**
-     * Gets the Channel for {@link ChannelId#HR1520_RESET}.
-     *
-     * @return the Channel
-     */
-    public default IntegerWriteChannel getResetChannel() { return this.channel(ChannelId.HR1520_RESET); }
-    
-    /**
-     * Get reset function.
-     * <ul>
-     *      <li> Type: Integer
-     *      <li> Possible values: 1 ... 3
-     *      <li> State 1: Reset System
-     *      <li> State 2: Reset Error
-     *      <li> State 3: Reset Heatpump
-     * </ul>
-	 * See {@link ChannelId#HR1520_RESET}.
-	 *
-	 * @return the Channel {@link Value}
-	 */
-	public default Value<Integer> getReset() {
-		return this.getResetChannel().value();
-	}
-	
-	/**
-     * Set reset function.
-     * <ul>
-     *      <li> Type: Integer
-     *      <li> Possible values: 1 ... 3
-     *      <li> State 1: Reset System
-     *      <li> State 2: Reset Error
-     *      <li> State 3: Reset Heatpump
-     * </ul>
-	 * See {@link ChannelId#HR1520_RESET}.
-	 * 
-	 * @param value the next write value
-	 * @throws OpenemsNamedException on error
-	 */
-	public default void setReset(Integer value) throws OpenemsNamedException {
-		this.getResetChannel().setNextWriteValue(value);
 	}
 
     /**
-     * Gets the Channel for {@link ChannelId#HR1521_RESTART_ISG}.
+     * Set the room temperature setpoint, ventilation cooling. Unit is dezidegree Celsius.
+     * See {@link ChannelId#HR1519_RAUMSOLLTEMPGEBLAESEKUEHLUNG}.
      *
-     * @return the Channel
+     * @param value the next write value
+     * @throws OpenemsNamedException on error
      */
-    public default IntegerWriteChannel getRestartIsgChannel() { return this.channel(ChannelId.HR1521_RESTART_ISG); }
-    
-    /**
-     * Get "restart internet service gateway (ISG)" function.
-     * <ul>
-     *      <li> Type: Integer
-     *      <li> Possible values: 0 ... 2
-     *      <li> State 0: Off
-     *      <li> State 1: Restart
-     *      <li> State 2: Service button
-     * </ul>
-	 * See {@link ChannelId#HR1521_RESTART_ISG}.
-	 *
-	 * @return the Channel {@link Value}
-	 */
-	public default Value<Integer> getRestartIsg() {
-		return this.getRestartIsgChannel().value();
-	}
-	
-	/**
-     * Set "restart internet service gateway (ISG)" function.
-     * <ul>
-     *      <li> Type: Integer
-     *      <li> Possible values: 0 ... 2
-     *      <li> State 0: Off
-     *      <li> State 1: Restart
-     *      <li> State 2: Service button
-     * </ul>
-	 * See {@link ChannelId#HR1521_RESTART_ISG}.
-	 * 
-	 * @param value the next write value
-	 * @throws OpenemsNamedException on error
-	 */
-	public default void setRestartIsg(Integer value) throws OpenemsNamedException {
-		this.getRestartIsgChannel().setNextWriteValue(value);
-	}
+    public default void setVentilationCoolingRoomTemp(Integer value) throws OpenemsNamedException {
+        this.getVentilationCoolingRoomTempChannel().setNextWriteValue(value);
+    }
 
     /**
      * Gets the Channel for {@link ChannelId#HR4001_SGREADY_ONOFF}.
      *
      * @return the Channel
      */
-    public default BooleanWriteChannel getSgReadyOnOffChannel() { return this.channel(ChannelId.HR4001_SGREADY_ONOFF); }
+    public default BooleanWriteChannel getSgReadyOnOffChannel() {
+        return this.channel(ChannelId.HR4001_SGREADY_ONOFF);
+    }
 
     /**
-     * Get on/off state of SG-Ready capabilities. True = on, false = off. Will automatically be set to "true" when
-     * using setSmartGridState() of HeatpumpSmartGridGeneralizedChannel interface.
+     * Get on/off state of SG-Ready capabilities. True = on, false = off.
 	 * See {@link ChannelId#HR4001_SGREADY_ONOFF}.
 	 *
 	 * @return the Channel {@link Value}
 	 */
-	public default Value<Boolean> getSgReadyOnOff() {
+    public default Value<Boolean> getSgReadyOnOff() {
 		return this.getSgReadyOnOffChannel().value();
 	}
 	
 	/**
-     * Turn on/off SG-Ready capabilities. True = on, false = off. Will automatically be set to "true" when using
-     * setSmartGridState() of HeatpumpSmartGridGeneralizedChannel interface.
+     * Turn on/off SG-Ready mode. True = on, false = off.
 	 * See {@link ChannelId#HR4001_SGREADY_ONOFF}.
 	 * 
 	 * @param value the next write value
@@ -2078,14 +2246,18 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGridGeneralizedChan
      *
      * @return the Channel
      */
-    public default BooleanWriteChannel getSgReadyInput1Channel() { return this.channel(ChannelId.HR4002_SGREADY_INPUT1); }
+    public default BooleanWriteChannel getSgReadyInput1Channel() {
+        return this.channel(ChannelId.HR4002_SGREADY_INPUT1);
+    }
 
     /**
      * Gets the Channel for {@link ChannelId#HR4003_SGREADY_INPUT2}.
      *
      * @return the Channel
      */
-    public default BooleanWriteChannel getSgReadyInput2Channel() { return this.channel(ChannelId.HR4003_SGREADY_INPUT2); }
+    public default BooleanWriteChannel getSgReadyInput2Channel() {
+        return this.channel(ChannelId.HR4003_SGREADY_INPUT2);
+    }
 
 
 }

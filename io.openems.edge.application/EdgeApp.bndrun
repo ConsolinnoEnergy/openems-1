@@ -120,6 +120,7 @@
 	bnd.identity;id='io.openems.edge.evcs.ocpp.common',\
 	bnd.identity;id='io.openems.edge.evcs.ocpp.ies.keywatt.singleccs',\
 	bnd.identity;id='io.openems.edge.evcs.ocpp.server',\
+	bnd.identity;id='io.openems.edge.exceptionalstate.api',\
 	bnd.identity;id='io.openems.edge.fenecon.dess',\
 	bnd.identity;id='io.openems.edge.fenecon.mini',\
 	bnd.identity;id='io.openems.edge.fenecon.pro',\
@@ -127,6 +128,7 @@
 	bnd.identity;id='io.openems.edge.heater.api',\
 	bnd.identity;id='io.openems.edge.heater.chp.dachs',\
 	bnd.identity;id='io.openems.edge.heater.chp.wolf',\
+	bnd.identity;id='io.openems.edge.heater.heatpump.alphainnotec',\
 	bnd.identity;id='io.openems.edge.heater.heatpump.tecalor',\
 	bnd.identity;id='io.openems.edge.heatsystem.components',\
 	bnd.identity;id='io.openems.edge.io.kmtronic',\
@@ -172,6 +174,7 @@
 	bnd.identity;id='io.openems.edge.thermometer.virtual',\
 	bnd.identity;id='io.openems.edge.timedata.influxdb',\
 	bnd.identity;id='io.openems.edge.timedata.rrd4j',\
+	bnd.identity;id='io.openems.edge.timer.api',\
 
 -runbundles: \
 	Java-WebSocket;version='[1.5.2,1.5.3)',\
@@ -273,6 +276,7 @@
 	io.openems.edge.evcs.ocpp.common;version=snapshot,\
 	io.openems.edge.evcs.ocpp.ies.keywatt.singleccs;version=snapshot,\
 	io.openems.edge.evcs.ocpp.server;version=snapshot,\
+	io.openems.edge.exceptionalstate.api;version=snapshot,\
 	io.openems.edge.fenecon.dess;version=snapshot,\
 	io.openems.edge.fenecon.mini;version=snapshot,\
 	io.openems.edge.fenecon.pro;version=snapshot,\
@@ -280,6 +284,7 @@
 	io.openems.edge.heater.api;version=snapshot,\
 	io.openems.edge.heater.chp.dachs;version=snapshot,\
 	io.openems.edge.heater.chp.wolf;version=snapshot,\
+	io.openems.edge.heater.heatpump.alphainnotec;version=snapshot,\
 	io.openems.edge.heater.heatpump.tecalor;version=snapshot,\
 	io.openems.edge.heatsystem.components;version=snapshot,\
 	io.openems.edge.io.api;version=snapshot,\
@@ -332,6 +337,7 @@
 	io.openems.edge.timedata.api;version=snapshot,\
 	io.openems.edge.timedata.influxdb;version=snapshot,\
 	io.openems.edge.timedata.rrd4j;version=snapshot,\
+	io.openems.edge.timer.api;version=snapshot,\
 	io.openems.shared.influxdb;version=snapshot,\
 	io.openems.wrapper.eu.chargetime.ocpp;version=snapshot,\
 	io.openems.wrapper.fastexcel;version=snapshot,\

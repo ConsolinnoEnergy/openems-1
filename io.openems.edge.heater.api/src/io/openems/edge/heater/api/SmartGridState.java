@@ -2,12 +2,16 @@ package io.openems.edge.heater.api;
 
 import io.openems.common.types.OptionsEnum;
 
+/**
+ * Possible smart grid states.
+ */
+
 public enum SmartGridState implements OptionsEnum {
 	UNDEFINED(-1, "Undefined"), //
-	OFF(0, "Off"), //
-	LOW(1, "Smart Grid Low"), //
-	STANDARD(2, "Standard"), //
-	HIGH(3, "Smart Grid High"); //
+	SG1_BLOCKED(1, "Smart Grid state 1: Electric supplier block"), //
+	SG2_LOW(2, "Smart Grid state 2: Low energy consumption"), //
+	SG3_STANDARD(3, "Smart Grid state 3: Standard"), //
+	SG4_HIGH(4, "Smart Grid state 4: High energy consumption"); //
 
 	private int value;
 	private String name;
@@ -19,12 +23,12 @@ public enum SmartGridState implements OptionsEnum {
 
 	@Override
 	public int getValue() {
-		return value;
+		return this.value;
 	}
 
 	@Override
 	public String getName() {
-		return name;
+		return this.name;
 	}
 	
 	@Override

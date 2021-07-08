@@ -46,8 +46,8 @@ public interface CommunicationMasterController extends OpenemsComponent {
         /**
          * Type of Execution on Fallback.
          */
-        EXECUTION_ON_FALLBACK(Doc.of(OpenemsType.STRING).accessMode(AccessMode.READ_WRITE).onInit(
-                channel -> ((StringWriteChannel) channel).onSetNextWrite(channel::setNextValue)
+        EXECUTION_ON_FALLBACK(Doc.of(FallbackHandling.values()).accessMode(AccessMode.READ_WRITE).onInit(
+                channel -> ((WriteChannel<?>) channel).onSetNextWrite(channel::setNextValue)
         )),
         /**
          * This Temperature Will be set on Fallback Logic.
@@ -159,19 +159,15 @@ public interface CommunicationMasterController extends OpenemsComponent {
         }
     }
 
-    default WriteChannel<String> getExecutionOnFallbackChannel() {
+    default WriteChannel<FallbackHandling> getExecutionOnFallbackChannel() {
         return this.channel(ChannelId.EXECUTION_ON_FALLBACK);
     }
 
-    default String getExecutionOnFallback() {
-        if (this.getExecutionOnFallbackChannel().value().isDefined()) {
-            return this.getExecutionOnFallbackChannel().value().get();
-        } else {
-            return "";
-        }
+    default FallbackHandling getExecutionOnFallback() {
+            return this.getExecutionOnFallbackChannel().value().asEnum();
     }
 
-    default void setFallbackLogic(String logic) {
+    default void setFallbackLogic(FallbackHandling logic) {
         this.getExecutionOnFallbackChannel().setNextValue(logic);
     }
 
