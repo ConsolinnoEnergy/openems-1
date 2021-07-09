@@ -5,6 +5,9 @@ import io.openems.edge.common.component.AbstractOpenemsComponent;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * The Abstract Timer. It provides basic methods that both Timer {@link TimerByTimeImpl} and {@link TimerByCycles} use.
+ */
 public abstract class AbstractTimer extends AbstractOpenemsComponent implements Timer {
 
 
@@ -21,31 +24,22 @@ public abstract class AbstractTimer extends AbstractOpenemsComponent implements 
      */
     Map<String, Map<String, ValueInitializedWrapper>> componentToIdentifierValueAndInitializedMap = new HashMap<>();
 
-
-    @Override
-    public void addComponentToTimer(String id, Map<String, Integer> identifierToTime) {
-        Map<String, ValueInitializedWrapper> identifierToWrapper = new HashMap<>();
-        identifierToTime.forEach((key, value) -> {
-            identifierToWrapper.put(key, new ValueInitializedWrapper(value));
-        });
-
-        if (this.componentToIdentifierValueAndInitializedMap.containsKey(id)) {
-            this.componentToIdentifierValueAndInitializedMap.get(id).forEach((key, value) -> {
-                identifierToWrapper.remove(key);
-            });
-            if (identifierToWrapper.isEmpty() == false) {
-                this.componentToIdentifierValueAndInitializedMap.get(id).putAll(identifierToWrapper);
-            }
-        } else {
-            this.componentToIdentifierValueAndInitializedMap.put(id, identifierToWrapper);
-        }
-    }
-
+    /**
+     * Removes the Component from the Timer.
+     *
+     * @param id of the Component you want to remove
+     */
     @Override
     public void removeComponent(String id) {
         this.componentToIdentifierValueAndInitializedMap.remove(id);
     }
 
+    /**
+     * Resets the Timer for the Component calling this method. Multiple Timer per config are possible.
+     *
+     * @param id         the openemsComponent id
+     * @param identifier the identifier the component uses
+     */
     @Override
     public void reset(String id, String identifier) {
         ValueInitializedWrapper wrapper = this.getWrapper(id, identifier);
@@ -54,6 +48,14 @@ public abstract class AbstractTimer extends AbstractOpenemsComponent implements 
         }
     }
 
+    /**
+     * Returns the Stored ValueInitializedWrapper determined by the component id and their identifier.
+     * Usually used by inheriting Classes.
+     *
+     * @param id         the ComponentId.
+     * @param identifier the identifier asked for.
+     * @return the {@link ValueInitializedWrapper}
+     */
     ValueInitializedWrapper getWrapper(String id, String identifier) {
         if (this.componentToIdentifierValueAndInitializedMap.containsKey(id)
                 && this.componentToIdentifierValueAndInitializedMap.get(id).containsKey(identifier)) {
@@ -62,6 +64,14 @@ public abstract class AbstractTimer extends AbstractOpenemsComponent implements 
         return null;
     }
 
+    /**
+     * Adds an Identifier to the Timer. An Identifier is a Unique Id within a Component.
+     * This is important due to the fact, that a component may need multiple Timer, determining different results.
+     *
+     * @param id         the ComponentId the id of the component.
+     * @param identifier one of the identifier the component has
+     * @param maxValue   the maxValue (max CycleTime or maxTime to wait).
+     */
     @Override
     public void addIdentifierToTimer(String id, String identifier, int maxValue) {
         if (this.componentToIdentifierValueAndInitializedMap.containsKey(id)) {

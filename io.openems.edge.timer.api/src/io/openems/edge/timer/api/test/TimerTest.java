@@ -32,7 +32,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * Tests the Functionality of the Timer
+ * Tests the Functionality of the Timer.
  */
 
 @Designate(ocd = Config.class, factory = true)
@@ -61,6 +61,13 @@ public class TimerTest extends AbstractOpenemsComponent implements OpenemsCompon
         this.setupTimerAndIdentifier(config);
     }
 
+    /**
+     * Get the timer, and add identifier to the Timer.
+     * Watch the logger and see if the Time is up for the configured identifier.
+     *
+     * @param config the config of this component.
+     * @throws OpenemsError.OpenemsNamedException  if timer couldn't be found.
+     */
     private void setupTimerAndIdentifier(Config config) throws OpenemsError.OpenemsNamedException {
         Timer timer = this.cpm.getComponent(config.timer());
         List<String> configEntries = Arrays.asList(config.identifier());

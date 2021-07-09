@@ -8,6 +8,13 @@ import org.osgi.service.cm.ConfigurationException;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * The TimerHandler makes the use of Timer easier. OpenemsComponents, that wants to use the {@link Timer}
+ * should use this, to avoid a bulk of implementation.
+ * Components cann add an Identifier to the TimerHandler by giving it the identifier id, the TimerString they want to use and the maxTime
+ * Everything's usually from config, except the identifier, this can be a static final string.
+ *
+ */
 public class TimerHandlerImpl implements TimerHandler {
     private final Map<String, Timer> identifierToTimerMap = new HashMap<>();
     private final ComponentManager cpm;
@@ -46,6 +53,16 @@ public class TimerHandlerImpl implements TimerHandler {
         this(id, cpm, new HashMap<>(), new HashMap<>());
     }
 
+    /**
+     * This method let's you add an identifier with it's configuration to a Timer.
+     * After that you can ask the TimerHandler if a time is up or reset a identifier->Timer.
+     *
+     * @param identifier 1 of n identifier a component can have.
+     * @param timer      the Id of the {@link Timer} previously configured
+     * @param maxTime    the max Allowed Time. (InitTime + MaxTime in Seconds)
+     * @throws OpenemsError.OpenemsNamedException if timer cannot be found
+     * @throws ConfigurationException             if Id not an instance of Timer
+     */
     @Override
     public void addOneIdentifier(String identifier, String timer, int maxTime) throws OpenemsError.OpenemsNamedException, ConfigurationException {
         Timer timerToAdd = this.getValidTimer(timer);
@@ -53,6 +70,13 @@ public class TimerHandlerImpl implements TimerHandler {
         timerToAdd.addIdentifierToTimer(this.id, identifier, maxTime);
     }
 
+    /**
+     * Private Method to validate the Timer. Checks if the ID is correct and if the component is an instance of a Timer.
+     * @param timer the TimerId
+     * @return the Timer if id is correct.
+     * @throws ConfigurationException if Id not an instance of Timer
+     * @throws OpenemsError.OpenemsNamedException if id could not be found.
+     */
     private Timer getValidTimer(String timer) throws ConfigurationException, OpenemsError.OpenemsNamedException {
         OpenemsComponent component = this.cpm.getComponent(timer);
         if (component instanceof Timer) {
@@ -62,11 +86,20 @@ public class TimerHandlerImpl implements TimerHandler {
         }
     }
 
+    /**
+     * Resets the Timer determined by the Identifier. This will call the {@link Timer#reset(String, String)} indirectly
+     *
+     * @param identifier the identifier that in combination with the stored component id,
+     *                   will be used to determine if the Time for the identifier is up.
+     */
     @Override
     public void resetTimer(String identifier) {
         this.identifierToTimerMap.get(identifier).reset(this.id, identifier);
     }
 
+    /**
+     * Removes all identifier/the component from the timer.
+     */
     @Override
     public void removeComponent() {
         this.identifierToTimerMap.forEach((identifier, timer) -> {
@@ -74,15 +107,15 @@ public class TimerHandlerImpl implements TimerHandler {
         });
     }
 
+    /**
+     * Checks if the Time is up equivalent to the {@link Timer#checkIsTimeUp(String, String)} method.
+     *
+     * @param identifier one of the identifier of the component.
+     * @return true if Time is up.
+     */
     @Override
     public boolean checkTimeIsUp(String identifier) {
         return this.identifierToTimerMap.get(identifier).checkIsTimeUp(this.id, identifier);
     }
 
-    @Override
-    public void resetAllTimer() {
-        this.identifierToTimerMap.forEach((identifier, timer) -> {
-            timer.reset(this.id, identifier);
-        });
-    }
 }
