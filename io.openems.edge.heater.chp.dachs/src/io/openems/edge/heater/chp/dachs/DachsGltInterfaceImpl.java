@@ -880,14 +880,14 @@ public class DachsGltInterfaceImpl extends AbstractOpenemsComponent implements O
 			}
 			
 			
-			if (errorMessage.length() > 0 && errorMessage.charAt(errorMessage.length() - 2) == ',') {
+			if (errorMessage.length() > 0) {
 				errorMessage = errorMessage.substring(0, errorMessage.length() - 2) + ".";
 			} else {
 				errorMessage = "No error";
 			}
 			this._setErrorMessage(errorMessage);
 			
-			if (warningMessage.length() > 0 && warningMessage.charAt(warningMessage.length() - 2) == ',') {
+			if (warningMessage.length() > 0) {
 				warningMessage = warningMessage.substring(0, warningMessage.length() - 2) + ".";
 			} else {
 				warningMessage = "No warning";

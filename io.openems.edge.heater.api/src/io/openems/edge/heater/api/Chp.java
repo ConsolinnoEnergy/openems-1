@@ -116,6 +116,26 @@ public interface Chp extends Heater {
 	}
 
 	/**
+	 * Internal method to set the 'nextValue' on {@link ChannelId#EFFECTIVE_ELECTRIC_POWER_SETPOINT}
+	 * Channel.
+	 *
+	 * @param value the next value
+	 */
+	public default void _setElectricPowerSetpoint(Integer value) {
+		this.getElectricPowerSetpointChannel().setNextValue(value);
+	}
+
+	/**
+	 * Internal method to set the 'nextValue' on {@link ChannelId#EFFECTIVE_ELECTRIC_POWER_SETPOINT}
+	 * Channel.
+	 *
+	 * @param value the next value
+	 */
+	public default void _setElectricPowerSetpoint(int value) {
+		this.getElectricPowerSetpointChannel().setNextValue(value);
+	}
+
+	/**
 	 * Set electric power set point. See {@link ChannelId#EFFECTIVE_ELECTRIC_POWER_SETPOINT}.
 	 *
 	 * @param value the next write value

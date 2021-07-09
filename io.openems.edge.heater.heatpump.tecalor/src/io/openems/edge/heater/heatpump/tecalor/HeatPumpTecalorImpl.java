@@ -78,7 +78,6 @@ public class HeatPumpTecalorImpl extends AbstractOpenemsModbusComponent implemen
 	private boolean readOnly;
 	private boolean sgReadyActive;
 
-	private boolean turnOnHeatpump;
 	private String defaultModeOfOperation;
 	private boolean useEnableSignal;
 	private EnableSignalHandler enableSignalHandler;
@@ -475,10 +474,11 @@ public class HeatPumpTecalorImpl extends AbstractOpenemsModbusComponent implemen
 			}
 
 			if (this.useEnableSignal || this.useExceptionalState) {
+				boolean turnOnHeatpump = false;
 
 				// Handle EnableSignal.
 				if (this.useEnableSignal) {
-					this.turnOnHeatpump = this.enableSignalHandler.deviceShouldBeHeating(this);
+					turnOnHeatpump = this.enableSignalHandler.deviceShouldBeHeating(this);
 				}
 
 				// Handle ExceptionalState. ExceptionalState overwrites EnableSignal.
@@ -490,10 +490,10 @@ public class HeatPumpTecalorImpl extends AbstractOpenemsModbusComponent implemen
 						exceptionalStateValue = this.getExceptionalStateValue();
 						if (exceptionalStateValue <= 0) {
 							// Turn off heat pump when ExceptionalStateValue = 0.
-							this.turnOnHeatpump = false;
+							turnOnHeatpump = false;
 						} else {
 							// When ExceptionalStateValue is > 0, turn heat pump on.
-							this.turnOnHeatpump = true;
+							turnOnHeatpump = true;
 							/*
 							if (exceptionalStateValue > 100) {
 								exceptionalStateValue = 100;
@@ -503,7 +503,7 @@ public class HeatPumpTecalorImpl extends AbstractOpenemsModbusComponent implemen
 					}
 				}
 
-				if (this.turnOnHeatpump) {
+				if (turnOnHeatpump) {
 					OperatingMode setModeTo = OperatingMode.STANDBY;
 					switch (this.defaultModeOfOperation) {
 						case "Programmbetrieb":
