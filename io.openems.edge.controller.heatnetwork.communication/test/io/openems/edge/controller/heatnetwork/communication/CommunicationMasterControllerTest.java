@@ -1,4 +1,4 @@
-package io.openems.edge.controller.heatnetwork.communication.master;
+package io.openems.edge.controller.heatnetwork.communication;
 
 import io.openems.common.types.ChannelAddress;
 import io.openems.edge.common.component.OpenemsComponent;
@@ -37,15 +37,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class CommunicationMasterControllerTest {
     private static final String id = "test";
     private static final String exampleConfigStringValue = "exampleConfigStringValue";
-    private boolean enabled = true;
-    private ConnectionType connectionType = ConnectionType.REST;
-    private int maxRequestsAllowedAtOnce = 2;
-    private TimerType timerForManager = TimerType.CYCLES;
-    private int maxWaitTimeAllowed = 2;
-    private ManageType manageType = ManageType.FIFO;
-    private String timerId = TIMER_ID;
-    private int keepAlive = 2;
-    private FallbackHandling fallback = FallbackHandling.DEFAULT;
+    private final boolean enabled = true;
+    private final ConnectionType connectionType = ConnectionType.REST;
+    private final int maxRequestsAllowedAtOnce = 2;
+    private final TimerType timerForManager = TimerType.CYCLES;
+    private final int maxWaitTimeAllowed = 2;
+    private final ManageType manageType = ManageType.FIFO;
+    private final int keepAlive = 1;
+    private final FallbackHandling fallback = FallbackHandling.DEFAULT;
     private String[] restDeviceIds;
     private String[] requestMap;
 
@@ -53,16 +52,12 @@ public class CommunicationMasterControllerTest {
     private String[] methodTypes;
     private String[] requestTypeToResponse;
     private String[] masterResponseTypes;
-    private boolean useHydraulicLineHeater = true;
-    private String hydraulicLineHeaterId = HYDRAULIC_LINE_HEATER_ID;
-    private boolean usePump = true;
-    private String pumpId = HEAT_PUMP_ID;
-    private String service_pid;
-    private boolean useExceptionalStateHandling = true;
-    private String timerIdExceptionalState = TIMER_ID;
-    private int exceptioalStateTime = 10;
-    private boolean forceHeating = false;
-    private boolean configurationDone = true;
+    private final boolean useHydraulicLineHeater = true;
+    private final boolean usePump = true;
+    private final boolean useExceptionalStateHandling = true;
+    private final String timerIdExceptionalState = TIMER_ID;
+    private final int exceptioalStateTime = 2;
+    private final boolean forceHeating = false;
     //Do 12 Times and add X
     private final static String HEAT_PUMP_ID = "Pump0";
     private final static String HYDRAULIC_LINE_HEATER_ID = "LineHeater0";
@@ -192,7 +187,10 @@ public class CommunicationMasterControllerTest {
                             .setMethodTypes(this.methodTypes)
                             .setConfigurationDone(true)
                             .build())
-                    //Everythings heating
+                    //1 and 2 having heat and more heat requests
+                    .next(new TestCase()
+                            .timeleap(this.clock, 1, ChronoUnit.SECONDS)
+                    )
                     .next(new TestCase()
                             .timeleap(this.clock, 1, ChronoUnit.SECONDS)
                             //Request
@@ -206,6 +204,31 @@ public class CommunicationMasterControllerTest {
                             .output(this.channelAddressMap.get("Rest5"), "1")
                             .output(this.channelAddressMap.get("Rest7"), "1")
                     )
+                    //no need more Heat -> internal method calls changed -> Passive Values
+                    .next(new TestCase()
+                            .timeleap(this.clock, 1, ChronoUnit.SECONDS)
+                            //Request
+                            .input(this.channelAddressMap.get("Rest0"), 1)
+                            .input(this.channelAddressMap.get("Rest2"), 0)
+                            .input(this.channelAddressMap.get("Rest4"), 1)
+                            .input(this.channelAddressMap.get("Rest6"), 0)
+                            //Callback
+                            .output(this.channelAddressMap.get("Rest1"), "1")
+                            .output(this.channelAddressMap.get("Rest5"), "1")
+                    )
+                    //No Heat Request -> Response with 0 and use Passive Values
+                    .next(new TestCase()
+                            .timeleap(this.clock, 1, ChronoUnit.SECONDS)
+                            //Request
+                            .input(this.channelAddressMap.get("Rest0"), 0)
+                            .input(this.channelAddressMap.get("Rest2"), 0)
+                            .input(this.channelAddressMap.get("Rest4"), 0)
+                            .input(this.channelAddressMap.get("Rest6"), 0)
+                            //Callback
+                            .output(this.channelAddressMap.get("Rest1"), "0")
+                            .output(this.channelAddressMap.get("Rest5"), "0")
+                    )
+                    //3 has a heating request but no response yet
                     .next(new TestCase()
                             //Request
                             .input(this.channelAddressMap.get("Rest0"), 1)
@@ -235,6 +258,7 @@ public class CommunicationMasterControllerTest {
                             .output(this.channelAddressMap.get("Rest7"), "1")
                             .output(this.channelAddressMap.get("Rest9"), "0")
                     )
+                    //bc of FIFO 1 is "disabled" and 3 is allowed to heat
                     .next(new TestCase()
                             .timeleap(this.clock, 1, ChronoUnit.SECONDS)
                             //Request
@@ -265,15 +289,92 @@ public class CommunicationMasterControllerTest {
                     )
                     .next(new TestCase()
                             .timeleap(this.clock, 1, ChronoUnit.SECONDS)
-                            //Request
+                            .input(ChannelAddress.fromString(id + "/" + "ExceptionalStateEnableSignal"), 1)
+                            .input(ChannelAddress.fromString(id + "/" + "ExceptionalStateValue"), 50)
                             .input(this.channelAddressMap.get("Rest0"), 1)
                             .input(this.channelAddressMap.get("Rest2"), 1)
                             .input(this.channelAddressMap.get("Rest4"), 1)
                             .input(this.channelAddressMap.get("Rest6"), 1)
                             .input(this.channelAddressMap.get("Rest8"), 1)
+                            .input(this.channelAddressMap.get("Rest10"), 1)
                             //Callback
+                            .output(this.channelAddressMap.get("Rest1"), "1")
+                            .output(this.channelAddressMap.get("Rest3"), "1")
+                            .output(this.channelAddressMap.get("Rest5"), "1")
+                            .output(this.channelAddressMap.get("Rest7"), "1")
                             .output(this.channelAddressMap.get("Rest9"), "1")
-                            .output(this.channelAddressMap.get("Rest0"), "1")
+                            .output(this.channelAddressMap.get("Rest11"), "1")
+                    )
+                    .getSut().run();
+        } catch (Exception e) {
+            Assert.fail();
+        }
+    }
+
+    /**
+     * The Configuration is correct and the Controller has to use FallbackLogic.
+     */
+    @Test
+    public void fallBack() {
+        try {
+            this.cpm.addComponent(new DummyRestDevice("Rest12", false, true))
+                    .addComponent(new DummyRestDevice("Rest13", true, true));
+            requestMap = new String[]{"Rest0:Rest1:1:HEAT", "Rest2:Rest3:1:MORE_HEAT",
+                    "Rest4:Rest5:2:HEAT", "Rest6:Rest7:2:MORE_HEAT",
+                    "Rest8:Rest9:3:HEAT", "Rest10:Rest11:3:MORE_HEAT", "Rest12:Rest13:4:HEAT"};
+            channelAddressMap.put("Rest12", ChannelAddress.fromString("Rest12/ValueRead"));
+            channelAddressMap.put("Rest13", ChannelAddress.fromString("Rest13/ValueWrite"));
+            OpenemsComponent[] components = new OpenemsComponent[this.cpm.getAllComponents().size()];
+            components = this.cpm.getAllComponents().toArray(components);
+            new ControllerTest(new CommunicationMasterControllerImpl(), components)
+                    .addReference("cpm", this.cpm)
+                    .activate(MyConfig.create()
+                            .setId(id)
+                            .setEnabled(enabled)
+                            .setService_pid("FallBack")
+                            .setTimerId(TIMER_ID)
+                            .setConnectionType(this.connectionType)
+                            .setExceptioalStateTime(this.exceptioalStateTime)
+                            .setFallback(this.fallback)
+                            .setForceHeating(this.forceHeating)
+                            .setHydraulicLineHeaterId(HYDRAULIC_LINE_HEATER_ID)
+                            .setKeepAlive(this.keepAlive)
+                            .setManageType(this.manageType)
+                            .setMaxRequestsAllowedAtOnce(this.maxRequestsAllowedAtOnce)
+                            .setPumpId(HEAT_PUMP_ID)
+                            .setUsePumpId(this.usePump)
+                            .setTimerForManager(this.timerForManager)
+                            .setUsePump(this.usePump)
+                            .setUseHydraulicLineHeater(this.useHydraulicLineHeater)
+                            .setTimerIdExceptionalState(this.timerIdExceptionalState)
+                            .setUseExceptionalStateHandling(this.useExceptionalStateHandling)
+                            .setRequestMap(this.requestMap)
+                            .setRequestTypeToResponse(this.requestTypeToResponse)
+                            .setMaxWaitTimeAllowed(this.maxWaitTimeAllowed)
+                            .setRequestTypes(this.requestTypes)
+                            .setMasterResponseTypes(this.masterResponseTypes)
+                            .setMethodTypes(this.methodTypes)
+                            .setConfigurationDone(true)
+                            .build())
+                    //1 and 2 having heat and more heat requests
+                    .next(new TestCase()
+                            .timeleap(this.clock, 1, ChronoUnit.SECONDS)
+                    )
+                    .next(new TestCase()
+                            .timeleap(this.clock, 1, ChronoUnit.SECONDS)
+                            //Request
+                            .input(this.channelAddressMap.get("Rest0"), 1)
+                            .input(this.channelAddressMap.get("Rest2"), 1)
+                            .input(this.channelAddressMap.get("Rest4"), 1)
+                            .input(this.channelAddressMap.get("Rest6"), 1)
+                            //Callback
+                            .output(this.channelAddressMap.get("Rest1"), "1")
+                            .output(this.channelAddressMap.get("Rest3"), "1")
+                            .output(this.channelAddressMap.get("Rest5"), "1")
+                            .output(this.channelAddressMap.get("Rest7"), "1")
+                            .output(this.channelAddressMap.get("Rest9"), "1")
+                            .output(this.channelAddressMap.get("Rest11"), "1")
+                            .output(this.channelAddressMap.get("Rest13"), "1")
                     )
                     .getSut().run();
         } catch (Exception e) {

@@ -1,4 +1,4 @@
-package io.openems.edge.controller.heatnetwork.communication.master;
+package io.openems.edge.controller.heatnetwork.communication;
 
 
 import io.openems.edge.controller.heatnetwork.communication.api.ConnectionType;

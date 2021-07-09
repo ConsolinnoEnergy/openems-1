@@ -1,11 +1,10 @@
-package io.openems.edge.controller.heatnetwork.communication.master;
+package io.openems.edge.controller.heatnetwork.communication;
 
 import io.openems.common.exceptions.OpenemsError;
 import io.openems.edge.common.component.AbstractOpenemsComponent;
 import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.controller.api.Controller;
-import io.openems.edge.controller.heatnetwork.communication.RestLeafletCommunicationControllerImpl;
 import io.openems.edge.controller.heatnetwork.communication.api.CommunicationController;
 import io.openems.edge.controller.heatnetwork.communication.api.CommunicationMasterController;
 import io.openems.edge.controller.heatnetwork.communication.api.ConnectionType;
