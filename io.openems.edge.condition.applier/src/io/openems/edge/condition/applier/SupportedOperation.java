@@ -1,9 +1,13 @@
 package io.openems.edge.condition.applier;
 
+/**
+ * The SupportedOperation, like the SupportedDataType, will be used in future versions, when the Condition Applier work will be
+ * continued.
+ */
 public enum SupportedOperation {
     EQUALS, GREATER, LESS;
 
-    public static boolean contains(String type) {
+    static boolean contains(String type) {
         for (SupportedOperation supportedOperation : SupportedOperation.values()) {
             if (supportedOperation.name().equals(type)) {
                 return true;

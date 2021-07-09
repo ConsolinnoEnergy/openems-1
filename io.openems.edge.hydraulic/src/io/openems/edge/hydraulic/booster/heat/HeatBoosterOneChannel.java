@@ -26,8 +26,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * This HeatBooster activates if enableSignal is present and true and writes a static Value into a Channel.
- * Used for HeatBoosting for example.
+ * A HeatBooster that Activates on an active EnableSignal and writes an active Value into a Channel.
  */
 
 @Designate(ocd = Config.class, factory = true)
@@ -42,12 +41,12 @@ public class HeatBoosterOneChannel extends AbstractOpenemsComponent implements O
     @Reference
     ComponentManager cpm;
 
-
     private static final String IDENTIFIER = "HEAT_BOOSTER_ENABLE";
     private TimerHandler timer;
     private ChannelAddress channelAddress;
     private boolean isActive = false;
-    private int value;
+    private int activeValue;
+    private int disableValue;
 
     public HeatBoosterOneChannel() {
         super(OpenemsComponent.ChannelId.values(),
@@ -60,7 +59,8 @@ public class HeatBoosterOneChannel extends AbstractOpenemsComponent implements O
         this.getChannelAddress(config.channelString());
         this.timer = new TimerHandlerImpl(super.id(), this.cpm);
         this.timer.addOneIdentifier(IDENTIFIER, config.timerId(), config.expiration());
-        this.value = config.value();
+        this.activeValue = config.value();
+        this.disableValue = config.passiveValue();
     }
 
     private void getChannelAddress(String channelString) throws OpenemsError.OpenemsNamedException {
@@ -73,9 +73,9 @@ public class HeatBoosterOneChannel extends AbstractOpenemsComponent implements O
         try {
             Channel<?> channelToWriteInto = this.cpm.getChannel(this.channelAddress);
             if (channelToWriteInto instanceof WriteChannel<?>) {
-                ((WriteChannel<?>) channelToWriteInto).setNextWriteValueFromObject(0);
+                ((WriteChannel<?>) channelToWriteInto).setNextWriteValueFromObject(this.disableValue);
             } else {
-                channelToWriteInto.setNextValue(0);
+                channelToWriteInto.setNextValue(this.disableValue);
             }
         } catch (OpenemsError.OpenemsNamedException e) {
             this.logger.warn("Couldn't write into Channel: " + this.channelAddress);
@@ -92,17 +92,17 @@ public class HeatBoosterOneChannel extends AbstractOpenemsComponent implements O
                     if (this.getHeatBoosterEnableSignal()) {
                         this.isActive = true;
                         this.timer.resetTimer(IDENTIFIER);
-                        this.setChannelValue(this.value);
+                        this.setChannelValue(this.activeValue);
                     } else {
                         this.isActive = false;
                         this.timer.resetTimer(IDENTIFIER);
-                        this.setChannelValue(0);
+                        this.setChannelValue(this.disableValue);
                     }
                     this._resetEnableSignal();
-
-                }//Time is up && active --> Deactivate and reset
+                }
+                // Time is up && active --> Deactivate and reset
                 else if (this.isActive && this.timer.checkTimeIsUp(IDENTIFIER)) {
-                    this.setChannelValue(0);
+                    this.setChannelValue(this.disableValue);
                 }
             } catch (OpenemsError.OpenemsNamedException e) {
                 this.logger.warn("Couldn't write into Channel: " + this.channelAddress + " of Component: " + super.id());
@@ -110,6 +110,12 @@ public class HeatBoosterOneChannel extends AbstractOpenemsComponent implements O
         }
     }
 
+    /**
+     * This sets the Channel Value by a given value.
+     *
+     * @param value the value that will be set into the channel.
+     * @throws OpenemsError.OpenemsNamedException if write fails.
+     */
     private void setChannelValue(Object value) throws OpenemsError.OpenemsNamedException {
         Channel<?> channelToWriteInto = this.cpm.getChannel(this.channelAddress);
         if (channelToWriteInto instanceof WriteChannel<?>) {
