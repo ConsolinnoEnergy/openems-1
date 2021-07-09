@@ -13,10 +13,10 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     String alias() default "";
 
     @AttributeDefinition(name = "Module", description = "ModuleNumber where this Sensor is plugged in.")
-    int module();
+    int module() default 1;
 
     @AttributeDefinition(name = "Position", description = "Pinposition of this Pwm.")
-    int position();
+    int position() default 1;
 
     @AttributeDefinition(name = "Duty Cycle", description = "Pwm Output in  Percent (100=10.0%).")
     int percent() default 0;
@@ -27,10 +27,10 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     boolean enabled() default true;
 
     @AttributeDefinition(name = "ModbusUnitId", description = "ModbusUnitId from Configurator.")
-    int modbusUnitId();
+    int modbusUnitId() default 1;
 
     @AttributeDefinition(name = "ModbusBridgeId", description = "ModbusBridgeId from Configurator.")
-    String modbusBridgeId();
+    String modbusBridgeId() default "modbus0";
 
     String webconsole_configurationFactory_nameHint() default "Pwm [{id}]";
 }

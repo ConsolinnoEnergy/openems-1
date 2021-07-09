@@ -13,10 +13,10 @@ import org.osgi.service.metatype.annotations.Option;
     String alias() default "";
 
     @AttributeDefinition(name = "Module", description = "ModuleNumber where this Sensor is plugged in.")
-    int module();
+    int module() default 1;
 
     @AttributeDefinition(name = "Position", description = "Pinposition of this sensor.")
-    int position();
+    int position() default 1;
 
     @AttributeDefinition(name = "SignalType", description = "Is the Signal an Error/Status",
             options = {
@@ -32,10 +32,10 @@ import org.osgi.service.metatype.annotations.Option;
     boolean enabled() default true;
 
     @AttributeDefinition(name = "ModbusUnitId", description = "ModbusUnitId from Configurator.")
-    int modbusUnitId();
+    int modbusUnitId() default 1;
 
     @AttributeDefinition(name = "ModbusBridgeId", description = "ModbusBridgeId from Configurator.")
-    String modbusBridgeId();
+    String modbusBridgeId() default "modbus0";
 
     String webconsole_configurationFactory_nameHint() default "Signalsensor [{id}]";
 }

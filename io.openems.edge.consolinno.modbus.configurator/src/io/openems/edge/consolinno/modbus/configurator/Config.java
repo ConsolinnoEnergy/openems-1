@@ -19,9 +19,10 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     boolean enabled() default true;
 
     @AttributeDefinition(name = "ModbusUnitId", description = "Unique Id for the ModbusUnit.")
-    int modbusUnitId();
+    int modbusUnitId() default 1;
     @AttributeDefinition(name = "ModbusBridgeId", description = "Unique Id for the ModbusBridge")
 
-    String modbusBridgeId();
+    String modbusBridgeId() default "modbus0";
+
     String webconsole_configurationFactory_nameHint() default "{id}";
 }
