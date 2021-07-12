@@ -18,7 +18,7 @@ public interface RestRequestManager extends RequestManager {
     void manageRequests(Map<Integer, List<RestRequest>> allRequests);
 
     /**
-     * returns the managed Request either all of them (e.g. if isForcing in Communicationmaster is set) or
+     * Returns the managed Request either all of them (e.g. if isForcing in {@link CommunicationMasterController} is set) or
      * returns managed requests (Maximum Requests size determined by Keys of the Map).
      * @return the ManagedRequests.
      */

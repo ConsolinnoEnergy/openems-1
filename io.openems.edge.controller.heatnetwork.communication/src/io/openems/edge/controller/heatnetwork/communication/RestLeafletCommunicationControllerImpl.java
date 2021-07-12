@@ -156,7 +156,7 @@ public class RestLeafletCommunicationControllerImpl implements RestLeafletCommun
 
     /**
      * Sets the TimerType for the Manager. E.g. Cycles or Time.
-     * Note: Bc it's hard and TimeConsuming to work with the later added {@link io.openems.edge.timer.api.TimerHandler}
+     * Note: Because it's hard and Time consuming to work with the later added {@link io.openems.edge.timer.api.TimerHandler}
      * The {@link RequestManager} has it's own TimeHandling.
      *
      * @param type the TimerType.

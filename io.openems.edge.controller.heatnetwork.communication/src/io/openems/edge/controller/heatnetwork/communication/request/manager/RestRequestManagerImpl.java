@@ -280,7 +280,8 @@ public class RestRequestManagerImpl implements RestRequestManager {
     }
 
     /**
-     * returns the managed Request either all of them (e.g. if isForcing in Communicationmaster is set) or
+     * Returns the managed Request either all of them (e.g. if isForcing in
+     * {@link io.openems.edge.controller.heatnetwork.communication.api.CommunicationMasterController} is set) or
      * returns managed requests (Maximum Requests size determined by Keys of the Map).
      *
      * @return the ManagedRequests.

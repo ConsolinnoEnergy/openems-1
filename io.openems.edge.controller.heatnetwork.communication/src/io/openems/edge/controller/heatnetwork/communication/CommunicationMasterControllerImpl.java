@@ -477,7 +477,7 @@ public class CommunicationMasterControllerImpl extends AbstractOpenemsComponent 
     }
 
     /**
-     * Activates the Response corresponding to the Wrapper.Exact handling is determined by the {@link MethodResponse}.
+     * Activates the Response corresponding to the Wrapper. Exact handling is determined by the {@link MethodResponse}.
      *
      * @param wrapper the Wrapper stored in the {@link #requestTypeAndResponses}
      * @throws OpenemsError.OpenemsNamedException if setNext(Write)Value fails.
