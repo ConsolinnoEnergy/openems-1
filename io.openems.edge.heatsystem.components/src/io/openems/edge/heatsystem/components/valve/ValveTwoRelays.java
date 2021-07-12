@@ -11,6 +11,7 @@ import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.common.cycle.Cycle;
 import io.openems.edge.common.event.EdgeEventConstants;
 
+import io.openems.edge.exceptionalstate.api.ExceptionalState;
 import io.openems.edge.heatsystem.components.ConfigurationType;
 import io.openems.edge.heatsystem.components.HeatsystemComponent;
 import io.openems.edge.heatsystem.components.Valve;
@@ -48,47 +49,30 @@ import java.util.concurrent.TimeUnit;
                 EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE,
                 EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS}
 )
-public class ValveImpl extends AbstractOpenemsComponent implements OpenemsComponent, Valve, EventHandler {
+public class ValveTwoRelays extends AbstractValve implements OpenemsComponent, Valve, ExceptionalState, EventHandler {
 
     @Reference
     Cycle cycle;
 
-    private final Logger log = LoggerFactory.getLogger(ValveImpl.class);
+    private final Logger log = LoggerFactory.getLogger(ValveTwoRelays.class);
 
     private ChannelAddress openAddress;
     private ChannelAddress closeAddress;
+    private ChannelAddress checkOpenAddress;
+    private ChannelAddress checkClosingAddress;
 
     private Relay openRelay;
     private Relay closeRelay;
 
-    private double secondsPerPercentage;
-    private long timeStampValveInitial = 0;
-    private long timeStampValveCurrent = -1;
-    private boolean isChanging = false;
-    //if true --> subtraction in updatePowerLevel else add
-    private boolean isClosing = false;
-    private boolean wasAlreadyReset = false;
-    private boolean isForced;
-    //Extra Buffer Time , only needed for Force Open/Close --> Just making sure that Valve is completely closed/opened
-    private static final int EXTRA_BUFFER_TIME = 2000;
+    private boolean useCheckChannel;
 
-    private static final int VALUE_BUFFER = 5;
-
-    private static final int MILLI_SECONDS_TO_SECONDS = 1000;
-    private static final int MAX_PERCENT_POSSIBLE = 100;
-    private static final int MIN_PERCENT_POSSIBLE = 0;
-
-    private Double lastMaximum;
-    private Double lastMinimum;
-    private Double maximum = 100.d;
-    private Double minimum = 0.d;
     private ConfigurationType configurationType;
 
     @Reference
     ComponentManager cpm;
 
 
-    public ValveImpl() {
+    public ValveTwoRelays() {
         super(OpenemsComponent.ChannelId.values(), HeatsystemComponent.ChannelId.values());
     }
 
@@ -331,7 +315,7 @@ public class ValveImpl extends AbstractOpenemsComponent implements OpenemsCompon
         if (this.isForced) {
             long currentTime = this.getMilliSecondTime();
             if (currentTime - this.timeStampValveInitial
-                    >= ((this.timeNeeded() * 1000) + EXTRA_BUFFER_TIME)) {
+                    >= ((this.timeNeeded() * MILLI_SECONDS_TO_SECONDS) + EXTRA_BUFFER_TIME)) {
                 this.getIsBusyChannel().setNextValue(false);
                 this.wasAlreadyReset = false;
                 this.isForced = false;
@@ -339,6 +323,9 @@ public class ValveImpl extends AbstractOpenemsComponent implements OpenemsCompon
             } else {
                 return false;
             }
+        }
+        if (this.isChanging == false) {
+            this.timeStampValveCurrent = -1;
         }
         return true;
     }

@@ -17,6 +17,9 @@ import io.openems.edge.common.component.OpenemsComponent;
  */
 public interface HeatsystemComponent extends OpenemsComponent {
 
+    int DEFAULT_MAX_POWER_VALUE = 100;
+    int DEFAULT_MIN_POWER_VALUE = 0;
+
     public enum ChannelId implements io.openems.edge.common.channel.ChannelId {
 
         /**
@@ -97,7 +100,7 @@ public interface HeatsystemComponent extends OpenemsComponent {
         FORCE_FULL_POWER(Doc.of(OpenemsType.BOOLEAN).accessMode(AccessMode.READ_WRITE)),
 
         /**
-         * Maximum value in % the Valve is allowed to be open.
+         * Maximum value in % the Component is allowed to be open.
          *
          * <ul>
          * <li> Interface: HeatsystemComponent
@@ -108,7 +111,8 @@ public interface HeatsystemComponent extends OpenemsComponent {
 
         MAX_ALLOWED_VALUE(Doc.of(OpenemsType.DOUBLE).accessMode(AccessMode.READ_WRITE)),
         /**
-         * Minimum value in % the Valve has to be open.
+         * Minimum value in % the Component is allowed to have.
+         * (E.g. 20 means the component needs to have a PowerLevel of at least 20%)
          *
          * <ul>
          * <li> Interface: HeatsystemComponent
@@ -469,4 +473,13 @@ public interface HeatsystemComponent extends OpenemsComponent {
      * @return true on success
      */
     boolean changeByPercentage(double percentage);
+
+    /**
+     * Check if Valve has an active Exceptional State
+     * @return
+     */
+    default boolean containsOnlyNumbers(String channelValue) {
+        String regex = "[-+]?([0-9]*[.][0-9]+|[0-9]+)";
+        return channelValue.matches(regex);
+    }
 }
