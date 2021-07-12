@@ -177,7 +177,7 @@ public class RestRequestManagerImpl implements RestRequestManager {
      * @param waitKey Map-key of the waiting Member
      */
     private void swapWaitingMember(int waitKey) {
-        //won't work with object removal bc reasons.
+        //won't work with object removal for unknown reasons.
         this.waitList.remove(this.waitList.indexOf(waitKey));
         int workKey = this.getMaxWorkTimeMember();
         this.managedRequests.remove(workKey);
