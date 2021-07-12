@@ -12,18 +12,18 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     String alias() default "";
 
     @AttributeDefinition(name = "Module", description = "ModuleNumber where this Sensor is plugged in.")
-    int module();
+    int module() default 1;
 
     @AttributeDefinition(name = "Position", description = "Pinposition of this sensor.")
-    int position();
+    int position() default 1;
 
     boolean enabled() default true;
 
     @AttributeDefinition(name = "ModbusUnitId", description = "ModbusUnitId from Configurator.")
-    int modbusUnitId();
+    int modbusUnitId() default 1;
 
     @AttributeDefinition(name = "ModbusBridgeId", description = "ModbusBridgeId from Configurator.")
-    String modbusBridgeId();
+    String modbusBridgeId() default "modbus0";
 
     String webconsole_configurationFactory_nameHint() default "TemperatureSensor [{id}]";
 }

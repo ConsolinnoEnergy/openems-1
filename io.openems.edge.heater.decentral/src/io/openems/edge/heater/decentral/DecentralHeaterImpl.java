@@ -22,6 +22,8 @@ import org.osgi.service.event.Event;
 import org.osgi.service.event.EventConstants;
 import org.osgi.service.event.EventHandler;
 import org.osgi.service.metatype.annotations.Designate;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -36,6 +38,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class DecentralHeaterImpl extends AbstractOpenemsComponent implements OpenemsComponent, DecentralHeater, EventHandler {
 
+    private final Logger log = LoggerFactory.getLogger(DecentralHeaterImpl.class);
     @Reference
     ComponentManager cpm;
 
@@ -154,8 +157,12 @@ public class DecentralHeaterImpl extends AbstractOpenemsComponent implements Ope
         this.thermometerThreshold.setSetPointTemperatureAndActivate(this.getSetPointTemperature(), super.id());
         //Static Valve Controller Works on it's own with given Temperature
         if (this.isValve == false) {
-            this.configuredValveController.setEnableSignal(true);
-            this.configuredValveController.setControlType(ControlType.TEMPERATURE);
+            try {
+                this.configuredValveController.setEnableSignal(true);
+                this.configuredValveController.setControlType(ControlType.TEMPERATURE);
+            } catch (OpenemsError.OpenemsNamedException e) {
+                this.log.warn("Couldn't apply EnableSignal (true) to the Valve Controller in " + super.id());
+            }
         }
         // Check if SetPointTemperature above Thermometer --> Either
         if (this.thermometerThreshold.thermometerAboveGivenTemperature(this.getSetPointTemperature())) {
@@ -258,7 +265,11 @@ public class DecentralHeaterImpl extends AbstractOpenemsComponent implements Ope
         if (this.isValve) {
             this.configuredValve.setPointPowerLevelChannel().setNextValue(0);
         } else {
-            this.configuredValveController.setEnableSignal(false);
+            try {
+                this.configuredValveController.setEnableSignal(false);
+            } catch (OpenemsError.OpenemsNamedException e) {
+                this.log.warn("Couldn't apply Enable Signal (false) in ValveController of " + super.id());
+            }
         }
     }
 

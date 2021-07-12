@@ -4,8 +4,8 @@ import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
 @ObjectClassDefinition(
-        name = "Controller Consolinno Multiple Heater",
-        description = "This Controller regulates the Pump and Valves for Heating."
+        name = "Controller Multiple Heater",
+        description = "This Controller regulates Heater by activation/Deactivation Temperatures and Thermometer."
 )
 @interface Config {
 
@@ -17,66 +17,22 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     @AttributeDefinition(name = "alias", description = "Human readable name of Controller.")
     String alias() default "";
 
-    boolean usePrimaryHeater() default true;
+    @AttributeDefinition(name = "Heating Device Primary Names", description = "Unique Ids of the primary Heating Devices.")
+    String[] heaterIds() default {"Chp0", "WoodChipHeater0", "GasBoiler0"};
 
-    @AttributeDefinition(name = "Heating Device 1 Name", description = "Unique Id of the first Heating Device.")
-    String primaryHeaterId() default "Chp0";
+    @AttributeDefinition(name = "Heating Device Activation Temperature in dC", description = "Threshold of the primary Heating Devices, when to activate the Heater (in dC --> 1°C == 10°dC). "
+            + "If measured Temperature beneath this -> Activate heater. Can also be a ChannelAddress!")
+    String[] activationTemperatures() default {"600","600","VirtualThermometer0/Temperature"};
 
-    @AttributeDefinition(name = "Heating Device 1 MIN Temperature in dC", description = "Threshold of the Heating Device 1 should be turned ON(in dC --> 1°C == 10°dC).")
-    int primaryHeaterMinTemperature() default 600;
+    @AttributeDefinition(name = "Heating Device Deactivation Temperature in dC",
+            description = "Threshold of the Heating Devices should be turned OFF(in dC --> 1°C == 10°dC). Can also be a ChannelAddress")
+    String[] deactivationTemperatures() default {"800","800", "VirtualThermometer1/Temperature"};
 
-    @AttributeDefinition(name = "Heating Device 1 MAX Temperature in dC", description = "Threshold of the Heating Device 1 should be turned OFF(in dC --> 1°C == 10°dC).")
-    int primaryHeaterMaxTemperature() default 800;
+    @AttributeDefinition(name = "Activation Thermometers", description = "The Thermometer measuring the activation Temperatures.")
+    String[] activationThermometers() default {"TemperatureSensor0", "TemperatureSensor2", "TemperatureSensor4"};
 
-    @AttributeDefinition(name = "HeatingDevice 1 TemperatureSensor MIN", description = "The Temperature-Sensor for the Heating Device 1 Temperature MIN.")
-    String primaryTemperatureSensorMin() default "TemperatureSensor0";
-
-    @AttributeDefinition(name = "HeatingDevice 1 TemperatureSensor MAX", description = "The Temperature-Sensor for the Heating Device 1 Temperature MAX.")
-    String primaryTemperatureSensorMax() default "TemperatureSensor1";
-
-    boolean useSecondaryHeater() default true;
-
-    @AttributeDefinition(name = "Heating Device 2 Name", description = "Unique Id of the second Heating Device.")
-    String secondaryHeaterId() default "WoodChipHeater0";
-
-    @AttributeDefinition(name = "Heating Device 2 MIN Temperature in dC", description = "Threshold of the Heating Device 2 should be turned ON(in dC --> 1°C == 10°dC).")
-    int secondaryTemperatureMin() default 600;
-
-    @AttributeDefinition(name = "Heating Device 2 MAX Temperature in dC", description = "Threshold of the Heating Device 2 should be turned OFF(in dC --> 1°C == 10°dC).")
-    int secondaryTemperatureMax() default 800;
-
-    @AttributeDefinition(name = "HeatingDevice 2 TemperatureSensor MIN", description = "The Temperature-Sensor for the Heating Device 2 Temperature MIN.")
-    String secondaryTemperatureSensorMin() default "TemperatureSensor2";
-
-    @AttributeDefinition(name = "HeatingDevice 2 TemperatureSensor MAX", description = "The Temperature-Sensor for the Heating Device 2 Temperature MAX.")
-    String secondaryTemperatureSensorMax() default "TemperatureSensor3";
-
-    boolean useTertiaryHeater() default true;
-
-    @AttributeDefinition(name = "Heating Device 3 Name", description = "Unique Id of the third Heating Device.")
-    String tertiaryHeaterId() default "GasBoiler0";
-
-    @AttributeDefinition(name = "Heating Device 3 MIN Temperature in dC", description = "Threshold of the Heating Device 3 should be turned ON(in dC --> 1°C == 10°dC).")
-    int tertiaryTemperatureMin() default 600;
-
-    @AttributeDefinition(name = "Heating Device 3 MAX Temperature in dC", description = "Threshold of the Heating Device 3 should be turned OFF(in dC --> 1°C == 10°dC).")
-    int tertiaryTemperatureMax() default 800;
-
-    @AttributeDefinition(name = "HeatingDevice 3 TemperatureSensor MIN", description = "The Temperature-Sensor for the Heating Device 3 Temperature MIN.")
-    String tertiaryTemperatureSensorMin() default "TemperatureSensor4";
-
-    @AttributeDefinition(name = "HeatingDevice 3 TemperatureSensor MAX", description = "The Temperature-Sensor for the Heating Device 3 Temperature MAX.")
-    String tertiaryTemperatureSensorMax() default "TemperatureSensor5";
-
-    boolean useExceptionalState() default false;
-
-    @AttributeDefinition(name = "Timer Id", description = "TimerByCycles or TimerByTime")
-    String timerId() default "TimerByCycles";
-
-    @AttributeDefinition(name = "Max WaitTime", description = "Given Time sets the limit, how long to wait after "
-            + "Exceptional State is missing after Exceptional State activation to go back to normal control behaviour")
-    int waitTime() default 30;
-
+    @AttributeDefinition(name = "Deactivation Thermometers", description = "The Temperature-Sensor for the Heating Device 1 Temperature MAX.")
+    String[] deactivationThermometers() default {"TemperatureSensor1", "TemperatureSensor3", "TemperatureSensor5"};
 
     boolean enabled() default true;
 
