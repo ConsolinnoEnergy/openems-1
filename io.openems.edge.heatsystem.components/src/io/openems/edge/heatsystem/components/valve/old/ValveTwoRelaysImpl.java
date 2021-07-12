@@ -71,9 +71,7 @@ public class ValveTwoRelaysImpl extends AbstractValve implements OpenemsComponen
         this.openAddress = ChannelAddress.fromString(config.openChannelAddress());
         this.closeAddress = ChannelAddress.fromString(config.closeChannelAddress());
         this.config = config;
-        this.useCheckChannel = config.useOpeningAndClosingCheck();
-        this.checkOpenAddress = ChannelAddress.fromString(config.inputOpeningChannelAddress());
-        this.checkClosingAddress = ChannelAddress.fromString(config.inputClosingChannelAddress());
+
         if (this.checkChannelOk()) {
             super.activate(context, config.id(), config.alias(), config.enabled());
             this.getIsBusy().setNextValue(false);

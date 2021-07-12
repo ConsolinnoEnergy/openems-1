@@ -5,7 +5,7 @@ import io.openems.common.types.ChannelAddress;
 import io.openems.common.types.OpenemsType;
 import io.openems.edge.common.channel.Channel;
 import io.openems.edge.common.channel.WriteChannel;
-import io.openems.edge.common.component.AbstractOpenemsComponent;
+import io.openems.edge.common.channel.value.Value;
 import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.common.cycle.Cycle;
@@ -31,10 +31,6 @@ import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.util.concurrent.TimeUnit;
-
 
 /**
  * This Component allows a Valve  to be configured and controlled.
@@ -58,8 +54,8 @@ public class ValveTwoRelays extends AbstractValve implements OpenemsComponent, V
 
     private ChannelAddress openAddress;
     private ChannelAddress closeAddress;
-    private ChannelAddress checkOpenAddress;
-    private ChannelAddress checkClosingAddress;
+    private ChannelAddress inputOpenAddress;
+    private ChannelAddress inputClosingAddress;
 
     private Relay openRelay;
     private Relay closeRelay;
@@ -70,6 +66,11 @@ public class ValveTwoRelays extends AbstractValve implements OpenemsComponent, V
 
     @Reference
     ComponentManager cpm;
+
+
+    private enum ChannelToGet {
+        CLOSING, OPENING;
+    }
 
 
     public ValveTwoRelays() {
@@ -101,12 +102,20 @@ public class ValveTwoRelays extends AbstractValve implements OpenemsComponent, V
 
     private void activateOrModifiedRoutine(Config config) throws ConfigurationException, OpenemsError.OpenemsNamedException {
         this.configurationType = config.configurationType();
+        this.useCheckChannel = config.useInputCheck();
         switch (this.configurationType) {
             case CHANNEL:
                 this.openAddress = ChannelAddress.fromString(config.open());
                 this.closeAddress = ChannelAddress.fromString(config.close());
                 if (this.checkChannelOk() == false) {
                     throw new ConfigurationException("ActivateMethod in Valve: " + super.id(), "Given Channels are not ok!");
+                }
+                if (this.useCheckChannel) {
+                    this.inputClosingAddress = ChannelAddress.fromString(config.inputClosingChannelAddress());
+                    this.inputOpenAddress = ChannelAddress.fromString(config.inputOpeningChannelAddress());
+                } else {
+                    this.inputClosingAddress = null;
+                    this.inputOpenAddress = null;
                 }
                 break;
             case DEVICE:
@@ -117,6 +126,9 @@ public class ValveTwoRelays extends AbstractValve implements OpenemsComponent, V
         }
         this.secondsPerPercentage = ((double) config.valve_Time() / 100.d);
         this.timeChannel().setNextValue(0);
+        if (config.useExceptionalState()) {
+            super.createExcpetionalStateHandler(config.timerId(), config.maxTime(), this.cpm, this);
+        }
     }
 
 
@@ -170,6 +182,7 @@ public class ValveTwoRelays extends AbstractValve implements OpenemsComponent, V
         if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE)) {
             this.lastMaximum = this.maximum;
             this.lastMinimum = this.minimum;
+            this.checkValveChannelCorrect();
             this.updatePowerLevel();
             this.checkMaxAndMinAllowed();
             boolean reached = this.powerLevelReached() && this.readyToChange();
@@ -179,23 +192,30 @@ public class ValveTwoRelays extends AbstractValve implements OpenemsComponent, V
                 this.adaptValveValue();
             }
         } else if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS)) {
-            if (this.shouldReset()) {
+            if (this.isExceptionalStateActive()) {
+                this.setPowerLevel(this.getExceptionalSateValue());
+            } else if (this.shouldReset()) {
                 this.reset();
             } else if (this.getForceFullPowerAndResetChannel()) {
                 this.forceOpen();
             } else {
-                int changeByPercent = this.setPointPowerLevelValue();
-                if (changeByPercent >= MIN_PERCENT_POSSIBLE) {
-                    changeByPercent -= this.getPowerLevelValue();
-                    if (this.changeByPercentage(changeByPercent)) {
-                        this.setPointPowerLevelChannel().setNextValue(-1);
+                int setPointPowerLevelValue = this.setPointPowerLevelValue();
+                if (setPointPowerLevelValue >= DEFAULT_MIN_POWER_VALUE) {
+                    this.setPowerLevel(setPointPowerLevelValue);
+                } else {
+                    if (this.powerLevelReached()) {
+                        this.shutdownRelays();
                     }
-                }
-                //Calculate current % State of Valve
-                else if (this.powerLevelReached() == false) {
                     this.updatePowerLevel();
                 }
             }
+        }
+    }
+
+    private void setPowerLevel(double setPoint) {
+        setPoint -= this.getPowerLevelValue();
+        if (this.changeByPercentage(setPoint)) {
+            this.setPointPowerLevelChannel().setNextValue(-1);
         }
     }
 
@@ -230,107 +250,6 @@ public class ValveTwoRelays extends AbstractValve implements OpenemsComponent, V
         }
     }
 
-    //--------------UPDATE POWERLEVEL AND POWER LEVEL REACHED---------------//
-
-    /**
-     * Update PowerLevel by getting elapsed Time and check how much time has passed.
-     * Current PowerLevel and new Percentage is added together and rounded to 3 decimals.
-     */
-    private void updatePowerLevel() {
-        //Only Update PowerLevel if the Valve is Changing
-        if (this.isChanging()) {
-            long elapsedTime = this.getMilliSecondTime();
-            //If it's the first update of PowerLevel
-            if (this.timeStampValveCurrent == -1) {
-                //only important for ForceClose/Open
-                this.timeStampValveInitial = elapsedTime;
-                //First time in change
-                elapsedTime = 0;
-
-                //was updated before
-            } else {
-                elapsedTime -= this.timeStampValveCurrent;
-            }
-            this.timeStampValveCurrent = this.getMilliSecondTime();
-            double percentIncrease = elapsedTime / (this.secondsPerPercentage * MILLI_SECONDS_TO_SECONDS);
-            if (this.isClosing) {
-                percentIncrease *= -1;
-            }
-            //Round the calculated PercentIncrease of current PowerLevel and percentIncrease to 3 decimals
-            Double powerLevel = this.getPowerLevelValue();
-            double truncatedDouble = powerLevel == null ? 0 : BigDecimal.valueOf(powerLevel + percentIncrease)
-                    .setScale(3, RoundingMode.HALF_UP)
-                    .doubleValue();
-            if (truncatedDouble > MAX_PERCENT_POSSIBLE) {
-                truncatedDouble = MAX_PERCENT_POSSIBLE;
-            } else if (truncatedDouble < MIN_PERCENT_POSSIBLE) {
-                truncatedDouble = MIN_PERCENT_POSSIBLE;
-            }
-            this.getPowerLevelChannel().setNextValue(truncatedDouble);
-        } else {
-            this.timeStampValveCurrent = -1;
-        }
-    }
-
-    /**
-     * Check if Valve has reached the set-point and shuts down Relays if true. (No further opening and closing of Valve)
-     *
-     * @return is powerLevelReached
-     */
-    @Override
-    public boolean powerLevelReached() {
-        boolean reached = true;
-        if (this.isChanging()) {
-            reached = false;
-            Double powerLevel = this.getPowerLevelValue();
-            Double futurePowerLevel = this.getFuturePowerLevelValue();
-            if (powerLevel != null && futurePowerLevel != null) {
-                if (this.isClosing) {
-                    reached = powerLevel <= futurePowerLevel;
-                } else {
-                    reached = powerLevel >= futurePowerLevel;
-                }
-            }
-        }
-        //ReadyToChange always True except if it is forced
-        reached = reached && this.readyToChange();
-        if (reached) {
-            this.isChanging = false;
-            this.timeStampValveCurrent = -1;
-            this.shutdownRelays();
-        }
-        return reached;
-    }
-
-    // ------------------------------------------------------------- //
-
-    // --------------- READY TO CHANGE AND CHANGE BY PERCENTAGE ------------ //
-
-    /**
-     * Ready To Change is always true except if the Valve was forced to open/close and the Time to close/open the
-     * Valve completely is not over.
-     */
-    @Override
-    public boolean readyToChange() {
-        if (this.isForced) {
-            long currentTime = this.getMilliSecondTime();
-            if (currentTime - this.timeStampValveInitial
-                    >= ((this.timeNeeded() * MILLI_SECONDS_TO_SECONDS) + EXTRA_BUFFER_TIME)) {
-                this.getIsBusyChannel().setNextValue(false);
-                this.wasAlreadyReset = false;
-                this.isForced = false;
-                return true;
-            } else {
-                return false;
-            }
-        }
-        if (this.isChanging == false) {
-            this.timeStampValveCurrent = -1;
-        }
-        return true;
-    }
-
-
     /**
      * Changes Valve Position by incoming percentage.
      * Warning, only executes if valve is not busy! (was not forced to open/close)
@@ -354,7 +273,7 @@ public class ValveTwoRelays extends AbstractValve implements OpenemsComponent, V
     public boolean changeByPercentage(double percentage) {
 
 
-        if (this.readyToChange() == false || percentage == MIN_PERCENT_POSSIBLE) {
+        if (this.readyToChange() == false || percentage == DEFAULT_MIN_POWER_VALUE) {
             return false;
         } else {
             Double currentPowerLevel = this.getPowerLevelValue();
@@ -371,8 +290,8 @@ public class ValveTwoRelays extends AbstractValve implements OpenemsComponent, V
                 currentPowerLevel = this.maximum;
             } else if (this.lastMaximum != null && this.lastMaximum < currentPowerLevel) {
                 currentPowerLevel = this.lastMaximum;
-            } else if (currentPowerLevel >= MAX_PERCENT_POSSIBLE) {
-                currentPowerLevel = (double) MAX_PERCENT_POSSIBLE;
+            } else if (currentPowerLevel >= DEFAULT_MAX_POWER_VALUE) {
+                currentPowerLevel = (double) DEFAULT_MAX_POWER_VALUE;
             } else if (this.minimum != null && this.minimum > currentPowerLevel) {
                 currentPowerLevel = this.minimum;
             } else if (this.lastMinimum != null && this.lastMinimum > currentPowerLevel) {
@@ -388,14 +307,14 @@ public class ValveTwoRelays extends AbstractValve implements OpenemsComponent, V
                 return false;
             }
             //Calculate the Time to Change the Valve
-            if (Math.abs(percentage) >= MAX_PERCENT_POSSIBLE) {
-                this.timeChannel().setNextValue(MAX_PERCENT_POSSIBLE * this.secondsPerPercentage);
+            if (Math.abs(percentage) >= DEFAULT_MAX_POWER_VALUE) {
+                this.timeChannel().setNextValue(DEFAULT_MAX_POWER_VALUE * this.secondsPerPercentage);
             } else {
                 this.timeChannel().setNextValue(Math.abs(percentage) * this.secondsPerPercentage);
             }
             //Close on negative Percentage and Open on Positive
             this.isChanging = true;
-            if (percentage < MIN_PERCENT_POSSIBLE) {
+            if (percentage < DEFAULT_MIN_POWER_VALUE) {
                 this.valveClose();
             } else {
                 this.valveOpen();
@@ -430,20 +349,6 @@ public class ValveTwoRelays extends AbstractValve implements OpenemsComponent, V
 
     }
 
-    /**
-     * Checks if the Valve should be reset.
-     *
-     * @return shouldReset.
-     */
-    private boolean shouldReset() {
-        if (this.wasAlreadyReset) {
-            return false;
-        } else {
-            return this.getResetValueAndResetChannel();
-        }
-    }
-
-
     // ------------ FORCE OPEN AND CLOSE------------------ //
 
     /**
@@ -457,8 +362,8 @@ public class ValveTwoRelays extends AbstractValve implements OpenemsComponent, V
         if (this.isForced == false || this.isClosing == false) {
             this.isForced = true;
             this.isChanging = true;
-            this.futurePowerLevelChannel().setNextValue(MIN_PERCENT_POSSIBLE);
-            this.timeChannel().setNextValue(MAX_PERCENT_POSSIBLE * this.secondsPerPercentage);
+            this.futurePowerLevelChannel().setNextValue(DEFAULT_MIN_POWER_VALUE);
+            this.timeChannel().setNextValue(DEFAULT_MAX_POWER_VALUE * this.secondsPerPercentage);
             this.valveClose();
             this.getIsBusyChannel().setNextValue(true);
             //Making sure to wait the correct time even if it is already closing.
@@ -479,8 +384,8 @@ public class ValveTwoRelays extends AbstractValve implements OpenemsComponent, V
         if (this.isForced == false || this.isClosing == true) {
             this.isForced = true;
             this.isChanging = true;
-            this.futurePowerLevelChannel().setNextValue(MAX_PERCENT_POSSIBLE);
-            this.timeChannel().setNextValue(MAX_PERCENT_POSSIBLE * this.secondsPerPercentage);
+            this.futurePowerLevelChannel().setNextValue(DEFAULT_MAX_POWER_VALUE);
+            this.timeChannel().setNextValue(DEFAULT_MAX_POWER_VALUE * this.secondsPerPercentage);
             this.valveOpen();
             this.getIsBusyChannel().setNextValue(true);
             //Making sure to wait the correct time even if it is already opening
@@ -531,7 +436,7 @@ public class ValveTwoRelays extends AbstractValve implements OpenemsComponent, V
 
         this.controlRelays(false, "Closed");
         this.controlRelays(true, "Open");
-        if (this.isClosing == true) {
+        if (this.isClosing) {
             this.timeStampValveCurrent = -1;
             this.isClosing = false;
         }
@@ -579,56 +484,90 @@ public class ValveTwoRelays extends AbstractValve implements OpenemsComponent, V
         }
     }
 
+    //----------PRIVATE VALVE CHECK ----------- //
+    private void checkValveChannelCorrect() {
+        if (this.useCheckChannel) {
+            try {
+                boolean channelValueIsTrue;
+                boolean channelValueIsNotFalse;
 
-    // --------- UTILITY -------------//
+                Channel<?> channelToCheckForTrue;
+                Channel<?> channelToCheckForFalse;
+                if (this.isClosing) {
+                    channelToCheckForTrue = this.getInputChannel(ChannelToGet.CLOSING);
+                    channelToCheckForFalse = this.getInputChannel(ChannelToGet.OPENING);
+                } else {
+                    channelToCheckForTrue = this.getInputChannel(ChannelToGet.OPENING);
+                    channelToCheckForFalse = this.getInputChannel(ChannelToGet.CLOSING);
+                }
+                channelValueIsTrue = this.checkChannelValueIsTrue(channelToCheckForTrue);
+                channelValueIsNotFalse = this.checkChannelValueIsTrue(channelToCheckForFalse);
+                if (this.isChanging) {
+                    if (channelValueIsTrue == false || channelValueIsNotFalse) {
+                        updateOk = false;
+                        timeStampValveCurrent = -1;
+                        this.getPowerLevelChannel().setNextValue(this.powerLevelBeforeUpdate);
+                        if (this.isClosing) {
+                            this.valveClose();
+                        } else {
+                            this.valveOpen();
+                        }
+                    } else {
+                        updateOk = true;
+                    }
+                } else {
+                    if (channelValueIsTrue) {
+                        this.isChanging = true;
+                        this.updatePowerLevel();
+                        this.shutdownRelays();
+                    }
+                }
 
-    /**
-     * Get Current Time in Ms.
-     *
-     * @return currentTime in Ms.
-     */
-
-    private long getMilliSecondTime() {
-        long time = System.nanoTime();
-        return TimeUnit.MILLISECONDS.convert(time, TimeUnit.NANOSECONDS);
-    }
-
-
-    /**
-     * Checks if the max and Min Values are correct and not bizarre that leads to bugs and errors.
-     *
-     * @return validation.
-     */
-
-    private boolean maxMinValid() {
-        if (this.maximum == null) {
-            this.maximum = (double) MAX_PERCENT_POSSIBLE;
-        }
-        if (this.minimum == null) {
-            this.minimum = (double) MIN_PERCENT_POSSIBLE;
-        }
-        return (this.maximum >= this.minimum && this.maximum > MIN_PERCENT_POSSIBLE && this.minimum >= MIN_PERCENT_POSSIBLE);
-    }
-
-
-    // ----------------------------- //
-
-
-    @Override
-    public String debugLog() {
-        if (this.getPowerLevelChannel().value().isDefined()) {
-            String name = "";
-            if (!super.alias().equals("")) {
-                name = super.alias();
-            } else {
-                name = super.id();
+            } catch (OpenemsError.OpenemsNamedException | ConfigurationException e) {
+                this.log.warn("Attention in Valve: " + super.id() + " ChannelToCheck Method failed: " + e.getMessage());
+                this.updateOk = false;
             }
-            return "Valve: " + name + ": " + this.getPowerLevelValue() + "\n";
-        } else {
-            return "\n";
         }
     }
 
+    private Channel<?> getInputChannel(ChannelToGet channelToGet) throws OpenemsError.OpenemsNamedException {
+        switch (this.configurationType) {
+            case CHANNEL:
+                return this.cpm.getChannel(channelToGet.equals(ChannelToGet.CLOSING)
+                        ? this.cpm.getChannel(this.inputClosingAddress) : this.cpm.getChannel(this.inputOpenAddress));
+            case DEVICE:
+            default:
+                return channelToGet.equals(ChannelToGet.CLOSING) ? this.closeRelay.getRelaysReadChannel() : this.openRelay.getRelaysReadChannel();
+        }
+    }
+
+
+    private boolean checkChannelValueIsTrue(Channel<?> channelToCheck) throws ConfigurationException {
+        Value<?> value = channelToCheck.value().isDefined() ? channelToCheck.value()
+                : channelToCheck.getNextValue().isDefined() ? channelToCheck.getNextValue() : null;
+        if (value != null) {
+            switch (channelToCheck.getType()) {
+                case BOOLEAN:
+                    return (Boolean) value.get();
+                case SHORT:
+                case INTEGER:
+                case LONG:
+                case FLOAT:
+                case DOUBLE:
+                    return ((Double) value.get() > 0);
+                case STRING:
+                    if (this.containsOnlyNumbers(value.get().toString())) {
+                        return Double.parseDouble(value.get().toString()) > 0;
+                    } else {
+                        throw new ConfigurationException("CheckChannelValue: " + super.id() + channelToCheck.toString(), "Channel Cannot be parsed to a Numeric Value");
+                    }
+                default:
+                    throw new ConfigurationException("CheckChannelValue: " + super.id() + channelToCheck.toString(), "ValueType not supported!");
+            }
+        } else {
+            return false;
+        }
+    }
 
     @Deactivate
     protected void deactivate() {

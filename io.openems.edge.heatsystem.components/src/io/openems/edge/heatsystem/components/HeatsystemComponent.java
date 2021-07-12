@@ -257,8 +257,12 @@ public interface HeatsystemComponent extends OpenemsComponent {
     default double getFuturePowerLevelValue() {
         Double futurePowerLevel = (Double) this.getValueOfChannel(this.futurePowerLevelChannel());
         if (futurePowerLevel == null) {
+            futurePowerLevel = (Double) this.getNextValueOfChannel(this.getPowerLevelChannel());
+        }
+        if (futurePowerLevel == null) {
             futurePowerLevel = 0.d;
         }
+
         return futurePowerLevel;
     }
 
@@ -476,6 +480,7 @@ public interface HeatsystemComponent extends OpenemsComponent {
 
     /**
      * Check if Valve has an active Exceptional State
+     *
      * @return
      */
     default boolean containsOnlyNumbers(String channelValue) {

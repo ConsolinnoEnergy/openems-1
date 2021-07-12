@@ -40,7 +40,7 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     @AttributeDefinition(name = "Self check if Output is written",
             description = "If the Box is ticked, the Valve will check if it's output is written into devices. "
                     + "If the ConfigurationType is Device, please type the inputChannelAddresses")
-    boolean useOpeningAndClosingCheck() default false;
+    boolean useInputCheck() default false;
 
     @AttributeDefinition(name = "CheckClosingChannelAddress", description = "If Valve should close, check with this channel if it is really closing")
     String inputClosingChannelAddress() default "Relay1/ReadOnOff";
