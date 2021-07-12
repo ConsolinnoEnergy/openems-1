@@ -3,18 +3,22 @@ package io.openems.edge.controller.heatnetwork.communication.api;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * This Interface extends the {@link RequestManager} that provides the ability to manage a given amount of RestRequests or
+ * return the manage requests.
+ */
 public interface RestRequestManager extends RequestManager {
     /**
      * Usually Called By CommunicationMaster.
      * Give all of the Requests and handle them by ManageType (e.g. FIFO) and Maximum Requests.
-     * Includes a Waitlist
+     * Includes a WaitList.
      *
      * @param allRequests All Requests mapped by Integer (Usually a Position/Number)
      */
     void manageRequests(Map<Integer, List<RestRequest>> allRequests);
 
     /**
-     * returns the managed Request either all of them (e.g. if isForcing in Communicationmaster is set) or
+     * Returns the managed Request either all of them (e.g. if isForcing in {@link CommunicationMasterController} is set) or
      * returns managed requests (Maximum Requests size determined by Keys of the Map).
      * @return the ManagedRequests.
      */

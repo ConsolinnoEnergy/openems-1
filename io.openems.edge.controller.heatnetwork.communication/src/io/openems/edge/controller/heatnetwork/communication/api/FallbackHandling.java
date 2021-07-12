@@ -7,9 +7,9 @@ import io.openems.common.types.OptionsEnum;
  */
 public enum FallbackHandling implements OptionsEnum {
     UNDEFINED(-1, "Undefined"),
-    HEAT(1, "HEAT"),
-    OPEN(2, "OPEN"),
-    CLOSE(3, "CLOSE"),
+    //HEAT(1, "HEAT"),
+    //OPEN(2, "OPEN"),
+    //CLOSE(3, "CLOSE"),
     DEFAULT(4, "DEFAULT");
 
     private final int value;
@@ -19,15 +19,6 @@ public enum FallbackHandling implements OptionsEnum {
     FallbackHandling(int value, String name) {
         this.value = value;
         this.name = name;
-    }
-
-    protected static boolean contains(String handling) {
-        for (FallbackHandling fallbackHandling : FallbackHandling.values()) {
-            if (fallbackHandling.name().equals(handling)) {
-                return true;
-            }
-        }
-        return false;
     }
 
     @Override

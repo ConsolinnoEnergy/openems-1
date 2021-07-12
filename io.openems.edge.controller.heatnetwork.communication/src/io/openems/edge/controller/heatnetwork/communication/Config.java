@@ -1,13 +1,12 @@
-package io.openems.edge.controller.heatnetwork.communication.master;
+package io.openems.edge.controller.heatnetwork.communication;
 
 
+import io.openems.edge.controller.heatnetwork.communication.api.ConnectionType;
 import io.openems.edge.controller.heatnetwork.communication.api.FallbackHandling;
+import io.openems.edge.controller.heatnetwork.communication.api.ManageType;
 import io.openems.edge.timer.api.TimerType;
 import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
-import org.osgi.service.metatype.annotations.Option;
-
-import java.util.Arrays;
 
 
 @ObjectClassDefinition(
@@ -23,11 +22,8 @@ import java.util.Arrays;
     @AttributeDefinition(name = "Alias", description = "Human readable Name.")
     String alias() default "";
 
-    @AttributeDefinition(name = "ConnectionType", description = "ConnectionTypes",
-            options = {
-                    @Option(label = "REST", value = "REST")
-            })
-    String connectionType();
+    @AttributeDefinition(name = "ConnectionType", description = "ConnectionTypes, that are supported by the Communicationmaster")
+    ConnectionType connectionType() default ConnectionType.REST;
 
     @AttributeDefinition(name = "Maximum Requests", description = "Maximum requests handled at once, mapped to Connection type")
     int maxRequestAllowedAtOnce() default 3;
@@ -35,13 +31,13 @@ import java.util.Arrays;
     @AttributeDefinition(name = "TimerType for Manager", description = "Should the Manager use Cycles or Time")
     TimerType timerForManager() default TimerType.TIME;
 
-    @AttributeDefinition(name = "Maximum Waiting Time", description = "Maximum Time in Minutes an element is Allowed to wait " +
-            "before it gets swapped by a member of the ActiveList. Or the number of cycles.")
+    @AttributeDefinition(name = "Maximum Waiting Time", description = "Maximum Time in Minutes an element is Allowed to wait "
+            + "before it gets swapped by a member of the ActiveList. Or the number of cycles.")
     int maxWaitTimeAllowed() default 30;
 
     @AttributeDefinition(name = "ManagingType", description = "How To Manage Requests Each Entry will be Mapped to Connection type. "
             + "Available ManageRequests are: FIFO")
-    String manageType() default "FIFO";
+    ManageType manageType() default ManageType.FIFO;
 
     @AttributeDefinition(name = "Timer Id", description = "Timer by Cycles or Timer by Time for keepAlive Count till fallback activates")
     String timerId() default "TimerByCycles";
@@ -59,6 +55,8 @@ import java.util.Arrays;
     String[] requestTypes() default {};
 
     String[] methodTypes() default {};
+
+    String[] masterResponseTypes() default {};
 
 
     @AttributeDefinition(name = "RequestType to Response", description = "Map an available RequestType to a Response, if no Request of this type is active -> set to default Value,"
