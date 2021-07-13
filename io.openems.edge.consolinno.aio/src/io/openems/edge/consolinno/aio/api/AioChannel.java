@@ -1,16 +1,19 @@
 package io.openems.edge.consolinno.aio.api;
 
 import io.openems.common.channel.AccessMode;
+import io.openems.common.channel.Unit;
 import io.openems.common.types.OpenemsType;
 import io.openems.edge.common.channel.Channel;
 import io.openems.edge.common.channel.Doc;
+import io.openems.edge.common.channel.WriteChannel;
 import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.consolinno.modbus.configurator.api.LeafletConfigurator;
 
 public interface AioChannel extends OpenemsComponent {
     public enum ChannelId implements io.openems.edge.common.channel.ChannelId {
         AIO_READ(Doc.of(OpenemsType.INTEGER)),
-        AIO_PERCENT(Doc.of(OpenemsType.INTEGER)),
+        AIO_CHECK_PERCENT(Doc.of(OpenemsType.INTEGER).unit(Unit.THOUSANDTH)),
+        AIO_PERCENT_WRITE(Doc.of(OpenemsType.INTEGER).unit(Unit.THOUSANDTH)),
         AIO_WRITE(Doc.of(OpenemsType.INTEGER).accessMode(AccessMode.READ_WRITE)),
         AIO_CHECK_WRITE(Doc.of(OpenemsType.INTEGER));
         private final Doc doc;
@@ -39,22 +42,32 @@ public interface AioChannel extends OpenemsComponent {
         return -1;
     }
     default Channel<Integer> getPercentChannel() {
-        return this.channel(ChannelId.AIO_PERCENT);
+        return this.channel(ChannelId.AIO_CHECK_PERCENT);
     }
 
-    default int getPercentValue() {
+    default float getPercentValue() {
         if (this.getPercentChannel().value().isDefined()) {
-            return this.getPercentChannel().value().get();
+            return this.getPercentChannel().value().get().floatValue() / 10;
         } else if (this.getPercentChannel().getNextValue().isDefined()) {
-            return this.getPercentChannel().getNextValue().get();
+            return this.getPercentChannel().getNextValue().get().floatValue() / 10;
         }
         return -1;
     }
-    default Channel<Integer> getWriteChannel() {
+    default WriteChannel<Integer> getWriteChannel() {
         return this.channel(ChannelId.AIO_WRITE);
     }
 
     default Channel<Integer> getCheckWriteChannel() {
         return this.channel(ChannelId.AIO_CHECK_WRITE);
     }
+
+    default int getWriteValue() {
+        if (this.getCheckWriteChannel().value().isDefined()) {
+            return this.getCheckWriteChannel().value().get();
+        } else if (this.getCheckWriteChannel().getNextValue().isDefined()) {
+            return this.getCheckWriteChannel().getNextValue().get();
+        }
+        return -1;
+    }
+
 }
