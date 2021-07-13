@@ -1,6 +1,7 @@
 package io.openems.edge.aio.api;
 
 import io.openems.common.channel.AccessMode;
+import io.openems.common.channel.Unit;
 import io.openems.common.types.OpenemsType;
 import io.openems.edge.common.channel.Channel;
 import io.openems.edge.common.channel.Doc;
@@ -31,17 +32,7 @@ public interface AioChannel extends OpenemsComponent {
          * </ul>
          */
         AIO_READ(Doc.of(OpenemsType.INTEGER)),
-        /**
-         * Status of Aio in percent.
-         *
-         * <ul>
-         * <li>Interface: AioChannel
-         * <li>Type: Integer
-         * <li>Unit: %
-         * <li>Range: 0..100
-         * </ul>
-         */
-        AIO_PERCENT(Doc.of(OpenemsType.INTEGER)),
+
         /**
          * Value that is being written to Aio.
          *
@@ -59,7 +50,29 @@ public interface AioChannel extends OpenemsComponent {
          * <li>Type: Integer
          * </ul>
          */
-        AIO_CHECK_WRITE(Doc.of(OpenemsType.INTEGER));
+        AIO_CHECK_WRITE(Doc.of(OpenemsType.INTEGER)),
+        /**
+         * Status of Aio in percent.
+         *
+         * <ul>
+         * <li>Interface: AioChannel
+         * <li>Type: Integer
+         * <li>Unit: ‰
+         * <li>Range: 0..1000
+         * </ul>
+         */
+        AIO_CHECK_PERCENT(Doc.of(OpenemsType.INTEGER).unit(Unit.THOUSANDTH)),
+        /**
+         * SetPoint of Aio in percent.
+         *
+         * <ul>
+         * <li>Interface: AioChannel
+         * <li>Type: Integer
+         * <li>Unit: ‰
+         * <li>Range: 0..1000
+         * </ul>
+         */
+        AIO_PERCENT_WRITE(Doc.of(OpenemsType.INTEGER).unit(Unit.THOUSANDTH));
         private final Doc doc;
 
         private ChannelId(Doc doc) {
@@ -86,8 +99,13 @@ public interface AioChannel extends OpenemsComponent {
         return -1;
     }
     default Channel<Integer> getPercentChannel() {
-        return this.channel(ChannelId.AIO_PERCENT);
+        return this.channel(ChannelId.AIO_CHECK_PERCENT);
     }
+
+    default WriteChannel<Integer> getSetPointPercentChannel() {
+        return this.channel(ChannelId.AIO_PERCENT_WRITE);
+    }
+
 
     default int getPercentValue() {
         if (this.getPercentChannel().value().isDefined()) {

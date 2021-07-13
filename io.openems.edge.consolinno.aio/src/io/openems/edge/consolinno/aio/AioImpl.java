@@ -140,7 +140,7 @@ public class AioImpl extends AbstractOpenemsModbusComponent implements OpenemsCo
                                 m(AioChannel.ChannelId.AIO_READ, new CoilElement(this.aioRegister),
                                         ElementToChannelConverter.DIRECT_1_TO_1)),
                         new FC3ReadRegistersTask(this.percentRegister, Priority.HIGH,
-                                m(AioChannel.ChannelId.AIO_PERCENT, new UnsignedWordElement(this.percentRegister),
+                                m(AioChannel.ChannelId.AIO_CHECK_PERCENT, new UnsignedWordElement(this.percentRegister),
                                         ElementToChannelConverter.DIRECT_1_TO_1)));
             } else if (this.type.contains("in")) {
                 return new ModbusProtocol(this,
@@ -148,7 +148,7 @@ public class AioImpl extends AbstractOpenemsModbusComponent implements OpenemsCo
                                 m(AioChannel.ChannelId.AIO_READ, new UnsignedWordElement(this.aioRegister),
                                         ElementToChannelConverter.DIRECT_1_TO_1)),
                         new FC3ReadRegistersTask(this.percentRegister, Priority.HIGH,
-                                m(AioChannel.ChannelId.AIO_PERCENT, new UnsignedWordElement(this.percentRegister),
+                                m(AioChannel.ChannelId.AIO_CHECK_PERCENT, new UnsignedWordElement(this.percentRegister),
                                         ElementToChannelConverter.DIRECT_1_TO_1)));
             } else if (this.type.contains("out")) {
                 return new ModbusProtocol(this,
@@ -160,7 +160,7 @@ public class AioImpl extends AbstractOpenemsModbusComponent implements OpenemsCo
                                 m(AioChannel.ChannelId.AIO_CHECK_WRITE, new UnsignedWordElement(this.aioRegister),
                                         ElementToChannelConverter.DIRECT_1_TO_1)),
                         new FC3ReadRegistersTask(this.percentRegister, Priority.HIGH,
-                                m(AioChannel.ChannelId.AIO_PERCENT, new UnsignedWordElement(this.percentRegister),
+                                m(AioChannel.ChannelId.AIO_CHECK_PERCENT, new UnsignedWordElement(this.percentRegister),
                                         ElementToChannelConverter.DIRECT_1_TO_1)));
 
 

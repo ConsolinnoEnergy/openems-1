@@ -40,7 +40,7 @@ import org.slf4j.LoggerFactory;
  * E.g. The Consolinno Leaflet reads the MCP and it's status, this will be send into the {@link Relay#getRelaysReadChannel()}
  * If the value you read is the expected value, everything is ok, otherwise the Components tries to set the expected values again.
  */
-@Designate(ocd = ConfigValveTwoInput.class, factory = true)
+@Designate(ocd = ConfigValveTwoOutput.class, factory = true)
 @Component(name = "HeatsystemComponent.Valve.TwoInput",
         configurationPolicy = ConfigurationPolicy.REQUIRE,
         immediate = true,
@@ -48,12 +48,12 @@ import org.slf4j.LoggerFactory;
                 EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE,
                 EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS}
 )
-public class ValveTwoInput extends AbstractValve implements OpenemsComponent, Valve, ExceptionalState, EventHandler {
+public class ValveTwoOutput extends AbstractValve implements OpenemsComponent, Valve, ExceptionalState, EventHandler {
 
     @Reference
     Cycle cycle;
 
-    private final Logger log = LoggerFactory.getLogger(ValveTwoInput.class);
+    private final Logger log = LoggerFactory.getLogger(ValveTwoOutput.class);
 
     private ChannelAddress openAddress;
     private ChannelAddress closeAddress;
@@ -63,10 +63,9 @@ public class ValveTwoInput extends AbstractValve implements OpenemsComponent, Va
     private Relay openRelay;
     private Relay closeRelay;
 
-    private boolean useCheckChannel;
 
     private ConfigurationType configurationType;
-    private ConfigValveTwoInput config;
+    private ConfigValveTwoOutput config;
 
     @Reference
     ComponentManager cpm;
@@ -77,13 +76,13 @@ public class ValveTwoInput extends AbstractValve implements OpenemsComponent, Va
     }
 
 
-    public ValveTwoInput() {
+    public ValveTwoOutput() {
         super(OpenemsComponent.ChannelId.values(), HeatsystemComponent.ChannelId.values());
     }
 
 
     @Activate
-    void activate(ComponentContext context, ConfigValveTwoInput config) throws ConfigurationException {
+    void activate(ComponentContext context, ConfigValveTwoOutput config) throws ConfigurationException {
         super.activate(context, config.id(), config.alias(), config.enabled());
         try {
             this.activateOrModifiedRoutine(config);
@@ -110,11 +109,11 @@ public class ValveTwoInput extends AbstractValve implements OpenemsComponent, Va
      * @throws OpenemsError.OpenemsNamedException thrown if configured address or Relay cannot be found at all.
      */
 
-    private void activateOrModifiedRoutine(ConfigValveTwoInput config) throws ConfigurationException, OpenemsError.OpenemsNamedException {
+    private void activateOrModifiedRoutine(ConfigValveTwoOutput config) throws ConfigurationException, OpenemsError.OpenemsNamedException {
         this.configSuccess = false;
         this.config = config;
         this.configurationType = config.configurationType();
-        this.useCheckChannel = config.useCheckChannel();
+        this.useCheckOutput = config.useCheckChannel();
         switch (this.configurationType) {
             case CHANNEL:
                 this.openAddress = ChannelAddress.fromString(config.open());
@@ -122,9 +121,9 @@ public class ValveTwoInput extends AbstractValve implements OpenemsComponent, Va
                 if (this.checkChannelOk() == false) {
                     throw new ConfigurationException("ActivateMethod in Valve: " + super.id(), "Given Channels are not ok!");
                 }
-                if (this.useCheckChannel) {
-                    this.inputClosingAddress = ChannelAddress.fromString(config.inputClosingChannelAddress());
-                    this.inputOpenAddress = ChannelAddress.fromString(config.inputOpeningChannelAddress());
+                if (this.useCheckOutput) {
+                    this.inputClosingAddress = ChannelAddress.fromString(config.checkClosingChannelAddress());
+                    this.inputOpenAddress = ChannelAddress.fromString(config.checkOpeningChannelAddress());
                 } else {
                     this.inputClosingAddress = null;
                     this.inputOpenAddress = null;
@@ -184,7 +183,7 @@ public class ValveTwoInput extends AbstractValve implements OpenemsComponent, Va
 
 
     @Modified
-    void modified(ComponentContext context, ConfigValveTwoInput config) throws OpenemsError.OpenemsNamedException, ConfigurationException {
+    void modified(ComponentContext context, ConfigValveTwoOutput config) throws OpenemsError.OpenemsNamedException, ConfigurationException {
         super.modified(context, config.id(), config.alias(), config.enabled());
         this.activateOrModifiedRoutine(config);
     }
@@ -219,31 +218,13 @@ public class ValveTwoInput extends AbstractValve implements OpenemsComponent, Va
                 }
             }
         } else if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS) && this.configSuccess) {
-            if (this.isExceptionalStateActive()) {
-                this.setPowerLevel(this.getExceptionalSateValue());
-            } else if (this.shouldReset()) {
-                this.reset();
-            } else if (this.getForceFullPowerAndResetChannel()) {
-                this.forceOpen();
-            } else {
-                int setPointPowerLevelValue = this.setPointPowerLevelValue();
-                if (setPointPowerLevelValue >= DEFAULT_MIN_POWER_VALUE) {
-                    this.setPowerLevel(setPointPowerLevelValue);
-                } else {
-                    if (this.powerLevelReached()) {
-                        this.shutdownRelays();
-                    }
-                    this.updatePowerLevel();
+            if (parentDidRoutine() == false) {
+                if (this.powerLevelReached()) {
+                    this.shutdownRelays();
                 }
             }
         }
-    }
 
-    private void setPowerLevel(double setPoint) {
-        setPoint -= this.getPowerLevelValue();
-        if (this.changeByPercentage(setPoint)) {
-            this.setPointPowerLevelChannel().setNextValue(-1);
-        }
     }
 
     /**
@@ -299,45 +280,13 @@ public class ValveTwoInput extends AbstractValve implements OpenemsComponent, Va
     @Override
     public boolean changeByPercentage(double percentage) {
 
-
         if (this.readyToChange() == false || percentage == DEFAULT_MIN_POWER_VALUE) {
             return false;
         } else {
-            Double currentPowerLevel = this.getPowerLevelValue();
-            //Setting the oldPowerLevel and adjust the percentage Value
-            this.getLastPowerLevelChannel().setNextValue(currentPowerLevel);
-            this.maximum = getMaxAllowedValue();
-            this.minimum = getMinAllowedValue();
-            if (this.maxMinValid() == false) {
-                this.minimum = null;
-                this.maximum = null;
-            }
-            currentPowerLevel += percentage;
-            if (this.maximum != null && this.maximum < currentPowerLevel) {
-                currentPowerLevel = this.maximum;
-            } else if (this.lastMaximum != null && this.lastMaximum < currentPowerLevel) {
-                currentPowerLevel = this.lastMaximum;
-            } else if (currentPowerLevel >= DEFAULT_MAX_POWER_VALUE) {
-                currentPowerLevel = (double) DEFAULT_MAX_POWER_VALUE;
-            } else if (this.minimum != null && this.minimum > currentPowerLevel) {
-                currentPowerLevel = this.minimum;
-            } else if (this.lastMinimum != null && this.lastMinimum > currentPowerLevel) {
-                currentPowerLevel = this.lastMinimum;
-            }
-            //Set goal Percentage for future reference
-            this.futurePowerLevelChannel().setNextValue(currentPowerLevel);
-            //if same power level do not change and return --> relays is not always powered
-            Double lastPower = this.getLastPowerLevelValue();
-            if (lastPower.equals(currentPowerLevel)) {
-                this.isChanging = false;
+            double currentPowerLevel = super.calculateCurrentPowerLevelAndSetTime(percentage);
+            if (currentPowerLevel < 0) {
                 this.shutdownRelays();
                 return false;
-            }
-            //Calculate the Time to Change the Valve
-            if (Math.abs(percentage) >= DEFAULT_MAX_POWER_VALUE) {
-                this.timeChannel().setNextValue(DEFAULT_MAX_POWER_VALUE * this.secondsPerPercentage);
-            } else {
-                this.timeChannel().setNextValue(Math.abs(percentage) * this.secondsPerPercentage);
             }
             //Close on negative Percentage and Open on Positive
             this.isChanging = true;
@@ -513,7 +462,7 @@ public class ValveTwoInput extends AbstractValve implements OpenemsComponent, Va
 
     //----------PRIVATE VALVE CHECK ----------- //
     private void checkValveChannelCorrect() {
-        if (this.useCheckChannel) {
+        if (this.useCheckOutput) {
             try {
                 boolean channelValueIsTrue;
                 boolean channelValueIsNotFalse;

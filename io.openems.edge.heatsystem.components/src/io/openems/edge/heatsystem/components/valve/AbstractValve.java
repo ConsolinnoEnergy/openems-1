@@ -1,6 +1,8 @@
 package io.openems.edge.heatsystem.components.valve;
 
 import io.openems.common.exceptions.OpenemsError;
+import io.openems.edge.common.channel.Channel;
+import io.openems.edge.common.channel.value.Value;
 import io.openems.edge.common.component.AbstractOpenemsComponent;
 import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.exceptionalstate.api.ExceptionalState;
@@ -18,6 +20,10 @@ import java.math.RoundingMode;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+/**
+ * The Abstract Valve. It Provides basic Functions, such as updating the PowerLevel or if tthe powerLevel is reached.
+ * Its the BaseClass for any Valve that is implemented.
+ */
 public abstract class AbstractValve extends AbstractOpenemsComponent implements Valve, ExceptionalState {
     protected final Logger log = LoggerFactory.getLogger(AbstractValve.class);
 
@@ -30,10 +36,14 @@ public abstract class AbstractValve extends AbstractOpenemsComponent implements 
     protected boolean isClosing = false;
     protected boolean wasAlreadyReset = false;
     protected boolean isForced;
+
+    protected boolean useCheckOutput;
+
     protected static int EXTRA_BUFFER_TIME = 2000;
     protected static final int TOLERANCE = 5;
     protected static final int MAX_CONFIG_TRIES = 10;
     protected AtomicInteger configTries = new AtomicInteger(0);
+    protected boolean configSuccess;
 
     protected static final int MILLI_SECONDS_TO_SECONDS = 1000;
 
@@ -48,7 +58,6 @@ public abstract class AbstractValve extends AbstractOpenemsComponent implements 
     private TimerHandler timerHandler;
     protected ExceptionalStateHandler exceptionalStateHandler;
     protected ExceptionalState exceptionalState;
-    protected boolean configSuccess;
 
     protected AbstractValve(io.openems.edge.common.channel.ChannelId[] firstInitialChannelIds,
                             io.openems.edge.common.channel.ChannelId[]... furtherInitialChannelIds) {
@@ -250,5 +259,110 @@ public abstract class AbstractValve extends AbstractOpenemsComponent implements 
 
     protected int getExceptionalSateValue() {
         return this.exceptionalState.getExceptionalStateValue();
+    }
+
+    protected Value<?> getValueOfOptionalChannel(Channel<?> optionalChannel) {
+        return optionalChannel.value().isDefined() ? optionalChannel.value()
+                : optionalChannel.getNextValue().isDefined() ? optionalChannel.getNextValue() : null;
+    }
+
+    /**
+     * Basic Routine that every Valve has to make.
+     * First things first -> is an ExceptionalState active -> 1. priority
+     * After that,check if the Valve should Reset (0%) -> 2. priority
+     * Check if full Power is Forced (100%) -> 3. priority
+     * Check if a PowerValue was set
+     *
+     * @return false if nothing above was done
+     */
+    protected boolean parentDidRoutine() {
+        boolean childHasNothingToDo = false;
+        if (this.isExceptionalStateActive()) {
+            this.setPowerLevel(this.getExceptionalSateValue());
+            childHasNothingToDo = true;
+        } else if (this.shouldReset()) {
+            this.reset();
+            childHasNothingToDo = true;
+        } else if (this.getForceFullPowerAndResetChannel()) {
+            this.forceOpen();
+            childHasNothingToDo = true;
+        } else {
+            int setPointPowerLevelValue = this.setPointPowerLevelValue();
+            if (setPointPowerLevelValue >= DEFAULT_MIN_POWER_VALUE) {
+                this.setPowerLevel(setPointPowerLevelValue);
+                childHasNothingToDo = true;
+            }
+        }
+        this.updatePowerLevel();
+        return childHasNothingToDo;
+    }
+
+    /**
+     * Sets the PowerLevel of the Valve and calls the ChangeByPercentage method that is implemented by the extending Classes.
+     *
+     * @param setPoint the setPoint that will be changed to a percent value that a valve has to be adapted to.
+     */
+    protected void setPowerLevel(double setPoint) {
+        setPoint -= this.getPowerLevelValue();
+        if (this.changeByPercentage(setPoint)) {
+            this.setPointPowerLevelChannel().setNextValue(-1);
+        }
+    }
+
+    /**
+     * Changes Valve Position by incoming percentage.
+     * Warning, only executes if valve is not busy! (was not forced to open/close)
+     * Depending on + or - it changes the current State to open/close it more. Switching the relays on/off does
+     * not open/close the valve instantly but slowly. The time it takes from completely closed to completely
+     * open is entered in the config. Partial open state of x% is then archived by switching the relay on for
+     * time-to-open * x%, or the appropriate amount of time depending on initial state.
+     * Sets the Future PowerLevel; ValveManager calls further Methods to refresh true % state
+     *
+     * @param percentage adjusting the current powerLevel in % points. Meaning if current state is 10%, requesting
+     *                   changeByPercentage(20) will change the state to 30%.
+     *                   <p>
+     *                   If the Valve is busy return false
+     *                   otherwise: save the current PowerLevel to the old one and overwrite the new one.
+     *                   Then it will check how much time is needed to adjust the position of the valve.
+     *                   If percentage is neg. valve needs to be closed (further)
+     *                   else it needs to open (further).
+     *                   </p>
+     */
+    protected double calculateCurrentPowerLevelAndSetTime(double percentage) {
+        double currentPowerLevel;
+        currentPowerLevel = this.getPowerLevelValue();
+        this.getLastPowerLevelChannel().setNextValue(currentPowerLevel);
+        this.maximum = this.getMaxAllowedValue();
+        this.minimum = this.getMinAllowedValue();
+        if (this.maxMinValid() == false) {
+            this.minimum = null;
+            this.maximum = null;
+        }
+        currentPowerLevel += percentage;
+        if (this.maximum != null && this.maximum < currentPowerLevel) {
+            currentPowerLevel = this.maximum;
+        } else if (this.lastMaximum != null && this.lastMaximum < currentPowerLevel) {
+            currentPowerLevel = this.lastMaximum;
+        } else if (currentPowerLevel >= DEFAULT_MAX_POWER_VALUE) {
+            currentPowerLevel = DEFAULT_MAX_POWER_VALUE;
+        } else if (this.minimum != null && this.minimum > currentPowerLevel) {
+            currentPowerLevel = this.minimum;
+        } else if (this.lastMinimum != null && this.lastMinimum > currentPowerLevel) {
+            currentPowerLevel = this.lastMinimum;
+        }
+        //Set goal Percentage for future reference
+        this.futurePowerLevelChannel().setNextValue(Math.round(currentPowerLevel));
+        //if same power level do not change and return --> relays is not always powered
+        if (getLastPowerLevelChannel().getNextValue().get() == currentPowerLevel) {
+            this.isChanging = false;
+            return -1;
+        }
+        //Calculate the Time to Change the Valve
+        if (Math.abs(percentage) >= DEFAULT_MAX_POWER_VALUE) {
+            this.timeChannel().setNextValue(DEFAULT_MAX_POWER_VALUE * this.secondsPerPercentage);
+        } else {
+            this.timeChannel().setNextValue(Math.abs(percentage) * this.secondsPerPercentage);
+        }
+        return currentPowerLevel;
     }
 }

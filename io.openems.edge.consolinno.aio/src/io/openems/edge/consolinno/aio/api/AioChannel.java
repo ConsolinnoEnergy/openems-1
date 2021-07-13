@@ -41,9 +41,15 @@ public interface AioChannel extends OpenemsComponent {
         }
         return -1;
     }
+
     default Channel<Integer> getPercentChannel() {
         return this.channel(ChannelId.AIO_CHECK_PERCENT);
     }
+
+    default WriteChannel<Integer> getSetPointPercentChannel() {
+        return this.channel(ChannelId.AIO_PERCENT_WRITE);
+    }
+
 
     default float getPercentValue() {
         if (this.getPercentChannel().value().isDefined()) {
@@ -53,6 +59,7 @@ public interface AioChannel extends OpenemsComponent {
         }
         return -1;
     }
+
     default WriteChannel<Integer> getWriteChannel() {
         return this.channel(ChannelId.AIO_WRITE);
     }

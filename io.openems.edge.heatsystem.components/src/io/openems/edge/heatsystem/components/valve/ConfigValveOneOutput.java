@@ -5,7 +5,7 @@ import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
 @ObjectClassDefinition(name = "Valve One Input", description = "A Valve that write a percent Value into another Output(Channel)")
-@interface ConfigValveOneInput {
+@interface ConfigValveOneOutput {
 
     String service_pid();
 
@@ -21,7 +21,7 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     ConfigurationType configurationType() default ConfigurationType.CHANNEL;
 
     @AttributeDefinition(name = "InputChannelAddress or InputDevice", description = "Device that writes PowerLevel to this Channel or Device.")
-    String inputChannel() default "Aio0/AioPercentWrite";
+    String inputChannelOrDevice() default "Aio0/AioPercentWrite";
 
 
     @AttributeDefinition(name = "TimeToOpenValve", description = "Time to open or Close a Valve Completely (T in seconds)")
@@ -47,5 +47,5 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     @AttributeDefinition(name = "Timeout ExceptionalState", description = "Time exceptionalState Value stays active after it's enable Signal is missing")
     int maxTime() default 10;
 
-    String webconsole_configurationFactory_nameHint() default "Valve One Input {id}";
+    String webconsole_configurationFactory_nameHint() default "Valve One Output {id}";
 }

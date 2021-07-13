@@ -1,14 +1,15 @@
-package io.openems.edge.heatsystem.components.valve.old;
+package io.openems.edge.heatsystem.components.valve;
 
+import io.openems.edge.heatsystem.components.ConfigurationType;
 import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
 
 @ObjectClassDefinition(
-        name = "Valve Two Relays",
-        description = "A Valve controlled by 2 relays used in the passing station."
+        name = "Valve Two Input ",
+        description = "A valve controlled by two inputs."
 )
-@interface ConfigValveTwoRelays {
+@interface ConfigValveTwoOutput {
 
 
     String service_pid();
@@ -19,11 +20,15 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     @AttributeDefinition(name = "Alias", description = "Human readable name for this Component.")
     String alias() default "";
 
-    @AttributeDefinition(name = "Closing Channel", description = "What channel to write True/False if Valve should close")
-    String closeChannelAddress() default "Relays0/WriteOnOff";
+    @AttributeDefinition(name = "Configuration Type", description = "Select either Control by Channel or by DeviceType.")
+    ConfigurationType configurationType() default ConfigurationType.CHANNEL;
 
-    @AttributeDefinition(name = "Opening Channel", description = "What channel to write True/False if Valve should close")
-    String openChannelAddress() default "Relays1/WriteOnOff";
+    @AttributeDefinition(name = "Closing Channel or Device", description = "What channel to write True/False if Valve should close OR Device. Depends on configurationType.")
+    String close() default "Relays0/WriteOnOff";
+
+    @AttributeDefinition(name = "Opening Channel or Device", description = "What channel to write True/False if Valve should close OR Device. Depends on configurationType.")
+    String open() default "Relays1/WriteOnOff";
+
 
     @AttributeDefinition(name = "Valve Time", description = "The time needed to Open and Close the valve (t in seconds).")
     int valve_Time() default 30;
@@ -32,14 +37,17 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
             + "activated: prevents in flight status due to crashes or restarts etc")
     boolean shouldCloseOnActivation() default true;
 
-    boolean useOpeningAndClosingCheck() default false;
+    @AttributeDefinition(name = "Self check if Output to Valve is written",
+            description = "If the Box is ticked, the Valve will check if it's output is written into devices. "
+                    + "If the ConfigurationType is Channel, please type the inputChannelAddresses")
+    boolean useCheckChannel() default false;
 
     @AttributeDefinition(name = "CheckClosingChannelAddress", description = "If Valve should close, check with this channel if it is really closing")
-    String inputClosingChannelAddress() default "Relay1/ReadOnOff";
+    String checkClosingChannelAddress() default "Relay1/ReadOnOff";
 
     @AttributeDefinition(name = "CheckOpeningChannelAddress", description = "If Valve should open, check with this channel if it is really opening"
             + "e.g. read from Hardware if Opening channel is set to true")
-    String inputOpeningChannelAddress() default "Relay0/ReadOnOff";
+    String checkOpeningChannelAddress() default "Relay0/ReadOnOff";
 
     boolean useExceptionalState() default false;
 
@@ -52,5 +60,5 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
     boolean enabled() default true;
 
-    String webconsole_configurationFactory_nameHint() default "Valve Two Relays [{id}]";
+    String webconsole_configurationFactory_nameHint() default "Valve Two Output [{id}]";
 }

@@ -11,9 +11,10 @@ import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.common.event.EdgeEventConstants;
 import io.openems.edge.exceptionalstate.api.ExceptionalState;
+import io.openems.edge.heatsystem.components.ConfigurationType;
 import io.openems.edge.heatsystem.components.HeatsystemComponent;
 import io.openems.edge.heatsystem.components.Valve;
-import io.openems.edge.relay.api.Relay;
+import io.openems.edge.pwm.api.Pwm;
 import org.osgi.service.cm.ConfigurationException;
 import org.osgi.service.component.ComponentContext;
 import org.osgi.service.component.annotations.Activate;
@@ -30,8 +31,6 @@ import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.concurrent.atomic.AtomicInteger;
-
 /**
  * This Component allows a Valve  to be configured and controlled.
  * It either works with 1 Aio/Pwm or 1 ChannelAddresses.
@@ -40,23 +39,25 @@ import java.util.concurrent.atomic.AtomicInteger;
  * E.g. The Consolinno Leaflet reads the MCP and it's status, this will be send into the {@link AioChannel#getPercentChannel()} ()}
  * If the value you read is the expected value, everything is ok, otherwise the Components tries to set the expected values again.
  */
-@Designate(ocd = ConfigValveOneInput.class, factory = true)
-@Component(name = "HeatsystemComponent.Valve.OneInput", immediate = true,
+@Designate(ocd = ConfigValveOneOutput.class, factory = true)
+@Component(name = "HeatsystemComponent.Valve.OneOutput", immediate = true,
         configurationPolicy = ConfigurationPolicy.REQUIRE,
-        property = EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE
+        property = {EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE,
+                EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS}
 
 )
 
-public class ValveOneInput extends AbstractValve implements OpenemsComponent, Valve, ExceptionalState, EventHandler {
+public class ValveOneOutput extends AbstractValve implements OpenemsComponent, Valve, ExceptionalState, EventHandler {
 
-    private final Logger log = LoggerFactory.getLogger(ValveOneInput.class);
+    private final Logger log = LoggerFactory.getLogger(ValveOneOutput.class);
 
     private ChannelAddress outputChannel;
     private ChannelAddress optionalCheckOutputChannel;
-
-    private ConfigValveOneInput config;
-
-    private final AtomicInteger configTries = new AtomicInteger(0);
+    private ConfigurationType configurationType;
+    private DeviceType deviceType;
+    private Pwm valvePwm;
+    private AioChannel valveAio;
+    private ConfigValveOneOutput config;
     private boolean validCheckOutputChannel;
     private boolean powerValueReachedBeforeCheck = false;
 
@@ -64,14 +65,18 @@ public class ValveOneInput extends AbstractValve implements OpenemsComponent, Va
     ComponentManager cpm;
 
 
-    public ValveOneInput() {
+    public ValveOneOutput() {
         super(OpenemsComponent.ChannelId.values(),
                 HeatsystemComponent.ChannelId.values(),
                 ExceptionalState.ChannelId.values());
     }
 
+    enum DeviceType {
+        PWM, AIO;
+    }
+
     @Activate
-    void activate(ComponentContext context, ConfigValveOneInput config) {
+    void activate(ComponentContext context, ConfigValveOneOutput config) throws ConfigurationException {
         try {
             super.activate(context, config.id(), config.alias(), config.enabled());
             this.config = config;
@@ -84,35 +89,58 @@ public class ValveOneInput extends AbstractValve implements OpenemsComponent, Va
                 this.setPointPowerLevelChannel().setNextWriteValueFromObject(0);
                 this.forceClose();
             }
-        } catch (OpenemsError.OpenemsNamedException | ConfigurationException e) {
-            e.printStackTrace();
+        } catch (OpenemsError.OpenemsNamedException e) {
+            this.configSuccess = false;
+            this.log.warn("Couldn't apply Config. Components may not be initialized yet This: "
+                    + super.id() + " will try again later.");
         }
     }
 
-    private void activationOrModifiedRoutine(ConfigValveOneInput config) throws ConfigurationException {
-        try {
-            this.outputChannel = ChannelAddress.fromString(config.inputChannel());
+    private void activationOrModifiedRoutine(ConfigValveOneOutput config) throws ConfigurationException, OpenemsError.OpenemsNamedException {
+        this.useCheckOutput = config.useCheckChannel();
+        this.configurationType = config.configurationType();
+        switch (this.configurationType) {
+            case CHANNEL:
+                try {
+                    this.outputChannel = ChannelAddress.fromString(config.inputChannelOrDevice());
 
-            if (config.useCheckChannel()) {
-                this.optionalCheckOutputChannel = ChannelAddress.fromString(config.checkChannel());
-            } else {
-                this.optionalCheckOutputChannel = null;
-            }
-            this.secondsPerPercentage = ((double) config.timeToOpenValve() / 100.d);
-        } catch (OpenemsError.OpenemsNamedException e) {
-            throw new ConfigurationException("Activate : " + super.id(), "ChannelAddresses are configured in a wrong Way");
+                    if (this.useCheckOutput) {
+                        this.optionalCheckOutputChannel = ChannelAddress.fromString(config.checkChannel());
+                    } else {
+                        this.optionalCheckOutputChannel = null;
+                    }
+                } catch (OpenemsError.OpenemsNamedException e) {
+                    throw new ConfigurationException("Activate : " + super.id(), "ChannelAddresses are configured in a wrong Way");
+                }
+                break;
+            case DEVICE:
+                OpenemsComponent component = this.cpm.getComponent(config.inputChannelOrDevice());
+                if (component instanceof Pwm) {
+                    this.valvePwm = (Pwm) component;
+                    this.deviceType = DeviceType.PWM;
+                } else if (component instanceof AioChannel) {
+                    this.valveAio = (AioChannel) component;
+                    this.deviceType = DeviceType.AIO;
+                } else {
+                    throw new ConfigurationException("Activate : " + super.id(), "OpenEmsComponent "
+                            + config.inputChannelOrDevice() + " is not an instance of an expected Device!");
+                }
+                break;
         }
+        this.secondsPerPercentage = ((double) config.timeToOpenValve() / 100.d);
     }
 
     @Modified
-    void modified(ComponentContext context, ConfigValveOneInput config) {
+    void modified(ComponentContext context, ConfigValveOneOutput config) throws ConfigurationException {
         this.configSuccess = false;
         super.modified(context, config.id(), config.alias(), config.enabled());
         this.config = config;
         try {
             this.activationOrModifiedRoutine(config);
-        } catch (ConfigurationException e) {
-            //TODO
+        } catch (OpenemsError.OpenemsNamedException e) {
+            this.configSuccess = false;
+            this.log.warn("Couldn't apply Config. Components may not be initialized yet This: "
+                    + super.id() + " will try again later.");
         }
         this.configSuccess = true;
     }
@@ -122,6 +150,26 @@ public class ValveOneInput extends AbstractValve implements OpenemsComponent, Va
         super.deactivate();
     }
 
+
+    /**
+     * Changes Valve Position by incoming percentage.
+     * Warning, only executes if valve is not busy! (was not forced to open/close)
+     * Depending on + or - it changes the current State to open/close it more. Switching the relays on/off does
+     * not open/close the valve instantly but slowly. The time it takes from completely closed to completely
+     * open is entered in the config. Partial open state of x% is then archived by switching the relay on for
+     * time-to-open * x%, or the appropriate amount of time depending on initial state.
+     * Sets the Future PowerLevel; ValveManager calls further Methods to refresh true % state
+     *
+     * @param percentage adjusting the current powerLevel in % points. Meaning if current state is 10%, requesting
+     *                   changeByPercentage(20) will change the state to 30%.
+     *                   <p>
+     *                   If the Valve is busy return false
+     *                   otherwise: save the current PowerLevel to the old one and overwrite the new one.
+     *                   Then it will check how much time is needed to adjust the position of the valve.
+     *                   If percentage is neg. valve needs to be closed (further)
+     *                   else it needs to open (further).
+     *                   </p>
+     */
     @Override
     public boolean changeByPercentage(double percentage) {
         double currentPowerLevel;
@@ -129,42 +177,13 @@ public class ValveOneInput extends AbstractValve implements OpenemsComponent, Va
             return false;
         } else {
             //Setting the oldPowerLevel and adjust the percentage Value
-            currentPowerLevel = this.getPowerLevelValue();
-            this.getLastPowerLevelChannel().setNextValue(currentPowerLevel);
-            this.maximum = this.getMaxAllowedValue();
-            this.minimum = this.getMinAllowedValue();
-            if (this.maxMinValid() == false) {
-                this.minimum = null;
-                this.maximum = null;
-            }
-            currentPowerLevel += percentage;
-            if (this.maximum != null && this.maximum < currentPowerLevel) {
-                currentPowerLevel = this.maximum;
-            } else if (this.lastMaximum != null && this.lastMaximum < currentPowerLevel) {
-                currentPowerLevel = this.lastMaximum;
-            } else if (currentPowerLevel >= 100) {
-                currentPowerLevel = 100;
-            } else if (this.minimum != null && this.minimum > currentPowerLevel) {
-                currentPowerLevel = this.minimum;
-            } else if (this.lastMinimum != null && this.lastMinimum > currentPowerLevel) {
-                currentPowerLevel = this.lastMinimum;
-            }
-            //Set goal Percentage for future reference
-            this.futurePowerLevelChannel().setNextValue(Math.round(currentPowerLevel));
-            //if same power level do not change and return --> relays is not always powered
-            if (getLastPowerLevelChannel().getNextValue().get() == currentPowerLevel) {
-                this.isChanging = false;
+            currentPowerLevel = super.calculateCurrentPowerLevelAndSetTime(percentage);
+            if (currentPowerLevel < 0) {
                 return false;
-            }
-            //Calculate the Time to Change the Valve
-            if (Math.abs(percentage) >= 100) {
-                this.timeChannel().setNextValue(100 * secondsPerPercentage);
-            } else {
-                this.timeChannel().setNextValue(Math.abs(percentage) * secondsPerPercentage);
             }
             this.writeToOutputChannel(Math.round(currentPowerLevel));
             boolean prevClosing = this.isClosing;
-            this.isClosing = percentage < 0;
+            this.isClosing = percentage < DEFAULT_MIN_POWER_VALUE;
             this.isChanging = true;
             if (prevClosing != this.isClosing) {
                 this.timeStampValveCurrent = -1;
@@ -185,9 +204,9 @@ public class ValveOneInput extends AbstractValve implements OpenemsComponent, Va
     public void forceClose() {
         if (this.isForced == false || this.isClosing == false) {
             this.isForced = true;
-            this.futurePowerLevelChannel().setNextValue(0);
-            this.timeChannel().setNextValue(100 * secondsPerPercentage);
-            this.writeToOutputChannel(0);
+            this.futurePowerLevelChannel().setNextValue(DEFAULT_MIN_POWER_VALUE);
+            this.timeChannel().setNextValue(DEFAULT_MAX_POWER_VALUE * secondsPerPercentage);
+            this.writeToOutputChannel(DEFAULT_MIN_POWER_VALUE);
             this.getIsBusyChannel().setNextValue(true);
             this.isChanging = true;
             this.isClosing = true;
@@ -199,10 +218,11 @@ public class ValveOneInput extends AbstractValve implements OpenemsComponent, Va
 
     private void writeToOutputChannel(double percent) {
         try {
-            Channel<?> channelToWrite = this.cpm.getChannel(this.outputChannel);
+            Channel<?> channelToWrite = this.configurationType.equals(ConfigurationType.CHANNEL)
+                    ? this.cpm.getChannel(this.outputChannel) : this.deviceType.equals(DeviceType.AIO)
+                    ? this.valveAio.getSetPointPercentChannel() : this.valvePwm.getWritePwmPowerLevelChannel();
             int scaleFactor = channelToWrite.channelDoc().getUnit().equals(Unit.THOUSANDTH) ? 10 : 1;
             if (channelToWrite instanceof WriteChannel<?>) {
-
                 ((WriteChannel<?>) channelToWrite).setNextWriteValueFromObject(percent * scaleFactor);
             } else {
                 channelToWrite.setNextValue(percent * scaleFactor);
@@ -221,62 +241,36 @@ public class ValveOneInput extends AbstractValve implements OpenemsComponent, Va
     public void forceOpen() {
         if (this.isForced == false || this.isClosing == true) {
             this.isForced = true;
-            this.futurePowerLevelChannel().setNextValue(100);
-            this.timeChannel().setNextValue(100 * secondsPerPercentage);
-            this.writeToOutputChannel(100);
+            this.futurePowerLevelChannel().setNextValue(DEFAULT_MAX_POWER_VALUE);
+            this.timeChannel().setNextValue(DEFAULT_MAX_POWER_VALUE * secondsPerPercentage);
+            this.writeToOutputChannel(DEFAULT_MAX_POWER_VALUE);
             this.getIsBusyChannel().setNextValue(true);
             this.isChanging = true;
             this.isClosing = false;
             this.timeStampValveCurrent = -1;
             this.updatePowerLevel();
         }
-
     }
 
-    @Override
-    public boolean powerLevelReached() {
-        boolean reached = true;
-        if (this.isChanging()) {
-            reached = false;
-            if (this.getPowerLevelChannel().value().isDefined() && this.futurePowerLevelChannel().value().isDefined()) {
-                if (this.isClosing) {
-                    reached = this.getPowerLevelValue() <= this.getFuturePowerLevelValue();
-                } else {
-                    reached = this.getPowerLevelValue() >= this.getFuturePowerLevelValue();
-                }
-            }
-        }
-        //ReadyToChange always True except
-        reached = reached && this.readyToChange();
-        if (reached) {
-            isChanging = false;
-            timeStampValveCurrent = -1;
-            this.powerValueReachedBeforeCheck = true;
-
-        } else {
-            this.powerValueReachedBeforeCheck = false;
-        }
-        return reached;
-    }
 
     /**
      * Check if the expected Value is almost the same as the written Value, if not -> Set Value again.
      *
+     * @param optionalChannel
      * @return true if expected Value is almost the Same (Or if an Error occurred, so the Valve can continue to run)
      */
 
-    private boolean checkOutputIsEqualToGoalPercent() {
-        if (this.optionalCheckOutputChannel != null) {
+    private boolean checkOutputIsEqualToGoalPercent(Channel<?> optionalChannel) {
+
+        if (this.useCheckOutput) {
             try {
                 //Prepare and get all Values needed.
-                Channel<?> optionalChannel = this.cpm.getChannel(this.optionalCheckOutputChannel);
+                optionalChannel = this.getOptionalChannel();
                 Value<?> otherChannelValue = optionalChannel.value().isDefined() ? optionalChannel.value() : optionalChannel.getNextValue().isDefined() ? optionalChannel.getNextValue() : null;
                 int scaleDownFactorOtherChannel = this.getScaleFactor(optionalChannel);
 
                 Value<Double> goalPowerLevelValue = this.futurePowerLevelChannel().value().isDefined() ? this.futurePowerLevelChannel().value() : null;
                 int scaleDownFactorGoalPowerLevel = this.getScaleFactor(this.futurePowerLevelChannel());
-
-
                 if (otherChannelValue != null && goalPowerLevelValue != null) {
                     if (this.containsOnlyNumbers(otherChannelValue.get().toString()) && this.containsOnlyNumbers(goalPowerLevelValue.get().toString())) {
                         this.validCheckOutputChannel = true;
@@ -297,13 +291,31 @@ public class ValveOneInput extends AbstractValve implements OpenemsComponent, Va
                 } else {
                     return true;
                 }
-            } catch (OpenemsError.OpenemsNamedException e) {
-                this.log.error("Couldn't get or write into Channel: Check channelAddress: " + this.optionalCheckOutputChannel);
+            } catch (OpenemsError.OpenemsNamedException | ConfigurationException e) {
+                this.log.error("Couldn't get or write into Channel: Check channelAddress: " + optionalChannel);
                 return true;
             }
 
         }
         return true;
+    }
+
+    private Channel<?> getOptionalChannel() throws OpenemsError.OpenemsNamedException, ConfigurationException {
+        switch (this.configurationType) {
+            case DEVICE:
+                switch (this.deviceType) {
+                    case PWM:
+                        return this.valvePwm.getReadPwmPowerLevelChannel();
+
+                    case AIO:
+                        return this.valveAio.getPercentChannel();
+                }
+                break;
+            case CHANNEL:
+            default:
+                return this.cpm.getChannel(this.optionalCheckOutputChannel);
+        }
+        throw new ConfigurationException("Get Optional Channel", "This Error shouldn't occur, there should always be a configuration Type at this point");
     }
 
     private int getScaleFactor(Channel<?> channel) {
@@ -322,47 +334,55 @@ public class ValveOneInput extends AbstractValve implements OpenemsComponent, Va
                 try {
                     this.activationOrModifiedRoutine(this.config);
                     this.configSuccess = true;
-                } catch (ConfigurationException e) {
+                } catch (ConfigurationException | OpenemsError.OpenemsNamedException e) {
                     this.configSuccess = false;
                     if (this.configTries.get() >= MAX_CONFIG_TRIES) {
-                        this.log.error("Config is Wrong in : " + super.id());
+                        this.log.error("Config is Wrong in : " + super.id() + " Please reconfigure!");
                     } else {
                         this.configTries.getAndIncrement();
                     }
                 }
             } else if (this.powerValueReachedBeforeCheck) {
-                boolean check = this.checkOutputIsEqualToGoalPercent();
+                Channel<?> optionalChannel;
+                try {
+                    optionalChannel = this.getOptionalChannel();
+                } catch (OpenemsError.OpenemsNamedException | ConfigurationException e) {
+                    this.log.warn("Couldn't receive optional Check Output Channel! " + super.id());
+                    return;
+                }
+                boolean check = this.checkOutputIsEqualToGoalPercent(optionalChannel);
                 if (check == false) {
                     //Set PowerLevel To "correct" Output -> if Output says 10% it is 10%; since it is not timebased in comparison to the ValveTwoRelay
-                    try {
-                        if (this.optionalCheckOutputChannel != null && this.validCheckOutputChannel) {
-                            Channel<?> otherChannel = this.cpm.getChannel(this.optionalCheckOutputChannel);
-
-                            Value<?> captureValueOfChannel = otherChannel.value().isDefined() ? otherChannel.value() : otherChannel.getNextValue().isDefined() ? otherChannel.getNextValue() : null;
-                            if (captureValueOfChannel != null) {
-                                Unit otherUnit = otherChannel.channelDoc().getUnit();
-                                Unit powerLevelUnit = this.getPowerLevelChannel().channelDoc().getUnit();
-                                double scaleDownFactor = 1;
-                                double value = Double.parseDouble(captureValueOfChannel.get().toString());
-                                if (otherUnit.equals(powerLevelUnit) == false) {
-                                    //powerLevel is PERCENT but
-                                    if (powerLevelUnit.equals(Unit.PERCENT) && otherUnit.equals(Unit.THOUSANDTH)) {
-                                        scaleDownFactor = 10;
-                                    } else if (powerLevelUnit.equals(Unit.THOUSANDTH) && otherUnit.equals(Unit.PERCENT)) {
-                                        scaleDownFactor = 0.1d;
-                                    }
+                    if (this.validCheckOutputChannel) {
+                        Value<?> captureValueOfChannel = this.getValueOfOptionalChannel(optionalChannel);
+                        if (captureValueOfChannel != null) {
+                            Unit otherUnit = optionalChannel.channelDoc().getUnit();
+                            Unit powerLevelUnit = this.getPowerLevelChannel().channelDoc().getUnit();
+                            double scaleDownFactor = 1;
+                            double value = Double.parseDouble(captureValueOfChannel.get().toString());
+                            if (otherUnit.equals(powerLevelUnit) == false) {
+                                //powerLevel is PERCENT but
+                                if (powerLevelUnit.equals(Unit.PERCENT) && otherUnit.equals(Unit.THOUSANDTH)) {
+                                    scaleDownFactor = 10;
+                                } else if (powerLevelUnit.equals(Unit.THOUSANDTH) && otherUnit.equals(Unit.PERCENT)) {
+                                    scaleDownFactor = 0.1d;
                                 }
-                                this.getPowerLevelChannel().setNextValue(value / scaleDownFactor);
                             }
-
+                            this.getPowerLevelChannel().setNextValue(value / scaleDownFactor);
                         }
-                        this.powerValueReachedBeforeCheck = false;
-                    } catch (OpenemsError.OpenemsNamedException e) {
-                        this.log.warn("Couldn't receive optional Check Output Channel! " + super.id());
+
                     }
+                    this.powerValueReachedBeforeCheck = false;
                 }
             }
 
+        }
+        if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS) && this.configSuccess) {
+            if (this.parentDidRoutine() == false) {
+                if (this.powerLevelReached()) {
+                    this.powerValueReachedBeforeCheck = true;
+                }
+            }
         }
     }
 }
