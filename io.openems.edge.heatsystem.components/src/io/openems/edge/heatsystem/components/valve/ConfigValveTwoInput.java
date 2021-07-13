@@ -6,10 +6,10 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
 
 @ObjectClassDefinition(
-        name = "Valve Two Relays",
-        description = "A valve controlled by 2 relays."
+        name = "Valve Two Input ",
+        description = "A valve controlled by two inputs."
 )
-@interface Config {
+@interface ConfigValveTwoInput {
 
 
     String service_pid();
@@ -37,10 +37,10 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
             + "activated: prevents in flight status due to crashes or restarts etc")
     boolean shouldCloseOnActivation() default true;
 
-    @AttributeDefinition(name = "Self check if Output is written",
+    @AttributeDefinition(name = "Self check if Output to Valve is written",
             description = "If the Box is ticked, the Valve will check if it's output is written into devices. "
-                    + "If the ConfigurationType is Device, please type the inputChannelAddresses")
-    boolean useInputCheck() default false;
+                    + "If the ConfigurationType is Channel, please type the inputChannelAddresses")
+    boolean useCheckChannel() default false;
 
     @AttributeDefinition(name = "CheckClosingChannelAddress", description = "If Valve should close, check with this channel if it is really closing")
     String inputClosingChannelAddress() default "Relay1/ReadOnOff";
@@ -60,5 +60,5 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
     boolean enabled() default true;
 
-    String webconsole_configurationFactory_nameHint() default "Valve Two Relays [{id}]";
+    String webconsole_configurationFactory_nameHint() default "Valve Two Input [{id}]";
 }

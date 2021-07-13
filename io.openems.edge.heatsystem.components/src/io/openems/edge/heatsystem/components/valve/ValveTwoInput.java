@@ -35,22 +35,25 @@ import org.slf4j.LoggerFactory;
 /**
  * This Component allows a Valve  to be configured and controlled.
  * It either works with 2 Relays or 2 ChannelAddresses.
- * It updates it's opening/closing state and shows up the percentage value of itself.
+ * It can update it's opening/closing state and shows up the percentage value of itself.
+ * To check if the output is correct, you can configure the CheckUp.
+ * E.g. The Consolinno Leaflet reads the MCP and it's status, this will be send into the {@link Relay#getRelaysReadChannel()}
+ * If the value you read is the expected value, everything is ok, otherwise the Components tries to set the expected values again.
  */
-@Designate(ocd = Config.class, factory = true)
-@Component(name = "HeatsystemComponent.Valve",
+@Designate(ocd = ConfigValveTwoInput.class, factory = true)
+@Component(name = "HeatsystemComponent.Valve.TwoInput",
         configurationPolicy = ConfigurationPolicy.REQUIRE,
         immediate = true,
         property = {
                 EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE,
                 EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS}
 )
-public class ValveTwoRelays extends AbstractValve implements OpenemsComponent, Valve, ExceptionalState, EventHandler {
+public class ValveTwoInput extends AbstractValve implements OpenemsComponent, Valve, ExceptionalState, EventHandler {
 
     @Reference
     Cycle cycle;
 
-    private final Logger log = LoggerFactory.getLogger(ValveTwoRelays.class);
+    private final Logger log = LoggerFactory.getLogger(ValveTwoInput.class);
 
     private ChannelAddress openAddress;
     private ChannelAddress closeAddress;
@@ -63,6 +66,7 @@ public class ValveTwoRelays extends AbstractValve implements OpenemsComponent, V
     private boolean useCheckChannel;
 
     private ConfigurationType configurationType;
+    private ConfigValveTwoInput config;
 
     @Reference
     ComponentManager cpm;
@@ -73,22 +77,28 @@ public class ValveTwoRelays extends AbstractValve implements OpenemsComponent, V
     }
 
 
-    public ValveTwoRelays() {
+    public ValveTwoInput() {
         super(OpenemsComponent.ChannelId.values(), HeatsystemComponent.ChannelId.values());
     }
 
 
     @Activate
-    void activate(ComponentContext context, Config config) throws OpenemsError.OpenemsNamedException, ConfigurationException {
+    void activate(ComponentContext context, ConfigValveTwoInput config) throws ConfigurationException {
         super.activate(context, config.id(), config.alias(), config.enabled());
-        this.activateOrModifiedRoutine(config);
-        this.getIsBusyChannel().setNextValue(false);
-        this.getPowerLevelChannel().setNextValue(0);
-        this.getLastPowerLevelChannel().setNextValue(0);
-        this.setPointPowerLevelChannel().setNextValue(-1);
-        this.futurePowerLevelChannel().setNextValue(0);
-        if (config.shouldCloseOnActivation()) {
-            this.forceClose();
+        try {
+            this.activateOrModifiedRoutine(config);
+        } catch (OpenemsError.OpenemsNamedException e) {
+            this.configSuccess = false;
+            this.log.warn("Couldn't find Components for " + super.id() + " Component Tries again later.");
+        } finally {
+            this.getIsBusyChannel().setNextValue(false);
+            this.getPowerLevelChannel().setNextValue(0);
+            this.getLastPowerLevelChannel().setNextValue(0);
+            this.setPointPowerLevelChannel().setNextValue(-1);
+            this.futurePowerLevelChannel().setNextValue(0);
+            if (config.shouldCloseOnActivation()) {
+                this.forceClose();
+            }
         }
     }
 
@@ -100,9 +110,11 @@ public class ValveTwoRelays extends AbstractValve implements OpenemsComponent, V
      * @throws OpenemsError.OpenemsNamedException thrown if configured address or Relay cannot be found at all.
      */
 
-    private void activateOrModifiedRoutine(Config config) throws ConfigurationException, OpenemsError.OpenemsNamedException {
+    private void activateOrModifiedRoutine(ConfigValveTwoInput config) throws ConfigurationException, OpenemsError.OpenemsNamedException {
+        this.configSuccess = false;
+        this.config = config;
         this.configurationType = config.configurationType();
-        this.useCheckChannel = config.useInputCheck();
+        this.useCheckChannel = config.useCheckChannel();
         switch (this.configurationType) {
             case CHANNEL:
                 this.openAddress = ChannelAddress.fromString(config.open());
@@ -119,7 +131,7 @@ public class ValveTwoRelays extends AbstractValve implements OpenemsComponent, V
                 }
                 break;
             case DEVICE:
-                if (this.checkDevicesOk(config.open(), config.close()) == false) {
+                if (this.checkDevicesOkAndApplyThem(config.open(), config.close()) == false) {
                     throw new ConfigurationException("ActivateMethod in Valve: " + super.id(), "Given Devices are not ok!");
                 }
                 break;
@@ -129,6 +141,7 @@ public class ValveTwoRelays extends AbstractValve implements OpenemsComponent, V
         if (config.useExceptionalState()) {
             super.createExcpetionalStateHandler(config.timerId(), config.maxTime(), this.cpm, this);
         }
+        this.configSuccess = true;
     }
 
 
@@ -140,7 +153,7 @@ public class ValveTwoRelays extends AbstractValve implements OpenemsComponent, V
      * @return true if the device is ok, otherwise false (Happens if the OpenEmsComponent is not an instance of a Relay)
      * @throws OpenemsError.OpenemsNamedException if the Id is not found at all
      */
-    private boolean checkDevicesOk(String open, String close) throws OpenemsError.OpenemsNamedException {
+    private boolean checkDevicesOkAndApplyThem(String open, String close) throws OpenemsError.OpenemsNamedException {
         OpenemsComponent relayToApply = this.cpm.getComponent(open);
         if (relayToApply instanceof Relay) {
             this.openRelay = (Relay) relayToApply;
@@ -171,7 +184,7 @@ public class ValveTwoRelays extends AbstractValve implements OpenemsComponent, V
 
 
     @Modified
-    void modified(ComponentContext context, Config config) throws OpenemsError.OpenemsNamedException, ConfigurationException {
+    void modified(ComponentContext context, ConfigValveTwoInput config) throws OpenemsError.OpenemsNamedException, ConfigurationException {
         super.modified(context, config.id(), config.alias(), config.enabled());
         this.activateOrModifiedRoutine(config);
     }
@@ -180,18 +193,32 @@ public class ValveTwoRelays extends AbstractValve implements OpenemsComponent, V
     @Override
     public void handleEvent(Event event) {
         if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE)) {
-            this.lastMaximum = this.maximum;
-            this.lastMinimum = this.minimum;
-            this.checkValveChannelCorrect();
-            this.updatePowerLevel();
-            this.checkMaxAndMinAllowed();
-            boolean reached = this.powerLevelReached() && this.readyToChange();
-            if (reached) {
-                this.getIsBusyChannel().setNextValue(false);
-                this.isForced = false;
-                this.adaptValveValue();
+            if (this.configSuccess) {
+                this.lastMaximum = this.maximum;
+                this.lastMinimum = this.minimum;
+                this.checkValveChannelCorrect();
+                this.updatePowerLevel();
+                this.checkMaxAndMinAllowed();
+                boolean reached = this.powerLevelReached() && this.readyToChange();
+                if (reached) {
+                    this.getIsBusyChannel().setNextValue(false);
+                    this.isForced = false;
+                    this.adaptValveValue();
+                }
+            } else {
+                try {
+                    this.activateOrModifiedRoutine(this.config);
+                    this.configSuccess = true;
+                } catch (ConfigurationException | OpenemsError.OpenemsNamedException e) {
+                    this.configSuccess = false;
+                    if (super.configTries.get() >= MAX_CONFIG_TRIES) {
+                        this.log.error("Config is Wrong in : " + super.id());
+                    } else {
+                        this.configTries.getAndIncrement();
+                    }
+                }
             }
-        } else if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS)) {
+        } else if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS) && this.configSuccess) {
             if (this.isExceptionalStateActive()) {
                 this.setPowerLevel(this.getExceptionalSateValue());
             } else if (this.shouldReset()) {
@@ -226,9 +253,9 @@ public class ValveTwoRelays extends AbstractValve implements OpenemsComponent, V
         Double maxAllowed = this.getMaxAllowedValue();
         Double minAllowed = this.getMinAllowedValue();
         double futurePowerLevel = this.getFuturePowerLevelValue();
-        if (maxAllowed != null && maxAllowed + VALUE_BUFFER < futurePowerLevel) {
+        if (maxAllowed != null && maxAllowed + TOLERANCE < futurePowerLevel) {
             this.changeByPercentage(maxAllowed - this.getPowerLevelValue());
-        } else if (minAllowed != null && minAllowed - VALUE_BUFFER > futurePowerLevel) {
+        } else if (minAllowed != null && minAllowed - TOLERANCE > futurePowerLevel) {
             this.changeByPercentage(minAllowed - futurePowerLevel);
         }
     }
@@ -381,7 +408,7 @@ public class ValveTwoRelays extends AbstractValve implements OpenemsComponent, V
      */
     @Override
     public void forceOpen() {
-        if (this.isForced == false || this.isClosing == true) {
+        if (this.isForced == false || this.isClosing) {
             this.isForced = true;
             this.isChanging = true;
             this.futurePowerLevelChannel().setNextValue(DEFAULT_MAX_POWER_VALUE);
@@ -559,10 +586,12 @@ public class ValveTwoRelays extends AbstractValve implements OpenemsComponent, V
                     if (this.containsOnlyNumbers(value.get().toString())) {
                         return Double.parseDouble(value.get().toString()) > 0;
                     } else {
-                        throw new ConfigurationException("CheckChannelValue: " + super.id() + channelToCheck.toString(), "Channel Cannot be parsed to a Numeric Value");
+                        throw new ConfigurationException("CheckChannelValue: " + super.id() + channelToCheck.toString(),
+                                "Channel Cannot be parsed to a Numeric Value");
                     }
                 default:
-                    throw new ConfigurationException("CheckChannelValue: " + super.id() + channelToCheck.toString(), "ValueType not supported!");
+                    throw new ConfigurationException("CheckChannelValue: " + super.id() + channelToCheck.toString(),
+                            "ValueType not supported!");
             }
         } else {
             return false;

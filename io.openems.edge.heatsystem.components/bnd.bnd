@@ -8,6 +8,7 @@ Bundle-Version: 1.0.0.${tstamp}
 	io.openems.common,\
 	io.openems.edge.common,\
 	io.openems.edge.pwm.api,\
+	io.openems.edge.aio.api,\
 	io.openems.edge.relay.api,\
 	io.openems.edge.timer.api,\
 	io.openems.edge.exceptionalstate.api,\

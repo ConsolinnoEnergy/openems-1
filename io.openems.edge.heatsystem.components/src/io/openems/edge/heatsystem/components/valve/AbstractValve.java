@@ -16,6 +16,7 @@ import org.slf4j.LoggerFactory;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public abstract class AbstractValve extends AbstractOpenemsComponent implements Valve, ExceptionalState {
     protected final Logger log = LoggerFactory.getLogger(AbstractValve.class);
@@ -30,7 +31,9 @@ public abstract class AbstractValve extends AbstractOpenemsComponent implements 
     protected boolean wasAlreadyReset = false;
     protected boolean isForced;
     protected static int EXTRA_BUFFER_TIME = 2000;
-    protected static final int VALUE_BUFFER = 5;
+    protected static final int TOLERANCE = 5;
+    protected static final int MAX_CONFIG_TRIES = 10;
+    protected AtomicInteger configTries = new AtomicInteger(0);
 
     protected static final int MILLI_SECONDS_TO_SECONDS = 1000;
 
@@ -45,6 +48,7 @@ public abstract class AbstractValve extends AbstractOpenemsComponent implements 
     private TimerHandler timerHandler;
     protected ExceptionalStateHandler exceptionalStateHandler;
     protected ExceptionalState exceptionalState;
+    protected boolean configSuccess;
 
     protected AbstractValve(io.openems.edge.common.channel.ChannelId[] firstInitialChannelIds,
                             io.openems.edge.common.channel.ChannelId[]... furtherInitialChannelIds) {
