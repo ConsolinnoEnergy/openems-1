@@ -10,7 +10,7 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     String service_pid();
 
     @AttributeDefinition(name = "Id", description = "Unique Id for the .")
-    String id() default "ValveOneOutput";
+    String id() default "Valve0";
 
     @AttributeDefinition(name = "Alias", description = "Human readable name of this Configurator.")
     String alias() default "";

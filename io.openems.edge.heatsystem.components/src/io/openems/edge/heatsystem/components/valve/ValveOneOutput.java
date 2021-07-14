@@ -42,7 +42,7 @@ import org.slf4j.LoggerFactory;
 @Designate(ocd = ConfigValveOneOutput.class, factory = true)
 @Component(name = "HeatsystemComponent.Valve.OneOutput", immediate = true,
         configurationPolicy = ConfigurationPolicy.REQUIRE,
-        property = {EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE,
+        property = {EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE,
                 EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS}
 
 )
@@ -212,9 +212,16 @@ public class ValveOneOutput extends AbstractValve implements OpenemsComponent, V
 
     private void writeToOutputChannel(double percent) {
         try {
-            Channel<?> channelToWrite = this.configurationType.equals(ConfigurationType.CHANNEL)
-                    ? this.cpm.getChannel(this.outputChannel) : this.deviceType.equals(DeviceType.AIO)
-                    ? this.valveAio.setPercentChannel() : this.valvePwm.getWritePwmPowerLevelChannel();
+            Channel<?> channelToWrite;
+            if (this.configurationType.equals(ConfigurationType.CHANNEL)) {
+                channelToWrite = this.cpm.getChannel(this.outputChannel);
+            } else {
+                if (this.deviceType.equals(DeviceType.AIO)) {
+                    channelToWrite = this.valveAio.setPercentChannel();
+                } else {
+                    channelToWrite = this.valvePwm.getWritePwmPowerLevelChannel();
+                }
+            }
             int scaleFactor = channelToWrite.channelDoc().getUnit().equals(Unit.THOUSANDTH) ? 10 : 1;
             if (channelToWrite instanceof WriteChannel<?>) {
                 ((WriteChannel<?>) channelToWrite).setNextWriteValueFromObject(percent * scaleFactor);
@@ -317,7 +324,7 @@ public class ValveOneOutput extends AbstractValve implements OpenemsComponent, V
 
     @Override
     public void handleEvent(Event event) {
-        if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE)) {
+        if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE)) {
             if (this.configSuccess == false) {
                 try {
                     this.activationOrModifiedRoutine(this.config);

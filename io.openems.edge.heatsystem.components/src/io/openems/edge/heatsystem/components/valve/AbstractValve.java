@@ -248,6 +248,7 @@ public abstract class AbstractValve extends AbstractOpenemsComponent implements 
         this.timerHandler.addOneIdentifier(EXCEPTIONAL_STATE_IDENTIFIER, timerId, maxTime);
         this.exceptionalStateHandler = new ExceptionalStateHandlerImpl(timerHandler, EXCEPTIONAL_STATE_IDENTIFIER);
         this.exceptionalState = exceptionalState;
+        this.useExceptionalState = true;
     }
 
 
@@ -282,25 +283,22 @@ public abstract class AbstractValve extends AbstractOpenemsComponent implements 
         boolean childHasNothingToDo = false;
         this.exceptionalStateActive = this.isExceptionalStateActive();
         if (this.exceptionalStateActive) {
-            this.isForced = false;
             this.setPowerLevel(this.getExceptionalSateValue());
             childHasNothingToDo = true;
+        } else if (this.shouldReset()) {
+            this.reset();
+            childHasNothingToDo = true;
+        } else if (this.getForceFullPowerAndResetChannel()) {
+            this.forceOpen();
+            childHasNothingToDo = true;
         } else {
-            if (this.shouldReset()) {
-                this.isForced = false;
-                this.reset();
+            int setPointPowerLevelValue = this.setPointPowerLevelValue();
+            if (setPointPowerLevelValue >= DEFAULT_MIN_POWER_VALUE) {
+                this.setPowerLevel(setPointPowerLevelValue);
                 childHasNothingToDo = true;
-            } else if (this.getForceFullPowerAndResetChannel()) {
-                this.forceOpen();
-                childHasNothingToDo = true;
-            } else {
-                int setPointPowerLevelValue = this.setPointPowerLevelValue();
-                if (setPointPowerLevelValue >= DEFAULT_MIN_POWER_VALUE) {
-                    this.setPowerLevel(setPointPowerLevelValue);
-                    childHasNothingToDo = true;
-                }
             }
         }
+
         this.updatePowerLevel();
         this.parentActive = false;
         return childHasNothingToDo;

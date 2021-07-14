@@ -77,7 +77,8 @@ public class ValveTwoOutput extends AbstractValve implements OpenemsComponent, V
 
 
     public ValveTwoOutput() {
-        super(OpenemsComponent.ChannelId.values(), HeatsystemComponent.ChannelId.values());
+        super(OpenemsComponent.ChannelId.values(), HeatsystemComponent.ChannelId.values(),
+                ExceptionalState.ChannelId.values());
     }
 
 
@@ -494,11 +495,18 @@ public class ValveTwoOutput extends AbstractValve implements OpenemsComponent, V
     private Channel<?> getInputChannel(ChannelToGet channelToGet) throws OpenemsError.OpenemsNamedException {
         switch (this.configurationType) {
             case CHANNEL:
-                return this.cpm.getChannel(channelToGet.equals(ChannelToGet.CLOSING)
-                        ? this.cpm.getChannel(this.inputClosingAddress) : this.cpm.getChannel(this.inputOpenAddress));
+                if (channelToGet.equals(ChannelToGet.OPENING)) {
+                    return this.cpm.getChannel(this.inputOpenAddress);
+                } else {
+                    return this.cpm.getChannel(this.inputClosingAddress);
+                }
             case DEVICE:
             default:
-                return channelToGet.equals(ChannelToGet.CLOSING) ? this.closeRelay.getRelaysReadChannel() : this.openRelay.getRelaysReadChannel();
+                if (channelToGet.equals(ChannelToGet.OPENING)) {
+                    return this.closeRelay.getRelaysReadChannel();
+                } else {
+                    return this.openRelay.getRelaysReadChannel();
+                }
         }
     }
 
