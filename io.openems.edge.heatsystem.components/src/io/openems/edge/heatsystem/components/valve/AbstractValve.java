@@ -277,12 +277,9 @@ public abstract class AbstractValve extends AbstractOpenemsComponent implements 
         double futurePowerLevel = this.getFuturePowerLevelValue();
         double percentPossiblePerCycle = cycleTime / (this.secondsPerPercentage * MILLI_SECONDS_TO_SECONDS);
         boolean possibleToAdapt = this.getFuturePowerLevelValue() - currentPowerLevelValue > percentPossiblePerCycle;
-        boolean shouldAdaptIfNotOutOfBounce =
-                Math.abs(futurePowerLevel - currentPowerLevelValue + percentPossiblePerCycle * OPTIMIZE_FACTOR)
-                        < Math.min(Math.abs(futurePowerLevel - currentPowerLevelValue), Math.abs(futurePowerLevel - currentPowerLevelValue + TOLERANCE));
         boolean powerLevelOutOfBounce = currentPowerLevelValue - TOLERANCE > this.getFuturePowerLevelValue()
                 || currentPowerLevelValue + TOLERANCE < this.getFuturePowerLevelValue();
-        if (possibleToAdapt && powerLevelOutOfBounce || shouldAdaptIfNotOutOfBounce && currentPowerLevelValue != futurePowerLevel) {
+        if (possibleToAdapt && powerLevelOutOfBounce && currentPowerLevelValue != futurePowerLevel) {
             try {
                 this.setPointPowerLevelChannel().setNextWriteValueFromObject(this.getFuturePowerLevelValue());
             } catch (OpenemsError.OpenemsNamedException e) {
