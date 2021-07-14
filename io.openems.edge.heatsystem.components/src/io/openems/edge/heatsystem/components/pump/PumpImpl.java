@@ -434,21 +434,22 @@ public class PumpImpl extends AbstractOpenemsComponent implements OpenemsCompone
                 } catch (OpenemsError.OpenemsNamedException e) {
                     this.log.warn("Couldn't check if PowerValue is correctly set! " + super.id());
                 }
-            } else if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS)) {
-                if (this.useExceptionalState && this.exceptionalStateHandler.exceptionalStateActive(this)) {
-                    int value = this.getExceptionalStateValue();
-                    value = Math.max(value, DEFAULT_MIN_EXCEPTIONAL_VALUE);
-                    this.setPowerLevel(value);
-                } else if (this.getResetValueAndResetChannel()) {
-                    this.setPowerLevel(DEFAULT_MIN_POWER_VALUE);
-                } else if (this.getForceFullPowerAndResetChannel()) {
-                    this.setPowerLevel(DEFAULT_MAX_POWER_VALUE);
-                    //next Value bc Controller will set the next Value -> no need to wait a full cycle
-                } else if (this.setPointPowerLevelChannel().getNextValue().isDefined()) {
-                    this.setPowerLevel(this.setPointPowerLevelChannel().getNextValue().get());
-                }
+            }
+        } else if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS)) {
+            if (this.useExceptionalState && this.exceptionalStateHandler.exceptionalStateActive(this)) {
+                int value = this.getExceptionalStateValue();
+                value = Math.max(value, DEFAULT_MIN_EXCEPTIONAL_VALUE);
+                this.setPowerLevel(value);
+            } else if (this.getResetValueAndResetChannel()) {
+                this.setPowerLevel(DEFAULT_MIN_POWER_VALUE);
+            } else if (this.getForceFullPowerAndResetChannel()) {
+                this.setPowerLevel(DEFAULT_MAX_POWER_VALUE);
+                //next Value bc Controller will set the next Value -> no need to wait a full cycle
+            } else if (this.setPointPowerLevelChannel().getNextValue().isDefined()) {
+                this.setPowerLevel(this.setPointPowerLevelChannel().getNextValue().get());
             }
         }
+
     }
 
     /**
