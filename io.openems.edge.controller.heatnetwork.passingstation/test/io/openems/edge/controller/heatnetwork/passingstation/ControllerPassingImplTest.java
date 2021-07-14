@@ -12,7 +12,8 @@ import io.openems.edge.heatsystem.components.Pump;
 import io.openems.edge.heatsystem.components.Valve;
 import io.openems.edge.heatsystem.components.test.DummyPump;
 import io.openems.edge.heatsystem.components.test.DummyValve;
-import io.openems.edge.pwm.api.Pwm;
+
+import io.openems.edge.io.api.Pwm;
 import io.openems.edge.pwm.api.test.DummyPwm;
 import io.openems.edge.relay.api.Relay;
 import io.openems.edge.relay.api.test.DummyRelay;

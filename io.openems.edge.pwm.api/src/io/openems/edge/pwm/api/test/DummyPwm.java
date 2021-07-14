@@ -2,7 +2,8 @@ package io.openems.edge.pwm.api.test;
 
 import io.openems.edge.common.component.AbstractOpenemsComponent;
 import io.openems.edge.common.component.OpenemsComponent;
-import io.openems.edge.pwm.api.Pwm;
+import io.openems.edge.io.api.Pwm;
+
 
 public class DummyPwm extends AbstractOpenemsComponent implements OpenemsComponent, Pwm {
 
