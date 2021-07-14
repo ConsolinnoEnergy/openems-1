@@ -280,7 +280,7 @@ public class ValveTwoOutput extends AbstractValve implements OpenemsComponent, V
     @Override
     public boolean changeByPercentage(double percentage) {
 
-        if (this.readyToChange() == false || percentage == DEFAULT_MIN_POWER_VALUE) {
+        if (super.changeInvalid(percentage)) {
             return false;
         } else {
             double currentPowerLevel = super.calculateCurrentPowerLevelAndSetTime(percentage);
@@ -336,18 +336,10 @@ public class ValveTwoOutput extends AbstractValve implements OpenemsComponent, V
     @Override
     public void forceClose() {
         if (this.isForced == false || this.isClosing == false) {
-            this.isForced = true;
-            this.isChanging = true;
-            this.futurePowerLevelChannel().setNextValue(DEFAULT_MIN_POWER_VALUE);
-            this.timeChannel().setNextValue(DEFAULT_MAX_POWER_VALUE * this.secondsPerPercentage);
-            this.valveClose();
-            this.getIsBusyChannel().setNextValue(true);
-            //Making sure to wait the correct time even if it is already closing.
-            this.timeStampValveInitial = -1;
-            this.updatePowerLevel();
-
+            if (super.parentForceClose()) {
+                this.valveClose();
+            }
         }
-
     }
 
     /**
@@ -358,17 +350,10 @@ public class ValveTwoOutput extends AbstractValve implements OpenemsComponent, V
     @Override
     public void forceOpen() {
         if (this.isForced == false || this.isClosing) {
-            this.isForced = true;
-            this.isChanging = true;
-            this.futurePowerLevelChannel().setNextValue(DEFAULT_MAX_POWER_VALUE);
-            this.timeChannel().setNextValue(DEFAULT_MAX_POWER_VALUE * this.secondsPerPercentage);
-            this.valveOpen();
-            this.getIsBusyChannel().setNextValue(true);
-            //Making sure to wait the correct time even if it is already opening
-            this.timeStampValveInitial = -1;
-            this.updatePowerLevel();
+            if (super.parentForceOpen()) {
+                this.valveOpen();
+            }
         }
-
     }
 
     //-------------------------------------------------------------//

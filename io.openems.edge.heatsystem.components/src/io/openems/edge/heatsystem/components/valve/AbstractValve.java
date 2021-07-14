@@ -55,9 +55,11 @@ public abstract class AbstractValve extends AbstractOpenemsComponent implements 
     protected boolean updateOk = true;
     protected boolean useExceptionalState;
     protected static final String EXCEPTIONAL_STATE_IDENTIFIER = "VALVE_EXCEPTIONAL_STATE_IDENTIFIER";
+    protected boolean parentActive;
     private TimerHandler timerHandler;
     protected ExceptionalStateHandler exceptionalStateHandler;
     protected ExceptionalState exceptionalState;
+    protected boolean exceptionalStateActive;
 
     protected AbstractValve(io.openems.edge.common.channel.ChannelId[] firstInitialChannelIds,
                             io.openems.edge.common.channel.ChannelId[]... furtherInitialChannelIds) {
@@ -276,24 +278,31 @@ public abstract class AbstractValve extends AbstractOpenemsComponent implements 
      * @return false if nothing above was done
      */
     protected boolean parentDidRoutine() {
+        this.parentActive = true;
         boolean childHasNothingToDo = false;
-        if (this.isExceptionalStateActive()) {
+        this.exceptionalStateActive = this.isExceptionalStateActive();
+        if (this.exceptionalStateActive) {
+            this.isForced = false;
             this.setPowerLevel(this.getExceptionalSateValue());
             childHasNothingToDo = true;
-        } else if (this.shouldReset()) {
-            this.reset();
-            childHasNothingToDo = true;
-        } else if (this.getForceFullPowerAndResetChannel()) {
-            this.forceOpen();
-            childHasNothingToDo = true;
         } else {
-            int setPointPowerLevelValue = this.setPointPowerLevelValue();
-            if (setPointPowerLevelValue >= DEFAULT_MIN_POWER_VALUE) {
-                this.setPowerLevel(setPointPowerLevelValue);
+            if (this.shouldReset()) {
+                this.isForced = false;
+                this.reset();
                 childHasNothingToDo = true;
+            } else if (this.getForceFullPowerAndResetChannel()) {
+                this.forceOpen();
+                childHasNothingToDo = true;
+            } else {
+                int setPointPowerLevelValue = this.setPointPowerLevelValue();
+                if (setPointPowerLevelValue >= DEFAULT_MIN_POWER_VALUE) {
+                    this.setPowerLevel(setPointPowerLevelValue);
+                    childHasNothingToDo = true;
+                }
             }
         }
         this.updatePowerLevel();
+        this.parentActive = false;
         return childHasNothingToDo;
     }
 
@@ -364,5 +373,68 @@ public abstract class AbstractValve extends AbstractOpenemsComponent implements 
             this.timeChannel().setNextValue(Math.abs(percentage) * this.secondsPerPercentage);
         }
         return currentPowerLevel;
+    }
+
+    /**
+     * A Method to help extending classes determine if they are allowed to Accept the Force Request.
+     * Additionally it applies the future PowerLevel, the Time needed and updates the PowerLevel.
+     *
+     * @return true if allowed to force. Otherwise false.
+     */
+
+    protected boolean parentForceClose() {
+
+        if (this.exceptionalStateActive == false) {
+            this.isForced = true;
+            this.isChanging = true;
+            this.isClosing = true;
+            this.futurePowerLevelChannel().setNextValue(DEFAULT_MIN_POWER_VALUE);
+            this.timeChannel().setNextValue(DEFAULT_MAX_POWER_VALUE * this.secondsPerPercentage);
+            this.getIsBusyChannel().setNextValue(true);
+            //Making sure to wait the correct time even if it is already closing.
+            this.timeStampValveInitial = -1;
+            this.updatePowerLevel();
+            return true;
+        }
+        this.log.info("Couldn't Force Close ExceptionalState is Active! " + super.id());
+        return false;
+    }
+
+    /**
+     * A Method to help extending classes determine if they are allowed to Accept the Force Request.
+     * Additionally it applies the future PowerLevel, the Time needed and updates the PowerLevel.
+     *
+     * @return true if allowed to force. Otherwise false.
+     */
+    protected boolean parentForceOpen() {
+
+        if (this.exceptionalStateActive == false) {
+            this.isForced = true;
+            this.futurePowerLevelChannel().setNextValue(DEFAULT_MAX_POWER_VALUE);
+            this.timeChannel().setNextValue(DEFAULT_MAX_POWER_VALUE * this.secondsPerPercentage);
+
+            this.getIsBusyChannel().setNextValue(true);
+            this.isChanging = true;
+            this.isClosing = false;
+            this.timeStampValveCurrent = -1;
+            this.updatePowerLevel();
+            return true;
+        }
+        this.log.info("Couldn't Force Open ExceptionalState is Active! " + super.id());
+        return false;
+    }
+
+    /**
+     * A Method to help extending classes determine if they are allowed change their Valve by a certain Percent value.
+     * If the Parent is active, the change is always valid (knows the priority order) otherwise check for forcing (readyToChange)
+     * or if the exceptionalState is active. As well as check for 0 percentage change.
+     *
+     * @param percentage the percentAmount that will be added/substracted from the current PowerLevel
+     * @return false if the Request ist valid
+     */
+
+    protected boolean changeInvalid(double percentage) {
+
+        return this.parentActive == false && (this.readyToChange() == false || this.exceptionalStateActive) || percentage == DEFAULT_MIN_POWER_VALUE;
     }
 }

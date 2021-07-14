@@ -470,8 +470,8 @@ public interface HeatsystemComponent extends OpenemsComponent {
 
     /**
      * Usually used internally but can be used by calling Components/Controller.
-     * Changes the Current Powerlevel by given Percentage. Can be positive or negative.
-     * The reached Powerlevel can be at most 100 and at least 0 but can be modified by the Max/Min Value.
+     * Changes the Current PowerLevel by given Percentage. Can be positive or negative.
+     * The reached PowerLevel can be at most 100 and at least 0 but can be modified by the Max/Min Value.
      *
      * @param percentage the percentage to change the HeatsystemComponent by this value.
      * @return true on success

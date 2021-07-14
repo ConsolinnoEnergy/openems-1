@@ -173,7 +173,7 @@ public class ValveOneOutput extends AbstractValve implements OpenemsComponent, V
     @Override
     public boolean changeByPercentage(double percentage) {
         double currentPowerLevel;
-        if (!this.readyToChange() || percentage == 0) {
+        if (super.changeInvalid(percentage)) {
             return false;
         } else {
             //Setting the oldPowerLevel and adjust the percentage Value
@@ -203,15 +203,9 @@ public class ValveOneOutput extends AbstractValve implements OpenemsComponent, V
     @Override
     public void forceClose() {
         if (this.isForced == false || this.isClosing == false) {
-            this.isForced = true;
-            this.futurePowerLevelChannel().setNextValue(DEFAULT_MIN_POWER_VALUE);
-            this.timeChannel().setNextValue(DEFAULT_MAX_POWER_VALUE * secondsPerPercentage);
-            this.writeToOutputChannel(DEFAULT_MIN_POWER_VALUE);
-            this.getIsBusyChannel().setNextValue(true);
-            this.isChanging = true;
-            this.isClosing = true;
-            this.timeStampValveCurrent = -1;
-            this.updatePowerLevel();
+            if (super.parentForceClose()) {
+                this.writeToOutputChannel(DEFAULT_MIN_POWER_VALUE);
+            }
         }
 
     }
@@ -240,15 +234,9 @@ public class ValveOneOutput extends AbstractValve implements OpenemsComponent, V
     @Override
     public void forceOpen() {
         if (this.isForced == false || this.isClosing == true) {
-            this.isForced = true;
-            this.futurePowerLevelChannel().setNextValue(DEFAULT_MAX_POWER_VALUE);
-            this.timeChannel().setNextValue(DEFAULT_MAX_POWER_VALUE * secondsPerPercentage);
-            this.writeToOutputChannel(DEFAULT_MAX_POWER_VALUE);
-            this.getIsBusyChannel().setNextValue(true);
-            this.isChanging = true;
-            this.isClosing = false;
-            this.timeStampValveCurrent = -1;
-            this.updatePowerLevel();
+            if (super.parentForceOpen()) {
+                this.writeToOutputChannel(DEFAULT_MAX_POWER_VALUE);
+            }
         }
     }
 
@@ -256,7 +244,7 @@ public class ValveOneOutput extends AbstractValve implements OpenemsComponent, V
     /**
      * Check if the expected Value is almost the same as the written Value, if not -> Set Value again.
      *
-     * @param optionalChannel
+     * @param optionalChannel the OptionalChannel to Check.
      * @return true if expected Value is almost the Same (Or if an Error occurred, so the Valve can continue to run)
      */
 
