@@ -21,7 +21,7 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     ConfigurationType configurationType() default ConfigurationType.CHANNEL;
 
     @AttributeDefinition(name = "InputChannelAddress or InputDevice", description = "Device that writes PowerLevel to this Channel or Device.")
-    String inputChannelOrDevice() default "Aio0/AioPercentWrite";
+    String inputChannelOrDevice() default "Aio1/AioPercentWrite";
 
 
     @AttributeDefinition(name = "TimeToOpenValve", description = "Time to open or Close a Valve Completely (T in seconds)")
@@ -33,7 +33,7 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     boolean useCheckChannel() default true;
 
     @AttributeDefinition(name = "Check Output ChannelAddress", description = "Check if the Output got written, only important if ConfigurationType selected is \"Channel\"")
-    String checkChannel() default "Aio0/AioCheckPercent";
+    String checkChannel() default "Aio1/AioCheckPercent";
 
     @AttributeDefinition(name = "Should Close on Activation", description = "Should the Valve Close completely if it's "
             + "activated: prevents in flight status due to crashes or restarts etc")

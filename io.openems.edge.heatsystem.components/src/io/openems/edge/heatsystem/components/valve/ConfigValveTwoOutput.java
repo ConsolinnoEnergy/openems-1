@@ -24,10 +24,10 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     ConfigurationType configurationType() default ConfigurationType.CHANNEL;
 
     @AttributeDefinition(name = "Closing Channel or Device", description = "What channel to write True/False if Valve should close OR Device. Depends on configurationType.")
-    String close() default "Relays0/WriteOnOff";
+    String close() default "Relay1/WriteOnOff";
 
     @AttributeDefinition(name = "Opening Channel or Device", description = "What channel to write True/False if Valve should close OR Device. Depends on configurationType.")
-    String open() default "Relays1/WriteOnOff";
+    String open() default "Relay2/WriteOnOff";
 
 
     @AttributeDefinition(name = "Valve Time", description = "The time needed to Open and Close the valve (t in seconds).")
@@ -47,7 +47,7 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
     @AttributeDefinition(name = "CheckOpeningChannelAddress", description = "If Valve should open, check with this channel if it is really opening"
             + "e.g. read from Hardware if Opening channel is set to true")
-    String checkOpeningChannelAddress() default "Relay0/ReadOnOff";
+    String checkOpeningChannelAddress() default "Relay2/ReadOnOff";
 
     boolean useExceptionalState() default false;
 

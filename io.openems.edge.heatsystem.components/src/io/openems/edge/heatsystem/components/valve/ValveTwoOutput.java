@@ -503,9 +503,9 @@ public class ValveTwoOutput extends AbstractValve implements OpenemsComponent, V
             case DEVICE:
             default:
                 if (channelToGet.equals(ChannelToGet.OPENING)) {
-                    return this.closeRelay.getRelaysReadChannel();
-                } else {
                     return this.openRelay.getRelaysReadChannel();
+                } else {
+                    return this.closeRelay.getRelaysReadChannel();
                 }
         }
     }
