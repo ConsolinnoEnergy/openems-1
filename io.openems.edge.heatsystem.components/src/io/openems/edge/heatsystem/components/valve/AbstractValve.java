@@ -5,6 +5,7 @@ import io.openems.edge.common.channel.Channel;
 import io.openems.edge.common.channel.value.Value;
 import io.openems.edge.common.component.AbstractOpenemsComponent;
 import io.openems.edge.common.component.ComponentManager;
+import io.openems.edge.common.cycle.Cycle;
 import io.openems.edge.exceptionalstate.api.ExceptionalState;
 import io.openems.edge.exceptionalstate.api.ExceptionalStateHandler;
 import io.openems.edge.exceptionalstate.api.ExceptionalStateHandlerImpl;
@@ -12,6 +13,7 @@ import io.openems.edge.heatsystem.components.Valve;
 import io.openems.edge.timer.api.TimerHandler;
 import io.openems.edge.timer.api.TimerHandlerImpl;
 import org.osgi.service.cm.ConfigurationException;
+import org.osgi.service.component.annotations.Reference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,6 +27,9 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Its the BaseClass for any Valve that is implemented.
  */
 public abstract class AbstractValve extends AbstractOpenemsComponent implements Valve, ExceptionalState {
+    @Reference
+    Cycle cycle;
+
     protected final Logger log = LoggerFactory.getLogger(AbstractValve.class);
 
     protected double secondsPerPercentage;
@@ -36,6 +41,7 @@ public abstract class AbstractValve extends AbstractOpenemsComponent implements 
     protected boolean isClosing = false;
     protected boolean wasAlreadyReset = false;
     protected boolean isForced;
+    private static final int OPTIMIZE_FACTOR = 2;
 
     protected boolean useCheckOutput;
 
@@ -259,6 +265,32 @@ public abstract class AbstractValve extends AbstractOpenemsComponent implements 
             return false;
         }
     }
+
+    /**
+     * This Method adapts the current ValvePosition if 2 Conditions apply.
+     * First: Check how much percent the Valve can change per cycle.
+     * After that check if the Valve can adapt to the FuturePowerLevel with it's current PowerLevelValue
+     */
+    protected void adaptValveValue() {
+        int cycleTime = this.cycle == null ? Cycle.DEFAULT_CYCLE_TIME : this.cycle.getCycleTime();
+        double currentPowerLevelValue = this.getPowerLevelValue();
+        double futurePowerLevel = this.getFuturePowerLevelValue();
+        double percentPossiblePerCycle = cycleTime / (this.secondsPerPercentage * MILLI_SECONDS_TO_SECONDS);
+        boolean possibleToAdapt = this.getFuturePowerLevelValue() - currentPowerLevelValue > percentPossiblePerCycle;
+        boolean shouldAdaptIfNotOutOfBounce =
+                Math.abs(futurePowerLevel - currentPowerLevelValue + percentPossiblePerCycle * OPTIMIZE_FACTOR)
+                        < Math.min(Math.abs(futurePowerLevel - currentPowerLevelValue), Math.abs(futurePowerLevel - currentPowerLevelValue + TOLERANCE));
+        boolean powerLevelOutOfBounce = currentPowerLevelValue - TOLERANCE > this.getFuturePowerLevelValue()
+                || currentPowerLevelValue + TOLERANCE < this.getFuturePowerLevelValue();
+        if (possibleToAdapt && powerLevelOutOfBounce || shouldAdaptIfNotOutOfBounce && currentPowerLevelValue != futurePowerLevel) {
+            try {
+                this.setPointPowerLevelChannel().setNextWriteValueFromObject(this.getFuturePowerLevelValue());
+            } catch (OpenemsError.OpenemsNamedException e) {
+                this.log.warn("Couldn't adapt Valve; Value of Valve: " + super.id());
+            }
+        }
+    }
+
 
     protected int getExceptionalSateValue() {
         return this.exceptionalState.getExceptionalStateValue();

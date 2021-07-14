@@ -50,8 +50,6 @@ import org.slf4j.LoggerFactory;
 )
 public class ValveTwoOutput extends AbstractValve implements OpenemsComponent, Valve, ExceptionalState, EventHandler {
 
-    @Reference
-    Cycle cycle;
 
     private final Logger log = LoggerFactory.getLogger(ValveTwoOutput.class);
 
@@ -203,7 +201,7 @@ public class ValveTwoOutput extends AbstractValve implements OpenemsComponent, V
                 if (reached) {
                     this.getIsBusyChannel().setNextValue(false);
                     this.isForced = false;
-                    this.adaptValveValue();
+                    super.adaptValveValue();
                 }
             } else {
                 try {
@@ -242,22 +240,6 @@ public class ValveTwoOutput extends AbstractValve implements OpenemsComponent, V
         }
     }
 
-    /**
-     * Only if Reached! this Method will be called.
-     */
-    private void adaptValveValue() {
-        int cycleTime = this.cycle == null ? Cycle.DEFAULT_CYCLE_TIME : this.cycle.getCycleTime();
-        double percentPossiblePerCycle = cycleTime / (this.secondsPerPercentage * MILLI_SECONDS_TO_SECONDS);
-        double limit = percentPossiblePerCycle * 2;
-        boolean powerLevelOutOfBounce = this.getPowerLevelValue() - limit > this.getFuturePowerLevelValue() || this.getPowerLevelValue() + limit < this.getFuturePowerLevelValue() || this.getPowerLevelValue() == this.getFuturePowerLevelValue();
-        if (percentPossiblePerCycle >= 2 && powerLevelOutOfBounce) {
-            try {
-                this.setPointPowerLevelChannel().setNextWriteValueFromObject(this.getFuturePowerLevelValue());
-            } catch (OpenemsError.OpenemsNamedException e) {
-                this.log.warn("Couldn't adapt Valve; Value of Valve: " + super.id());
-            }
-        }
-    }
 
     /**
      * Changes Valve Position by incoming percentage.
