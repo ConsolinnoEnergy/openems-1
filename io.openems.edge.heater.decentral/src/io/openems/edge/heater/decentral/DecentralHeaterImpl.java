@@ -137,7 +137,10 @@ public class DecentralHeaterImpl extends AbstractOpenemsComponent implements Ope
                     this.wasNeedHeatEnableLastCycle = true;
                     //activateThresholdThermometer and check if setPointTemperature can be met otherwise shut valve
                     // and ask for more heat
-                    this.setThresholdAndControlValve();
+                    try {
+                        this.setThresholdAndControlValve();
+                    } catch (OpenemsError.OpenemsNamedException ignored) {
+                    }
                 } else {
                     this.wasNeedHeatEnableLastCycle = false;
                     this.setState(HeaterState.AWAIT.name());
@@ -153,7 +156,7 @@ public class DecentralHeaterImpl extends AbstractOpenemsComponent implements Ope
      * If Controller is Enabled AND permission to heat is set.
      * Check if ThresholdThermometer is ok --> if yes activate Valve/ValveController --> Else Close Valve and say "I need more Heat".
      */
-    private void setThresholdAndControlValve() {
+    private void setThresholdAndControlValve() throws OpenemsError.OpenemsNamedException {
         this.thermometerThreshold.setSetPointTemperatureAndActivate(this.getSetPointTemperature(), super.id());
         //Static Valve Controller Works on it's own with given Temperature
         if (this.isValve == false) {
