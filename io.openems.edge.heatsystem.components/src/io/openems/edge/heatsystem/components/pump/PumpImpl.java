@@ -56,7 +56,6 @@ public class PumpImpl extends AbstractOpenemsComponent implements OpenemsCompone
     private boolean isRelay = false;
     private boolean isPwmOrAio = false;
     private ConfigurationType configurationType;
-    private PumpType pumpType;
     private DeviceType deviceType;
     private boolean shouldCheckOutput;
     private ChannelAddress checkRelayChannel;
@@ -67,6 +66,7 @@ public class PumpImpl extends AbstractOpenemsComponent implements OpenemsCompone
     private boolean useExceptionalState;
     private static final String EXCEPTIONAL_STATE_IDENTIFIER = "EXCEPTIONAL_STATE_IDENTIFIER_HYDRAULIC_PUMP";
     private Config config;
+    private PumpType pumpType;
 
     enum DeviceType {
         PWM, AIO
@@ -105,7 +105,7 @@ public class PumpImpl extends AbstractOpenemsComponent implements OpenemsCompone
             this.controlRelay(false);
         }
         if (this.isPwmOrAio) {
-            this.controlPwm(DEFAULT_MIN_POWER_VALUE);
+            this.controlPercentDevice(DEFAULT_MIN_POWER_VALUE);
         }
     }
 
@@ -256,7 +256,7 @@ public class PumpImpl extends AbstractOpenemsComponent implements OpenemsCompone
     /**
      * Changes the power value by percentage.
      * <p>
-     * If the Pump is only a relays --> if negative --> controlyRelays false, else true
+     * If the Pump is only a relays --> if negative --> controlRelays false, else true
      * If it's in addition a pwm --> check if the powerlevel - percentage <= 0
      * --> pump is idle --> relays off and pwm is 0.f %
      * Otherwise it's calculating the new Power-level and writing
@@ -274,7 +274,7 @@ public class PumpImpl extends AbstractOpenemsComponent implements OpenemsCompone
 
                 //deactivate
                 if ((powerLevel + percentage <= DEFAULT_MIN_POWER_VALUE)) {
-                    if (this.controlRelay(false) && this.controlPwm(DEFAULT_MIN_POWER_VALUE)) {
+                    if (this.controlRelay(false) && this.controlPercentDevice(DEFAULT_MIN_POWER_VALUE)) {
                         this.getLastPowerLevelChannel().setNextValue(powerLevel);
                         this.getPowerLevelChannel().setNextValue(DEFAULT_MIN_POWER_VALUE);
                         return true;
@@ -292,12 +292,12 @@ public class PumpImpl extends AbstractOpenemsComponent implements OpenemsCompone
                 return this.controlRelay((percentage <= DEFAULT_MIN_POWER_VALUE) == false);
             }
         }
-        //sets pwm
+        //sets pwm/aio
         if (this.isPwmOrAio) {
             powerLevel += percentage;
             powerLevel = Math.max(DEFAULT_MIN_POWER_VALUE, powerLevel);
             powerLevel = Math.min(DEFAULT_MAX_POWER_VALUE, powerLevel);
-            if (this.controlPwm(powerLevel)) {
+            if (this.controlPercentDevice(powerLevel)) {
                 this.getLastPowerLevelChannel().setNextValue(this.getPowerLevelValue());
                 this.getPowerLevelChannel().setNextValue(powerLevel);
             } else {
@@ -348,7 +348,7 @@ public class PumpImpl extends AbstractOpenemsComponent implements OpenemsCompone
      * @param percent the Percent set to this Pump
      * @return true on success
      */
-    private boolean controlPwm(double percent) {
+    private boolean controlPercentDevice(double percent) {
         int multiplier = 1;
         Unit unit;
         if (this.configurationType.equals(ConfigurationType.CHANNEL)) {
@@ -440,11 +440,18 @@ public class PumpImpl extends AbstractOpenemsComponent implements OpenemsCompone
         }
     }
 
+    /**
+     * This method is called if the CheckOutput was set in the config {@link Config#checkPowerLevelIsApplied()} was set.
+     * The Component checks depending on it's type the expected Values.
+     * If not, it applies / controls the devices depending on the expected value.
+     *
+     * @throws OpenemsError.OpenemsNamedException if Channel couldn't be found.
+     */
     private void checkIfPowerValueIsMatching() throws OpenemsError.OpenemsNamedException {
         double currentPowerLevel = this.getPowerLevelValue();
         boolean anticipatedValueCorrect = true;
         if (this.isRelay) {
-            boolean expectedBooleanValue = currentPowerLevel > 0;
+            boolean expectedBooleanValue = currentPowerLevel > DEFAULT_MIN_EXCEPTIONAL_VALUE;
             Channel<?> channel = this.getChannelForCheckup(AvailableDevices.RELAY);
             if (channel != null && channel.value().isDefined()) {
                 switch (channel.channelDoc().getType()) {
@@ -462,7 +469,8 @@ public class PumpImpl extends AbstractOpenemsComponent implements OpenemsCompone
                         if (this.containsOnlyNumbers(channel.value().get().toString())) {
                             anticipatedValueCorrect = expectedBooleanValue == Double.parseDouble(channel.value().get().toString()) > 0;
                         } else {
-                            this.log.warn("Couldn't check if Relay value is set correctly, Channel has non Numeric content " + super.id() + channel.toString());
+                            this.log.warn("Couldn't check if Relay value is set correctly, Channel has non Numeric content "
+                                    + super.id() + channel.toString());
                         }
                         break;
                 }
@@ -499,17 +507,17 @@ public class PumpImpl extends AbstractOpenemsComponent implements OpenemsCompone
                         case DOUBLE:
                         case STRING:
                             value = this.containsOnlyNumbers(channel.value().get().toString())
-                                    ? Double.parseDouble(channel.value().get().toString()) : this.getCurrentPowerLevelValue();
+                                    ? Double.parseDouble(channel.value().get().toString()) : this.getPowerLevelValue();
                             break;
                         default:
-                            log.warn("ChannelType is not supported!" + super.id() + "Channel: " + channel.toString());
+                            this.log.warn("ChannelType is not supported!" + super.id() + "Channel: " + channel.toString());
                     }
                     if (Math.abs(value * scaleFactorForOtherChannel - currentPowerLevel) > TOLERANCE) {
-                        log.info("PowerLevel of Pump: " + super.id() + " incorrect. Was: " + value + " but expected: " + currentPowerLevel);
-                        this.applyPowerToPwm(currentPowerLevel);
+                        this.log.info("PowerLevel of Pump: " + super.id() + " incorrect. Was: " + value + " but expected: " + currentPowerLevel);
+                        this.controlPercentDevice(currentPowerLevel);
                     }
                 } else {
-                    log.info("Couldn't check for anticipated Value! Value is not defined yet: " + super.id() + channel.toString());
+                    this.log.info("Couldn't check for anticipated Value! Value is not defined yet: " + super.id() + channel.toString());
                 }
             }
         }
