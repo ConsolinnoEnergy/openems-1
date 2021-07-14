@@ -62,6 +62,11 @@ public class ElementToChannelConverter {
 	public static final ElementToChannelConverter SCALE_FACTOR_3 = new ElementToChannelScaleFactorConverter(3);
 
 	/**
+	 * If the value of the element is 0XFFFF, writes null in the channel.
+	 */
+	public static final ElementToChannelConverter REPLACE_WITH_MINUS_ZERO_IF_0XFFFF = new ElementToChannelValueReplacer(65535, -1);
+
+	/**
 	 * Converts only positive values from Element to Channel.
 	 */
 	public static final ElementToChannelConverter KEEP_POSITIVE = new ElementToChannelConverter(//
