@@ -7,11 +7,9 @@ Bundle-Version: 1.0.0.${tstamp}
 	${buildpath},\
 	io.openems.common,\
 	io.openems.edge.common,\
-	io.openems.edge.relay.api,\
-	io.openems.edge.timer.api,\
-	io.openems.edge.exceptionalstate.api,\
 	io.openems.edge.io.api,\
-	io.openems.edge.pwm.api,\
+	io.openems.edge.consolinno.leaflet,\
+	io.openems.edge.relay.api
 
 -testpath: \
 	${testpath}

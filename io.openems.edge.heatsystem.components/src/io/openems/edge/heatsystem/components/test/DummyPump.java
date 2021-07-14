@@ -5,7 +5,7 @@ import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.heatsystem.components.Pump;
 import io.openems.edge.heatsystem.components.HeatsystemComponent;
 import io.openems.edge.io.api.Pwm;
-import io.openems.edge.pwm.api.test.DummyPwm;
+import io.openems.edge.consolinno.leaflet.pwm.test.DummyPwm;
 import io.openems.edge.relay.api.Relay;
 import io.openems.edge.relay.api.test.DummyRelay;
 
