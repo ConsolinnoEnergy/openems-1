@@ -7,7 +7,7 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 @interface Config {
 
     @AttributeDefinition(name = "Id", description = "Unique Id for the .")
-    String id() default "";
+    String id() default "TimerTest";
 
     @AttributeDefinition(name = "Alias", description = "Human readable name of this Configurator.")
     String alias() default "";
