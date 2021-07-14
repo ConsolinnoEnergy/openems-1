@@ -198,7 +198,7 @@ public class ValveTwoOutput extends AbstractValve implements OpenemsComponent, V
                 this.updatePowerLevel();
                 this.checkMaxAndMinAllowed();
                 boolean reached = this.powerLevelReached() && this.readyToChange();
-                if (reached) {
+                if (reached || this.isChanging == false) {
                     this.getIsBusyChannel().setNextValue(false);
                     this.isForced = false;
                     super.adaptValveValue();

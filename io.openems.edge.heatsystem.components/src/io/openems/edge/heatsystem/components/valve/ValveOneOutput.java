@@ -42,7 +42,7 @@ import org.slf4j.LoggerFactory;
 @Designate(ocd = ConfigValveOneOutput.class, factory = true)
 @Component(name = "HeatsystemComponent.Valve.OneOutput", immediate = true,
         configurationPolicy = ConfigurationPolicy.REQUIRE,
-        property = {EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE,
+        property = {EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE,
                 EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS}
 
 )
@@ -324,7 +324,7 @@ public class ValveOneOutput extends AbstractValve implements OpenemsComponent, V
 
     @Override
     public void handleEvent(Event event) {
-        if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE)) {
+        if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE)) {
             if (this.configSuccess == false) {
                 try {
                     this.activationOrModifiedRoutine(this.config);
