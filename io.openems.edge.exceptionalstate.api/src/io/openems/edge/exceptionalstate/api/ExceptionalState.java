@@ -15,6 +15,10 @@ import io.openems.edge.common.component.OpenemsComponent;
  * Ignoring all the other controller/enableSignal of the heater interface etc etc.
  */
 public interface ExceptionalState extends OpenemsComponent {
+
+    int DEFAULT_MIN_EXCEPTIONAL_VALUE = 0;
+    int DEFAULT_MAX_EXCEPTIONAL_VALUE = 100;
+
     enum ChannelId implements io.openems.edge.common.channel.ChannelId {
         /**
          * Exceptional State Enable Signal.

@@ -153,7 +153,7 @@ public class ValveOneOutput extends AbstractValve implements OpenemsComponent, V
 
     /**
      * Changes Valve Position by incoming percentage.
-     * Warning, only executes if valve is not busy! (was not forced to open/close)
+     * Only executes if valve is not busy! (was not forced to open/close)
      * Depending on + or - it changes the current State to open/close it more. Switching the relays on/off does
      * not open/close the valve instantly but slowly. The time it takes from completely closed to completely
      * open is entered in the config. Partial open state of x% is then archived by switching the relay on for

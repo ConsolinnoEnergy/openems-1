@@ -328,9 +328,9 @@ public abstract class AbstractValve extends AbstractOpenemsComponent implements 
      *                   else it needs to open (further).
      *                   </p>
      */
+
     protected double calculateCurrentPowerLevelAndSetTime(double percentage) {
-        double currentPowerLevel;
-        currentPowerLevel = this.getPowerLevelValue();
+        double currentPowerLevel = this.getPowerLevelValue();
         this.getLastPowerLevelChannel().setNextValue(currentPowerLevel);
         this.maximum = this.getMaxAllowedValue();
         this.minimum = this.getMinAllowedValue();
