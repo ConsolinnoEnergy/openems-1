@@ -35,13 +35,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * This simple Pump can be configured and used by either a Pwm or a Relay or Both.
- * It works with Channels as well. You still need to configure if the Pump is controlled by a Relay, Pwm or Both.
+ * This simple Pump can be configured and used by either a Pwm/Aio or a Relay or Both.
+ * It works with Channels as well. You still need to configure if the Pump is controlled by a Relay, Pwm/aio or Both.
+ * It provides the ability to check it's output and apply an Output again if the output does not match.
+ * Additionally you can use the ExceptionalState to apply an Output.
  */
 @Designate(ocd = Config.class, factory = true)
 @Component(name = "HeatsystemComponent.Pump",
         property = {
-                EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS,
+                EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE,
                 EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS
         })
 public class PumpImpl extends AbstractOpenemsComponent implements OpenemsComponent, Pump, ExceptionalState, EventHandler {
@@ -66,7 +68,6 @@ public class PumpImpl extends AbstractOpenemsComponent implements OpenemsCompone
     private boolean useExceptionalState;
     private static final String EXCEPTIONAL_STATE_IDENTIFIER = "EXCEPTIONAL_STATE_IDENTIFIER_HYDRAULIC_PUMP";
     private Config config;
-    private PumpType pumpType;
 
     enum DeviceType {
         PWM, AIO
@@ -98,7 +99,7 @@ public class PumpImpl extends AbstractOpenemsComponent implements OpenemsCompone
     }
 
     /**
-     * Deactivates the Devices. It sets the Relay to false and the Pwm to 0.
+     * Deactivates the Devices. It sets the Relay to false and the Pwm/aio to 0.
      */
     private void deactivateDevices() {
         if (this.isRelay) {
@@ -111,15 +112,18 @@ public class PumpImpl extends AbstractOpenemsComponent implements OpenemsCompone
 
 
     /**
-     * Allocates the components.
+     * This method is called by the activate and modified method.
+     * It allocates the configurationType, tells the Class if it uses a Relay and/or Pwm/Aio
+     * Configures the ExceptionalStateHandler (if needed).
      *
      * @param config The Config of this Component.
      */
     private void activateOrModifiedRoutine(Config config)
             throws OpenemsError.OpenemsNamedException, ConfigurationException {
         this.configurationType = config.configType();
-        this.pumpType = config.pump_Type();
-        switch (this.pumpType) {
+        PumpType pumpType = config.pump_Type();
+        this.shouldCheckOutput = config.checkPowerLevelIsApplied();
+        switch (pumpType) {
             case RELAY:
                 this.isRelay = true;
                 break;
@@ -135,10 +139,10 @@ public class PumpImpl extends AbstractOpenemsComponent implements OpenemsCompone
         }
 
         if (this.isRelay) {
-            this.configureRelay(config.pump_Relay());
+            this.configureRelay(config);
         }
         if (this.isPwmOrAio) {
-            this.configurePwmOrAio(config.pump_Pwm_or_Aio());
+            this.configurePwmOrAio(config);
         }
         if (this.timerHandler != null) {
             this.timerHandler.removeComponent();
@@ -149,29 +153,34 @@ public class PumpImpl extends AbstractOpenemsComponent implements OpenemsCompone
             this.timerHandler.addOneIdentifier(EXCEPTIONAL_STATE_IDENTIFIER, config.timerId(), config.maxTime());
             this.exceptionalStateHandler = new ExceptionalStateHandlerImpl(this.timerHandler, EXCEPTIONAL_STATE_IDENTIFIER);
         }
-        this.shouldCheckOutput = config.checkPowerLevelIsApplied();
+        this.checkPwmOrAioChannel = null;
+        this.checkRelayChannel = null;
+        this.config = config;
     }
 
     /**
      * Configures the Pwm either by Device or Channel.
      *
-     * @param pump_pwm the Pwm Id or ChannelAddress
+     * @param config the Config of this Component
      * @throws OpenemsError.OpenemsNamedException if either the Address or Device by the pump_pwm couldn't be found
      * @throws ConfigurationException             if either the Channel is not a WriteChannel or the Device is not a Pwm.
      */
-    private void configurePwmOrAio(String pump_pwm) throws OpenemsError.OpenemsNamedException, ConfigurationException {
+    private void configurePwmOrAio(Config config) throws OpenemsError.OpenemsNamedException, ConfigurationException {
         switch (this.configurationType) {
             case CHANNEL:
-                ChannelAddress pwmAddress = ChannelAddress.fromString(pump_pwm);
+                ChannelAddress pwmAddress = ChannelAddress.fromString(config.pump_Pwm_or_Aio());
                 Channel<?> pwmChannelByAddress = this.cpm.getChannel(pwmAddress);
                 if (pwmChannelByAddress instanceof WriteChannel<?>) {
                     this.percentageChannel = (WriteChannel<?>) pwmChannelByAddress;
                 } else {
                     throw new ConfigurationException("Configure Pump in : " + super.id(), "Channel is not a WriteChannel");
                 }
+                if (this.shouldCheckOutput) {
+                    this.checkPwmOrAioChannel = ChannelAddress.fromString(config.checkPwmOrAioChannelAddress());
+                }
                 break;
             case DEVICE:
-                OpenemsComponent openemsComponent = this.cpm.getComponent(pump_pwm);
+                OpenemsComponent openemsComponent = this.cpm.getComponent(config.pump_Pwm_or_Aio());
                 if (openemsComponent instanceof Pwm) {
                     this.pwm = (Pwm) openemsComponent;
                     this.deviceType = DeviceType.PWM;
@@ -192,28 +201,31 @@ public class PumpImpl extends AbstractOpenemsComponent implements OpenemsCompone
     /**
      * Configures the Relay either by Device or Channel (Boolean).
      *
-     * @param pump_relay the Relay allocated to the pump.
+     * @param config the Config of this Component.
      * @throws OpenemsError.OpenemsNamedException thrown if the Id of Device/Channel couldn't be found.
      * @throws ConfigurationException             if the id of the Device is not an instance of a relay.
      */
 
-    private void configureRelay(String pump_relay) throws OpenemsError.OpenemsNamedException, ConfigurationException {
+    private void configureRelay(Config config) throws OpenemsError.OpenemsNamedException, ConfigurationException {
         switch (this.configurationType) {
             case CHANNEL:
-                ChannelAddress relayAddress = ChannelAddress.fromString(pump_relay);
+                ChannelAddress relayAddress = ChannelAddress.fromString(config.pump_Relay());
                 Channel<?> relayChannelByAddress = this.cpm.getChannel(relayAddress);
                 if (relayChannelByAddress instanceof WriteChannel<?>) {
                     this.relayChannel = (WriteChannel<?>) relayChannelByAddress;
                 } else {
                     throw new ConfigurationException("Configure Relay in : " + super.id(), "Channel is not a WriteChannel");
                 }
+                if (this.shouldCheckOutput) {
+                    this.checkRelayChannel = ChannelAddress.fromString(config.checkRelayChannelAddress());
+                }
                 break;
             case DEVICE:
-                OpenemsComponent relayComponent = this.cpm.getComponent(pump_relay);
+                OpenemsComponent relayComponent = this.cpm.getComponent(config.pump_Relay());
                 if (relayComponent instanceof Relay) {
                     this.relay = (Relay) relayComponent;
                 } else {
-                    throw new ConfigurationException(pump_relay, "Allocated relay, not a (configured) relay-device.");
+                    throw new ConfigurationException("Configure Relay in " + super.id(), "Allocated relay, not a (configured) relay-device.");
                 }
                 break;
         }
@@ -231,10 +243,7 @@ public class PumpImpl extends AbstractOpenemsComponent implements OpenemsCompone
 
 
     /**
-     * Deactivates the pump.
-     * if the relays is a closer --> false is written --> open
-     * if the relays is an opener --> true is written --> open
-     * --> no voltage.
+     * Deactivates the Pump.
      */
     @Deactivate
     protected void deactivate() {
@@ -243,9 +252,10 @@ public class PumpImpl extends AbstractOpenemsComponent implements OpenemsCompone
     }
 
     /**
-     * Called internally or by other Components. Tells the calling device if the HeatsystemComponent is ready to apply any Changes.
+     * Called internally or by other Components.
+     * Tells the calling device if the HeatsystemComponent is ready to apply any Changes.
      *
-     * @return a Boolean
+     * @return true, since a Pump is always allowed to change.
      */
 
     @Override
@@ -257,10 +267,10 @@ public class PumpImpl extends AbstractOpenemsComponent implements OpenemsCompone
      * Changes the power value by percentage.
      * <p>
      * If the Pump is only a relays --> if negative --> controlRelays false, else true
-     * If it's in addition a pwm --> check if the powerlevel - percentage <= 0
-     * --> pump is idle --> relays off and pwm is 0.f %
-     * Otherwise it's calculating the new Power-level and writing
-     * the old power-level in the LastPowerLevel Channel
+     * If it's in addition a pwm/aio --> check if the PowerLevel - percentage <= 0
+     * --> pump is idle --> relays off and Pwm/Aio is 0 %
+     * Otherwise it's calculating the new Power-Level and writing
+     * the old power-level in the LastPowerLevel Channel and apply the new % value to the Pwm/Aio
      * </p>
      *
      * @param percentage to adjust the current powerLevel.
@@ -288,8 +298,8 @@ public class PumpImpl extends AbstractOpenemsComponent implements OpenemsCompone
                     }
                 }
             } else {
-                //set relay if only relay
-                return this.controlRelay((percentage <= DEFAULT_MIN_POWER_VALUE) == false);
+
+                return this.controlRelay((powerLevel + percentage <= DEFAULT_MIN_POWER_VALUE) == false);
             }
         }
         //sets pwm/aio
@@ -408,7 +418,7 @@ public class PumpImpl extends AbstractOpenemsComponent implements OpenemsCompone
 
     @Override
     public void setPowerLevel(double powerLevelToApply) {
-        if (powerLevelToApply >= 0 && powerLevelToApply != this.getPowerLevelValue()) {
+        if (powerLevelToApply >= DEFAULT_MIN_POWER_VALUE && powerLevelToApply != this.getPowerLevelValue()) {
             double changeByPercent = powerLevelToApply - getPowerLevelValue();
             this.changeByPercentage(changeByPercent);
         }
@@ -433,6 +443,7 @@ public class PumpImpl extends AbstractOpenemsComponent implements OpenemsCompone
                     this.setPowerLevel(DEFAULT_MIN_POWER_VALUE);
                 } else if (this.getForceFullPowerAndResetChannel()) {
                     this.setPowerLevel(DEFAULT_MAX_POWER_VALUE);
+                    //next Value bc Controller will set the next Value -> no need to wait a full cycle
                 } else if (this.setPointPowerLevelChannel().getNextValue().isDefined()) {
                     this.setPowerLevel(this.setPointPowerLevelChannel().getNextValue().get());
                 }
@@ -463,11 +474,11 @@ public class PumpImpl extends AbstractOpenemsComponent implements OpenemsCompone
                     case LONG:
                     case FLOAT:
                     case DOUBLE:
-                        anticipatedValueCorrect = expectedBooleanValue == (Double) channel.value().get() > 0;
+                        anticipatedValueCorrect = expectedBooleanValue == (Double) channel.value().get() > DEFAULT_MIN_POWER_VALUE;
                         break;
                     case STRING:
                         if (this.containsOnlyNumbers(channel.value().get().toString())) {
-                            anticipatedValueCorrect = expectedBooleanValue == Double.parseDouble(channel.value().get().toString()) > 0;
+                            anticipatedValueCorrect = expectedBooleanValue == Double.parseDouble(channel.value().get().toString()) > DEFAULT_MIN_POWER_VALUE;
                         } else {
                             this.log.warn("Couldn't check if Relay value is set correctly, Channel has non Numeric content "
                                     + super.id() + channel.toString());
@@ -524,6 +535,15 @@ public class PumpImpl extends AbstractOpenemsComponent implements OpenemsCompone
 
     }
 
+    /**
+     * Overload method.
+     * This Method calls {@link #getChannelForCheckup(AvailableDevices)} depending on the {@link DeviceType}
+     *
+     * @param deviceType the DeviceType, usually determined by Config and called in {@link #checkIfPowerValueIsMatching()}
+     * @return the channel
+     * @throws OpenemsError.OpenemsNamedException if channel cannot be found
+     */
+
     private Channel<?> getChannelForCheckup(DeviceType deviceType) throws OpenemsError.OpenemsNamedException {
         switch (deviceType) {
             case PWM:
@@ -535,6 +555,14 @@ public class PumpImpl extends AbstractOpenemsComponent implements OpenemsCompone
         return null;
     }
 
+    /**
+     * This method provides the Channel you need to check for the anticipated Value.
+     * Depends on the {@link ConfigurationType} and the {@link AvailableDevices}.
+     *
+     * @param availableDevice the device that determines the Channel selected.
+     * @return a Channel
+     * @throws OpenemsError.OpenemsNamedException if channel cannot be found.
+     */
     private Channel<?> getChannelForCheckup(AvailableDevices availableDevice) throws OpenemsError.OpenemsNamedException {
 
         switch (this.configurationType) {

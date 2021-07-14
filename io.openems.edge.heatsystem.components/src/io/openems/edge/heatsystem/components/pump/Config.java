@@ -44,10 +44,10 @@ import org.osgi.service.metatype.annotations.Option;
     boolean checkPowerLevelIsApplied() default false;
 
     @AttributeDefinition(name = "Check ChannelAddress Relay", description = "If the Pump PowerValue is applied -> Check via Output if it's set correctly")
-    String relayCheckChannelAddress() default "SignalSensorSpi/SignalActive";
+    String checkRelayChannelAddress() default "SignalSensorSpi/SignalActive";
 
     @AttributeDefinition(name = "Check ChannelAddress Pwm", description = "If the Pump PowerValue is applied -> Check via Output if it's set correctly")
-    String pwmCheckChannelAddress() default "Pwm/ReadPowerLevel";
+    String checkPwmOrAioChannelAddress() default "Pwm/ReadPowerLevel";
 
     boolean useExceptionalState() default false;
 
