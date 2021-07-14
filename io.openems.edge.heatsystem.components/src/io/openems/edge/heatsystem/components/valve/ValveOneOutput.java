@@ -3,7 +3,6 @@ package io.openems.edge.heatsystem.components.valve;
 import io.openems.common.channel.Unit;
 import io.openems.common.exceptions.OpenemsError;
 import io.openems.common.types.ChannelAddress;
-import io.openems.edge.aio.api.AioChannel;
 import io.openems.edge.common.channel.Channel;
 import io.openems.edge.common.channel.WriteChannel;
 import io.openems.edge.common.channel.value.Value;
@@ -14,7 +13,8 @@ import io.openems.edge.exceptionalstate.api.ExceptionalState;
 import io.openems.edge.heatsystem.components.ConfigurationType;
 import io.openems.edge.heatsystem.components.HeatsystemComponent;
 import io.openems.edge.heatsystem.components.Valve;
-import io.openems.edge.pwm.api.Pwm;
+import io.openems.edge.io.api.AnalogInputOutput;
+import io.openems.edge.io.api.Pwm;
 import org.osgi.service.cm.ConfigurationException;
 import org.osgi.service.component.ComponentContext;
 import org.osgi.service.component.annotations.Activate;
@@ -36,7 +36,7 @@ import org.slf4j.LoggerFactory;
  * It either works with 1 Aio/Pwm or 1 ChannelAddresses.
  * It can update it's opening/closing state and shows up the percentage value of itself.
  * To check if the output is correct, you can configure the CheckUp.
- * E.g. The Consolinno Leaflet reads the MCP and it's status, this will be send into the {@link AioChannel#getPercentChannel()} ()}
+ * E.g. The Consolinno Leaflet reads the MCP and it's status, this will be send into the {@link AnalogInputOutput#getPercentChannel()}
  * If the value you read is the expected value, everything is ok, otherwise the Components tries to set the expected values again.
  */
 @Designate(ocd = ConfigValveOneOutput.class, factory = true)
@@ -56,7 +56,7 @@ public class ValveOneOutput extends AbstractValve implements OpenemsComponent, V
     private ConfigurationType configurationType;
     private DeviceType deviceType;
     private Pwm valvePwm;
-    private AioChannel valveAio;
+    private AnalogInputOutput valveAio;
     private ConfigValveOneOutput config;
     private boolean validCheckOutputChannel;
     private boolean powerValueReachedBeforeCheck = false;
@@ -118,8 +118,8 @@ public class ValveOneOutput extends AbstractValve implements OpenemsComponent, V
                 if (component instanceof Pwm) {
                     this.valvePwm = (Pwm) component;
                     this.deviceType = DeviceType.PWM;
-                } else if (component instanceof AioChannel) {
-                    this.valveAio = (AioChannel) component;
+                } else if (component instanceof AnalogInputOutput) {
+                    this.valveAio = (AnalogInputOutput) component;
                     this.deviceType = DeviceType.AIO;
                 } else {
                     throw new ConfigurationException("Activate : " + super.id(), "OpenEmsComponent "
@@ -220,7 +220,7 @@ public class ValveOneOutput extends AbstractValve implements OpenemsComponent, V
         try {
             Channel<?> channelToWrite = this.configurationType.equals(ConfigurationType.CHANNEL)
                     ? this.cpm.getChannel(this.outputChannel) : this.deviceType.equals(DeviceType.AIO)
-                    ? this.valveAio.getSetPointPercentChannel() : this.valvePwm.getWritePwmPowerLevelChannel();
+                    ? this.valveAio.setPercentChannel() : this.valvePwm.getWritePwmPowerLevelChannel();
             int scaleFactor = channelToWrite.channelDoc().getUnit().equals(Unit.THOUSANDTH) ? 10 : 1;
             if (channelToWrite instanceof WriteChannel<?>) {
                 ((WriteChannel<?>) channelToWrite).setNextWriteValueFromObject(percent * scaleFactor);

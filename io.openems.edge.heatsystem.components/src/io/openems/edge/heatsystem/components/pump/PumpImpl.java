@@ -3,7 +3,6 @@ package io.openems.edge.heatsystem.components.pump;
 import io.openems.common.channel.Unit;
 import io.openems.common.exceptions.OpenemsError;
 import io.openems.common.types.ChannelAddress;
-import io.openems.edge.aio.api.AioChannel;
 import io.openems.edge.common.channel.Channel;
 import io.openems.edge.common.channel.WriteChannel;
 import io.openems.edge.common.component.AbstractOpenemsComponent;
@@ -16,7 +15,8 @@ import io.openems.edge.exceptionalstate.api.ExceptionalStateHandlerImpl;
 import io.openems.edge.heatsystem.components.ConfigurationType;
 import io.openems.edge.heatsystem.components.HeatsystemComponent;
 import io.openems.edge.heatsystem.components.Pump;
-import io.openems.edge.pwm.api.Pwm;
+import io.openems.edge.io.api.AnalogInputOutput;
+import io.openems.edge.io.api.Pwm;
 import io.openems.edge.relay.api.Relay;
 import io.openems.edge.timer.api.TimerHandler;
 import io.openems.edge.timer.api.TimerHandlerImpl;
@@ -51,7 +51,7 @@ public class PumpImpl extends AbstractOpenemsComponent implements OpenemsCompone
 
     private Relay relay;
     private Pwm pwm;
-    private AioChannel aio;
+    private AnalogInputOutput aio;
 
     private WriteChannel<?> relayChannel;
     private WriteChannel<?> percentageChannel;
@@ -186,10 +186,10 @@ public class PumpImpl extends AbstractOpenemsComponent implements OpenemsCompone
                     this.deviceType = DeviceType.PWM;
                     //reset pwm to 0; so pump is on activation off
                     this.pwm.getWritePwmPowerLevelChannel().setNextWriteValueFromObject(0);
-                } else if (openemsComponent instanceof AioChannel) {
-                    this.aio = (AioChannel) openemsComponent;
+                } else if (openemsComponent instanceof AnalogInputOutput) {
+                    this.aio = (AnalogInputOutput) openemsComponent;
                     this.deviceType = DeviceType.AIO;
-                    this.aio.getSetPointPercentChannel().setNextWriteValueFromObject(0);
+                    this.aio.setPercentChannel().setNextWriteValueFromObject(0);
                 } else {
                     throw new ConfigurationException("ConfigurePwmOrAio in " + super.id(), "Component instance is not an "
                             + "expected device. Make sure to configure a Pwm or Aio Device.");
@@ -370,7 +370,7 @@ public class PumpImpl extends AbstractOpenemsComponent implements OpenemsCompone
                     break;
                 case AIO:
                 default:
-                    unit = this.aio.getSetPointPercentChannel().channelDoc().getUnit();
+                    unit = this.aio.setPercentChannel().channelDoc().getUnit();
                     break;
             }
         }
@@ -397,7 +397,7 @@ public class PumpImpl extends AbstractOpenemsComponent implements OpenemsCompone
                             this.pwm.getWritePwmPowerLevelChannel().setNextWriteValueFromObject(percentToApply);
                             break;
                         case AIO:
-                            this.aio.getSetPointPercentChannel().setNextWriteValueFromObject(percentToApply);
+                            this.aio.setPercentChannel().setNextWriteValueFromObject(percentToApply);
                             break;
                     }
 
