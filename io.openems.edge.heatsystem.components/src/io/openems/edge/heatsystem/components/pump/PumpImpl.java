@@ -12,7 +12,7 @@ import io.openems.edge.common.event.EdgeEventConstants;
 import io.openems.edge.heatsystem.components.ConfigurationType;
 import io.openems.edge.heatsystem.components.HeatsystemComponent;
 import io.openems.edge.heatsystem.components.Pump;
-import io.openems.edge.pwm.api.Pwm;
+import io.openems.edge.io.api.Pwm;
 import io.openems.edge.relay.api.Relay;
 import org.osgi.service.cm.ConfigurationException;
 import org.osgi.service.component.ComponentContext;

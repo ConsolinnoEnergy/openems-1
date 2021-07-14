@@ -155,7 +155,6 @@
 	bnd.identity;id='io.openems.edge.pvinverter.sma',\
 	bnd.identity;id='io.openems.edge.pvinverter.solarlog',\
 	bnd.identity;id='io.openems.edge.pvinverter.sunspec',\
-	bnd.identity;id='io.openems.edge.pwm.api',\
 	bnd.identity;id='io.openems.edge.relay.api',\
 	bnd.identity;id='io.openems.edge.remote.rest.device',\
 	bnd.identity;id='io.openems.edge.scheduler.allalphabetically',\
@@ -308,7 +307,6 @@
 	io.openems.edge.pvinverter.sma;version=snapshot,\
 	io.openems.edge.pvinverter.solarlog;version=snapshot,\
 	io.openems.edge.pvinverter.sunspec;version=snapshot,\
-	io.openems.edge.pwm.api;version=snapshot,\
 	io.openems.edge.relay.api;version=snapshot,\
 	io.openems.edge.remote.rest.device;version=snapshot,\
 	io.openems.edge.scheduler.allalphabetically;version=snapshot,\
