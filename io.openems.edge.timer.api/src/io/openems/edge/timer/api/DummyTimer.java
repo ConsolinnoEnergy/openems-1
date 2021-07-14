@@ -52,7 +52,7 @@ public class DummyTimer extends AbstractOpenemsComponent implements OpenemsCompo
         return true;
     }
 
-    @Override
+
     public void addComponentToTimer(String id, Map<String, Integer> identifierToTime) {
         identifierToTime.forEach((key, value) -> {
             this.identifierToValueWrapper.put(key, new ValueInitializedWrapper(value));
