@@ -591,4 +591,9 @@ public class PumpImpl extends AbstractOpenemsComponent implements OpenemsCompone
         return null;
     }
 
+    @Override
+    public String debugLog() {
+        return "Pump " + super.id() + " PowerLevel is : " + this.getPowerLevelValue() + this.getPowerLevelChannel().channelDoc().getUnit()
+                + " and should be around : " + this.getFuturePowerLevelValue() + this.futurePowerLevelChannel().channelDoc().getUnit();
+    }
 }
