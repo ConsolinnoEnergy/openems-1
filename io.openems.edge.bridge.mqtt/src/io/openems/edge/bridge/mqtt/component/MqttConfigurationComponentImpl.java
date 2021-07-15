@@ -131,7 +131,7 @@ public class MqttConfigurationComponentImpl implements MqttConfigurationComponen
     }
 
     /**
-     * Checks if the Value is valid.
+     * Checks if the Value is legitimate.
      * E.g. if it is "NotDefined" (No Value read yet) or "NaN" (Happens if a new Schedule is called by broker).
      *
      * @param value value of CommandWrapper in Parent Task.
@@ -139,7 +139,7 @@ public class MqttConfigurationComponentImpl implements MqttConfigurationComponen
      */
 
     @Override
-    public boolean valueValid(String value) {
+    public boolean valueLegit(String value) {
         return !(value.toUpperCase().equals("NOTDEFINED") || value.toUpperCase().equals("NAN"));
     }
 

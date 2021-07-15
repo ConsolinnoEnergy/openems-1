@@ -83,13 +83,13 @@ public interface MqttConfigurationComponent {
     void updateJsonByChannel(ArrayList<Channel<?>> channels, String content) throws ConfigurationException, MqttException;
 
     /**
-     * Checks if the Value is valid.
+     * Checks if the Value is legitimate.
      * E.g. if it is "NotDefined" (No Value read yet) or "NaN" (Happens if a new Schedule is called by broker).
      *
      * @param value value of CommandWrapper in Parent Task.
      * @return a Boolean
      */
-    boolean valueValid(String value);
+    boolean valueLegit(String value);
 
     /**
      * Getter for the {@link AbstractMqttComponent}.
