@@ -121,6 +121,8 @@ public class PumpImpl extends AbstractOpenemsComponent implements OpenemsCompone
      */
     private void activateOrModifiedRoutine(Config config)
             throws OpenemsError.OpenemsNamedException, ConfigurationException {
+        this.checkPwmOrAioChannel = null;
+        this.checkRelayChannel = null;
         this.configurationType = config.configType();
         PumpType pumpType = config.pump_Type();
         this.shouldCheckOutput = config.checkPowerLevelIsApplied();
@@ -154,8 +156,6 @@ public class PumpImpl extends AbstractOpenemsComponent implements OpenemsCompone
             this.timerHandler.addOneIdentifier(EXCEPTIONAL_STATE_IDENTIFIER, config.timerId(), config.maxTime());
             this.exceptionalStateHandler = new ExceptionalStateHandlerImpl(this.timerHandler, EXCEPTIONAL_STATE_IDENTIFIER);
         }
-        this.checkPwmOrAioChannel = null;
-        this.checkRelayChannel = null;
         this.config = config;
     }
 

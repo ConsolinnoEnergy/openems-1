@@ -7,7 +7,7 @@ import org.osgi.service.metatype.annotations.Option;
 
 
 @ObjectClassDefinition(
-        name = "Hydraulic Pump Pwm/Relay",
+        name = "Hydraulic Pump Relay and or One Output",
         description = "A Pump mainly used for the Passing Station and Controller"
 )
 @interface Config {
