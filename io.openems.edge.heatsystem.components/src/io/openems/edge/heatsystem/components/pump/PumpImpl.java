@@ -280,6 +280,11 @@ public class PumpImpl extends AbstractOpenemsComponent implements OpenemsCompone
     @Override
     public boolean changeByPercentage(double percentage) {
         double powerLevel = this.getPowerLevelValue();
+        boolean changeSuccess = false;
+        //Return if no percentage Change is made while PowerLevelValue is Defined -> no changes made
+        if (percentage == 0 && this.getPowerLevelChannel().value().isDefined()) {
+            return false;
+        }
         if (this.isRelay) {
             if (this.isPwmOrAio) {
 
@@ -288,34 +293,32 @@ public class PumpImpl extends AbstractOpenemsComponent implements OpenemsCompone
                     if (this.controlRelay(false) && this.controlPercentDevice(DEFAULT_MIN_POWER_VALUE)) {
                         this.getLastPowerLevelChannel().setNextValue(powerLevel);
                         this.getPowerLevelChannel().setNextValue(DEFAULT_MIN_POWER_VALUE);
-                        return true;
+                        changeSuccess = true;
                     } else {
-                        return false;
+                        changeSuccess = false;
                     }
                 } else {
                     //activate relay, set Pwm Later
                     if (this.controlRelay(true) == false) {
-                        return false;
+                        changeSuccess = false;
                     }
                 }
             } else {
-
-                return this.controlRelay((powerLevel + percentage <= DEFAULT_MIN_POWER_VALUE) == false);
+                changeSuccess = this.controlRelay((powerLevel + percentage <= DEFAULT_MIN_POWER_VALUE) == false);
             }
         }
+        powerLevel += percentage;
+        powerLevel = Math.max(DEFAULT_MIN_POWER_VALUE, powerLevel);
+        powerLevel = Math.min(DEFAULT_MAX_POWER_VALUE, powerLevel);
         //sets pwm/aio
-        if (this.isPwmOrAio) {
-            powerLevel += percentage;
-            powerLevel = Math.max(DEFAULT_MIN_POWER_VALUE, powerLevel);
-            powerLevel = Math.min(DEFAULT_MAX_POWER_VALUE, powerLevel);
-            if (this.controlPercentDevice(powerLevel)) {
-                this.getLastPowerLevelChannel().setNextValue(this.getPowerLevelValue());
-                this.getPowerLevelChannel().setNextValue(powerLevel);
-            } else {
-                return false;
-            }
+        if (this.isPwmOrAio && (this.isRelay == false || changeSuccess)) {
+            changeSuccess = this.controlPercentDevice(powerLevel);
         }
-        return true;
+        if (changeSuccess) {
+            this.getLastPowerLevelChannel().setNextValue(this.getPowerLevelValue());
+            this.getPowerLevelChannel().setNextValue(powerLevel);
+        }
+        return changeSuccess;
     }
 
     /**
@@ -593,7 +596,7 @@ public class PumpImpl extends AbstractOpenemsComponent implements OpenemsCompone
 
     @Override
     public String debugLog() {
-        return "Pump " + super.id() + " PowerLevel is : " + this.getPowerLevelValue() + this.getPowerLevelChannel().channelDoc().getUnit()
-                + " and should be around : " + this.getFuturePowerLevelValue() + this.futurePowerLevelChannel().channelDoc().getUnit();
+        return super.id() + " PowerLevel is: " + this.getPowerLevelValue() + this.getPowerLevelChannel().channelDoc().getUnit().getSymbol()
+                + " and should be around: " + this.getFuturePowerLevelValue() + this.futurePowerLevelChannel().channelDoc().getUnit().getSymbol() + "\n";
     }
 }
