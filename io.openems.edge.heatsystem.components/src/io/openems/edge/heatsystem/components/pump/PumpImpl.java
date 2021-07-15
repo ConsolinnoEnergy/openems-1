@@ -451,6 +451,7 @@ public class PumpImpl extends AbstractOpenemsComponent implements OpenemsCompone
                 //next Value bc Controller will set the next Value -> no need to wait a full cycle
             } else if (this.setPointPowerLevelChannel().getNextValue().isDefined()) {
                 this.setPowerLevel(this.setPointPowerLevelChannel().getNextValue().get());
+                this.setPointPowerLevelChannel().setNextValue(null);
             }
         }
 
