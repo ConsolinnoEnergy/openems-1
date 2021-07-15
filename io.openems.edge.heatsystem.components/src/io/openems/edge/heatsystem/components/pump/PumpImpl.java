@@ -61,7 +61,8 @@ public class PumpImpl extends AbstractOpenemsComponent implements OpenemsCompone
     private DeviceType deviceType;
     private boolean shouldCheckOutput;
     private ChannelAddress checkRelayChannel;
-    private ChannelAddress checkPwmOrAioChannel; // 10% tolerance
+    private ChannelAddress checkPwmOrAioChannel;
+    // 10% tolerance
     private static final int TOLERANCE = 10;
     TimerHandler timerHandler;
     private ExceptionalStateHandler exceptionalStateHandler;
