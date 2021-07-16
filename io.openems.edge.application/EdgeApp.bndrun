@@ -166,6 +166,7 @@
 	bnd.identity;id='io.openems.edge.thermometer.virtual',\
 	bnd.identity;id='io.openems.edge.timedata.influxdb',\
 	bnd.identity;id='io.openems.edge.timedata.rrd4j',\
+	bnd.identity;id='io.openems.edge.timer.api',\
 
 -runbundles: \
 	Java-WebSocket;version='[1.5.2,1.5.3)',\
@@ -320,6 +321,7 @@
 	io.openems.edge.timedata.api;version=snapshot,\
 	io.openems.edge.timedata.influxdb;version=snapshot,\
 	io.openems.edge.timedata.rrd4j;version=snapshot,\
+	io.openems.edge.timer.api;version=snapshot,\
 	io.openems.shared.influxdb;version=snapshot,\
 	io.openems.wrapper.eu.chargetime.ocpp;version=snapshot,\
 	io.openems.wrapper.fastexcel;version=snapshot,\
