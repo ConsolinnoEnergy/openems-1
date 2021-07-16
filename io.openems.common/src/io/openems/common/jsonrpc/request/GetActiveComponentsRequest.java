@@ -8,6 +8,7 @@ import io.openems.common.jsonrpc.base.JsonrpcRequest;
 
 /**
  * Represents a JSON-RPC Request for 'getActiveComponents'.
+ * This will return all currently configured Components.
  *
  * <pre>
  * {
