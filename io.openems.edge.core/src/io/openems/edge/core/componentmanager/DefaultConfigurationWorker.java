@@ -150,6 +150,20 @@ public class DefaultConfigurationWorker extends ComponentManagerWorker {
                     new Property("debugMode", true)
             ));
         }
+        if (existingConfigs.stream().noneMatch(c -> "Timer.TimerByCycles".equals(c.factoryPid))) {
+            this.createConfiguration(defaultConfigurationFailed, "Timer.TimerByCycles", Arrays.asList(//
+                    new Property("id", "TimerByCycles"), //
+                    new Property("alias", ""), //
+                    new Property("enabled", true) //
+            ));
+        }
+        if (existingConfigs.stream().noneMatch(c -> "Timer.TimerByTime".equals(c.factoryPid))) {
+            this.createConfiguration(defaultConfigurationFailed, "Timer.TimerByTime", Arrays.asList(//
+                    new Property("id", "TimerByTime"), //
+                    new Property("alias", ""), //
+                    new Property("enabled", true) //
+            ));
+        }
         return defaultConfigurationFailed.get();
     }
 
