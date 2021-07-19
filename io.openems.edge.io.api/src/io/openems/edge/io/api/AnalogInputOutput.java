@@ -2,6 +2,7 @@ package io.openems.edge.io.api;
 
 import io.openems.common.channel.AccessMode;
 import io.openems.common.channel.Unit;
+import io.openems.common.exceptions.OpenemsError;
 import io.openems.common.types.OpenemsType;
 import io.openems.edge.common.channel.Channel;
 import io.openems.edge.common.channel.Doc;
@@ -91,6 +92,7 @@ public interface AnalogInputOutput extends OpenemsComponent {
         }
         return -1;
     }
+
     default WriteChannel<Integer> getWriteChannel() {
         return this.channel(ChannelId.AIO_WRITE);
     }
@@ -107,5 +109,47 @@ public interface AnalogInputOutput extends OpenemsComponent {
         }
         return -1;
     }
+    /**
+     * Sets the Value of the Write Channel.
+     *
+     * @param value the value that has to be set
+     */
+    default void setWrite(int value) throws OpenemsError.OpenemsNamedException {
+        this.getWriteChannel().setNextWriteValue(value);
+    }
+
+    /**
+     * Returns Channel for the Output Percent Register.
+     *
+     * @return the Channel
+     */
+    default WriteChannel<Integer> setPercentChannel() {
+        return this.channel(ChannelId.AIO_PERCENT_WRITE);
+    }
+
+    /**
+     * Returns the Value of the Percent Output Channel.
+     *
+     * @return the Value
+     */
+    default int getSetPercentValue() {
+        if (this.setPercentChannel().value().isDefined()) {
+            return this.setPercentChannel().value().get();
+        } else if (this.setPercentChannel().getNextValue().isDefined()) {
+            return this.setPercentChannel().getNextValue().get();
+        }
+        return -1;
+    }
+
+    /**
+     * Sets the Value of the Percent Channel.
+     *
+     * @param percent the value that has to be set
+     */
+    default void setPercent(int percent) throws OpenemsError.OpenemsNamedException {
+        this.setPercentChannel().setNextWriteValue(percent);
+    }
+
+
 
 }
