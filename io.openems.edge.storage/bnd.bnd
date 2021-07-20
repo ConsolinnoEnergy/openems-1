@@ -5,22 +5,11 @@ Bundle-Version: 1.0.0.${tstamp}
 Bundle-Description: \
 	Interfaces and Modules for Storage Systems like Heater or Hydrogen
 
-Export-Package:  \
-	io.openems.edge.storage.api;
-
-Private-Package:  \
-	io.openems.edge.storage,\
-	io.openems.edge.storage.heat.modbus,\
-	io.openems.edge.storage.hydrogen.modbus,\
-
--includeresource: {readme.md}
-
 -buildpath:  \
-	osgi.enroute.base.api;version=2.1,\
-	io.openems.edge.common;version=latest,\
-   	io.openems.common;version=latest,\
-   	io.openems.edge.bridge.modbus;version=latest,\
+	${buildpath},\
+	io.openems.edge.common,\
+   	io.openems.common,\
+   	io.openems.edge.bridge.modbus,\
 
 -testpath: \
-	osgi.enroute.junit.wrapper;version=4.12, \
-	osgi.enroute.hamcrest.wrapper;version=1.3
+	${testpath},\

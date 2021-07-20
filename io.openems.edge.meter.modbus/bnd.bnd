@@ -8,8 +8,6 @@ Bundle-Version: 1.0.0.${tstamp}
 	io.openems.common,\
 	io.openems.edge.common,\
 	io.openems.edge.meter.api,\
-	io.openems.edge.meter.gasmeter,\
-	io.openems.edge.meter.heatmeter,\
 	io.openems.edge.bridge.modbus,\
 
 -testpath: \

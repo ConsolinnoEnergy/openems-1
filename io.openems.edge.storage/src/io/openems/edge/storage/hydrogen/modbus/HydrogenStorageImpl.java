@@ -1,5 +1,6 @@
 package io.openems.edge.storage.hydrogen.modbus;
 
+import io.openems.common.exceptions.OpenemsException;
 import io.openems.edge.bridge.modbus.api.AbstractOpenemsModbusComponent;
 import io.openems.edge.bridge.modbus.api.BridgeModbus;
 import io.openems.edge.bridge.modbus.api.ElementToChannelConverter;
@@ -48,7 +49,7 @@ public class HydrogenStorageImpl extends AbstractOpenemsModbusComponent implemen
     }
 
     @Activate
-    public void activate(ComponentContext context, Config config) {
+    public void activate(ComponentContext context, Config config) throws OpenemsException {
         super.activate(context, config.id(), config.alias(), config.enabled(), config.modbusUnitId(), this.cm,
                 "Modbus", config.modbusBridgeId());
     }
@@ -59,7 +60,7 @@ public class HydrogenStorageImpl extends AbstractOpenemsModbusComponent implemen
     }
 
     @Override
-    protected ModbusProtocol defineModbusProtocol() {
+    protected ModbusProtocol defineModbusProtocol() throws OpenemsException {
         return new ModbusProtocol(this,
                 new FC4ReadInputRegistersTask(0, Priority.HIGH,
                         m(HydrogenStorage.ChannelId.PRESSURE, new UnsignedWordElement(0),

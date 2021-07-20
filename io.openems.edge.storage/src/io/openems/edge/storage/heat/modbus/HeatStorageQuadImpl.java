@@ -1,5 +1,6 @@
 package io.openems.edge.storage.heat.modbus;
 
+import io.openems.common.exceptions.OpenemsException;
 import io.openems.edge.bridge.modbus.api.AbstractOpenemsModbusComponent;
 import io.openems.edge.bridge.modbus.api.BridgeModbus;
 import io.openems.edge.bridge.modbus.api.ElementToChannelConverter;
@@ -50,7 +51,7 @@ public class HeatStorageQuadImpl extends AbstractOpenemsModbusComponent implemen
     protected QuadConfig oConfig;
 
     @Activate
-    public void activate(ComponentContext context, QuadConfig config) {
+    public void activate(ComponentContext context, QuadConfig config) throws OpenemsException {
         oConfig = config;
         super.activate(context, config.id(), config.alias(), config.enabled(), config.modbusUnitId(), this.cm,
                 "Modbus", config.modbusBridgeId());
@@ -62,7 +63,7 @@ public class HeatStorageQuadImpl extends AbstractOpenemsModbusComponent implemen
     }
 
     @Override
-    protected ModbusProtocol defineModbusProtocol() {
+    protected ModbusProtocol defineModbusProtocol() throws OpenemsException {
         return new ModbusProtocol(this,
                 new FC4ReadInputRegistersTask(oConfig.modbusRegisterTempFirst(), Priority.HIGH,
                         m(HeatStorageQuad.ChannelId.TEMP_1, new FloatDoublewordElement(oConfig.modbusRegisterTempFirst()),
