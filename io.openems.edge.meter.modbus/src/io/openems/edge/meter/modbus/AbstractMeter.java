@@ -2,18 +2,29 @@ package io.openems.edge.meter.modbus;
 
 import io.openems.common.exceptions.OpenemsException;
 import io.openems.edge.bridge.modbus.api.AbstractOpenemsModbusComponent;
+import io.openems.edge.bridge.modbus.api.ModbusProtocol;
+import io.openems.edge.bridge.modbus.api.element.CoilElement;
+import io.openems.edge.bridge.modbus.api.element.UnsignedWordElement;
+import io.openems.edge.bridge.modbus.api.task.FC1ReadCoilsTask;
+import io.openems.edge.bridge.modbus.api.task.FC4ReadInputRegistersTask;
+import io.openems.edge.bridge.modbus.api.task.FC5WriteCoilTask;
+import io.openems.edge.bridge.modbus.api.task.FC6WriteRegisterTask;
 import io.openems.edge.common.channel.Channel;
-import io.openems.edge.common.channel.ChannelId;
 import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
+import io.openems.edge.common.taskmanager.Priority;
 import org.osgi.service.cm.Configuration;
 import org.osgi.service.cm.ConfigurationAdmin;
+import org.osgi.service.cm.ConfigurationException;
 import org.osgi.service.component.ComponentContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Dictionary;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -22,6 +33,7 @@ import java.util.stream.Collectors;
 
 public abstract class AbstractMeter extends AbstractOpenemsModbusComponent implements OpenemsComponent {
 
+    private static final Logger log = LoggerFactory.getLogger(AbstractMeter.class);
 
     protected ConfigurationAdmin cm;
 
@@ -31,11 +43,27 @@ public abstract class AbstractMeter extends AbstractOpenemsModbusComponent imple
     private static final int CHANNEL_ID_POSITION = 0;
     private static final int ADDRESS_POSITION = 1;
     private static final int TASK_TYPE_POSITION = 2;
-    //May increase in future when ChannelConverter is handled.
-    private static final int EXCPECTED_SIZE = 3;
+    private static final int PRIORITY_POSITION = 3;
+    //TODO: CONVERTER
+    private static final int EXPECTED_SIZE = 3;
+    private static final int EXPECTED_SIZE_WITH_PRIORITY = 4;
 
-    private Map<String, Channel<?>> channelMap;
-    private List<ModbusConfigWrapper> modbusConfig = new ArrayList<>();
+    private final Map<String, Channel<?>> channelMap = new HashMap<>();
+    private final List<ModbusConfigWrapper> modbusConfig = new ArrayList<>();
+
+
+    private enum TaskType {
+        READ_COIL, READ_REGISTER, WRITE_COIL, WRITE_REGISTER;
+
+        public static boolean contains(String taskType) {
+            for (TaskType type : TaskType.values()) {
+                if (type.name().equals(taskType)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+    }
 
 
     protected AbstractMeter(io.openems.edge.common.channel.ChannelId[] firstInitialChannelIds, io.openems.edge.common.channel.ChannelId[]... furtherInitialChannelIds) {
@@ -47,32 +75,60 @@ public abstract class AbstractMeter extends AbstractOpenemsModbusComponent imple
         this.cpm = cpm;
         this.cm = cm;
         if (configurationDone) {
-            this.configureChannelConfiguration(channelToAddressList);
+            try {
+                this.configureChannelConfiguration(channelToAddressList);
+            } catch (ConfigurationException e) {
+                return true;
+            }
             return super.activate(context, id, alias, enabled, unitId, cm, modbusReference, modbusId);
         }
-        return true;
+        return false;
     }
 
-    private void configureChannelConfiguration(List<String> channelToAddressList) {
+    private void configureChannelConfiguration(List<String> channelToAddressList) throws ConfigurationException {
+        ConfigurationException[] ex = {null};
+        AtomicInteger index = new AtomicInteger(1);
         channelToAddressList.forEach(entry -> {
-            String[] split = entry.split(CONFIGURATION_SPLITTER);
-            if (split.length == EXCPECTED_SIZE) {
-                String channelId = split[CHANNEL_ID_POSITION];
-                int address = Integer.parseInt(split[ADDRESS_POSITION]);
-                String taskType = split[TASK_TYPE_POSITION].trim().toUpperCase();
+            if (ex[0] == null) {
+                String[] split = entry.split(CONFIGURATION_SPLITTER);
+                if (split.length == EXPECTED_SIZE || split.length == EXPECTED_SIZE_WITH_PRIORITY) {
+                    String channelId = split[CHANNEL_ID_POSITION];
+                    int address = Integer.parseInt(split[ADDRESS_POSITION]);
+                    String taskType = split[TASK_TYPE_POSITION].trim().toUpperCase();
 
-                Channel<?> channel = this.channelMap.get(channelId);
-                TaskType type = null;
-                if (TaskType.contains(taskType) && channel != null) {
-                    type = TaskType.valueOf(taskType);
-                    this.modbusConfig.add(new ModbusConfigWrapper(channel.channelId(), address, type));
+                    Channel<?> channel = this.channelMap.get(channelId);
+                    TaskType type = null;
+                    Priority priority = null;
+                    if (split.length == EXPECTED_SIZE_WITH_PRIORITY) {
+                        String priorityString = split[PRIORITY_POSITION].trim().toUpperCase();
+                        for (Priority prio : Priority.values()) {
+                            if (prio.name().equals(priorityString)) {
+                                priority = prio;
+                            }
+                        }
+                    }
+                    if (TaskType.contains(taskType) && channel != null) {
+                        type = TaskType.valueOf(taskType);
+                        if (priority != null) {
+                            this.modbusConfig.add(new ModbusConfigWrapper(channel.channelId(), address, type, priority));
+                        } else {
+                            this.modbusConfig.add(new ModbusConfigWrapper(channel.channelId(), address, type));
+                        }
+                    } else {
+                        ex[0] = new ConfigurationException("Configure Channel Configuration: " + super.id(), "Either Type is null or Channel not Available: For Entry: "
+                                + index.get() + " Channel: " + (channel == null ? "null" : channel) + " Attempted TaskType: " + taskType);
+                    }
+                } else {
+                    ex[0] = new ConfigurationException("Configure Channel Configuration: " + super.id(), "Expected Configuration Size of : "
+                            + EXPECTED_SIZE + " But was: " + split.length);
                 }
-
-            } else {
-                //TODO ERROR
             }
+            index.getAndIncrement();
 
         });
+        if (ex[0] != null) {
+            throw ex[0];
+        }
 
     }
 
@@ -139,30 +195,23 @@ public abstract class AbstractMeter extends AbstractOpenemsModbusComponent imple
     }
 
 
-    private static enum TaskType {
-        READ_COIL, READ_REGISTER, WRITE_COIL, WRITE_REGISTER;
-
-        public static boolean contains(String taskType) {
-            for (TaskType type : TaskType.values()) {
-                if (type.name().equals(taskType)) {
-                    return true;
-                }
-            }
-            return false;
-        }
-    }
-
-
     private class ModbusConfigWrapper {
         //Only UnsignedWordElement supported atm
         io.openems.edge.common.channel.ChannelId channelId;
         int modbusAddress;
         TaskType taskType;
+        Priority priority;
 
-        private ModbusConfigWrapper(io.openems.edge.common.channel.ChannelId idForModbus, int modbusAddress, TaskType taskType) {
-            this.channelId = idForModbus;
+        private ModbusConfigWrapper(io.openems.edge.common.channel.ChannelId channelId, int modbusAddress, TaskType taskType) {
+            this(channelId, modbusAddress, taskType, Priority.LOW);
+
+        }
+
+        public ModbusConfigWrapper(io.openems.edge.common.channel.ChannelId channelId, int modbusAddress, TaskType taskType, Priority priority) {
+            this.channelId = channelId;
             this.modbusAddress = modbusAddress;
             this.taskType = taskType;
+            this.priority = priority;
         }
 
         public io.openems.edge.common.channel.ChannelId getChannelId() {
@@ -176,5 +225,49 @@ public abstract class AbstractMeter extends AbstractOpenemsModbusComponent imple
         public TaskType getTaskType() {
             return this.taskType;
         }
+
+        public Priority getPriority() {
+            return this.priority;
+        }
+    }
+
+    @Override
+    protected ModbusProtocol defineModbusProtocol() throws OpenemsException {
+        ModbusProtocol protocol = new ModbusProtocol(this);
+        OpenemsException[] ex = {null};
+        this.modbusConfig.forEach(entry -> {
+            try {
+                if (ex[0] == null) {
+                    switch (entry.getTaskType()) {
+
+                        case READ_COIL:
+                            protocol.addTask(
+                                    new FC1ReadCoilsTask(entry.modbusAddress, entry.getPriority(),
+                                            m(entry.getChannelId(), new CoilElement(entry.modbusAddress)))
+                            );
+                            break;
+                        case READ_REGISTER:
+                            protocol.addTask(new FC4ReadInputRegistersTask(entry.getModbusAddress(), entry.getPriority(),
+                                    m(entry.getChannelId(), new UnsignedWordElement(entry.modbusAddress))));
+                            break;
+                        case WRITE_COIL:
+                            protocol.addTask(new FC5WriteCoilTask(entry.getModbusAddress(),
+                                    new CoilElement(entry.getModbusAddress())));
+                            break;
+                        case WRITE_REGISTER:
+                            protocol.addTask(new FC6WriteRegisterTask(entry.getModbusAddress(),
+                                    m(entry.getChannelId(), new UnsignedWordElement(entry.getModbusAddress()))));
+                            break;
+                    }
+                }
+            } catch (OpenemsException e) {
+                log.warn("Couldn't apply ModbusConfig for : " + entry.channelId);
+                ex[0] = e;
+            }
+        });
+        if (ex[0] != null) {
+            throw ex[0];
+        }
+        return protocol;
     }
 }

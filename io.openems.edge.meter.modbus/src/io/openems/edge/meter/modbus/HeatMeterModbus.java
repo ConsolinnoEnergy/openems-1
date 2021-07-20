@@ -58,16 +58,11 @@ public class HeatMeterModbus extends AbstractMeter implements OpenemsComponent, 
         super.deactivate();
     }
 
-    @Override
-    protected ModbusProtocol defineModbusProtocol() throws OpenemsException {
-        ModbusProtocol protocol = new ModbusProtocol(this);
-        /**
-         * WMZ_ENERGY_AMOUNT
-         * WMZ_TEMP_SOURCE
-         * WMZ_TEMP_SINK
-         * WMZ_POWER
-         */
-        return protocol;
-    }
+    /**
+     * WMZ_ENERGY_AMOUNT
+     * WMZ_TEMP_SOURCE
+     * WMZ_TEMP_SINK
+     * WMZ_POWER
+     */
 
 }
