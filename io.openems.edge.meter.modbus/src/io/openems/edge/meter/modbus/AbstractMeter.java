@@ -28,6 +28,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 
@@ -35,10 +36,11 @@ public abstract class AbstractMeter extends AbstractOpenemsModbusComponent imple
 
     private static final Logger log = LoggerFactory.getLogger(AbstractMeter.class);
 
-    protected ConfigurationAdmin cm;
+    protected AtomicReference<ConfigurationAdmin> cm = new AtomicReference<>();
 
-    protected ComponentManager cpm;
+    protected AtomicReference<ComponentManager> cpm = new AtomicReference<>();
 
+    private static final String DEBUG_LOG_DIVIDER = "-----------";
     private static final String CONFIGURATION_SPLITTER = ":";
     private static final String TASK_TYPE_CONFIG = "TaskType";
     private static final String PRIORITY_CONFIG = "Priorities";
@@ -73,19 +75,29 @@ public abstract class AbstractMeter extends AbstractOpenemsModbusComponent imple
     }
 
     protected boolean activate(ComponentContext context, String id, String alias, boolean enabled, int unitId,
-                               ConfigurationAdmin cm, String modbusReference, String modbusId, boolean configurationDone, ComponentManager cpm, List<String> channelToAddressList) throws OpenemsException {
-        this.cpm = cpm;
-        this.cm = cm;
-        if (configurationDone) {
+                               ConfigurationAdmin cm, String modbusId, ComponentManager cpm, List<String> channelToAddressList) throws OpenemsException {
+        this.cpm.set(cpm);
+        this.cm.set(cm);
             try {
                 this.configureChannelConfiguration(channelToAddressList);
             } catch (ConfigurationException e) {
                 return true;
             }
-            return super.activate(context, id, alias, enabled, unitId, cm, modbusReference, modbusId);
-        }
-        return false;
+            return super.activate(context, id, alias, enabled, unitId, cm, "Modbus", modbusId);
     }
+
+    protected boolean modified(ComponentContext context, String id, String alias, boolean enabled, int unitId,
+                               ConfigurationAdmin cm, String modbusId, ComponentManager cpm, List<String> channelToAddressList) throws OpenemsException {
+        this.cpm.set(cpm);
+        this.cm.set(cm);
+        try {
+            this.configureChannelConfiguration(channelToAddressList);
+        } catch (ConfigurationException e) {
+            return true;
+        }
+        return super.modified(context, id, alias, enabled, unitId, cm, "Modbus", modbusId);
+    }
+
 
     private void configureChannelConfiguration(List<String> channelToAddressList) throws ConfigurationException {
         ConfigurationException[] ex = {null};
@@ -272,5 +284,15 @@ public abstract class AbstractMeter extends AbstractOpenemsModbusComponent imple
             throw ex[0];
         }
         return protocol;
+    }
+
+    @Override
+    public String debugLog() {
+        StringBuilder builder = new StringBuilder();
+        builder.append(DEBUG_LOG_DIVIDER).append(super.id()).append(DEBUG_LOG_DIVIDER).append("\n");
+        this.channels().stream().filter(channel -> channel.value().isDefined()).forEach(entry
+                -> builder.append("Channel: ").append(entry.channelId()).append(" Value: ").append(entry.value()).append("\n"));
+        builder.append(DEBUG_LOG_DIVIDER).append(DEBUG_LOG_DIVIDER).append("\n");
+        return builder.toString();
     }
 }
