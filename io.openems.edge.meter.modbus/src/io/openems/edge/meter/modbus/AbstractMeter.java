@@ -40,6 +40,8 @@ public abstract class AbstractMeter extends AbstractOpenemsModbusComponent imple
     protected ComponentManager cpm;
 
     private static final String CONFIGURATION_SPLITTER = ":";
+    private static final String TASK_TYPE_CONFIG = "TaskType";
+    private static final String PRIORITY_CONFIG = "Priorities";
     private static final int CHANNEL_ID_POSITION = 0;
     private static final int ADDRESS_POSITION = 1;
     private static final int TASK_TYPE_POSITION = 2;
@@ -173,7 +175,8 @@ public abstract class AbstractMeter extends AbstractOpenemsModbusComponent imple
         try {
             Dictionary<String, Object> properties = config.getProperties();
             properties.put(configTarget, this.propertyInput(Arrays.toString(channelIdArray)));
-            properties.put("TaskType", this.propertyInput(Arrays.toString(TaskType.values())));
+            properties.put(TASK_TYPE_CONFIG, this.propertyInput(Arrays.toString(TaskType.values())));
+            properties.put(PRIORITY_CONFIG, this.propertyInput(Arrays.toString(Priority.values())));
             config.update(properties);
 
         } catch (IOException e) {

@@ -4,9 +4,11 @@ import io.openems.common.exceptions.OpenemsException;
 import io.openems.edge.bridge.modbus.api.AbstractOpenemsModbusComponent;
 import io.openems.edge.bridge.modbus.api.BridgeModbus;
 import io.openems.edge.bridge.modbus.api.ModbusProtocol;
+import io.openems.edge.common.channel.Channel;
 import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.meter.api.HeatMeter;
 import io.openems.edge.meter.api.Meter;
+import org.osgi.service.cm.Configuration;
 import org.osgi.service.cm.ConfigurationAdmin;
 import org.osgi.service.cm.ConfigurationException;
 import org.osgi.service.component.ComponentContext;
@@ -19,6 +21,9 @@ import org.osgi.service.component.annotations.ReferenceCardinality;
 import org.osgi.service.component.annotations.ReferencePolicy;
 import org.osgi.service.component.annotations.ReferencePolicyOption;
 import org.osgi.service.metatype.annotations.Designate;
+
+import java.util.ArrayList;
+import java.util.Arrays;
 
 
 @Designate(ocd = GasMeterConfig.class, factory = true)
@@ -47,9 +52,9 @@ public class HeatMeterModbus extends AbstractMeter implements OpenemsComponent, 
     @Activate
     void activate(ComponentContext context, HeatMeterConfig config) throws ConfigurationException, OpenemsException {
         this.config = config;
-        if (super.update(config, "channelIds", this.channels(), this.config.channelIds().length) && config.configurationDone()) {
+        if (super.update((Configuration) config, "channelIds", new ArrayList<>(this.channels()), this.config.channelIds().length) && config.configurationDone()) {
             super.activate(context, config.id(), config.alias(), config.enabled(), config.modbusUnitId(), this.cm,
-                    "Modbus", config.modbusBridgeId(), config.configurationDone());
+                    "Modbus", config.modbusBridgeId(), true, this.cpm, Arrays.asList(config.configurationList()));
         }
     }
 
