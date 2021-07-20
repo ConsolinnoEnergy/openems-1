@@ -1,0 +1,6 @@
+= Generator
+
+Implemented Natures::
+- Electrolyzer
+- Generator
+- HydrogenGenerator

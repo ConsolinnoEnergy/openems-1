@@ -17,7 +17,6 @@ Private-Package:  \
     io.openems.edge.common;version=latest,\
     io.openems.edge.bridge.mbus;version=latest,\
     io.openems.edge.meter.api;version=latest,\
-    io.openems.edge.meter.gasmeter.api;version=latest,\
     org.openmuc.jmbus;version=3.3.0,\
 
 -testpath: \

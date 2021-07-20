@@ -13,7 +13,6 @@ import io.openems.edge.common.component.OpenemsComponent;
 public interface Meter extends OpenemsComponent {
     public enum ChannelId implements io.openems.edge.common.channel.ChannelId {
 
-
         /**
          * Power.
          *
