@@ -41,6 +41,7 @@
 	bnd.identity;id='io.openems.edge.batteryinverter.kaco.blueplanetgridsave',\
 	bnd.identity;id='io.openems.edge.batteryinverter.refu88k',\
 	bnd.identity;id='io.openems.edge.batteryinverter.sunspec',\
+	bnd.identity;id='io.openems.edge.battery.siemens',\
 	bnd.identity;id='io.openems.edge.battery.soltaro',\
 	bnd.identity;id='io.openems.edge.bridge.communication.remote.rest',\
 	bnd.identity;id='io.openems.edge.bridge.lucidcontrol',\
@@ -131,6 +132,7 @@
 	bnd.identity;id='io.openems.edge.io.wago',\
 	bnd.identity;id='io.openems.edge.lucidcontrol.module',\
 	bnd.identity;id='io.openems.edge.lucidcontrol.device',\
+	bnd.identity;id='io.openems.edge.kbr4f96',\
 	bnd.identity;id='io.openems.edge.kostal.piko',\
 	bnd.identity;id='io.openems.edge.meter.abb',\
 	bnd.identity;id='io.openems.edge.meter.artemes.am2',\
@@ -181,6 +183,7 @@
 	io.openems.edge.battery.bmw;version=snapshot,\
 	io.openems.edge.battery.bydcommercial;version=snapshot,\
 	io.openems.edge.battery.fenecon.home;version=snapshot,\
+	io.openems.edge.battery.siemens;version=snapshot,\
 	io.openems.edge.battery.soltaro;version=snapshot,\
 	io.openems.edge.batteryinverter.api;version=snapshot,\
 	io.openems.edge.batteryinverter.kaco.blueplanetgridsave;version=snapshot,\
@@ -277,6 +280,7 @@
 	io.openems.edge.io.revpi;version=snapshot,\
 	io.openems.edge.io.shelly;version=snapshot,\
 	io.openems.edge.io.wago;version=snapshot,\
+	io.openems.edge.kbr4f96;version=snapshot,\
 	io.openems.edge.kostal.piko;version=snapshot,\
 	io.openems.edge.lucidcontrol.device;version=snapshot,\
 	io.openems.edge.lucidcontrol.module;version=snapshot,\
