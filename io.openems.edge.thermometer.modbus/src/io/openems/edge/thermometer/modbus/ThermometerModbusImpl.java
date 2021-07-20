@@ -138,7 +138,6 @@ public class ThermometerModbusImpl extends AbstractOpenemsModbusComponent implem
                 return (int) (valueTemperature * 10);
             case DEZIDEGREE_CELSIUS:
                 return (int) valueTemperature;
-
             case FAHRENHEIT:
                 return (int) ((valueTemperature - 32) * (5 / 9));
             case KELVIN:
