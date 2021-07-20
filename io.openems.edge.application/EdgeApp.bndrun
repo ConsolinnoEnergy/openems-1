@@ -119,6 +119,7 @@
 	bnd.identity;id='io.openems.edge.fenecon.dess',\
 	bnd.identity;id='io.openems.edge.fenecon.mini',\
 	bnd.identity;id='io.openems.edge.fenecon.pro',\
+	bnd.identity;id='io.openems.edge.generator',\
 	bnd.identity;id='io.openems.edge.goodwe',\
 	bnd.identity;id='io.openems.edge.heater.api',\
 	bnd.identity;id='io.openems.edge.heater.chp.dachs',\
@@ -267,6 +268,7 @@
 	io.openems.edge.fenecon.dess;version=snapshot,\
 	io.openems.edge.fenecon.mini;version=snapshot,\
 	io.openems.edge.fenecon.pro;version=snapshot,\
+	io.openems.edge.generator;version=snapshot,\
 	io.openems.edge.goodwe;version=snapshot,\
 	io.openems.edge.heater.api;version=snapshot,\
 	io.openems.edge.heater.chp.dachs;version=snapshot,\

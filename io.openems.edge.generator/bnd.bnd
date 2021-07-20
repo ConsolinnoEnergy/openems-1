@@ -6,15 +6,6 @@ Bundle-Description: \
 	The provider bundle for the Generator. Provides e.g. an electrolyser \
 	\
 
-Export-Package:  \
-	io.openems.edge.generator.api
-
-Private-Package:  \
-	io.openems.edge.generator,\
-	io.openems.edge.generator.electrolyzer,\
-
--includeresource: {readme.md}
-
 -buildpath:  \
 	${buildpath},\
     io.openems.edge.common,\
