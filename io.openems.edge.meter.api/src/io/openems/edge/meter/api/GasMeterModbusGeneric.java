@@ -1,6 +1,5 @@
 package io.openems.edge.meter.api;
 
-import io.openems.common.channel.Unit;
 import io.openems.common.types.OpenemsType;
 import io.openems.edge.common.channel.Channel;
 import io.openems.edge.common.channel.Doc;
@@ -8,16 +7,29 @@ import io.openems.edge.common.channel.Doc;
 public interface GasMeterModbusGeneric extends MeterModbusGeneric {
 
     enum ChannelId implements io.openems.edge.common.channel.ChannelId {
+
+
+
         /**
-         * The Percolation of the Gasmeter.
+         * The Percolation of the GasMeter.
          *
          * <ul>
-         * <li>Interface: GasMeter
-         * <li>Type: Integer
-         * <li>Unit: CubicMeterPerSecond
+         * <li>Interface: GasMeterModbusGeneric
+         * <li>Type: Long
          * </ul>
          */
-        PERCOLATION(Doc.of(OpenemsType.INTEGER).unit(Unit.CUBICMETER_PER_SECOND)),
+        PERCOLATION_LONG(Doc.of(OpenemsType.LONG)),
+
+        /**
+         * The Percolation of the GasMeter.
+         *
+         * <ul>
+         * <li>Interface: GasMeterModbusGeneric
+         * <li>Type: Double
+         * </ul>
+         */
+        PERCOLATION_DOUBLE(Doc.of(OpenemsType.DOUBLE)),
+
         /**
          * Total Consumed Energy Cubic Meter.
          * <ul>
@@ -26,7 +38,20 @@ public interface GasMeterModbusGeneric extends MeterModbusGeneric {
          *     <li>Unit: CubicMeter
          * </ul>
          */
-        TOTAL_CONSUMED_ENERGY_CUBIC_METER(Doc.of(OpenemsType.INTEGER).unit(Unit.CUBIC_METER)),
+
+        READ_ENERGY_LONG(Doc.of(OpenemsType.LONG)),
+
+        /**
+         * Total Consumed Energy Cubic Meter.
+         * <ul>
+         *     <li>Interface: GasMeter
+         *     <li>Type: Integer
+         *     <li>Unit: CubicMeter
+         * </ul>
+         */
+
+        READ_ENERGY_DOUBLE(Doc.of(OpenemsType.DOUBLE)),
+
         /**
          * Flow Temperature in Degree Celsius.
          * <ul>
@@ -35,16 +60,20 @@ public interface GasMeterModbusGeneric extends MeterModbusGeneric {
          *     <li>Unit: Degree Celsius
          * </ul>
          */
-        FLOW_TEMP(Doc.of(OpenemsType.FLOAT).unit(Unit.DEGREE_CELSIUS)),
+
+        FLOW_TEMP_LONG(Doc.of(OpenemsType.LONG)),
+
         /**
-         * Return Temperature in Degree Celsius.
+         * Flow Temperature in Degree Celsius.
          * <ul>
          *     <li>Interface: GasMeter
          *     <li>Type: Integer
          *     <li>Unit: Degree Celsius
          * </ul>
          */
-        RETURN_TEMP(Doc.of(OpenemsType.FLOAT).unit(Unit.DEGREE_CELSIUS));
+
+        FLOW_TEMP_DOUBLE(Doc.of(OpenemsType.DOUBLE));
+
 
         private final Doc doc;
 
@@ -60,39 +89,79 @@ public interface GasMeterModbusGeneric extends MeterModbusGeneric {
     }
 
     /**
-     * Gets the Percolation of the GasMeter.
+     * Get the ReadingPercolationDouble Channel.
+     * Only Call by Generic Meter!
+     * The actual Percolation will be written into {@link GasMeter#getPercolationChannel()} ()}.
      *
      * @return the Channel.
      */
-    default Channel<Integer> getPercolationChannel() {
-        return this.channel(GasMeter.ChannelId.PERCOLATION);
+
+    default Channel<Double> getPercolationDoubleChannel() {
+        return this.channel(ChannelId.PERCOLATION_DOUBLE);
     }
 
     /**
-     * Gets the Total Consumed Energy.
-     *
-     * @return the Channel
-     */
-    default Channel<Integer> getTotalConsumedEnergyCubicMeterChannel() {
-        return this.channel(GasMeter.ChannelId.TOTAL_CONSUMED_ENERGY_CUBIC_METER);
-    }
-
-    /**
-     * Gets the Flow Temperature Channel.
-     *
-     * @return the Channel
-     */
-    default Channel<Float> getFlowTempChannel() {
-        return this.channel(GasMeter.ChannelId.FLOW_TEMP);
-    }
-
-    /**
-     * Gets the return Temperature Channel.
+     * Get the ReadEnergyLong Channel.
+     * Only Call by Generic Meter!
+     * The actual Energy will be written into {@link GasMeter#getTotalConsumedEnergyCubicMeterChannel()} ()}.
      *
      * @return the Channel.
      */
-    default Channel<Float> getReturnTemp() {
-        return this.channel(GasMeter.ChannelId.RETURN_TEMP);
+
+    default Channel<Long> getReadPercolationLongChannel() {
+        return this.channel(ChannelId.PERCOLATION_LONG);
     }
+
+    /**
+     * Get the ReadingPercolationLong Channel.
+     * Only Call by Generic Meter!
+     * The actual Reading Power will be written into {@link HeatMeter#getReadingPowerChannel()}.
+     *
+     * @return the Channel.
+     */
+
+    default Channel<Double> getReadPercolationDoubleChannel() {
+        return this.channel(ChannelId.PERCOLATION_DOUBLE);
+    }
+
+    /**
+     * Get the ReadEnergyLong Channel.
+     * Only Call by Generic Meter!
+     * The actual Reading Energy will be written into {@link GasMeter#getTotalConsumedEnergyCubicMeterChannel()}.
+     *
+     * @return the Channel.
+     */
+
+    default Channel<Long> getReadEnergyLongChannel() {
+        return this.channel(ChannelId.READ_ENERGY_LONG);
+    }
+
+    /**
+     * Get the ReadEnergyDouble Channel.
+     * Only Call by Generic Meter!
+     * The actual Reading Energy will be written into {@link GasMeter#getTotalConsumedEnergyCubicMeterChannel()}.
+     *
+     * @return the Channel.
+     */
+
+    default Channel<Double> getReadEnergyDoubleChannel() {
+        return this.channel(ChannelId.READ_ENERGY_DOUBLE);
+    }
+
+
+    /**
+     * Get the ReadEnergyDouble Channel.
+     * Only Call by Generic Meter!
+     * The actual Reading Energy will be written into {@link GasMeter#getTotalConsumedEnergyCubicMeterChannel()}.
+     *
+     * @return the Channel.
+     */
+
+    default Channel<Double> getFlowTempDoubleChannel() {
+        return this.channel(ChannelId.FLOW_TEMP_DOUBLE);
+    }
+
+
+
 }
 

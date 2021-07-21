@@ -22,7 +22,7 @@ public interface GasMeter extends Meter {
          * <li>Unit: Kilowatt
          * </ul>
          */
-        POWER(Doc.of(OpenemsType.INTEGER).unit(Unit.KILOWATT)),
+        READING_POWER(Doc.of(OpenemsType.LONG).unit(Unit.KILOWATT)),
 
         /**
          * The Percolation of the GasMeter.
@@ -33,7 +33,7 @@ public interface GasMeter extends Meter {
          * <li>Unit: CubicMeterPerSecond
          * </ul>
          */
-        PERCOLATION(Doc.of(OpenemsType.INTEGER).unit(Unit.CUBICMETER_PER_SECOND)),
+        PERCOLATION(Doc.of(OpenemsType.LONG).unit(Unit.CUBICMETER_PER_SECOND)),
         /**
          * Total Consumed Energy Cubic Meter.
          * <ul>
@@ -42,7 +42,7 @@ public interface GasMeter extends Meter {
          *     <li>Unit: CubicMeter
          * </ul>
          */
-        TOTAL_CONSUMED_ENERGY_CUBIC_METER(Doc.of(OpenemsType.INTEGER).unit(Unit.CUBIC_METER)),
+        TOTAL_CONSUMED_ENERGY_CUBIC_METER(Doc.of(OpenemsType.LONG).unit(Unit.CUBIC_METER)),
         /**
          * Flow Temperature in Degree Celsius.
          * <ul>
@@ -51,7 +51,7 @@ public interface GasMeter extends Meter {
          *     <li>Unit: Degree Celsius
          * </ul>
          */
-        FLOW_TEMP(Doc.of(OpenemsType.FLOAT).unit(Unit.DEGREE_CELSIUS)),
+        FLOW_TEMP(Doc.of(OpenemsType.DOUBLE).unit(Unit.DEGREE_CELSIUS)),
         /**
          * Return Temperature in Degree Celsius.
          * <ul>
@@ -60,7 +60,7 @@ public interface GasMeter extends Meter {
          *     <li>Unit: Degree Celsius
          * </ul>
          */
-        RETURN_TEMP(Doc.of(OpenemsType.FLOAT).unit(Unit.DEGREE_CELSIUS));
+        RETURN_TEMP(Doc.of(OpenemsType.DOUBLE).unit(Unit.DEGREE_CELSIUS));
 
         private final Doc doc;
 
@@ -80,7 +80,7 @@ public interface GasMeter extends Meter {
      *
      * @return the Channel.
      */
-    default Channel<Integer> getPercolationChannel() {
+    default Channel<Long> getPercolationChannel() {
         return this.channel(ChannelId.PERCOLATION);
     }
 
@@ -89,7 +89,7 @@ public interface GasMeter extends Meter {
      *
      * @return the Channel
      */
-    default Channel<Integer> getTotalConsumedEnergyCubicMeterChannel() {
+    default Channel<Long> getTotalConsumedEnergyCubicMeterChannel() {
         return this.channel(ChannelId.TOTAL_CONSUMED_ENERGY_CUBIC_METER);
     }
 
@@ -98,7 +98,7 @@ public interface GasMeter extends Meter {
      *
      * @return the Channel
      */
-    default Channel<Float> getFlowTempChannel() {
+    default Channel<Double> getFlowTempChannel() {
         return this.channel(ChannelId.FLOW_TEMP);
     }
 
@@ -107,7 +107,7 @@ public interface GasMeter extends Meter {
      *
      * @return the Channel.
      */
-    default Channel<Float> getReturnTemp() {
+    default Channel<Double> getReturnTemp() {
         return this.channel(ChannelId.RETURN_TEMP);
     }
 
@@ -116,8 +116,8 @@ public interface GasMeter extends Meter {
      *
      * @return the Channel
      */
-    default Channel<Integer> getPowerChannel() {
-        return this.channel(ChannelId.POWER);
+    default Channel<Double> getPowerChannel() {
+        return this.channel(ChannelId.READING_POWER);
     }
 
 
