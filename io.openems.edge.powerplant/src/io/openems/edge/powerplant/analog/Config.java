@@ -4,7 +4,7 @@ import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
 @ObjectClassDefinition(
-        name = "Power Plant Analog",
+        name = "Modbus Power Plant Analog",
         description = "A PowerPlant controlled by an analogue output (e.g. 0-10V)."
 )
 @interface Config {

@@ -28,7 +28,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 
-@Designate(ocd = GasMeterConfig.class, factory = true)
+@Designate(ocd = GasMeterModbusGenericConfig.class, factory = true)
 @Component(name = "Meter.Modbus.HeatMeter", immediate = true,
         configurationPolicy = ConfigurationPolicy.REQUIRE)
 public class HeatMeterModbus extends AbstractMeter implements OpenemsComponent, HeatMeter, Meter {

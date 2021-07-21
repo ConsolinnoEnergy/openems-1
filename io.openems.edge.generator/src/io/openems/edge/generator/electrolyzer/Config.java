@@ -5,7 +5,7 @@ import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
 @ObjectClassDefinition(
-        name = "Generic Modbus Electrolyzer",
+        name = "Electrolyzer Modbus",
         description = "A module to map Modbus calls to OpenEMS channels for a Generic Modbus Electrolyzer."
 )
 @interface Config {

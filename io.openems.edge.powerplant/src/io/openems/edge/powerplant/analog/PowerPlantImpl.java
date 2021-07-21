@@ -32,7 +32,7 @@ import org.slf4j.LoggerFactory;
 
 
 @Designate(ocd = Config.class, factory = true)
-@Component(name = "Heater.Powerplant.Analog",
+@Component(name = "Heater.PowerPlant.Analog",
         configurationPolicy = ConfigurationPolicy.REQUIRE,
         immediate = true,
         property = EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE)

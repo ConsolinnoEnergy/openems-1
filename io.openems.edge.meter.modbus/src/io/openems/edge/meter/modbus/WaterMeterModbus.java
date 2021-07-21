@@ -1,13 +1,9 @@
 package io.openems.edge.meter.modbus;
 
-import io.openems.common.channel.AccessMode;
 import io.openems.common.exceptions.OpenemsException;
-import io.openems.common.types.OpenemsType;
 import io.openems.edge.bridge.modbus.api.BridgeModbus;
-import io.openems.edge.common.channel.Doc;
 import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
-import io.openems.edge.meter.api.HeatMeter;
 import io.openems.edge.meter.api.Meter;
 import io.openems.edge.meter.api.WaterMeter;
 import org.osgi.service.cm.Configuration;
@@ -29,7 +25,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 
-@Designate(ocd = GasMeterConfig.class, factory = true)
+@Designate(ocd = GasMeterModbusGenericConfig.class, factory = true)
 @Component(name = "Meter.Modbus.WaterMeter", immediate = true,
         configurationPolicy = ConfigurationPolicy.REQUIRE)
 public class WaterMeterModbus extends AbstractMeter implements OpenemsComponent, WaterMeter, Meter {

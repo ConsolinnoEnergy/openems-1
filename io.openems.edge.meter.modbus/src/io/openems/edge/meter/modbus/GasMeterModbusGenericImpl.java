@@ -2,7 +2,6 @@ package io.openems.edge.meter.modbus;
 
 import io.openems.common.exceptions.OpenemsException;
 import io.openems.edge.bridge.modbus.api.BridgeModbus;
-import io.openems.edge.bridge.modbus.api.ModbusProtocol;
 import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.meter.api.GasMeter;
@@ -25,11 +24,15 @@ import org.osgi.service.metatype.annotations.Designate;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-
-@Designate(ocd = GasMeterConfig.class, factory = true)
-@Component(name = "Meter.Modbus.GasMeter", immediate = true,
+/**
+ * The GasMeter Generic Modbus Implementation.
+ * It is a Generic Modbus Component, that can Map it's Channels to ModbusAddresses.
+ * Depends on the way you configure them.
+ */
+@Designate(ocd = GasMeterModbusGenericConfig.class, factory = true)
+@Component(name = "Meter.Modbus.GasMeter.Generic", immediate = true,
         configurationPolicy = ConfigurationPolicy.REQUIRE)
-public class GasMeterModbus extends AbstractMeter implements OpenemsComponent, Meter, GasMeter {
+public class GasMeterModbusGenericImpl extends AbstractMeter implements OpenemsComponent, Meter, GasMeter, ModbusGasMeter, ModbusMeter {
 
     @Reference
     protected ConfigurationAdmin cm;
@@ -43,16 +46,18 @@ public class GasMeterModbus extends AbstractMeter implements OpenemsComponent, M
     }
 
 
-    public GasMeterModbus() {
+
+
+    public GasMeterModbusGenericImpl() {
         super(OpenemsComponent.ChannelId.values(),
                 Meter.ChannelId.values(),
                 GasMeter.ChannelId.values());
     }
 
-    private GasMeterConfig config;
+    private GasMeterModbusGenericConfig config;
 
     @Activate
-    void activate(ComponentContext context, GasMeterConfig config) throws ConfigurationException, OpenemsException {
+    void activate(ComponentContext context, GasMeterModbusGenericConfig config) throws ConfigurationException, OpenemsException {
         this.config = config;
         if (super.update((Configuration) config, "channelIds", new ArrayList<>(this.channels()), config.channelIds().length) && config.configurationDone()) {
             super.activate(context, config.id(), config.alias(), config.enabled(), config.modbusUnitId(), this.cm,

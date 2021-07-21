@@ -1,15 +1,14 @@
 package io.openems.edge.meter.api;
 
+import io.openems.common.channel.AccessMode;
 import io.openems.common.channel.Unit;
 import io.openems.common.types.OpenemsType;
 import io.openems.edge.common.channel.Channel;
 import io.openems.edge.common.channel.Doc;
+import io.openems.edge.common.channel.WriteChannel;
+import io.openems.edge.common.component.OpenemsComponent;
 
-/**
- * The Nature of a GasMeter, it's an expansion of the existing Meter Interface.
- */
-public interface GasMeter extends Meter {
-
+public interface ModbusGasMeterGeneric extends ModbusMeterGeneric {
 
     enum ChannelId implements io.openems.edge.common.channel.ChannelId {
         /**
@@ -69,7 +68,7 @@ public interface GasMeter extends Meter {
      * @return the Channel.
      */
     default Channel<Integer> getPercolationChannel() {
-        return this.channel(ChannelId.PERCOLATION);
+        return this.channel(GasMeter.ChannelId.PERCOLATION);
     }
 
     /**
@@ -78,7 +77,7 @@ public interface GasMeter extends Meter {
      * @return the Channel
      */
     default Channel<Integer> getTotalConsumedEnergyCubicMeterChannel() {
-        return this.channel(ChannelId.TOTAL_CONSUMED_ENERGY_CUBIC_METER);
+        return this.channel(GasMeter.ChannelId.TOTAL_CONSUMED_ENERGY_CUBIC_METER);
     }
 
     /**
@@ -87,7 +86,7 @@ public interface GasMeter extends Meter {
      * @return the Channel
      */
     default Channel<Float> getFlowTempChannel() {
-        return this.channel(ChannelId.FLOW_TEMP);
+        return this.channel(GasMeter.ChannelId.FLOW_TEMP);
     }
 
     /**
@@ -96,6 +95,7 @@ public interface GasMeter extends Meter {
      * @return the Channel.
      */
     default Channel<Float> getReturnTemp() {
-        return this.channel(ChannelId.RETURN_TEMP);
+        return this.channel(GasMeter.ChannelId.RETURN_TEMP);
     }
 }
+

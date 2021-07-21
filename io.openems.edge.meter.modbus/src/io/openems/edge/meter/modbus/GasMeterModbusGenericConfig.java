@@ -3,8 +3,8 @@ package io.openems.edge.meter.modbus;
 import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
-@ObjectClassDefinition(name = "Modbus GasMeter ", description = ".")
-@interface GasMeterConfig {
+@ObjectClassDefinition(name = "Modbus GasMeter Generic", description = "A Generic Modbus GasMeter, Configure the Meter, as you please.")
+@interface GasMeterModbusGenericConfig {
 
     String service_pid();
 
