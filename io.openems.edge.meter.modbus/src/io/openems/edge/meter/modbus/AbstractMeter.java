@@ -1,5 +1,6 @@
 package io.openems.edge.meter.modbus;
 
+import io.openems.common.channel.Unit;
 import io.openems.common.exceptions.OpenemsException;
 import io.openems.edge.bridge.modbus.api.AbstractOpenemsModbusComponent;
 import io.openems.edge.bridge.modbus.api.ModbusProtocol;
@@ -10,6 +11,8 @@ import io.openems.edge.bridge.modbus.api.task.FC4ReadInputRegistersTask;
 import io.openems.edge.bridge.modbus.api.task.FC5WriteCoilTask;
 import io.openems.edge.bridge.modbus.api.task.FC6WriteRegisterTask;
 import io.openems.edge.common.channel.Channel;
+import io.openems.edge.common.channel.ChannelId;
+import io.openems.edge.common.channel.value.Value;
 import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.common.taskmanager.Priority;
@@ -42,15 +45,17 @@ public abstract class AbstractMeter extends AbstractOpenemsModbusComponent imple
 
     private static final String DEBUG_LOG_DIVIDER = "-----------";
     private static final String CONFIGURATION_SPLITTER = ":";
-    private static final String TASK_TYPE_CONFIG = "TaskType";
-    private static final String PRIORITY_CONFIG = "Priorities";
+    private static final String TASK_TYPE_CONFIG = "taskType";
+    private static final String PRIORITY_CONFIG = "priorities";
+    private static final String WORD_TYPE_CONFIG = "wordType";
     private static final int CHANNEL_ID_POSITION = 0;
     private static final int ADDRESS_POSITION = 1;
     private static final int TASK_TYPE_POSITION = 2;
-    private static final int PRIORITY_POSITION = 3;
+    private static final int WORD_TYPE_POSITION = 3;
+    private static final int PRIORITY_POSITION = 4;
     //TODO: CONVERTER
-    private static final int EXPECTED_SIZE = 3;
-    private static final int EXPECTED_SIZE_WITH_PRIORITY = 4;
+    private static final int EXPECTED_SIZE = 4;
+    private static final int EXPECTED_SIZE_WITH_PRIORITY = 5;
 
     private final Map<String, Channel<?>> channelMap = new HashMap<>();
     private final List<ModbusConfigWrapper> modbusConfig = new ArrayList<>();
@@ -115,7 +120,15 @@ public abstract class AbstractMeter extends AbstractOpenemsModbusComponent imple
                     String channelId = split[CHANNEL_ID_POSITION];
                     int address = Integer.parseInt(split[ADDRESS_POSITION]);
                     String taskType = split[TASK_TYPE_POSITION].trim().toUpperCase();
-
+                    WordType wordType = null;
+                    for (WordType type : WordType.values()) {
+                        if (type.name().equals(split[WORD_TYPE_POSITION].trim().toUpperCase())) {
+                            wordType = type;
+                        }
+                    }
+                    if (wordType == null) {
+                        ex[0] = new ConfigurationException("configureChannelConfiguration in " + super.id(), "Wrong WordType: " + split[WORD_TYPE_POSITION]);
+                    }suell
                     Channel<?> channel = this.channelMap.get(channelId);
                     TaskType type = null;
                     Priority priority = null;
@@ -130,7 +143,8 @@ public abstract class AbstractMeter extends AbstractOpenemsModbusComponent imple
                     if (TaskType.contains(taskType) && channel != null) {
                         type = TaskType.valueOf(taskType);
                         if (priority != null) {
-                            this.modbusConfig.add(new ModbusConfigWrapper(channel.channelId(), address, type, priority));
+                            //TODO
+                            this.modbusConfig.add(new ModbusConfigWrapper(channel.channelId(), address, type, priority, WordType.INT_16));
                         } else {
                             this.modbusConfig.add(new ModbusConfigWrapper(channel.channelId(), address, type));
                         }
@@ -217,22 +231,29 @@ public abstract class AbstractMeter extends AbstractOpenemsModbusComponent imple
 
 
     private class ModbusConfigWrapper {
-        //Only UnsignedWordElement supported atm
+
         io.openems.edge.common.channel.ChannelId channelId;
         int modbusAddress;
         TaskType taskType;
         Priority priority;
+        WordType wordType;
 
-        private ModbusConfigWrapper(io.openems.edge.common.channel.ChannelId channelId, int modbusAddress, TaskType taskType) {
-            this(channelId, modbusAddress, taskType, Priority.LOW);
 
-        }
-
-        public ModbusConfigWrapper(io.openems.edge.common.channel.ChannelId channelId, int modbusAddress, TaskType taskType, Priority priority) {
+        public ModbusConfigWrapper(io.openems.edge.common.channel.ChannelId channelId, int modbusAddress, TaskType taskType, Priority priority, WordType wordType) {
             this.channelId = channelId;
             this.modbusAddress = modbusAddress;
             this.taskType = taskType;
             this.priority = priority;
+            this.wordType = wordType;
+        }
+
+        public ModbusConfigWrapper(io.openems.edge.common.channel.ChannelId channelId, int modbusAddress, TaskType taskType) {
+            this(channelId, modbusAddress, taskType, Priority.LOW, WordType.INT_16);
+
+        }
+
+        public ModbusConfigWrapper(io.openems.edge.common.channel.ChannelId channelId, int modbusAddress, TaskType taskType, WordType wordType) {
+            this(channelId, modbusAddress, taskType, Priority.LOW, wordType);
         }
 
         public io.openems.edge.common.channel.ChannelId getChannelId() {
@@ -249,6 +270,10 @@ public abstract class AbstractMeter extends AbstractOpenemsModbusComponent imple
 
         public Priority getPriority() {
             return this.priority;
+        }
+
+        public WordType getWordType() {
+            return this.wordType;
         }
     }
 
@@ -300,5 +325,17 @@ public abstract class AbstractMeter extends AbstractOpenemsModbusComponent imple
                 -> builder.append("Channel: ").append(entry.channelId()).append(" Value: ").append(entry.value()).append("\n"));
         builder.append(DEBUG_LOG_DIVIDER).append(DEBUG_LOG_DIVIDER).append("\n");
         return builder.toString();
+    }
+
+    /**
+     * This will be called by
+     *
+     * @param target
+     * @param targetValue
+     * @param targetUnit
+     * @param sourceUnit
+     */
+    protected void handleChannelUpdate(Channel<?> target, Value<?> targetValue, Unit targetUnit, Unit sourceUnit) {
+
     }
 }

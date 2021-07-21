@@ -4,8 +4,11 @@ import io.openems.common.exceptions.OpenemsException;
 import io.openems.edge.bridge.modbus.api.BridgeModbus;
 import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
+import io.openems.edge.common.event.EdgeEventConstants;
 import io.openems.edge.meter.api.GasMeter;
+import io.openems.edge.meter.api.GasMeterModbusGeneric;
 import io.openems.edge.meter.api.Meter;
+import io.openems.edge.meter.api.MeterModbusGeneric;
 import org.osgi.service.cm.Configuration;
 import org.osgi.service.cm.ConfigurationAdmin;
 import org.osgi.service.cm.ConfigurationException;
@@ -19,6 +22,9 @@ import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.component.annotations.ReferenceCardinality;
 import org.osgi.service.component.annotations.ReferencePolicy;
 import org.osgi.service.component.annotations.ReferencePolicyOption;
+import org.osgi.service.event.Event;
+import org.osgi.service.event.EventConstants;
+import org.osgi.service.event.EventHandler;
 import org.osgi.service.metatype.annotations.Designate;
 
 import java.util.ArrayList;
@@ -31,8 +37,9 @@ import java.util.Arrays;
  */
 @Designate(ocd = GasMeterModbusGenericConfig.class, factory = true)
 @Component(name = "Meter.Modbus.GasMeter.Generic", immediate = true,
-        configurationPolicy = ConfigurationPolicy.REQUIRE)
-public class GasMeterModbusGenericImpl extends AbstractMeter implements OpenemsComponent, Meter, GasMeter, ModbusGasMeter, ModbusMeter {
+        configurationPolicy = ConfigurationPolicy.REQUIRE,
+        property = {EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE})
+public class GasMeterModbusGenericImpl extends AbstractMeter implements OpenemsComponent, Meter, GasMeter, GasMeterModbusGeneric, MeterModbusGeneric, EventHandler {
 
     @Reference
     protected ConfigurationAdmin cm;
@@ -46,12 +53,12 @@ public class GasMeterModbusGenericImpl extends AbstractMeter implements OpenemsC
     }
 
 
-
-
     public GasMeterModbusGenericImpl() {
         super(OpenemsComponent.ChannelId.values(),
                 Meter.ChannelId.values(),
-                GasMeter.ChannelId.values());
+                GasMeter.ChannelId.values(),
+                GasMeterModbusGeneric.ChannelId.values(),
+                MeterModbusGeneric.ChannelId.values());
     }
 
     private GasMeterModbusGenericConfig config;
@@ -79,4 +86,10 @@ public class GasMeterModbusGenericImpl extends AbstractMeter implements OpenemsC
 
     }
 
+    @Override
+    public void handleEvent(Event event) {
+        if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE)) {
+
+        }
+    }
 }

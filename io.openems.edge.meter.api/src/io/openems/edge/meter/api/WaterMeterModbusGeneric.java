@@ -1,24 +1,39 @@
 package io.openems.edge.meter.api;
 
 import io.openems.common.channel.AccessMode;
-import io.openems.common.channel.Unit;
 import io.openems.common.types.OpenemsType;
 import io.openems.edge.common.channel.Channel;
 import io.openems.edge.common.channel.Doc;
-import io.openems.edge.common.channel.WriteChannel;
 
+/**
+ * Generic WaterMeter Modbus Nature extension of Meter Modbus Generic.
+ * This Nature will be used by Generic Water Meter components to
+ */
 public interface WaterMeterModbusGeneric extends MeterModbusGeneric {
 
-    /**
-     * <ul>
-     * <li>Interface:
-     * <li>Type:
-     * <li>Unit:
-     * </ul>
-     */
+
     public enum ChannelId implements io.openems.edge.common.channel.ChannelId {
-        WRITE_CHANNEL(Doc.of(OpenemsType.FLOAT).unit(Unit.PERCENT).accessMode(AccessMode.READ_WRITE)),
-        READ_CHANNEL(Doc.of(OpenemsType.FLOAT).unit(Unit.PERCENT).accessMode(AccessMode.READ_ONLY));
+
+        /**
+         * Read Water Double.
+         *
+         * <ul>
+         * <li>Interface: WaterMeterModbusGeneric
+         * <li>Type: Double
+         * </ul>
+         */
+        READ_WATER_DOUBLE(Doc.of(OpenemsType.DOUBLE).accessMode(AccessMode.READ_ONLY)),
+
+        /**
+         * Read Water Long.
+         *
+         * <ul>
+         * <li>Interface: WaterMeterModbusGeneric
+         * <li>Type: Double
+         * </ul>
+         */
+        READ_WATER_LONG(Doc.of(OpenemsType.DOUBLE).accessMode(AccessMode.READ_ONLY));
+
         private final Doc doc;
 
         ChannelId(Doc doc) {
@@ -31,23 +46,28 @@ public interface WaterMeterModbusGeneric extends MeterModbusGeneric {
 
     }
 
-    default Channel<Float> getReadChannel() {
-        return this.channel(ChannelId.READ_CHANNEL);
+    /**
+     * Get the ReadEnergyLong Channel.
+     * Only Call by Generic Meter!
+     * The actual Reading Energy will be written into {@link GasMeter#getTotalConsumedEnergyCubicMeterChannel()}.
+     *
+     * @return the Channel.
+     */
+
+    default Channel<Double> _getReadWaterDoubleChannel() {
+        return this.channel(ChannelId.READ_WATER_DOUBLE);
     }
 
-    default WriteChannel<Float> getWriteChannel() {
-        return this.channel(ChannelId.WRITE_CHANNEL);
-    }
+    /**
+     * Get the ReadEnergyLong Channel.
+     * Only Call by Generic Meter!
+     * The actual Reading Energy will be written into {@link GasMeter#getTotalConsumedEnergyCubicMeterChannel()}.
+     *
+     * @return the Channel.
+     */
 
-
-    default float getReadChannelValue() {
-        if (this.getReadChannel().value().isDefined()) {
-            return this.getReadChannel().value().get();
-        } else if (this.getReadChannel().getNextValue().isDefined()) {
-            return this.getReadChannel().getNextValue().get();
-        } else {
-            return -9001;
-        }
+    default Channel<Double> _getReadWaterLongChannel() {
+        return this.channel(ChannelId.READ_WATER_LONG);
     }
 }
 

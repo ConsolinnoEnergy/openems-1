@@ -96,7 +96,7 @@ public interface GasMeterModbusGeneric extends MeterModbusGeneric {
      * @return the Channel.
      */
 
-    default Channel<Double> getPercolationDoubleChannel() {
+    default Channel<Double> _getPercolationDoubleChannel() {
         return this.channel(ChannelId.PERCOLATION_DOUBLE);
     }
 
@@ -108,7 +108,7 @@ public interface GasMeterModbusGeneric extends MeterModbusGeneric {
      * @return the Channel.
      */
 
-    default Channel<Long> getReadPercolationLongChannel() {
+    default Channel<Long> _getReadPercolationLongChannel() {
         return this.channel(ChannelId.PERCOLATION_LONG);
     }
 
@@ -120,7 +120,7 @@ public interface GasMeterModbusGeneric extends MeterModbusGeneric {
      * @return the Channel.
      */
 
-    default Channel<Double> getReadPercolationDoubleChannel() {
+    default Channel<Double> _getReadPercolationDoubleChannel() {
         return this.channel(ChannelId.PERCOLATION_DOUBLE);
     }
 
@@ -132,7 +132,7 @@ public interface GasMeterModbusGeneric extends MeterModbusGeneric {
      * @return the Channel.
      */
 
-    default Channel<Long> getReadEnergyLongChannel() {
+    default Channel<Long> _getReadEnergyLongChannel() {
         return this.channel(ChannelId.READ_ENERGY_LONG);
     }
 
@@ -144,7 +144,7 @@ public interface GasMeterModbusGeneric extends MeterModbusGeneric {
      * @return the Channel.
      */
 
-    default Channel<Double> getReadEnergyDoubleChannel() {
+    default Channel<Double> _getReadEnergyDoubleChannel() {
         return this.channel(ChannelId.READ_ENERGY_DOUBLE);
     }
 
@@ -157,7 +157,7 @@ public interface GasMeterModbusGeneric extends MeterModbusGeneric {
      * @return the Channel.
      */
 
-    default Channel<Double> getFlowTempDoubleChannel() {
+    default Channel<Double> _getFlowTempDoubleChannel() {
         return this.channel(ChannelId.FLOW_TEMP_DOUBLE);
     }
 
