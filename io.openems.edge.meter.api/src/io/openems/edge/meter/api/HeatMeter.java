@@ -7,13 +7,33 @@ import io.openems.edge.common.channel.Doc;
 
 /**
  * A HeatMeter, an expansion of the Meter interface.
+ * It stores the Power Reading and the Energy, as well as a returnTemp.
  */
 public interface HeatMeter extends Meter {
 
 
     public enum ChannelId implements io.openems.edge.common.channel.ChannelId {
 
+        /**
+         * Reading Power of the HeatMeter.
+         * <ul>
+         * <li> Interface: HeatMeter
+         * <li> Type: Long
+         * <li> Unit: Kilowatt
+         * </ul>
+         */
+        READING_POWER(Doc.of(OpenemsType.LONG).unit(Unit.KILOWATT)),
 
+        /**
+         * Total Consumed Energy.
+         *
+         * <ul>
+         * <li>Interface: HeatMeter
+         * <li>Type: Long
+         * <li>Unit: WattHours
+         * </ul>
+         */
+        READING_ENERGY(Doc.of(OpenemsType.LONG).unit(Unit.KILOWATT_HOURS)),
 
         /**
          * Return Temp.
@@ -24,7 +44,7 @@ public interface HeatMeter extends Meter {
          * <li>Unit: DegreeCelsius
          * </ul>
          */
-        RETURN_TEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS));
+        RETURN_TEMP(Doc.of(OpenemsType.LONG).unit(Unit.DEZIDEGREE_CELSIUS));
 
 
         private final Doc doc;
@@ -45,8 +65,26 @@ public interface HeatMeter extends Meter {
      *
      * @return the Channel
      */
-    default Channel<Integer> getReturnTempChannel() {
+    default Channel<Long> getReturnTempChannel() {
         return this.channel(ChannelId.RETURN_TEMP);
+    }
+
+    /**
+     * Get the Reading channel of this HeatMeter.
+     *
+     * @return the Channel.
+     */
+    default Channel<Long> getReadingPowerChannel() {
+        return this.channel(ChannelId.READING_POWER);
+    }
+
+    /**
+     * Gets the Total Consumed Energy Channel of this Meter.
+     *
+     * @return the Channel.
+     */
+    default Channel<Long> getReadingEnergyChannel() {
+        return this.channel(ChannelId.READING_ENERGY);
     }
 
 

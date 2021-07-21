@@ -6,9 +6,8 @@ import io.openems.common.types.OpenemsType;
 import io.openems.edge.common.channel.Channel;
 import io.openems.edge.common.channel.Doc;
 import io.openems.edge.common.channel.WriteChannel;
-import io.openems.edge.common.component.OpenemsComponent;
 
-public interface ModbusWaterMeterGeneric extends ModbusMeterGeneric {
+public interface WaterMeterModbusGeneric extends MeterModbusGeneric {
 
     /**
      * <ul>

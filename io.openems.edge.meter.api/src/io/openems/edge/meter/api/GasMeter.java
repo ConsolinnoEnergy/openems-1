@@ -12,8 +12,20 @@ public interface GasMeter extends Meter {
 
 
     enum ChannelId implements io.openems.edge.common.channel.ChannelId {
+
         /**
-         * The Percolation of the Gasmeter.
+         * Power.
+         *
+         * <ul>
+         * <li>Interface: HeatMeterMbus
+         * <li>Type: Integer
+         * <li>Unit: Kilowatt
+         * </ul>
+         */
+        POWER(Doc.of(OpenemsType.INTEGER).unit(Unit.KILOWATT)),
+
+        /**
+         * The Percolation of the GasMeter.
          *
          * <ul>
          * <li>Interface: GasMeter
@@ -98,4 +110,15 @@ public interface GasMeter extends Meter {
     default Channel<Float> getReturnTemp() {
         return this.channel(ChannelId.RETURN_TEMP);
     }
+
+    /**
+     * Gets the POWER Channel of this Meter.
+     *
+     * @return the Channel
+     */
+    default Channel<Integer> getPowerChannel() {
+        return this.channel(ChannelId.POWER);
+    }
+
+
 }

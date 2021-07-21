@@ -1,14 +1,11 @@
 package io.openems.edge.meter.api;
 
-import io.openems.common.channel.AccessMode;
 import io.openems.common.channel.Unit;
 import io.openems.common.types.OpenemsType;
 import io.openems.edge.common.channel.Channel;
 import io.openems.edge.common.channel.Doc;
-import io.openems.edge.common.channel.WriteChannel;
-import io.openems.edge.common.component.OpenemsComponent;
 
-public interface ModbusGasMeterGeneric extends ModbusMeterGeneric {
+public interface GasMeterModbusGeneric extends MeterModbusGeneric {
 
     enum ChannelId implements io.openems.edge.common.channel.ChannelId {
         /**

@@ -69,6 +69,12 @@ public abstract class AbstractMeter extends AbstractOpenemsModbusComponent imple
         }
     }
 
+    private enum WordType {
+        INT_16, INT_16_SIGNED, INT_32, INT_32_SIGNED, INT_64, INT_64_SIGNED,
+        FLOAT_32;
+        //FLOAT_64
+    }
+
 
     protected AbstractMeter(io.openems.edge.common.channel.ChannelId[] firstInitialChannelIds, io.openems.edge.common.channel.ChannelId[]... furtherInitialChannelIds) {
         super(firstInitialChannelIds, furtherInitialChannelIds);
@@ -78,12 +84,12 @@ public abstract class AbstractMeter extends AbstractOpenemsModbusComponent imple
                                ConfigurationAdmin cm, String modbusId, ComponentManager cpm, List<String> channelToAddressList) throws OpenemsException {
         this.cpm.set(cpm);
         this.cm.set(cm);
-            try {
-                this.configureChannelConfiguration(channelToAddressList);
-            } catch (ConfigurationException e) {
-                return true;
-            }
-            return super.activate(context, id, alias, enabled, unitId, cm, "Modbus", modbusId);
+        try {
+            this.configureChannelConfiguration(channelToAddressList);
+        } catch (ConfigurationException e) {
+            return true;
+        }
+        return super.activate(context, id, alias, enabled, unitId, cm, "Modbus", modbusId);
     }
 
     protected boolean modified(ComponentContext context, String id, String alias, boolean enabled, int unitId,

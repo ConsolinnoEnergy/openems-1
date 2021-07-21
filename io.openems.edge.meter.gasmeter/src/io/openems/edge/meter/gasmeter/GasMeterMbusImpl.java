@@ -92,7 +92,7 @@ public class GasMeterMbusImpl extends AbstractOpenemsMbusComponent implements Op
         this.channelDataRecordsList.add(new ChannelRecord(channel(GasMeter.ChannelId.TOTAL_CONSUMED_ENERGY_CUBIC_METER), this.gasMeterType.getTotalConsumptionEnergyAddress()));
         this.channelDataRecordsList.add(new ChannelRecord(channel(GasMeter.ChannelId.FLOW_TEMP), this.gasMeterType.getFlowTempAddress()));
         this.channelDataRecordsList.add(new ChannelRecord(channel(GasMeter.ChannelId.RETURN_TEMP), this.gasMeterType.getReturnTempAddress()));
-        this.channelDataRecordsList.add(new ChannelRecord(channel(Meter.ChannelId.POWER), this.gasMeterType.getPowerAddress()));
+        this.channelDataRecordsList.add(new ChannelRecord(channel(GasMeter.ChannelId.POWER), this.gasMeterType.getPowerAddress()));
         this.channelDataRecordsList.add(new ChannelRecord(channel(GasMeter.ChannelId.PERCOLATION), this.gasMeterType.getPercolationAddress()));
         this.channelDataRecordsList.add(new ChannelRecord(channel(ChannelId.MANUFACTURER_ID), ChannelRecord.DataType.Manufacturer));
         this.channelDataRecordsList.add(new ChannelRecord(channel(ChannelId.DEVICE_ID), ChannelRecord.DataType.DeviceId));
