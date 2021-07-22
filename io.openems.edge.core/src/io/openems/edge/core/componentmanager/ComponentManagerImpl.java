@@ -14,9 +14,9 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import io.openems.common.jsonrpc.request.GetActiveComponentsChannelContentRequest;
 import io.openems.common.jsonrpc.request.GetActiveComponentsRequest;
+import io.openems.common.jsonrpc.request.GetDependenciesRequest;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.InvalidSyntaxException;
 import org.osgi.service.cm.Configuration;
@@ -208,6 +208,10 @@ public class ComponentManagerImpl extends AbstractOpenemsComponent
             case GetActiveComponentsChannelContentRequest.METHOD:
                 return this.handleGetActiveComponentsChannelContentRequest(user, GetActiveComponentsChannelContentRequest.from(request));
 
+            case GetDependenciesRequest.METHOD:
+                return this.handleGetDependenciesRequest(user, GetDependenciesRequest.from(request));
+
+
             case CreateComponentConfigRequest.METHOD:
                 return this.handleCreateComponentConfigRequest(user, CreateComponentConfigRequest.from(request));
 
@@ -268,12 +272,30 @@ public class ComponentManagerImpl extends AbstractOpenemsComponent
         JsonObject pair = new JsonObject();
         JsonObject result = new JsonObject();
         this.allComponents.stream().forEach(openemsComponent -> {
-            pair.addProperty(openemsComponent.id(),openemsComponent.channels().toString());
+            pair.addProperty(openemsComponent.id(), openemsComponent.channels().toString());
         });
         result.add("components", pair);
         return CompletableFuture.completedFuture(new GenericJsonrpcResponseSuccess(request.getId(), result));
     }
 
+    /**
+     * Handles a {@link CreateComponentConfigRequest}.
+     *
+     * @param user    the {@link User}
+     * @param request the {@link CreateComponentConfigRequest}
+     * @return the Future JSON-RPC Response
+     * @throws OpenemsNamedException on error
+     */
+    protected CompletableFuture<JsonrpcResponseSuccess> handleGetDependenciesRequest(User user,
+                                                                                     GetDependenciesRequest request) throws OpenemsNamedException {
+        // Get FactoryPid from Request
+        String factoryPid = request.getFactoryPid();
+        String importPackages = this.edgeConfigWorker.getImportPackages(factoryPid);
+        JsonObject output = new JsonObject();
+        output.addProperty("Factory Pid", factoryPid);
+        output.addProperty("Requirements",importPackages);
+        return CompletableFuture.completedFuture(new GenericJsonrpcResponseSuccess(request.getId(), output));
+    }
 
     /**
      * Handles a {@link CreateComponentConfigRequest}.

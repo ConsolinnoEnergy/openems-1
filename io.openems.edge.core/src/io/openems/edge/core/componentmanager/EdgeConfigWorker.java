@@ -637,6 +637,61 @@ public class EdgeConfigWorker extends ComponentManagerWorker {
         }
         return new String[0];
     }
+    /**
+     * Reads Natures from an XML.
+     *
+     * <pre>
+     * &lt;scr:component&gt;
+     *   &lt;service&gt;
+     *     &lt;provide interface="..."&gt;
+     *   &lt;/service&gt;
+     * &lt;/scr:component&gt;
+     * </pre>
+     *
+     * @return Natures as array of Strings
+     */
+    public String getImportPackages(String factoryPid) {
+        final Bundle[] bundles = this.parent.bundleContext.getBundles();
+        for (Bundle bundle : bundles) {
+            final MetaTypeInformation mti = this.parent.metaTypeService.getMetaTypeInformation(bundle);
+            if (mti == null) {
+                continue;
+            }
+
+            // read Bundle Manifest
+            URL manifestUrl = bundle.getResource("META-INF/MANIFEST.MF");
+            Manifest manifest;
+            try {
+                manifest = new Manifest(manifestUrl.openStream());
+            } catch (IOException e) {
+                // unable to read manifest
+                continue;
+            }
+            String serviceComponentsString = manifest.getMainAttributes()
+                    .getValue(ComponentConstants.SERVICE_COMPONENT);
+            if (serviceComponentsString == null) {
+                continue;
+            }
+            String[] serviceComponents = serviceComponentsString.split(",");
+
+            // read Service-Component XML files from OSGI-INF folder
+            for (String serviceComponent : serviceComponents) {
+                if (!serviceComponent.contains(factoryPid)) {
+                    // search for correct XML file
+                    continue;
+                }
+
+                // get "Service-Component"-Entry of Manifest
+                String importPackagesString = manifest.getMainAttributes()
+                        .getValue("Import-Package");
+            if (importPackagesString == null){
+                continue;
+            }
+            return importPackagesString;
+            }
+        }
+        return null;
+    }
 
     /**
      * Gets a component Property as JsonElement. Uses some more techniques to find
