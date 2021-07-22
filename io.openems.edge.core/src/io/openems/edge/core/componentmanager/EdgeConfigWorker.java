@@ -641,7 +641,7 @@ public class EdgeConfigWorker extends ComponentManagerWorker {
     }
 
     /**
-     * Reads Natures from an XML.
+     * Reads Import-Packages from the Manifest.
      *
      * <pre>
      * &lt;scr:component&gt;
@@ -651,7 +651,7 @@ public class EdgeConfigWorker extends ComponentManagerWorker {
      * &lt;/scr:component&gt;
      * </pre>
      *
-     * @return Natures as array of Strings
+     * @return Import-Packages as array of Strings
      */
     public String[] getImportPackages(String factoryPid) {
         final Bundle[] bundles = this.parent.bundleContext.getBundles();

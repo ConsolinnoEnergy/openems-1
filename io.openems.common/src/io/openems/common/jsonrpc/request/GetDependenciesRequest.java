@@ -9,8 +9,7 @@ import io.openems.common.utils.JsonUtils;
 
 /**
  * Represents a JSON-RPC Request for 'GetDependenciesRequest'.
- * This will return all currently configured Components with their corresponding Configuration.
- * NOTE: This does not contain information about the Channels.
+ * This will return all Import Packages from the Edge that aren't from the common Package.
  *
  * <pre>
  * {
