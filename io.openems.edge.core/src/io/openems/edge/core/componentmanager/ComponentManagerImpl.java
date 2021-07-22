@@ -290,10 +290,14 @@ public class ComponentManagerImpl extends AbstractOpenemsComponent
                                                                                      GetDependenciesRequest request) throws OpenemsNamedException {
         // Get FactoryPid from Request
         String factoryPid = request.getFactoryPid();
-        String importPackages = this.edgeConfigWorker.getImportPackages(factoryPid);
+        String[] importPackages = this.edgeConfigWorker.getImportPackages(factoryPid);
         JsonObject output = new JsonObject();
+        JsonArray packageArray = new JsonArray();
+        for (int n = 0; n < importPackages.length; n++) {
+            packageArray.add(importPackages[n]);
+        }
         output.addProperty("Factory Pid", factoryPid);
-        output.addProperty("Requirements",importPackages);
+        output.add("Requirements", packageArray);
         return CompletableFuture.completedFuture(new GenericJsonrpcResponseSuccess(request.getId(), output));
     }
 

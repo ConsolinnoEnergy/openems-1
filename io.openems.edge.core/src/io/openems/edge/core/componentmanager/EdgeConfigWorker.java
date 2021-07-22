@@ -3,11 +3,13 @@ package io.openems.edge.core.componentmanager;
 import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Dictionary;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
@@ -637,6 +639,7 @@ public class EdgeConfigWorker extends ComponentManagerWorker {
         }
         return new String[0];
     }
+
     /**
      * Reads Natures from an XML.
      *
@@ -650,8 +653,9 @@ public class EdgeConfigWorker extends ComponentManagerWorker {
      *
      * @return Natures as array of Strings
      */
-    public String getImportPackages(String factoryPid) {
+    public String[] getImportPackages(String factoryPid) {
         final Bundle[] bundles = this.parent.bundleContext.getBundles();
+        List<String> result = new ArrayList<>();
         for (Bundle bundle : bundles) {
             final MetaTypeInformation mti = this.parent.metaTypeService.getMetaTypeInformation(bundle);
             if (mti == null) {
@@ -684,10 +688,18 @@ public class EdgeConfigWorker extends ComponentManagerWorker {
                 // get "Service-Component"-Entry of Manifest
                 String importPackagesString = manifest.getMainAttributes()
                         .getValue("Import-Package");
-            if (importPackagesString == null){
-                continue;
-            }
-            return importPackagesString;
+                if (importPackagesString == null) {
+                    continue;
+                }
+                String[] packages = importPackagesString.split("\\" + "\"" + ",");
+                for (String importPackage : packages) {
+                    if (!importPackage.contains("io.openems.edge") || importPackage.contains("io.openems.edge.common")) {
+                        //do nothing
+                    } else {
+                        result.add(importPackage);
+                    }
+                }
+                return result.toArray(new String[result.size()]);
             }
         }
         return null;
