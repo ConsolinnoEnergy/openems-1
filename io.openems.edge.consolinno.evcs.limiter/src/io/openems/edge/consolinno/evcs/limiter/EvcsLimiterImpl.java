@@ -5,9 +5,9 @@ import io.openems.edge.common.component.AbstractOpenemsComponent;
 import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.common.event.EdgeEventConstants;
-import io.openems.edge.ess.api.AsymmetricEss;
-import io.openems.edge.ess.api.SymmetricEss;
 import io.openems.edge.evcs.api.ManagedEvcs;
+import io.openems.edge.meter.api.AsymmetricMeter;
+import io.openems.edge.meter.api.SymmetricMeter;
 import org.joda.time.DateTime;
 import org.osgi.service.cm.ConfigurationException;
 import org.osgi.service.component.ComponentContext;
@@ -76,7 +76,7 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
     private int offTime;
     private boolean symmetry;
     private boolean useMeter;
-    private AsymmetricEss meter;
+    private AsymmetricMeter meter;
 
     @Reference
     ComponentManager cpm;
@@ -114,10 +114,10 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
 
         try {
             OpenemsComponent component = this.cpm.getComponent(meter);
-            if (component instanceof AsymmetricEss) {
-                this.meter = (AsymmetricEss) component;
+            if (component instanceof AsymmetricMeter) {
+                this.meter = (AsymmetricMeter) component;
                 return true;
-            } else if (component instanceof SymmetricEss) {
+            } else if (component instanceof SymmetricMeter) {
                 return false;
             }
 
@@ -2146,9 +2146,9 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
         int l2Offset = 0;
         int l3Offset = 0;
         if (this.useMeter) {
-            int l1 = this.meter.getActivePowerL1().orElse(0) / GRID_VOLTAGE;
-            int l2 = this.meter.getActivePowerL2().orElse(0) / GRID_VOLTAGE;
-            int l3 = this.meter.getActivePowerL3().orElse(0) / GRID_VOLTAGE;
+            int l1 = Math.abs(this.meter.getActivePowerL1().orElse(0) / GRID_VOLTAGE);
+            int l2 = Math.abs(this.meter.getActivePowerL2().orElse(0) / GRID_VOLTAGE);
+            int l3 = Math.abs(this.meter.getActivePowerL3().orElse(0) / GRID_VOLTAGE);
             int minPower = Math.min(Math.min(l1, l2), l3);
             l1Offset = l1 - minPower;
             l2Offset = l2 - minPower;
