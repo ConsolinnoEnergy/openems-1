@@ -696,7 +696,10 @@ public class EdgeConfigWorker extends ComponentManagerWorker {
                     if (!importPackage.contains("io.openems.edge") || importPackage.contains("io.openems.edge.common")) {
                         //do nothing
                     } else {
-                        result.add(importPackage);
+                        String currentPackage = importPackage.split(";",2)[0].replace("io.openems.edge.", "").split(".api",2)[0];
+                        if (!result.toString().contains(currentPackage)) {
+                            result.add(currentPackage);
+                        }
                     }
                 }
                 return result.toArray(new String[result.size()]);
