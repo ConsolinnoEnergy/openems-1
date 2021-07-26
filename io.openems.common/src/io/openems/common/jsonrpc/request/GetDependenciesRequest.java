@@ -15,8 +15,10 @@ import io.openems.common.utils.JsonUtils;
  * {
  *   "jsonrpc": "2.0",
  *   "id": "UUID",
- *   "method": "getActiveComponents",
- *   "params": {}
+ *   "method": "getDependencies",
+ *   "params": {
+ *       "factoryPid":string
+ *   }
  * }
  * </pre>
  */
@@ -25,7 +27,7 @@ public class GetDependenciesRequest extends JsonrpcRequest {
     public static final String METHOD = "getDependencies";
 
     /**
-     * Create {@link GetActiveComponentsRequest} from a template {@link JsonrpcRequest}.
+     * Create {@link GetDependenciesRequest} from a template {@link JsonrpcRequest}.
      *
      * @param r the template {@link JsonrpcRequest}
      * @return the {@link GetActiveComponentsRequest}
