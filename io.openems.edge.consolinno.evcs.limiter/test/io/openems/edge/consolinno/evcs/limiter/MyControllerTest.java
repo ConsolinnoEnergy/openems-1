@@ -6,7 +6,6 @@ import io.openems.edge.common.test.ComponentTest;
 import io.openems.edge.common.test.DummyComponentManager;
 import io.openems.edge.common.test.TimeLeapClock;
 import io.openems.edge.common.test.AbstractComponentTest.TestCase;
-import io.openems.edge.ess.test.DummyManagedAsymmetricEss;
 import io.openems.edge.evcs.test.DummyEvcsPower;
 import io.openems.edge.evcs.test.DummyManagedEvcs;
 import org.junit.Test;
@@ -140,17 +139,18 @@ public class MyControllerTest {
             }
         }
     }
+    /*
     @Test(expected = ConfigurationException.class)
     public void configurationExceptionTest() throws Throwable {
         EvcsLimiterImpl test = new EvcsLimiterImpl();
         final TimeLeapClock clock = new TimeLeapClock(
-                Instant.ofEpochSecond(1577836800) /* starts at 1. January 2020 00:00:00 */, ZoneOffset.UTC);
+                Instant.ofEpochSecond(1577836800), ZoneOffset.UTC);
 
 
         try {
             new ComponentTest(test)
                     .addReference("cpm", new DummyComponentManager(clock))
-                    .addComponent(new DummyManagedAsymmetricEss("wrong"))
+                    .addComponent(new DummyManagedAsymmetricMeter("wrong"))
                     .activate(MyConfig.create()
                             .setId(id)
                             .setEnabled(true)
@@ -177,4 +177,6 @@ public class MyControllerTest {
             }
         }
     }
+    */
+
 }

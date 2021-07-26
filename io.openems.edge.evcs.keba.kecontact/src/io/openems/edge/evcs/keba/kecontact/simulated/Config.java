@@ -6,7 +6,7 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 @ObjectClassDefinition(name = "Simulated Keba KeContact", description = ".")
 @interface Config {
 
-    @AttributeDefinition(name = "Id", description = "Unique Id for the .")
+    @AttributeDefinition(name = "Id", description = "Unique Id for the Simulated Keba.")
     String id() default "";
 
     @AttributeDefinition(name = "Alias", description = "Human readable name of this Configurator.")

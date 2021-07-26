@@ -91,9 +91,25 @@ public class SimulatedKebaContact extends AbstractOpenemsComponent implements Ma
     }
 
     @Modified
-    void modified(ComponentContext context, Config config) throws ConfigurationException {
+    void modified(ComponentContext context, Config config) throws ConfigurationException, javax.naming.ConfigurationException {
         super.modified(context, config.id(), config.alias(), config.enabled());
+        this.channel(KebaChannelId.ALIAS).setNextValue(config.alias());
 
+        this.config = config;
+        this.phases = config.phases();
+        if (!this.checkPhases()) {
+            throw new javax.naming.ConfigurationException();
+        }
+        this.l1 = this.channel(KebaChannelId.CURRENT_L1);
+        this.l2 = this.channel(KebaChannelId.CURRENT_L2);
+        this.l3 = this.channel(KebaChannelId.CURRENT_L3);
+        if (config.minHwPower() == 0) {
+            this._setMinimumHardwarePower(6);
+        } else {
+            this._setMinimumHardwarePower(config.minHwPower());
+        }
+        this._setPhases(0);
+        this._setPowerPrecision(0.23);
     }
 
     @Override
@@ -120,7 +136,11 @@ public class SimulatedKebaContact extends AbstractOpenemsComponent implements Ma
         WriteChannel<Integer> channel = this.channel(ManagedEvcs.ChannelId.SET_CHARGE_POWER_LIMIT);
         Optional<Integer> valueOpt = channel.getNextWriteValueAndReset();
         if (valueOpt.isPresent()) {
-            this.limitPower(((valueOpt.get()) / 230) / this.phaseCount);
+            if (this.phaseCount == 0) {
+                this.limitPower(0);
+            } else {
+                this.limitPower(((valueOpt.get()) / 230) / this.phaseCount);
+            }
         }
         this._setChargePower((this.l1Power + this.l2Power + this.l3Power) * 230);
 
