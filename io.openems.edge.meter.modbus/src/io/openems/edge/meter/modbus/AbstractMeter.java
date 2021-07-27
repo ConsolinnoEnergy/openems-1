@@ -2,16 +2,23 @@ package io.openems.edge.meter.modbus;
 
 import io.openems.common.channel.Unit;
 import io.openems.common.exceptions.OpenemsException;
+import io.openems.common.types.OpenemsType;
 import io.openems.edge.bridge.modbus.api.AbstractOpenemsModbusComponent;
 import io.openems.edge.bridge.modbus.api.ModbusProtocol;
+import io.openems.edge.bridge.modbus.api.element.AbstractModbusElement;
 import io.openems.edge.bridge.modbus.api.element.CoilElement;
+import io.openems.edge.bridge.modbus.api.element.FloatDoublewordElement;
+import io.openems.edge.bridge.modbus.api.element.SignedDoublewordElement;
+import io.openems.edge.bridge.modbus.api.element.SignedQuadruplewordElement;
+import io.openems.edge.bridge.modbus.api.element.SignedWordElement;
+import io.openems.edge.bridge.modbus.api.element.UnsignedDoublewordElement;
+import io.openems.edge.bridge.modbus.api.element.UnsignedQuadruplewordElement;
 import io.openems.edge.bridge.modbus.api.element.UnsignedWordElement;
 import io.openems.edge.bridge.modbus.api.task.FC1ReadCoilsTask;
 import io.openems.edge.bridge.modbus.api.task.FC4ReadInputRegistersTask;
 import io.openems.edge.bridge.modbus.api.task.FC5WriteCoilTask;
 import io.openems.edge.bridge.modbus.api.task.FC6WriteRegisterTask;
 import io.openems.edge.common.channel.Channel;
-import io.openems.edge.common.channel.ChannelId;
 import io.openems.edge.common.channel.value.Value;
 import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
@@ -53,7 +60,6 @@ public abstract class AbstractMeter extends AbstractOpenemsModbusComponent imple
     private static final int TASK_TYPE_POSITION = 2;
     private static final int WORD_TYPE_POSITION = 3;
     private static final int PRIORITY_POSITION = 4;
-    //TODO: CONVERTER
     private static final int EXPECTED_SIZE = 4;
     private static final int EXPECTED_SIZE_WITH_PRIORITY = 5;
 
@@ -80,6 +86,9 @@ public abstract class AbstractMeter extends AbstractOpenemsModbusComponent imple
         //FLOAT_64
     }
 
+    private enum RegisterType {
+        READ, WRITE
+    }
 
     protected AbstractMeter(io.openems.edge.common.channel.ChannelId[] firstInitialChannelIds, io.openems.edge.common.channel.ChannelId[]... furtherInitialChannelIds) {
         super(firstInitialChannelIds, furtherInitialChannelIds);
@@ -128,7 +137,7 @@ public abstract class AbstractMeter extends AbstractOpenemsModbusComponent imple
                     }
                     if (wordType == null) {
                         ex[0] = new ConfigurationException("configureChannelConfiguration in " + super.id(), "Wrong WordType: " + split[WORD_TYPE_POSITION]);
-                    }suell
+                    }
                     Channel<?> channel = this.channelMap.get(channelId);
                     TaskType type = null;
                     Priority priority = null;
@@ -143,10 +152,9 @@ public abstract class AbstractMeter extends AbstractOpenemsModbusComponent imple
                     if (TaskType.contains(taskType) && channel != null) {
                         type = TaskType.valueOf(taskType);
                         if (priority != null) {
-                            //TODO
-                            this.modbusConfig.add(new ModbusConfigWrapper(channel.channelId(), address, type, priority, WordType.INT_16));
+                            this.modbusConfig.add(new ModbusConfigWrapper(channel.channelId(), address, type, priority, wordType));
                         } else {
-                            this.modbusConfig.add(new ModbusConfigWrapper(channel.channelId(), address, type));
+                            this.modbusConfig.add(new ModbusConfigWrapper(channel.channelId(), address, type, wordType));
                         }
                     } else {
                         ex[0] = new ConfigurationException("Configure Channel Configuration: " + super.id(), "Either Type is null or Channel not Available: For Entry: "
@@ -209,6 +217,7 @@ public abstract class AbstractMeter extends AbstractOpenemsModbusComponent imple
             properties.put(configTarget, this.propertyInput(Arrays.toString(channelIdArray)));
             properties.put(TASK_TYPE_CONFIG, this.propertyInput(Arrays.toString(TaskType.values())));
             properties.put(PRIORITY_CONFIG, this.propertyInput(Arrays.toString(Priority.values())));
+            properties.put(WORD_TYPE_CONFIG, this.propertyInput(Arrays.toString(WordType.values())));
             config.update(properties);
 
         } catch (IOException e) {
@@ -293,16 +302,14 @@ public abstract class AbstractMeter extends AbstractOpenemsModbusComponent imple
                             );
                             break;
                         case READ_REGISTER:
-                            protocol.addTask(new FC4ReadInputRegistersTask(entry.getModbusAddress(), entry.getPriority(),
-                                    m(entry.getChannelId(), new UnsignedWordElement(entry.modbusAddress))));
+                            this.addRegister(protocol, entry, RegisterType.READ);
                             break;
                         case WRITE_COIL:
                             protocol.addTask(new FC5WriteCoilTask(entry.getModbusAddress(),
                                     new CoilElement(entry.getModbusAddress())));
                             break;
                         case WRITE_REGISTER:
-                            protocol.addTask(new FC6WriteRegisterTask(entry.getModbusAddress(),
-                                    m(entry.getChannelId(), new UnsignedWordElement(entry.getModbusAddress()))));
+                            this.addRegister(protocol, entry, RegisterType.WRITE);
                             break;
                     }
                 }
@@ -317,6 +324,47 @@ public abstract class AbstractMeter extends AbstractOpenemsModbusComponent imple
         return protocol;
     }
 
+    private void addRegister(ModbusProtocol protocol, ModbusConfigWrapper wrapper, RegisterType registerType) throws OpenemsException {
+        AbstractModbusElement<?> element = null;
+        int address = wrapper.getModbusAddress();
+
+        switch (wrapper.getWordType()) {
+
+            case INT_16:
+                element = new UnsignedWordElement(address);
+                break;
+            case INT_16_SIGNED:
+                element = new SignedWordElement(address);
+                break;
+            case INT_32:
+                element = new UnsignedDoublewordElement(address);
+                break;
+            case INT_32_SIGNED:
+                element = new SignedDoublewordElement(address);
+                break;
+            case INT_64:
+                element = new UnsignedQuadruplewordElement(address);
+                break;
+            case INT_64_SIGNED:
+                element = new SignedQuadruplewordElement(address);
+                break;
+            case FLOAT_32:
+                element = new FloatDoublewordElement(address);
+                break;/* case FLOAT_64:
+                element = new FloatQuadroubleWordElement(address);
+                break;
+                        */
+        }
+
+        if (registerType.equals(RegisterType.READ)) {
+            protocol.addTask(new FC4ReadInputRegistersTask(wrapper.getModbusAddress(), wrapper.getPriority(),
+                    m(wrapper.getChannelId(), element)));
+        } else {
+            protocol.addTask(new FC6WriteRegisterTask(wrapper.getModbusAddress(),
+                    m(wrapper.getChannelId(), element)));
+        }
+    }
+
     @Override
     public String debugLog() {
         StringBuilder builder = new StringBuilder();
@@ -328,14 +376,31 @@ public abstract class AbstractMeter extends AbstractOpenemsModbusComponent imple
     }
 
     /**
-     * This will be called by
+     * This will be called by extending classes. The Value of the channel will be written into the channel, depending on the unit.
      *
-     * @param target
-     * @param targetValue
-     * @param targetUnit
-     * @param sourceUnit
+     * @param target the target channel (the original channel -> "correct" meter data
+     * @param source the source channel (the channel that gets information via modbus -> adapted for "correct" meter data
      */
-    protected void handleChannelUpdate(Channel<?> target, Value<?> targetValue, Unit targetUnit, Unit sourceUnit) {
-
+    protected void handleChannelUpdate(Channel<?> target, Channel<?> source) {
+        Value<?> targetValue = source.value();
+        Unit targetUnit = target.channelDoc().getUnit();
+        Unit sourceUnit = source.channelDoc().getUnit();
+        if (targetValue.isDefined()) {
+            switch (source.channelDoc().getType()) {
+                case BOOLEAN:
+                case STRING:
+                    target.setNextValue(targetValue.get());
+                    break;
+                case SHORT:
+                case INTEGER:
+                case LONG:
+                case FLOAT:
+                case DOUBLE:
+                    int scaleFactor = sourceUnit.getScaleFactor() - targetUnit.getScaleFactor();
+                    target.setNextValue(((double)targetValue.get() * Math.pow(10, scaleFactor)));
+                    break;
+            }
+        }
     }
+
 }
