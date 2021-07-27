@@ -4,8 +4,11 @@ import io.openems.common.exceptions.OpenemsException;
 import io.openems.edge.bridge.modbus.api.BridgeModbus;
 import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
+import io.openems.edge.common.event.EdgeEventConstants;
 import io.openems.edge.meter.api.Meter;
+import io.openems.edge.meter.api.MeterModbusGeneric;
 import io.openems.edge.meter.api.WaterMeter;
+import io.openems.edge.meter.api.WaterMeterModbusGeneric;
 import org.osgi.service.cm.Configuration;
 import org.osgi.service.cm.ConfigurationAdmin;
 import org.osgi.service.cm.ConfigurationException;
@@ -19,6 +22,9 @@ import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.component.annotations.ReferenceCardinality;
 import org.osgi.service.component.annotations.ReferencePolicy;
 import org.osgi.service.component.annotations.ReferencePolicyOption;
+import org.osgi.service.event.Event;
+import org.osgi.service.event.EventConstants;
+import org.osgi.service.event.EventHandler;
 import org.osgi.service.metatype.annotations.Designate;
 
 import java.util.ArrayList;
@@ -27,8 +33,9 @@ import java.util.Arrays;
 
 @Designate(ocd = GasMeterModbusGenericConfig.class, factory = true)
 @Component(name = "Meter.Modbus.WaterMeter", immediate = true,
-        configurationPolicy = ConfigurationPolicy.REQUIRE)
-public class WaterMeterModbus extends AbstractMeter implements OpenemsComponent, WaterMeter, Meter {
+        configurationPolicy = ConfigurationPolicy.REQUIRE,
+        property = {EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE})
+public class WaterMeterModbus extends AbstractMeter implements OpenemsComponent, WaterMeter, Meter, MeterModbusGeneric, WaterMeterModbusGeneric, EventHandler {
 
     @Reference
     protected ConfigurationAdmin cm;
@@ -47,6 +54,8 @@ public class WaterMeterModbus extends AbstractMeter implements OpenemsComponent,
     public WaterMeterModbus() {
         super(OpenemsComponent.ChannelId.values(),
                 WaterMeter.ChannelId.values(),
+                WaterMeterModbusGeneric.ChannelId.values(),
+                MeterModbusGeneric.ChannelId.values(),
                 Meter.ChannelId.values());
     }
 
@@ -71,6 +80,14 @@ public class WaterMeterModbus extends AbstractMeter implements OpenemsComponent,
     @Deactivate
     protected void deactivate() {
         super.deactivate();
+    }
+
+    @Override
+    public void handleEvent(Event event) {
+        if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE)) {
+            handleChannelUpdate(this.getTimestampChannel(), this._hasTimeStamp());
+            handleChannelUpdate(this.getTotalConsumedWaterChannel(), this._hasReadWater());
+        }
     }
 
 

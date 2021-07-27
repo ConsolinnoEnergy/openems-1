@@ -9,7 +9,6 @@ public interface GasMeterModbusGeneric extends MeterModbusGeneric {
     enum ChannelId implements io.openems.edge.common.channel.ChannelId {
 
 
-
         /**
          * The Percolation of the GasMeter.
          *
@@ -89,18 +88,6 @@ public interface GasMeterModbusGeneric extends MeterModbusGeneric {
     }
 
     /**
-     * Get the ReadingPercolationDouble Channel.
-     * Only Call by Generic Meter!
-     * The actual Percolation will be written into {@link GasMeter#getPercolationChannel()} ()}.
-     *
-     * @return the Channel.
-     */
-
-    default Channel<Double> _getPercolationDoubleChannel() {
-        return this.channel(ChannelId.PERCOLATION_DOUBLE);
-    }
-
-    /**
      * Get the ReadEnergyLong Channel.
      * Only Call by Generic Meter!
      * The actual Energy will be written into {@link GasMeter#getTotalConsumedEnergyCubicMeterChannel()} ()}.
@@ -124,30 +111,18 @@ public interface GasMeterModbusGeneric extends MeterModbusGeneric {
         return this.channel(ChannelId.PERCOLATION_DOUBLE);
     }
 
+
     /**
-     * Get the ReadEnergyLong Channel.
+     * Get the _getFlowTempLongChannelFlowTempLong Channel.
      * Only Call by Generic Meter!
-     * The actual Reading Energy will be written into {@link GasMeter#getTotalConsumedEnergyCubicMeterChannel()}.
+     * The actual Reading Energy will be written into {@link GasMeter#getFlowTempChannel()}.
      *
      * @return the Channel.
      */
 
-    default Channel<Long> _getReadEnergyLongChannel() {
-        return this.channel(ChannelId.READ_ENERGY_LONG);
+    default Channel<Long> _getFlowTempLongChannel() {
+        return this.channel(ChannelId.FLOW_TEMP_DOUBLE);
     }
-
-    /**
-     * Get the ReadEnergyDouble Channel.
-     * Only Call by Generic Meter!
-     * The actual Reading Energy will be written into {@link GasMeter#getTotalConsumedEnergyCubicMeterChannel()}.
-     *
-     * @return the Channel.
-     */
-
-    default Channel<Double> _getReadEnergyDoubleChannel() {
-        return this.channel(ChannelId.READ_ENERGY_DOUBLE);
-    }
-
 
     /**
      * Get the ReadEnergyDouble Channel.
@@ -161,7 +136,13 @@ public interface GasMeterModbusGeneric extends MeterModbusGeneric {
         return this.channel(ChannelId.FLOW_TEMP_DOUBLE);
     }
 
+    default Channel<?> _hasPercolation() {
+        return MeterModbusGeneric.getValueDefinedChannel(this._getReadPercolationDoubleChannel(), this._getReadPercolationLongChannel());
+    }
 
+    default Channel<?> _hasFlowTemp() {
+        return MeterModbusGeneric.getValueDefinedChannel(this._getFlowTempDoubleChannel(), this._getFlowTempLongChannel());
+    }
 
 }
 

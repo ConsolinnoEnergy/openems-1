@@ -37,8 +37,6 @@ public interface MeterModbusGeneric extends OpenemsComponent {
         READING_POWER_DOUBLE(Doc.of(OpenemsType.DOUBLE).accessMode(AccessMode.READ_ONLY)),
 
 
-
-
         /**
          * The last timestamp.
          *
@@ -105,7 +103,6 @@ public interface MeterModbusGeneric extends OpenemsComponent {
         READING_ENERGY_DOUBLE(Doc.of(OpenemsType.DOUBLE));
 
 
-
         private final Doc doc;
 
         private ChannelId(Doc doc) {
@@ -124,7 +121,7 @@ public interface MeterModbusGeneric extends OpenemsComponent {
      *
      * @return the Channel.
      */
-    default Channel<Double> getTimeStampDoubleChannel() {
+    default Channel<Double> _getTimeStampDoubleChannel() {
         return this.channel(ChannelId.TIMESTAMP_DOUBLE);
     }
 
@@ -133,7 +130,7 @@ public interface MeterModbusGeneric extends OpenemsComponent {
      *
      * @return the Channel.
      */
-    default Channel<Long> getTimeStampLongChannel() {
+    default Channel<Long> _getTimeStampLongChannel() {
         return this.channel(ChannelId.TIMESTAMP_LONG);
     }
 
@@ -211,6 +208,32 @@ public interface MeterModbusGeneric extends OpenemsComponent {
         return this.channel(ChannelId.READING_ENERGY_LONG);
     }
 
+
+    default Channel<?> _hasTimeStamp() {
+        return MeterModbusGeneric.getValueDefinedChannel(this._getTimeStampDoubleChannel(), this._getTimeStampLongChannel());
+    }
+
+    default Channel<?> _hasReadingPower() {
+        return MeterModbusGeneric.getValueDefinedChannel(this._getReadingPowerDoubleChannel(), this._getReadingPowerLongChannel());
+    }
+
+    default Channel<?> _hasReturnTemp() {
+        return MeterModbusGeneric.getValueDefinedChannel(this._getReturnTempDoubleChannel(), this._getReturnTempLongChannel());
+    }
+
+    default Channel<?> _hasReadEnergy() {
+        return MeterModbusGeneric.getValueDefinedChannel(this._getReadingEnergyDouble(), this._getReadingEnergyLong());
+    }
+
+    static Channel<?> getValueDefinedChannel(Channel<?> firstChannel, Channel<?> secondChannel) {
+        if (firstChannel.getNextValue().isDefined()) {
+            return firstChannel;
+        } else if (secondChannel.getNextValue().isDefined()) {
+            return secondChannel;
+        } else {
+            return null;
+        }
+    }
 
 }
 

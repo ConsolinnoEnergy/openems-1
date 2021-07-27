@@ -7,8 +7,10 @@ import io.openems.edge.bridge.modbus.api.BridgeModbus;
 import io.openems.edge.common.channel.Doc;
 import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
+import io.openems.edge.common.event.EdgeEventConstants;
 import io.openems.edge.meter.api.HeatMeter;
 import io.openems.edge.meter.api.Meter;
+import io.openems.edge.meter.api.MeterModbusGeneric;
 import org.osgi.service.cm.Configuration;
 import org.osgi.service.cm.ConfigurationAdmin;
 import org.osgi.service.cm.ConfigurationException;
@@ -22,6 +24,9 @@ import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.component.annotations.ReferenceCardinality;
 import org.osgi.service.component.annotations.ReferencePolicy;
 import org.osgi.service.component.annotations.ReferencePolicyOption;
+import org.osgi.service.event.Event;
+import org.osgi.service.event.EventConstants;
+import org.osgi.service.event.EventHandler;
 import org.osgi.service.metatype.annotations.Designate;
 
 import java.util.ArrayList;
@@ -30,8 +35,9 @@ import java.util.Arrays;
 
 @Designate(ocd = GasMeterModbusGenericConfig.class, factory = true)
 @Component(name = "Meter.Modbus.HeatMeter", immediate = true,
-        configurationPolicy = ConfigurationPolicy.REQUIRE)
-public class HeatMeterModbus extends AbstractMeter implements OpenemsComponent, HeatMeter, Meter {
+        configurationPolicy = ConfigurationPolicy.REQUIRE,
+        property = {EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE})
+public class HeatMeterModbus extends AbstractMeter implements OpenemsComponent, HeatMeter, Meter, EventHandler, MeterModbusGeneric {
 
     @Reference
     protected ConfigurationAdmin cm;
@@ -71,6 +77,7 @@ public class HeatMeterModbus extends AbstractMeter implements OpenemsComponent, 
         super(OpenemsComponent.ChannelId.values(),
                 ChannelId.values(),
                 HeatMeter.ChannelId.values(),
+                MeterModbusGeneric.ChannelId.values(),
                 Meter.ChannelId.values());
     }
 
@@ -97,5 +104,14 @@ public class HeatMeterModbus extends AbstractMeter implements OpenemsComponent, 
         super.deactivate();
     }
 
+    @Override
+    public void handleEvent(Event event) {
+        if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE)) {
+            handleChannelUpdate(this.getReadingEnergyChannel(), this._hasReadEnergy());
+            handleChannelUpdate(this.getTimestampChannel(), this._hasTimeStamp());
+            handleChannelUpdate(this.getReturnTempChannel(), this._hasReturnTemp());
+            handleChannelUpdate(this.getReadingPowerChannel(), this._hasReadingPower());
+        }
+    }
 
 }

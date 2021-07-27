@@ -2,7 +2,6 @@ package io.openems.edge.meter.modbus;
 
 import io.openems.common.channel.Unit;
 import io.openems.common.exceptions.OpenemsException;
-import io.openems.common.types.OpenemsType;
 import io.openems.edge.bridge.modbus.api.AbstractOpenemsModbusComponent;
 import io.openems.edge.bridge.modbus.api.ModbusProtocol;
 import io.openems.edge.bridge.modbus.api.element.AbstractModbusElement;
@@ -65,7 +64,6 @@ public abstract class AbstractMeter extends AbstractOpenemsModbusComponent imple
 
     private final Map<String, Channel<?>> channelMap = new HashMap<>();
     private final List<ModbusConfigWrapper> modbusConfig = new ArrayList<>();
-
 
     private enum TaskType {
         READ_COIL, READ_REGISTER, WRITE_COIL, WRITE_REGISTER;
@@ -381,24 +379,26 @@ public abstract class AbstractMeter extends AbstractOpenemsModbusComponent imple
      * @param target the target channel (the original channel -> "correct" meter data
      * @param source the source channel (the channel that gets information via modbus -> adapted for "correct" meter data
      */
-    protected void handleChannelUpdate(Channel<?> target, Channel<?> source) {
-        Value<?> targetValue = source.value();
-        Unit targetUnit = target.channelDoc().getUnit();
-        Unit sourceUnit = source.channelDoc().getUnit();
-        if (targetValue.isDefined()) {
-            switch (source.channelDoc().getType()) {
-                case BOOLEAN:
-                case STRING:
-                    target.setNextValue(targetValue.get());
-                    break;
-                case SHORT:
-                case INTEGER:
-                case LONG:
-                case FLOAT:
-                case DOUBLE:
-                    int scaleFactor = sourceUnit.getScaleFactor() - targetUnit.getScaleFactor();
-                    target.setNextValue(((double)targetValue.get() * Math.pow(10, scaleFactor)));
-                    break;
+    protected static void handleChannelUpdate(Channel<?> target, Channel<?> source) {
+        if (source != null) {
+            Value<?> targetValue = source.getNextValue();
+            Unit targetUnit = target.channelDoc().getUnit();
+            Unit sourceUnit = source.channelDoc().getUnit();
+            if (targetValue.isDefined()) {
+                switch (source.channelDoc().getType()) {
+                    case BOOLEAN:
+                    case STRING:
+                        target.setNextValue(targetValue.get());
+                        break;
+                    case SHORT:
+                    case INTEGER:
+                    case LONG:
+                    case FLOAT:
+                    case DOUBLE:
+                        int scaleFactor = sourceUnit.getScaleFactor() - targetUnit.getScaleFactor();
+                        target.setNextValue(((double) targetValue.get() * Math.pow(10, scaleFactor)));
+                        break;
+                }
             }
         }
     }

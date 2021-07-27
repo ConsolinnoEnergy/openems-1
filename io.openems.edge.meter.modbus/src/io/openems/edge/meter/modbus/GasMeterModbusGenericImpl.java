@@ -2,6 +2,7 @@ package io.openems.edge.meter.modbus;
 
 import io.openems.common.exceptions.OpenemsException;
 import io.openems.edge.bridge.modbus.api.BridgeModbus;
+import io.openems.edge.common.channel.Channel;
 import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.common.event.EdgeEventConstants;
@@ -89,7 +90,12 @@ public class GasMeterModbusGenericImpl extends AbstractMeter implements OpenemsC
     @Override
     public void handleEvent(Event event) {
         if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE)) {
-
+            handleChannelUpdate(this.getTimestampChannel(), this._hasTimeStamp());
+            handleChannelUpdate(this.getPowerChannel(), this._hasReadingPower());
+            handleChannelUpdate(this.getTotalConsumedEnergyCubicMeterChannel(), this._hasReadEnergy());
+            handleChannelUpdate(this.getReturnTemp(), this._hasReturnTemp());
+            handleChannelUpdate(this.getPercolationChannel(), this._hasPercolation());
+            handleChannelUpdate(this.getFlowTempChannel(), this._hasFlowTemp());
         }
     }
 }
