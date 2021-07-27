@@ -167,7 +167,7 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
         if (this.evcss[0] == null) {
             try {
                 this.updateEvcss();
-            } catch (ConfigurationException | OpenemsError.OpenemsNamedException e) {
+            } catch (ConfigurationException e) {
                 this.log.error("EVCS given are not EVCS.");
             }
         } else {
@@ -1989,14 +1989,19 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
     /**
      * Update the Array of EVCSS.
      */
-    private void updateEvcss() throws ConfigurationException, OpenemsError.OpenemsNamedException {
-        for (int i = 0; i < this.ids.length; i++) {
-
-            if (this.cpm.getComponent(this.ids[i]) instanceof ManagedEvcs) {
-                this.evcss[i] = this.cpm.getComponent(this.ids[i]);
-            } else {
-                throw new ConfigurationException("The EVCSsId list contains a wrong ID: ", this.ids[i] + " is not a EVCS");
+    private void updateEvcss() throws ConfigurationException {
+        try {
+            for (int i = 0; i < this.ids.length; i++) {
+                OpenemsComponent component = this.cpm.getComponent(this.ids[i]);
+                if (component instanceof ManagedEvcs) {
+                    this.evcss[i] = (ManagedEvcs) component;
+                } else {
+                    throw new ConfigurationException("The EVCSsId list contains a wrong ID: ", this.ids[i] + " is not a EVCS");
+                }
             }
+        } catch (OpenemsError.OpenemsNamedException e) {
+            this.log.info("Unable to find Component. OpenEms is either still starting or the Name is incorrect.");
+            this.evcss = new ManagedEvcs[this.ids.length];
         }
     }
 
