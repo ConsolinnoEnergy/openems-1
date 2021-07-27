@@ -13,7 +13,9 @@ import org.osgi.service.component.annotations.ConfigurationPolicy;
 import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Modified;
 import org.osgi.service.component.annotations.Reference;
+import org.osgi.service.event.Event;
 import org.osgi.service.event.EventConstants;
+import org.osgi.service.event.EventHandler;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,7 +28,7 @@ import org.slf4j.LoggerFactory;
 @Component(name = "SimulatedEV", immediate = true,
         configurationPolicy = ConfigurationPolicy.REQUIRE, property = EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE)
 
-public class SimulatedEV extends AbstractOpenemsComponent implements OpenemsComponent {
+public class SimulatedEV extends AbstractOpenemsComponent implements OpenemsComponent, EventHandler {
 
     private int chargePower;
     private int phase;
@@ -73,4 +75,12 @@ public class SimulatedEV extends AbstractOpenemsComponent implements OpenemsComp
     }
 
 
+    @Override
+    public void handleEvent(Event event) {
+        if (this.evcsId.getPower() < this.chargePower) {
+            for (int i = 0; i < this.phase; i++) {
+                this.evcsId.applyPower(i, Math.min(this.chargePower, this.evcsId.getChargeLimit()), this.phase);
+            }
+        }
+    }
 }

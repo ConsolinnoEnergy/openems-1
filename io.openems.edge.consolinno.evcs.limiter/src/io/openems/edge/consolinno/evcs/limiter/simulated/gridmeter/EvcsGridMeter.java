@@ -13,7 +13,6 @@ import io.openems.edge.ess.api.ManagedSymmetricEss;
 import io.openems.edge.meter.api.AsymmetricMeter;
 import io.openems.edge.meter.api.MeterType;
 import io.openems.edge.meter.api.SymmetricMeter;
-import io.openems.edge.simulator.meter.grid.reacting.GridMeter;
 import io.openems.edge.timedata.api.Timedata;
 import io.openems.edge.timedata.api.TimedataProvider;
 import io.openems.edge.timedata.api.utils.CalculateEnergyFromPower;
@@ -37,7 +36,8 @@ import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.function.Consumer;
 
 /**
- *
+ * This is an extension of the "Simulator Grid Meter Reacting" that monitors the EVCS Limiter.
+ * NOTE: This is a Copy-Paste of that Class, since "extends" wasn't working with osgi for some reason.
  */
 
 @Designate(ocd = Config.class, factory = true)
@@ -214,7 +214,7 @@ public class EvcsGridMeter extends AbstractOpenemsComponent
                 OpenemsComponent.ChannelId.values(), //
                 SymmetricMeter.ChannelId.values(), //
                 AsymmetricMeter.ChannelId.values(), //
-                io.openems.edge.simulator.meter.grid.reacting.GridMeter.ChannelId.values() //
+                EvcsGridMeter.ChannelId.values() //
         );
     }
 

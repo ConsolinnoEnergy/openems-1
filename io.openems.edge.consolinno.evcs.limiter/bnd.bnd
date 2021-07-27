@@ -9,7 +9,6 @@ Bundle-Version: 1.0.0.${tstamp}
     io.openems.common,\
     io.openems.edge.evcs.api,\
     io.openems.edge.meter.api,\
-    io.openems.edge.simulator,\
     io.openems.edge.timedata.api,\
     io.openems.common,\
     io.openems.edge.battery.api,\

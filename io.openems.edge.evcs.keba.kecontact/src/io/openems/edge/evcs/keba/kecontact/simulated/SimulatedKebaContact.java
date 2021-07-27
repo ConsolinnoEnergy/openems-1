@@ -52,6 +52,7 @@ public class SimulatedKebaContact extends AbstractOpenemsComponent implements Ma
     private int l3Power;
     private int phaseCount;
     private int initialPower;
+    private int chargeLimit;
 
     public SimulatedKebaContact() {
         super(//
@@ -158,7 +159,7 @@ public class SimulatedKebaContact extends AbstractOpenemsComponent implements Ma
         } else {
             newPower = chargeLimit;
         }
-
+        this.chargeLimit = chargeLimit;
         for (int i = 0; i < this.phaseCount; i++) {
             switch (this.phases[i]) {
                 case 1:
@@ -227,5 +228,19 @@ public class SimulatedKebaContact extends AbstractOpenemsComponent implements Ma
     @Override
     public int[] getPhaseConfiguration() {
         return this.phases;
+    }
+
+    /**
+     * Returns the current ChargePower.
+     *
+     * @return Charge Power as int
+     */
+    public int getPower() {
+        int max = Math.max(Math.max(this.l1Power, this.l2Power), this.l3Power);
+        return Math.max(max, 0);
+    }
+
+    public int getChargeLimit() {
+        return this.chargeLimit;
     }
 }
