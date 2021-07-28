@@ -3,7 +3,7 @@ package io.openems.edge.meter.modbus;
 import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
-@ObjectClassDefinition(name = "Modbus GasMeter ", description = ".")
+@ObjectClassDefinition(name = "Modbus Meter Water Generic", description = ".")
 @interface WaterMeterConfig {
 
     String service_pid();
@@ -37,5 +37,5 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
     boolean configurationDone() default false;
 
-    String webconsole_configurationFactory_nameHint() default "GasMeter {id}";
+    String webconsole_configurationFactory_nameHint() default "Modbus Meter Water Generic {id}";
 }

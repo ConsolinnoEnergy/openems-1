@@ -3,7 +3,7 @@ package io.openems.edge.meter.modbus;
 import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
-@ObjectClassDefinition(name = "Modbus HeatMeter Generic", description = "A Generic Modbus HeatMeter")
+@ObjectClassDefinition(name = "Modbus Meter Heat Generic", description = "A Generic Modbus HeatMeter")
 @interface HeatMeterConfig {
 
     String service_pid();
@@ -37,5 +37,5 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
     boolean configurationDone() default false;
 
-    String webconsole_configurationFactory_nameHint() default "{HeatMeter id}";
+    String webconsole_configurationFactory_nameHint() default "Modbus Meter Heat Generic {id}";
 }

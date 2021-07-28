@@ -118,7 +118,7 @@ public class DefaultConfigurationWorker extends ComponentManagerWorker {
                 e.printStackTrace();
                 defaultConfigurationFailed.set(true);
             }
-        }
+        }/*
         if (existingConfigs.stream().noneMatch(c -> "Bridge.Modbus.Tcp".equals(c.factoryPid))) {
             this.createConfiguration(defaultConfigurationFailed, "Bridge.Modbus.Tcp", Arrays.asList(//
                     new Property("id", "modbus0"), //
@@ -163,7 +163,7 @@ public class DefaultConfigurationWorker extends ComponentManagerWorker {
                     new Property("alias", ""), //
                     new Property("enabled", true) //
             ));
-        }
+        }*/
         return defaultConfigurationFailed.get();
     }
 

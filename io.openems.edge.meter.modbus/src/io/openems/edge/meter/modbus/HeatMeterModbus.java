@@ -33,9 +33,13 @@ import org.osgi.service.metatype.annotations.Designate;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-
-@Designate(ocd = GasMeterModbusGenericConfig.class, factory = true)
-@Component(name = "Meter.Modbus.HeatMeter", immediate = true,
+/**
+ * The Generic Modbus Heat Meter.
+ * It is a Generic Modbus Component, that can Map it's Channels to ModbusAddresses.
+ * Depends on the way you configure them.
+ */
+@Designate(ocd = HeatMeterConfig.class, factory = true)
+@Component(name = "Meter.Modbus.Meter.Heat.Generic", immediate = true,
         configurationPolicy = ConfigurationPolicy.REQUIRE,
         property = {EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE})
 public class HeatMeterModbus extends AbstractGenericModbusComponent implements OpenemsComponent, HeatMeter, Meter, EventHandler, MeterModbusGeneric {

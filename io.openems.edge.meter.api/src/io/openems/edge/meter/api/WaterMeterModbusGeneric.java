@@ -70,6 +70,10 @@ public interface WaterMeterModbusGeneric extends MeterModbusGeneric {
         return this.channel(ChannelId.READ_WATER_LONG);
     }
 
+    /**
+     * Checks if the ModbusChannel got a WaterLevel to read.
+     * @return the channel or else null.
+     */
     default Channel<?> _hasReadWater() {
         return MeterModbusGeneric.getValueDefinedChannel(this._getReadWaterDoubleChannel(), this._getReadWaterLongChannel());
     }

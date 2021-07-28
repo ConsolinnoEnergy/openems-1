@@ -37,7 +37,7 @@ import java.util.Arrays;
  * Depends on the way you configure them.
  */
 @Designate(ocd = GasMeterModbusGenericConfig.class, factory = true)
-@Component(name = "Meter.Modbus.GasMeter.Generic", immediate = true,
+@Component(name = "Meter.Modbus.Meter.Gas.Generic", immediate = true,
         configurationPolicy = ConfigurationPolicy.REQUIRE,
         property = {EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE})
 public class GasMeterModbusGenericImpl extends AbstractGenericModbusComponent implements OpenemsComponent, Meter, GasMeter, GasMeterModbusGeneric, MeterModbusGeneric, EventHandler {

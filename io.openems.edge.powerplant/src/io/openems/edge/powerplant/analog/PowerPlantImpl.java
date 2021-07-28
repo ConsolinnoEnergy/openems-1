@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import io.openems.common.exceptions.OpenemsError;
+import io.openems.edge.bridge.modbus.api.generic.AbstractGenericModbusComponent;
 import io.openems.edge.common.component.AbstractOpenemsComponent;
 import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
@@ -37,7 +38,7 @@ import org.slf4j.LoggerFactory;
         configurationPolicy = ConfigurationPolicy.REQUIRE,
         immediate = true,
         property = EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE)
-public class PowerPlantImpl extends AbstractOpenemsComponent implements PowerPlant, OpenemsComponent, EventHandler {
+public class PowerPlantImpl extends AbstractGenericModbusComponent implements PowerPlant, OpenemsComponent, EventHandler {
 
     private final Logger log = LoggerFactory.getLogger(PowerPlantImpl.class);
 

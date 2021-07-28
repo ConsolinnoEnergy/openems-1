@@ -31,9 +31,13 @@ import org.osgi.service.metatype.annotations.Designate;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-
-@Designate(ocd = GasMeterModbusGenericConfig.class, factory = true)
-@Component(name = "Meter.Modbus.WaterMeter", immediate = true,
+/**
+ * The Generic Modbus Water Meter.
+ * It is a Generic Modbus Component, that can Map it's Channels to ModbusAddresses.
+ * Depends on the way you configure them.
+ */
+@Designate(ocd = WaterMeterConfig.class, factory = true)
+@Component(name = "Meter.Modbus.Meter.Water.Generic", immediate = true,
         configurationPolicy = ConfigurationPolicy.REQUIRE,
         property = {EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE})
 public class WaterMeterModbus extends AbstractGenericModbusComponent implements OpenemsComponent, WaterMeter, Meter, MeterModbusGeneric, WaterMeterModbusGeneric, EventHandler {
@@ -88,6 +92,7 @@ public class WaterMeterModbus extends AbstractGenericModbusComponent implements 
         if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE)) {
             handleChannelUpdate(this.getTimestampChannel(), this._hasTimeStamp());
             handleChannelUpdate(this.getTotalConsumedWaterChannel(), this._hasReadWater());
+            handleChannelUpdate(this.getErrorMessageChannel(), this.getErrorMessageChannelGeneric());
         }
     }
 

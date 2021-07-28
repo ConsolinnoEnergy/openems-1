@@ -59,7 +59,7 @@ import java.util.stream.Collectors;
  */
 public abstract class AbstractGenericModbusComponent extends AbstractOpenemsModbusComponent implements OpenemsComponent {
 
-    private static final Logger log = LoggerFactory.getLogger(AbstractGenericModbusComponent.class);
+    private final Logger log = LoggerFactory.getLogger(AbstractGenericModbusComponent.class);
 
     protected AtomicReference<ConfigurationAdmin> cm = new AtomicReference<>();
 
@@ -148,6 +148,7 @@ public abstract class AbstractGenericModbusComponent extends AbstractOpenemsModb
     /**
      * Called on either activate or modified. It checks the configuration of the modbusChannel and applies it.
      * It creates the {@link #channelMap} that will be used by the {@link #defineModbusProtocol()} to create the ModbusTasks.
+     *
      * @param modbusConfiguration the configuration of the child Config
      * @throws ConfigurationException if the ComponentConfiguration was wrong
      */
@@ -275,7 +276,7 @@ public abstract class AbstractGenericModbusComponent extends AbstractOpenemsModb
             config.update(properties);
 
         } catch (IOException e) {
-            e.printStackTrace();
+            this.log.warn("Couldn't update the Config: " + e.getMessage() + "\n because: " + e.getCause());
         }
     }
 
@@ -370,6 +371,7 @@ public abstract class AbstractGenericModbusComponent extends AbstractOpenemsModb
     protected ModbusProtocol defineModbusProtocol() throws OpenemsException {
         ModbusProtocol protocol = new ModbusProtocol(this);
         OpenemsException[] ex = {null};
+        //previously configured ModbusConfig -> usually from child Configuration
         this.modbusConfig.forEach((key, entry) -> {
             try {
                 if (ex[0] == null) {
@@ -392,7 +394,7 @@ public abstract class AbstractGenericModbusComponent extends AbstractOpenemsModb
                     }
                 }
             } catch (OpenemsException e) {
-                log.warn("Couldn't apply ModbusConfig for : " + entry.channelId);
+                this.log.warn("Couldn't apply ModbusConfig for : " + entry.channelId);
                 ex[0] = e;
             }
         });
@@ -402,6 +404,13 @@ public abstract class AbstractGenericModbusComponent extends AbstractOpenemsModb
         return protocol;
     }
 
+    /**
+     * Adds a Register (Read or Write) to the ModbusProtocol, distinct what {@link AbstractModbusElement} needs to be
+     * used.
+     * @param protocol The ModbusProtocol usually from this {@link #defineModbusProtocol()}.
+     * @param wrapper the ModbusConfigWrapper, usually from the {@link #modbusConfig}
+     * @throws OpenemsException if the addTask fails.
+     */
     private void addRegister(ModbusProtocol protocol, ModbusConfigWrapper wrapper) throws OpenemsException {
         AbstractModbusElement<?> element = null;
         int address = wrapper.getModbusAddress();
@@ -477,7 +486,7 @@ public abstract class AbstractGenericModbusComponent extends AbstractOpenemsModb
                         case FLOAT:
                         case DOUBLE:
                             int scaleFactor = this.modbusConfig.get(source.channelId()).getStringLengthOrScaleFactor();
-                            target.setNextValue(((double) targetValue.get() * Math.pow(10, scaleFactor)));
+                            target.setNextValue(((Double) targetValue.get() * Math.pow(10, scaleFactor)));
                             break;
                     }
                 }
