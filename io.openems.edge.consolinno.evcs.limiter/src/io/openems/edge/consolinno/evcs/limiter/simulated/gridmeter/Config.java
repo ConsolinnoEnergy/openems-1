@@ -23,7 +23,7 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     @AttributeDefinition(name = "Is enabled?", description = "Is this Component enabled?")
     boolean enabled() default true;
 
-    @AttributeDefinition(name = "ScaleFactor", description = "Scales the Power detected by the meter.")
+    @AttributeDefinition(name = "ScaleFactor", description = "Scales the Power detected by the meter from the EVCS Limiter.")
     int scaleFactor() default 1;
 
     @AttributeDefinition(name = "Minimum Ever Active Power", description = "This is automatically updated.")

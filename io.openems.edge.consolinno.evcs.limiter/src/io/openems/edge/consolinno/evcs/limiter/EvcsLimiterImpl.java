@@ -77,6 +77,7 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
     private boolean symmetry;
     private boolean useMeter;
     private AsymmetricMeter meter;
+    private String meterId;
 
     @Reference
     ComponentManager cpm;
@@ -90,8 +91,9 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
     void activate(ComponentContext context, Config config) throws ConfigurationException, OpenemsError.OpenemsNamedException {
         super.activate(context, config.id(), config.alias(), config.enabled());
         this.useMeter = config.useMeter();
+        this.meterId = config.meter();
         if (this.useMeter && !this.checkMeter(config.meter())) {
-            throw new ConfigurationException("Configured Meter is not an Asymmetric Meter.", "Check config");
+            this.log.error("The configured Meter is not active or not an Asymmetric Meter.");
         }
         this.ids = config.evcss();
         this.evcss = new ManagedEvcs[this.ids.length];
@@ -133,6 +135,7 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
         this.ids = config.evcss();
         this.evcss = new ManagedEvcs[this.ids.length];
         this.useMeter = config.useMeter();
+        this.meterId = config.meter();
         if (this.useMeter && !this.checkMeter(config.meter())) {
             throw new ConfigurationException("Configured Meter is not an Asymmetric Meter.", "Check config");
         }
@@ -171,6 +174,10 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
                 this.log.error("EVCS given are not EVCS.");
             }
         } else {
+
+            if (this.useMeter && this.meter == null) {
+                this.checkMeter(this.meterId);
+            }
 
             //-----Reallocate Resources------\\
             this.checkWaitingList();
@@ -2150,7 +2157,7 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
         int l1Offset = 0;
         int l2Offset = 0;
         int l3Offset = 0;
-        if (this.useMeter) {
+        if (this.useMeter && this.meter != null) {
             int l1 = Math.abs(this.meter.getActivePowerL1().orElse(0) / GRID_VOLTAGE);
             int l2 = Math.abs(this.meter.getActivePowerL2().orElse(0) / GRID_VOLTAGE);
             int l3 = Math.abs(this.meter.getActivePowerL3().orElse(0) / GRID_VOLTAGE);

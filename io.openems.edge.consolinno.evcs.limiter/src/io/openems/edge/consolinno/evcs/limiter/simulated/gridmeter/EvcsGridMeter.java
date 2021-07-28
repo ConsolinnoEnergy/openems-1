@@ -165,7 +165,7 @@ public class EvcsGridMeter extends AbstractOpenemsComponent
             }
         }
         if (this.limiter != null && sum != null) {
-            this._setActivePower((sum * this.scaleFactor + this.limiter.getCurrentPowerChannel().value().orElse(0)));
+            this._setActivePower(sum  + (this.limiter.getCurrentPowerChannel().value().orElse(0)) * this.scaleFactor);
         } else {
             this._setActivePower(sum);
         }
