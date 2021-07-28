@@ -3,7 +3,7 @@ package io.openems.edge.evcs.keba.kecontact.simulated;
 import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
-@ObjectClassDefinition(name = "Simulated Keba KeContact", description = ".")
+@ObjectClassDefinition(name = "Consolinno EVCS Simulator", description = "This Simulates a Keba EVCS.")
 @interface Config {
 
     @AttributeDefinition(name = "Id", description = "Unique Id for the Simulated Keba.")

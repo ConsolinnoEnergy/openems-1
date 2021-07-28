@@ -53,6 +53,7 @@ public class EvcsGridMeter extends AbstractOpenemsComponent
 
     private String limiterId;
     private EvcsLimiterImpl limiter;
+    private int scaleFactor;
 
     public enum ChannelId implements io.openems.edge.common.channel.ChannelId {
         ;
@@ -164,7 +165,7 @@ public class EvcsGridMeter extends AbstractOpenemsComponent
             }
         }
         if (this.limiter != null && sum != null) {
-            this._setActivePower(sum + this.limiter.getCurrentPowerChannel().value().orElse(0));
+            this._setActivePower((sum * this.scaleFactor + this.limiter.getCurrentPowerChannel().value().orElse(0)));
         } else {
             this._setActivePower(sum);
         }
@@ -202,6 +203,7 @@ public class EvcsGridMeter extends AbstractOpenemsComponent
     void activate(ComponentContext context, Config config) throws IOException {
         super.activate(context, config.id(), config.alias(), config.enabled());
         this.limiterId = config.limiterId();
+        this.scaleFactor = config.scaleFactor();
     }
 
     @Deactivate

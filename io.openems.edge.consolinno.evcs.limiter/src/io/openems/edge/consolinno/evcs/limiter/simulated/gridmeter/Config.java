@@ -7,7 +7,7 @@ import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
 @ObjectClassDefinition(//
-        name = "Simulator GridMeter Reacting for Evcs Limiter", //
+        name = "Consolinno Simulated EVCS Limiter Grid Meter", //
         description = "This simulates an 'reacting' Grid meter.")
 @interface Config {
 
@@ -22,6 +22,9 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
     @AttributeDefinition(name = "Is enabled?", description = "Is this Component enabled?")
     boolean enabled() default true;
+
+    @AttributeDefinition(name = "ScaleFactor", description = "Scales the Power detected by the meter.")
+    int scaleFactor() default 1;
 
     @AttributeDefinition(name = "Minimum Ever Active Power", description = "This is automatically updated.")
     int minActivePower();

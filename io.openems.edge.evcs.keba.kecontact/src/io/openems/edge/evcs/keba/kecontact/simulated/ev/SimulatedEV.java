@@ -21,7 +21,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * This provides a Simulated Electric vehicle for the Keba KeContact EVCS.
+ * This provides a Simulated Electric vehicle for the Consolinno EVCS Simulator.
  */
 
 @Designate(ocd = Config.class, factory = true)
@@ -77,7 +77,8 @@ public class SimulatedEV extends AbstractOpenemsComponent implements OpenemsComp
 
     @Override
     public void handleEvent(Event event) {
-        if (this.evcsId.getPower() < this.chargePower) {
+       if (this.evcsId.getPower() < this.chargePower && this.evcsId.getPower() < this.evcsId.getChargeLimit()) {
+                this.evcsId.resetPower();
             for (int i = 0; i < this.phase; i++) {
                 this.evcsId.applyPower(i, Math.min(this.chargePower, this.evcsId.getChargeLimit()), this.phase);
             }
