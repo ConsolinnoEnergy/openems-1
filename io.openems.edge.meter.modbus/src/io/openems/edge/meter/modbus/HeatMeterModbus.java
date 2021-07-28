@@ -4,6 +4,7 @@ import io.openems.common.channel.AccessMode;
 import io.openems.common.exceptions.OpenemsException;
 import io.openems.common.types.OpenemsType;
 import io.openems.edge.bridge.modbus.api.BridgeModbus;
+import io.openems.edge.bridge.modbus.api.generic.AbstractGenericModbusComponent;
 import io.openems.edge.common.channel.Doc;
 import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
@@ -37,7 +38,7 @@ import java.util.Arrays;
 @Component(name = "Meter.Modbus.HeatMeter", immediate = true,
         configurationPolicy = ConfigurationPolicy.REQUIRE,
         property = {EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE})
-public class HeatMeterModbus extends AbstractMeter implements OpenemsComponent, HeatMeter, Meter, EventHandler, MeterModbusGeneric {
+public class HeatMeterModbus extends AbstractGenericModbusComponent implements OpenemsComponent, HeatMeter, Meter, EventHandler, MeterModbusGeneric {
 
     @Reference
     protected ConfigurationAdmin cm;

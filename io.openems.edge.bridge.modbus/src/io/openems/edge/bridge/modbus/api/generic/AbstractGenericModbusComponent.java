@@ -1,4 +1,4 @@
-package io.openems.edge.meter.modbus;
+package io.openems.edge.bridge.modbus.api.generic;
 
 import io.openems.common.exceptions.OpenemsException;
 import io.openems.edge.bridge.modbus.api.AbstractOpenemsModbusComponent;
@@ -39,10 +39,27 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
+/**
+ * This Component allows a Simple implementation and use of Generic ModbusComponents.
+ * Children can extend this Class and let the parent handle generic tasks.
+ * Such as: Mapping and converting ChannelValues
+ * Important: Extending Classes should have the following String[] Config entries (empty)
+ * - taskType
+ * - priorities
+ * - wordType
+ * - channelIds
+ * ---
+ * When Configuring the modbuschannel should be used since the children will map a modbuschannel to a "correct" channel.
+ * E.g. if the generic ModbusMeter A gets it's reading by a DOUBLE -> the DOUBLE channel should be used for the reading.
+ * If ModbusMeter B gets it's reading by a LONG -> the LONG channel should be used.
+ * The Impl. of the Modbusmeter checks if a reading in the Long or Double is present, and sents it to this component.
+ * The Correct Channel (Reading in the Meter) gets the value of the ModbusChannel multiplied by the configured scaleFactor.
+ * In the End a generic Meter / HeatMeter etc... can be used by a e.g. a controller and does not have to distinct between a Generic and a concrete Modbus Meter.
+ * Additionally add a String[] for config. Look up the package of modbus meter to see an example.
+ */
+public abstract class AbstractGenericModbusComponent extends AbstractOpenemsModbusComponent implements OpenemsComponent {
 
-public abstract class AbstractMeter extends AbstractOpenemsModbusComponent implements OpenemsComponent {
-
-    private static final Logger log = LoggerFactory.getLogger(AbstractMeter.class);
+    private static final Logger log = LoggerFactory.getLogger(AbstractGenericModbusComponent.class);
 
     protected AtomicReference<ConfigurationAdmin> cm = new AtomicReference<>();
 
@@ -67,9 +84,20 @@ public abstract class AbstractMeter extends AbstractOpenemsModbusComponent imple
     private final Map<String, Channel<?>> channelMap = new HashMap<>();
     private final Map<io.openems.edge.common.channel.ChannelId, ModbusConfigWrapper> modbusConfig = new HashMap<>();
 
+
+    /**
+     * Declares what FC Task to use.
+     */
+
     private enum TaskType {
         READ_COIL, READ_REGISTER, WRITE_COIL, WRITE_REGISTER;
 
+        /**
+         * Contains Method -> Check if the String matches an enum value.
+         *
+         * @param taskType the potential TaskType name
+         * @return true if String matches a name
+         */
         public static boolean contains(String taskType) {
             for (TaskType type : TaskType.values()) {
                 if (type.name().equals(taskType)) {
@@ -80,26 +108,25 @@ public abstract class AbstractMeter extends AbstractOpenemsModbusComponent imple
         }
     }
 
+    /**
+     * The Word Type. Declares What type of WordElement to use.
+     */
     private enum WordType {
         INT_16, INT_16_SIGNED, INT_32, INT_32_SIGNED, INT_64, INT_64_SIGNED,
         FLOAT_32, STRING, BOOLEAN;
         //FLOAT_64
     }
 
-    private enum RegisterType {
-        READ, WRITE
-    }
-
-    protected AbstractMeter(io.openems.edge.common.channel.ChannelId[] firstInitialChannelIds, io.openems.edge.common.channel.ChannelId[]... furtherInitialChannelIds) {
+    protected AbstractGenericModbusComponent(io.openems.edge.common.channel.ChannelId[] firstInitialChannelIds, io.openems.edge.common.channel.ChannelId[]... furtherInitialChannelIds) {
         super(firstInitialChannelIds, furtherInitialChannelIds);
     }
 
     protected boolean activate(ComponentContext context, String id, String alias, boolean enabled, int unitId,
-                               ConfigurationAdmin cm, String modbusId, ComponentManager cpm, List<String> channelToAddressList) throws OpenemsException {
+                               ConfigurationAdmin cm, String modbusId, ComponentManager cpm, List<String> modbusConfiguration) throws OpenemsException {
         this.cpm.set(cpm);
         this.cm.set(cm);
         try {
-            this.configureChannelConfiguration(channelToAddressList);
+            this.configureChannelConfiguration(modbusConfiguration);
         } catch (ConfigurationException e) {
             return true;
         }
@@ -107,28 +134,32 @@ public abstract class AbstractMeter extends AbstractOpenemsModbusComponent imple
     }
 
     protected boolean modified(ComponentContext context, String id, String alias, boolean enabled, int unitId,
-                               ConfigurationAdmin cm, String modbusId, ComponentManager cpm, List<String> channelToAddressList) throws OpenemsException {
+                               ConfigurationAdmin cm, String modbusId, ComponentManager cpm, List<String> modbusConfiguration) throws OpenemsException {
         this.cpm.set(cpm);
         this.cm.set(cm);
         try {
-            this.configureChannelConfiguration(channelToAddressList);
+            this.configureChannelConfiguration(modbusConfiguration);
         } catch (ConfigurationException e) {
             return true;
         }
         return super.modified(context, id, alias, enabled, unitId, cm, "Modbus", modbusId);
     }
 
-
-    private void configureChannelConfiguration(List<String> channelToAddressList) throws ConfigurationException {
+    /**
+     * Called on either activate or modified. It checks the configuration of the modbusChannel and applies it.
+     * It creates the {@link #channelMap} that will be used by the {@link #defineModbusProtocol()} to create the ModbusTasks.
+     * @param modbusConfiguration the configuration of the child Config
+     * @throws ConfigurationException if the ComponentConfiguration was wrong
+     */
+    private void configureChannelConfiguration(List<String> modbusConfiguration) throws ConfigurationException {
         ConfigurationException[] ex = {null};
         AtomicInteger index = new AtomicInteger(1);
-        channelToAddressList.forEach(entry -> {
+        modbusConfiguration.forEach(entry -> {
             if (ex[0] == null) {
                 String[] split = entry.split(CONFIGURATION_SPLITTER);
                 if (split.length >= EXPECTED_SIZE && split.length <= EXPECTED_SIZE_WITH_PRIORITY_AND_LENGTH) {
                     String channelId = split[CHANNEL_ID_POSITION];
                     int address = Integer.parseInt(split[ADDRESS_POSITION]);
-
 
                     WordType wordType = null;
                     for (WordType type : WordType.values()) {
@@ -207,6 +238,7 @@ public abstract class AbstractMeter extends AbstractOpenemsModbusComponent imple
      * @return true if it does not need to update
      */
     public boolean update(Configuration config, String configTarget, List<Channel<?>> channelsGiven, int length) {
+        this.channelMap.clear();
         List<Channel<?>> channels =
                 channelsGiven.stream().filter(entry ->
                         !entry.channelId().id().startsWith("_Property")
@@ -232,7 +264,7 @@ public abstract class AbstractMeter extends AbstractOpenemsModbusComponent imple
     private void updateConfig(Configuration config, String configTarget, List<Channel<?>> channels) {
         AtomicInteger counter = new AtomicInteger(0);
         String[] channelIdWithUnitArray = new String[channels.size()];
-        channels.forEach(channel -> channelIdWithUnitArray[counter.getAndIncrement()] = channel.channelId().id() + " Unit: " + channel.channelDoc().getUnit());
+        channels.forEach(channel -> channelIdWithUnitArray[counter.getAndIncrement()] = channel.channelId().id() + CONFIGURATION_SPLITTER + " Unit is " + channel.channelDoc().getUnit());
 
         try {
             Dictionary<String, Object> properties = config.getProperties();
@@ -260,7 +292,19 @@ public abstract class AbstractMeter extends AbstractOpenemsModbusComponent imple
         return types.split(",");
     }
 
-
+    /**
+     * Instances of this classes are created when splitting the configuration.
+     * It holds information of each Config entry for the ModbusProtocol.
+     * It contains:
+     * <ul>
+     * <li> The ChannelId</li>
+     * <li>ModbusRegister</li>
+     * <li>TaskType</li>
+     * <li>Priority</li>
+     * <li>WordType</li>
+     * <li>Length for String or ScaleFactor</li>
+     * </ul>
+     */
     private class ModbusConfigWrapper {
 
         private final io.openems.edge.common.channel.ChannelId channelId;
@@ -338,14 +382,12 @@ public abstract class AbstractMeter extends AbstractOpenemsModbusComponent imple
                             );
                             break;
                         case READ_REGISTER:
-                            this.addRegister(protocol, entry, RegisterType.READ);
+                        case WRITE_REGISTER:
+                            this.addRegister(protocol, entry);
                             break;
                         case WRITE_COIL:
                             protocol.addTask(new FC5WriteCoilTask(entry.getModbusAddress(),
                                     new CoilElement(entry.getModbusAddress())));
-                            break;
-                        case WRITE_REGISTER:
-                            this.addRegister(protocol, entry, RegisterType.WRITE);
                             break;
                     }
                 }
@@ -360,7 +402,7 @@ public abstract class AbstractMeter extends AbstractOpenemsModbusComponent imple
         return protocol;
     }
 
-    private void addRegister(ModbusProtocol protocol, ModbusConfigWrapper wrapper, RegisterType registerType) throws OpenemsException {
+    private void addRegister(ModbusProtocol protocol, ModbusConfigWrapper wrapper) throws OpenemsException {
         AbstractModbusElement<?> element = null;
         int address = wrapper.getModbusAddress();
 
@@ -394,8 +436,7 @@ public abstract class AbstractMeter extends AbstractOpenemsModbusComponent imple
                 element = new StringWordElement(address, wrapper.getStringLengthOrScaleFactor());
                 break;
         }
-        //TODO SCALE FACTOR (LENGTH == ADDITIONAL SCALE FACTOR IF NOT A STRING)
-        if (registerType.equals(RegisterType.READ)) {
+        if (wrapper.getTaskType().equals(TaskType.READ_REGISTER)) {
             protocol.addTask(new FC4ReadInputRegistersTask(wrapper.getModbusAddress(), wrapper.getPriority(),
                     m(wrapper.getChannelId(), element)));
         } else {

@@ -2,7 +2,7 @@ package io.openems.edge.meter.modbus;
 
 import io.openems.common.exceptions.OpenemsException;
 import io.openems.edge.bridge.modbus.api.BridgeModbus;
-import io.openems.edge.common.channel.Channel;
+import io.openems.edge.bridge.modbus.api.generic.AbstractGenericModbusComponent;
 import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.common.event.EdgeEventConstants;
@@ -40,7 +40,7 @@ import java.util.Arrays;
 @Component(name = "Meter.Modbus.GasMeter.Generic", immediate = true,
         configurationPolicy = ConfigurationPolicy.REQUIRE,
         property = {EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE})
-public class GasMeterModbusGenericImpl extends AbstractMeter implements OpenemsComponent, Meter, GasMeter, GasMeterModbusGeneric, MeterModbusGeneric, EventHandler {
+public class GasMeterModbusGenericImpl extends AbstractGenericModbusComponent implements OpenemsComponent, Meter, GasMeter, GasMeterModbusGeneric, MeterModbusGeneric, EventHandler {
 
     @Reference
     protected ConfigurationAdmin cm;

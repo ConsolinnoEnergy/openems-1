@@ -13,6 +13,7 @@ import io.openems.edge.common.event.EdgeEventConstants;
 
 import io.openems.edge.consolinno.leaflet.sensor.signal.api.SignalSensor;
 
+import io.openems.edge.heater.Heater;
 import io.openems.edge.io.api.AnalogInputOutput;
 import io.openems.edge.powerplant.api.PowerPlant;
 
