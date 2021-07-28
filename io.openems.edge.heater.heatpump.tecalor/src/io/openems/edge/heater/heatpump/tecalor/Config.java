@@ -1,5 +1,6 @@
 package io.openems.edge.heater.heatpump.tecalor;
 
+import io.openems.edge.heater.heatpump.tecalor.api.OperatingMode;
 import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 import org.osgi.service.metatype.annotations.Option;
@@ -50,15 +51,8 @@ import org.osgi.service.metatype.annotations.Option;
 	boolean exceptionalStateTimerIsCyclesNotSeconds() default false;
 
 	@AttributeDefinition(name = "Default mode of operation", description = "When EnableSignal or ExceptionalState turns "
-			+ "on the heat pump, switch these modes to \"automatic\".",
-			options = {
-					@Option(label = "Program mode (Programmbetrieb)", value = "Programmbetrieb"),
-					@Option(label = "Comfort mode (Komfortbetrieb)", value = "Komfortbetrieb"),
-					@Option(label = "ECO mode (ECO-Betrieb)", value = "ECO-Betrieb"),
-					@Option(label = "Domestic hot water (Warmwasserbetrieb)", value = "Warmwasserbetrieb"),
-					@Option(label = "Standby mode (Bereitschaftsbetrieb)", value = "Bereitschaftsbetrieb")
-			})
-	String defaultModeOfOperation();
+			+ "on the heat pump, switch these modes to \"automatic\".")
+	OperatingMode defaultModeOfOperation() default OperatingMode.PROGRAM_MODE;
 
 	@AttributeDefinition(name = "Read only", description = "Only read values from Modbus, don't send commands.")
 	boolean readOnly() default false;

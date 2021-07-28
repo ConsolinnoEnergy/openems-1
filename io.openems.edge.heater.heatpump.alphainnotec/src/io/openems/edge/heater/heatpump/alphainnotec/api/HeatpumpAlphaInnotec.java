@@ -16,11 +16,11 @@ import io.openems.edge.heater.api.HeatpumpSmartGrid;
  * Channels for the Alpha Innotec heat pump.
  */
 
-public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
+public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
 
     public enum ChannelId implements io.openems.edge.common.channel.ChannelId {
 
-        // Discrete Inputs (DI) 0 to 7, read only. 0 = Off, 1 = On. Represented as boolean
+        // Discrete Inputs (DI) 0 to 7, read only. 0 = Off, 1 = On. Represented as boolean.
 
         /**
          * El.Sup.bl., electric supplier block (EVU, Energie Versorger Unterbrechung).
@@ -28,7 +28,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
          *      <li> Type: Boolean
          * </ul>
          */
-        DI_0_EVU(Doc.of(OpenemsType.BOOLEAN).unit(Unit.ON_OFF)),
+        DI_0_EL_SUP_BLOCK(Doc.of(OpenemsType.BOOLEAN).unit(Unit.ON_OFF)),
 
         /**
          * El.Sup.bl.2, electric supplier block 2 (EVU2). Like El.Sup.bl., but triggered because of smart grid setting.
@@ -36,7 +36,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
          *      <li> Type: Boolean
          * </ul>
          */
-        DI_1_EVU2(Doc.of(OpenemsType.BOOLEAN).unit(Unit.ON_OFF)),
+        DI_1_EL_SUP_BLOCK_SG(Doc.of(OpenemsType.BOOLEAN).unit(Unit.ON_OFF)),
 
         /**
          * Pool thermostat (SWT, Schwimmbadthermostat).
@@ -44,7 +44,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
          *      <li> Type: Boolean
          * </ul>
          */
-        DI_2_SWT(Doc.of(OpenemsType.BOOLEAN).unit(Unit.ON_OFF)),
+        DI_2_POOL_THERMOSTAT(Doc.of(OpenemsType.BOOLEAN).unit(Unit.ON_OFF)),
 
         /**
          * Compressor 1 (VD1, Verdichter 1).
@@ -52,7 +52,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
          *      <li> Type: Boolean
          * </ul>
          */
-        DI_3_VD1(Doc.of(OpenemsType.BOOLEAN).unit(Unit.ON_OFF)),
+        DI_3_COMPRESSOR1(Doc.of(OpenemsType.BOOLEAN).unit(Unit.ON_OFF)),
 
         /**
          * Compressor 2 (VD2, Verdichter 2).
@@ -60,7 +60,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
          *      <li> Type: Boolean
          * </ul>
          */
-        DI_4_VD2(Doc.of(OpenemsType.BOOLEAN).unit(Unit.ON_OFF)),
+        DI_4_COMPRESSOR2(Doc.of(OpenemsType.BOOLEAN).unit(Unit.ON_OFF)),
 
         /**
          * 2nd heat generator 1 (ZWE1, zusätzlicher Wärmeerzeuger 1).
@@ -68,7 +68,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
          *      <li> Type: Boolean
          * </ul>
          */
-        DI_5_ZWE1(Doc.of(OpenemsType.BOOLEAN).unit(Unit.ON_OFF)),
+        DI_5_AUX1(Doc.of(OpenemsType.BOOLEAN).unit(Unit.ON_OFF)),
 
         /**
          * 2nd heat generator 2 (ZWE2, zusätzlicher Wärmeerzeuger 2).
@@ -76,7 +76,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
          *      <li> Type: Boolean
          * </ul>
          */
-        DI_6_ZWE2(Doc.of(OpenemsType.BOOLEAN).unit(Unit.ON_OFF)),
+        DI_6_AUX2(Doc.of(OpenemsType.BOOLEAN).unit(Unit.ON_OFF)),
 
         /**
          * 2nd heat generator 3 (ZWE3, zusätzlicher Wärmeerzeuger 3). Optional, depends on heat pump model if available.
@@ -84,7 +84,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
          *      <li> Type: Boolean
          * </ul>
          */
-        DI_7_ZWE3(Doc.of(OpenemsType.BOOLEAN).unit(Unit.ON_OFF)),
+        DI_7_AUX3(Doc.of(OpenemsType.BOOLEAN).unit(Unit.ON_OFF)),
 
 
         // Input Registers (IR) 0 to 46, read only. They are 16 bit unsigned numbers unless stated otherwise.
@@ -96,7 +96,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
          *     <li> Unit: decimal degree Celsius
          * </ul>
          */
-        IR_0_MITTELTEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
+        IR_0_AVERAGE_TEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
 
         /**
          * Flow temperature (Vorlauftemperatur).
@@ -105,7 +105,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
          *     <li> Unit: decimal degree Celsius
          * </ul>
          */
-        // IR_1_VORLAUFTEMP - use FLOW_TEMPERATURE from heater interface
+        // IR_1_FLOW_TEMP - use FLOW_TEMPERATURE from heater interface
 
         /**
          * Return temperature (Rücklauftemperatur).
@@ -114,7 +114,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
          *     <li> Unit: decimal degree Celsius
          * </ul>
          */
-        // IR_2_RUECKLAUFTEMP - use RETURN_TEMPERATURE from heater interface
+        // IR_2_RETURN_TEMP - use RETURN_TEMPERATURE from heater interface
 
         /**
          * External return temperature (Rücklauf extern).
@@ -123,7 +123,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
          *     <li> Unit: decimal degree Celsius
          * </ul>
          */
-        IR_3_RUECKEXTERN(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
+        IR_3_RETURN_TEMP_EXT(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
 
         /**
          * Domestic hot water temperature (Trinkwarmwassertemperatur).
@@ -132,7 +132,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
          *     <li> Unit: decimal degree Celsius
          * </ul>
          */
-        IR_4_TRINKWWTEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
+        IR_4_WATER_TEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
 
         /**
          * Mixing circuit 1 flow temperature (Mischkreis 1 Vorlauf).
@@ -141,7 +141,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
          *     <li> Unit: decimal degree Celsius
          * </ul>
          */
-        IR_5_MK1VORLAUF(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
+        IR_5_FLOW_TEMP_MC1(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
 
         /**
          * Mixing circuit 2 flow temperature (Mischkreis 2 Vorlauf).
@@ -151,7 +151,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
          *     <li> Unit: decimal degree Celsius
          * </ul>
          */
-        IR_6_MK2VORLAUF(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
+        IR_6_FLOW_TEMP_MC2(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
 
         /**
          * Mixing circuit 3 flow temperature (Mischkreis 3 Vorlauf).
@@ -161,7 +161,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
          *     <li> Unit: decimal degree Celsius
          * </ul>
          */
-        IR_7_MK3VORLAUF(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
+        IR_7_FLOW_TEMP_MC3(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
 
         /**
          * Hot gas temperature (Heissgastemperatur).
@@ -170,7 +170,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
          *     <li> Unit: decimal degree Celsius
          * </ul>
          */
-        IR_8_HEISSGASTEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
+        IR_8_HOT_GAS_TEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
 
         /**
          * Heat source inlet (Wärmequelle Eintritt).
@@ -179,7 +179,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
          *     <li> Unit: decimal degree Celsius
          * </ul>
          */
-        IR_9_WQEINTRITT(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
+        IR_9_HEAT_SOURCE_INLET_TEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
 
         /**
          * Heat source outlet (Wärmequelle Austritt).
@@ -188,7 +188,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
          *     <li> Unit: decimal degree Celsius
          * </ul>
          */
-        IR_10_WQAUSTRITT(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
+        IR_10_HEAT_SOURCE_OUTLET_TEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
 
         /**
          * Room remote adjuster 1 (Raumfernversteller 1).
@@ -197,7 +197,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
          *     <li> Unit: decimal degree Celsius
          * </ul>
          */
-        IR_11_RAUMFV1(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
+        IR_11_ROOM_REMOTE_ADJ1_TEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
 
         /**
          * Room remote adjuster 2 (Raumfernversteller 2). Optional, depends on heat pump model if
@@ -207,7 +207,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
          *     <li> Unit: decimal degree Celsius
          * </ul>
          */
-        IR_12_RAUMFV2(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
+        IR_12_ROOM_REMOTE_ADJ2_TEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
 
         /**
          * Room remote adjuster 3 (Raumfernversteller 3). Optional, depends on heat pump model if
@@ -217,7 +217,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
          *     <li> Unit: decimal degree Celsius
          * </ul>
          */
-        IR_13_RAUMFV3(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
+        IR_13_ROOM_REMOTE_ADJ3_TEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
 
         /**
          * Solar collector (Solarkollektor). Optional, depends on heat pump model if available.
@@ -226,7 +226,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
          *     <li> Unit: decimal degree Celsius
          * </ul>
          */
-        IR_14_SOLARKOLLEKTOR(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
+        IR_14_SOLAR_COLLECTOR_TEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
 
         /**
          * Solar collector storage tank (Solarspeicher). Optional, depends on heat pump model if available.
@@ -235,7 +235,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
          *     <li> Unit: decimal degree Celsius
          * </ul>
          */
-        IR_15_SOLARSPEICHER(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
+        IR_15_SOLAR_STORAGE_TANK_TEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
 
         /**
          * External energy source (Externe Energiequelle). Optional, depends on heat pump model if available.
@@ -244,7 +244,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
          *     <li> Unit: decimal degree Celsius
          * </ul>
          */
-        IR_16_EXTEQ(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
+        IR_16_EXT_ENERGY_SOURCE_TEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
 
         /**
          * Supply air temperature (Zulufttemperatur). Optional, depends on heat pump model if available.
@@ -253,7 +253,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
          *     <li> Unit: decimal degree Celsius
          * </ul>
          */
-        IR_17_ZULUFTTEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
+        IR_17_SUPPLY_AIR_TEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
 
         /**
          * Extract air temperature (Ablufttemperatur).
@@ -262,7 +262,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
          *     <li> Unit: decimal degree Celsius
          * </ul>
          */
-        IR_18_ABLUFTTEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
+        IR_18_EXTRACT_AIR_TEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
 
         /**
          * Compressor intake temperature (Ansaugtemperatur Verdichter).
@@ -271,7 +271,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
          *     <li> Unit: decimal degree Celsius
          * </ul>
          */
-        IR_19_ANSAUGTEMPVDICHTER(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
+        IR_19_COMPRESSOR_INTAKE_TEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
 
         /**
          * Evaporator intake temperature (Ansaugtemperatur Verdampfer).
@@ -280,7 +280,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
          *     <li> Unit: decimal degree Celsius
          * </ul>
          */
-        IR_20_ANSAUGTEMPVDAMPFER(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
+        IR_20_EVAPORATOR_INTAKE_TEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
 
         /**
          * Compressor heater temperature (Temperatur Verdichterheizung).
@@ -289,7 +289,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
          *     <li> Unit: decimal degree Celsius
          * </ul>
          */
-        IR_21_TEMPVDHEIZUNG(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
+        IR_21_COMPRESSOR_HEATER_TEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
 
         /**
          * Overheating (Überhitzung).
@@ -298,7 +298,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
          *     <li> Unit: decimal degree Kelvin
          * </ul>
          */
-        IR_22_UEBERHITZ(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_KELVIN)),
+        IR_22_OVERHEAT(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_KELVIN)),
 
         /**
          * Overheating setpoint (Überhitzung Soll).
@@ -307,7 +307,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
          *     <li> Unit: decimal degree Kelvin
          * </ul>
          */
-        IR_23_UEBERHITZSOLL(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_KELVIN)),
+        IR_23_OVERHEAT_SETPOINT(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_KELVIN)),
 
         /**
          * RBE room temperature actual (RBE, Raumbedieneinheit Raumtemperatur Ist).
@@ -316,7 +316,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
          *     <li> Unit: decimal degree Celsius
          * </ul>
          */
-        IR_24_RBERAUMTEMPIST(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
+        IR_24_RBE_ROOM_TEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
 
         /**
          * RBE room temperature setpoint (RBE, Raumbedieneinheit Raumtemperatur Soll).
@@ -325,7 +325,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
          *     <li> Unit: decimal degree Celsius
          * </ul>
          */
-        IR_25_RBERAUMTEMPSOLL(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
+        IR_25_RBE_ROOM_TEMP_SETPOINT(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
 
         /**
          * High pressure (Druck HD, Hochdruck).
@@ -334,7 +334,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
          *     <li> Unit: centibar
          * </ul>
          */
-        IR_26_DRUCKHD(Doc.of(OpenemsType.INTEGER)),
+        IR_26_HIGH_PRESSURE(Doc.of(OpenemsType.INTEGER)),
 
         /**
          * Low pressure (Druck ND, Niederdruck).
@@ -343,7 +343,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
          *     <li> Unit: centibar
          * </ul>
          */
-        IR_27_DRUCKND(Doc.of(OpenemsType.INTEGER)),
+        IR_27_LOW_PRESSURE(Doc.of(OpenemsType.INTEGER)),
 
         /**
          * Operating hours compressor 1 (Betriebsstunden VD1, Verdichter 1).
@@ -352,7 +352,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
          *     <li> Unit: hours
          * </ul>
          */
-        IR_28_TVD1(Doc.of(OpenemsType.INTEGER).unit(Unit.HOUR)),
+        IR_28_HOURS_COMP1(Doc.of(OpenemsType.INTEGER).unit(Unit.HOUR)),
 
         /**
          * Operating hours compressor 2 (Betriebsstunden VD2, Verdichter 2).
@@ -361,7 +361,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
          *     <li> Unit: hours
          * </ul>
          */
-        IR_29_TVD2(Doc.of(OpenemsType.INTEGER).unit(Unit.HOUR)),
+        IR_29_HOURS_COMP2(Doc.of(OpenemsType.INTEGER).unit(Unit.HOUR)),
 
         /**
          * Operating hours 2nd heat generator 1 (Betriebsstunden ZWE1, Zusätzlicher Wärmeerzeuger).
@@ -370,7 +370,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
          *     <li> Unit: hours
          * </ul>
          */
-        IR_30_TZWE1(Doc.of(OpenemsType.INTEGER).unit(Unit.HOUR)),
+        IR_30_HOURS_AUX1(Doc.of(OpenemsType.INTEGER).unit(Unit.HOUR)),
 
         /**
          * Operating hours 2nd heat generator 2 (Betriebsstunden ZWE2, Zusätzlicher Wärmeerzeuger).
@@ -379,7 +379,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
          *     <li> Unit: hours
          * </ul>
          */
-        IR_31_TZWE2(Doc.of(OpenemsType.INTEGER).unit(Unit.HOUR)),
+        IR_31_HOURS_AUX2(Doc.of(OpenemsType.INTEGER).unit(Unit.HOUR)),
 
         /**
          * Operating hours 2nd heat generator 3 (Betriebsstunden ZWE3, Zusätzlicher Wärmeerzeuger).
@@ -389,7 +389,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
          *     <li> Unit: hours
          * </ul>
          */
-        IR_32_TZWE3(Doc.of(OpenemsType.INTEGER).unit(Unit.HOUR)),
+        IR_32_HOURS_AUX3(Doc.of(OpenemsType.INTEGER).unit(Unit.HOUR)),
 
         /**
          * Operating hours heat pump (Betriebsstunden Wärmepumpe).
@@ -398,7 +398,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
          *     <li> Unit: hours
          * </ul>
          */
-        IR_33_TWAERMEPUMPE(Doc.of(OpenemsType.INTEGER).unit(Unit.HOUR)),
+        IR_33_HOURS_HEAT_PUMP(Doc.of(OpenemsType.INTEGER).unit(Unit.HOUR)),
 
         /**
          * Operating hours room heating (Betriebsstunden Heizung).
@@ -407,7 +407,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
          *     <li> Unit: hours
          * </ul>
          */
-        IR_34_THEIZUNG(Doc.of(OpenemsType.INTEGER).unit(Unit.HOUR)),
+        IR_34_HOURS_CIRCUIT_HEATING(Doc.of(OpenemsType.INTEGER).unit(Unit.HOUR)),
 
         /**
          * Operating hours domestic hot water heating (Betriebsstunden Trinkwarmwasser).
@@ -416,7 +416,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
          *     <li> Unit: hours
          * </ul>
          */
-        IR_35_TTRINKWW(Doc.of(OpenemsType.INTEGER).unit(Unit.HOUR)),
+        IR_35_HOURS_WATER_HEATING(Doc.of(OpenemsType.INTEGER).unit(Unit.HOUR)),
 
         /**
          * Operating hours swimming pool or solar panels (Betriebsstunden SWoPV, Schwimmbad oder Photovoltaik).
@@ -426,7 +426,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
          *     <li> Unit: hours
          * </ul>
          */
-        IR_36_TSWOPV(Doc.of(OpenemsType.INTEGER).unit(Unit.HOUR)),
+        IR_36_HOURS_POOL_SOLAR(Doc.of(OpenemsType.INTEGER).unit(Unit.HOUR)),
 
         /**
          * Current system status of the heat pump (Anlagenstatus).
@@ -453,7 +453,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
          *     <li> Unit: kWh * 10E-1
          * </ul>
          */
-        IR_38_WHHEIZUNG(Doc.of(OpenemsType.INTEGER).unit(Unit.HECTOWATT_HOURS)),
+        IR_38_ENERGY_CIRCUIT_HEATING(Doc.of(OpenemsType.INTEGER).unit(Unit.HECTOWATT_HOURS)),
 
         /**
          * Heat quantity domestic hot water heating (Wärmemenge Trinkwarmwasser). 32 bit unsigned doubleword.
@@ -463,7 +463,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
          *     <li> Unit: kWh * 10E-1
          * </ul>
          */
-        IR_40_WHTRINKWW(Doc.of(OpenemsType.INTEGER).unit(Unit.HECTOWATT_HOURS)),
+        IR_40_ENERGY_WATER(Doc.of(OpenemsType.INTEGER).unit(Unit.HECTOWATT_HOURS)),
 
         /**
          * Heat quantity swimming pool heating (Wärmemenge Schwimmbad). 32 bit unsigned doubleword. IR 42 is high,
@@ -474,7 +474,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
          *     <li> Unit: kWh * 10E-1
          * </ul>
          */
-        IR_42_WHPOOL(Doc.of(OpenemsType.INTEGER).unit(Unit.HECTOWATT_HOURS)),
+        IR_42_ENERGY_POOL(Doc.of(OpenemsType.INTEGER).unit(Unit.HECTOWATT_HOURS)),
 
         /**
          * Heat quantity total (Wärmemenge gesamt). 32 bit unsigned doubleword. IR 44 is high, IR 45 is low.
@@ -483,7 +483,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
          *     <li> Unit: kWh * 10E-1
          * </ul>
          */
-        IR_44_WHTOTAL(Doc.of(OpenemsType.INTEGER).unit(Unit.HECTOWATT_HOURS)),
+        IR_44_ENERGY_TOTAL(Doc.of(OpenemsType.INTEGER).unit(Unit.HECTOWATT_HOURS)),
 
         /**
          * Error buffer. Only displays current error.
@@ -623,7 +623,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
          *     <li> Unit: decimal degree Celsius
          * </ul>
          */
-        HR_1_RUECKTEMPSOLL(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
+        HR_1_RETURN_TEMP_SETPOINT(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
 
         /**
          * Mixing circuit 1 (Mischkreis 1) flow temperature setpoint. Minimum 150, maximum 800.
@@ -632,7 +632,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
          *     <li> Unit: decimal degree Celsius
          * </ul>
          */
-        HR_2_MK1VORTEMPSOLL(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
+        HR_2_FLOW_TEMP_SETPOINT_MC1(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
 
         /**
          * Mixing circuit 2 (Mischkreis 2) flow temperature setpoint. Minimum 150, maximum 800.
@@ -642,7 +642,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
          *     <li> Unit: decimal degree Celsius
          * </ul>
          */
-        HR_3_MK2VORTEMPSOLL(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
+        HR_3_FLOW_TEMP_SETPOINT_MC2(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
 
         /**
          * Mixing circuit 3 (Mischkreis 3) flow temperature setpoint. Minimum 150, maximum 800.
@@ -652,7 +652,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
          *     <li> Unit: decimal degree Celsius
          * </ul>
          */
-        HR_4_MK3VORTEMPSOLL(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
+        HR_4_FLOW_TEMP_SETPOINT_MC3(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
 
         /**
          * Domestic hot water (Trinkwarmwasser) temperature desired value. Minimum 150, maximum 800.
@@ -661,7 +661,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
          *     <li> Unit: decimal degree Celsius
          * </ul>
          */
-        HR_5_TRINKWWTEMPSOLL(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
+        HR_5_WATER_TEMP_SETPOINT(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
 
         /**
          * Block / release heat pump (Sperre / Freigabe Wärmepumpe).
@@ -689,7 +689,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
          *      <li> State 4: Off
          * </ul>
          */
-        HR_7_HEIZUNGRUNSTATE(Doc.of(HeatingMode.values()).accessMode(AccessMode.READ_WRITE)),
+        HR_7_CIRCUIT_HEATING_OPERATION_MODE(Doc.of(HeatingMode.values()).accessMode(AccessMode.READ_WRITE)),
 
         /**
          * Mode of operation domestic hot water (Betriebsart Trinkwarmwasser).
@@ -704,7 +704,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
          *      <li> State 4: Off
          * </ul>
          */
-        HR_8_TRINKWWRUNSTATE(Doc.of(HeatingMode.values()).accessMode(AccessMode.READ_WRITE)),
+        HR_8_WATER_OPERATION_MODE(Doc.of(HeatingMode.values()).accessMode(AccessMode.READ_WRITE)),
 
         /**
          * Mode of operation mixing circuit 2 (Betriebsart Mischkreis 2).
@@ -720,7 +720,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
          *      <li> State 4: Off
          * </ul>
          */
-        HR_9_MK2RUNSTATE(Doc.of(HeatingMode.values()).accessMode(AccessMode.READ_WRITE)),
+        HR_9_MC2_OPERATION_MODE(Doc.of(HeatingMode.values()).accessMode(AccessMode.READ_WRITE)),
 
         /**
          * Mode of operation mixing circuit 3 (Betriebsart Mischkreis 3).
@@ -736,7 +736,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
          *      <li> State 4: Off
          * </ul>
          */
-        HR_10_MK3RUNSTATE(Doc.of(HeatingMode.values()).accessMode(AccessMode.READ_WRITE)),
+        HR_10_MC3_OPERATION_MODE(Doc.of(HeatingMode.values()).accessMode(AccessMode.READ_WRITE)),
 
         /**
          * Mode of operation cooling (Betriebsart Kühlung).
@@ -748,7 +748,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
          *      <li> State 1: Automatic
          * </ul>
          */
-        HR_11_COOLINGRUNSTATE(Doc.of(CoolingMode.values()).accessMode(AccessMode.READ_WRITE)),
+        HR_11_COOLING_OPERATION_MODE(Doc.of(CoolingMode.values()).accessMode(AccessMode.READ_WRITE)),
 
         /**
          * Mode of operation ventilation (Betriebsart Lüftung).
@@ -763,7 +763,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
          *      <li> State 3: Off
          * </ul>
          */
-        HR_12_VENTILATIONRUNSTATE(Doc.of(VentilationMode.values()).accessMode(AccessMode.READ_WRITE)),
+        HR_12_VENTILATION_OPERATION_MODE(Doc.of(VentilationMode.values()).accessMode(AccessMode.READ_WRITE)),
 
         /**
          * Mode of operation swimming pool heating (Betriebsart Schwimmbad).
@@ -779,7 +779,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
          *      <li> State 4: Off
          * </ul>
          */
-        HR_13_POOLRUNSTATE(Doc.of(PoolMode.values()).accessMode(AccessMode.READ_WRITE)),
+        HR_13_POOL_OPERATION_MODE(Doc.of(PoolMode.values()).accessMode(AccessMode.READ_WRITE)),
 
         /**
          * Smart Grid. Do not use this channel, use SMART_GRID_STATE in HeatpumpSmartGrid interface.
@@ -801,7 +801,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
          *     <li> Unit: decimal degree Celsius
          * </ul>
          */
-        HR_15_HKHEIZUNGENDPKT(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
+        HR_15_CURVE_CIRCUIT_HEATING_END_POINT(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
 
         /**
          * Heating curve room heating parallel shift (Heizkurve Heizung Parallelverschiebung). Minimum 50, maximum 350.
@@ -810,7 +810,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
          *     <li> Unit: decimal degree Celsius
          * </ul>
          */
-        HR_16_HKHEIZUNGPARAVER(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
+        HR_16_CURVE_CIRCUIT_HEATING_SHIFT(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
 
         /**
          * Heating curve mixing circuit 1 end point (Heizkurve Mischkreis 1 Endpunkt). Minimum 200, maximum 700.
@@ -819,7 +819,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
          *     <li> Unit: decimal degree Celsius
          * </ul>
          */
-        HR_17_HKMK1ENDPKT(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
+        HR_17_CURVE_MC1_END_POINT(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
 
         /**
          * Heating curve mixing circuit 1 parallel shift (Heizkurve Mischkreis 1 Parallelverschiebung).
@@ -829,7 +829,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
          *     <li> Unit: decimal degree Celsius
          * </ul>
          */
-        HR_18_HKMK1PARAVER(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
+        HR_18_CURVE_MC1_SHIFT(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
 
         /**
          * Heating curve mixing circuit 2 end point (Heizkurve Mischkreis 2 Endpunkt). Minimum 200, maximum 700.
@@ -839,7 +839,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
          *     <li> Unit: decimal degree Celsius
          * </ul>
          */
-        HR_19_HKMK2ENDPKT(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
+        HR_19_CURVE_MC2_END_POINT(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
 
         /**
          * Heating curve mixing circuit 2 parallel shift (Heizkurve Mischkreis 2 Parallelverschiebung).
@@ -850,7 +850,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
          *     <li> Unit: decimal degree Celsius
          * </ul>
          */
-        HR_20_HKMK2PARAVER(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
+        HR_20_CURVE_MC2_SHIFT(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
 
         /**
          * Heating curve mixing circuit 3 end point (Heizkurve Mischkreis 3 Endpunkt). Minimum 200, maximum 700.
@@ -860,7 +860,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
          *     <li> Unit: decimal degree Celsius
          * </ul>
          */
-        HR_21_HKMK3ENDPKT(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
+        HR_21_CURVE_MC3_END_POINT(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
 
         /**
          * Heating curve mixing circuit 3 parallel shift (Heizkurve Mischkreis 3 Parallelverschiebung).
@@ -871,7 +871,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
          *     <li> Unit: decimal degree Celsius
          * </ul>
          */
-        HR_22_HKMK3PARAVER(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
+        HR_22_CURVE_MC3_SHIFT(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
 
         /**
          * Temperature +-. Minimum -50, maximum 50. Signed 16 bit number.
@@ -880,7 +880,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
          *     <li> Unit: decimal degree Celsius
          * </ul>
          */
-        HR_23_TEMPPM(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE));
+        HR_23_TEMP_PM(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE));
 
 
         private final Doc doc;
@@ -898,12 +898,12 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
     // Discrete Inputs
 
     /**
-     * Gets the Channel for {@link ChannelId#DI_0_EVU}.
+     * Gets the Channel for {@link ChannelId#DI_0_EL_SUP_BLOCK}.
      *
      * @return the Channel
      */
     public default BooleanReadChannel getEvuActiveChannel() {
-        return this.channel(ChannelId.DI_0_EVU);
+        return this.channel(ChannelId.DI_0_EL_SUP_BLOCK);
     }
     
     /**
@@ -916,12 +916,12 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
     }
 
     /**
-     * Gets the Channel for {@link ChannelId#DI_1_EVU2}.
+     * Gets the Channel for {@link ChannelId#DI_1_EL_SUP_BLOCK_SG}.
      *
      * @return the Channel
      */
     public default BooleanReadChannel getEvu2ActiveChannel() {
-        return this.channel(ChannelId.DI_1_EVU2);
+        return this.channel(ChannelId.DI_1_EL_SUP_BLOCK_SG);
     }
     
     /**
@@ -934,12 +934,12 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
     }
     
     /**
-     * Gets the Channel for {@link ChannelId#DI_2_SWT}.
+     * Gets the Channel for {@link ChannelId#DI_2_POOL_THERMOSTAT}.
      *
      * @return the Channel
      */
     public default BooleanReadChannel getSwtActiveChannel() {
-        return this.channel(ChannelId.DI_2_SWT);
+        return this.channel(ChannelId.DI_2_POOL_THERMOSTAT);
     }
     
     /**
@@ -952,12 +952,12 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
     }
     
     /**
-     * Gets the Channel for {@link ChannelId#DI_3_VD1}.
+     * Gets the Channel for {@link ChannelId#DI_3_COMPRESSOR1}.
      *
      * @return the Channel
      */
     public default BooleanReadChannel getVD1activeChannel() {
-        return this.channel(ChannelId.DI_3_VD1);
+        return this.channel(ChannelId.DI_3_COMPRESSOR1);
     }
     
     /**
@@ -970,12 +970,12 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
     }
 
     /**
-     * Gets the Channel for {@link ChannelId#DI_4_VD2}.
+     * Gets the Channel for {@link ChannelId#DI_4_COMPRESSOR2}.
      *
      * @return the Channel
      */
     public default BooleanReadChannel getVD2activeChannel() {
-        return this.channel(ChannelId.DI_4_VD2);
+        return this.channel(ChannelId.DI_4_COMPRESSOR2);
     }
     
     /**
@@ -988,12 +988,12 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
     }
 
     /**
-     * Gets the Channel for {@link ChannelId#DI_5_ZWE1}.
+     * Gets the Channel for {@link ChannelId#DI_5_AUX1}.
      *
      * @return the Channel
      */
     public default BooleanReadChannel getZwe1ActiveChannel() {
-        return this.channel(ChannelId.DI_5_ZWE1);
+        return this.channel(ChannelId.DI_5_AUX1);
     }
     
     /**
@@ -1006,12 +1006,12 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
     }
 
     /**
-     * Gets the Channel for {@link ChannelId#DI_6_ZWE2}.
+     * Gets the Channel for {@link ChannelId#DI_6_AUX2}.
      *
      * @return the Channel
      */
     public default BooleanReadChannel getZwe2ActiveChannel() {
-        return this.channel(ChannelId.DI_6_ZWE2);
+        return this.channel(ChannelId.DI_6_AUX2);
     }
     
     /**
@@ -1024,12 +1024,12 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
     }
 
     /**
-     * Gets the Channel for {@link ChannelId#DI_7_ZWE3}.
+     * Gets the Channel for {@link ChannelId#DI_7_AUX3}.
      *
      * @return the Channel
      */
     public default BooleanReadChannel getZwe3ActiveChannel() {
-        return this.channel(ChannelId.DI_7_ZWE3);
+        return this.channel(ChannelId.DI_7_AUX3);
     }
     
     /**
@@ -1045,12 +1045,12 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
     // Input Registers
 
     /**
-     * Gets the Channel for {@link ChannelId#IR_0_MITTELTEMP}.
+     * Gets the Channel for {@link ChannelId#IR_0_AVERAGE_TEMP}.
      *
      * @return the Channel
      */
     public default IntegerReadChannel getAverageTempChannel() {
-        return this.channel(ChannelId.IR_0_MITTELTEMP);
+        return this.channel(ChannelId.IR_0_AVERAGE_TEMP);
     }
     
     /**
@@ -1063,12 +1063,12 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
     }
 
     /**
-     * Gets the Channel for {@link ChannelId#IR_3_RUECKEXTERN}.
+     * Gets the Channel for {@link ChannelId#IR_3_RETURN_TEMP_EXT}.
      *
      * @return the Channel
      */
     public default IntegerReadChannel getExternalReturnTempChannel() {
-        return this.channel(ChannelId.IR_3_RUECKEXTERN);
+        return this.channel(ChannelId.IR_3_RETURN_TEMP_EXT);
     }
     
     /**
@@ -1081,12 +1081,12 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
     }
 
     /**
-     * Gets the Channel for {@link ChannelId#IR_4_TRINKWWTEMP}.
+     * Gets the Channel for {@link ChannelId#IR_4_WATER_TEMP}.
      *
      * @return the Channel
      */
     public default IntegerReadChannel getDomesticHotWaterTempChannel() {
-        return this.channel(ChannelId.IR_4_TRINKWWTEMP);
+        return this.channel(ChannelId.IR_4_WATER_TEMP);
     }
     
     /**
@@ -1099,12 +1099,12 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
     }
 
     /**
-     * Gets the Channel for {@link ChannelId#IR_5_MK1VORLAUF}.
+     * Gets the Channel for {@link ChannelId#IR_5_FLOW_TEMP_MC1}.
      *
      * @return the Channel
      */
     public default IntegerReadChannel getCircuit1FlowTempChannel() {
-        return this.channel(ChannelId.IR_5_MK1VORLAUF);
+        return this.channel(ChannelId.IR_5_FLOW_TEMP_MC1);
     }
     
     /**
@@ -1117,12 +1117,12 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
     }
 
     /**
-     * Gets the Channel for {@link ChannelId#IR_6_MK2VORLAUF}.
+     * Gets the Channel for {@link ChannelId#IR_6_FLOW_TEMP_MC2}.
      *
      * @return the Channel
      */
     public default IntegerReadChannel getCircuit2FlowTempChannel() {
-        return this.channel(ChannelId.IR_6_MK2VORLAUF);
+        return this.channel(ChannelId.IR_6_FLOW_TEMP_MC2);
     }
     
     /**
@@ -1135,12 +1135,12 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
     }
 
     /**
-     * Gets the Channel for {@link ChannelId#IR_7_MK3VORLAUF}.
+     * Gets the Channel for {@link ChannelId#IR_7_FLOW_TEMP_MC3}.
      *
      * @return the Channel
      */
     public default IntegerReadChannel getCircuit3FlowTempChannel() {
-        return this.channel(ChannelId.IR_7_MK3VORLAUF);
+        return this.channel(ChannelId.IR_7_FLOW_TEMP_MC3);
     }
     
     /**
@@ -1154,12 +1154,12 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
     }
 
     /**
-     * Gets the Channel for {@link ChannelId#IR_8_HEISSGASTEMP}.
+     * Gets the Channel for {@link ChannelId#IR_8_HOT_GAS_TEMP}.
      *
      * @return the Channel
      */
     public default IntegerReadChannel getHotGasTempChannel() {
-        return this.channel(ChannelId.IR_8_HEISSGASTEMP);
+        return this.channel(ChannelId.IR_8_HOT_GAS_TEMP);
     }
     
     /**
@@ -1172,12 +1172,12 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
     }
 
     /**
-     * Gets the Channel for {@link ChannelId#IR_9_WQEINTRITT}.
+     * Gets the Channel for {@link ChannelId#IR_9_HEAT_SOURCE_INLET_TEMP}.
      *
      * @return the Channel
      */
     public default IntegerReadChannel getHeatSourceInletTempChannel() {
-        return this.channel(ChannelId.IR_9_WQEINTRITT);
+        return this.channel(ChannelId.IR_9_HEAT_SOURCE_INLET_TEMP);
     }
     
     /**
@@ -1190,12 +1190,12 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
     }
 
     /**
-     * Gets the Channel for {@link ChannelId#IR_10_WQAUSTRITT}.
+     * Gets the Channel for {@link ChannelId#IR_10_HEAT_SOURCE_OUTLET_TEMP}.
      *
      * @return the Channel
      */
     public default IntegerReadChannel getHeatSourceOutletTempChannel() {
-        return this.channel(ChannelId.IR_10_WQAUSTRITT);
+        return this.channel(ChannelId.IR_10_HEAT_SOURCE_OUTLET_TEMP);
     }
     
     /**
@@ -1208,12 +1208,12 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
     }
 
     /**
-     * Gets the Channel for {@link ChannelId#IR_11_RAUMFV1}.
+     * Gets the Channel for {@link ChannelId#IR_11_ROOM_REMOTE_ADJ1_TEMP}.
      *
      * @return the Channel
      */
     public default IntegerReadChannel getRoomRemoteAdjuster1TempChannel() {
-        return this.channel(ChannelId.IR_11_RAUMFV1);
+        return this.channel(ChannelId.IR_11_ROOM_REMOTE_ADJ1_TEMP);
     }
     
     /**
@@ -1226,12 +1226,12 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
     }
 
     /**
-     * Gets the Channel for {@link ChannelId#IR_12_RAUMFV2}.
+     * Gets the Channel for {@link ChannelId#IR_12_ROOM_REMOTE_ADJ2_TEMP}.
      *
      * @return the Channel
      */
     public default IntegerReadChannel getRoomRemoteAdjuster2TempChannel() {
-        return this.channel(ChannelId.IR_12_RAUMFV2);
+        return this.channel(ChannelId.IR_12_ROOM_REMOTE_ADJ2_TEMP);
     }
     
     /**
@@ -1245,12 +1245,12 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
     }
 
     /**
-     * Gets the Channel for {@link ChannelId#IR_13_RAUMFV3}.
+     * Gets the Channel for {@link ChannelId#IR_13_ROOM_REMOTE_ADJ3_TEMP}.
      *
      * @return the Channel
      */
     public default IntegerReadChannel getRoomRemoteAdjuster3TempChannel() {
-        return this.channel(ChannelId.IR_13_RAUMFV3);
+        return this.channel(ChannelId.IR_13_ROOM_REMOTE_ADJ3_TEMP);
     }
     
     /**
@@ -1264,12 +1264,12 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
     }
 
     /**
-     * Gets the Channel for {@link ChannelId#IR_14_SOLARKOLLEKTOR}.
+     * Gets the Channel for {@link ChannelId#IR_14_SOLAR_COLLECTOR_TEMP}.
      *
      * @return the Channel
      */
     public default IntegerReadChannel getSolarCollectorTempChannel() {
-        return this.channel(ChannelId.IR_14_SOLARKOLLEKTOR);
+        return this.channel(ChannelId.IR_14_SOLAR_COLLECTOR_TEMP);
     }
     
     /**
@@ -1283,12 +1283,12 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
     }
 
     /**
-     * Gets the Channel for {@link ChannelId#IR_15_SOLARSPEICHER}.
+     * Gets the Channel for {@link ChannelId#IR_15_SOLAR_STORAGE_TANK_TEMP}.
      *
      * @return the Channel
      */
     public default IntegerReadChannel getSolarStorageTankTempChannel() {
-        return this.channel(ChannelId.IR_15_SOLARSPEICHER);
+        return this.channel(ChannelId.IR_15_SOLAR_STORAGE_TANK_TEMP);
     }
     
     /**
@@ -1302,12 +1302,12 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
     }
 
     /**
-     * Gets the Channel for {@link ChannelId#IR_16_EXTEQ}.
+     * Gets the Channel for {@link ChannelId#IR_16_EXT_ENERGY_SOURCE_TEMP}.
      *
      * @return the Channel
      */
     public default IntegerReadChannel getExternalEnergySourceTempChannel() {
-        return this.channel(ChannelId.IR_16_EXTEQ);
+        return this.channel(ChannelId.IR_16_EXT_ENERGY_SOURCE_TEMP);
     }
     
     /**
@@ -1321,12 +1321,12 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
     }
 
     /**
-     * Gets the Channel for {@link ChannelId#IR_17_ZULUFTTEMP}.
+     * Gets the Channel for {@link ChannelId#IR_17_SUPPLY_AIR_TEMP}.
      *
      * @return the Channel
      */
     public default IntegerReadChannel getSupplyAirTempChannel() {
-        return this.channel(ChannelId.IR_17_ZULUFTTEMP);
+        return this.channel(ChannelId.IR_17_SUPPLY_AIR_TEMP);
     }
     
     /**
@@ -1340,12 +1340,12 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
     }
 
     /**
-     * Gets the Channel for {@link ChannelId#IR_18_ABLUFTTEMP}.
+     * Gets the Channel for {@link ChannelId#IR_18_EXTRACT_AIR_TEMP}.
      *
      * @return the Channel
      */
     public default IntegerReadChannel getExtractAirTempChannel() {
-        return this.channel(ChannelId.IR_18_ABLUFTTEMP);
+        return this.channel(ChannelId.IR_18_EXTRACT_AIR_TEMP);
     }
     
     /**
@@ -1358,12 +1358,12 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
     }
 
     /**
-     * Gets the Channel for {@link ChannelId#IR_19_ANSAUGTEMPVDICHTER}.
+     * Gets the Channel for {@link ChannelId#IR_19_COMPRESSOR_INTAKE_TEMP}.
      *
      * @return the Channel
      */
     public default IntegerReadChannel getCompressorIntakeTempChannel() {
-        return this.channel(ChannelId.IR_19_ANSAUGTEMPVDICHTER);
+        return this.channel(ChannelId.IR_19_COMPRESSOR_INTAKE_TEMP);
     }
     
     /**
@@ -1376,12 +1376,12 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
     }
 
     /**
-     * Gets the Channel for {@link ChannelId#IR_20_ANSAUGTEMPVDAMPFER}.
+     * Gets the Channel for {@link ChannelId#IR_20_EVAPORATOR_INTAKE_TEMP}.
      *
      * @return the Channel
      */
     public default IntegerReadChannel getEvaporatorIntakeTempChannel() {
-        return this.channel(ChannelId.IR_20_ANSAUGTEMPVDAMPFER);
+        return this.channel(ChannelId.IR_20_EVAPORATOR_INTAKE_TEMP);
     }
     
     /**
@@ -1394,12 +1394,12 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
     }
 
     /**
-     * Gets the Channel for {@link ChannelId#IR_21_TEMPVDHEIZUNG}.
+     * Gets the Channel for {@link ChannelId#IR_21_COMPRESSOR_HEATER_TEMP}.
      *
      * @return the Channel
      */
     public default IntegerReadChannel getCompressorHeaterTempChannel() {
-        return this.channel(ChannelId.IR_21_TEMPVDHEIZUNG);
+        return this.channel(ChannelId.IR_21_COMPRESSOR_HEATER_TEMP);
     }
     
     /**
@@ -1412,12 +1412,12 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
     }
 
     /**
-     * Gets the Channel for {@link ChannelId#IR_22_UEBERHITZ}.
+     * Gets the Channel for {@link ChannelId#IR_22_OVERHEAT}.
      *
      * @return the Channel
      */
     public default IntegerReadChannel getOverheatingChannel() {
-        return this.channel(ChannelId.IR_22_UEBERHITZ);
+        return this.channel(ChannelId.IR_22_OVERHEAT);
     }
     
     /**
@@ -1430,12 +1430,12 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
     }
 
     /**
-     * Gets the Channel for {@link ChannelId#IR_23_UEBERHITZSOLL}.
+     * Gets the Channel for {@link ChannelId#IR_23_OVERHEAT_SETPOINT}.
      *
      * @return the Channel
      */
     public default IntegerReadChannel getOverheatingSetpointChannel() {
-        return this.channel(ChannelId.IR_23_UEBERHITZSOLL);
+        return this.channel(ChannelId.IR_23_OVERHEAT_SETPOINT);
     }
     
     /**
@@ -1448,12 +1448,12 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
     }
 
     /**
-     * Gets the Channel for {@link ChannelId#IR_24_RBERAUMTEMPIST}.
+     * Gets the Channel for {@link ChannelId#IR_24_RBE_ROOM_TEMP}.
      *
      * @return the Channel
      */
     public default IntegerReadChannel getRbeRoomTempActualChannel() {
-        return this.channel(ChannelId.IR_24_RBERAUMTEMPIST);
+        return this.channel(ChannelId.IR_24_RBE_ROOM_TEMP);
     }
     
     /**
@@ -1467,12 +1467,12 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
     }
 
     /**
-     * Gets the Channel for {@link ChannelId#IR_25_RBERAUMTEMPSOLL}.
+     * Gets the Channel for {@link ChannelId#IR_25_RBE_ROOM_TEMP_SETPOINT}.
      *
      * @return the Channel
      */
     public default IntegerReadChannel getRbeRoomTempSetpointChannel() {
-        return this.channel(ChannelId.IR_25_RBERAUMTEMPSOLL);
+        return this.channel(ChannelId.IR_25_RBE_ROOM_TEMP_SETPOINT);
     }
     
     /**
@@ -1486,12 +1486,12 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
     }
 
     /**
-     * Gets the Channel for {@link ChannelId#IR_26_DRUCKHD}.
+     * Gets the Channel for {@link ChannelId#IR_26_HIGH_PRESSURE}.
      *
      * @return the Channel
      */
     public default IntegerReadChannel getHighPressureChannel() {
-        return this.channel(ChannelId.IR_26_DRUCKHD);
+        return this.channel(ChannelId.IR_26_HIGH_PRESSURE);
     }
     
     /**
@@ -1504,12 +1504,12 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
     }
 
     /**
-     * Gets the Channel for {@link ChannelId#IR_27_DRUCKND}.
+     * Gets the Channel for {@link ChannelId#IR_27_LOW_PRESSURE}.
      *
      * @return the Channel
      */
     public default IntegerReadChannel getLowPressureChannel() {
-        return this.channel(ChannelId.IR_27_DRUCKND);
+        return this.channel(ChannelId.IR_27_LOW_PRESSURE);
     }
     
     /**
@@ -1522,12 +1522,12 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
     }
 
     /**
-     * Gets the Channel for {@link ChannelId#IR_28_TVD1}.
+     * Gets the Channel for {@link ChannelId#IR_28_HOURS_COMP1}.
      *
      * @return the Channel
      */
     public default IntegerReadChannel getHoursVD1Channel() {
-        return this.channel(ChannelId.IR_28_TVD1);
+        return this.channel(ChannelId.IR_28_HOURS_COMP1);
     }
     
     /**
@@ -1540,12 +1540,12 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
     }
     
     /**
-     * Gets the Channel for {@link ChannelId#IR_29_TVD2}.
+     * Gets the Channel for {@link ChannelId#IR_29_HOURS_COMP2}.
      *
      * @return the Channel
      */
     public default IntegerReadChannel getHoursVD2Channel() {
-        return this.channel(ChannelId.IR_29_TVD2);
+        return this.channel(ChannelId.IR_29_HOURS_COMP2);
     }
     
     /**
@@ -1558,12 +1558,12 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
     }
 
     /**
-     * Gets the Channel for {@link ChannelId#IR_30_TZWE1}.
+     * Gets the Channel for {@link ChannelId#IR_30_HOURS_AUX1}.
      *
      * @return the Channel
      */
     public default IntegerReadChannel getHoursZwe1Channel() {
-        return this.channel(ChannelId.IR_30_TZWE1);
+        return this.channel(ChannelId.IR_30_HOURS_AUX1);
     }
     
     /**
@@ -1576,12 +1576,12 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
     }
 
     /**
-     * Gets the Channel for {@link ChannelId#IR_31_TZWE2}.
+     * Gets the Channel for {@link ChannelId#IR_31_HOURS_AUX2}.
      *
      * @return the Channel
      */
     public default IntegerReadChannel getHoursZwe2Channel() {
-        return this.channel(ChannelId.IR_31_TZWE2);
+        return this.channel(ChannelId.IR_31_HOURS_AUX2);
     }
     
     /**
@@ -1594,12 +1594,12 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
     }
 
     /**
-     * Gets the Channel for {@link ChannelId#IR_32_TZWE3}.
+     * Gets the Channel for {@link ChannelId#IR_32_HOURS_AUX3}.
      *
      * @return the Channel
      */
     public default IntegerReadChannel getHoursZwe3Channel() {
-        return this.channel(ChannelId.IR_32_TZWE3);
+        return this.channel(ChannelId.IR_32_HOURS_AUX3);
     }
     
     /**
@@ -1613,12 +1613,12 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
     }
 
     /**
-     * Gets the Channel for {@link ChannelId#IR_33_TWAERMEPUMPE}.
+     * Gets the Channel for {@link ChannelId#IR_33_HOURS_HEAT_PUMP}.
      *
      * @return the Channel
      */
     public default IntegerReadChannel getHoursHeatPumpChannel() {
-        return this.channel(ChannelId.IR_33_TWAERMEPUMPE);
+        return this.channel(ChannelId.IR_33_HOURS_HEAT_PUMP);
     }
     
     /**
@@ -1631,12 +1631,12 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
     }
 
     /**
-     * Gets the Channel for {@link ChannelId#IR_34_THEIZUNG}.
+     * Gets the Channel for {@link ChannelId#IR_34_HOURS_CIRCUIT_HEATING}.
      *
      * @return the Channel
      */
     public default IntegerReadChannel getHoursHeatingChannel() {
-        return this.channel(ChannelId.IR_34_THEIZUNG);
+        return this.channel(ChannelId.IR_34_HOURS_CIRCUIT_HEATING);
     }
     
     /**
@@ -1649,12 +1649,12 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
     }
 
     /**
-     * Gets the Channel for {@link ChannelId#IR_35_TTRINKWW}.
+     * Gets the Channel for {@link ChannelId#IR_35_HOURS_WATER_HEATING}.
      *
      * @return the Channel
      */
     public default IntegerReadChannel getHoursDomesticHotWaterChannel() {
-        return this.channel(ChannelId.IR_35_TTRINKWW);
+        return this.channel(ChannelId.IR_35_HOURS_WATER_HEATING);
     }
     
     /**
@@ -1667,12 +1667,12 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
     }
 
     /**
-     * Gets the Channel for {@link ChannelId#IR_36_TSWOPV}.
+     * Gets the Channel for {@link ChannelId#IR_36_HOURS_POOL_SOLAR}.
      *
      * @return the Channel
      */
     public default IntegerReadChannel getHoursSwoPvChannel() {
-        return this.channel(ChannelId.IR_36_TSWOPV);
+        return this.channel(ChannelId.IR_36_HOURS_POOL_SOLAR);
     }
     
     /**
@@ -1717,12 +1717,12 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
     }
 
     /**
-     * Gets the Channel for {@link ChannelId#IR_38_WHHEIZUNG}.
+     * Gets the Channel for {@link ChannelId#IR_38_ENERGY_CIRCUIT_HEATING}.
      *
      * @return the Channel
      */
     public default IntegerReadChannel getHeatAmountHeatingChannel() {
-        return this.channel(ChannelId.IR_38_WHHEIZUNG);
+        return this.channel(ChannelId.IR_38_ENERGY_CIRCUIT_HEATING);
     }
     
     /**
@@ -1736,12 +1736,12 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
 
 
     /**
-     * Gets the Channel for {@link ChannelId#IR_40_WHTRINKWW}.
+     * Gets the Channel for {@link ChannelId#IR_40_ENERGY_WATER}.
      *
      * @return the Channel
      */
     public default IntegerReadChannel getHeatAmountDomesticHotWaterChannel() {
-        return this.channel(ChannelId.IR_40_WHTRINKWW);
+        return this.channel(ChannelId.IR_40_ENERGY_WATER);
     }
     
     /**
@@ -1755,12 +1755,12 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
     }
 
     /**
-     * Gets the Channel for {@link ChannelId#IR_42_WHPOOL}.
+     * Gets the Channel for {@link ChannelId#IR_42_ENERGY_POOL}.
      *
      * @return the Channel
      */
     public default IntegerReadChannel getHeatAmountPoolChannel() {
-        return this.channel(ChannelId.IR_42_WHPOOL);
+        return this.channel(ChannelId.IR_42_ENERGY_POOL);
     }
     
     /**
@@ -1775,12 +1775,12 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
     }
 
     /**
-     * Gets the Channel for {@link ChannelId#IR_44_WHTOTAL}.
+     * Gets the Channel for {@link ChannelId#IR_44_ENERGY_TOTAL}.
      *
      * @return the Channel
      */
     public default IntegerReadChannel getHeatAmountAllChannel() {
-        return this.channel(ChannelId.IR_44_WHTOTAL);
+        return this.channel(ChannelId.IR_44_ENERGY_TOTAL);
     }
     
     /**
@@ -2248,17 +2248,17 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
 	}
 
 	/**
-     * Gets the Channel for {@link ChannelId#HR_1_RUECKTEMPSOLL}.
+     * Gets the Channel for {@link ChannelId#HR_1_RETURN_TEMP_SETPOINT}.
      *
      * @return the Channel
      */
 	public default IntegerWriteChannel getReturnTempSetpointChannel() {
-        return this.channel(ChannelId.HR_1_RUECKTEMPSOLL);
+        return this.channel(ChannelId.HR_1_RETURN_TEMP_SETPOINT);
     }
 
     /**
      * Get return temperature set point, unit is decimal degree Celsius.
-	 * See {@link ChannelId#HR_1_RUECKTEMPSOLL}.
+	 * See {@link ChannelId#HR_1_RETURN_TEMP_SETPOINT}.
 	 *
 	 * @return the Channel {@link Value}
 	 */
@@ -2268,7 +2268,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
 	
 	/**
      * Set return temperature set point, unit is decimal degree Celsius. Minimum 150, maximum 800.
-	 * See {@link ChannelId#HR_1_RUECKTEMPSOLL}.
+	 * See {@link ChannelId#HR_1_RETURN_TEMP_SETPOINT}.
 	 * 
 	 * @param value the next write value
 	 * @throws OpenemsNamedException on error
@@ -2279,7 +2279,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
 	
 	/**
      * Set return temperature set point, unit is decimal degree Celsius. Minimum 150, maximum 800.
-	 * See {@link ChannelId#HR_1_RUECKTEMPSOLL}.
+	 * See {@link ChannelId#HR_1_RETURN_TEMP_SETPOINT}.
 	 * 
 	 * @param value the next write value
 	 * @throws OpenemsNamedException on error
@@ -2289,17 +2289,17 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
 	}
 
 	/**
-     * Gets the Channel for {@link ChannelId#HR_2_MK1VORTEMPSOLL}.
+     * Gets the Channel for {@link ChannelId#HR_2_FLOW_TEMP_SETPOINT_MC1}.
      *
      * @return the Channel
      */
 	public default IntegerWriteChannel getCircuit1FlowTempSetpointChannel() {
-        return this.channel(ChannelId.HR_2_MK1VORTEMPSOLL);
+        return this.channel(ChannelId.HR_2_FLOW_TEMP_SETPOINT_MC1);
     }
 
     /**
      * Get mixing circuit 1 (Mischkreis 1) flow temperature set point, unit is decimal degree Celsius.
-	 * See {@link ChannelId#HR_2_MK1VORTEMPSOLL}.
+	 * See {@link ChannelId#HR_2_FLOW_TEMP_SETPOINT_MC1}.
 	 *
 	 * @return the Channel {@link Value}
 	 */
@@ -2310,7 +2310,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
 	/**
      * Set mixing circuit 1 (Mischkreis 1) flow temperature set point, unit is decimal degree Celsius.
      * Minimum 150, maximum 800.
-	 * See {@link ChannelId#HR_2_MK1VORTEMPSOLL}.
+	 * See {@link ChannelId#HR_2_FLOW_TEMP_SETPOINT_MC1}.
 	 * 
 	 * @param value the next write value
 	 * @throws OpenemsNamedException on error
@@ -2322,7 +2322,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
 	/**
      * Set mixing circuit 1 (Mischkreis 1) flow temperature set point, unit is decimal degree Celsius.
      * Minimum 150, maximum 800.
-	 * See {@link ChannelId#HR_2_MK1VORTEMPSOLL}.
+	 * See {@link ChannelId#HR_2_FLOW_TEMP_SETPOINT_MC1}.
 	 * 
 	 * @param value the next write value
 	 * @throws OpenemsNamedException on error
@@ -2332,18 +2332,18 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
 	}
 
 	/**
-     * Gets the Channel for {@link ChannelId#HR_3_MK2VORTEMPSOLL}.
+     * Gets the Channel for {@link ChannelId#HR_3_FLOW_TEMP_SETPOINT_MC2}.
      *
      * @return the Channel
      */
 	public default IntegerWriteChannel getCircuit2FlowTempSetpointChannel() {
-	    return this.channel(ChannelId.HR_3_MK2VORTEMPSOLL);
+	    return this.channel(ChannelId.HR_3_FLOW_TEMP_SETPOINT_MC2);
 	}
 
 	/**
      * Get mixing circuit 2 (Mischkreis 2) flow temperature set point, unit is decimal degree Celsius.
      * Optional, depends on heat pump model if available.
-	 * See {@link ChannelId#HR_3_MK2VORTEMPSOLL}.
+	 * See {@link ChannelId#HR_3_FLOW_TEMP_SETPOINT_MC2}.
 	 *
 	 * @return the Channel {@link Value}
 	 */
@@ -2355,7 +2355,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
      * Set mixing circuit 2 (Mischkreis 2) flow temperature set point, unit is decimal degree Celsius.
      * Minimum 150, maximum 800.
      * Optional, depends on heat pump model if available.
-	 * See {@link ChannelId#HR_3_MK2VORTEMPSOLL}.
+	 * See {@link ChannelId#HR_3_FLOW_TEMP_SETPOINT_MC2}.
 	 * 
 	 * @param value the next write value
 	 * @throws OpenemsNamedException on error
@@ -2368,7 +2368,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
      * Set mixing circuit 2 (Mischkreis 2) flow temperature set point, unit is decimal degree Celsius.
      * Minimum 150, maximum 800.
      * Optional, depends on heat pump model if available.
-	 * See {@link ChannelId#HR_3_MK2VORTEMPSOLL}.
+	 * See {@link ChannelId#HR_3_FLOW_TEMP_SETPOINT_MC2}.
 	 * 
 	 * @param value the next write value
 	 * @throws OpenemsNamedException on error
@@ -2378,18 +2378,18 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
 	}
 
 	/**
-     * Gets the Channel for {@link ChannelId#HR_4_MK3VORTEMPSOLL}.
+     * Gets the Channel for {@link ChannelId#HR_4_FLOW_TEMP_SETPOINT_MC3}.
      *
      * @return the Channel
      */
 	public default IntegerWriteChannel getCircuit3FlowTempSetpointChannel() {
-	    return this.channel(ChannelId.HR_4_MK3VORTEMPSOLL);
+	    return this.channel(ChannelId.HR_4_FLOW_TEMP_SETPOINT_MC3);
 	}
 
 	/**
      * Get mixing circuit 3 (Mischkreis 3) flow temperature set point, unit is decimal degree Celsius.
      * Optional, depends on heat pump model if available.
-	 * See {@link ChannelId#HR_4_MK3VORTEMPSOLL}.
+	 * See {@link ChannelId#HR_4_FLOW_TEMP_SETPOINT_MC3}.
 	 *
 	 * @return the Channel {@link Value}
 	 */
@@ -2401,7 +2401,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
      * Set mixing circuit 3 (Mischkreis 3) flow temperature set point, unit is decimal degree Celsius.
      * Minimum 150, maximum 800.
      * Optional, depends on heat pump model if available.
-	 * See {@link ChannelId#HR_4_MK3VORTEMPSOLL}.
+	 * See {@link ChannelId#HR_4_FLOW_TEMP_SETPOINT_MC3}.
 	 * 
 	 * @param value the next write value
 	 * @throws OpenemsNamedException on error
@@ -2414,7 +2414,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
      * Set mixing circuit 3 (Mischkreis 3) flow temperature set point, unit is decimal degree Celsius.
      * Minimum 150, maximum 800.
      * Optional, depends on heat pump model if available.
-	 * See {@link ChannelId#HR_4_MK3VORTEMPSOLL}.
+	 * See {@link ChannelId#HR_4_FLOW_TEMP_SETPOINT_MC3}.
 	 * 
 	 * @param value the next write value
 	 * @throws OpenemsNamedException on error
@@ -2424,17 +2424,17 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
 	}
 
 	/**
-     * Gets the Channel for {@link ChannelId#HR_5_TRINKWWTEMPSOLL}.
+     * Gets the Channel for {@link ChannelId#HR_5_WATER_TEMP_SETPOINT}.
      *
      * @return the Channel
      */
 	public default IntegerWriteChannel getDomesticHotWaterTempSetpointChannel() {
-	    return this.channel(ChannelId.HR_5_TRINKWWTEMPSOLL);
+	    return this.channel(ChannelId.HR_5_WATER_TEMP_SETPOINT);
 	}
 
 	/**
      * Get domestic hot water (Trinkwarmwasser) desired temperature value, unit is decimal degree Celsius.
-	 * See {@link ChannelId#HR_5_TRINKWWTEMPSOLL}.
+	 * See {@link ChannelId#HR_5_WATER_TEMP_SETPOINT}.
 	 *
 	 * @return the Channel {@link Value}
 	 */
@@ -2445,7 +2445,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
 	/**
      * Set domestic hot water (Trinkwarmwasser) desired temperature value, unit is decimal degree Celsius.
      * Minimum 150, maximum 800.
-	 * See {@link ChannelId#HR_5_TRINKWWTEMPSOLL}.
+	 * See {@link ChannelId#HR_5_WATER_TEMP_SETPOINT}.
 	 * 
 	 * @param value the next write value
 	 * @throws OpenemsNamedException on error
@@ -2457,7 +2457,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
 	/**
      * Set domestic hot water (Trinkwarmwasser) desired temperature value, unit is decimal degree Celsius.
      * Minimum 150, maximum 800.
-	 * See {@link ChannelId#HR_5_TRINKWWTEMPSOLL}.
+	 * See {@link ChannelId#HR_5_WATER_TEMP_SETPOINT}.
 	 * 
 	 * @param value the next write value
 	 * @throws OpenemsNamedException on error
@@ -2532,12 +2532,12 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
 	}
 
 	/**
-     * Gets the Channel for {@link ChannelId#HR_7_HEIZUNGRUNSTATE}.
+     * Gets the Channel for {@link ChannelId#HR_7_CIRCUIT_HEATING_OPERATION_MODE}.
      *
      * @return the Channel
      */
 	public default IntegerWriteChannel getHeatingOperationModeChannel() {
-	    return this.channel(ChannelId.HR_7_HEIZUNGRUNSTATE);
+	    return this.channel(ChannelId.HR_7_CIRCUIT_HEATING_OPERATION_MODE);
 	}
 
 	/**
@@ -2552,7 +2552,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
      *      <li> State 3: Holidays, full time throttling (Ferien)
      *      <li> State 4: Off
      * </ul>
-	 * See {@link ChannelId#HR_7_HEIZUNGRUNSTATE}.
+	 * See {@link ChannelId#HR_7_CIRCUIT_HEATING_OPERATION_MODE}.
 	 *
 	 * @return the Channel {@link Value}
 	 */
@@ -2572,7 +2572,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
      *      <li> State 3: Holidays, full time throttling (Ferien)
      *      <li> State 4: Off
      * </ul>
-	 * See {@link ChannelId#HR_7_HEIZUNGRUNSTATE}.
+	 * See {@link ChannelId#HR_7_CIRCUIT_HEATING_OPERATION_MODE}.
 	 * 
 	 * @param value the next write value
 	 * @throws OpenemsNamedException on error
@@ -2593,7 +2593,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
      *      <li> State 3: Holidays, full time throttling (Ferien)
      *      <li> State 4: Off
      * </ul>
-	 * See {@link ChannelId#HR_7_HEIZUNGRUNSTATE}.
+	 * See {@link ChannelId#HR_7_CIRCUIT_HEATING_OPERATION_MODE}.
 	 * 
 	 * @param value the next write value
 	 * @throws OpenemsNamedException on error
@@ -2603,12 +2603,12 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
 	}
 
 	/**
-     * Gets the Channel for {@link ChannelId#HR_8_TRINKWWRUNSTATE}.
+     * Gets the Channel for {@link ChannelId#HR_8_WATER_OPERATION_MODE}.
      *
      * @return the Channel
      */
 	public default IntegerWriteChannel getDomesticHotWaterOperationModeChannel() {
-        return this.channel(ChannelId.HR_8_TRINKWWRUNSTATE);
+        return this.channel(ChannelId.HR_8_WATER_OPERATION_MODE);
     }
 
     /**
@@ -2623,7 +2623,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
      *      <li> State 3: Holidays, full time throttling (Ferien)
      *      <li> State 4: Off
      * </ul>
-	 * See {@link ChannelId#HR_8_TRINKWWRUNSTATE}.
+	 * See {@link ChannelId#HR_8_WATER_OPERATION_MODE}.
 	 *
 	 * @return the Channel {@link Value}
 	 */
@@ -2643,7 +2643,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
      *      <li> State 3: Holidays, full time throttling (Ferien)
      *      <li> State 4: Off
      * </ul>
-	 * See {@link ChannelId#HR_8_TRINKWWRUNSTATE}.
+	 * See {@link ChannelId#HR_8_WATER_OPERATION_MODE}.
 	 * 
 	 * @param value the next write value
 	 * @throws OpenemsNamedException on error
@@ -2664,7 +2664,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
      *      <li> State 3: Holidays, full time throttling (Ferien)
      *      <li> State 4: Off
      * </ul>
-	 * See {@link ChannelId#HR_8_TRINKWWRUNSTATE}.
+	 * See {@link ChannelId#HR_8_WATER_OPERATION_MODE}.
 	 * 
 	 * @param value the next write value
 	 * @throws OpenemsNamedException on error
@@ -2674,12 +2674,12 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
 	}
 
 	/**
-     * Gets the Channel for {@link ChannelId#HR_9_MK2RUNSTATE}.
+     * Gets the Channel for {@link ChannelId#HR_9_MC2_OPERATION_MODE}.
      *
      * @return the Channel
      */
 	public default IntegerWriteChannel getCircuit2OperationModeChannel() {
-	    return this.channel(ChannelId.HR_9_MK2RUNSTATE);
+	    return this.channel(ChannelId.HR_9_MC2_OPERATION_MODE);
 	}
 
 	/**
@@ -2695,7 +2695,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
      *      <li> State 3: Holidays, full time throttling (Ferien)
      *      <li> State 4: Off
      * </ul>
-	 * See {@link ChannelId#HR_9_MK2RUNSTATE}.
+	 * See {@link ChannelId#HR_9_MC2_OPERATION_MODE}.
 	 *
 	 * @return the Channel {@link Value}
 	 */
@@ -2716,7 +2716,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
      *      <li> State 3: Holidays, full time throttling (Ferien)
      *      <li> State 4: Off
      * </ul>
-	 * See {@link ChannelId#HR_9_MK2RUNSTATE}.
+	 * See {@link ChannelId#HR_9_MC2_OPERATION_MODE}.
 	 * 
 	 * @param value the next write value
 	 * @throws OpenemsNamedException on error
@@ -2738,7 +2738,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
      *      <li> State 3: Holidays, full time throttling (Ferien)
      *      <li> State 4: Off
      * </ul>
-	 * See {@link ChannelId#HR_9_MK2RUNSTATE}.
+	 * See {@link ChannelId#HR_9_MC2_OPERATION_MODE}.
 	 * 
 	 * @param value the next write value
 	 * @throws OpenemsNamedException on error
@@ -2748,12 +2748,12 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
 	}
 
 	/**
-     * Gets the Channel for {@link ChannelId#HR_10_MK3RUNSTATE}.
+     * Gets the Channel for {@link ChannelId#HR_10_MC3_OPERATION_MODE}.
      *
      * @return the Channel
      */
 	public default IntegerWriteChannel getCircuit3OperationModeChannel() {
-	    return this.channel(ChannelId.HR_10_MK3RUNSTATE);
+	    return this.channel(ChannelId.HR_10_MC3_OPERATION_MODE);
 	}
 
 	/**
@@ -2769,7 +2769,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
      *      <li> State 3: Holidays, full time throttling (Ferien)
      *      <li> State 4: Off
      * </ul>
-	 * See {@link ChannelId#HR_10_MK3RUNSTATE}.
+	 * See {@link ChannelId#HR_10_MC3_OPERATION_MODE}.
 	 *
 	 * @return the Channel {@link Value}
 	 */
@@ -2790,7 +2790,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
      *      <li> State 3: Holidays, full time throttling (Ferien)
      *      <li> State 4: Off
      * </ul>
-	 * See {@link ChannelId#HR_10_MK3RUNSTATE}.
+	 * See {@link ChannelId#HR_10_MC3_OPERATION_MODE}.
 	 * 
 	 * @param value the next write value
 	 * @throws OpenemsNamedException on error
@@ -2812,7 +2812,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
      *      <li> State 3: Holidays, full time throttling (Ferien)
      *      <li> State 4: Off
      * </ul>
-	 * See {@link ChannelId#HR_10_MK3RUNSTATE}.
+	 * See {@link ChannelId#HR_10_MC3_OPERATION_MODE}.
 	 * 
 	 * @param value the next write value
 	 * @throws OpenemsNamedException on error
@@ -2822,12 +2822,12 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
 	}
 
 	/**
-     * Gets the Channel for {@link ChannelId#HR_11_COOLINGRUNSTATE}.
+     * Gets the Channel for {@link ChannelId#HR_11_COOLING_OPERATION_MODE}.
      *
      * @return the Channel
      */
 	public default IntegerWriteChannel getCoolingOperationModeChannel() {
-	    return this.channel(ChannelId.HR_11_COOLINGRUNSTATE);
+	    return this.channel(ChannelId.HR_11_COOLING_OPERATION_MODE);
 	}
 
 	/**
@@ -2839,7 +2839,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
      *      <li> State 0: Off
      *      <li> State 1: Automatic
      * </ul>
-	 * See {@link ChannelId#HR_11_COOLINGRUNSTATE}.
+	 * See {@link ChannelId#HR_11_COOLING_OPERATION_MODE}.
 	 *
 	 * @return the Channel {@link Value}
 	 */
@@ -2856,7 +2856,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
      *      <li> State 0: Off
      *      <li> State 1: Automatic
      * </ul>
-	 * See {@link ChannelId#HR_11_COOLINGRUNSTATE}.
+	 * See {@link ChannelId#HR_11_COOLING_OPERATION_MODE}.
 	 * 
 	 * @param value the next write value
 	 * @throws OpenemsNamedException on error
@@ -2874,7 +2874,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
      *      <li> State 0: Off
      *      <li> State 1: Automatic
      * </ul>
-	 * See {@link ChannelId#HR_11_COOLINGRUNSTATE}.
+	 * See {@link ChannelId#HR_11_COOLING_OPERATION_MODE}.
 	 * 
 	 * @param value the next write value
 	 * @throws OpenemsNamedException on error
@@ -2884,12 +2884,12 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
 	}
 
 	/**
-     * Gets the Channel for {@link ChannelId#HR_12_VENTILATIONRUNSTATE}.
+     * Gets the Channel for {@link ChannelId#HR_12_VENTILATION_OPERATION_MODE}.
      *
      * @return the Channel
      */
 	public default IntegerWriteChannel getVentilationOperationModeChannel() {
-	    return this.channel(ChannelId.HR_12_VENTILATIONRUNSTATE);
+	    return this.channel(ChannelId.HR_12_VENTILATION_OPERATION_MODE);
 	}
 
 	/**
@@ -2904,7 +2904,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
      *      <li> State 2: Holidays, full time throttling (Ferien)
      *      <li> State 3: Off
      * </ul>
-	 * See {@link ChannelId#HR_12_VENTILATIONRUNSTATE}.
+	 * See {@link ChannelId#HR_12_VENTILATION_OPERATION_MODE}.
 	 *
 	 * @return the Channel {@link Value}
 	 */
@@ -2924,7 +2924,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
      *      <li> State 2: Holidays, full time throttling (Ferien)
      *      <li> State 3: Off
      * </ul>
-	 * See {@link ChannelId#HR_12_VENTILATIONRUNSTATE}.
+	 * See {@link ChannelId#HR_12_VENTILATION_OPERATION_MODE}.
 	 * 
 	 * @param value the next write value
 	 * @throws OpenemsNamedException on error
@@ -2945,7 +2945,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
      *      <li> State 2: Holidays, full time throttling (Ferien)
      *      <li> State 3: Off
      * </ul>
-	 * See {@link ChannelId#HR_12_VENTILATIONRUNSTATE}.
+	 * See {@link ChannelId#HR_12_VENTILATION_OPERATION_MODE}.
 	 * 
 	 * @param value the next write value
 	 * @throws OpenemsNamedException on error
@@ -2955,12 +2955,12 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
 	}
 
 	/**
-     * Gets the Channel for {@link ChannelId#HR_13_POOLRUNSTATE}.
+     * Gets the Channel for {@link ChannelId#HR_13_POOL_OPERATION_MODE}.
      *
      * @return the Channel
      */
 	public default IntegerWriteChannel getPoolHeatingOperationModeChannel() {
-	    return this.channel(ChannelId.HR_13_POOLRUNSTATE);
+	    return this.channel(ChannelId.HR_13_POOL_OPERATION_MODE);
 	}
 
 	/**
@@ -2976,7 +2976,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
      *      <li> State 3: Holidays, full time throttling (Ferien)
      *      <li> State 4: Off
      * </ul>
-	 * See {@link ChannelId#HR_13_POOLRUNSTATE}.
+	 * See {@link ChannelId#HR_13_POOL_OPERATION_MODE}.
 	 *
 	 * @return the Channel {@link Value}
 	 */
@@ -2997,7 +2997,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
      *      <li> State 3: Holidays, full time throttling (Ferien)
      *      <li> State 4: Off
      * </ul>
-	 * See {@link ChannelId#HR_13_POOLRUNSTATE}.
+	 * See {@link ChannelId#HR_13_POOL_OPERATION_MODE}.
 	 * 
 	 * @param value the next write value
 	 * @throws OpenemsNamedException on error
@@ -3019,7 +3019,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
      *      <li> State 3: Holidays, full time throttling (Ferien)
      *      <li> State 4: Off
      * </ul>
-	 * See {@link ChannelId#HR_13_POOLRUNSTATE}.
+	 * See {@link ChannelId#HR_13_POOL_OPERATION_MODE}.
 	 * 
 	 * @param value the next write value
 	 * @throws OpenemsNamedException on error
@@ -3070,17 +3070,17 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
     }
 
     /**
-     * Gets the Channel for {@link ChannelId#HR_15_HKHEIZUNGENDPKT}.
+     * Gets the Channel for {@link ChannelId#HR_15_CURVE_CIRCUIT_HEATING_END_POINT}.
      *
      * @return the Channel
      */
     public default IntegerWriteChannel getHeatingCurveEndPointChannel() {
-	    return this.channel(ChannelId.HR_15_HKHEIZUNGENDPKT);
+	    return this.channel(ChannelId.HR_15_CURVE_CIRCUIT_HEATING_END_POINT);
 	}
 
 	/**
      * Get heating curve room heating end point (Heizkurve Heizung Endpunkt), unit is decimal degree Celsius.
-	 * See {@link ChannelId#HR_15_HKHEIZUNGENDPKT}.
+	 * See {@link ChannelId#HR_15_CURVE_CIRCUIT_HEATING_END_POINT}.
 	 *
 	 * @return the Channel {@link Value}
 	 */
@@ -3091,7 +3091,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
 	/**
      * Set heating curve room heating end point (Heizkurve Heizung Endpunkt), unit is decimal degree Celsius.
      * Minimum 200, maximum 700.
-	 * See {@link ChannelId#HR_15_HKHEIZUNGENDPKT}.
+	 * See {@link ChannelId#HR_15_CURVE_CIRCUIT_HEATING_END_POINT}.
 	 * 
 	 * @param value the next write value
 	 * @throws OpenemsNamedException on error
@@ -3103,7 +3103,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
 	/**
      * Set heating curve room heating end point (Heizkurve Heizung Endpunkt), unit is decimal degree Celsius.
      * Minimum 200, maximum 700.
-	 * See {@link ChannelId#HR_15_HKHEIZUNGENDPKT}.
+	 * See {@link ChannelId#HR_15_CURVE_CIRCUIT_HEATING_END_POINT}.
 	 * 
 	 * @param value the next write value
 	 * @throws OpenemsNamedException on error
@@ -3113,17 +3113,17 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
 	}
 
 	/**
-     * Gets the Channel for {@link ChannelId#HR_16_HKHEIZUNGPARAVER}.
+     * Gets the Channel for {@link ChannelId#HR_16_CURVE_CIRCUIT_HEATING_SHIFT}.
      *
      * @return the Channel
      */
 	public default IntegerWriteChannel getHeatingCurveParallelShiftChannel() {
-	    return this.channel(ChannelId.HR_16_HKHEIZUNGPARAVER);
+	    return this.channel(ChannelId.HR_16_CURVE_CIRCUIT_HEATING_SHIFT);
 	}
 
 	/**
      * Get heating curve room heating parallel shift (Heizkurve Heizung Parallelverschiebung), unit is decimal degree Celsius.
-	 * See {@link ChannelId#HR_16_HKHEIZUNGPARAVER}.
+	 * See {@link ChannelId#HR_16_CURVE_CIRCUIT_HEATING_SHIFT}.
 	 *
 	 * @return the Channel {@link Value}
 	 */
@@ -3134,7 +3134,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
 	/**
      * Set heating curve room heating parallel shift (Heizkurve Heizung Parallelverschiebung), unit is decimal degree Celsius.
      * Minimum 50, maximum 350.
-	 * See {@link ChannelId#HR_16_HKHEIZUNGPARAVER}.
+	 * See {@link ChannelId#HR_16_CURVE_CIRCUIT_HEATING_SHIFT}.
 	 * 
 	 * @param value the next write value
 	 * @throws OpenemsNamedException on error
@@ -3146,7 +3146,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
 	/**
      * Set heating curve room heating parallel shift (Heizkurve Heizung Parallelverschiebung), unit is decimal degree Celsius.
      * Minimum 50, maximum 350.
-	 * See {@link ChannelId#HR_16_HKHEIZUNGPARAVER}.
+	 * See {@link ChannelId#HR_16_CURVE_CIRCUIT_HEATING_SHIFT}.
 	 * 
 	 * @param value the next write value
 	 * @throws OpenemsNamedException on error
@@ -3156,17 +3156,17 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
 	}
 
 	/**
-     * Gets the Channel for {@link ChannelId#HR_17_HKMK1ENDPKT}.
+     * Gets the Channel for {@link ChannelId#HR_17_CURVE_MC1_END_POINT}.
      *
      * @return the Channel
      */
 	public default IntegerWriteChannel getHeatingCurveCircuit1EndPointChannel() {
-	    return this.channel(ChannelId.HR_17_HKMK1ENDPKT);
+	    return this.channel(ChannelId.HR_17_CURVE_MC1_END_POINT);
 	}
 
 	/**
      * Get heating curve mixing circuit 1 end point (Heizkurve Mischkreis 1 Endpunkt), unit is decimal degree Celsius.
-	 * See {@link ChannelId#HR_17_HKMK1ENDPKT}.
+	 * See {@link ChannelId#HR_17_CURVE_MC1_END_POINT}.
 	 *
 	 * @return the Channel {@link Value}
 	 */
@@ -3177,7 +3177,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
 	/**
      * Set heating curve mixing circuit 1 end point (Heizkurve Mischkreis 1 Endpunkt), unit is decimal degree Celsius.
      * Minimum 200, maximum 700.
-	 * See {@link ChannelId#HR_17_HKMK1ENDPKT}.
+	 * See {@link ChannelId#HR_17_CURVE_MC1_END_POINT}.
 	 * 
 	 * @param value the next write value
 	 * @throws OpenemsNamedException on error
@@ -3189,7 +3189,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
 	/**
      * Set heating curve mixing circuit 1 end point (Heizkurve Mischkreis 1 Endpunkt), unit is decimal degree Celsius.
      * Minimum 200, maximum 700.
-	 * See {@link ChannelId#HR_17_HKMK1ENDPKT}.
+	 * See {@link ChannelId#HR_17_CURVE_MC1_END_POINT}.
 	 * 
 	 * @param value the next write value
 	 * @throws OpenemsNamedException on error
@@ -3199,18 +3199,18 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
 	}
 
 	/**
-     * Gets the Channel for {@link ChannelId#HR_18_HKMK1PARAVER}.
+     * Gets the Channel for {@link ChannelId#HR_18_CURVE_MC1_SHIFT}.
      *
      * @return the Channel
      */
 	public default IntegerWriteChannel getHeatingCurveCircuit1ParallelShiftChannel() {
-	    return this.channel(ChannelId.HR_18_HKMK1PARAVER);
+	    return this.channel(ChannelId.HR_18_CURVE_MC1_SHIFT);
 	}
 
 	/**
      * Get heating curve mixing circuit 1 parallel shift (Heizkurve Mischkreis 1 Parallelverschiebung), unit is
      * decimal degree Celsius.
-	 * See {@link ChannelId#HR_18_HKMK1PARAVER}.
+	 * See {@link ChannelId#HR_18_CURVE_MC1_SHIFT}.
 	 *
 	 * @return the Channel {@link Value}
 	 */
@@ -3221,7 +3221,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
 	/**
      * Set heating curve mixing circuit 1 parallel shift (Heizkurve Mischkreis 1 Parallelverschiebung), unit is
      * decimal degree Celsius. Minimum 50, maximum 350.
-	 * See {@link ChannelId#HR_18_HKMK1PARAVER}.
+	 * See {@link ChannelId#HR_18_CURVE_MC1_SHIFT}.
 	 * 
 	 * @param value the next write value
 	 * @throws OpenemsNamedException on error
@@ -3233,7 +3233,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
 	/**
      * Set heating curve mixing circuit 1 parallel shift (Heizkurve Mischkreis 1 Parallelverschiebung), unit is
      * decimal degree Celsius. Minimum 50, maximum 350.
-	 * See {@link ChannelId#HR_18_HKMK1PARAVER}.
+	 * See {@link ChannelId#HR_18_CURVE_MC1_SHIFT}.
 	 * 
 	 * @param value the next write value
 	 * @throws OpenemsNamedException on error
@@ -3243,18 +3243,18 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
 	}
 
 	/**
-     * Gets the Channel for {@link ChannelId#HR_19_HKMK2ENDPKT}.
+     * Gets the Channel for {@link ChannelId#HR_19_CURVE_MC2_END_POINT}.
      *
      * @return the Channel
      */
 	public default IntegerWriteChannel getHeatingCurveCircuit2EndPointChannel() {
-	    return this.channel(ChannelId.HR_19_HKMK2ENDPKT);
+	    return this.channel(ChannelId.HR_19_CURVE_MC2_END_POINT);
 	}
 
 	/**
      * Get heating curve mixing circuit 2 end point (Heizkurve Mischkreis 2 Endpunkt), unit is decimal degree Celsius.
      * Optional, depends on heat pump model if available.
-	 * See {@link ChannelId#HR_19_HKMK2ENDPKT}.
+	 * See {@link ChannelId#HR_19_CURVE_MC2_END_POINT}.
 	 *
 	 * @return the Channel {@link Value}
 	 */
@@ -3266,7 +3266,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
      * Set heating curve mixing circuit 2 end point (Heizkurve Mischkreis 2 Endpunkt), unit is decimal degree Celsius.
      * Minimum 200, maximum 700.
      * Optional, depends on heat pump model if available.
-	 * See {@link ChannelId#HR_19_HKMK2ENDPKT}.
+	 * See {@link ChannelId#HR_19_CURVE_MC2_END_POINT}.
 	 * 
 	 * @param value the next write value
 	 * @throws OpenemsNamedException on error
@@ -3279,7 +3279,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
      * Set heating curve mixing circuit 2 end point (Heizkurve Mischkreis 2 Endpunkt), unit is decimal degree Celsius.
      * Minimum 200, maximum 700.
      * Optional, depends on heat pump model if available.
-	 * See {@link ChannelId#HR_19_HKMK2ENDPKT}.
+	 * See {@link ChannelId#HR_19_CURVE_MC2_END_POINT}.
 	 * 
 	 * @param value the next write value
 	 * @throws OpenemsNamedException on error
@@ -3289,19 +3289,19 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
 	}
 
 	/**
-     * Gets the Channel for {@link ChannelId#HR_20_HKMK2PARAVER}.
+     * Gets the Channel for {@link ChannelId#HR_20_CURVE_MC2_SHIFT}.
      *
      * @return the Channel
      */
 	public default IntegerWriteChannel getHeatingCurveCircuit2ParallelShiftChannel() {
-	    return this.channel(ChannelId.HR_20_HKMK2PARAVER);
+	    return this.channel(ChannelId.HR_20_CURVE_MC2_SHIFT);
 	}
 
 	/**
      * Get heating curve mixing circuit 2 parallel shift (Heizkurve Mischkreis 2 Parallelverschiebung), unit is
      * decimal degree Celsius.
      * Optional, depends on heat pump model if available.
-	 * See {@link ChannelId#HR_20_HKMK2PARAVER}
+	 * See {@link ChannelId#HR_20_CURVE_MC2_SHIFT}
 	 *
 	 * @return the Channel {@link Value}
 	 */
@@ -3313,7 +3313,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
      * Set heating curve mixing circuit 2 parallel shift (Heizkurve Mischkreis 2 Parallelverschiebung), unit is
      * decimal degree Celsius. Minimum 50, maximum 350.
      * Optional, depends on heat pump model if available.
-	 * See {@link ChannelId#HR_20_HKMK2PARAVER}.
+	 * See {@link ChannelId#HR_20_CURVE_MC2_SHIFT}.
 	 * 
 	 * @param value the next write value
 	 * @throws OpenemsNamedException on error
@@ -3326,7 +3326,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
      * Set heating curve mixing circuit 2 parallel shift (Heizkurve Mischkreis 2 Parallelverschiebung), unit is
      * decimal degree Celsius. Minimum 50, maximum 350.
      * Optional, depends on heat pump model if available.
-	 * See {@link ChannelId#HR_20_HKMK2PARAVER}.
+	 * See {@link ChannelId#HR_20_CURVE_MC2_SHIFT}.
 	 * 
 	 * @param value the next write value
 	 * @throws OpenemsNamedException on error
@@ -3336,18 +3336,18 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
 	}
 
 	/**
-     * Gets the Channel for {@link ChannelId#HR_21_HKMK3ENDPKT}.
+     * Gets the Channel for {@link ChannelId#HR_21_CURVE_MC3_END_POINT}.
      *
      * @return the Channel
      */
 	public default IntegerWriteChannel getHeatingCurveCircuit3EndPointChannel() {
-	    return this.channel(ChannelId.HR_21_HKMK3ENDPKT);
+	    return this.channel(ChannelId.HR_21_CURVE_MC3_END_POINT);
 	}
 
 	/**
      * Get heating curve mixing circuit 3 end point (Heizkurve Mischkreis 3 Endpunkt), unit is decimal degree Celsius.
      * Optional, depends on heat pump model if available.
-	 * See {@link ChannelId#HR_21_HKMK3ENDPKT}.
+	 * See {@link ChannelId#HR_21_CURVE_MC3_END_POINT}.
 	 *
 	 * @return the Channel {@link Value}
 	 */
@@ -3359,7 +3359,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
      * Set heating curve mixing circuit 3 end point (Heizkurve Mischkreis 3 Endpunkt), unit is decimal degree Celsius.
      * Minimum 200, maximum 700.
      * Optional, depends on heat pump model if available.
-	 * See {@link ChannelId#HR_21_HKMK3ENDPKT}.
+	 * See {@link ChannelId#HR_21_CURVE_MC3_END_POINT}.
 	 * 
 	 * @param value the next write value
 	 * @throws OpenemsNamedException on error
@@ -3372,7 +3372,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
      * Set heating curve mixing circuit 3 end point (Heizkurve Mischkreis 3 Endpunkt), unit is decimal degree Celsius.
      * Minimum 200, maximum 700.
      * Optional, depends on heat pump model if available.
-	 * See {@link ChannelId#HR_21_HKMK3ENDPKT}.
+	 * See {@link ChannelId#HR_21_CURVE_MC3_END_POINT}.
 	 * 
 	 * @param value the next write value
 	 * @throws OpenemsNamedException on error
@@ -3382,19 +3382,19 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
 	}
 
 	/**
-     * Gets the Channel for {@link ChannelId#HR_22_HKMK3PARAVER}.
+     * Gets the Channel for {@link ChannelId#HR_22_CURVE_MC3_SHIFT}.
      *
      * @return the Channel
      */
 	public default IntegerWriteChannel getHeatingCurveCircuit3ParallelShiftChannel() {
-	    return this.channel(ChannelId.HR_22_HKMK3PARAVER);
+	    return this.channel(ChannelId.HR_22_CURVE_MC3_SHIFT);
 	}
 
 	/**
      * Get heating curve mixing circuit 3 parallel shift (Heizkurve Mischkreis 3 Parallelverschiebung), unit is
      * decimal degree Celsius.
      * Optional, depends on heat pump model if available.
-	 * See {@link ChannelId#HR_22_HKMK3PARAVER}.
+	 * See {@link ChannelId#HR_22_CURVE_MC3_SHIFT}.
 	 *
 	 * @return the Channel {@link Value}
 	 */
@@ -3406,7 +3406,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
      * Set heating curve mixing circuit 3 parallel shift (Heizkurve Mischkreis 3 Parallelverschiebung), unit is
      * decimal degree Celsius. Minimum 50, maximum 350.
      * Optional, depends on heat pump model if available.
-	 * See {@link ChannelId#HR_22_HKMK3PARAVER}.
+	 * See {@link ChannelId#HR_22_CURVE_MC3_SHIFT}.
 	 * 
 	 * @param value the next write value
 	 * @throws OpenemsNamedException on error
@@ -3419,7 +3419,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
      * Set heating curve mixing circuit 3 parallel shift (Heizkurve Mischkreis 3 Parallelverschiebung), unit is
      * decimal degree Celsius. Minimum 50, maximum 350.
      * Optional, depends on heat pump model if available.
-	 * See {@link ChannelId#HR_22_HKMK3PARAVER}.
+	 * See {@link ChannelId#HR_22_CURVE_MC3_SHIFT}.
 	 * 
 	 * @param value the next write value
 	 * @throws OpenemsNamedException on error
@@ -3429,17 +3429,17 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
 	}
 
 	/**
-     * Gets the Channel for {@link ChannelId#HR_23_TEMPPM}.
+     * Gets the Channel for {@link ChannelId#HR_23_TEMP_PM}.
      *
      * @return the Channel
      */
 	public default IntegerWriteChannel getTempPlusMinusChannel() {
-	    return this.channel(ChannelId.HR_23_TEMPPM);
+	    return this.channel(ChannelId.HR_23_TEMP_PM);
 	}
 
 	/**
      * Get temperature +-, unit is decimal degree Celsius.
-	 * See {@link ChannelId#HR_23_TEMPPM}.
+	 * See {@link ChannelId#HR_23_TEMP_PM}.
 	 *
 	 * @return the Channel {@link Value}
 	 */
@@ -3449,7 +3449,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
 	
 	/**
      * Set temperature +-, unit is decimal degree Celsius. Minimum -50, maximum 50.
-	 * See {@link ChannelId#HR_23_TEMPPM}.
+	 * See {@link ChannelId#HR_23_TEMP_PM}.
 	 * 
 	 * @param value the next write value
 	 * @throws OpenemsNamedException on error
@@ -3460,7 +3460,7 @@ public interface HeatpumpAlphaInnotecChannel extends HeatpumpSmartGrid {
 	
 	/**
      * Set temperature +-, unit is decimal degree Celsius. Minimum -50, maximum 50.
-	 * See {@link ChannelId#HR_23_TEMPPM}.
+	 * See {@link ChannelId#HR_23_TEMP_PM}.
 	 * 
 	 * @param value the next write value
 	 * @throws OpenemsNamedException on error

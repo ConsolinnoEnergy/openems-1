@@ -16,8 +16,12 @@ import io.openems.edge.common.component.OpenemsComponent;
  * active or not. The second channel is ExceptionalStateValue, which sets the behaviour of the device when the
  * ExceptionalState is active.
  * The basic interpretation of the ExceptionalStateValue is that 0 <= off, and any value > 0 means on.
- * The advanced interpretation is that ExceptionalStateValue is a power percent value, meaning 0 = off and 100 = full
- * power. The implementation is dependent on the device, since not all devices allow a power percent control.
+ * If a device has the ability to regulate output power, the advanced implementation is that the ExceptionalStateValue
+ * is interpreted as a power percent setting. So a value of 50 would mean 'turn the device on with 50% power setting'
+ * and a value >= 100 is 'turn on with full power'.
+ * If a device can not not do the full range of 1-100% (a CHP for example can only go as low as 50% power), a value
+ * lower than that minimum but >0 will mean 'turn on with power as low as possible'. Only a value <= 0 will turn the
+ * device off.
  * Components implementing the ExceptionalState should use the ExceptionalStateHandlerImpl to process the
  * ExceptionalStateEnableSignal (see {@link io.openems.edge.exceptionalstate.api.ExceptionalStateHandlerImpl}).
  */
@@ -46,9 +50,12 @@ public interface ExceptionalState extends OpenemsComponent {
         /**
          * The ExceptionalStateValue controls the behaviour of the device when the ExceptionalState is active.
          * The basic interpretation of the ExceptionalStateValue is that 0 <= off, and any value > 0 means on.
-         * The advanced interpretation is that ExceptionalStateValue is a power percent value, meaning 0 = off and
-         * 100 = full power.
-         * The implementation is dependent on the device, since not all devices allow a power percent control.
+         * If a device has the ability to regulate output power, the advanced implementation is that the
+         * ExceptionalStateValue is interpreted as a power percent setting. So a value of 50 would mean 'turn the
+         * device on with 50% power setting' and a value >= 100 is 'turn on with full power'.
+         * If a device can not not do the full range of 1-100% (a CHP for example can only go as low as 50% power),
+         * a value lower than that minimum but >0 will mean 'turn on with power as low as possible'. Only a
+         * value <= 0 will turn the device off.
          *
          * <ul>
          *     <li> Interface: {@link ExceptionalState}
@@ -145,9 +152,12 @@ public interface ExceptionalState extends OpenemsComponent {
      * Sets the ExceptionalStateValue.
      * The ExceptionalStateValue controls the behaviour of the device when the ExceptionalState is active.
      * The basic interpretation of the ExceptionalStateValue is that 0 <= off, and any value > 0 means on.
-     * The advanced interpretation is that ExceptionalStateValue is a power percent value, meaning 0 = off and
-     * 100 = full power.
-     * The implementation is dependent on the device, since not all devices allow a power percent control.
+     * If a device has the ability to regulate output power, the advanced implementation is that the
+     * ExceptionalStateValue is interpreted as a power percent setting. So a value of 50 would mean 'turn the
+     * device on with 50% power setting' and a value >= 100 is 'turn on with full power'.
+     * If a device can not not do the full range of 1-100% (a CHP for example can only go as low as 50% power),
+     * a value lower than that minimum but >0 will mean 'turn on with power as low as possible'. Only a
+     * value <= 0 will turn the device off.
      *
      * @param value the next write value
      * @throws OpenemsNamedException on error
@@ -160,9 +170,12 @@ public interface ExceptionalState extends OpenemsComponent {
      * Sets the ExceptionalStateValue.
      * The ExceptionalStateValue controls the behaviour of the device when the ExceptionalState is active.
      * The basic interpretation of the ExceptionalStateValue is that 0 <= off, and any value > 0 means on.
-     * The advanced interpretation is that ExceptionalStateValue is a power percent value, meaning 0 = off and
-     * 100 = full power.
-     * The implementation is dependent on the device, since not all devices allow a power percent control.
+     * If a device has the ability to regulate output power, the advanced implementation is that the
+     * ExceptionalStateValue is interpreted as a power percent setting. So a value of 50 would mean 'turn the
+     * device on with 50% power setting' and a value >= 100 is 'turn on with full power'.
+     * If a device can not not do the full range of 1-100% (a CHP for example can only go as low as 50% power),
+     * a value lower than that minimum but >0 will mean 'turn on with power as low as possible'. Only a
+     * value <= 0 will turn the device off.
      *
      * @param value the next write value
      * @throws OpenemsNamedException on error

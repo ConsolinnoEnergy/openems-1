@@ -47,7 +47,7 @@ public class ExceptionalStateHandlerImpl implements ExceptionalStateHandler {
         if (exceptionalStateEnableSignal.isPresent()) {
             boolean exceptionalStateActive = exceptionalStateEnableSignal.get();
             this.exceptionalStateActiveBefore = exceptionalStateActive;
-            exceptionalStateComponent._setExceptionalStateEnableSignal(exceptionalStateActive); // Set status in ’nextValue’ and ’value’ part of the channel.
+            exceptionalStateComponent._setExceptionalStateEnableSignal(exceptionalStateActive);
             this.timer.resetTimer(this.exceptionalStateIdentifier);
             return exceptionalStateActive;
         } else {
