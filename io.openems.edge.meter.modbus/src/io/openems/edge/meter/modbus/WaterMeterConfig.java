@@ -25,17 +25,26 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
     @AttributeDefinition(name = "Task Types", description = "This will be filled in automatically and shows the available "
             + "Types (Read and Write Coil and Register)")
-    String[] TaskType();
+    String[] taskType();
+
+    @AttributeDefinition(name = "Word Types", description = "This will be filled in automatically and shows the available "
+            + "WordTypes say if you have a signed/unsigned int of 1(16), 2(32) or 4(64) register size. Same for Float")
+    String[] wordType();
+
+    @AttributeDefinition(name = "Priority", description = "This will be filled in automatically and shows the available ")
+    String[] priorities();
+
 
     @AttributeDefinition(name = "Configuration", description = "Configuration for this ModbusMeter, Expected Entry is:"
-            + "\"Channel:ModbusAddress:TaskType:PRIORITY\" \n please note: Priority is Optional. The Configuration Expects a Splitter, the current Splitter is a ':'"
-            + " Please Type in a ChannelId, listed in ChannelIds first, then Type in the ModbusAddress, followed by the TaskType, listed in TaskType and then the Priority, if needed"
-            + "Priorities are by default LOW and are only needed by Read Coils and Inputs")
-    String[] configurationList() default {"Power:1:READ_REGISTER:HIGH"};
+            + "\"Channel:ModbusAddress:TaskType:wordType:Priority:LengthORScaleFactor\" "
+            + "\n please note: Priority is Optional. The Configuration Expects a Splitter, the current Splitter is a ':'\n"
+            + "Please Type in a ChannelId, listed in ChannelIds first, then Type in the ModbusAddress, followed by the TaskType and the WordType, listed in TaskType and then the Priority, if needed"
+            + "Priorities are by default LOW and are only needed by Read Coils and Inputs"
+            + "In any way the last entry should always be the Length of an expected String OR the ScaleFactor. (10^ScaleFactor)")
+    String[] configurationList() default {"Power:1:READ_REGISTER:WORD_TYPE:HIGH:2"};
+
 
     boolean enabled() default true;
-
-    boolean configurationDone() default false;
 
     String webconsole_configurationFactory_nameHint() default "Modbus Meter Water Generic {id}";
 }

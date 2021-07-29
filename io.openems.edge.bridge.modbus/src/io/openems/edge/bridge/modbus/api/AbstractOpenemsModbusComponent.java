@@ -158,7 +158,7 @@ public abstract class AbstractOpenemsModbusComponent extends AbstractOpenemsComp
         BridgeModbus modbus = this.modbus.get();
         modbus.removeProtocol(this.id());
         if (this.isEnabled() && modbus != null) {
-            modbus.addProtocol(this.id(), this.getModbusProtocol());
+            modbus.addProtocol(this.id(), this.defineModbusProtocol());
         }
         return false;
     }

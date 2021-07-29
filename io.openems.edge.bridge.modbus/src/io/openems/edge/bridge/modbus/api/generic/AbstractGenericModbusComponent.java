@@ -122,26 +122,18 @@ public abstract class AbstractGenericModbusComponent extends AbstractOpenemsModb
     }
 
     protected boolean activate(ComponentContext context, String id, String alias, boolean enabled, int unitId,
-                               ConfigurationAdmin cm, String modbusId, ComponentManager cpm, List<String> modbusConfiguration) throws OpenemsException {
+                               ConfigurationAdmin cm, String modbusId, ComponentManager cpm, List<String> modbusConfiguration) throws OpenemsException, ConfigurationException {
         this.cpm.set(cpm);
         this.cm.set(cm);
-        try {
-            this.configureChannelConfiguration(modbusConfiguration);
-        } catch (ConfigurationException e) {
-            return true;
-        }
+        this.configureChannelConfiguration(modbusConfiguration);
         return super.activate(context, id, alias, enabled, unitId, cm, "Modbus", modbusId);
     }
 
     protected boolean modified(ComponentContext context, String id, String alias, boolean enabled, int unitId,
-                               ConfigurationAdmin cm, String modbusId, ComponentManager cpm, List<String> modbusConfiguration) throws OpenemsException {
+                               ConfigurationAdmin cm, String modbusId, ComponentManager cpm, List<String> modbusConfiguration) throws OpenemsException, ConfigurationException {
         this.cpm.set(cpm);
         this.cm.set(cm);
-        try {
-            this.configureChannelConfiguration(modbusConfiguration);
-        } catch (ConfigurationException e) {
-            return true;
-        }
+        this.configureChannelConfiguration(modbusConfiguration);
         return super.modified(context, id, alias, enabled, unitId, cm, "Modbus", modbusId);
     }
 
@@ -155,75 +147,79 @@ public abstract class AbstractGenericModbusComponent extends AbstractOpenemsModb
     private void configureChannelConfiguration(List<String> modbusConfiguration) throws ConfigurationException {
         ConfigurationException[] ex = {null};
         AtomicInteger index = new AtomicInteger(1);
-        modbusConfiguration.forEach(entry -> {
-            if (ex[0] == null) {
-                String[] split = entry.split(CONFIGURATION_SPLITTER);
-                if (split.length >= EXPECTED_SIZE && split.length <= EXPECTED_SIZE_WITH_PRIORITY_AND_LENGTH) {
-                    String channelId = split[CHANNEL_ID_POSITION];
-                    int address = Integer.parseInt(split[ADDRESS_POSITION]);
+        if (modbusConfiguration.size() > 0 && modbusConfiguration.get(0).equals("") == false) {
+            modbusConfiguration.forEach(entry -> {
+                if (ex[0] == null) {
+                    String[] split = entry.split(CONFIGURATION_SPLITTER);
+                    if (split.length >= EXPECTED_SIZE && split.length <= EXPECTED_SIZE_WITH_PRIORITY_AND_LENGTH) {
+                        String channelId = split[CHANNEL_ID_POSITION];
+                        int address = Integer.parseInt(split[ADDRESS_POSITION]);
 
-                    WordType wordType = null;
-                    for (WordType type : WordType.values()) {
-                        if (type.name().equals(split[WORD_TYPE_POSITION].trim().toUpperCase())) {
-                            wordType = type;
+                        WordType wordType = null;
+                        for (WordType type : WordType.values()) {
+                            if (type.name().equals(split[WORD_TYPE_POSITION].trim().toUpperCase())) {
+                                wordType = type;
+                                break;
+                            }
                         }
-                    }
-                    if (wordType == null) {
-                        ex[0] = new ConfigurationException("configureChannelConfiguration in " + super.id(), "Wrong WordType: " + split[WORD_TYPE_POSITION]);
-                    }
-                    Channel<?> channel = this.channelMap.get(channelId);
+                        if (wordType == null) {
+                            ex[0] = new ConfigurationException("configureChannelConfiguration in " + super.id(), "Wrong WordType: " + split[WORD_TYPE_POSITION]);
+                        }
+                        Channel<?> channel = this.channelMap.get(channelId);
 
-                    Priority priority = null;
-                    int length = 0;
-                    if (split.length >= EXPECTED_SIZE_WITH_PRIORITY) {
-                        //only numbers == length
-                        if (split[PRIORITY_POSITION].matches("([+-][0-9]*)")) {
+                        Priority priority = null;
+                        int length = 0;
+                        if (split.length >= EXPECTED_SIZE_WITH_PRIORITY) {
+                            //only numbers == length
+                            if (split[PRIORITY_POSITION].matches("([+-][0-9]*)")) {
+                                try {
+                                    length = Integer.parseInt(split[LENGTH_POSITION]);
+                                } catch (NumberFormatException e) {
+                                    ex[0] = new ConfigurationException("configureChannelConfiguration in "
+                                            + super.id(), "Wrong length entry: " + split[PRIORITY_POSITION]);
+                                }
+                            } else {
+                                String priorityString = split[PRIORITY_POSITION].trim().toUpperCase();
+                                for (Priority prio : Priority.values()) {
+                                    if (prio.name().equals(priorityString)) {
+                                        priority = prio;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                        if (split.length == EXPECTED_SIZE_WITH_PRIORITY_AND_LENGTH) {
                             try {
                                 length = Integer.parseInt(split[LENGTH_POSITION]);
                             } catch (NumberFormatException e) {
                                 ex[0] = new ConfigurationException("configureChannelConfiguration in "
-                                        + super.id(), "Wrong length entry: " + split[PRIORITY_POSITION]);
-                            }
-                        } else {
-                            String priorityString = split[PRIORITY_POSITION].trim().toUpperCase();
-                            for (Priority prio : Priority.values()) {
-                                if (prio.name().equals(priorityString)) {
-                                    priority = prio;
-                                }
+                                        + super.id(), "Wrong length entry: " + split[LENGTH_POSITION]);
                             }
                         }
-                    }
-                    if (split.length == EXPECTED_SIZE_WITH_PRIORITY_AND_LENGTH) {
-                        try {
-                            length = Integer.parseInt(split[LENGTH_POSITION]);
-                        } catch (NumberFormatException e) {
-                            ex[0] = new ConfigurationException("configureChannelConfiguration in "
-                                    + super.id(), "Wrong length entry: " + split[LENGTH_POSITION]);
-                        }
-                    }
-                    String taskType = split[TASK_TYPE_POSITION].trim().toUpperCase();
-                    TaskType type = null;
-                    if (TaskType.contains(taskType) && channel != null) {
-                        type = TaskType.valueOf(taskType);
-                        if (priority != null) {
-                            this.modbusConfig.put(channel.channelId(), new ModbusConfigWrapper(channel.channelId(), address, type, priority, wordType, length));
+                        String taskType = split[TASK_TYPE_POSITION].trim().toUpperCase();
+                        TaskType type = null;
+                        if (TaskType.contains(taskType) && channel != null) {
+                            type = TaskType.valueOf(taskType);
+                            if (priority != null) {
+                                this.modbusConfig.put(channel.channelId(), new ModbusConfigWrapper(channel.channelId(), address, type, priority, wordType, length));
+                            } else {
+                                this.modbusConfig.put(channel.channelId(), new ModbusConfigWrapper(channel.channelId(), address, type, wordType, length));
+                            }
                         } else {
-                            this.modbusConfig.put(channel.channelId(), new ModbusConfigWrapper(channel.channelId(), address, type, wordType, length));
+                            ex[0] = new ConfigurationException("Configure Channel Configuration: " + super.id(), "Either Type is null or Channel not Available: For Entry: "
+                                    + index.get() + " Channel: " + (channel == null ? "null" : channel) + " Attempted TaskType: " + taskType);
                         }
                     } else {
-                        ex[0] = new ConfigurationException("Configure Channel Configuration: " + super.id(), "Either Type is null or Channel not Available: For Entry: "
-                                + index.get() + " Channel: " + (channel == null ? "null" : channel) + " Attempted TaskType: " + taskType);
+                        ex[0] = new ConfigurationException("Configure Channel Configuration: " + super.id(), "Expected Configuration Size of : "
+                                + EXPECTED_SIZE + " But was: " + split.length);
                     }
-                } else {
-                    ex[0] = new ConfigurationException("Configure Channel Configuration: " + super.id(), "Expected Configuration Size of : "
-                            + EXPECTED_SIZE + " But was: " + split.length);
                 }
-            }
-            index.getAndIncrement();
+                index.getAndIncrement();
 
-        });
-        if (ex[0] != null) {
-            throw ex[0];
+            });
+            if (ex[0] != null) {
+                throw ex[0];
+            }
         }
 
     }
@@ -232,13 +228,13 @@ public abstract class AbstractGenericModbusComponent extends AbstractOpenemsModb
     /**
      * Update method available for Components using MQTT.
      *
-     * @param config        config of the Component, will be updated automatically.
+     * @param ca            The ConfigurationAdmin this class will need for updating the Configuration
      * @param configTarget  target, where to put ChannelIds. Usually something like "ChannelIds".
      * @param channelsGiven Channels of the Component, collected by this.channels, filtered by "_Property"
      * @param length        of the configTarget entries. If Length doesn't match ChannelSize --> Update.
      * @return true if it does not need to update
      */
-    public boolean update(Configuration config, String configTarget, List<Channel<?>> channelsGiven, int length) {
+    public boolean update(ConfigurationAdmin ca, String configTarget, List<Channel<?>> channelsGiven, int length) throws IOException {
         this.channelMap.clear();
         List<Channel<?>> channels =
                 channelsGiven.stream().filter(entry ->
@@ -248,7 +244,7 @@ public abstract class AbstractGenericModbusComponent extends AbstractOpenemsModb
             this.channelMap.put(entry.channelId().id(), entry);
         });
         if (length != channels.size()) {
-            this.updateConfig(config, configTarget, channels);
+            this.updateConfig(ca.getConfiguration(this.servicePid(), "?"), configTarget, channels);
             return false;
         }
         return true;
@@ -265,7 +261,8 @@ public abstract class AbstractGenericModbusComponent extends AbstractOpenemsModb
     private void updateConfig(Configuration config, String configTarget, List<Channel<?>> channels) {
         AtomicInteger counter = new AtomicInteger(0);
         String[] channelIdWithUnitArray = new String[channels.size()];
-        channels.forEach(channel -> channelIdWithUnitArray[counter.getAndIncrement()] = channel.channelId().id() + CONFIGURATION_SPLITTER + " Unit is " + channel.channelDoc().getUnit());
+        channels.forEach(channel -> channelIdWithUnitArray[counter.getAndIncrement()] = channel.channelId().id()
+                + CONFIGURATION_SPLITTER + " Unit is " + CONFIGURATION_SPLITTER + channel.channelDoc().getUnit());
 
         try {
             Dictionary<String, Object> properties = config.getProperties();
@@ -407,8 +404,9 @@ public abstract class AbstractGenericModbusComponent extends AbstractOpenemsModb
     /**
      * Adds a Register (Read or Write) to the ModbusProtocol, distinct what {@link AbstractModbusElement} needs to be
      * used.
+     *
      * @param protocol The ModbusProtocol usually from this {@link #defineModbusProtocol()}.
-     * @param wrapper the ModbusConfigWrapper, usually from the {@link #modbusConfig}
+     * @param wrapper  the ModbusConfigWrapper, usually from the {@link #modbusConfig}
      * @throws OpenemsException if the addTask fails.
      */
     private void addRegister(ModbusProtocol protocol, ModbusConfigWrapper wrapper) throws OpenemsException {
@@ -471,8 +469,8 @@ public abstract class AbstractGenericModbusComponent extends AbstractOpenemsModb
      * @param source the source channel (the channel that gets information via modbus -> adapted for "correct" meter data
      */
     protected void handleChannelUpdate(Channel<?> target, Channel<?> source) {
-        if (this.modbusConfig.containsKey(source.channelId())) {
-            if (source != null) {
+        if (source != null) {
+            if (this.modbusConfig.containsKey(source.channelId())) {
                 Value<?> targetValue = source.getNextValue();
                 if (targetValue.isDefined()) {
                     switch (source.channelDoc().getType()) {

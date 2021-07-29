@@ -12,7 +12,6 @@ import io.openems.edge.common.event.EdgeEventConstants;
 import io.openems.edge.meter.api.HeatMeter;
 import io.openems.edge.meter.api.Meter;
 import io.openems.edge.meter.api.MeterModbusGeneric;
-import org.osgi.service.cm.Configuration;
 import org.osgi.service.cm.ConfigurationAdmin;
 import org.osgi.service.cm.ConfigurationException;
 import org.osgi.service.component.ComponentContext;
@@ -30,6 +29,7 @@ import org.osgi.service.event.EventConstants;
 import org.osgi.service.event.EventHandler;
 import org.osgi.service.metatype.annotations.Designate;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 
@@ -87,19 +87,17 @@ public class HeatMeterModbus extends AbstractGenericModbusComponent implements O
     }
 
     @Activate
-    void activate(ComponentContext context, HeatMeterConfig config) throws ConfigurationException, OpenemsException {
+    void activate(ComponentContext context, HeatMeterConfig config) throws ConfigurationException, OpenemsException, IOException {
         this.config = config;
-        if (super.update((Configuration) config, "channelIds", new ArrayList<>(this.channels()), this.config.channelIds().length) && config.configurationDone()) {
-            super.activate(context, config.id(), config.alias(), config.enabled(), config.modbusUnitId(), this.cm, config.modbusBridgeId(), this.cpm, Arrays.asList(config.configurationList()));
-        }
+        super.activate(context, config.id(), config.alias(), config.enabled(), config.modbusUnitId(), this.cm, config.modbusBridgeId(), this.cpm, Arrays.asList(config.configurationList()));
+        super.update(this.cm, "channelIds", new ArrayList<>(this.channels()), this.config.channelIds().length);
     }
 
     @Modified
-    void modified(ComponentContext context, HeatMeterConfig config) throws OpenemsException {
-        if (super.update((Configuration) config, "channelIds", new ArrayList<>(this.channels()), config.channelIds().length) && config.configurationDone()) {
-            super.modified(context, config.id(), config.alias(), config.enabled(), config.modbusUnitId(), this.cm,
-                    config.modbusBridgeId(), this.cpm, Arrays.asList(config.configurationList()));
-        }
+    void modified(ComponentContext context, HeatMeterConfig config) throws OpenemsException, IOException, ConfigurationException {
+        super.update(this.cm, "channelIds", new ArrayList<>(this.channels()), this.config.channelIds().length);
+        super.modified(context, config.id(), config.alias(), config.enabled(), config.modbusUnitId(), this.cm,
+                config.modbusBridgeId(), this.cpm, Arrays.asList(config.configurationList()));
         this.config = config;
 
     }

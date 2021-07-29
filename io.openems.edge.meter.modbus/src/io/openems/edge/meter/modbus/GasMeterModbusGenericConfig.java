@@ -45,7 +45,5 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
     boolean enabled() default true;
 
-    boolean configurationDone() default false;
-
     String webconsole_configurationFactory_nameHint() default "Modbus Meter Gas Generic {id}";
 }
