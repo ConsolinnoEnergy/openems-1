@@ -15,7 +15,7 @@ public enum SystemStatus implements OptionsEnum {
 	DEFROST(4, "Defrost (Abtauen)"), //
 	OFF(5, "Off"), //
 	EXTERNAL_ENERGY_SOURCE(6, "External energy source (Externe Energiequelle)"), //
-	COOLING(7, "Cooling (Kühlung)"); //
+	COOLING(7, "Cooling (Kuehlung)"); //
 
 	private int value;
 	private String name;

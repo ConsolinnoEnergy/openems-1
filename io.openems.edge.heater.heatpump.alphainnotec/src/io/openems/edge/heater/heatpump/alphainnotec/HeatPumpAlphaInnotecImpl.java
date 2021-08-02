@@ -451,10 +451,10 @@ public class HeatPumpAlphaInnotecImpl extends AbstractOpenemsModbusComponent imp
 		SystemStatus heatpumpSystemStatus = getHeatpumpOperatingMode().asEnum();
 		switch (heatpumpSystemStatus) {
 			case OFF:
-				_setHeaterState(HeaterState.OFF.getValue());
+				this._setHeaterState(HeaterState.OFF.getValue());
 				break;
 			case BLOCKED:
-				_setHeaterState(HeaterState.BLOCKED.getValue());
+				this._setHeaterState(HeaterState.BLOCKED.getValue());
 				break;
 			case DEFROST:
 			case COOLING:
@@ -462,11 +462,11 @@ public class HeatPumpAlphaInnotecImpl extends AbstractOpenemsModbusComponent imp
 			case ROOM_HEATING:
 			case DOMESTIC_HOT_WATER_HEATING:
 			case EXTERNAL_ENERGY_SOURCE:
-				_setHeaterState(HeaterState.HEATING.getValue());
+				this._setHeaterState(HeaterState.HEATING.getValue());
 				break;
 			case UNDEFINED:
 			default:
-				_setHeaterState(HeaterState.UNDEFINED.getValue());
+				this._setHeaterState(HeaterState.UNDEFINED.getValue());
 				break;
 		}
 
@@ -475,30 +475,30 @@ public class HeatPumpAlphaInnotecImpl extends AbstractOpenemsModbusComponent imp
 			int smartGridFromModbus = getSmartGridFromModbus().get();
 			switch (smartGridFromModbus) {
 				case 0:
-					_setSmartGridState(SmartGridState.SG1_BLOCKED.getValue());
+					this._setSmartGridState(SmartGridState.SG1_BLOCKED.getValue());
 					break;
 				case 1:
-					_setSmartGridState(SmartGridState.SG2_LOW.getValue());
+					this._setSmartGridState(SmartGridState.SG2_LOW.getValue());
 					break;
 				case 2:
-					_setSmartGridState(SmartGridState.SG3_STANDARD.getValue());
+					this._setSmartGridState(SmartGridState.SG3_STANDARD.getValue());
 					break;
 				case 3:
-					_setSmartGridState(SmartGridState.SG4_HIGH.getValue());
+					this._setSmartGridState(SmartGridState.SG4_HIGH.getValue());
 					break;
 				default:
 					this._setSmartGridState(SmartGridState.UNDEFINED.getValue());
 			}
 		} else {
-			_setSmartGridState(SmartGridState.UNDEFINED.getValue());
+			this._setSmartGridState(SmartGridState.UNDEFINED.getValue());
 		}
 
 		// The value in the channel can be null. Use "orElse" to avoid null pointer exception.
-		int errorCode = getErrorCode().orElse(0);
+		int errorCode = this.getErrorCode().orElse(0);
 		if (errorCode != 0) {
-			_setErrorMessage("Error code: " + errorCode);
+			this._setErrorMessage("Error code: " + errorCode);
 		} else {
-			_setErrorMessage("No error");
+			this._setErrorMessage("No error");
 		}
 
 		if (this.readOnly == false) {
@@ -509,16 +509,16 @@ public class HeatPumpAlphaInnotecImpl extends AbstractOpenemsModbusComponent imp
 				try {
 					switch (smartGridStateWrite.get()) {
 						case 1:
-							setSmartGridToModbus(0);	// Blocked
+							this.setSmartGridToModbus(0);	// Blocked
 							break;
 						case 2:
-							setSmartGridToModbus(1);	// Smart Grid Low
+							this.setSmartGridToModbus(1);	// Smart Grid Low
 							break;
 						case 3:
-							setSmartGridToModbus(2);	// Standard
+							this.setSmartGridToModbus(2);	// Standard
 							break;
 						case 4:
-							setSmartGridToModbus(3);	// Smart Grid High
+							this.setSmartGridToModbus(3);	// Smart Grid High
 							break;
 						default:
 							/* Manual says: "If a value is no longer to be predefined, a value outside the defined
@@ -562,10 +562,10 @@ public class HeatPumpAlphaInnotecImpl extends AbstractOpenemsModbusComponent imp
 				if (this.turnOnHeatpump) {
 
 					// Make sure heat pump is not blocked or partially blocked.
-					if (getBlockRelease().isDefined()) {
-						if ((getBlockRelease().asEnum() == BlockRelease.RELEASE_2_COMPRESSORS) == false) {
+					if (this.getBlockRelease().isDefined()) {
+						if ((this.getBlockRelease().asEnum() == BlockRelease.RELEASE_2_COMPRESSORS) == false) {
 							try {
-								setBlockRelease(BlockRelease.RELEASE_2_COMPRESSORS.getValue());
+								this.setBlockRelease(BlockRelease.RELEASE_2_COMPRESSORS.getValue());
 							} catch (OpenemsError.OpenemsNamedException e) {
 								this.logError(this.log, "Could not write to channel 'HR_6_BLOCK_RELEASE'. "
 										+ "Reason: " + e.getMessage());
@@ -573,7 +573,7 @@ public class HeatPumpAlphaInnotecImpl extends AbstractOpenemsModbusComponent imp
 						}
 					} else {
 						try {
-							setBlockRelease(BlockRelease.RELEASE_2_COMPRESSORS.getValue());
+							this.setBlockRelease(BlockRelease.RELEASE_2_COMPRESSORS.getValue());
 						} catch (OpenemsError.OpenemsNamedException e) {
 							this.logError(this.log, "Could not write to channel 'HR_6_BLOCK_RELEASE'. "
 									+ "Reason: " + e.getMessage());
@@ -585,25 +585,25 @@ public class HeatPumpAlphaInnotecImpl extends AbstractOpenemsModbusComponent imp
 							if (string.equals("") == false) {
 								switch (string) {
 									case "Heating":
-										setHeatingOperationMode(HeatingMode.AUTOMATIC.getValue());
+										this.setHeatingOperationMode(HeatingMode.AUTOMATIC.getValue());
 										break;
 									case "DomesticHotWater":
-										setDomesticHotWaterOperationMode(HeatingMode.AUTOMATIC.getValue());
+										this.setDomesticHotWaterOperationMode(HeatingMode.AUTOMATIC.getValue());
 										break;
 									case "MixingCircuit2":
-										setCircuit2OperationMode(HeatingMode.AUTOMATIC.getValue());
+										this.setCircuit2OperationMode(HeatingMode.AUTOMATIC.getValue());
 										break;
 									case "MixingCircuit3":
-										setCircuit3OperationMode(HeatingMode.AUTOMATIC.getValue());
+										this.setCircuit3OperationMode(HeatingMode.AUTOMATIC.getValue());
 										break;
 									case "Cooling":
-										setCoolingOperationMode(CoolingMode.AUTOMATIC.getValue());
+										this.setCoolingOperationMode(CoolingMode.AUTOMATIC.getValue());
 										break;
 									case "Ventilation":
-										setVentilationOperationMode(VentilationMode.AUTOMATIC.getValue());
+										this.setVentilationOperationMode(VentilationMode.AUTOMATIC.getValue());
 										break;
 									case "SwimmingPool":
-										setPoolHeatingOperationMode(PoolMode.AUTOMATIC.getValue());
+										this.setPoolHeatingOperationMode(PoolMode.AUTOMATIC.getValue());
 										break;
 								}
 							}
@@ -620,13 +620,13 @@ public class HeatPumpAlphaInnotecImpl extends AbstractOpenemsModbusComponent imp
 					*/
 				} else {
 					try {
-						setHeatingOperationMode(HeatingMode.OFF.getValue());
-						setDomesticHotWaterOperationMode(HeatingMode.OFF.getValue());
-						setCircuit2OperationMode(HeatingMode.OFF.getValue());
-						setCircuit3OperationMode(HeatingMode.OFF.getValue());
-						setCoolingOperationMode(CoolingMode.OFF.getValue());
-						setVentilationOperationMode(VentilationMode.OFF.getValue());
-						setPoolHeatingOperationMode(PoolMode.OFF.getValue());
+						this.setHeatingOperationMode(HeatingMode.OFF.getValue());
+						this.setDomesticHotWaterOperationMode(HeatingMode.OFF.getValue());
+						this.setCircuit2OperationMode(HeatingMode.OFF.getValue());
+						this.setCircuit3OperationMode(HeatingMode.OFF.getValue());
+						this.setCoolingOperationMode(CoolingMode.OFF.getValue());
+						this.setVentilationOperationMode(VentilationMode.OFF.getValue());
+						this.setPoolHeatingOperationMode(PoolMode.OFF.getValue());
 						// setBlockRelease(BlockRelease.BLOCKED.getValue());	// Better not use that. If the heat pump has frost protection, this might disable it.
 					} catch (OpenemsError.OpenemsNamedException e) {
 						this.logError(this.log, "Could not write to operating mode channels. "
@@ -636,23 +636,22 @@ public class HeatPumpAlphaInnotecImpl extends AbstractOpenemsModbusComponent imp
 			}
 
 		}
-		this.logInfo(this.log, "Outside temperature: " + getOutsideTemp().asEnum());
 		
 		if (this.debug) {
 			this.logInfo(this.log, "--Heat pump Alpha Innotec--");
-			this.logInfo(this.log, "System State: " + getHeatpumpOperatingMode().asEnum().getName());
-			this.logInfo(this.log, "Smart Grid State name: " + getSmartGridState().asEnum().getName());
-			this.logInfo(this.log, "Block / release: " + getBlockRelease().asEnum().getName());
-			this.logInfo(this.log, "Heating mode: " + getHeatingOperationMode().asEnum().getName());
-			this.logInfo(this.log, "Domestic hot water mode: " + getDomesticHotWaterOperationMode().asEnum().getName());
-			this.logInfo(this.log, "Cooling mode: " + getCoolingOperationMode().asEnum().getName());
-			this.logInfo(this.log, "Flow temperature: " + getFlowTemperature());
-			this.logInfo(this.log, "Flow temp circuit 1: " + getCircuit1FlowTemp());
-			this.logInfo(this.log, "Flow temp circuit 1 setpoint: " + getCircuit1FlowTempSetpoint());
-			this.logInfo(this.log, "Return temperature: " + getReturnTemperature());
-			this.logInfo(this.log, "Return temp setpoint: " + getReturnTempSetpoint());
-			this.logInfo(this.log, "Outside temperature: " + getOutsideTemp());
-			this.logInfo(this.log, "Error Code: " + getErrorCode().get());	// Code "0" means no error. "Null" means no reading (yet).
+			this.logInfo(this.log, "System State: " + this.getHeatpumpOperatingMode().asEnum().getName());
+			this.logInfo(this.log, "Smart Grid State name: " + this.getSmartGridState().asEnum().getName());
+			this.logInfo(this.log, "Block / release: " + this.getBlockRelease().asEnum().getName());
+			this.logInfo(this.log, "Heating mode: " + this.getHeatingOperationMode().asEnum().getName());
+			this.logInfo(this.log, "Domestic hot water mode: " + this.getDomesticHotWaterOperationMode().asEnum().getName());
+			this.logInfo(this.log, "Cooling mode: " + this.getCoolingOperationMode().asEnum().getName());
+			this.logInfo(this.log, "Flow temperature: " + this.getFlowTemperature());
+			this.logInfo(this.log, "Flow temp circuit 1: " + this.getCircuit1FlowTemp());
+			this.logInfo(this.log, "Flow temp circuit 1 setpoint: " + this.getCircuit1FlowTempSetpoint());
+			this.logInfo(this.log, "Return temperature: " + this.getReturnTemperature());
+			this.logInfo(this.log, "Return temp setpoint: " + this.getReturnTempSetpoint());
+			this.logInfo(this.log, "Outside temperature: " + this.getOutsideTemp());
+			this.logInfo(this.log, "Error Code: " + this.getErrorCode().get());	// Code "0" means no error. "Null" means no reading (yet).
 			this.logInfo(this.log, "");
 		}
 

@@ -370,13 +370,13 @@ public class HeatPumpTecalorImpl extends AbstractOpenemsModbusComponent implemen
 		if (this.getErrorCode().isDefined()) {
 			int errorCode = this.getErrorCode().get();
 			if (errorCode > 0) {
-				_setErrorMessage("Error Code: " + errorCode);
+				this._setErrorMessage("Error Code: " + errorCode);
 			}
 		} else {
 			if (isError) {
-				_setErrorMessage("An unknown error occurred.");
+				this._setErrorMessage("An unknown error occurred.");
 			} else {
-				_setErrorMessage("No error");
+				this._setErrorMessage("No error");
 			}
 		}
 
@@ -400,22 +400,22 @@ public class HeatPumpTecalorImpl extends AbstractOpenemsModbusComponent implemen
 			notBlocked = this.getElSupBlockRelease().get();
 		}
 		if (isRunning) {
-			_setHeaterState(HeaterState.HEATING.getValue());
+			this._setHeaterState(HeaterState.HEATING.getValue());
 		} else if (notBlocked && signalReceived) {
-			_setHeaterState(HeaterState.STANDBY.getValue());
+			this._setHeaterState(HeaterState.STANDBY.getValue());
 		} else if (notBlocked == false || isError) {
-		_setHeaterState(HeaterState.BLOCKED.getValue());
+			this._setHeaterState(HeaterState.BLOCKED.getValue());
 		} else {
 			// You land here when no channel has data (’signalReceived == false’, ’notBlocked == true’, ’isError == false’).
-			_setHeaterState(HeaterState.OFF.getValue());
+			this._setHeaterState(HeaterState.OFF.getValue());
 		}
 
 		// Map HeatPumpSmartGrid "SmartGridState" read values.
 		if (this.getSgReadyOperatingMode().isDefined()) {
 			int generalizedSgState = this.getSgReadyOperatingMode().get();
-			_setSmartGridState(generalizedSgState);
+			this._setSmartGridState(generalizedSgState);
 		} else {
-			_setSmartGridState(SmartGridState.UNDEFINED.getValue());
+			this._setSmartGridState(SmartGridState.UNDEFINED.getValue());
 		}
 
 		if (this.readOnly == false) {
@@ -514,7 +514,7 @@ public class HeatPumpTecalorImpl extends AbstractOpenemsModbusComponent implemen
 		}
 
 		// Map "getCircuit1SetpointTemp" according to WPM version.
-		if (getControllerModelId().isDefined()) {
+		if (this.getControllerModelId().isDefined()) {
 			int controllerModelId = getControllerModelId().get();
 			if (controllerModelId == wpm3iIdentifier) {
 				// WPM version is 3i
@@ -567,24 +567,24 @@ public class HeatPumpTecalorImpl extends AbstractOpenemsModbusComponent implemen
 			this.logInfo(this.log, "10 - Silentmode 1 active = " + (((statusBits & 0b010000000000) == 0b010000000000) ? 1 : 0));
 			this.logInfo(this.log, "11 - Silentmode 2 active = " + (((statusBits & 0b0100000000000) == 0b0100000000000) ? 1 : 0));
 			this.logInfo(this.log, "");
-			this.logInfo(this.log, "SmartGrid-Mode (Tecalor, 1-4): " + getSgReadyOperatingMode());
-			this.logInfo(this.log, "Controller id (Reglerkennung): " + getControllerModelId());
-			this.logInfo(this.log, "El. sup. block (EVU-Freigabe): " + getElSupBlockRelease());
-			this.logInfo(this.log, "Error status: " + getErrorStatus());
-			this.logInfo(this.log, "Error code: " + getErrorCode());
+			this.logInfo(this.log, "SmartGrid-Mode (Tecalor, 1-4): " + this.getSgReadyOperatingMode());
+			this.logInfo(this.log, "Controller id (Reglerkennung): " + this.getControllerModelId());
+			this.logInfo(this.log, "El. sup. block (EVU-Freigabe): " + this.getElSupBlockRelease());
+			this.logInfo(this.log, "Error status: " + this.getErrorStatus());
+			this.logInfo(this.log, "Error code: " + this.getErrorCode());
 			this.logInfo(this.log, "");
-			this.logInfo(this.log, "Outside temp: " + getOutsideTemp());
-			this.logInfo(this.log, "Storage tank temp: " + getStorageTankTemp());
-			this.logInfo(this.log, "Circuit 1 temp: " + getCircuit1Temp());
-			this.logInfo(this.log, "Circuit 2 temp: " + getCircuit2Temp());
-			this.logInfo(this.log, "Flow temp: " + getFlowTemperature());
-			this.logInfo(this.log, "Return temp: " + getReturnTemperature());
-			this.logInfo(this.log, "Domestic hot water temp: " + getDomesticHotWaterTemp());
+			this.logInfo(this.log, "Outside temp: " + this.getOutsideTemp());
+			this.logInfo(this.log, "Storage tank temp: " + this.getStorageTankTemp());
+			this.logInfo(this.log, "Circuit 1 temp: " + this.getCircuit1Temp());
+			this.logInfo(this.log, "Circuit 2 temp: " + this.getCircuit2Temp());
+			this.logInfo(this.log, "Flow temp: " + this.getFlowTemperature());
+			this.logInfo(this.log, "Return temp: " + this.getReturnTemperature());
+			this.logInfo(this.log, "Domestic hot water temp: " + this.getDomesticHotWaterTemp());
 			this.logInfo(this.log, "");
 			this.logInfo(this.log, "--Writable Values--");
-			this.logInfo(this.log, "Operating mode: " + getOperatingModeChannel().value().asEnum().getName());
-			this.logInfo(this.log, "SmartGrid-Ready active: " + getSgReadyOnOff());
-			this.logInfo(this.log, "SmartGridState (HeatpumpSmartGrid): " + getSmartGridStateChannel().value().asEnum().getName());
+			this.logInfo(this.log, "Operating mode: " + this.getOperatingModeChannel().value().asEnum().getName());
+			this.logInfo(this.log, "SmartGrid-Ready active: " + this.getSgReadyOnOff());
+			this.logInfo(this.log, "SmartGridState (HeatpumpSmartGrid): " + this.getSmartGridStateChannel().value().asEnum().getName());
 			this.logInfo(this.log, "");
 		}
 
