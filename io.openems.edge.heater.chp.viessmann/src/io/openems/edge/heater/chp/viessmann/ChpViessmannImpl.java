@@ -48,13 +48,13 @@ import java.util.Optional;
 
 
 @Designate(ocd = Config.class, factory = true)
-@Component(name = "Chp",
+@Component(name = "Heater.Chp.Viessmann",
         configurationPolicy = ConfigurationPolicy.REQUIRE,
         immediate = true,
         property = EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE)
-public class ChpImplViessmann extends AbstractOpenemsModbusComponent implements OpenemsComponent, ViessmannInformation, EventHandler, Heater {
+public class ChpViessmannImpl extends AbstractOpenemsModbusComponent implements OpenemsComponent, ViessmannInformation, EventHandler, Heater {
 
-    private final Logger log = LoggerFactory.getLogger(ChpImplViessmann.class);
+    private final Logger log = LoggerFactory.getLogger(ChpViessmannImpl.class);
     private ViessmannChpType chpType;
     private int thermicalOutput;
     private int electricalOutput;
@@ -82,7 +82,7 @@ public class ChpImplViessmann extends AbstractOpenemsModbusComponent implements 
         super.setModbus(modbus);
     }
 
-    public ChpImplViessmann() {
+    public ChpViessmannImpl() {
         super(OpenemsComponent.ChannelId.values(),
                 ViessmannPowerPercentage.ChannelId.values(),
                 ViessmannInformation.ChannelId.values(),

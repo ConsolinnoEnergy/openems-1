@@ -13,10 +13,9 @@ import io.openems.edge.common.channel.IntegerWriteChannel;
 import io.openems.edge.common.channel.StringReadChannel;
 import io.openems.edge.common.channel.value.Value;
 import io.openems.edge.heater.api.Chp;
-import io.openems.edge.heater.api.Heater;
 
 
-public interface ChpKwEnergySmartblockChannel extends Chp {
+public interface ChpKwEnergySmartblock extends Chp {
 
     public enum ChannelId implements io.openems.edge.common.channel.ChannelId {
 

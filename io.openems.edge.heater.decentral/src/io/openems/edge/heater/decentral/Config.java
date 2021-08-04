@@ -31,7 +31,7 @@ import org.osgi.service.metatype.annotations.Option;
     @AttributeDefinition(name = "ThresholdThermometerId", description = "ThresholdThermometer to Check")
     String thresholdThermometerId() default "ThresholdThermometer0";
 
-    @AttributeDefinition(name = "SetPointTemperature", description = "Setpoint to OpenValve, only important if you control Valve directly and not via controller, Unit: Decidegree: 1°C = 10dC")
+    @AttributeDefinition(name = "SetPointTemperature", description = "SetPoint to OpenValve, also setPoint To Tell: NeedMoreHeat, Unit: DeciDegree: 1°C = 10dC")
     int setPointTemperature() default 700;
 
     int maximumThermalOutputInKw() default 150;
@@ -42,7 +42,32 @@ import org.osgi.service.metatype.annotations.Option;
     boolean forceHeating() default false;
 
     @AttributeDefinition(name = "Cycles to wait when Need Heat Enable Signal (Central Controller) isn't present", description = "How many Cycles do you wait for the Central Communication Controller if Communication is lost")
-    int waitCyclesNeedHeatResponse() default 8;
+    int waitTimeNeedHeatResponse() default 8;
+
+    @AttributeDefinition(name = "NeedHeatResponse timer unit is seconds not cycles", description = "Use seconds instead "
+            + "of OpenEMS cycles as the unit for the timer.")
+    boolean heatResponseTimerIsSecondsNotCycles() default false;
+
+    @AttributeDefinition(name = "Wait time EnableSignal", description = "How long to wait after the EnableSignal is "
+            + "no longer received before the heater is switched off. Unit is seconds, unless cycles option is selected.")
+    int waitTimeEnableSignal() default 30;
+
+    @AttributeDefinition(name = "EnableSignal timer unit is cycles not seconds", description = "Use OpenEMS cycles "
+            + "instead of seconds as the unit for the timer.")
+    boolean enableSignalTimerIsCyclesNotSeconds() default false;
+
+    @AttributeDefinition(name = "Use ExceptionalState", description = "React to commands from the Exceptional State "
+            + "interface. When the Exceptional State is active, this will override any other commands.")
+    boolean useExceptionalState() default true;
+
+    @AttributeDefinition(name = "Wait time ExceptionalState", description = "How long to wait after the Exceptional "
+            + "State Active Signal is no longer received before the heater leaves the Exceptional State. Unit is "
+            + "seconds, unless cycles option is selected.")
+    int waitTimeExceptionalState() default 60;
+
+    @AttributeDefinition(name = "ExceptionalState timer unit is cycles not seconds", description = "Use OpenEMS cycles "
+            + "instead of seconds as the unit for the timer.")
+    boolean exceptionalStateTimerIsCyclesNotSeconds() default false;
 
     boolean enabled() default true;
 

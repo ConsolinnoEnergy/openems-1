@@ -12,7 +12,7 @@ import io.openems.edge.bridge.modbus.api.element.UnsignedWordElement;
 import io.openems.edge.bridge.modbus.api.task.FC16WriteRegistersTask;
 import io.openems.edge.bridge.modbus.api.task.FC3ReadRegistersTask;
 import io.openems.edge.heater.api.Chp;
-import io.openems.edge.heater.chp.kwenergy.api.ChpKwEnergySmartblockChannel;
+import io.openems.edge.heater.chp.kwenergy.api.ChpKwEnergySmartblock;
 import io.openems.edge.heater.chp.kwenergy.api.ControlMode;
 import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
@@ -50,7 +50,7 @@ import java.time.temporal.ChronoUnit;
 
 
 @Designate(ocd = Config.class, factory = true)
-@Component(name = "ChpKwEnergySmartblock",
+@Component(name = "Heater.Chp.KwEnergySmartblock",
 		immediate = true,
 		configurationPolicy = ConfigurationPolicy.REQUIRE,
 		property = EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE)
@@ -64,7 +64,7 @@ import java.time.temporal.ChronoUnit;
  * setSetPointTemperature() and related methods are not supported by this CHP.
  */
 public class ChpKwEnergySmartblockImpl extends AbstractOpenemsModbusComponent implements OpenemsComponent, EventHandler,
-		ExceptionalState, ChpKwEnergySmartblockChannel {
+		ExceptionalState, ChpKwEnergySmartblock {
 
 	@Reference
 	protected ConfigurationAdmin cm;
@@ -98,7 +98,7 @@ public class ChpKwEnergySmartblockImpl extends AbstractOpenemsModbusComponent im
 
 	public ChpKwEnergySmartblockImpl() {
 		super(OpenemsComponent.ChannelId.values(),
-				ChpKwEnergySmartblockChannel.ChannelId.values(),
+				ChpKwEnergySmartblock.ChannelId.values(),
 				Chp.ChannelId.values(),
 				Heater.ChannelId.values(),
 				ExceptionalState.ChannelId.values());
@@ -115,7 +115,7 @@ public class ChpKwEnergySmartblockImpl extends AbstractOpenemsModbusComponent im
 
 		this.readOnly = config.readOnly();
 		this.startupStateChecked = false;
-		if (readOnly == false) {
+		if (this.readOnly == false) {
 			this.turnOnChp = config.turnOnChp();
 			TimerHandler timer = new TimerHandlerImpl(super.id(), this.cpm);
 			this.useEnableSignal = config.useEnableSignalChannel();
@@ -175,19 +175,19 @@ public class ChpKwEnergySmartblockImpl extends AbstractOpenemsModbusComponent im
 						// Use SignedWordElement when the number can be negative. Signed 16bit maps every number >32767
 						// to negative. That means if the value you read is positive and <32767, there is no difference
 						// between signed and unsigned.
-						m(ChpKwEnergySmartblockChannel.ChannelId.HR0_ERROR_BITS_1_to_16, new UnsignedWordElement(0),
+						m(ChpKwEnergySmartblock.ChannelId.HR0_ERROR_BITS_1_to_16, new UnsignedWordElement(0),
 								ElementToChannelConverter.DIRECT_1_TO_1)
 				),
 				new FC3ReadRegistersTask(16, Priority.HIGH,
-						m(ChpKwEnergySmartblockChannel.ChannelId.HR16_STATUS_BITS_1_to_16, new UnsignedWordElement(16),
+						m(ChpKwEnergySmartblock.ChannelId.HR16_STATUS_BITS_1_to_16, new UnsignedWordElement(16),
 								ElementToChannelConverter.DIRECT_1_TO_1)
 				),
 				new FC3ReadRegistersTask(20, Priority.HIGH,
-						m(ChpKwEnergySmartblockChannel.ChannelId.HR20_STATUS_BITS_65_to_80, new UnsignedWordElement(20),
+						m(ChpKwEnergySmartblock.ChannelId.HR20_STATUS_BITS_65_to_80, new UnsignedWordElement(20),
 								ElementToChannelConverter.DIRECT_1_TO_1)
 				),
 				new FC3ReadRegistersTask(24, Priority.HIGH,
-						m(ChpKwEnergySmartblockChannel.ChannelId.HR24_ENGINE_TEMPERATURE, new UnsignedWordElement(24),
+						m(ChpKwEnergySmartblock.ChannelId.HR24_ENGINE_TEMPERATURE, new UnsignedWordElement(24),
 								ElementToChannelConverter.DIRECT_1_TO_1),
 						m(Heater.ChannelId.RETURN_TEMPERATURE, new UnsignedWordElement(25),
 								ElementToChannelConverter.DIRECT_1_TO_1),
@@ -196,43 +196,43 @@ public class ChpKwEnergySmartblockImpl extends AbstractOpenemsModbusComponent im
 
 				),
 				new FC3ReadRegistersTask(31, Priority.HIGH,
-						m(ChpKwEnergySmartblockChannel.ChannelId.HR31_ENGINE_RPM, new UnsignedWordElement(31),
+						m(ChpKwEnergySmartblock.ChannelId.HR31_ENGINE_RPM, new UnsignedWordElement(31),
 								ElementToChannelConverter.SCALE_FACTOR_MINUS_1)
 				),
 				new FC3ReadRegistersTask(34, Priority.HIGH,
-						m(ChpKwEnergySmartblockChannel.ChannelId.HR34_EFFECTIVE_ELECTRIC_POWER, new UnsignedWordElement(34),
+						m(ChpKwEnergySmartblock.ChannelId.HR34_EFFECTIVE_ELECTRIC_POWER, new UnsignedWordElement(34),
 								ElementToChannelConverter.DIRECT_1_TO_1)
 				),
 				new FC3ReadRegistersTask(48, Priority.HIGH,
-						m(ChpKwEnergySmartblockChannel.ChannelId.HR48_CHP_MODEL, new UnsignedWordElement(48),
+						m(ChpKwEnergySmartblock.ChannelId.HR48_CHP_MODEL, new UnsignedWordElement(48),
 								ElementToChannelConverter.DIRECT_1_TO_1)
 				),
 				new FC3ReadRegistersTask(62, Priority.HIGH,
-						m(ChpKwEnergySmartblockChannel.ChannelId.HR62_OPERATING_HOURS, new UnsignedDoublewordElement(62),
+						m(ChpKwEnergySmartblock.ChannelId.HR62_OPERATING_HOURS, new UnsignedDoublewordElement(62),
 								ElementToChannelConverter.DIRECT_1_TO_1),
-						m(ChpKwEnergySmartblockChannel.ChannelId.HR64_ENGINE_START_COUNTER, new UnsignedDoublewordElement(64),
+						m(ChpKwEnergySmartblock.ChannelId.HR64_ENGINE_START_COUNTER, new UnsignedDoublewordElement(64),
 								ElementToChannelConverter.DIRECT_1_TO_1)
 				),
 				new FC3ReadRegistersTask(70, Priority.HIGH,
-						m(ChpKwEnergySmartblockChannel.ChannelId.HR70_ACTIVE_ENERGY, new UnsignedDoublewordElement(70),
+						m(ChpKwEnergySmartblock.ChannelId.HR70_ACTIVE_ENERGY, new UnsignedDoublewordElement(70),
 								ElementToChannelConverter.DIRECT_1_TO_1),
-						m(ChpKwEnergySmartblockChannel.ChannelId.HR72_MAINTENANCE_INTERVAL1, new UnsignedWordElement(72),
+						m(ChpKwEnergySmartblock.ChannelId.HR72_MAINTENANCE_INTERVAL1, new UnsignedWordElement(72),
 								ElementToChannelConverter.DIRECT_1_TO_1),
-						m(ChpKwEnergySmartblockChannel.ChannelId.HR73_MAINTENANCE_INTERVAL2, new UnsignedWordElement(73),
+						m(ChpKwEnergySmartblock.ChannelId.HR73_MAINTENANCE_INTERVAL2, new UnsignedWordElement(73),
 								ElementToChannelConverter.DIRECT_1_TO_1),
-						m(ChpKwEnergySmartblockChannel.ChannelId.HR74_MAINTENANCE_INTERVAL3, new UnsignedWordElement(74),
+						m(ChpKwEnergySmartblock.ChannelId.HR74_MAINTENANCE_INTERVAL3, new UnsignedWordElement(74),
 								ElementToChannelConverter.DIRECT_1_TO_1),
-						m(ChpKwEnergySmartblockChannel.ChannelId.HR75_PRODUCED_HEAT, new UnsignedDoublewordElement(75),
+						m(ChpKwEnergySmartblock.ChannelId.HR75_PRODUCED_HEAT, new UnsignedDoublewordElement(75),
 								ElementToChannelConverter.DIRECT_1_TO_1)
 				),
 				new FC3ReadRegistersTask(81, Priority.HIGH,
-						m(ChpKwEnergySmartblockChannel.ChannelId.HR81_OPERATING_MODE, new UnsignedWordElement(81),
+						m(ChpKwEnergySmartblock.ChannelId.HR81_OPERATING_MODE, new UnsignedWordElement(81),
 								ElementToChannelConverter.DIRECT_1_TO_1),
-						m(ChpKwEnergySmartblockChannel.ChannelId.HR82_POWER_SETPOINT, new UnsignedWordElement(82),
+						m(ChpKwEnergySmartblock.ChannelId.HR82_POWER_SETPOINT, new UnsignedWordElement(82),
 								ElementToChannelConverter.DIRECT_1_TO_1)
 				),
 				new FC3ReadRegistersTask(108, Priority.HIGH,
-						m(ChpKwEnergySmartblockChannel.ChannelId.HR108_HANDSHAKE_OUT, new UnsignedWordElement(108),
+						m(ChpKwEnergySmartblock.ChannelId.HR108_HANDSHAKE_OUT, new UnsignedWordElement(108),
 								ElementToChannelConverter.DIRECT_1_TO_1)
 						//m(ChpKwEnergySmartblockChannel.ChannelId.HR109_COMMAND_BITS_1_to_16, new UnsignedWordElement(109),
 						//		ElementToChannelConverter.DIRECT_1_TO_1)
@@ -240,7 +240,7 @@ public class ChpKwEnergySmartblockImpl extends AbstractOpenemsModbusComponent im
 						// copy setNextWrite to setNextValue.
 				),
 				new FC3ReadRegistersTask(112, Priority.HIGH,
-						m(ChpKwEnergySmartblockChannel.ChannelId.HR112_NETZBEZUGSWERT, new UnsignedWordElement(112),
+						m(ChpKwEnergySmartblock.ChannelId.HR112_NETZBEZUGSWERT, new UnsignedWordElement(112),
 								ElementToChannelConverter.SCALE_FACTOR_MINUS_1)
 				)
 				/*
@@ -263,7 +263,7 @@ public class ChpKwEnergySmartblockImpl extends AbstractOpenemsModbusComponent im
 					// Also: if you do not add a Modbus read task for a write channel, any "setNextWriteValue" values will
 					// not be transferred to the "value" field of the channel, unless you add code that does that.
 					new FC16WriteRegistersTask(109,
-							m(ChpKwEnergySmartblockChannel.ChannelId.HR109_COMMAND_BITS_1_to_16, new UnsignedWordElement(109),
+							m(ChpKwEnergySmartblock.ChannelId.HR109_COMMAND_BITS_1_to_16, new UnsignedWordElement(109),
 									ElementToChannelConverter.DIRECT_1_TO_1),
 							// A Modbus read commands reads everything from start address to finish address. If there is a
 							// gap, you must place a dummy element to fill the gap or end the read command there and start
@@ -271,11 +271,11 @@ public class ChpKwEnergySmartblockImpl extends AbstractOpenemsModbusComponent im
 							new DummyRegisterElement(110),
 							m(Heater.ChannelId.SET_POINT_HEATING_POWER_PERCENT, new UnsignedWordElement(111),
 									ElementToChannelConverter.SCALE_FACTOR_MINUS_1),
-							m(ChpKwEnergySmartblockChannel.ChannelId.HR112_NETZBEZUGSWERT, new UnsignedWordElement(112),
+							m(ChpKwEnergySmartblock.ChannelId.HR112_NETZBEZUGSWERT, new UnsignedWordElement(112),
 									ElementToChannelConverter.SCALE_FACTOR_MINUS_1)
 					),
 					new FC16WriteRegistersTask(119,
-							m(ChpKwEnergySmartblockChannel.ChannelId.HR119_HANDSHAKE_IN, new UnsignedWordElement(119),
+							m(ChpKwEnergySmartblock.ChannelId.HR119_HANDSHAKE_IN, new UnsignedWordElement(119),
 									ElementToChannelConverter.DIRECT_1_TO_1)
 					)
 			);
