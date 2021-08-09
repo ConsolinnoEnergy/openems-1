@@ -56,6 +56,7 @@ public class CoolingSurveillancerImpl extends AbstractOpenemsComponent implement
             super.activate(context, config.id(), config.alias(), config.enabled());
         } catch (OpenemsError.OpenemsNamedException | ConfigurationException e) {
             this.log.error("Given Channels are not Existent or incompatible (not Boolean).");
+            this.deactivate();
         }
     }
 
