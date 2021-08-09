@@ -42,6 +42,8 @@ public class MyControllerTest {
                         .setInputRequest(new String[]{requestChannel})
                         .setInputWatchdogs(new String[]{watchdogChannel})
                         .setOutput(new String[]{outputChannel})
+                        .setActiveValue("true")
+                        .setPassiveValue("null")
                         .build())
                 .next(new TestCase()
                         .timeleap(clock, 1, ChronoUnit.SECONDS)
@@ -70,6 +72,8 @@ public class MyControllerTest {
                         .setInputRequest(new String[]{requestChannel})
                         .setInputWatchdogs(new String[]{watchdogChannel})
                         .setOutput(new String[]{outputChannel})
+                        .setActiveValue("true")
+                        .setPassiveValue("null")
                         .build())
                 .next(new TestCase()
                         .timeleap(clock, 1, ChronoUnit.SECONDS)
@@ -82,4 +86,38 @@ public class MyControllerTest {
                 )
                 .getSut().run();
     }
+    /*
+    //This Works in the controller but not in the current Test because the DummyInputOutput is always boolean.
+    @Test
+    public void intTest() throws Exception {
+
+        final TimeLeapClock clock = new TimeLeapClock(
+                Instant.ofEpochSecond(1577836800) , ZoneOffset.UTC);
+
+        new ControllerTest(new CoolingSurveillancerImpl())
+                .addReference("cpm", new DummyComponentManager(clock))
+                .addComponent(new DummySignalSensor(signalSensorRequest,true))
+                .addComponent(new DummySignalSensor(signalSensorWatchdog,true))
+                .addComponent(new DummyInputOutput(output))
+                .activate(MyConfig.create()
+                        .setId(id)
+                        .setEnabled(true)
+                        .setInputRequest(new String[]{requestChannel})
+                        .setInputWatchdogs(new String[]{watchdogChannel})
+                        .setOutput(new String[]{outputChannel})
+                        .setActiveValue("true")
+                        .setPassiveValue("10")
+                        .build())
+                .next(new TestCase()
+                        .timeleap(clock, 1, ChronoUnit.SECONDS)
+                        .input(inputRequestChannel,true)
+                        .input(inputWatchdogChannel,true)
+                )
+                .next(new TestCase()
+                        .timeleap(clock,1,ChronoUnit.SECONDS)
+                        .output(outputChannelAddress,10)
+                )
+                .getSut().run();
+    }
+    */
 }

@@ -10,6 +10,8 @@ public class MyConfig extends AbstractComponentConfig implements Config {
 
     protected static class Builder {
 
+        public String activeValue;
+        public String passiveValue;
         private String[] inputRequest;
         private String[] inputWatchdogs;
         private String[] output;
@@ -43,6 +45,16 @@ public class MyConfig extends AbstractComponentConfig implements Config {
 
         public Builder setOutput(String[] output) {
             this.output = output;
+            return this;
+        }
+
+        public Builder setActiveValue(String activeValue) {
+            this.activeValue = activeValue;
+            return this;
+        }
+
+        public Builder setPassiveValue(String passiveValue) {
+            this.passiveValue = passiveValue;
             return this;
         }
 
@@ -81,6 +93,16 @@ public class MyConfig extends AbstractComponentConfig implements Config {
     @Override
     public String[] output() {
        return this.builder.output;
+    }
+
+    @Override
+    public String activeValue() {
+        return this.builder.activeValue;
+    }
+
+    @Override
+    public String passiveValue() {
+        return this.builder.passiveValue;
     }
 
     @Override

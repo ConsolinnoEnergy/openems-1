@@ -41,7 +41,9 @@ public class CoolingSurveillancerImpl extends AbstractOpenemsComponent implement
     private final Logger log = LoggerFactory.getLogger(CoolingSurveillancerImpl.class);
     private List<Channel<Boolean>> inputRequests;
     private List<Channel<Boolean>> inputWatchdogs;
-    private List<WriteChannel<Boolean>> outputs;
+    private List<WriteChannel<?>> outputs;
+    private String activeValue;
+    private String passiveValue;
 
     public CoolingSurveillancerImpl() {
         super(OpenemsComponent.ChannelId.values(), Controller.ChannelId.values());
@@ -53,6 +55,8 @@ public class CoolingSurveillancerImpl extends AbstractOpenemsComponent implement
             this.inputRequests = this.checkInputChannels(config.inputRequest());
             this.inputWatchdogs = this.checkInputChannels(config.inputWatchdogs());
             this.outputs = this.checkOutputChannels(config.output());
+            this.activeValue = config.activeValue();
+            this.passiveValue = config.passiveValue();
             super.activate(context, config.id(), config.alias(), config.enabled());
         } catch (OpenemsError.OpenemsNamedException | ConfigurationException e) {
             this.log.error("Given Channels are not Existent or incompatible (not Boolean).");
@@ -81,6 +85,7 @@ public class CoolingSurveillancerImpl extends AbstractOpenemsComponent implement
         }
         return returnChannel;
     }
+
     /**
      * Checks if the Configured Channels exists and are Boolean Channel.
      *
@@ -89,25 +94,23 @@ public class CoolingSurveillancerImpl extends AbstractOpenemsComponent implement
      * @throws OpenemsError.OpenemsNamedException if Channel doesn't exist
      * @throws ConfigurationException             if Channel is not a Boolean Channel
      */
-    @SuppressWarnings("unchecked")
-    private List<WriteChannel<Boolean>> checkOutputChannels(String[] channelAddresses) throws OpenemsError.OpenemsNamedException, ConfigurationException {
-        List<WriteChannel<Boolean>> returnChannel = new ArrayList<>();
+    private List<WriteChannel<?>> checkOutputChannels(String[] channelAddresses) throws OpenemsError.OpenemsNamedException {
+        List<WriteChannel<?>> returnChannel = new ArrayList<>();
         for (int n = 0; n < channelAddresses.length; n++) {
             WriteChannel<?> test = this.cpm.getChannel(ChannelAddress.fromString(channelAddresses[n]));
-            if (test.getType().equals(OpenemsType.BOOLEAN)) {
-                returnChannel.add(n, (WriteChannel<Boolean>) test);
-            } else {
-                throw new ConfigurationException("Not Boolean Channel", "Check Config");
-            }
+            returnChannel.add(n, test);
         }
         return returnChannel;
     }
+
     @Modified
     void modified(ComponentContext context, Config config) {
         try {
             this.inputRequests = this.checkInputChannels(config.inputRequest());
             this.inputWatchdogs = this.checkInputChannels(config.inputWatchdogs());
             this.outputs = this.checkOutputChannels(config.output());
+            this.activeValue = config.activeValue();
+            this.passiveValue = config.passiveValue();
             super.modified(context, config.id(), config.alias(), config.enabled());
         } catch (OpenemsError.OpenemsNamedException | ConfigurationException e) {
             this.log.error("Given Channels are not Existent or incompatible (not Boolean).");
@@ -124,17 +127,27 @@ public class CoolingSurveillancerImpl extends AbstractOpenemsComponent implement
     public void run() {
 
         if (this.checkInput(this.inputRequests) && !this.checkInput(this.inputWatchdogs)) {
-            this.setOutputs();
+            if (this.passiveValue != null && !this.passiveValue.equals("null")) {
+                this.setOutputs(this.activeValue);
+            } else {
+                this.setOutputs("true");
+            }
+        } else {
+            if (this.passiveValue != null && !this.passiveValue.equals("null")) {
+                this.setOutputs(this.passiveValue);
+            }
         }
     }
 
     /**
      * Sets all values of the outputs to the Specified Value.
+     *
+     * @param t Value that has to be set in all outputs
      */
-    private void setOutputs() {
+    private void setOutputs(String t) {
         this.outputs.forEach(channel -> {
             try {
-                channel.setNextWriteValue(true);
+                channel.setNextWriteValueFromObject(t);
             } catch (OpenemsError.OpenemsNamedException e) {
                 this.log.error("Could not set Write Value!");
             }
@@ -143,6 +156,7 @@ public class CoolingSurveillancerImpl extends AbstractOpenemsComponent implement
 
     /**
      * Checks an inputChannel List for a true value.
+     *
      * @param input the input Channel List.
      * @return true if at least one member is true
      */

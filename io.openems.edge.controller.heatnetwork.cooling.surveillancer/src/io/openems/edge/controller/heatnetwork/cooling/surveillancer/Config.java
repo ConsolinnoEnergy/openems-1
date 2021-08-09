@@ -2,6 +2,7 @@ package io.openems.edge.controller.heatnetwork.cooling.surveillancer;
 
 import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
+import sun.net.www.content.text.Generic;
 
 @ObjectClassDefinition(name = "Consolinno Cooling Surveillancer ", description = "This Controller Checks if there are Cooling requests that can be handled.")
 @interface Config {
@@ -21,6 +22,12 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
     @AttributeDefinition(name = "Outputs", description = "Array of all the Output Channels (e.g. Pump).")
     String[] output() default "";
+
+    @AttributeDefinition(name = "activeValue", description = "Value that has to be written in Output if Request is coming from input.")
+    String activeValue();
+
+    @AttributeDefinition(name = "passiveValue", description = "Value that has to be written in Output in any other case.")
+    String passiveValue();
 
     boolean enabled() default true;
 
