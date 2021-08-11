@@ -4,6 +4,7 @@ import io.openems.common.channel.AccessMode;
 import io.openems.common.types.OpenemsType;
 import io.openems.edge.common.channel.Channel;
 import io.openems.edge.common.channel.Doc;
+import io.openems.edge.common.channel.WriteChannel;
 import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.consolinno.modbus.configurator.api.LeafletConfigurator;
 
@@ -50,7 +51,7 @@ public interface AioChannel extends OpenemsComponent {
         }
         return -1;
     }
-    default Channel<Integer> getWriteChannel() {
+    default WriteChannel<Integer> getWriteChannel() {
         return this.channel(ChannelId.AIO_WRITE);
     }
 

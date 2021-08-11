@@ -11,7 +11,6 @@ import io.openems.edge.bridge.modbus.api.element.UnsignedDoublewordElement;
 import io.openems.edge.bridge.modbus.api.element.UnsignedWordElement;
 import io.openems.edge.bridge.modbus.api.task.FC16WriteRegistersTask;
 import io.openems.edge.bridge.modbus.api.task.FC3ReadRegistersTask;
-import io.openems.edge.heater.api.Chp;
 import io.openems.edge.heater.chp.kwenergy.api.ChpKwEnergySmartblock;
 import io.openems.edge.heater.chp.kwenergy.api.ControlMode;
 import io.openems.edge.common.component.ComponentManager;
@@ -21,6 +20,7 @@ import io.openems.edge.common.taskmanager.Priority;
 import io.openems.edge.exceptionalstate.api.ExceptionalState;
 import io.openems.edge.exceptionalstate.api.ExceptionalStateHandler;
 import io.openems.edge.exceptionalstate.api.ExceptionalStateHandlerImpl;
+import io.openems.edge.heater.api.Chp;
 import io.openems.edge.heater.api.EnableSignalHandler;
 import io.openems.edge.heater.api.EnableSignalHandlerImpl;
 import io.openems.edge.heater.api.Heater;
@@ -120,24 +120,24 @@ public class ChpKwEnergySmartblockImpl extends AbstractOpenemsModbusComponent im
 			TimerHandler timer = new TimerHandlerImpl(super.id(), this.cpm);
 			this.useEnableSignal = config.useEnableSignalChannel();
 			if (this.useEnableSignal) {
-				String timerIdEnableSignal;
+				String timerTypeEnableSignal;
 				if (config.enableSignalTimerIsCyclesNotSeconds()) {
-					timerIdEnableSignal = "TimerByCycles";
+					timerTypeEnableSignal = "TimerByCycles";
 				} else {
-					timerIdEnableSignal = "TimerByTime";
+					timerTypeEnableSignal = "TimerByTime";
 				}
-				timer.addOneIdentifier(ENABLE_SIGNAL_IDENTIFIER, timerIdEnableSignal, config.waitTimeEnableSignal());
+				timer.addOneIdentifier(ENABLE_SIGNAL_IDENTIFIER, timerTypeEnableSignal, config.waitTimeEnableSignal());
 				this.enableSignalHandler = new EnableSignalHandlerImpl(timer, ENABLE_SIGNAL_IDENTIFIER);
 			}
 			this.useExceptionalState = config.useExceptionalState();
 			if (this.useExceptionalState) {
-				String timerIdEnableSignal;
+				String timerTypeExceptionalState;
 				if (config.exceptionalStateTimerIsCyclesNotSeconds()) {
-					timerIdEnableSignal = "TimerByCycles";
+					timerTypeExceptionalState = "TimerByCycles";
 				} else {
-					timerIdEnableSignal = "TimerByTime";
+					timerTypeExceptionalState = "TimerByTime";
 				}
-				timer.addOneIdentifier(EXCEPTIONAL_STATE_IDENTIFIER, timerIdEnableSignal, config.waitTimeExceptionalState());
+				timer.addOneIdentifier(EXCEPTIONAL_STATE_IDENTIFIER, timerTypeExceptionalState, config.waitTimeExceptionalState());
 				this.exceptionalStateHandler = new ExceptionalStateHandlerImpl(timer, EXCEPTIONAL_STATE_IDENTIFIER);
 			}
 			switch (config.controlMode()) {
@@ -158,7 +158,7 @@ public class ChpKwEnergySmartblockImpl extends AbstractOpenemsModbusComponent im
 
 		}
 		if (this.componentEnabled == false) {
-			_setHeaterState(HeaterState.OFF.getValue());
+			this._setHeaterState(HeaterState.OFF.getValue());
 		}
 	}
 
@@ -286,12 +286,8 @@ public class ChpKwEnergySmartblockImpl extends AbstractOpenemsModbusComponent im
 
 	@Override
 	public void handleEvent(Event event) {
-		if (this.componentEnabled) {
-			switch (event.getTopic()) {
-				case EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE:
-					channelmapping();
-					break;
-			}
+		if (this.componentEnabled && event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE)) {
+			this.channelmapping();
 		}
 	}
 
@@ -428,7 +424,7 @@ public class ChpKwEnergySmartblockImpl extends AbstractOpenemsModbusComponent im
 				try {
 					setHandshakeIn(receivedHandshakeCounter);    // Send receivedHandshakeCounter back.
 				} catch (OpenemsError.OpenemsNamedException e) {
-					log.warn("Couldn't write in Channel " + e.getMessage());
+					this.log.warn("Couldn't write in Channel " + e.getMessage());
 				}
 			}
 			if (ChronoUnit.SECONDS.between(this.connectionTimestamp, LocalDateTime.now()) >= 30) {    // No heart beat match for 30 seconds means connection is dead.
@@ -445,7 +441,7 @@ public class ChpKwEnergySmartblockImpl extends AbstractOpenemsModbusComponent im
 					this.turnOnChp = this.enableSignalHandler.deviceShouldBeHeating(this);
 				}
 
-				// Handle ExceptionalState. ExceptionalState overwrites isEnabledSignal().
+				// Handle ExceptionalState. ExceptionalState overwrites EnableSignal.
 				int exceptionalStateValue = 0;
 				boolean exceptionalStateActive = false;
 				if (this.useExceptionalState) {
@@ -481,7 +477,7 @@ public class ChpKwEnergySmartblockImpl extends AbstractOpenemsModbusComponent im
 							try {
 								this.getEnableSignalChannel().setNextWriteValue(true);
 							} catch (OpenemsError.OpenemsNamedException e) {
-								e.printStackTrace();
+								this.log.warn("Couldn't write in Channel " + e.getMessage());
 							}
 						}
 					}
@@ -503,9 +499,9 @@ public class ChpKwEnergySmartblockImpl extends AbstractOpenemsModbusComponent im
 					double calculatedPercent = 1.0 *  getElectricPowerSetpointChannel().getNextWriteValue().get() / this.maxChpPower;
 					try {
 						this.setHeatingPowerPercentSetpoint(calculatedPercent);
-						_setElectricPowerSetpoint(setpointValue);
+						this._setElectricPowerSetpoint(setpointValue);
 					} catch (OpenemsError.OpenemsNamedException e) {
-						e.printStackTrace();
+						this.log.warn("Couldn't write in Channel " + e.getMessage());
 					}
 				}
 
@@ -544,7 +540,7 @@ public class ChpKwEnergySmartblockImpl extends AbstractOpenemsModbusComponent im
 				try {
 					setCommandBits1to16(commandBits1to16);
 				} catch (OpenemsError.OpenemsNamedException e) {
-					log.warn("Couldn't write in Channel " + e.getMessage());
+					this.log.warn("Couldn't write in Channel " + e.getMessage());
 				}
 			}
 		} else {
@@ -554,16 +550,16 @@ public class ChpKwEnergySmartblockImpl extends AbstractOpenemsModbusComponent im
 
 		// Set Heater interface STATUS channel
 		if (this.connectionAlive == false) {
-			_setHeaterState(HeaterState.OFF.getValue());
+			this._setHeaterState(HeaterState.OFF.getValue());
 		} else if (chpEngineRunning) {
-			_setHeaterState(HeaterState.HEATING.getValue());
+			this._setHeaterState(HeaterState.HEATING.getValue());
 		} else if (chpStartingUp) {
-			_setHeaterState(HeaterState.STARTING_UP_OR_PREHEAT.getValue());
+			this._setHeaterState(HeaterState.STARTING_UP_OR_PREHEAT.getValue());
 		} else if (chpReadySignal) {
-			_setHeaterState(HeaterState.STANDBY.getValue());
+			this._setHeaterState(HeaterState.STANDBY.getValue());
 		} else {
 			// If the code gets to here, the state is undefined.
-			_setHeaterState(HeaterState.UNDEFINED.getValue());
+			this._setHeaterState(HeaterState.UNDEFINED.getValue());
 		}
 
 		// Build status message.
@@ -658,6 +654,7 @@ public class ChpKwEnergySmartblockImpl extends AbstractOpenemsModbusComponent im
 			this.logInfo(this.log, "Control mode OpenEMS: " + this.getControlMode().asEnum().getName());
 			this.logInfo(this.log, "Received handshake counter: " + receivedHandshakeCounter);
 			this.logInfo(this.log, "Status message: " + this.getStatusMessage().get());
+			this.logInfo(this.log, "Error message: " + this.getErrorMessage().get());
 			this.logInfo(this.log, "");
 		}
 

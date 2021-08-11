@@ -54,4 +54,12 @@ class ThermometerWrapper {
         return this.getMinThermometer().getTemperatureValue() < this.minThermometerValue();
     }
 
+    public Map<Thermometer, Integer> getThermometerAndValue() {
+        return this.thermometerAndValue;
+    }
+
+    public Map<ThermometerKind, Thermometer> getThermometerKindThermometerMap() {
+        return this.thermometerKindThermometerMap;
+    }
+
 }
