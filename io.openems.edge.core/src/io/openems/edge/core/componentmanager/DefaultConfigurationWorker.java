@@ -139,6 +139,8 @@ public class DefaultConfigurationWorker extends ComponentManagerWorker {
                     new Property("modbusBridgeId", "modbus0")
             ));
         }
+
+
         if (existingConfigs.stream().noneMatch(c -> "Controller.Api.Rest.ReadWrite".equals(c.factoryPid))) {
             this.createConfiguration(defaultConfigurationFailed, "Controller.Api.Rest.ReadWrite", Arrays.asList(//
                     new Property("id", "ctrlApiRest0"), //
