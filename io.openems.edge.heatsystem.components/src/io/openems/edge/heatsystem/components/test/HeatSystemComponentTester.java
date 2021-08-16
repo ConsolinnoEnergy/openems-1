@@ -1,12 +1,10 @@
 package io.openems.edge.heatsystem.components.test;
 
-import io.openems.common.exceptions.OpenemsError;
 import io.openems.edge.common.component.AbstractOpenemsComponent;
 import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.common.event.EdgeEventConstants;
 import io.openems.edge.io.api.Pwm;
 import io.openems.edge.relay.api.Relay;
-import org.osgi.service.cm.ConfigurationException;
 import org.osgi.service.component.ComponentContext;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
@@ -35,7 +33,7 @@ import java.util.Optional;
 )
 public class HeatSystemComponentTester extends AbstractOpenemsComponent implements OpenemsComponent, Relay, Pwm, EventHandler {
 
-    private Logger log = LoggerFactory.getLogger(HeatSystemComponentTester.class);
+    private final Logger log = LoggerFactory.getLogger(HeatSystemComponentTester.class);
 
     public HeatSystemComponentTester() {
         super(OpenemsComponent.ChannelId.values(),
@@ -63,12 +61,8 @@ public class HeatSystemComponentTester extends AbstractOpenemsComponent implemen
     @Override
     public void handleEvent(Event event) {
         if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE)) {
-            Optional<Boolean> relay = this.getRelaysWriteChannel().getNextWriteValueAndReset();
-            this.getRelaysReadChannel().setNextValue(relay.orElse(false));
-            if (relay.isPresent() == false) {
-                this.log.warn("Relay Value wasn't set for: " + super.id());
-            }
-            this.getReadPwmPowerLevelChannel().setNextValue(this.getWritePwmPowerLevelChannel().getNextWriteValueAndReset().orElse(-100));
+            this.getRelaysWriteChannel().getNextWriteValueAndReset().ifPresent(bool -> this.getRelaysReadChannel().setNextValue(bool));
+            this.getWritePwmPowerLevelChannel().getNextWriteValueAndReset().ifPresent(entry -> this.getReadPwmPowerLevelChannel().setNextValue(entry));
         }
     }
 }
