@@ -97,7 +97,7 @@ public class DecentralHeaterImpl extends AbstractOpenemsComponent implements Ope
 
         this.isValve = config.valveOrController().equals("Valve");
         componentFetchedByComponentManager = this.cpm.getComponent(config.valveOrControllerId());
-        if (isValve) {
+        if (this.isValve) {
             if (componentFetchedByComponentManager instanceof Valve) {
                 this.configuredValve = (Valve) componentFetchedByComponentManager;
             } else {

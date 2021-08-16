@@ -112,8 +112,28 @@ public class ChpViessmannImpl extends AbstractOpenemsModbusComponent implements 
         this.componentEnabled = config.enabled();
         this.setChpType(config.chpType());
         this.printInfoToLog = config.printInfoToLog();
+        this.thermicalOutput = Math.round(this.chpType.getThermalOutput());
+        this.electricalOutput = Math.round(this.chpType.getElectricalOutput());
         this.readOnly = config.readOnly();
+
         if (this.readOnly == false) {
+            if (this.cpm.getComponent(config.aioModuleId()) instanceof AioChannel) {
+                this.aioChannel = this.cpm.getComponent(config.aioModuleId());
+            } else {
+                throw new ConfigurationException("activate", "The Component with id: "
+                        + config.aioModuleId() + " is not an AIO module");
+            }
+            this.useRelay = config.useRelay();
+            if (this.useRelay) {
+                if (this.cpm.getComponent(config.relayId()) instanceof Relay) {
+                    this.relay = this.cpm.getComponent(config.relayId());
+                    //this.relay.getRelaysWriteChannel().setNextWriteValue(false); No need to turn chp off here.
+                } else {
+                    throw new ConfigurationException("activate", "The Component with id: "
+                            + config.relayId() + " is not a relay module");
+                }
+            }
+
             this.minValue = config.minLimit();
             this.maxValue = config.maxLimit();
             this.percentageRange = config.percentageRange();
@@ -139,22 +159,8 @@ public class ChpViessmannImpl extends AbstractOpenemsModbusComponent implements 
                 timer.addOneIdentifier(EXCEPTIONAL_STATE_IDENTIFIER, timerTypeExceptionalState, config.waitTimeExceptionalState());
                 this.exceptionalStateHandler = new ExceptionalStateHandlerImpl(timer, EXCEPTIONAL_STATE_IDENTIFIER);
             }
-
-            if (this.cpm.getComponent(config.aioModuleId()) instanceof AioChannel) {
-                this.aioChannel = this.cpm.getComponent(config.aioModuleId());
-            } else {
-                throw new ConfigurationException("AIO module", "No valid AIO module configured.");
-            }
-            this.useRelay = config.useRelay();
-            if (this.useRelay) {
-                if (this.cpm.getComponent(config.relayId()) instanceof Relay) {
-                    this.relay = this.cpm.getComponent(config.relayId());
-                    this.relay.getRelaysWriteChannel().setNextWriteValue(false);
-                }
-            }
         }
-        this.thermicalOutput = Math.round(this.chpType.getThermalOutput());
-        this.electricalOutput = Math.round(this.chpType.getElectricalOutput());
+
         if (this.componentEnabled == false) {
             this._setHeaterState(HeaterState.OFF.getValue());
         }
@@ -224,6 +230,7 @@ public class ChpViessmannImpl extends AbstractOpenemsModbusComponent implements 
     @Deactivate
     public void deactivate() {
         super.deactivate();
+        /*  Don't turn off chp. Restarting the component should not also restart the chp.
         if (this.readOnly == false) {
             if (this.useRelay) {
                 try {
@@ -233,6 +240,7 @@ public class ChpViessmannImpl extends AbstractOpenemsModbusComponent implements 
                 }
             }
         }
+        */
     }
 
     @Override
@@ -380,7 +388,7 @@ public class ChpViessmannImpl extends AbstractOpenemsModbusComponent implements 
                     electricPowerSetpoint = 0;
                 }
                 this._setElectricPowerSetpoint(electricPowerSetpoint);
-                this.powerPercentSetpoint = 1.0 * electricPowerSetpoint / this.electricalOutput;
+                this.powerPercentSetpoint = 100.0 * electricPowerSetpoint / this.electricalOutput;
             }
             Optional<Double> heatingPowerPercentWrite = this.getHeatingPowerPercentSetpointChannel().getNextWriteValueAndReset();
             if (heatingPowerPercentWrite.isPresent()) {
@@ -414,7 +422,7 @@ public class ChpViessmannImpl extends AbstractOpenemsModbusComponent implements 
 
     protected void channelmapping() {
 
-        // Parse errors and write them in heater.api error channel.
+        // Parse errors.
         List<String> errorSummary = new ArrayList<>();
         char[] allErrorsAsChar = this.generateErrorAsCharArray();
         int errorMax = 80;
@@ -427,6 +435,38 @@ public class ChpViessmannImpl extends AbstractOpenemsModbusComponent implements 
                 errorListPosition++;
             }
         }
+
+        // Check for missing components.
+        if (this.readOnly == false) {
+            try {
+                OpenemsComponent componentFetchedByCpm;
+                if (this.aioChannel.isEnabled() == false) {
+                    componentFetchedByCpm = this.cpm.getComponent(this.aioChannel.id());
+                    if (componentFetchedByCpm instanceof AioChannel) {
+                        this.aioChannel = (AioChannel) componentFetchedByCpm;
+                    }
+                }
+            } catch (OpenemsError.OpenemsNamedException ignored) {
+                errorSummary.add("OpenEMS error: Could not find configured AIO module.");
+                this.log.warn("Could not find configured AIO module!");
+            }
+                if (this.useRelay) {
+                    try {
+                        if (this.relay.isEnabled() == false) {
+                            OpenemsComponent componentFetchedByCpm;
+                            componentFetchedByCpm = this.cpm.getComponent(this.relay.id());
+                            if (componentFetchedByCpm instanceof Relay) {
+                                this.relay = (Relay) componentFetchedByCpm;
+                            }
+                        }
+                    } catch (OpenemsError.OpenemsNamedException ignored) {
+                        errorSummary.add("OpenEMS error: Could not find configured relay module.");
+                        this.log.warn("Could not find configured relay module!");
+                    }
+                }
+        }
+
+        // Write errors to error channel.
         if ((errorSummary.size() > 0)) {
             this._setErrorMessage(errorSummary.toString());
         } else {
