@@ -10,7 +10,7 @@ import io.openems.edge.controller.heatnetwork.controlcenter.api.ControlCenter;
 import io.openems.edge.controller.heatnetwork.performancebooster.api.HeatnetworkPerformanceBooster;
 import io.openems.edge.heater.Storage;
 import io.openems.edge.heatsystem.components.PassingStation;
-import io.openems.edge.heatsystem.components.Valve;
+import io.openems.edge.heatsystem.components.HydraulicComponent;
 import io.openems.edge.bridge.lucidcontrol.api.LucidControlDeviceOutput;
 import io.openems.edge.relay.api.Relay;
 import io.openems.edge.thermometer.api.Thermometer;
@@ -50,7 +50,7 @@ public class HeatnetworkPerformanceBoosterImpl extends AbstractOpenemsComponent 
     private List<SignalSensor> heaterPrimarySignalSensors = new ArrayList<>();
     private List<LucidControlDeviceOutput> heaterControl = new ArrayList<>();
     private List<Relay> heaterControlRelay = new ArrayList<>();
-    private Valve heatMixer;
+    private HydraulicComponent heatMixer;
     private ControlCenter controlCenter;
     private int waitExternalSeconds = 0;
     private Thermometer referenceThermometer;
@@ -249,7 +249,7 @@ public class HeatnetworkPerformanceBoosterImpl extends AbstractOpenemsComponent 
                 default:
                     throw new ConfigurationException(component, "Not a Thermometer");
             }
-        } else if (cpm.getComponent(component) instanceof Valve) {
+        } else if (cpm.getComponent(component) instanceof HydraulicComponent) {
             this.heatMixer = cpm.getComponent(component);
         } else if (cpm.getComponent(component) instanceof ControlCenter) {
             this.controlCenter = cpm.getComponent(component);

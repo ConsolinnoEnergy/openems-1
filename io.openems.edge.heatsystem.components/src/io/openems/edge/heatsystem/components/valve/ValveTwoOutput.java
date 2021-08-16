@@ -8,13 +8,12 @@ import io.openems.edge.common.channel.WriteChannel;
 import io.openems.edge.common.channel.value.Value;
 import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
-import io.openems.edge.common.cycle.Cycle;
 import io.openems.edge.common.event.EdgeEventConstants;
 
 import io.openems.edge.exceptionalstate.api.ExceptionalState;
 import io.openems.edge.heatsystem.components.ConfigurationType;
-import io.openems.edge.heatsystem.components.HeatsystemComponent;
-import io.openems.edge.heatsystem.components.Valve;
+import io.openems.edge.heatsystem.components.HydraulicChannel;
+import io.openems.edge.heatsystem.components.HydraulicComponent;
 import io.openems.edge.relay.api.Relay;
 import org.osgi.service.cm.ConfigurationException;
 import org.osgi.service.component.ComponentContext;
@@ -48,7 +47,7 @@ import org.slf4j.LoggerFactory;
                 EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE,
                 EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS}
 )
-public class ValveTwoOutput extends AbstractValve implements OpenemsComponent, Valve, ExceptionalState, EventHandler {
+public class ValveTwoOutput extends AbstractValve implements OpenemsComponent, HydraulicComponent, ExceptionalState, EventHandler {
 
 
     private final Logger log = LoggerFactory.getLogger(ValveTwoOutput.class);
@@ -75,7 +74,7 @@ public class ValveTwoOutput extends AbstractValve implements OpenemsComponent, V
 
 
     public ValveTwoOutput() {
-        super(OpenemsComponent.ChannelId.values(), HeatsystemComponent.ChannelId.values(),
+        super(OpenemsComponent.ChannelId.values(), HydraulicChannel.ChannelId.values(),
                 ExceptionalState.ChannelId.values());
     }
 

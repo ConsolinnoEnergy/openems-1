@@ -13,7 +13,7 @@ import io.openems.edge.exceptionalstate.api.ExceptionalState;
 import io.openems.edge.exceptionalstate.api.ExceptionalStateHandler;
 import io.openems.edge.exceptionalstate.api.ExceptionalStateHandlerImpl;
 import io.openems.edge.heatsystem.components.ConfigurationType;
-import io.openems.edge.heatsystem.components.HeatsystemComponent;
+import io.openems.edge.heatsystem.components.HydraulicChannel;
 import io.openems.edge.heatsystem.components.Pump;
 import io.openems.edge.io.api.AnalogInputOutput;
 import io.openems.edge.io.api.Pwm;
@@ -83,7 +83,7 @@ public class PumpImpl extends AbstractOpenemsComponent implements OpenemsCompone
 
     public PumpImpl() {
         super(OpenemsComponent.ChannelId.values(),
-                HeatsystemComponent.ChannelId.values(),
+                HydraulicChannel.ChannelId.values(),
                 ExceptionalState.ChannelId.values());
     }
 

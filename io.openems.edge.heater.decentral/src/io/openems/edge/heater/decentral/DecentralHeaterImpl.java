@@ -5,12 +5,12 @@ import io.openems.edge.common.component.AbstractOpenemsComponent;
 import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.common.event.EdgeEventConstants;
-import io.openems.edge.controller.heatnetwork.valve.api.ControlType;
-import io.openems.edge.controller.heatnetwork.valve.api.ValveController;
+import io.openems.edge.controller.hydrauliccomponent.api.ControlType;
+import io.openems.edge.controller.hydrauliccomponent.api.HydraulicController;
 import io.openems.edge.heater.Heater;
 import io.openems.edge.heater.HeaterState;
 import io.openems.edge.heater.decentral.api.DecentralHeater;
-import io.openems.edge.heatsystem.components.Valve;
+import io.openems.edge.heatsystem.components.HydraulicComponent;
 import io.openems.edge.thermometer.api.ThermometerThreshold;
 import org.osgi.service.cm.ConfigurationException;
 import org.osgi.service.component.ComponentContext;
@@ -42,8 +42,8 @@ public class DecentralHeaterImpl extends AbstractOpenemsComponent implements Ope
     @Reference
     ComponentManager cpm;
 
-    private Valve configuredValve;
-    private ValveController configuredValveController;
+    private HydraulicComponent configuredHydraulicComponent;
+    private HydraulicController configuredHydraulicController;
     private boolean isValve;
     private ThermometerThreshold thermometerThreshold;
     private final AtomicInteger currentWaitCycleNeedHeatEnable = new AtomicInteger(0);
@@ -66,14 +66,14 @@ public class DecentralHeaterImpl extends AbstractOpenemsComponent implements Ope
         this.isValve = config.valveOrController().equals("Valve");
         componentFetchedByComponentManager = this.cpm.getComponent(config.valveOrControllerId());
         if (isValve) {
-            if (componentFetchedByComponentManager instanceof Valve) {
-                this.configuredValve = (Valve) componentFetchedByComponentManager;
+            if (componentFetchedByComponentManager instanceof HydraulicComponent) {
+                this.configuredHydraulicComponent = (HydraulicComponent) componentFetchedByComponentManager;
             } else {
                 throw new ConfigurationException("activate", "The Component with id: "
                         + config.valveOrControllerId() + " is not a Valve");
             }
-        } else if (componentFetchedByComponentManager instanceof ValveController) {
-            this.configuredValveController = (ValveController) componentFetchedByComponentManager;
+        } else if (componentFetchedByComponentManager instanceof HydraulicController) {
+            this.configuredHydraulicController = (HydraulicController) componentFetchedByComponentManager;
         } else {
             throw new ConfigurationException("activate", "The Component with id "
                     + config.valveOrControllerId() + "not an instance of ValveController");
@@ -90,9 +90,9 @@ public class DecentralHeaterImpl extends AbstractOpenemsComponent implements Ope
         this.setSetPointTemperature(config.setPointTemperature());
         if (config.shouldCloseOnActivation()) {
             if (isValve) {
-                this.configuredValve.forceClose();
+                this.configuredHydraulicComponent.forceClose();
             } else {
-                this.configuredValveController.setEnableSignal(false);
+                this.configuredHydraulicController.setEnableSignal(false);
             }
         }
         this.getForceHeatChannel().setNextValue(config.forceHeating());
@@ -161,8 +161,8 @@ public class DecentralHeaterImpl extends AbstractOpenemsComponent implements Ope
         //Static Valve Controller Works on it's own with given Temperature
         if (this.isValve == false) {
             try {
-                this.configuredValveController.setEnableSignal(true);
-                this.configuredValveController.setControlType(ControlType.TEMPERATURE);
+                this.configuredHydraulicController.setEnableSignal(true);
+                this.configuredHydraulicController.setControlType(ControlType.TEMPERATURE);
             } catch (OpenemsError.OpenemsNamedException e) {
                 this.log.warn("Couldn't apply EnableSignal (true) to the Valve Controller in " + super.id());
             }
@@ -172,7 +172,7 @@ public class DecentralHeaterImpl extends AbstractOpenemsComponent implements Ope
             this.setState(HeaterState.RUNNING.name());
             this.getNeedMoreHeatChannel().setNextValue(false);
             if (this.isValve) {
-                this.configuredValve.setPointPowerLevelChannel().setNextValue(100);
+                this.configuredHydraulicComponent.setPointPowerLevelChannel().setNextValue(100);
             }
         } else {
             this.getNeedMoreHeatChannel().setNextValue(true);
@@ -220,17 +220,17 @@ public class DecentralHeaterImpl extends AbstractOpenemsComponent implements Ope
         OpenemsComponent componentFetchedByCpm;
         try {
             if (this.isValve) {
-                if (this.configuredValve.isEnabled() == false) {
-                    componentFetchedByCpm = cpm.getComponent(this.configuredValve.id());
-                    if (componentFetchedByCpm instanceof Valve) {
-                        this.configuredValve = (Valve) componentFetchedByCpm;
+                if (this.configuredHydraulicComponent.isEnabled() == false) {
+                    componentFetchedByCpm = cpm.getComponent(this.configuredHydraulicComponent.id());
+                    if (componentFetchedByCpm instanceof HydraulicComponent) {
+                        this.configuredHydraulicComponent = (HydraulicComponent) componentFetchedByCpm;
                     }
                 }
             } else {
-                if (this.configuredValveController.isEnabled() == false) {
-                    componentFetchedByCpm = cpm.getComponent(this.configuredValveController.id());
-                    if (componentFetchedByCpm instanceof ValveController) {
-                        this.configuredValveController = (ValveController) componentFetchedByCpm;
+                if (this.configuredHydraulicController.isEnabled() == false) {
+                    componentFetchedByCpm = cpm.getComponent(this.configuredHydraulicController.id());
+                    if (componentFetchedByCpm instanceof HydraulicController) {
+                        this.configuredHydraulicController = (HydraulicController) componentFetchedByCpm;
                     }
                 }
             }
@@ -266,10 +266,10 @@ public class DecentralHeaterImpl extends AbstractOpenemsComponent implements Ope
      */
     private void closeValveOrDisableValveController() {
         if (this.isValve) {
-            this.configuredValve.setPointPowerLevelChannel().setNextValue(0);
+            this.configuredHydraulicComponent.setPointPowerLevelChannel().setNextValue(0);
         } else {
             try {
-                this.configuredValveController.setEnableSignal(false);
+                this.configuredHydraulicController.setEnableSignal(false);
             } catch (OpenemsError.OpenemsNamedException e) {
                 this.log.warn("Couldn't apply Enable Signal (false) in ValveController of " + super.id());
             }

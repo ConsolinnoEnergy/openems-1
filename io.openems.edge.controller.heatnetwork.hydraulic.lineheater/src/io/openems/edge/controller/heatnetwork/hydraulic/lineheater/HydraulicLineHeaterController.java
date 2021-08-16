@@ -2,7 +2,6 @@ package io.openems.edge.controller.heatnetwork.hydraulic.lineheater;
 
 import io.openems.common.exceptions.OpenemsError;
 import io.openems.common.types.ChannelAddress;
-import io.openems.edge.common.channel.WriteChannel;
 import io.openems.edge.common.component.AbstractOpenemsComponent;
 import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
@@ -12,9 +11,8 @@ import io.openems.edge.controller.heatnetwork.hydraulic.lineheater.api.Hydraulic
 import io.openems.edge.controller.heatnetwork.hydraulic.lineheater.helperclass.ChannelLineHeater;
 import io.openems.edge.controller.heatnetwork.hydraulic.lineheater.helperclass.OneChannelLineHeater;
 import io.openems.edge.controller.heatnetwork.hydraulic.lineheater.helperclass.ValveLineHeater;
-import io.openems.edge.exceptionalstate.api.ExceptionalState;
 import io.openems.edge.heater.decentral.api.DecentralHeater;
-import io.openems.edge.heatsystem.components.Valve;
+import io.openems.edge.heatsystem.components.HydraulicComponent;
 import io.openems.edge.thermometer.api.Thermometer;
 import io.openems.edge.timer.api.TimerHandler;
 import io.openems.edge.timer.api.TimerHandlerImpl;
@@ -157,7 +155,7 @@ public class HydraulicLineHeaterController extends AbstractOpenemsComponent impl
      * @throws Exception thrown if valveId couldn't be found or is not an instance of valve
      */
     private void createValveLineHeater(boolean booleanControlled, String valveId) throws Exception {
-        Valve valve = (Valve) this.allocateComponent(valveId, ComponentType.VALVE);
+        HydraulicComponent valve = (HydraulicComponent) this.allocateComponent(valveId, ComponentType.VALVE);
         this.lineHeater = new ValveLineHeater(booleanControlled, valve, this.useMinMax);
     }
 
@@ -216,7 +214,7 @@ public class HydraulicLineHeaterController extends AbstractOpenemsComponent impl
      * @throws Exception if config is wrong.
      */
     private OpenemsComponent allocateValve(String device) throws Exception {
-        if (this.cpm.getComponent(device) instanceof Valve) {
+        if (this.cpm.getComponent(device) instanceof HydraulicComponent) {
             return this.cpm.getComponent(device);
         }
         throw new Exception("Internal Error, this shouldn't occur");

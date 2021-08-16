@@ -8,7 +8,7 @@ import io.openems.edge.controller.api.Controller;
 import io.openems.edge.controller.heatnetwork.controlcenter.api.ControlCenter;
 import io.openems.edge.controller.heatnetwork.valvepumpcontrol.api.ValvePumpControl;
 import io.openems.edge.heatsystem.components.Pump;
-import io.openems.edge.heatsystem.components.Valve;
+import io.openems.edge.heatsystem.components.HydraulicComponent;
 import io.openems.edge.thermometer.api.Thermometer;
 import org.osgi.service.cm.Configuration;
 import org.osgi.service.cm.ConfigurationAdmin;
@@ -46,7 +46,7 @@ public class ValvePumpControlImpl extends AbstractOpenemsComponent implements Op
     private Config config;
 
     private ControlCenter heatingController;
-    private Valve valveUS01;
+    private HydraulicComponent valveUS01;
     private Pump pumpHK01;
     private Thermometer thermometerFlow;
     private Thermometer thermometerReturn;
@@ -107,7 +107,7 @@ public class ValvePumpControlImpl extends AbstractOpenemsComponent implements Op
             throw new ConfigurationException(config.allocated_Heating_Controller(),
                     "Allocated Heating Controller not a Heating Controller; Check if Name is correct and try again.");
         }
-        if (cpm.getComponent(config.valveUS01Id()) instanceof Valve) {
+        if (cpm.getComponent(config.valveUS01Id()) instanceof HydraulicComponent) {
             valveUS01 = cpm.getComponent(config.valveUS01Id());
         } else {
             throw new ConfigurationException("The configured component is not a valve! Please check "

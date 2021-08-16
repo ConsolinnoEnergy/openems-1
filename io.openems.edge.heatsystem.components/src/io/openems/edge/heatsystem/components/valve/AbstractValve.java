@@ -9,7 +9,7 @@ import io.openems.edge.common.cycle.Cycle;
 import io.openems.edge.exceptionalstate.api.ExceptionalState;
 import io.openems.edge.exceptionalstate.api.ExceptionalStateHandler;
 import io.openems.edge.exceptionalstate.api.ExceptionalStateHandlerImpl;
-import io.openems.edge.heatsystem.components.Valve;
+import io.openems.edge.heatsystem.components.HydraulicComponent;
 import io.openems.edge.timer.api.TimerHandler;
 import io.openems.edge.timer.api.TimerHandlerImpl;
 import org.osgi.service.cm.ConfigurationException;
@@ -26,7 +26,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * The Abstract Valve. It Provides basic Functions, such as updating the PowerLevel or if tthe powerLevel is reached.
  * Its the BaseClass for any Valve that is implemented.
  */
-public abstract class AbstractValve extends AbstractOpenemsComponent implements Valve, ExceptionalState {
+public abstract class AbstractValve extends AbstractOpenemsComponent implements HydraulicComponent, ExceptionalState {
     @Reference
     Cycle cycle;
 
@@ -338,7 +338,7 @@ public abstract class AbstractValve extends AbstractOpenemsComponent implements 
      *
      * @param setPoint the setPoint that will be changed to a percent value that a valve has to be adapted to.
      */
-    protected void setPowerLevel(double setPoint) {
+    public void setPowerLevel(double setPoint) {
         setPoint -= this.getPowerLevelValue();
         if (this.changeByPercentage(setPoint)) {
             this.setPointPowerLevelChannel().setNextValue(-1);

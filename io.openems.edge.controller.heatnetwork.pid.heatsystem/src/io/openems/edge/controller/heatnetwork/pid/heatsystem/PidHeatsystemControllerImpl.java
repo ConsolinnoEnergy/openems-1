@@ -7,7 +7,7 @@ import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.common.filter.PidFilter;
 import io.openems.edge.controller.api.Controller;
 import io.openems.edge.controller.heatnetwork.pid.heatsystem.api.PidHeatsystemController;
-import io.openems.edge.heatsystem.components.HeatsystemComponent;
+import io.openems.edge.heatsystem.components.HydraulicChannel;
 import io.openems.edge.heatsystem.components.PassingStation;
 import io.openems.edge.heatsystem.components.Pump;
 import io.openems.edge.thermometer.api.Thermometer;
@@ -33,7 +33,7 @@ public class PidHeatsystemControllerImpl extends AbstractOpenemsComponent implem
     @Reference
     ComponentManager cpm;
 
-    private HeatsystemComponent heatSystemComponent;
+    private HydraulicChannel heatSystemComponent;
     private Thermometer thermometer;
     private PassingStation passing;
     private boolean isPump;
@@ -91,7 +91,7 @@ public class PidHeatsystemControllerImpl extends AbstractOpenemsComponent implem
      * @throws ConfigurationException             when cpm tries to access device but it's not correct instance.
      */
     private void allocateComponent(String Device) throws OpenemsError.OpenemsNamedException, ConfigurationException {
-        if (cpm.getComponent(Device) instanceof HeatsystemComponent) {
+        if (cpm.getComponent(Device) instanceof HydraulicChannel) {
             if (cpm.getComponent(Device) instanceof Pump) {
                 this.isPump = true;
             }
