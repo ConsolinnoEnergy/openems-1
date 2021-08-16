@@ -7,16 +7,23 @@ import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.common.event.EdgeEventConstants;
 import io.openems.edge.controller.hydrauliccomponent.api.ControlType;
 import io.openems.edge.controller.hydrauliccomponent.api.HydraulicController;
+import io.openems.edge.exceptionalstate.api.ExceptionalState;
+import io.openems.edge.exceptionalstate.api.ExceptionalStateHandler;
+import io.openems.edge.exceptionalstate.api.ExceptionalStateHandlerImpl;
 import io.openems.edge.heater.Heater;
 import io.openems.edge.heater.HeaterState;
 import io.openems.edge.heater.decentral.api.DecentralHeater;
 import io.openems.edge.heatsystem.components.HydraulicComponent;
 import io.openems.edge.thermometer.api.ThermometerThreshold;
+
+import io.openems.edge.timer.api.TimerHandler;
+import io.openems.edge.timer.api.TimerHandlerImpl;
 import org.osgi.service.cm.ConfigurationException;
 import org.osgi.service.component.ComponentContext;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.ConfigurationPolicy;
+import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.event.Event;
 import org.osgi.service.event.EventConstants;
@@ -25,8 +32,9 @@ import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 
 @Designate(ocd = Config.class, factory = true)
@@ -36,68 +44,83 @@ import java.util.concurrent.atomic.AtomicInteger;
         property = {EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS}
 )
 
-public class DecentralHeaterImpl extends AbstractOpenemsComponent implements OpenemsComponent, DecentralHeater, EventHandler {
+public class DecentralHeaterImpl extends AbstractOpenemsComponent implements OpenemsComponent, DecentralHeater, ExceptionalState, EventHandler {
 
     private final Logger log = LoggerFactory.getLogger(DecentralHeaterImpl.class);
+
     @Reference
     ComponentManager cpm;
 
-    private HydraulicComponent configuredHydraulicComponent;
+    private final static String NEED_HEAT_RESPONSE_IDENTIFIER = "DECENTRAL_HEATER_NEED_HEAT_RESPONSE_IDENTIFIER";
+    private final static String EXCEPTIONAL_STATE_IDENTIFIER = "DECENTRAL_HEATER_EXCEPTIONAL_STATE_IDENTIFIER";
+
+    private TimerHandler timer;
+    private ExceptionalStateHandler exceptionalStateHandler;
+
+    private HydraulicComponent hydraulicComponent;
     private HydraulicController configuredHydraulicController;
-    private boolean isValve;
-    private ThermometerThreshold thermometerThreshold;
-    private final AtomicInteger currentWaitCycleNeedHeatEnable = new AtomicInteger(0);
-    private int maxWaitCyclesNeedHeatEnable;
+    private boolean isComponent;
+    private ThermometerThreshold thresholdThermometer;
     private boolean wasNeedHeatEnableLastCycle;
+    private boolean useExceptionalState;
+    private boolean exceptionalStatePresentBefore = false;
 
     public DecentralHeaterImpl() {
         super(OpenemsComponent.ChannelId.values(),
                 Heater.ChannelId.values(),
-                DecentralHeater.ChannelId.values());
+                DecentralHeater.ChannelId.values(),
+                ExceptionalState.ChannelId.values());
     }
 
 
     @Activate
     public void activate(ComponentContext context, Config config) throws OpenemsError.OpenemsNamedException, ConfigurationException {
         super.activate(context, config.id(), config.alias(), config.enabled());
+        if (config.enabled() == false) {
+            return;
+        }
 
         OpenemsComponent componentFetchedByComponentManager;
 
-        this.isValve = config.valveOrController().equals("Valve");
-        componentFetchedByComponentManager = this.cpm.getComponent(config.valveOrControllerId());
-        if (isValve) {
+        this.isComponent = config.componentOrController().equals("Component");
+        componentFetchedByComponentManager = this.cpm.getComponent(config.componentOrControllerId());
+        if (isComponent) {
             if (componentFetchedByComponentManager instanceof HydraulicComponent) {
-                this.configuredHydraulicComponent = (HydraulicComponent) componentFetchedByComponentManager;
+                this.hydraulicComponent = (HydraulicComponent) componentFetchedByComponentManager;
             } else {
                 throw new ConfigurationException("activate", "The Component with id: "
-                        + config.valveOrControllerId() + " is not a Valve");
+                        + config.componentOrControllerId() + " is not a HydraulicComponent");
             }
         } else if (componentFetchedByComponentManager instanceof HydraulicController) {
             this.configuredHydraulicController = (HydraulicController) componentFetchedByComponentManager;
         } else {
             throw new ConfigurationException("activate", "The Component with id "
-                    + config.valveOrControllerId() + "not an instance of ValveController");
+                    + config.componentOrControllerId() + "not an instance of ValveController");
         }
 
         componentFetchedByComponentManager = cpm.getComponent(config.thresholdThermometerId());
         if (componentFetchedByComponentManager instanceof ThermometerThreshold) {
-            this.thermometerThreshold = (ThermometerThreshold) componentFetchedByComponentManager;
-            this.thermometerThreshold.setSetPointTemperature(config.setPointTemperature(), super.id());
+            this.thresholdThermometer = (ThermometerThreshold) componentFetchedByComponentManager;
+            this.thresholdThermometer.setSetPointTemperature(config.setPointTemperature(), super.id());
         } else {
             throw new ConfigurationException("activate",
                     "Component with ID: " + config.thresholdThermometerId() + " not an instance of Threshold");
         }
         this.setSetPointTemperature(config.setPointTemperature());
         if (config.shouldCloseOnActivation()) {
-            if (isValve) {
-                this.configuredHydraulicComponent.forceClose();
+            if (isComponent) {
+                this.hydraulicComponent.forceClose();
             } else {
                 this.configuredHydraulicController.setEnableSignal(false);
             }
         }
         this.getForceHeatChannel().setNextValue(config.forceHeating());
-        this.maxWaitCyclesNeedHeatEnable = config.waitCyclesNeedHeatResponse();
         this.setState(HeaterState.OFFLINE.name());
+        this.useExceptionalState = config.enableExceptionalStateHandling();
+        this.initializeTimer(config);
+        this.getNeedHeatChannel().setNextValue(false);
+        this.getNeedMoreHeatChannel().setNextValue(false);
+
     }
 
 
@@ -121,63 +144,81 @@ public class DecentralHeaterImpl extends AbstractOpenemsComponent implements Ope
      */
     @Override
     public void handleEvent(Event event) {
-        if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS)) {
+        if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS) && super.isEnabled()) {
             if (this.errorInHeater()) {
                 //TODO DO SOMETHING (?)
             }
             checkMissingComponents();
-            //First things first: Is Heater Enabled
-            boolean currentRunHeaterEnabled = checkIsCurrentRunHeaterEnabled();
-            if (currentRunHeaterEnabled) {
-                this.getNeedHeatChannel().setNextValue(true);
-                //Is Heater allowed to Heat
-                boolean currentRunNeedHeatEnable = checkIsCurrentHeatNeedEnabled();
-                if (currentRunNeedHeatEnable || this.getIsForceHeating()) {
-                    this.currentWaitCycleNeedHeatEnable.getAndSet(0);
-                    this.wasNeedHeatEnableLastCycle = true;
-                    //activateThresholdThermometer and check if setPointTemperature can be met otherwise shut valve
-                    // and ask for more heat
-                    try {
+            AtomicBoolean currentRunHeaterEnabled = new AtomicBoolean();
+            AtomicBoolean exceptionalStateOverride = new AtomicBoolean(false);
+            currentRunHeaterEnabled.set(checkIsCurrentRunHeaterEnabled());
+            if (this.useExceptionalState) {
+                boolean exceptionalStateActive = this.exceptionalStateHandler.exceptionalStateActive(this);
+                if (exceptionalStateActive) {
+                    this.reactToExceptionalState(this.getExceptionalStateValue(), currentRunHeaterEnabled);
+                    this.reactToExceptionalState(this.getExceptionalStateValue(), exceptionalStateOverride);
+                }
+            }
+            if (currentRunHeaterEnabled.get()) {
+                try {
+                    this.getNeedHeatChannel().setNextValue(true);
+                    //Is Heater allowed to Heat
+                    boolean currentRunNeedHeatEnable = checkIsCurrentHeatNeedEnabled();
+                    if (currentRunNeedHeatEnable || this.getIsForceHeating() || exceptionalStateOverride.get()) {
+                        this.wasNeedHeatEnableLastCycle = true;
+                        //activateThermometerThreshold and check if setPointTemperature can be met otherwise shut valve
+                        // and ask for more heat
                         this.setThresholdAndControlValve();
-                    } catch (OpenemsError.OpenemsNamedException ignored) {
+                    } else {
+                        this.wasNeedHeatEnableLastCycle = false;
+                        this.setState(HeaterState.AWAIT.name());
+                        this.closeComponentOrDisableComponentController();
                     }
-                } else {
-                    this.wasNeedHeatEnableLastCycle = false;
-                    this.setState(HeaterState.AWAIT.name());
-                    this.closeValveOrDisableValveController();
+                } catch (OpenemsError.OpenemsNamedException e) {
+                    this.log.warn("Couldn't enable/Disable the ValveController!");
                 }
             } else {
                 deactivateControlledComponents();
+                this.timer.resetTimer(NEED_HEAT_RESPONSE_IDENTIFIER);
             }
         }
     }
 
+
+    private void reactToExceptionalState(int exceptionalStateValue, AtomicBoolean currentRunHeaterEnabled) {
+        currentRunHeaterEnabled.set(exceptionalStateValue > 0);
+    }
+
+    private boolean checkTimeIsUpAndResetIfTrue(String identifier) {
+        boolean timeIsUp = this.timer.checkTimeIsUp(identifier);
+        if (timeIsUp) {
+            this.timer.resetTimer(identifier);
+        }
+        return timeIsUp;
+    }
+
     /**
      * If Controller is Enabled AND permission to heat is set.
-     * Check if ThresholdThermometer is ok --> if yes activate Valve/ValveController --> Else Close Valve and say "I need more Heat".
+     * Check if ThermometerThreshold is ok --> if yes activate Valve/ValveController --> Else Close Valve and say "I need more Heat".
      */
     private void setThresholdAndControlValve() throws OpenemsError.OpenemsNamedException {
-        this.thermometerThreshold.setSetPointTemperatureAndActivate(this.getSetPointTemperature(), super.id());
+        this.thresholdThermometer.setSetPointTemperatureAndActivate(this.getSetPointTemperature(), super.id());
         //Static Valve Controller Works on it's own with given Temperature
-        if (this.isValve == false) {
-            try {
-                this.configuredHydraulicController.setEnableSignal(true);
-                this.configuredHydraulicController.setControlType(ControlType.TEMPERATURE);
-            } catch (OpenemsError.OpenemsNamedException e) {
-                this.log.warn("Couldn't apply EnableSignal (true) to the Valve Controller in " + super.id());
-            }
+        if (this.isComponent == false) {
+            this.configuredHydraulicController.getEnableSignalChannel().setNextWriteValueFromObject(true);
+            this.configuredHydraulicController.setControlType(ControlType.TEMPERATURE);
         }
         // Check if SetPointTemperature above Thermometer --> Either
-        if (this.thermometerThreshold.thermometerAboveGivenTemperature(this.getSetPointTemperature())) {
+        if (this.thresholdThermometer.thermometerAboveGivenTemperature(this.getSetPointTemperature())) {
             this.setState(HeaterState.RUNNING.name());
             this.getNeedMoreHeatChannel().setNextValue(false);
-            if (this.isValve) {
-                this.configuredHydraulicComponent.setPointPowerLevelChannel().setNextValue(100);
+            if (this.isComponent) {
+                this.hydraulicComponent.setPointPowerLevelChannel().setNextValue(100);
             }
         } else {
             this.getNeedMoreHeatChannel().setNextValue(true);
-            if (this.isValve) {
-                this.closeValveOrDisableValveController();
+            if (this.isComponent) {
+                this.closeComponentOrDisableComponentController();
             }
             this.setState(HeaterState.PREHEAT.name());
         }
@@ -190,15 +231,16 @@ public class DecentralHeaterImpl extends AbstractOpenemsComponent implements Ope
      * @return enabled;
      */
     private boolean checkIsCurrentHeatNeedEnabled() {
-        boolean currentRunNeedHeatEnable = this.currentWaitCycleNeedHeatEnable.get() >= this.maxWaitCyclesNeedHeatEnable || wasNeedHeatEnableLastCycle;
+        boolean currentRunNeedHeatEnable =
+                this.timer.checkTimeIsUp(NEED_HEAT_RESPONSE_IDENTIFIER) == false
+                        || wasNeedHeatEnableLastCycle;
 
         Optional<Boolean> needHeatEnableSignal = this.getNeedHeatEnableSignalChannel().getNextWriteValueAndReset();
         if (needHeatEnableSignal.isPresent()) {
-            this.currentWaitCycleNeedHeatEnable.set(0);
+            this.timer.resetTimer(NEED_HEAT_RESPONSE_IDENTIFIER);
             currentRunNeedHeatEnable = needHeatEnableSignal.get();
-        } else if (this.currentWaitCycleNeedHeatEnable.get() < this.maxWaitCyclesNeedHeatEnable) {
-            this.currentWaitCycleNeedHeatEnable.getAndIncrement();
         }
+        this.getNeedHeatEnableSignalChannel().setNextValue(currentRunNeedHeatEnable);
         return currentRunNeedHeatEnable;
     }
 
@@ -219,11 +261,11 @@ public class DecentralHeaterImpl extends AbstractOpenemsComponent implements Ope
     private void checkMissingComponents() {
         OpenemsComponent componentFetchedByCpm;
         try {
-            if (this.isValve) {
-                if (this.configuredHydraulicComponent.isEnabled() == false) {
-                    componentFetchedByCpm = cpm.getComponent(this.configuredHydraulicComponent.id());
+            if (this.isComponent) {
+                if (this.hydraulicComponent.isEnabled() == false) {
+                    componentFetchedByCpm = cpm.getComponent(this.hydraulicComponent.id());
                     if (componentFetchedByCpm instanceof HydraulicComponent) {
-                        this.configuredHydraulicComponent = (HydraulicComponent) componentFetchedByCpm;
+                        this.hydraulicComponent = (HydraulicComponent) componentFetchedByCpm;
                     }
                 }
             } else {
@@ -234,10 +276,10 @@ public class DecentralHeaterImpl extends AbstractOpenemsComponent implements Ope
                     }
                 }
             }
-            if (this.thermometerThreshold.isEnabled() == false) {
-                componentFetchedByCpm = cpm.getComponent(this.thermometerThreshold.id());
+            if (this.thresholdThermometer.isEnabled() == false) {
+                componentFetchedByCpm = cpm.getComponent(this.thresholdThermometer.id());
                 if (componentFetchedByCpm instanceof ThermometerThreshold) {
-                    this.thermometerThreshold = (ThermometerThreshold) componentFetchedByCpm;
+                    this.thresholdThermometer = (ThermometerThreshold) componentFetchedByCpm;
                 }
             }
         } catch (OpenemsError.OpenemsNamedException ignored) {
@@ -256,23 +298,23 @@ public class DecentralHeaterImpl extends AbstractOpenemsComponent implements Ope
     void deactivateControlledComponents() {
         this.getNeedHeatChannel().setNextValue(false);
         this.getNeedMoreHeatChannel().setNextValue(false);
-        this.thermometerThreshold.releaseSetPointTemperatureId(super.id());
-        this.closeValveOrDisableValveController();
+        this.thresholdThermometer.releaseSetPointTemperatureId(super.id());
+        try {
+            this.closeComponentOrDisableComponentController();
+        } catch (OpenemsError.OpenemsNamedException e) {
+            this.log.warn("Couldn't disable ValveController!");
+        }
         this.setState(HeaterState.OFFLINE.name());
     }
 
     /**
      * When Called close the Valve (if configured) or otherwise disable the ValveController.
      */
-    private void closeValveOrDisableValveController() {
-        if (this.isValve) {
-            this.configuredHydraulicComponent.setPointPowerLevelChannel().setNextValue(0);
+    private void closeComponentOrDisableComponentController() throws OpenemsError.OpenemsNamedException {
+        if (this.isComponent) {
+            this.hydraulicComponent.setPointPowerLevelChannel().setNextValue(0);
         } else {
-            try {
-                this.configuredHydraulicController.setEnableSignal(false);
-            } catch (OpenemsError.OpenemsNamedException e) {
-                this.log.warn("Couldn't apply Enable Signal (false) in ValveController of " + super.id());
-            }
+            this.configuredHydraulicController.getEnableSignalChannel().setNextWriteValueFromObject(false);
         }
     }
 
@@ -320,6 +362,33 @@ public class DecentralHeaterImpl extends AbstractOpenemsComponent implements Ope
     public int getMaximumThermalOutput() {
         //TODO
         return 0;
+    }
+
+
+    /**
+     * Init the Timer to the identifier
+     *
+     * @param config the config of this component
+     * @throws OpenemsError.OpenemsNamedException if the timer couldn't be found
+     * @throws ConfigurationException             if id is found but they're not instances of timer in {@link TimerHandler}
+     */
+    private void initializeTimer(Config config) throws OpenemsError.OpenemsNamedException, ConfigurationException {
+        this.timer = new TimerHandlerImpl(this.id(), this.cpm);
+        this.timer.addOneIdentifier(NEED_HEAT_RESPONSE_IDENTIFIER, config.timerNeedHeatResponse(), config.timeNeedHeatResponse());
+
+        if (config.enableExceptionalStateHandling()) {
+            this.timer.addOneIdentifier(EXCEPTIONAL_STATE_IDENTIFIER, config.timerExceptionalState(), config.timeToWaitExceptionalState());
+            this.getExceptionalStateValueChannel().setNextValue(100);
+            this.exceptionalStateHandler = new ExceptionalStateHandlerImpl(this.timer, EXCEPTIONAL_STATE_IDENTIFIER);
+        }
+    }
+
+    @Deactivate
+    protected void deactivate() {
+        if (this.timer != null) {
+            this.timer.removeComponent();
+        }
+        super.deactivate();
     }
 
 }
