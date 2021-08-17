@@ -15,7 +15,6 @@ import io.openems.edge.heater.api.HeaterState;
 import io.openems.edge.timer.api.TimerHandler;
 import io.openems.edge.timer.api.TimerHandlerImpl;
 import io.openems.edge.relay.api.Relay;
-import org.osgi.service.cm.ConfigurationAdmin;
 import org.osgi.service.cm.ConfigurationException;
 import org.osgi.service.component.ComponentContext;
 import org.osgi.service.component.annotations.Activate;
@@ -29,11 +28,9 @@ import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Optional;
-
 
 @Designate(ocd = ConfigOneRelay.class, factory = true)
-@Component(name = "GasBoilerOneRelay",
+@Component(name = "Heater.Viessmann.GasBoilerOneRelay",
         configurationPolicy = ConfigurationPolicy.REQUIRE,
         immediate = true)
 public class GasBoilerOneRelayImpl extends AbstractOpenemsComponent implements OpenemsComponent, EventHandler,
@@ -42,16 +39,10 @@ public class GasBoilerOneRelayImpl extends AbstractOpenemsComponent implements O
     private final Logger log = LoggerFactory.getLogger(GasBoilerOneRelayImpl.class);
 
     @Reference
-    ConfigurationAdmin cm;
-
-    @Reference
     ComponentManager cpm;
 
     private boolean componentEnabled;
     private Relay relay;
-    private int thermalOutput;
-    private boolean isEnabled;
-    private int cycleCounter = 0;
 
     private EnableSignalHandler enableSignalHandler;
     private static final String ENABLE_SIGNAL_IDENTIFIER = "GASBOILER_VIESSMANN_RELAY_ENABLE_SIGNAL_IDENTIFIER";
@@ -102,7 +93,6 @@ public class GasBoilerOneRelayImpl extends AbstractOpenemsComponent implements O
             timer.addOneIdentifier(EXCEPTIONAL_STATE_IDENTIFIER, timerTypeExceptionalState, config.waitTimeExceptionalState());
             this.exceptionalStateHandler = new ExceptionalStateHandlerImpl(timer, EXCEPTIONAL_STATE_IDENTIFIER);
         }
-        this.thermalOutput = config.maxThermicalOutput();
 
         if (this.componentEnabled == false) {
             this._setHeaterState(HeaterState.OFF.getValue());

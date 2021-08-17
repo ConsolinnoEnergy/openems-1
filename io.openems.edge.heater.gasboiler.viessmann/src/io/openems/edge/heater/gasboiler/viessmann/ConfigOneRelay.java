@@ -21,9 +21,6 @@ import org.osgi.service.metatype.annotations.Option;
     @AttributeDefinition(name = "Relay ID", description = "The Unique Id of the relay you what to allocate to this device.")
     String relayId() default "relay0";
 
-    @AttributeDefinition(name = "Maximum thermical output", description = "Max thermical Output.")
-    int maxThermicalOutput() default 1750;
-
     @AttributeDefinition(name = "Wait time EnableSignal", description = "How long to wait after the EnableSignal is "
             + "no longer received before the Chp is switched off. Unit is seconds, unless cycles option is selected.")
     int waitTimeEnableSignal() default 30;

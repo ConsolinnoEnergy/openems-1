@@ -57,7 +57,7 @@ import java.util.Optional;
 @Component(name = "Heater.Chp.Viessmann",
         configurationPolicy = ConfigurationPolicy.REQUIRE,
         immediate = true,
-        property = EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE)
+        property = EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE)
 public class ChpViessmannImpl extends AbstractOpenemsModbusComponent implements OpenemsComponent, EventHandler,
         ExceptionalState, ViessmannInformation {
 
@@ -575,8 +575,8 @@ public class ChpViessmannImpl extends AbstractOpenemsModbusComponent implements 
             this.logInfo(this.log, "Power percent set point (write mode only): " + this.getHeatingPowerPercentSetpoint());
             this.logInfo(this.log, "Effective electrical power: " + this.getEffectiveElectricPower() + " of max "
                     + this.electricalOutput + " kW (" + (1.0 * this.getEffectiveElectricPower().get() / this.electricalOutput) + "%)");
-            this.logInfo(this.log, "Flow temperature: " + this.getFlowTemperature() + " d°C");
-            this.logInfo(this.log, "Return temperature: " + this.getReturnTemperature() + " d°C");
+            this.logInfo(this.log, "Flow temperature: " + this.getFlowTemperature());
+            this.logInfo(this.log, "Return temperature: " + this.getReturnTemperature());
             this.logInfo(this.log, "Operating hours: " + this.getOperatingHours().value());
             this.logInfo(this.log, "Engine start counter: " + this.getStartCounter().value());
             this.logInfo(this.log, "Maintenance interval: " + this.getMaintenanceInterval().value());
