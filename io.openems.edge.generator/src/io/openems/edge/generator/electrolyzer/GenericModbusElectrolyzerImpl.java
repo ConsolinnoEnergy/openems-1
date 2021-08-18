@@ -8,6 +8,7 @@ import io.openems.edge.bridge.modbus.api.ElementToChannelConverter;
 import io.openems.edge.bridge.modbus.api.ModbusProtocol;
 import io.openems.edge.bridge.modbus.api.element.CoilElement;
 import io.openems.edge.bridge.modbus.api.element.UnsignedWordElement;
+import io.openems.edge.bridge.modbus.api.generic.AbstractGenericModbusComponent;
 import io.openems.edge.bridge.modbus.api.task.FC4ReadInputRegistersTask;
 import io.openems.edge.bridge.modbus.api.task.FC5WriteCoilTask;
 import io.openems.edge.bridge.modbus.api.task.FC6WriteRegisterTask;
@@ -21,7 +22,9 @@ import io.openems.edge.exceptionalstate.api.ExceptionalStateHandler;
 import io.openems.edge.exceptionalstate.api.ExceptionalStateHandlerImpl;
 import io.openems.edge.generator.api.ControlMode;
 import io.openems.edge.generator.api.Electrolyzer;
+import io.openems.edge.generator.api.ElectrolyzerModbusGeneric;
 import io.openems.edge.generator.api.Generator;
+import io.openems.edge.generator.api.GeneratorModbusGeneric;
 import io.openems.edge.heater.Heater;
 import io.openems.edge.timer.api.TimerHandler;
 import io.openems.edge.timer.api.TimerHandlerImpl;
@@ -33,6 +36,7 @@ import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.ConfigurationPolicy;
 import org.osgi.service.component.annotations.Deactivate;
+import org.osgi.service.component.annotations.Modified;
 import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.component.annotations.ReferenceCardinality;
 import org.osgi.service.component.annotations.ReferencePolicy;
@@ -44,16 +48,19 @@ import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+
 
 @Designate(ocd = Config.class, factory = true)
-@Component(name = "Generator.HydrogenGenerator.Electrolyzer",
+@Component(name = "Generator.Modbus.HydrogenGenerator.Electrolyzer.Generic",
         immediate = true,
         configurationPolicy = ConfigurationPolicy.REQUIRE,
         properties = {EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE,
                 EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS})
-public class ElectrolyzerImpl extends AbstractOpenemsModbusComponent implements Electrolyzer, OpenemsComponent, Heater, ExceptionalState, EventHandler, Generator {
+public class GenericModbusElectrolyzerImpl extends AbstractGenericModbusComponent implements Electrolyzer, OpenemsComponent, Heater, ExceptionalState, EventHandler, Generator {
 
-    private final Logger log = LoggerFactory.getLogger(ElectrolyzerImpl.class);
+    private final Logger log = LoggerFactory.getLogger(GenericModbusElectrolyzerImpl.class);
 
     private TimerHandler timerHandler;
     private ExceptionalStateHandler exceptionalStateHandler;
@@ -74,9 +81,11 @@ public class ElectrolyzerImpl extends AbstractOpenemsModbusComponent implements 
         super.setModbus(modbus);
     }
 
-    public ElectrolyzerImpl() {
+    public GenericModbusElectrolyzerImpl() {
         super(OpenemsComponent.ChannelId.values(),
                 Electrolyzer.ChannelId.values(),
+                ElectrolyzerModbusGeneric.ChannelId.values(),
+                GeneratorModbusGeneric.ChannelId.values(),
                 Generator.ChannelId.values(),
                 Heater.ChannelId.values(),
                 ExceptionalState.ChannelId.values());
@@ -85,7 +94,7 @@ public class ElectrolyzerImpl extends AbstractOpenemsModbusComponent implements 
     protected Config config;
 
     @Activate
-    public void activate(ComponentContext context, Config config) throws OpenemsError.OpenemsNamedException, ConfigurationException {
+    void activate(ComponentContext context, Config config) throws OpenemsError.OpenemsNamedException, ConfigurationException {
         this.config = config;
         if (super.activate(context, config.id(), config.alias(), config.enabled(), config.modbusUnitId(), this.cm,
                 "Modbus", config.modbusBridgeId()) == false) {
@@ -100,8 +109,15 @@ public class ElectrolyzerImpl extends AbstractOpenemsModbusComponent implements 
 
     }
 
+    @Modified
+    void modified(ComponentContext context, Config config) throws OpenemsException, ConfigurationException {
+        super.modified(context, config.id(), config.alias(), config.enabled(), config.modbusUnitId(), this.cm,
+                config.modbusBridgeId(), this.cpm, Arrays.asList(config.configurationList()));
+        super.update(this.cm, "channelIds", new ArrayList<>(this.channels()), this.config.channelIds().length);
+    }
+
     @Deactivate
-    public void deactivate() {
+    protected void deactivate() {
         super.deactivate();
     }
 
