@@ -13,7 +13,9 @@ Bundle-Version: 1.0.0.${tstamp}
 	io.openems.edge.heater.decentral,\
 	io.openems.edge.heatsystem.components,\
 	io.openems.edge.thermometer.api,\
-	joda-time;version=2.10.8,\
+	joda-time;version=latest,\
+	io.openems.edge.timer.api,\
+	io.openems.edge.exceptionalstate.api,\
 
 
 -testpath: \

@@ -6,6 +6,8 @@ import io.openems.edge.bridge.mqtt.connection.MqttConnectionPublishImpl;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.List;
@@ -17,6 +19,8 @@ import java.util.concurrent.atomic.AtomicInteger;
  * In One Cycle---> Handle currentToDo, calculated by AbstractMqttManager.
  */
 public class MqttPublishManager extends AbstractMqttManager {
+    private final Logger log = LoggerFactory.getLogger(MqttSubscribeManager.class);
+
     //              QOS       MqttConnector
     private final Map<Integer, MqttConnectionPublishImpl> connections = new HashMap<>();
 
@@ -36,7 +40,9 @@ public class MqttPublishManager extends AbstractMqttManager {
         }
     }
 
-    @Override
+    /**
+     * This method gets the current PublishTasks and publishes the Data to the MqttBroker.
+     */
     public void forever() {
         super.foreverAbstract();
         //Handle Tasks given by Parent
@@ -76,7 +82,6 @@ public class MqttPublishManager extends AbstractMqttManager {
      * This will disconnect every connection and stops the communication with the Broker.
      */
     public void deactivate() {
-        super.deactivate();
         this.connections.forEach((key, value) -> {
             try {
                 value.disconnect();

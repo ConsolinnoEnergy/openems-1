@@ -6,6 +6,8 @@ import io.openems.edge.bridge.mqtt.api.MqttType;
 import io.openems.edge.bridge.mqtt.connection.MqttConnectionSubscribeImpl;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.joda.time.DateTimeZone;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.List;
@@ -15,6 +17,8 @@ import java.util.Map;
  * Created by MqttBridge. Handles all SubscribeTasks.
  */
 public class MqttSubscribeManager extends AbstractMqttManager {
+
+    private final Logger log = LoggerFactory.getLogger(MqttSubscribeManager.class);
 
     private final Map<MqttType, MqttConnectionSubscribeImpl> connections = new HashMap<>();
 
@@ -34,7 +38,9 @@ public class MqttSubscribeManager extends AbstractMqttManager {
 
     }
 
-    @Override
+    /**
+     * This Method sets the current Time, and refreshes all Payloads of the current SubscribeTasks.
+     */
     public void forever() {
         super.calculateCurrentTime();
         //Get all tasks and update them.
@@ -68,7 +74,6 @@ public class MqttSubscribeManager extends AbstractMqttManager {
      * Closes the connection.
      */
     public void deactivate() {
-        super.deactivate();
         this.connections.forEach((key, value) -> {
             try {
                 value.disconnect();
@@ -92,6 +97,7 @@ public class MqttSubscribeManager extends AbstractMqttManager {
 
     /**
      * Unsubscribes a Topic if there is no other subscriber left.
+     *
      * @param task the task you wish to unsubscribe.
      * @throws MqttException if somethings wrong with the connection.
      */

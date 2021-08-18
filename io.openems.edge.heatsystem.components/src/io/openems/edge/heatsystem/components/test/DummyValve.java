@@ -5,18 +5,21 @@ import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.heatsystem.components.HeatsystemComponent;
 import io.openems.edge.heatsystem.components.Valve;
 import io.openems.edge.relay.api.Relay;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * This Class works the same way as the ValveImpl except it's constructor and lacking of the
  * Osgi Activate and Deactivate Methods for obv Reasons. It should be combined with the Passing Station + the DummyPump.
- * */
+ */
 
 public class DummyValve extends AbstractOpenemsComponent implements Valve, OpenemsComponent {
 
+    private final Logger log = LoggerFactory.getLogger(DummyValve.class);
 
-    private Relay opens;
-    private Relay closing;
-    private double secondsPerPercentage;
+    private final Relay opens;
+    private final Relay closing;
+    private final double secondsPerPercentage;
     private boolean percentageWasSet = false;
     private long timeStampValve;
 
@@ -36,10 +39,10 @@ public class DummyValve extends AbstractOpenemsComponent implements Valve, Opene
 
     private void valveClose() {
         if (!this.getIsBusyChannel().getNextValue().get()) {
-            controlRelays(false, "Open");
-            controlRelays(true, "Closed");
+            this.controlRelays(false, "Open");
+            this.controlRelays(true, "Closed");
             this.getIsBusyChannel().setNextValue(true);
-            timeStampValve = System.currentTimeMillis();
+            this.timeStampValve = System.currentTimeMillis();
         }
     }
 
@@ -47,17 +50,17 @@ public class DummyValve extends AbstractOpenemsComponent implements Valve, Opene
     private void valveOpen() {
         //opens will be set true when closing is done
         if (!this.getIsBusyChannel().getNextValue().get()) {
-            controlRelays(false, "Closed");
-            controlRelays(true, "Open");
+            this.controlRelays(false, "Closed");
+            this.controlRelays(true, "Open");
             this.getIsBusyChannel().setNextValue(true);
-            timeStampValve = System.currentTimeMillis();
+            this.timeStampValve = System.currentTimeMillis();
         }
     }
 
 
     @Override
     public boolean readyToChange() {
-        return System.currentTimeMillis() - timeStampValve >= (this.timeChannel().getNextValue().get() * 1000);
+        return System.currentTimeMillis() - this.timeStampValve >= (this.timeChannel().getNextValue().get() * 1000);
     }
 
     @Override
@@ -78,24 +81,24 @@ public class DummyValve extends AbstractOpenemsComponent implements Valve, Opene
             this.getPowerLevelChannel().setNextValue(currentPowerLevel);
             System.out.println("Next PowerLevel Value is " + currentPowerLevel);
             if (Math.abs(percentage) >= 100) {
-                this.timeChannel().setNextValue(100 * secondsPerPercentage);
+                this.timeChannel().setNextValue(100 * this.secondsPerPercentage);
             } else {
-                this.timeChannel().setNextValue(Math.abs(percentage) * secondsPerPercentage);
+                this.timeChannel().setNextValue(Math.abs(percentage) * this.secondsPerPercentage);
             }
             if (percentage < 0) {
-                controlRelays(false, "Open");
-                valveClose();
+                this.controlRelays(false, "Open");
+                this.valveClose();
             } else {
-                controlRelays(false, "Closed");
-                valveOpen();
+                this.controlRelays(false, "Closed");
+                this.valveOpen();
             }
-            percentageWasSet = true;
+            this.percentageWasSet = true;
             return true;
         }
     }
 
 
-    public void controlRelays(boolean activate, String whichRelays) {
+    private void controlRelays(boolean activate, String whichRelays) {
         switch (whichRelays) {
             case "Open":
                 if (this.opens.isCloser().getNextValue().get()) {
@@ -106,9 +109,9 @@ public class DummyValve extends AbstractOpenemsComponent implements Valve, Opene
                 break;
             case "Closed":
                 if (this.closing.isCloser().getNextValue().get()) {
-                    System.out.println(activate);
+                    this.log.info(super.id() + activate);
                 } else {
-                    System.out.println(!activate);
+                    this.log.info(super.id() + !activate);
                 }
                 break;
         }
@@ -137,6 +140,7 @@ public class DummyValve extends AbstractOpenemsComponent implements Valve, Opene
     public void reset() {
 
     }
+
     @Override
     public void forceClose() {
     }

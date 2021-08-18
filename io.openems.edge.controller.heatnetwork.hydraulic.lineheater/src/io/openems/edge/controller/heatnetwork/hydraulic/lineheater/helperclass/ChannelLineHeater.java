@@ -19,8 +19,8 @@ public class ChannelLineHeater extends AbstractLineHeater {
     private Double min;
 
     public ChannelLineHeater(boolean booleanControlled, ChannelAddress readAddress, ChannelAddress writeAddress,
-                             ChannelAddress maxAddress, ChannelAddress minAddress, ComponentManager cpm) {
-        super(booleanControlled, true);
+                             ChannelAddress maxAddress, ChannelAddress minAddress, ComponentManager cpm, boolean useMinMax) {
+        super(booleanControlled, useMinMax);
         this.writeAddress = writeAddress;
         this.readAddress = readAddress;
         this.maxAddress = maxAddress;
@@ -29,24 +29,13 @@ public class ChannelLineHeater extends AbstractLineHeater {
 
     }
 
-    public ChannelLineHeater(boolean booleanControlled, ChannelAddress writeAddress, ComponentManager cpm) {
-        super(booleanControlled, false);
-        this.writeAddress = writeAddress;
-        this.readAddress = null;
-        this.maxAddress = null;
-        this.minAddress = null;
-        this.cpm = cpm;
-    }
-
     @Override
     public boolean startHeating() throws OpenemsError.OpenemsNamedException {
-        if (this.isBooleanControlled() && super.useMinMax == false) {
-            return this.writeToChannel(1);
-        }
-        double lastPowerDouble = getLastPower();
-        if (this.isRunning == false || lastPowerDouble < LAST_POWER_CHECK_VALUE) {
-            if (this.writeToChannel(FULL_POWER)) {
+        double currentPowerDouble = getLastPower();
+        if (this.isRunning == false || currentPowerDouble < previouslyCheckedPowerLevel) {
+            if (this.writeToChannel(this.isBooleanControlled() ? 1 : FULL_POWER)) {
                 this.isRunning = true;
+                this.previouslyCheckedPowerLevel = currentPowerDouble;
                 return true;
             }
         }
@@ -55,7 +44,7 @@ public class ChannelLineHeater extends AbstractLineHeater {
 
     private double getLastPower() throws OpenemsError.OpenemsNamedException {
         Object lastPower = readFromChannel();
-         if (lastPower instanceof Double) {
+        if (lastPower instanceof Double) {
             return (Double) lastPower;
         } else {
             return Double.parseDouble(lastPower.toString());
@@ -77,8 +66,7 @@ public class ChannelLineHeater extends AbstractLineHeater {
         }
         if (this.isBooleanControlled()) {
             WriteChannel<Boolean> booleanWriteChannel = this.cpm.getChannel(this.writeAddress);
-            booleanWriteChannel.setNextWriteValue(lastPower >= 0);
-            return true;
+            booleanWriteChannel.setNextWriteValue(lastPower > 0);
         } else {
             Channel<?> writeChannel = this.cpm.getChannel(this.writeAddress);
             if (writeChannel instanceof WriteChannel<?>) {
@@ -87,22 +75,19 @@ public class ChannelLineHeater extends AbstractLineHeater {
                 writeChannel.setNextValue(lastPower);
             }
         }
-        return false;
+        return true;
     }
 
     @Override
     public boolean stopHeating(DateTime lifecycle) throws OpenemsError.OpenemsNamedException {
 
-        if (this.isRunning && this.isBooleanControlled()) {
-            return this.writeToChannel(-1);
-        }
-
         double lastPower;
         lastPower = (double) this.readFromChannel();
-        if (this.isRunning || lastPower > LAST_POWER_CHECK_VALUE) {
+        if (this.isRunning || lastPower > previouslyCheckedPowerLevel) {
             this.writeToChannel(this.isBooleanControlled() ? -1 : 0);
             this.setLifeCycle(lifecycle);
             this.isRunning = false;
+            this.previouslyCheckedPowerLevel = lastPower;
             return true;
         }
         return false;

@@ -3,7 +3,7 @@ package io.openems.edge.heater.chp.viessmann;
 
 import io.openems.common.exceptions.OpenemsError;
 import io.openems.common.exceptions.OpenemsException;
-import io.openems.edge.aio.api.AioChannel;
+import io.openems.edge.io.api.AnalogInputOutput;
 import io.openems.edge.bridge.modbus.api.AbstractOpenemsModbusComponent;
 import io.openems.edge.bridge.modbus.api.BridgeModbus;
 import io.openems.edge.bridge.modbus.api.ElementToChannelConverter;
@@ -64,7 +64,7 @@ public class ChpImplViessmann extends AbstractOpenemsModbusComponent implements 
     private boolean hadError;
     private boolean isEnabled;
     private int cycleCounter = 0;
-    private AioChannel aioChannel;
+    private AnalogInputOutput aioChannel;
 
     private Config config;
     private boolean wasActiveBefore;
@@ -159,7 +159,7 @@ public class ChpImplViessmann extends AbstractOpenemsModbusComponent implements 
         this.useRelay = config.useRelay();
         if (config.accesMode().equals("rw")) {
             this.accessChp = AccessChp.READWRITE;
-            if (cpm.getComponent(config.chpModuleId()) instanceof AioChannel) {
+            if (cpm.getComponent(config.chpModuleId()) instanceof AnalogInputOutput) {
                 this.aioChannel = cpm.getComponent(config.chpModuleId());
                 ;
                 //TODO
