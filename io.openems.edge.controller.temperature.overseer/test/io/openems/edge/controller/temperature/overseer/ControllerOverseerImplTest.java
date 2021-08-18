@@ -1,5 +1,5 @@
 package io.openems.edge.controller.temperature.overseer;
-/*
+
 import io.openems.common.exceptions.OpenemsError;
 import io.openems.common.types.ChannelAddress;
 import io.openems.common.types.EdgeConfig;
@@ -200,7 +200,7 @@ public class ControllerOverseerImplTest {
                                 .output(error, null)
                 );
 
-        controllerTest.run();
+
 
 
     }
@@ -226,7 +226,7 @@ public class ControllerOverseerImplTest {
                 .next(new AbstractComponentTest.TestCase()
                         .output(error, true));
 
-        controllerTest.run();
+
 
     }
 
@@ -247,7 +247,7 @@ public class ControllerOverseerImplTest {
                     ).next(new AbstractComponentTest.TestCase()
                             .output(error, false));
 
-            controllerTest.run();
+
 
         } catch (Exception e) {
             fail();
@@ -277,8 +277,7 @@ public class ControllerOverseerImplTest {
                 .next(new AbstractComponentTest.TestCase()
                         .output(error, true));
 
-        controllerTest.run();
+
 
     }
 }
-*/

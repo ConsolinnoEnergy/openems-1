@@ -3,7 +3,6 @@ package io.openems.edge.controller.heatnetwork.passingstation;
 import io.openems.common.types.ChannelAddress;
 import io.openems.edge.common.test.AbstractComponentConfig;
 import io.openems.edge.common.test.DummyComponentManager;
-import io.openems.edge.heatsystem.components.Pump;
 import io.openems.edge.heatsystem.components.HydraulicComponent;
 import io.openems.edge.heatsystem.components.test.DummyValve;
 import io.openems.edge.io.api.Pwm;
@@ -115,7 +114,7 @@ public class ControllerPassingImplTest {
     private ChannelAddress vC;
     private ChannelAddress vCc;
     private HydraulicComponent valve;
-    private Pump pump;
+    private HydraulicComponent pump;
     private ChannelAddress noError;
     private ChannelAddress minTemperature;
     private ChannelAddress mainActivate;

@@ -8,8 +8,8 @@ import io.openems.edge.common.filter.PidFilter;
 import io.openems.edge.controller.api.Controller;
 import io.openems.edge.controller.heatnetwork.pid.heatsystem.api.PidHeatsystemController;
 import io.openems.edge.heatsystem.components.HydraulicChannel;
+import io.openems.edge.heatsystem.components.HydraulicComponent;
 import io.openems.edge.heatsystem.components.PassingStation;
-import io.openems.edge.heatsystem.components.Pump;
 import io.openems.edge.thermometer.api.Thermometer;
 import org.osgi.service.cm.ConfigurationException;
 import org.osgi.service.component.ComponentContext;
@@ -92,7 +92,7 @@ public class PidHeatsystemControllerImpl extends AbstractOpenemsComponent implem
      */
     private void allocateComponent(String Device) throws OpenemsError.OpenemsNamedException, ConfigurationException {
         if (cpm.getComponent(Device) instanceof HydraulicChannel) {
-            if (cpm.getComponent(Device) instanceof Pump) {
+            if (cpm.getComponent(Device) instanceof HydraulicComponent) {
                 this.isPump = true;
             }
             this.heatSystemComponent = cpm.getComponent(Device);

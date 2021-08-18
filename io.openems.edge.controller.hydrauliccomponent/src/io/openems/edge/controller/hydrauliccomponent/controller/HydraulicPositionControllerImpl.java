@@ -152,7 +152,7 @@ public class HydraulicPositionControllerImpl extends AbstractOpenemsComponent im
                     //Example: Temperature 50; selected position 45; new has 55; take 55
                     //new iteration temperature 50; selected 55; current is 52; take 52 position
                 } else if (hydraulicPosition.getTemperature() >= temperature) {
-                    if (hydraulicPosition.getTemperature() < selectedPosition.get().getTemperature()
+                    if (hydraulicPosition.getTemperature() <= selectedPosition.get().getTemperature()
                             && (selectedPosition.get().getTemperature() < temperature || hydraulicPosition.getTemperature() < selectedPosition.get().getTemperature())) {
                         selectedPosition.set(hydraulicPosition);
                     }

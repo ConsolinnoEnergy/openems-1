@@ -84,6 +84,7 @@
 	bnd.identity;id='io.openems.edge.controller.evcs.fixactivepower',\
 	bnd.identity;id='io.openems.edge.controller.generic.jsonlogic',\
 	bnd.identity;id='io.openems.edge.controller.highloadtimeslot',\
+	bnd.identity;id='io.openems.edge.controller.hydrauliccomponent',\
 	bnd.identity;id='io.openems.edge.controller.io.alarm',\
 	bnd.identity;id='io.openems.edge.controller.io.channelsinglethreshold',\
 	bnd.identity;id='io.openems.edge.controller.io.fixdigitaloutput',\
@@ -234,6 +235,7 @@
 	io.openems.edge.controller.evcs.fixactivepower;version=snapshot,\
 	io.openems.edge.controller.generic.jsonlogic;version=snapshot,\
 	io.openems.edge.controller.highloadtimeslot;version=snapshot,\
+	io.openems.edge.controller.hydrauliccomponent;version=snapshot,\
 	io.openems.edge.controller.io.alarm;version=snapshot,\
 	io.openems.edge.controller.io.channelsinglethreshold;version=snapshot,\
 	io.openems.edge.controller.io.fixdigitaloutput;version=snapshot,\

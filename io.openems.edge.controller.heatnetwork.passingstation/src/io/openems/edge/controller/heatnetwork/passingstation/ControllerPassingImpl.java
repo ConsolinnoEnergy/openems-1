@@ -11,7 +11,6 @@ import io.openems.edge.controller.api.Controller;
 import io.openems.edge.controller.heatnetwork.passingstation.api.ControllerPassing;
 import io.openems.edge.heatsystem.components.PassingStation;
 import io.openems.edge.heatsystem.components.HydraulicChannel;
-import io.openems.edge.heatsystem.components.Pump;
 import io.openems.edge.heatsystem.components.HydraulicComponent;
 import io.openems.edge.thermometer.api.Thermometer;
 import org.osgi.service.cm.ConfigurationException;
@@ -35,7 +34,7 @@ public class ControllerPassingImpl extends AbstractOpenemsComponent implements O
     private Thermometer secondaryForward;
     private Thermometer secondaryRewind;
     private HydraulicComponent valve;
-    private Pump pump;
+    private HydraulicComponent pump;
     private boolean pumpActive = false;
 
     private boolean isOpen = false;

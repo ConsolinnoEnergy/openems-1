@@ -7,7 +7,6 @@ import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.controller.api.Controller;
 import io.openems.edge.controller.heatnetwork.controlcenter.api.ControlCenter;
 import io.openems.edge.controller.heatnetwork.valvepumpcontrol.api.ValvePumpControl;
-import io.openems.edge.heatsystem.components.Pump;
 import io.openems.edge.heatsystem.components.HydraulicComponent;
 import io.openems.edge.thermometer.api.Thermometer;
 import org.osgi.service.cm.Configuration;
@@ -47,7 +46,7 @@ public class ValvePumpControlImpl extends AbstractOpenemsComponent implements Op
 
     private ControlCenter heatingController;
     private HydraulicComponent valveUS01;
-    private Pump pumpHK01;
+    private HydraulicComponent pumpHK01;
     private Thermometer thermometerFlow;
     private Thermometer thermometerReturn;
     private int closeValvePercent = 20;
@@ -114,7 +113,7 @@ public class ValvePumpControlImpl extends AbstractOpenemsComponent implements Op
                     + config.valveUS01Id(), "configured component is incorrect!");
         }
         try {//optional pump
-            if (cpm.getComponent(config.pumpHK01Id()) instanceof Pump) {
+            if (cpm.getComponent(config.pumpHK01Id()) instanceof HydraulicComponent) {
                 pumpHK01 = cpm.getComponent(config.pumpHK01Id());
             }
         } catch (Exception e) {
