@@ -8,6 +8,7 @@ import io.openems.edge.bridge.modbus.api.ElementToChannelConverter;
 import io.openems.edge.bridge.modbus.api.ModbusProtocol;
 import io.openems.edge.bridge.modbus.api.element.CoilElement;
 import io.openems.edge.bridge.modbus.api.element.UnsignedWordElement;
+import io.openems.edge.bridge.modbus.api.generic.AbstractGenericModbusComponent;
 import io.openems.edge.bridge.modbus.api.task.FC4ReadInputRegistersTask;
 
 import io.openems.edge.bridge.modbus.api.task.FC5WriteCoilTask;
@@ -25,6 +26,7 @@ import io.openems.edge.generator.api.HydrogenGenerator;
 import io.openems.edge.generator.api.HydrogenMode;
 import io.openems.edge.heater.Heater;
 import io.openems.edge.powerplant.api.CombinedHeatPowerPlant;
+import io.openems.edge.powerplant.api.CombinedHeatPowerPlantModbus;
 import io.openems.edge.powerplant.api.PowerPlant;
 import io.openems.edge.timer.api.TimerHandler;
 import io.openems.edge.timer.api.TimerHandlerImpl;
@@ -36,6 +38,7 @@ import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.ConfigurationPolicy;
 import org.osgi.service.component.annotations.Deactivate;
+import org.osgi.service.component.annotations.Modified;
 import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.component.annotations.ReferenceCardinality;
 import org.osgi.service.component.annotations.ReferencePolicy;
@@ -47,14 +50,19 @@ import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+
 
 @Designate(ocd = Config.class, factory = true)
 @Component(name = "Heater.PowerPlant.CombinedHeatPower",
         immediate = true,
         configurationPolicy = ConfigurationPolicy.REQUIRE,
-        properties = {EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE,
+        property = {EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE,
                 EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS})
-public class CombinedHeatPowerPlantImpl extends AbstractOpenemsModbusComponent implements OpenemsComponent, CombinedHeatPowerPlant, Heater, HydrogenGenerator, ExceptionalState, EventHandler {
+public class CombinedHeatPowerPlantImpl extends AbstractGenericModbusComponent implements OpenemsComponent,
+        CombinedHeatPowerPlant, Heater, HydrogenGenerator, ExceptionalState, EventHandler, CombinedHeatPowerPlantModbus {
 
     private final Logger log = LoggerFactory.getLogger(CombinedHeatPowerPlantImpl.class);
 
@@ -92,20 +100,36 @@ public class CombinedHeatPowerPlantImpl extends AbstractOpenemsModbusComponent i
     protected Config config;
 
     @Activate
-    void activate(ComponentContext context, Config config) throws OpenemsError.OpenemsNamedException, ConfigurationException {
+    void activate(ComponentContext context, Config config) throws OpenemsError.OpenemsNamedException, ConfigurationException, IOException {
         this.config = config;
-        if (super.activate(context, config.id(), config.alias(), config.enabled(), config.modbusUnitId(), this.cm,
-                "Modbus", config.modbusBridgeId()) == false) {
-            this.timerHandler = new TimerHandlerImpl(super.id(), this.cpm);
-            this.timerHandler.addOneIdentifier(ENABLE_SIGNAL_IDENTIFIER, config.timerNeedHeatResponse(), config.timeNeedHeatResponse());
-            this.useExceptionalState = config.enableExceptionalStateHandling();
-            if (this.useExceptionalState) {
-                this.timerHandler.addOneIdentifier(EXCEPTIONAL_STATE_IDENTIFIER, config.timerExceptionalState(), config.timeToWaitExceptionalState());
-                this.exceptionalStateHandler = new ExceptionalStateHandlerImpl(this.timerHandler, EXCEPTIONAL_STATE_IDENTIFIER);
-            }
-            this.hydrogenMode = config.hydrogenMode();
+        super.activate(context, config.id(), config.alias(), config.enabled(), config.modbusUnitId(), this.cm,
+                "Modbus", config.modbusBridgeId());
+
+        if (super.update(this.cm, "channelIds", new ArrayList<>(this.channels()), this.config.channelIds().length)) {
+            this.baseConfiguration();
+        }
+        this.hydrogenMode = config.hydrogenMode();
+    }
+
+    @Modified
+    void modified(ComponentContext context, Config config) throws OpenemsError.OpenemsNamedException, ConfigurationException, IOException {
+        super.modified(context, config.id(), config.alias(), config.enabled(), config.modbusUnitId(), this.cm,
+                config.modbusBridgeId(), this.cpm, Arrays.asList(config.configurationList()));
+        super.update(this.cm, "channelIds", new ArrayList<>(this.channels()), this.config.channelIds().length);
+        this.config = config;
+        this.baseConfiguration();
+    }
+
+    private void baseConfiguration() throws OpenemsError.OpenemsNamedException, ConfigurationException {
+        this.timerHandler = new TimerHandlerImpl(super.id(), this.cpm);
+        this.timerHandler.addOneIdentifier(ENABLE_SIGNAL_IDENTIFIER, this.config.timerNeedHeatResponse(), this.config.timeNeedHeatResponse());
+        this.useExceptionalState = this.config.enableExceptionalStateHandling();
+        if (this.useExceptionalState) {
+            this.timerHandler.addOneIdentifier(EXCEPTIONAL_STATE_IDENTIFIER, this.config.timerExceptionalState(), this.config.timeToWaitExceptionalState());
+            this.exceptionalStateHandler = new ExceptionalStateHandlerImpl(this.timerHandler, EXCEPTIONAL_STATE_IDENTIFIER);
         }
     }
+
 
     @Deactivate
     protected void deactivate() {
@@ -113,92 +137,13 @@ public class CombinedHeatPowerPlantImpl extends AbstractOpenemsModbusComponent i
     }
 
     @Override
-    protected ModbusProtocol defineModbusProtocol() throws OpenemsException {
-        //TODO Filter for -1 --> any Channel is optional if address < 0
-        ModbusProtocol protocolToReturn = new ModbusProtocol(this,
-                new FC4ReadInputRegistersTask(this.config.modbusRegisterWMZEnergyAmount(), Priority.HIGH,
-                        m(CombinedHeatPowerPlant.ChannelId.WMZ_ENERGY_AMOUNT, new UnsignedWordElement(this.config.modbusRegisterWMZEnergyAmount()),
-                                ElementToChannelConverter.DIRECT_1_TO_1)
-                ),
-                new FC4ReadInputRegistersTask(this.config.modbusRegisterWMZTempSource(), Priority.HIGH,
-                        m(CombinedHeatPowerPlant.ChannelId.WMZ_TEMP_SOURCE, new UnsignedWordElement(this.config.modbusRegisterWMZTempSource()),
-                                ElementToChannelConverter.DIRECT_1_TO_1)
-                ),
-                new FC4ReadInputRegistersTask(this.config.modbusRegisterWMZTempSink(), Priority.HIGH,
-                        m(CombinedHeatPowerPlant.ChannelId.WMZ_TEMP_SINK, new UnsignedWordElement(this.config.modbusRegisterWMZTempSink()),
-                                ElementToChannelConverter.DIRECT_1_TO_1)
-                ),
-                new FC4ReadInputRegistersTask(this.config.modbusRegisterWMZTPower(), Priority.HIGH,
-                        m(CombinedHeatPowerPlant.ChannelId.WMZ_POWER, new UnsignedWordElement(this.config.modbusRegisterWMZTPower()),
-                                ElementToChannelConverter.DIRECT_1_TO_1)
-                ),
-                new FC4ReadInputRegistersTask(this.config.modbusRegisterGasMeter(), Priority.HIGH,
-                        m(CombinedHeatPowerPlant.ChannelId.WMZ_GAS_METER, new UnsignedWordElement(this.config.modbusRegisterGasMeter()),
-                                ElementToChannelConverter.DIRECT_1_TO_1)
-                ),
-                new FC4ReadInputRegistersTask(this.config.modbusRegisterGasKind(), Priority.HIGH,
-                        m(CombinedHeatPowerPlant.ChannelId.GAS_KIND, new UnsignedWordElement(this.config.modbusRegisterGasKind()),
-                                ElementToChannelConverter.DIRECT_1_TO_1)
-                ),
-                new FC4ReadInputRegistersTask(this.config.modbusRegisterCurrentPower(), Priority.HIGH,
-                        m(CombinedHeatPowerPlant.ChannelId.CURRENT_POWER, new UnsignedWordElement(this.config.modbusRegisterCurrentPower()),
-                                ElementToChannelConverter.DIRECT_1_TO_1)
-                ),
-                new FC4ReadInputRegistersTask(this.config.modbusRegisterTargetPower(), Priority.HIGH,
-                        m(CombinedHeatPowerPlant.ChannelId.TARGET_POWER, new UnsignedWordElement(this.config.modbusRegisterTargetPower()),
-                                ElementToChannelConverter.DIRECT_1_TO_1)
-                ),
-                new FC4ReadInputRegistersTask(this.config.modbusRegisterHoursAfterLastService(), Priority.HIGH,
-                        m(CombinedHeatPowerPlant.ChannelId.HOURS_AFTER_LAST_SERVICE, new UnsignedWordElement(this.config.modbusRegisterHoursAfterLastService()),
-                                ElementToChannelConverter.DIRECT_1_TO_1)
-                ),
-                new FC4ReadInputRegistersTask(this.config.modbusRegisterSecurityOffExtern(), Priority.HIGH,
-                        m(CombinedHeatPowerPlant.ChannelId.SECURITY_OFF_EXTERN, new UnsignedWordElement(this.config.modbusRegisterSecurityOffExtern()),
-                                ElementToChannelConverter.DIRECT_1_TO_1)
-                ),
-                new FC4ReadInputRegistersTask(this.config.modbusRegisterStartRequestEvu(), Priority.HIGH,
-                        m(CombinedHeatPowerPlant.ChannelId.REQUIRED_ON_EVU, new UnsignedWordElement(this.config.modbusRegisterStartRequestEvu()),
-                                ElementToChannelConverter.DIRECT_1_TO_1)
-                ),
-                new FC4ReadInputRegistersTask(this.config.modbusRegisterStartRequestExtern(), Priority.HIGH,
-                        m(CombinedHeatPowerPlant.ChannelId.REQUIRED_ON_EXTERN, new UnsignedWordElement(this.config.modbusRegisterStartRequestExtern()),
-                                ElementToChannelConverter.DIRECT_1_TO_1)
-                ),
-                new FC4ReadInputRegistersTask(this.config.modbusRegisterStopRequestEVUExtern(), Priority.HIGH,
-                        m(CombinedHeatPowerPlant.ChannelId.SECURITY_OFF_EVU, new UnsignedWordElement(this.config.modbusRegisterStopRequestEVUExtern()),
-                                ElementToChannelConverter.DIRECT_1_TO_1)
-                ),
-                new FC4ReadInputRegistersTask(this.config.modbusRegisterStopRequestEVUExternGridDisconnect(), Priority.HIGH,
-                        m(CombinedHeatPowerPlant.ChannelId.SECURITY_OFF_GRID_FAIL, new UnsignedWordElement(this.config.modbusRegisterStopRequestEVUExternGridDisconnect()),
-                                ElementToChannelConverter.DIRECT_1_TO_1)
-                ),
-                new FC4ReadInputRegistersTask(this.config.modbusRegisterElectricityProduced(), Priority.HIGH,
-                        m(CombinedHeatPowerPlant.ChannelId.ELECTRICITY_ENERGY_PRODUCED, new UnsignedWordElement(this.config.modbusRegisterElectricityProduced()),
-                                ElementToChannelConverter.DIRECT_1_TO_1)
-                ),
-                new FC4ReadInputRegistersTask(this.config.modbusRegisterElectricityPower(), Priority.HIGH,
-                        m(CombinedHeatPowerPlant.ChannelId.ELECTRICITY_POWER, new UnsignedWordElement(this.config.modbusRegisterElectricityPower()),
-                                ElementToChannelConverter.DIRECT_1_TO_1)
-                )
-        );
-        if (this.config.controlMode().equals(ControlMode.READ_WRITE)) {
-            protocolToReturn.addTasks(new FC5WriteCoilTask(this.config.modbusRegisterEnableSignal(), m(PowerPlant.ChannelId.SET_EXTERNAL_ENABLE_SIGNAL,
-                    new CoilElement(this.config.modbusRegisterEnableSignal()))),
-                    new FC6WriteRegisterTask(this.config.modbusRegisterWritePower(), m(PowerPlant.ChannelId.SET_EXTERNAL_POWER_LEVEL_PERCENT,
-                            new UnsignedWordElement(this.config.modbusRegisterWritePower()), ElementToChannelConverter.DIRECT_1_TO_1)));
-        }
-        if (this.config.hydrogenMode().equals(HydrogenMode.ACTIVE)) {
-            protocolToReturn.addTask(new FC5WriteCoilTask(this.config.modbusRegisterHydrogenUse(),
-                    m(HydrogenGenerator.ChannelId.ENABLE_HYDROGEN_USE, new CoilElement(this.config.modbusRegisterHydrogenUse()))));
-        }
-        return protocolToReturn;
-
-    }
-
-
-
-    @Override
     public void handleEvent(Event event) {
+
+        if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE)) {
+            //handleChannelUpdate(Concrete..., _hasValue)
+            //note -> Enable Signal stays as enable signal and hydrogen enable stays as hydrogen
+        }
+
         if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS)) {
             try {
                 if (this.useExceptionalState) {
@@ -218,6 +163,8 @@ public class CombinedHeatPowerPlantImpl extends AbstractOpenemsModbusComponent i
                     this.isRunning = false;
                     this.writeIntoComponents(false, 0.d, false);
                 }
+
+                //update WriteValueToModbus
 
 
             } catch (OpenemsError.OpenemsNamedException e) {

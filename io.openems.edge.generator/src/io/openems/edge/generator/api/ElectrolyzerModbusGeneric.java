@@ -6,7 +6,7 @@ import io.openems.edge.common.channel.Channel;
 import io.openems.edge.common.channel.Doc;
 import io.openems.edge.common.channel.WriteChannel;
 
-public interface ElectrolyzerModbusGeneric extends GeneratorModbusGeneric{
+public interface ElectrolyzerModbusGeneric extends GeneratorModbus {
     enum ChannelId implements io.openems.edge.common.channel.ChannelId {
 
         // Input Registers
@@ -65,7 +65,7 @@ public interface ElectrolyzerModbusGeneric extends GeneratorModbusGeneric{
      * @return the channel that contains the value or else null.
      */
     default Channel<?> _hasWMZPower() {
-        return GeneratorModbusGeneric.getValueDefinedChannel(this._getWMZPowerDoubleChannel(), this._getWMZPowerLongChannel());
+        return GeneratorModbus.getValueDefinedChannel(this._getWMZPowerDoubleChannel(), this._getWMZPowerLongChannel());
     }
 
     /**
@@ -94,7 +94,7 @@ public interface ElectrolyzerModbusGeneric extends GeneratorModbusGeneric{
      * @return the channel that contains the value or else null.
      */
     default Channel<?> _hasWMZTempSink() {
-        return GeneratorModbusGeneric.getValueDefinedChannel(this._getWMZTempSinkLongChannel(), this._getWMZTempSinkDoubleChannel());
+        return GeneratorModbus.getValueDefinedChannel(this._getWMZTempSinkLongChannel(), this._getWMZTempSinkDoubleChannel());
     }
 
 
@@ -123,7 +123,7 @@ public interface ElectrolyzerModbusGeneric extends GeneratorModbusGeneric{
      * @return the channel that contains the value or else null.
      */
     default Channel<?> _hasWMZTempSource() {
-        return GeneratorModbusGeneric.getValueDefinedChannel(this._getWMZTempSourceLongChannel(), this._getWMZTempSourceDoubleChannel());
+        return GeneratorModbus.getValueDefinedChannel(this._getWMZTempSourceLongChannel(), this._getWMZTempSourceDoubleChannel());
     }
 
 
@@ -151,7 +151,7 @@ public interface ElectrolyzerModbusGeneric extends GeneratorModbusGeneric{
      * @return the channel that contains the value or else null.
      */
     default Channel<?> _hasWMZEnergyProduced() {
-        return GeneratorModbusGeneric.getValueDefinedChannel(this._getWMZEnergyProducedLongChannel(), this._getWMZEnergyProducedDoubleChannel());
+        return GeneratorModbus.getValueDefinedChannel(this._getWMZEnergyProducedLongChannel(), this._getWMZEnergyProducedDoubleChannel());
     }
 
     /**
@@ -178,7 +178,7 @@ public interface ElectrolyzerModbusGeneric extends GeneratorModbusGeneric{
      * @return the channel that contains the value or else null.
      */
     default Channel<?> _hasPowerPercent() {
-        return GeneratorModbusGeneric.getValueDefinedChannel(this._getPowerPercentLongChannel(), this._getPowerPercentDoubleChannel());
+        return GeneratorModbus.getValueDefinedChannel(this._getPowerPercentLongChannel(), this._getPowerPercentDoubleChannel());
     }
 
 

@@ -1,7 +1,6 @@
 package io.openems.edge.generator.electrolyzer;
 
 import io.openems.common.exceptions.OpenemsError;
-import io.openems.common.exceptions.OpenemsException;
 import io.openems.edge.bridge.modbus.api.BridgeModbus;
 import io.openems.edge.bridge.modbus.api.generic.AbstractGenericModbusComponent;
 import io.openems.edge.common.component.ComponentManager;
@@ -16,7 +15,7 @@ import io.openems.edge.generator.api.ControlMode;
 import io.openems.edge.generator.api.Electrolyzer;
 import io.openems.edge.generator.api.ElectrolyzerModbusGeneric;
 import io.openems.edge.generator.api.Generator;
-import io.openems.edge.generator.api.GeneratorModbusGeneric;
+import io.openems.edge.generator.api.GeneratorModbus;
 import io.openems.edge.heater.Heater;
 import io.openems.edge.timer.api.TimerHandler;
 import io.openems.edge.timer.api.TimerHandlerImpl;
@@ -49,10 +48,10 @@ import java.util.Arrays;
 @Component(name = "Generator.Modbus.HydrogenGenerator.Electrolyzer.Generic",
         immediate = true,
         configurationPolicy = ConfigurationPolicy.REQUIRE,
-        properties = {EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE,
+        property = {EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE,
                 EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS})
 public class GenericModbusElectrolyzerImpl extends AbstractGenericModbusComponent implements Electrolyzer, OpenemsComponent,
-        Heater, ExceptionalState, EventHandler, Generator, GeneratorModbusGeneric, ElectrolyzerModbusGeneric {
+        Heater, ExceptionalState, EventHandler, Generator, GeneratorModbus, ElectrolyzerModbusGeneric {
 
     private final Logger log = LoggerFactory.getLogger(GenericModbusElectrolyzerImpl.class);
 
@@ -71,7 +70,6 @@ public class GenericModbusElectrolyzerImpl extends AbstractGenericModbusComponen
     ComponentManager cpm;
     private boolean isRunning;
 
-    // This is essential for Modbus to work, but the compiler does not warn you when it is missing!
     @Reference(policy = ReferencePolicy.STATIC, policyOption = ReferencePolicyOption.GREEDY, cardinality = ReferenceCardinality.MANDATORY)
     protected void setModbus(BridgeModbus modbus) {
         super.setModbus(modbus);
@@ -81,7 +79,7 @@ public class GenericModbusElectrolyzerImpl extends AbstractGenericModbusComponen
         super(OpenemsComponent.ChannelId.values(),
                 Electrolyzer.ChannelId.values(),
                 ElectrolyzerModbusGeneric.ChannelId.values(),
-                GeneratorModbusGeneric.ChannelId.values(),
+                GeneratorModbus.ChannelId.values(),
                 Generator.ChannelId.values(),
                 Heater.ChannelId.values(),
                 ExceptionalState.ChannelId.values());
@@ -94,7 +92,7 @@ public class GenericModbusElectrolyzerImpl extends AbstractGenericModbusComponen
         this.config = config;
         super.activate(context, config.id(), config.alias(), config.enabled(), config.modbusUnitId(), this.cm, config.modbusBridgeId(), this.cpm, Arrays.asList(config.configurationList()));
         if (super.update(this.cm, "channelIds", new ArrayList<>(this.channels()), this.config.channelIds().length)) {
-            baseConfiguration();
+            this.baseConfiguration();
         }
 
     }

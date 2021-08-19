@@ -48,8 +48,6 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     @AttributeDefinition(name = "Channel Ids", description = "These will be filled in automatically and shows the supported channel")
     String[] channelIds();
 
-
-
     @AttributeDefinition(name = "Task Types", description = "This will be filled in automatically and shows the available "
             + "Types (Read and Write Coil and Register)")
     String[] taskType();
