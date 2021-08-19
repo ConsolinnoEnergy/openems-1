@@ -39,7 +39,7 @@ public interface GeneratorModbusGeneric extends OpenemsComponent {
      *
      * @return the Channel
      */
-    default Channel<Long> getPowerLongChannel() {
+    default Channel<Long> _getPowerLongChannel() {
         return this.channel(ChannelId.POWER_LONG);
     }
 
@@ -49,8 +49,28 @@ public interface GeneratorModbusGeneric extends OpenemsComponent {
      *
      * @return the Channel
      */
-    default Channel<Double> getPowerDoubleChannel() {
+    default Channel<Double> _getPowerDoubleChannel() {
         return this.channel(ChannelId.POWER_DOUBLE);
+    }
+
+    /**
+     * Checks if the Generator has a Reading Power set. After that the stored value will be written to the actual {@link Generator}
+     * Only call this within the implementing Class.
+     * @return the channel that contains the value or else null.
+     */
+    default Channel<?> _hasPower() {
+        return getValueDefinedChannel(this._getPowerDoubleChannel(), this._getPowerLongChannel());
+    }
+
+
+    static Channel<?> getValueDefinedChannel(Channel<?> firstChannel, Channel<?> secondChannel) {
+        if (firstChannel.getNextValue().isDefined()) {
+            return firstChannel;
+        } else if (secondChannel.getNextValue().isDefined()) {
+            return secondChannel;
+        } else {
+            return null;
+        }
     }
 
 

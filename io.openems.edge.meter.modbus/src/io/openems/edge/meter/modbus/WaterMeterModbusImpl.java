@@ -40,7 +40,7 @@ import java.util.Arrays;
 @Component(name = "Meter.Modbus.Meter.Water.Generic", immediate = true,
         configurationPolicy = ConfigurationPolicy.REQUIRE,
         property = {EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE})
-public class WaterMeterModbus extends AbstractGenericModbusComponent implements OpenemsComponent, WaterMeter, Meter, MeterModbusGeneric, WaterMeterModbusGeneric, EventHandler {
+public class WaterMeterModbusImpl extends AbstractGenericModbusComponent implements OpenemsComponent, WaterMeter, Meter, MeterModbusGeneric, WaterMeterModbusGeneric, EventHandler {
 
     @Reference
     protected ConfigurationAdmin cm;
@@ -56,7 +56,7 @@ public class WaterMeterModbus extends AbstractGenericModbusComponent implements 
     private WaterMeterConfig config;
 
 
-    public WaterMeterModbus() {
+    public WaterMeterModbusImpl() {
         super(OpenemsComponent.ChannelId.values(),
                 WaterMeter.ChannelId.values(),
                 WaterMeterModbusGeneric.ChannelId.values(),

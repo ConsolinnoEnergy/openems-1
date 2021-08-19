@@ -46,7 +46,7 @@ public interface ElectrolyzerModbusGeneric extends GeneratorModbusGeneric{
      *
      * @return the Channel
      */
-    default Channel<Long> getWMZPowerLongChannel() {
+    default Channel<Long> _getWMZPowerLongChannel() {
         return this.channel(ChannelId.WMZ_POWER_LONG);
     }
 
@@ -55,8 +55,17 @@ public interface ElectrolyzerModbusGeneric extends GeneratorModbusGeneric{
      *
      * @return the Channel
      */
-    default Channel<Double> getWMZPowerDoubleChannel() {
+    default Channel<Double> _getWMZPowerDoubleChannel() {
         return this.channel(ChannelId.WMZ_POWER_DOUBLE);
+    }
+
+    /**
+     * Checks if the Electrolyzer has a WMZ Power set. After that the stored value will be written to the actual {@link Electrolyzer}
+     * Only call this within the implementing Class.
+     * @return the channel that contains the value or else null.
+     */
+    default Channel<?> _hasWMZPower() {
+        return GeneratorModbusGeneric.getValueDefinedChannel(this._getWMZPowerDoubleChannel(), this._getWMZPowerLongChannel());
     }
 
     /**
@@ -64,7 +73,7 @@ public interface ElectrolyzerModbusGeneric extends GeneratorModbusGeneric{
      *
      * @return the Channel
      */
-    default Channel<Long> getWMZTempSinkLongChannel() {
+    default Channel<Long> _getWMZTempSinkLongChannel() {
         return this.channel(ChannelId.WMZ_TEMP_SINK_LONG);
     }
 
@@ -73,8 +82,19 @@ public interface ElectrolyzerModbusGeneric extends GeneratorModbusGeneric{
      *
      * @return the Channel
      */
-    default Channel<Double> getWMZTempSinkDoubleChannel() {
+    default Channel<Double> _getWMZTempSinkDoubleChannel() {
         return this.channel(ChannelId.WMZ_TEMP_SINK_DOUBLE);
+    }
+
+
+
+    /**
+     * Checks if the Electrolyzer has a WMZ Temp Sink set. After that the stored value will be written to the actual {@link Electrolyzer}
+     * Only call this within the implementing Class.
+     * @return the channel that contains the value or else null.
+     */
+    default Channel<?> _hasWMZTempSink() {
+        return GeneratorModbusGeneric.getValueDefinedChannel(this._getWMZTempSinkLongChannel(), this._getWMZTempSinkDoubleChannel());
     }
 
 
@@ -83,7 +103,7 @@ public interface ElectrolyzerModbusGeneric extends GeneratorModbusGeneric{
      *
      * @return the Channel
      */
-    default Channel<Long> getWMZTempSourceLongChannel() {
+    default Channel<Long> _getWMZTempSourceLongChannel() {
         return this.channel(ChannelId.WMZ_TEMP_SOURCE_LONG);
     }
 
@@ -92,16 +112,27 @@ public interface ElectrolyzerModbusGeneric extends GeneratorModbusGeneric{
      *
      * @return the Channel
      */
-    default Channel<Double> getWMZTempSourceDoubleChannel() {
+    default Channel<Double> _getWMZTempSourceDoubleChannel() {
         return this.channel(ChannelId.WMZ_TEMP_SOURCE_DOUBLE);
     }
+
+
+    /**
+     * Checks if the Electrolyzer has a WMZ Temp Source set. After that the stored value will be written to the actual {@link Electrolyzer}
+     * Only call this within the implementing Class.
+     * @return the channel that contains the value or else null.
+     */
+    default Channel<?> _hasWMZTempSource() {
+        return GeneratorModbusGeneric.getValueDefinedChannel(this._getWMZTempSourceLongChannel(), this._getWMZTempSourceDoubleChannel());
+    }
+
 
     /**
      * Gets the Channel for {@link ChannelId#WMZ_ENERGY_PRODUCED_LONG}.
      *
      * @return the Channel
      */
-    default Channel<Long> getWMZEnergyProducedLongChannel() {
+    default Channel<Long> _getWMZEnergyProducedLongChannel() {
         return this.channel(ChannelId.WMZ_ENERGY_PRODUCED_LONG);
     }
 
@@ -110,8 +141,17 @@ public interface ElectrolyzerModbusGeneric extends GeneratorModbusGeneric{
      *
      * @return the Channel
      */
-    default Channel<Double> getWMZEnergyProducedDoubleChannel() {
+    default Channel<Double> _getWMZEnergyProducedDoubleChannel() {
         return this.channel(ChannelId.WMZ_ENERGY_PRODUCED_DOUBLE);
+    }
+
+    /**
+     * Checks if the Electrolyzer has a WMZ Energy Produced set. After that the stored value will be written to the actual {@link Electrolyzer}
+     * Only call this within the implementing Class.
+     * @return the channel that contains the value or else null.
+     */
+    default Channel<?> _hasWMZEnergyProduced() {
+        return GeneratorModbusGeneric.getValueDefinedChannel(this._getWMZEnergyProducedLongChannel(), this._getWMZEnergyProducedDoubleChannel());
     }
 
     /**
@@ -119,7 +159,7 @@ public interface ElectrolyzerModbusGeneric extends GeneratorModbusGeneric{
      *
      * @return the Channel
      */
-    default WriteChannel<Long> getPowerPercentLongChannel() {
+    default WriteChannel<Long> _getPowerPercentLongChannel() {
         return this.channel(ChannelId.POWER_PERCENT_LONG);
     }
 
@@ -128,8 +168,18 @@ public interface ElectrolyzerModbusGeneric extends GeneratorModbusGeneric{
      *
      * @return the Channel
      */
-    default WriteChannel<Long> getPowerPercentDoubleChannel() {
+    default WriteChannel<Long> _getPowerPercentDoubleChannel() {
         return this.channel(ChannelId.POWER_PERCENT_DOUBLE);
     }
+
+    /**
+     * Checks if the Electrolyzer has a WMZ Energy Produced set. After that the stored value will be written to the actual {@link Electrolyzer}
+     * Only call this within the implementing Class.
+     * @return the channel that contains the value or else null.
+     */
+    default Channel<?> _hasPowerPercent() {
+        return GeneratorModbusGeneric.getValueDefinedChannel(this._getPowerPercentLongChannel(), this._getPowerPercentDoubleChannel());
+    }
+
 
 }

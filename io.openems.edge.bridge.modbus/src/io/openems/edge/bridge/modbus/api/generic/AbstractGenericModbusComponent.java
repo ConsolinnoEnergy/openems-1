@@ -1,5 +1,6 @@
 package io.openems.edge.bridge.modbus.api.generic;
 
+import io.openems.common.exceptions.OpenemsError;
 import io.openems.common.exceptions.OpenemsException;
 import io.openems.edge.bridge.modbus.api.AbstractOpenemsModbusComponent;
 import io.openems.edge.bridge.modbus.api.ModbusProtocol;
@@ -18,6 +19,8 @@ import io.openems.edge.bridge.modbus.api.task.FC4ReadInputRegistersTask;
 import io.openems.edge.bridge.modbus.api.task.FC5WriteCoilTask;
 import io.openems.edge.bridge.modbus.api.task.FC6WriteRegisterTask;
 import io.openems.edge.common.channel.Channel;
+import io.openems.edge.common.channel.ChannelId;
+import io.openems.edge.common.channel.WriteChannel;
 import io.openems.edge.common.channel.value.Value;
 import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
@@ -35,6 +38,7 @@ import java.util.Dictionary;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
@@ -490,5 +494,49 @@ public abstract class AbstractGenericModbusComponent extends AbstractOpenemsModb
                 }
             }
         }
+    }
+
+
+    /**
+     * Writes from the real Channel entry to the ModbusChannel.
+     *
+     * @param target the targetChannel to update the Value to
+     * @param source the source Channel where the original Value is written
+     */
+    protected boolean handleChannelWriteFromOriginalToModbus(WriteChannel<?> target, WriteChannel<?> source) {
+
+        if (this.modbusConfig.containsKey(target.channelId())) {
+            Optional<?> targetValue = source.getNextWriteValue();
+            if (targetValue.isPresent()) {
+                try {
+                    switch (source.channelDoc().getType()) {
+                        case BOOLEAN:
+                        case STRING:
+                            target.setNextWriteValueFromObject(targetValue.get());
+                            break;
+                        case SHORT:
+                        case INTEGER:
+                        case LONG:
+                        case FLOAT:
+                        case DOUBLE:
+                            int scaleFactor = this.modbusConfig.get(target.channelId()).getStringLengthOrScaleFactor();
+                            target.setNextWriteValueFromObject(((Double) targetValue.get() * Math.pow(10, scaleFactor)));
+                            break;
+                    }
+                } catch (OpenemsError.OpenemsNamedException e) {
+                    this.log.warn("Couldn't find target Channel, please check your configuration/Component/Code: " + e.getMessage());
+                    return false;
+                }
+            } else {
+                this.log.info("No TargetValue for nextWrite Available: " + target.channelId());
+            }
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    protected Map<io.openems.edge.common.channel.ChannelId, ModbusConfigWrapper> getModbusConfig() {
+        return this.modbusConfig;
     }
 }

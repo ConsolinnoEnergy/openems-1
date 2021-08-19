@@ -1,5 +1,6 @@
 package io.openems.edge.generator.electrolyzer;
 
+import io.openems.edge.generator.api.ElectrolyzerAccessMode;
 import io.openems.edge.generator.api.ControlMode;
 import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
@@ -23,6 +24,7 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
     @AttributeDefinition(name = "Modbus Register Enable Signal", description = "Modbus Register for Enabling the Electrolyzer")
     int modbusRegisterEnableSignal() default -1;
+
     @AttributeDefinition(name = "Modbus Register Power Write", description = "Modbus Register for Power Write")
     int modbusRegisterWritePower() default -1;
 
@@ -46,6 +48,8 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     @AttributeDefinition(name = "Channel Ids", description = "These will be filled in automatically and shows the supported channel")
     String[] channelIds();
 
+
+
     @AttributeDefinition(name = "Task Types", description = "This will be filled in automatically and shows the available "
             + "Types (Read and Write Coil and Register)")
     String[] taskType();
@@ -65,6 +69,10 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
             + "Priorities are by default LOW and are only needed by Read Coils and Inputs"
             + "In any way the last entry should always be the Length of an expected String OR the ScaleFactor. (10^ScaleFactor)")
     String[] configurationList() default {"Power:1:READ_REGISTER:WORD_TYPE:HIGH:2"};
+
+    ControlMode controlMode() default ControlMode.READ;
+
+    ElectrolyzerAccessMode accessMode() default ElectrolyzerAccessMode.HEATER;
 
     boolean enabled() default true;
 
