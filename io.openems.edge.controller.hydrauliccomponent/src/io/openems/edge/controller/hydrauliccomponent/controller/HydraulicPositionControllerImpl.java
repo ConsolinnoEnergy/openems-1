@@ -56,6 +56,8 @@ public class HydraulicPositionControllerImpl extends AbstractOpenemsComponent im
     private static final String MIN_RUN_TIME_AFTER_FALLBACK_IDENTIFIER = "VALVE_CONTROLLER_STATIC_MIN_RUN_TIME_IDENTIFIER";
     private TimerHandler timer;
     private boolean isRunning = false;
+    private String componentId;
+    private String thermometerId;
 
 
     private DateTime initialTimeStamp;
@@ -68,61 +70,66 @@ public class HydraulicPositionControllerImpl extends AbstractOpenemsComponent im
     }
 
     @Activate
-    public void activate(ComponentContext context, Config config) throws ConfigurationException, OpenemsError.OpenemsNamedException {
+    void activate(ComponentContext context, Config config) throws ConfigurationException, OpenemsError.OpenemsNamedException {
+        try {
+            if (config.enabled() == false) {
+                return;
+            }
+            this.componentId = config.componentToControl();
+            this.thermometerId = config.thermometerId();
+            if (this.cpm.getComponent(config.componentToControl()) instanceof HydraulicComponent) {
+                this.controlledComponent = this.cpm.getComponent(this.componentId);
+            } else {
+                //    throw new ConfigurationException("ActivateMethod HydraulicPositionController", config.componentToControl() + " Not an instance of HydraulicComponent");
+            }
+            ControlType controlTypeOfThisRun = this.getControlType();
+
+            this.controlType = controlTypeOfThisRun != null ? controlTypeOfThisRun : ControlType.TEMPERATURE;
+
+
+            OpenemsComponent componentToFetch = this.cpm.getComponent(config.thermometerId());
+            if (componentToFetch instanceof Thermometer) {
+                this.referenceThermometer = (Thermometer) componentToFetch;
+            } else {
+                     throw new ConfigurationException("Activate of HydraulicPositionController", "Instance of "
+                             + config.thermometerId() + " is not a Thermometer");
+            }
+        } catch (Exception e) {
+        }
+            ConfigurationException[] exceptions = {null};
+            //Split entry: temperature:ValueOfValve
+            Arrays.asList(config.temperaturePositionMap()).forEach(entry -> {
+                if (exceptions[0] == null && entry.contains(":") && entry.equals("") == false) {
+                    try {
+                        String[] entries = entry.split(":");
+                        if (entries.length != ENTRY_LENGTH) {
+                            throw new ConfigurationException("activate StaticValveController", "Entries: " + entries.length + " expected : " + ENTRY_LENGTH);
+                        }
+                        int temperature = Integer.parseInt(entries[0]);
+                        double valvePosition = Double.parseDouble(entries[1]);
+                        this.hydraulicPositionList.add(new HydraulicPosition(temperature, valvePosition));
+                    } catch (ConfigurationException e) {
+                        exceptions[0] = e;
+                    }
+                }
+            });
+            this.hydraulicPositionList.add(new HydraulicPosition(1000, config.defaultPosition()));
+            if (exceptions[0] != null) {
+                throw exceptions[0];
+            }
+            if (ControlType.contains(config.controlType().toUpperCase().trim())) {
+                this.controlType = ControlType.valueOf(config.controlType().toUpperCase().trim());
+            } else {
+                throw new ConfigurationException("ControlTypeConfig", config.controlType() + " does not exist");
+            }
+            this.setAutoRun(config.autorun());
+            this.closeWhenNeitherAutoRunNorEnableSignal = config.shouldCloseWhenNoSignal();
+            this.forceAllowedChannel().setNextValue(config.allowForcing());
+            this.useFallback = config.useFallback();
+            this.setTimer(config);
 
         super.activate(context, config.id(), config.alias(), config.enabled());
-        if (config.enabled() == false) {
-            return;
-        }
-        if (this.cpm.getComponent(config.componentToControl()) instanceof HydraulicComponent) {
 
-            this.controlledComponent = this.cpm.getComponent(config.componentToControl());
-        } else {
-            throw new ConfigurationException("ActivateMethod HydraulicPositionController", config.componentToControl() + " Not an instance of HydraulicComponent");
-        }
-        ControlType controlTypeOfThisRun = this.getControlType();
-
-        this.controlType = controlTypeOfThisRun != null ? controlTypeOfThisRun : ControlType.TEMPERATURE;
-
-
-        OpenemsComponent componentToFetch = this.cpm.getComponent(config.thermometerId());
-        if (componentToFetch instanceof Thermometer) {
-            this.referenceThermometer = (Thermometer) componentToFetch;
-        } else {
-            throw new ConfigurationException("Activate of HydraulicPositionController", "Instance of "
-                    + config.thermometerId() + " is not a Thermometer");
-        }
-        ConfigurationException[] exceptions = {null};
-        //Split entry: temperature:ValueOfValve
-        Arrays.asList(config.temperaturePositionMap()).forEach(entry -> {
-            if (exceptions[0] == null && entry.contains(":") && entry.equals("") == false) {
-                try {
-                    String[] entries = entry.split(":");
-                    if (entries.length != ENTRY_LENGTH) {
-                        throw new ConfigurationException("activate StaticValveController", "Entries: " + entries.length + " expected : " + ENTRY_LENGTH);
-                    }
-                    int temperature = Integer.parseInt(entries[0]);
-                    double valvePosition = Double.parseDouble(entries[1]);
-                    this.hydraulicPositionList.add(new HydraulicPosition(temperature, valvePosition));
-                } catch (ConfigurationException e) {
-                    exceptions[0] = e;
-                }
-            }
-        });
-        this.hydraulicPositionList.add(new HydraulicPosition(1000, config.defaultPosition()));
-        if (exceptions[0] != null) {
-            throw exceptions[0];
-        }
-        if (ControlType.contains(config.controlType().toUpperCase().trim())) {
-            this.controlType = ControlType.valueOf(config.controlType().toUpperCase().trim());
-        } else {
-            throw new ConfigurationException("ControlTypeConfig", config.controlType() + " does not exist");
-        }
-        this.setAutoRun(config.autorun());
-        this.closeWhenNeitherAutoRunNorEnableSignal = config.shouldCloseWhenNoSignal();
-        this.forceAllowedChannel().setNextValue(config.allowForcing());
-        this.useFallback = config.useFallback();
-        this.setTimer(config);
     }
 
     private void setTimer(Config config) throws OpenemsError.OpenemsNamedException, ConfigurationException {
@@ -198,39 +205,55 @@ public class HydraulicPositionControllerImpl extends AbstractOpenemsComponent im
     @Override
     public void run() throws OpenemsError.OpenemsNamedException {
         //Check Requested Position
-        checkComponentsStillEnabled();
-        //TODO Do getNextWriteValueAndReset!
-        if (this.isEnabledOrAutoRun()) {
-            this.isRunning = true;
-            //check for forceOpen/Close
-            if (forceAllowed()) {
-                if (isForcedOpen()) {
-                    this.forceOpenValve();
-                } else if (isForcedClose()) {
-                    this.forceCloseValve();
+        if (this.controlledComponent == null || this.referenceThermometer == null) {
+            try {
+                if (this.cpm.getComponent(this.componentId) instanceof HydraulicComponent) {
+                    this.controlledComponent = this.cpm.getComponent(this.componentId);
+                }
+                ControlType controlTypeOfThisRun = this.getControlType();
+
+                this.controlType = controlTypeOfThisRun != null ? controlTypeOfThisRun : ControlType.TEMPERATURE;
+
+
+                OpenemsComponent componentToFetch = this.cpm.getComponent(this.thermometerId);
+                if (componentToFetch instanceof Thermometer) {
+                    this.referenceThermometer = (Thermometer) componentToFetch;
+                }
+            }catch(Exception e){}
+        } else {
+            checkComponentsStillEnabled();
+            //TODO Do getNextWriteValueAndReset!
+            if (this.isEnabledOrAutoRun()) {
+                this.isRunning = true;
+                //check for forceOpen/Close
+                if (forceAllowed()) {
+                    if (isForcedOpen()) {
+                        this.forceOpenValve();
+                    } else if (isForcedClose()) {
+                        this.forceCloseValve();
+                    }
+                } else {
+                    switch (this.controlType) {
+                        case POSITION:
+                            int percent = this.getRequestedComponentPosition();
+                            this.setPositionByPercent(percent);
+                            break;
+                        case TEMPERATURE:
+                            int temperature = this.referenceThermometer.getTemperatureValue();
+                            this.setPositionByTemperature(temperature);
+                            break;
+                    }
                 }
             } else {
-                switch (this.controlType) {
-                    case POSITION:
-                        int percent = this.getRequestedComponentPosition();
-                        this.setPositionByPercent(percent);
-                        break;
-                    case TEMPERATURE:
-                        int temperature = this.referenceThermometer.getTemperatureValue();
-                        this.setPositionByTemperature(temperature);
-                        break;
-                }
-            }
-        } else {
-            this.isRunning = false;
-            if (this.closeWhenNeitherAutoRunNorEnableSignal) {
-                if (this.controlledComponent.getPowerLevelValue() != 0) {
-                    this.controlledComponent.setPointPowerLevelChannel().setNextValue(0);
+                this.isRunning = false;
+                if (this.closeWhenNeitherAutoRunNorEnableSignal) {
+                    if (this.controlledComponent.getPowerLevelValue() != 0) {
+                        this.controlledComponent.setPointPowerLevelChannel().setNextValue(0);
+                    }
                 }
             }
         }
     }
-
     /**
      * Checks if the Controller is allowed to Run (Either if it's autorun, the EnabledSignal is
      * Present AND true OR EnabledSignal is Missing AND fallback is active).
