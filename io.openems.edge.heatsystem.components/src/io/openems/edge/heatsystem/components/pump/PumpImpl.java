@@ -311,7 +311,7 @@ public class PumpImpl extends AbstractOpenemsComponent implements OpenemsCompone
         powerLevel = Math.max(DEFAULT_MIN_POWER_VALUE, powerLevel);
         powerLevel = Math.min(DEFAULT_MAX_POWER_VALUE, powerLevel);
         //sets pwm/aio
-        if (this.isPwmOrAio && (this.isRelay == false || changeSuccess)) {
+        if (this.isPwmOrAio && (this.isRelay == false || changeSuccess == false)) {
             changeSuccess = this.controlPercentDevice(powerLevel);
         }
         if (changeSuccess) {

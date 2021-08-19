@@ -58,7 +58,7 @@ public class HydraulicPositionControllerImpl extends AbstractOpenemsComponent im
     private boolean isRunning = false;
     private String componentId;
     private String thermometerId;
-
+    protected static final double TOLERANCE = 1.5;
 
     private DateTime initialTimeStamp;
     private boolean hadToFallbackBefore;
@@ -91,42 +91,42 @@ public class HydraulicPositionControllerImpl extends AbstractOpenemsComponent im
             if (componentToFetch instanceof Thermometer) {
                 this.referenceThermometer = (Thermometer) componentToFetch;
             } else {
-                     throw new ConfigurationException("Activate of HydraulicPositionController", "Instance of "
-                             + config.thermometerId() + " is not a Thermometer");
+                throw new ConfigurationException("Activate of HydraulicPositionController", "Instance of "
+                        + config.thermometerId() + " is not a Thermometer");
             }
         } catch (Exception e) {
         }
-            ConfigurationException[] exceptions = {null};
-            //Split entry: temperature:ValueOfValve
-            Arrays.asList(config.temperaturePositionMap()).forEach(entry -> {
-                if (exceptions[0] == null && entry.contains(":") && entry.equals("") == false) {
-                    try {
-                        String[] entries = entry.split(":");
-                        if (entries.length != ENTRY_LENGTH) {
-                            throw new ConfigurationException("activate StaticValveController", "Entries: " + entries.length + " expected : " + ENTRY_LENGTH);
-                        }
-                        int temperature = Integer.parseInt(entries[0]);
-                        double valvePosition = Double.parseDouble(entries[1]);
-                        this.hydraulicPositionList.add(new HydraulicPosition(temperature, valvePosition));
-                    } catch (ConfigurationException e) {
-                        exceptions[0] = e;
+        ConfigurationException[] exceptions = {null};
+        //Split entry: temperature:ValueOfValve
+        Arrays.asList(config.temperaturePositionMap()).forEach(entry -> {
+            if (exceptions[0] == null && entry.contains(":") && entry.equals("") == false) {
+                try {
+                    String[] entries = entry.split(":");
+                    if (entries.length != ENTRY_LENGTH) {
+                        throw new ConfigurationException("activate StaticValveController", "Entries: " + entries.length + " expected : " + ENTRY_LENGTH);
                     }
+                    int temperature = Integer.parseInt(entries[0]);
+                    double valvePosition = Double.parseDouble(entries[1]);
+                    this.hydraulicPositionList.add(new HydraulicPosition(temperature, valvePosition));
+                } catch (ConfigurationException e) {
+                    exceptions[0] = e;
                 }
-            });
-            this.hydraulicPositionList.add(new HydraulicPosition(1000, config.defaultPosition()));
-            if (exceptions[0] != null) {
-                throw exceptions[0];
             }
-            if (ControlType.contains(config.controlType().toUpperCase().trim())) {
-                this.controlType = ControlType.valueOf(config.controlType().toUpperCase().trim());
-            } else {
-                throw new ConfigurationException("ControlTypeConfig", config.controlType() + " does not exist");
-            }
-            this.setAutoRun(config.autorun());
-            this.closeWhenNeitherAutoRunNorEnableSignal = config.shouldCloseWhenNoSignal();
-            this.forceAllowedChannel().setNextValue(config.allowForcing());
-            this.useFallback = config.useFallback();
-            this.setTimer(config);
+        });
+        this.hydraulicPositionList.add(new HydraulicPosition(1000, config.defaultPosition()));
+        if (exceptions[0] != null) {
+            throw exceptions[0];
+        }
+        if (ControlType.contains(config.controlType().toUpperCase().trim())) {
+            this.controlType = ControlType.valueOf(config.controlType().toUpperCase().trim());
+        } else {
+            throw new ConfigurationException("ControlTypeConfig", config.controlType() + " does not exist");
+        }
+        this.setAutoRun(config.autorun());
+        this.closeWhenNeitherAutoRunNorEnableSignal = config.shouldCloseWhenNoSignal();
+        this.forceAllowedChannel().setNextValue(config.allowForcing());
+        this.useFallback = config.useFallback();
+        this.setTimer(config);
 
         super.activate(context, config.id(), config.alias(), config.enabled());
 
@@ -152,13 +152,13 @@ public class HydraulicPositionControllerImpl extends AbstractOpenemsComponent im
             this.hydraulicPositionList.forEach(hydraulicPosition -> {
                 //As long as position Temperature < current Temp && position temperature greater than current Position temp.
                 // e.g. Temperature is 50; current position in iteration is 45 and selected position temp was 42
-                if (hydraulicPosition.getTemperature() <= temperature && hydraulicPosition.getTemperature() > selectedPosition.get().getTemperature()) {
+                if (hydraulicPosition.getTemperature() <= temperature && hydraulicPosition.getTemperature() >= selectedPosition.get().getTemperature()) {
                     selectedPosition.set(hydraulicPosition);
                     //if current Position is greater Than temp -> check for either : selected Pos beneath temp -> select current position
                     // OR if current pos has lower temp but selected is greater than current --> select current
                     //Example: Temperature 50; selected position 45; new has 55; take 55
                     //new iteration temperature 50; selected 55; current is 52; take 52 position
-                } else if (hydraulicPosition.getTemperature() >= temperature) {
+                } else if (hydraulicPosition.getTemperature() > temperature) {
                     if (hydraulicPosition.getTemperature() <= selectedPosition.get().getTemperature()
                             && (selectedPosition.get().getTemperature() < temperature || hydraulicPosition.getTemperature() < selectedPosition.get().getTemperature())) {
                         selectedPosition.set(hydraulicPosition);
@@ -166,13 +166,16 @@ public class HydraulicPositionControllerImpl extends AbstractOpenemsComponent im
                 }
             });
             double setPosition = selectedPosition.get().getHydraulicPosition();
-            try {
-                this.controlledComponent.setPointPowerLevelChannel().setNextWriteValueFromObject(setPosition);
-            } catch (OpenemsError.OpenemsNamedException e) {
-                e.printStackTrace();
+            if (this.controlledComponent.getPowerLevelValue() + TOLERANCE < setPosition || this.controlledComponent.getPowerLevelValue() - TOLERANCE > setPosition) {
+                try {
+                    this.controlledComponent.setPointPowerLevelChannel().setNextWriteValueFromObject(setPosition);
+
+                } catch (OpenemsError.OpenemsNamedException e) {
+                    e.printStackTrace();
+                }
+                this.log.info("Setting: " + this.controlledComponent.id() + " to : " + setPosition);
+                this.setSetPointPosition((int) setPosition);
             }
-            this.log.info("Setting: " + this.controlledComponent.id() + " to : " + setPosition);
-            this.setSetPointPosition((int) setPosition);
         }
 
     }
@@ -219,7 +222,8 @@ public class HydraulicPositionControllerImpl extends AbstractOpenemsComponent im
                 if (componentToFetch instanceof Thermometer) {
                     this.referenceThermometer = (Thermometer) componentToFetch;
                 }
-            }catch(Exception e){}
+            } catch (Exception e) {
+            }
         } else {
             checkComponentsStillEnabled();
             //TODO Do getNextWriteValueAndReset!
@@ -254,6 +258,7 @@ public class HydraulicPositionControllerImpl extends AbstractOpenemsComponent im
             }
         }
     }
+
     /**
      * Checks if the Controller is allowed to Run (Either if it's autorun, the EnabledSignal is
      * Present AND true OR EnabledSignal is Missing AND fallback is active).
