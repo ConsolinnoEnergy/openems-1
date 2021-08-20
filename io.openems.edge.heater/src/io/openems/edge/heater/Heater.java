@@ -22,6 +22,7 @@ public interface Heater extends OpenemsComponent {
         SET_POINT_POWER_PERCENT(Doc.of(OpenemsType.DOUBLE).accessMode(AccessMode.READ_WRITE).unit(Unit.PERCENT).onInit(
                 channel -> ((DoubleWriteChannel) channel).onSetNextWrite(channel::setNextValue)
         )),
+        // SET THIS to get the PowerValue
         SET_POINT_POWER(Doc.of(OpenemsType.INTEGER).accessMode(AccessMode.READ_WRITE).unit(Unit.KILOWATT).onInit(
                 channel -> ((IntegerWriteChannel) channel).onSetNextWrite(channel::setNextValue)
         )),

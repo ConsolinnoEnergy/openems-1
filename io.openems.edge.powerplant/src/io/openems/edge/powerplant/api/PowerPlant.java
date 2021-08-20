@@ -4,7 +4,6 @@ import io.openems.common.channel.AccessMode;
 import io.openems.common.channel.Unit;
 import io.openems.common.types.OpenemsType;
 import io.openems.edge.common.channel.*;
-import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.generator.api.Generator;
 
 public interface PowerPlant extends Generator {
@@ -45,7 +44,7 @@ public interface PowerPlant extends Generator {
          * </ul>
          */
 
-        POWER_LEVEL_KW(Doc.of(OpenemsType.INTEGER).accessMode(AccessMode.READ_WRITE).unit(Unit.KILOWATT).onInit(
+        SET_POWER_LEVEL_KW(Doc.of(OpenemsType.INTEGER).accessMode(AccessMode.READ_WRITE).unit(Unit.KILOWATT).onInit(
                 ch -> {
                     ((IntegerWriteChannel) ch).onSetNextWrite(ch::setNextValue);
                 })),
@@ -82,7 +81,7 @@ public interface PowerPlant extends Generator {
     }
 
     default WriteChannel<Integer> getPowerLevelKiloWatt() {
-        return this.channel(ChannelId.POWER_LEVEL_KW);
+        return this.channel(ChannelId.SET_POWER_LEVEL_KW);
     }
 
     default Channel<Boolean> getErrorOccured() {
@@ -97,7 +96,7 @@ public interface PowerPlant extends Generator {
         return this.channel(ChannelId.SET_EXTERNAL_ENABLE_SIGNAL);
     }
 
-    default WriteChannel<Float> setExternalPowerLevelChannel() {
+    default WriteChannel<Float> setExternalPowerLevelPercentChannel() {
         return this.channel(ChannelId.SET_EXTERNAL_POWER_LEVEL_PERCENT);
     }
 }

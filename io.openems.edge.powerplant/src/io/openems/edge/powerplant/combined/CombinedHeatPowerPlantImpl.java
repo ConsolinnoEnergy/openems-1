@@ -1,26 +1,15 @@
 package io.openems.edge.powerplant.combined;
 
 import io.openems.common.exceptions.OpenemsError;
-import io.openems.common.exceptions.OpenemsException;
-import io.openems.edge.bridge.modbus.api.AbstractOpenemsModbusComponent;
 import io.openems.edge.bridge.modbus.api.BridgeModbus;
-import io.openems.edge.bridge.modbus.api.ElementToChannelConverter;
-import io.openems.edge.bridge.modbus.api.ModbusProtocol;
-import io.openems.edge.bridge.modbus.api.element.CoilElement;
-import io.openems.edge.bridge.modbus.api.element.UnsignedWordElement;
 import io.openems.edge.bridge.modbus.api.generic.AbstractGenericModbusComponent;
-import io.openems.edge.bridge.modbus.api.task.FC4ReadInputRegistersTask;
 
-import io.openems.edge.bridge.modbus.api.task.FC5WriteCoilTask;
-import io.openems.edge.bridge.modbus.api.task.FC6WriteRegisterTask;
 import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.common.event.EdgeEventConstants;
-import io.openems.edge.common.taskmanager.Priority;
 import io.openems.edge.exceptionalstate.api.ExceptionalState;
 import io.openems.edge.exceptionalstate.api.ExceptionalStateHandler;
 import io.openems.edge.exceptionalstate.api.ExceptionalStateHandlerImpl;
-import io.openems.edge.generator.api.ControlMode;
 import io.openems.edge.generator.api.Generator;
 import io.openems.edge.generator.api.HydrogenGenerator;
 import io.openems.edge.generator.api.HydrogenMode;
@@ -142,6 +131,27 @@ public class CombinedHeatPowerPlantImpl extends AbstractGenericModbusComponent i
         if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE)) {
             //handleChannelUpdate(Concrete..., _hasValue)
             //note -> Enable Signal stays as enable signal and hydrogen enable stays as hydrogen
+            handleChannelUpdate(this.getElectricityPowerChannel(), this._hasElectricityPower());
+            handleChannelUpdate(this.getElectricityEnergyProducedChannel(), this._hasElectricityEnergyProduced());
+            handleChannelUpdate(this.getElectricityEnergyProducedChannel(), this._hasElectricityEnergyProduced());
+            handleChannelUpdate(this.getSecurityOffGridFailChannel(), this._hasSecurityOffGridFail());
+            handleChannelUpdate(this.getSecurityOffEVUChannel(), this._hasSecurityOffEVU());
+            handleChannelUpdate(this.getSecurityOffGridFailChannel(), this._hasSecurityOffGridFail());
+            handleChannelUpdate(this.getSecurityOffEVUChannel(), this._hasSecurityOffEVU());
+            handleChannelUpdate(this.getRequiredOnExternChannel(), this._hasRequiredOnExtern());
+            handleChannelUpdate(this.getRequiredOnEVUChannel(), this._hasRequiredOnEVU());
+            handleChannelUpdate(this.getSecurityOffExternChannel(), this._hasSecurityOffExtern());
+            handleChannelUpdate(this.getHoursAfterLastServiceChannel(), this._hasHoursAfterService());
+            handleChannelUpdate(this.getTargetPowerChannel(), this._hasTargetPower());
+            handleChannelUpdate(this.getCurrentPowerChannel(), this._hasCurrentPower());
+            handleChannelUpdate(this.getWmzGasMeterPowerChannel(), this._hasWMZGasMeterPower());
+            handleChannelUpdate(this.getWmzPowerChannel(), this._hasWMZPower());
+            handleChannelUpdate(this.getWmzTempSinkChannel(), this._hasWMZTempSink());
+            handleChannelUpdate(this.getWmzTempSourceChannel(), this._hasWMZTempSource());
+            handleChannelUpdate(this.getWmzEnergyAmountChannel(), this._hasWMZEnergyAmount());
+            handleChannelUpdate(this.getMaximumKw(), this._hasMaximumKw());
+            handleChannelUpdate(this.getPowerChannel(), this._hasPower());
+
         }
 
         if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS)) {
@@ -158,14 +168,14 @@ public class CombinedHeatPowerPlantImpl extends AbstractGenericModbusComponent i
                     this.isRunning = true;
                     this.timerHandler.resetTimer(ENABLE_SIGNAL_IDENTIFIER);
                     this.writeIntoComponents(this.getEnableSignalChannel().getNextWriteValueAndReset().orElse(false),
-                            this.getSetPointPowerChannel().getNextValue().orElse(0.d), true);
+                            this.getSetPointPowerPercentChannel().getNextValue().orElse(0.d), true);
                 } else {
                     this.isRunning = false;
                     this.writeIntoComponents(false, 0.d, false);
                 }
 
                 //update WriteValueToModbus
-
+                this.updateWriteValueToModbus();
 
             } catch (OpenemsError.OpenemsNamedException e) {
                 this.log.warn("Couldn't proceed to write EnableSignal etc in " + super.id() + " Reason: " + e.getMessage());
@@ -174,9 +184,31 @@ public class CombinedHeatPowerPlantImpl extends AbstractGenericModbusComponent i
 
     }
 
+    private void updateWriteValueToModbus() {
+        if (this.getPowerLevelKiloWatt().getNextWriteValue().isPresent()) {
+            this.getPowerLevelKiloWatt().setNextValue(this.getPowerLevelKiloWatt().getNextWriteValue().get());
+            if (this.getModbusConfig().containsKey(this._setPowerLevelKwLongChannel().channelId())) {
+                this.handleChannelWriteFromOriginalToModbus(this._setPowerLevelKwLongChannel(), this.getPowerLevelKiloWatt());
+            } else if (this.getModbusConfig().containsKey(this._setPowerLevelKwDoubleChannel().channelId())) {
+                this.handleChannelWriteFromOriginalToModbus(this._setPowerLevelKwDoubleChannel(), this.getPowerLevelKiloWatt());
+            }
+        }
+        if (this.setExternalPowerLevelPercentChannel().getNextWriteValue().isPresent()) {
+            this.setExternalPowerLevelPercentChannel().setNextValue(this.setExternalPowerLevelPercentChannel().getNextWriteValue().get());
+            if (this.getModbusConfig().containsKey(this._setPowerLevelPercentDoubleChannel().channelId())) {
+                this.handleChannelWriteFromOriginalToModbus(this._setPowerLevelPercentDoubleChannel(), this.setExternalPowerLevelPercentChannel());
+            } else if (this.getModbusConfig().containsKey(this._setPowerLevelPercentLongChannel().channelId())) {
+                this.handleChannelWriteFromOriginalToModbus(this._setPowerLevelPercentLongChannel(), this.setExternalPowerLevelPercentChannel());
+            }
+        }
+    }
+
     private void writeIntoComponents(Boolean enableSignal, Double powerPercent, boolean hydrogenUse) throws OpenemsError.OpenemsNamedException {
         this.setExternalEnableSignalChannel().setNextWriteValueFromObject(enableSignal);
-        this.setExternalPowerLevelChannel().setNextWriteValueFromObject(powerPercent);
+        if (enableSignal && powerPercent <= 0) {
+            powerPercent = null;
+        }
+        this.setExternalPowerLevelPercentChannel().setNextWriteValueFromObject(powerPercent);
         if (this.hydrogenMode.equals(HydrogenMode.ACTIVE)) {
             this.getEnableHydrogenUse().setNextWriteValueFromObject(hydrogenUse);
         }

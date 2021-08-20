@@ -6,8 +6,6 @@ import io.openems.common.types.OpenemsType;
 import io.openems.edge.common.channel.Channel;
 import io.openems.edge.common.channel.Doc;
 
-import io.openems.edge.common.component.OpenemsComponent;
-
 public interface CombinedHeatPowerPlant extends PowerPlant {
     enum ChannelId implements io.openems.edge.common.channel.ChannelId {
 
@@ -24,7 +22,7 @@ public interface CombinedHeatPowerPlant extends PowerPlant {
         WMZ_TEMP_SOURCE(Doc.of(OpenemsType.FLOAT).unit(Unit.DEGREE_CELSIUS).accessMode(AccessMode.READ_ONLY)),
         WMZ_TEMP_SINK(Doc.of(OpenemsType.FLOAT).unit(Unit.DEGREE_CELSIUS).accessMode(AccessMode.READ_ONLY)),
         WMZ_POWER(Doc.of(OpenemsType.FLOAT).unit(Unit.KILOWATT).accessMode(AccessMode.READ_ONLY)),
-        WMZ_GAS_METER(Doc.of(OpenemsType.FLOAT).accessMode(AccessMode.READ_ONLY)),
+        WMZ_GAS_METER_POWER(Doc.of(OpenemsType.FLOAT).accessMode(AccessMode.READ_ONLY)),
         GAS_KIND(Doc.of(OpenemsType.FLOAT).accessMode(AccessMode.READ_ONLY)),
         CURRENT_POWER(Doc.of(OpenemsType.FLOAT).accessMode(AccessMode.READ_ONLY)),
         TARGET_POWER(Doc.of(OpenemsType.FLOAT).accessMode(AccessMode.READ_ONLY)),
@@ -149,12 +147,12 @@ public interface CombinedHeatPowerPlant extends PowerPlant {
     }
 
     /**
-     * Gets the Channel for {@link ChannelId#WMZ_GAS_METER}.
+     * Gets the Channel for {@link ChannelId#WMZ_GAS_METER_POWER}.
      *
      * @return the Channel
      */
-    default Channel<Float> getWmzGasMeterChannel() {
-        return this.channel(ChannelId.WMZ_GAS_METER);
+    default Channel<Float> getWmzGasMeterPowerChannel() {
+        return this.channel(ChannelId.WMZ_GAS_METER_POWER);
     }
 
     /**

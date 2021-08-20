@@ -506,7 +506,7 @@ public abstract class AbstractGenericModbusComponent extends AbstractOpenemsModb
     protected boolean handleChannelWriteFromOriginalToModbus(WriteChannel<?> target, WriteChannel<?> source) {
 
         if (this.modbusConfig.containsKey(target.channelId())) {
-            Optional<?> targetValue = source.getNextWriteValue();
+            Optional<?> targetValue = source.getNextWriteValueAndReset();
             if (targetValue.isPresent()) {
                 try {
                     switch (source.channelDoc().getType()) {
