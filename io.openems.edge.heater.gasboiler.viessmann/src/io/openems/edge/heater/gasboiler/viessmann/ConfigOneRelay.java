@@ -22,7 +22,7 @@ import org.osgi.service.metatype.annotations.Option;
     String relayId() default "relay0";
 
     @AttributeDefinition(name = "Wait time EnableSignal", description = "How long to wait after the EnableSignal is "
-            + "no longer received before the Chp is switched off. Unit is seconds, unless cycles option is selected.")
+            + "no longer received before the heater is switched off. Unit is seconds, unless cycles option is selected.")
     int waitTimeEnableSignal() default 30;
 
     @AttributeDefinition(name = "EnableSignal timer unit is cycles not seconds", description = "Use OpenEMS cycles "
@@ -34,7 +34,7 @@ import org.osgi.service.metatype.annotations.Option;
     boolean useExceptionalState() default false;
 
     @AttributeDefinition(name = "Wait time ExceptionalState", description = "How long to wait after the Exceptional "
-            + "State Active Signal is no longer received before the heat pump leaves the Exceptional State. Unit is "
+            + "State Active Signal is no longer received before the heater leaves the Exceptional State. Unit is "
             + "seconds, unless cycles option is selected.")
     int waitTimeExceptionalState() default 30;
 

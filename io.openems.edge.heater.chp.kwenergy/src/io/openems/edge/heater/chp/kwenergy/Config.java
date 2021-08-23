@@ -45,7 +45,7 @@ import org.osgi.service.metatype.annotations.Option;
     boolean useExceptionalState() default false;
 
     @AttributeDefinition(name = "Wait time ExceptionalState", description = "How long to wait after the Exceptional "
-            + "State Active Signal is no longer received before the heat pump leaves the Exceptional State. Unit is "
+            + "State Active Signal is no longer received before the chp leaves the Exceptional State. Unit is "
             + "seconds, unless cycles option is selected.")
     int waitTimeExceptionalState() default 30;
 

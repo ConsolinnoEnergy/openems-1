@@ -434,6 +434,8 @@ public class ChpKwEnergySmartblockImpl extends AbstractOpenemsModbusComponent im
 			// Determine state of Chp before sending commands. Don't send commands if state is undetermined.
 			boolean readyForCommands = this.connectionAlive && statusBits1to16received;
 
+			boolean exceptionalStateActive = false;
+			int exceptionalStateValue = 0;
 			if (this.useEnableSignal || this.useExceptionalState) {
 
 				// Handle EnableSignal.
@@ -442,8 +444,6 @@ public class ChpKwEnergySmartblockImpl extends AbstractOpenemsModbusComponent im
 				}
 
 				// Handle ExceptionalState. ExceptionalState overwrites EnableSignal.
-				int exceptionalStateValue = 0;
-				boolean exceptionalStateActive = false;
 				if (this.useExceptionalState) {
 					exceptionalStateActive = this.exceptionalStateHandler.exceptionalStateActive(this);
 					if (exceptionalStateActive) {
@@ -456,6 +456,8 @@ public class ChpKwEnergySmartblockImpl extends AbstractOpenemsModbusComponent im
 							this.turnOnChp = true;
 							if (exceptionalStateValue > 100) {
 								exceptionalStateValue = 100;
+							} else if (exceptionalStateValue < 0) {
+								exceptionalStateValue = 0;
 							}
 						}
 					}
@@ -482,32 +484,38 @@ public class ChpKwEnergySmartblockImpl extends AbstractOpenemsModbusComponent im
 						}
 					}
 				}
-
 			}
 
 			if (readyForCommands) {
 
-				// Map EffectiveElectricPowerSetpoint channel from Chp interface.
-				if (getElectricPowerSetpointChannel().getNextWriteValue().isPresent()) {
-					int setpointValue = getElectricPowerSetpointChannel().getNextWriteValue().get();
-					if (setpointValue > this.maxChpPower) {
-						setpointValue = this.maxChpPower;
-					}
-					if (setpointValue < this.maxChpPower / 2) {
-						setpointValue = this.maxChpPower / 2;
-					}
-					double calculatedPercent = 1.0 *  getElectricPowerSetpointChannel().getNextWriteValue().get() / this.maxChpPower;
-					try {
-						this.setHeatingPowerPercentSetpoint(calculatedPercent);
-						this._setElectricPowerSetpoint(setpointValue);
-					} catch (OpenemsError.OpenemsNamedException e) {
-						this.log.warn("Couldn't write in Channel " + e.getMessage());
-					}
-				}
-
 				// Send command bits, based on settings. ’turnOnChp’ can be set to true by config, EnableSignal or ExceptionalState.
 				int commandBits1to16 = 0;
 				if (this.turnOnChp) {
+
+					// Map EffectiveElectricPowerSetpoint channel from Chp interface.
+					if (exceptionalStateActive == false && getElectricPowerSetpointChannel().getNextWriteValue().isPresent()) {
+						int setpointValue = getElectricPowerSetpointChannel().getNextWriteValue().get();
+						if (setpointValue > this.maxChpPower) {
+							setpointValue = this.maxChpPower;
+						}
+						if (setpointValue < this.maxChpPower / 2) {
+							setpointValue = this.maxChpPower / 2;
+						}
+						double calculatedPercent = 1.0 *  getElectricPowerSetpointChannel().getNextWriteValue().get() / this.maxChpPower;
+						try {
+							this.setHeatingPowerPercentSetpoint(calculatedPercent);
+							this._setElectricPowerSetpoint(setpointValue);
+						} catch (OpenemsError.OpenemsNamedException e) {
+							this.log.warn("Couldn't write in Channel " + e.getMessage());
+						}
+					} else if (exceptionalStateActive && exceptionalStateValue > 0) {
+						// When ExceptionalStateValue is between 0 and 100, set Chp to this PowerPercentage.
+						try {
+							this.setHeatingPowerPercentSetpoint(exceptionalStateValue);
+						} catch (OpenemsError.OpenemsNamedException e) {
+							this.log.warn("Couldn't write in Channel " + e.getMessage());
+						}
+					}
 
 					// Command bits:
 					// 0 - Steuerung über Bussystem (muss für Steuerung immer 1 sein)

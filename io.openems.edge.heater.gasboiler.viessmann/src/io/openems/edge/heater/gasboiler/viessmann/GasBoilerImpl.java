@@ -50,6 +50,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 
+// ToDo: The heater can do setpoint power percent and setpoint temperature. Currently only default values for
+//  setpoint power percent are set. Also, I do not know how exactly the heater switches between these two control modes
+
 @Designate(ocd = Config.class, factory = true)
 @Component(name = "Heater.Viessmann.GasBoiler",
         configurationPolicy = ConfigurationPolicy.REQUIRE,
@@ -69,10 +72,10 @@ public class GasBoilerImpl extends AbstractOpenemsModbusComponent implements Ope
     private boolean readOnly = false;
 
     private EnableSignalHandler enableSignalHandler;
-    private static final String ENABLE_SIGNAL_IDENTIFIER = "GASBOILER_VIESSMANN_RELAY_ENABLE_SIGNAL_IDENTIFIER";
+    private static final String ENABLE_SIGNAL_IDENTIFIER = "GASBOILER_VIESSMANN_ENABLE_SIGNAL_IDENTIFIER";
     private boolean useExceptionalState;
     private ExceptionalStateHandler exceptionalStateHandler;
-    private static final String EXCEPTIONAL_STATE_IDENTIFIER = "GASBOILER_VIESSMANN_RELAY_EXCEPTIONAL_STATE_IDENTIFIER";
+    private static final String EXCEPTIONAL_STATE_IDENTIFIER = "GASBOILER_VIESSMANN_EXCEPTIONAL_STATE_IDENTIFIER";
 
     private final String[] errorList = ErrorList.STANDARD_ERRORS.getErrorList();
 
@@ -530,10 +533,10 @@ public class GasBoilerImpl extends AbstractOpenemsModbusComponent implements Ope
                 if (exceptionalStateActive) {
                     exceptionalStateValue = this.getExceptionalStateValue();
                     if (exceptionalStateValue <= 0) {
-                        // Turn off Chp when ExceptionalStateValue = 0.
+                        // Turn off heater when ExceptionalStateValue = 0.
                         turnOnHeater = false;
                     } else {
-                        // When ExceptionalStateValue is between 0 and 100, set Chp to this PowerPercentage.
+                        // When ExceptionalStateValue is between 0 and 100, set heater to this PowerPercentage.
                         turnOnHeater = true;
                         if (exceptionalStateValue > 100) {
                             exceptionalStateValue = 100;

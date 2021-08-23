@@ -6,20 +6,22 @@ import io.openems.common.types.OpenemsType;
 import io.openems.edge.common.channel.Channel;
 import io.openems.edge.common.channel.Doc;
 import io.openems.edge.common.channel.WriteChannel;
-import io.openems.edge.heater.Heater;
+import io.openems.edge.heater.api.Heater;
 
-public interface BioMassHeater extends Heater {
+public interface MassHeaterWoodChips extends Heater {
 
     enum ChannelId implements io.openems.edge.common.channel.ChannelId {
         /*RW Channels_2 Byte_ Address 24576-24584*/
 
-        BOILER_TEMPERATURE_SET_POINT(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)
-                .accessMode(AccessMode.READ_WRITE)),
+        //BOILER_TEMPERATURE_SET_POINT(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
+        // -> Heater SET_POINT_TEMPERATURE
+
         BOILER_TEMPERATURE_MINIMAL_FORWARD(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)
                 .accessMode(AccessMode.READ_WRITE)),
-        SLIDE_IN_PERCENTAGE_VALUE_READ(Doc.of(OpenemsType.INTEGER).unit(Unit.PERCENT)),
-        SLIDE_IN_PERCENTAGE_VALUE(Doc.of(OpenemsType.INTEGER).unit(Unit.PERCENT)
-                .accessMode(AccessMode.READ_WRITE)),
+        //SLIDE_IN_PERCENTAGE_VALUE_READ(Doc.of(OpenemsType.INTEGER).unit(Unit.PERCENT)),
+        //SLIDE_IN_PERCENTAGE_VALUE(Doc.of(OpenemsType.INTEGER).unit(Unit.PERCENT).accessMode(AccessMode.READ_WRITE)),
+        SLIDE_IN_PERCENTAGE_VALUE_SETPOINT(Doc.of(OpenemsType.INTEGER).unit(Unit.PERCENT).accessMode(AccessMode.READ_WRITE)),
+
         EXHAUST_PERFORMANCE_MIN(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)
                 .accessMode(AccessMode.READ_WRITE)),
         EXHAUST_PERFORMANCE_MAX(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)
@@ -37,14 +39,26 @@ public interface BioMassHeater extends Heater {
 
         /* Read Channel 2 Byte; Address 20000-20035*/
 
-        BOILER_TEMPERATURE(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
-        REWIND_TEMPERATURE(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
+        //BOILER_TEMPERATURE(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
+        // -> Heater FLOW_TEMPERATURE
+
+        //REWIND_TEMPERATURE(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
+        // -> Heater RETURN_TEMPERATURE
+
         EXHAUST_TEMPERATURE(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
         FIRE_ROOM_TEMPERATURE(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
-        SLIDE_IN_ACTIVE(Doc.of(OpenemsType.INTEGER).unit(Unit.PERCENT)),
+
+        //SLIDE_IN_ACTIVE(Doc.of(OpenemsType.INTEGER).unit(Unit.PERCENT)),
+        // -> Heater EFFECTIVE_HEATING_POWER_PERCENT
+        // There is a second value like this, SLIDE_IN_PERCENTAGE_VALUE_READ_ONLY. I think this value is the effective
+        // value, and SLIDE_IN_PERCENTAGE_VALUE_READ_ONLY is the setpoint.
+
         OXYGEN_ACTIVE(Doc.of(OpenemsType.FLOAT).unit(Unit.PERCENT)),
         VACUUM_ACTIVE(Doc.of(OpenemsType.FLOAT).unit(Unit.PASCAL)),
-        PERFORMANCE_ACTIVE(Doc.of(OpenemsType.INTEGER).unit(Unit.KILOWATT)),
+
+        //PERFORMANCE_ACTIVE(Doc.of(OpenemsType.INTEGER).unit(Unit.KILOWATT)),
+        // -> Heater EFFECTIVE_HEATING_POWER
+
         PERFORMANCE_WM(Doc.of(OpenemsType.INTEGER).unit(Unit.KILOWATT_HOURS)),
         PERCOLATION(Doc.of(OpenemsType.INTEGER).unit(Unit.CUBICMETER_PER_HOUR)),
         REWIND_GRID(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
@@ -124,16 +138,12 @@ public interface BioMassHeater extends Heater {
         }
     }
 
-    default WriteChannel<Integer> getBoilerTemperatureSetPoint() {
-        return this.channel(ChannelId.BOILER_TEMPERATURE_SET_POINT);
-    }
-
     default WriteChannel<Integer> getBoilerTemperatureMinimalForward() {
         return this.channel(ChannelId.BOILER_TEMPERATURE_MINIMAL_FORWARD);
     }
 
-    default WriteChannel<Integer> getSlideInPercentageValue() {
-        return this.channel(ChannelId.SLIDE_IN_PERCENTAGE_VALUE);
+    default WriteChannel<Integer> getSlideInPercentageValueSetpoint() {
+        return this.channel(ChannelId.SLIDE_IN_PERCENTAGE_VALUE_SETPOINT);
     }
 
     default WriteChannel<Integer> getExhaustPerformanceMin() {
@@ -160,14 +170,6 @@ public interface BioMassHeater extends Heater {
         return this.channel(ChannelId.SLIDE_IN_MAX);
     }
 
-    default Channel<Integer> getBoilerTemperature() {
-        return this.channel(ChannelId.BOILER_TEMPERATURE);
-    }
-
-    default Channel<Integer> getRewindTemperature() {
-        return this.channel(ChannelId.REWIND_TEMPERATURE);
-    }
-
     default Channel<Integer> getExhaustTemperature() {
         return this.channel(ChannelId.EXHAUST_TEMPERATURE);
     }
@@ -176,20 +178,12 @@ public interface BioMassHeater extends Heater {
         return this.channel(ChannelId.FIRE_ROOM_TEMPERATURE);
     }
 
-    default Channel<Integer> getSlideInAcitve() {
-        return this.channel(ChannelId.SLIDE_IN_ACTIVE);
-    }
-
     default Channel<Float> getOxygenActive() {
         return this.channel(ChannelId.OXYGEN_ACTIVE);
     }
 
     default Channel<Float> getVacuumActive() {
         return this.channel(ChannelId.VACUUM_ACTIVE);
-    }
-
-    default Channel<Integer> getPerformanceActive() {
-        return this.channel(ChannelId.PERFORMANCE_ACTIVE);
     }
 
     default Channel<Integer> getPerformanceWM() {

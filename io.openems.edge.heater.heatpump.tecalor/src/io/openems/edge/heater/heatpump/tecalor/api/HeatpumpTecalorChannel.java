@@ -179,7 +179,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGrid {
          *      <li> Unit: Decimal degree Kelvin
          * </ul>
          */
-        IR524_GEBLAESEISTTEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_KELVIN)),
+        IR524_GEBLAESEISTTEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZI_KELVIN)),
 
         /**
          * Ventilation cooling temperature, setpoint.
@@ -188,7 +188,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGrid {
          *      <li> Unit: Decimal degree Kelvin
          * </ul>
          */
-        IR525_GEBLAESESOLLTEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_KELVIN)),
+        IR525_GEBLAESESOLLTEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZI_KELVIN)),
 
         /**
          * Surface cooling temperature.
@@ -197,7 +197,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGrid {
          *      <li> Unit: Decimal degree Kelvin
          * </ul>
          */
-        IR526_FLAECHEISTTEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_KELVIN)),
+        IR526_FLAECHEISTTEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZI_KELVIN)),
 
         /**
          * Surface cooling temperature, setpoint.
@@ -206,7 +206,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGrid {
          *      <li> Unit: Decimal degree Kelvin
          * </ul>
          */
-        IR527_FLAECHESOLLTEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_KELVIN)),
+        IR527_FLAECHESOLLTEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZI_KELVIN)),
 
         /**
          * Status bits.
@@ -648,7 +648,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGrid {
          *      <li> Unit: Decimal degree Kelvin
          * </ul>
          */
-        HR1515_HYSTERESEVORLAUFTEMPFLAECHENKUEHLUNG(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_KELVIN).accessMode(AccessMode.READ_WRITE)),
+        HR1515_HYSTERESEVORLAUFTEMPFLAECHENKUEHLUNG(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZI_KELVIN).accessMode(AccessMode.READ_WRITE)),
 
         /**
          * Cooling: Room temperature setpoint, surface cooling.
@@ -675,7 +675,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGrid {
          *      <li> Unit: Decimal degree Kelvin
          * </ul>
          */
-        HR1518_HYSTERESEVORLAUFTEMPGEBLAESEKUEHLUNG(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_KELVIN).accessMode(AccessMode.READ_WRITE)),
+        HR1518_HYSTERESEVORLAUFTEMPGEBLAESEKUEHLUNG(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZI_KELVIN).accessMode(AccessMode.READ_WRITE)),
 
         /**
          * Cooling: Room temperature setpoint, ventilation cooling.

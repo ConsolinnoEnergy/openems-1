@@ -143,7 +143,7 @@ public class GasBoilerOneRelayImpl extends AbstractOpenemsComponent implements O
             if (exceptionalStateActive) {
                 exceptionalStateValue = this.getExceptionalStateValue();
                 if (exceptionalStateValue <= 0) {
-                    // Turn off Chp when ExceptionalStateValue = 0.
+                    // Turn off heater when ExceptionalStateValue = 0.
                     turnOnHeater = false;
                 } else {
                     turnOnHeater = true;
