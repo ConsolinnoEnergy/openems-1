@@ -72,56 +72,6 @@ public class SimulationHeaterOneRelayImpl extends AbstractOpenemsComponent imple
         super.deactivate();
     }
 
-
-    @Override
-    public boolean setPointPowerPercentAvailable() {
-        return false;
-    }
-
-    @Override
-    public boolean setPointPowerAvailable() {
-        return false;
-    }
-
-    @Override
-    public boolean setPointTemperatureAvailable() {
-        return false;
-    }
-
-    @Override
-    public int calculateProvidedPower(int demand, float bufferValue) throws OpenemsError.OpenemsNamedException {
-        return 0;
-    }
-
-    @Override
-    public int getMaximumThermalOutput() {
-        return 0;
-    }
-
-    @Override
-    public void setOffline() throws OpenemsError.OpenemsNamedException {
-        this.writeChannel.setNextWriteValue(false);
-    }
-
-    @Override
-    public boolean hasError() {
-        return false;
-    }
-
-    @Override
-    public void requestMaximumPower() {
-        try {
-            this.writeChannel.setNextWriteValue(true);
-        } catch (OpenemsError.OpenemsNamedException e) {
-            e.printStackTrace();
-        }
-    }
-
-    @Override
-    public void setIdle() {
-
-    }
-
     @Override
     public void handleEvent(Event event) {
         if (EdgeEventConstants.TOPIC_CYCLE_EXECUTE_WRITE.equals(event.getTopic())) {
