@@ -205,6 +205,7 @@
 	io.openems.edge.bridge.mqtt;version=snapshot,\
 	io.openems.edge.bridge.onewire;version=snapshot,\
 	io.openems.edge.common;version=snapshot,\
+	io.openems.edge.consolinno.evcs.limiter;version=snapshot,\
 	io.openems.edge.consolinno.leaflet;version=snapshot,\
 	io.openems.edge.controller.api;version=snapshot,\
 	io.openems.edge.controller.api.backend;version=snapshot,\
