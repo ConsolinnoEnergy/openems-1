@@ -47,6 +47,22 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Optional;
 
+/**
+ * Die Steuerung der Hackgutanlage ist etwas eigen. An/aus erfolgt über den nicht dokumentierten Coil mit Register
+ * Nummer 16387. Leistungsregelung erfolgt über den slide-in-max Regler. Slide-in ist der Einschub an Brennmaterial.
+ * Es wird nicht direkt die Einschub % eingestellt (Register 24578), sondern nur der Max Einschub limitiert.
+ * Grund: Der Kessel soll sich selber regeln und etwas Spielraum haben, damit er die Verbrennung optimal einstellen
+ * kann. Einschub-min der Anlage ist im Moment auf 40%, also weniger als das kann nicht an Einschub-max eingestellt
+ * werden. Dieser Min-Wert soll nicht verändert werden.
+ * Der Kessel hat einen Register für Vorlauf-Min, aber keinen für Vorlauf. Auf heater interface FLOW_TEMPERATURE ist die
+ * Kesseltemperatur gemapped (sollte ähnlich sein). SET_POINT_TEMPERATURE von heater.api ist dann Kesseltemperatur soll.
+ * Mir ist nicht bekannt wie der Kessel das nach-Temperatur-regeln vom nach-Einschub-regeln trennt. Es gibt keinen
+ * Register um das eine oder andere einzustellen.
+ *
+ * Für etwaige Fragen ist der Ansprechpartner bei Gilles (mittlerweile von Hargassner übernommen):
+ * Wolfgang Mampel, Tel. +43 664 8573374
+ */
+
 @Designate(ocd = Config.class, factory = true)
 @Component(name = "Heater.Gilles.WoodChip",
         immediate = true,
@@ -131,14 +147,6 @@ public class MassHeaterWoodChipsWoodChipsImpl extends AbstractOpenemsModbusCompo
 
     @Deactivate
     public void deactivate() {
-        // Turn off here, because ’EnableSignal = false’ does not turn off the heater.
-        if (this.readOnly = false) {
-            try {
-                this.getExternalControl().setNextWriteValue(false);
-            } catch (OpenemsError.OpenemsNamedException e) {
-                this.log.warn("Couldn't write in Channel " + e.getMessage());
-            }
-        }
         super.deactivate();
     }
 
@@ -217,13 +225,13 @@ public class MassHeaterWoodChipsWoodChipsImpl extends AbstractOpenemsModbusCompo
                 new FC3ReadRegistersTask(24576, Priority.HIGH,
                         m(Heater.ChannelId.SET_POINT_TEMPERATURE, new UnsignedWordElement(24576)),
                         m(MassHeaterWoodChips.ChannelId.BOILER_TEMPERATURE_MINIMAL_FORWARD, new UnsignedWordElement(24577)),
-                        m(Heater.ChannelId.SET_POINT_HEATING_POWER_PERCENT, new UnsignedWordElement(24578)),
+                        m(MassHeaterWoodChips.ChannelId.SLIDE_IN_PERCENTAGE_VALUE_SETPOINT, new UnsignedWordElement(24578)),
                         m(MassHeaterWoodChips.ChannelId.EXHAUST_PERFORMANCE_MIN, new UnsignedWordElement(24579)),
                         m(MassHeaterWoodChips.ChannelId.EXHAUST_PERFORMANCE_MAX, new UnsignedWordElement(24580)),
                         m(MassHeaterWoodChips.ChannelId.OXYGEN_PERFORMANCE_MIN, new UnsignedWordElement(24581)),
                         m(MassHeaterWoodChips.ChannelId.OXYGEN_PERFORMANCE_MAX, new UnsignedWordElement(24582)),
-                        m(MassHeaterWoodChips.ChannelId.SLIDE_IN_MIN_READ, new UnsignedWordElement(24583)),
-                        m(MassHeaterWoodChips.ChannelId.SLIDE_IN_MAX_READ, new UnsignedWordElement(24584))
+                        m(MassHeaterWoodChips.ChannelId.SLIDE_IN_MIN_SETPOINT, new UnsignedWordElement(24583)),
+                        m(MassHeaterWoodChips.ChannelId.SLIDE_IN_MAX_SETPOINT, new UnsignedWordElement(24584))
                 ),
                 new FC1ReadCoilsTask(16387, Priority.HIGH,
                         m(MassHeaterWoodChips.ChannelId.EXTERNAL_CONTROL, new CoilElement(16387)))
@@ -235,7 +243,7 @@ public class MassHeaterWoodChipsWoodChipsImpl extends AbstractOpenemsModbusCompo
                     new FC6WriteRegisterTask(24577,
                             m(MassHeaterWoodChips.ChannelId.BOILER_TEMPERATURE_MINIMAL_FORWARD, new UnsignedWordElement(24577))),
                     new FC6WriteRegisterTask(24578,
-                            m(Heater.ChannelId.SET_POINT_HEATING_POWER_PERCENT, new UnsignedWordElement(24578))),
+                            m(MassHeaterWoodChips.ChannelId.SLIDE_IN_PERCENTAGE_VALUE_SETPOINT, new UnsignedWordElement(24578))),
                     new FC6WriteRegisterTask(24579,
                             m(MassHeaterWoodChips.ChannelId.EXHAUST_PERFORMANCE_MIN, new UnsignedWordElement(24579))),
                     new FC6WriteRegisterTask(24580,
@@ -245,9 +253,9 @@ public class MassHeaterWoodChipsWoodChipsImpl extends AbstractOpenemsModbusCompo
                     new FC6WriteRegisterTask(24582,
                             m(MassHeaterWoodChips.ChannelId.OXYGEN_PERFORMANCE_MAX, new UnsignedWordElement(24582))),
                     new FC6WriteRegisterTask(24583,
-                            m(MassHeaterWoodChips.ChannelId.SLIDE_IN_MIN, new UnsignedWordElement(24583))),
+                            m(MassHeaterWoodChips.ChannelId.SLIDE_IN_MIN_SETPOINT, new UnsignedWordElement(24583))),
                     new FC6WriteRegisterTask(24584,
-                            m(MassHeaterWoodChips.ChannelId.SLIDE_IN_MAX, new UnsignedWordElement(24584))),
+                            m(MassHeaterWoodChips.ChannelId.SLIDE_IN_MAX_SETPOINT, new UnsignedWordElement(24584))),
                     new FC5WriteCoilTask(16387,
                             m(MassHeaterWoodChips.ChannelId.EXTERNAL_CONTROL, new CoilElement(16387)))
             );
@@ -264,19 +272,8 @@ public class MassHeaterWoodChipsWoodChipsImpl extends AbstractOpenemsModbusCompo
 
     protected void channelmapping() {
 
-        // Map SET_POINT_HEATING_POWER_PERCENT from Heater interface, because of the way this heater handles
-        // ’EnableSignal = false’. The heater is not turned off, instead power is set to 0%. That's why
-        // SET_POINT_HEATING_POWER_PERCENT can't go directly to Modbus.
-        Optional<Double> writeValue = this.getHeatingPowerPercentSetpointChannel().getNextWriteValueAndReset();
-        if (writeValue.isPresent()) {
-            this.powerPercentSetpoint = writeValue.get();
-            this._setHeatingPowerPercentSetpoint(this.powerPercentSetpoint);
-        }
-
         // Map warning and error.
-        boolean connectionAlive = false;
         if (this.getWarning().value().isDefined()) {
-            connectionAlive = true;
             if (this.getWarning().value().get()) {
                 this._setWarningMessage("Warning flag active.");
             } else {
@@ -312,6 +309,18 @@ public class MassHeaterWoodChipsWoodChipsImpl extends AbstractOpenemsModbusCompo
         }
 
         if (this.readOnly == false) {
+
+            // Map SET_POINT_HEATING_POWER_PERCENT from Heater interface.
+            Optional<Double> writeValue = this.getHeatingPowerPercentSetpointChannel().getNextWriteValueAndReset();
+            if (writeValue.isPresent() && this.getSlideInMinReadOnly().value().isDefined()) {
+                this.powerPercentSetpoint = writeValue.get();
+                int slideInMinValue = this.getSlideInMinReadOnly().value().get();
+                if (this.powerPercentSetpoint < slideInMinValue) {
+                    this.powerPercentSetpoint = slideInMinValue;
+                }
+                this._setHeatingPowerPercentSetpoint(this.powerPercentSetpoint);
+            }
+
             // Handle EnableSignal.
             boolean turnOnHeater = this.enableSignalHandler.deviceShouldBeHeating(this);
 
@@ -330,8 +339,6 @@ public class MassHeaterWoodChipsWoodChipsImpl extends AbstractOpenemsModbusCompo
                         turnOnHeater = true;
                         if (exceptionalStateValue > 100) {
                             exceptionalStateValue = 100;
-                        } else if (exceptionalStateValue < 0) {
-                            exceptionalStateValue = 0;
                         }
                         try {
                             this.setHeatingPowerPercentSetpoint(exceptionalStateValue);
@@ -343,6 +350,7 @@ public class MassHeaterWoodChipsWoodChipsImpl extends AbstractOpenemsModbusCompo
             }
 
             if (turnOnHeater) {
+                /* I don't think this is necessary.
                 if (this.getDisturbance().value().isDefined() && this.getDisturbance().value().get()) {
                     try {
                         this.getExternalControl().setNextWriteValue(false);
@@ -350,19 +358,18 @@ public class MassHeaterWoodChipsWoodChipsImpl extends AbstractOpenemsModbusCompo
                         this.log.warn("Couldn't write in Channel " + e.getMessage());
                     }
                 }
+                */
+
                 try {
                     this.getExternalControl().setNextWriteValue(true);
-                    this.getSlideInPercentageValueSetpoint().setNextWriteValue((int)Math.round(this.powerPercentSetpoint));
+                    this.getSlideInMaxSetpoint().setNextWriteValue((int)Math.round(this.powerPercentSetpoint));
                 } catch (OpenemsError.OpenemsNamedException e) {
                     this.log.warn("Couldn't write in Channel " + e.getMessage());
                 }
 
             } else {
                 try {
-                    // Felix hat gesagt: anstatt ausschalten die Pellet Zufuhr auf 0 stellen, da der so lange braucht
-                    // um hoch zu fahren.
-                    //this.getExternalControl().setNextWriteValue(false);
-                    this.getSlideInPercentageValueSetpoint().setNextWriteValue(0);
+                    this.getExternalControl().setNextWriteValue(false);
                 } catch (OpenemsError.OpenemsNamedException e) {
                     this.log.warn("Couldn't write in Channel " + e.getMessage());
                 }

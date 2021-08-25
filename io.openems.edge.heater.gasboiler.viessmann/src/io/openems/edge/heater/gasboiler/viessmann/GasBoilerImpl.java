@@ -540,8 +540,6 @@ public class GasBoilerImpl extends AbstractOpenemsModbusComponent implements Ope
                         turnOnHeater = true;
                         if (exceptionalStateValue > 100) {
                             exceptionalStateValue = 100;
-                        } else if (exceptionalStateValue < 0) {
-                            exceptionalStateValue = 0;
                         }
                         try {
                             this.setHeatingPowerPercentSetpoint(exceptionalStateValue);

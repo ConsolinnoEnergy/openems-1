@@ -9,7 +9,7 @@ Bundle-Version: 1.0.0.${tstamp}
 	io.openems.edge.bridge.modbus,\
 	io.openems.edge.common,\
 	io.openems.edge.relay.api,\
-	io.openems.edge.consolinno.aio.api,\
+	io.openems.edge.consolinno.aio,\
     io.openems.edge.heater.api,\
     io.openems.edge.exceptionalstate.api,\
     io.openems.edge.timer.api

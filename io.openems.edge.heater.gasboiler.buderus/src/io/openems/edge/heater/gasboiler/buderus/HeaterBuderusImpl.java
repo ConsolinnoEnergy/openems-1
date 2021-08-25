@@ -321,14 +321,13 @@ public class HeaterBuderusImpl extends AbstractOpenemsModbusComponent implements
 						turnOnHeater = true;
 						if (exceptionalStateValue > 100) {
 							exceptionalStateValue = 100;
-						} else if (exceptionalStateValue < 0) {
-							exceptionalStateValue = 0;
 						}
 						try {
 							this.setHeatingPowerPercentSetpoint(exceptionalStateValue);
 
 							// Todo: Should heater switch to control mode power percent in exceptional state?
-							//  Setting power percent setpoint with Exceptional State Value will not work if it is not.
+							// ExceptoinalStateValue is Setting power percent setpoint. If heater is in control mode
+							// temperature, this won't do anything.
 						} catch (OpenemsError.OpenemsNamedException e) {
 							this.log.warn("Couldn't write in Channel " + e.getMessage());
 						}
@@ -336,7 +335,7 @@ public class HeaterBuderusImpl extends AbstractOpenemsModbusComponent implements
 				}
 			}
 
-			// Wait for connection. Then turn on heater and send CommandsBits when enableSignal == true.
+			// Wait for connection. Then turn on heater and send CommandBits when enableSignal == true.
 			if (this.connectionAlive) {
 				if (turnOnHeater) {
 

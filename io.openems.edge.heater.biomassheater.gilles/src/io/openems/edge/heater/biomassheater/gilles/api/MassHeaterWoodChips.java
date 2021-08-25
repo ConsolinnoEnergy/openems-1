@@ -18,6 +18,7 @@ public interface MassHeaterWoodChips extends Heater {
 
         BOILER_TEMPERATURE_MINIMAL_FORWARD(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)
                 .accessMode(AccessMode.READ_WRITE)),
+
         //SLIDE_IN_PERCENTAGE_VALUE_READ(Doc.of(OpenemsType.INTEGER).unit(Unit.PERCENT)),
         //SLIDE_IN_PERCENTAGE_VALUE(Doc.of(OpenemsType.INTEGER).unit(Unit.PERCENT).accessMode(AccessMode.READ_WRITE)),
         SLIDE_IN_PERCENTAGE_VALUE_SETPOINT(Doc.of(OpenemsType.INTEGER).unit(Unit.PERCENT).accessMode(AccessMode.READ_WRITE)),
@@ -30,12 +31,14 @@ public interface MassHeaterWoodChips extends Heater {
                 .accessMode(AccessMode.READ_WRITE)),
         OXYGEN_PERFORMANCE_MAX(Doc.of(OpenemsType.FLOAT).unit(Unit.PERCENT)
                 .accessMode(AccessMode.READ_WRITE)),
-        SLIDE_IN_MIN_READ(Doc.of(OpenemsType.INTEGER).unit(Unit.PERCENT)),
-        SLIDE_IN_MIN(Doc.of(OpenemsType.INTEGER).unit(Unit.PERCENT)
-                .accessMode(AccessMode.READ_WRITE)),
-        SLIDE_IN_MAX_READ(Doc.of(OpenemsType.INTEGER).unit(Unit.PERCENT)),
-        SLIDE_IN_MAX(Doc.of(OpenemsType.INTEGER).unit(Unit.PERCENT)
-                .accessMode(AccessMode.READ_WRITE)),
+
+        //SLIDE_IN_MIN_READ(Doc.of(OpenemsType.INTEGER).unit(Unit.PERCENT)),
+        //SLIDE_IN_MIN(Doc.of(OpenemsType.INTEGER).unit(Unit.PERCENT).accessMode(AccessMode.READ_WRITE)),
+        SLIDE_IN_MIN_SETPOINT(Doc.of(OpenemsType.INTEGER).unit(Unit.PERCENT).accessMode(AccessMode.READ_WRITE)),
+
+        //SLIDE_IN_MAX_READ(Doc.of(OpenemsType.INTEGER).unit(Unit.PERCENT)),
+        //SLIDE_IN_MAX(Doc.of(OpenemsType.INTEGER).unit(Unit.PERCENT).accessMode(AccessMode.READ_WRITE)),
+        SLIDE_IN_MAX_SETPOINT(Doc.of(OpenemsType.INTEGER).unit(Unit.PERCENT).accessMode(AccessMode.READ_WRITE)),
 
         /* Read Channel 2 Byte; Address 20000-20035*/
 
@@ -162,12 +165,12 @@ public interface MassHeaterWoodChips extends Heater {
         return this.channel(ChannelId.OXYGEN_PERFORMANCE_MAX);
     }
 
-    default WriteChannel<Integer> getSlideInMin() {
-        return this.channel(ChannelId.SLIDE_IN_MIN);
+    default WriteChannel<Integer> getSlideInMinSetpoint() {
+        return this.channel(ChannelId.SLIDE_IN_MIN_SETPOINT);
     }
 
-    default WriteChannel<Integer> getSlideInMax() {
-        return this.channel(ChannelId.SLIDE_IN_MAX);
+    default WriteChannel<Integer> getSlideInMaxSetpoint() {
+        return this.channel(ChannelId.SLIDE_IN_MAX_SETPOINT);
     }
 
     default Channel<Integer> getExhaustTemperature() {

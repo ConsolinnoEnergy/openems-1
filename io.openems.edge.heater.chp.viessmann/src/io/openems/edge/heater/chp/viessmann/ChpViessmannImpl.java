@@ -534,8 +534,6 @@ public class ChpViessmannImpl extends AbstractOpenemsModbusComponent implements 
                         turnOnChp = true;
                         if (exceptionalStateValue > 100) {
                             exceptionalStateValue = 100;
-                        } else if (exceptionalStateValue < 0) {
-                            exceptionalStateValue = 0;
                         }
                         try {
                             this.setHeatingPowerPercentSetpoint(exceptionalStateValue);
