@@ -275,7 +275,7 @@ public interface Cooler extends OpenemsComponent {
 
     void setIdle();
 
-    default boolean errorInHeater() {
+    default boolean errorInCooler() {
         return this.getCurrentState().equals(HeaterState.ERROR);
     }
 
