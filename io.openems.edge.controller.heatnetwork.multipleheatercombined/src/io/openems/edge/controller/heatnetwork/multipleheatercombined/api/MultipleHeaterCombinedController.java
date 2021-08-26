@@ -6,12 +6,24 @@ import io.openems.edge.common.channel.Doc;
 import io.openems.edge.common.component.OpenemsComponent;
 import org.osgi.annotation.versioning.ProviderType;
 
-@ProviderType
+/**
+ * The MultipleHeaterCombined controller manages Heater by Temperature. Each heater gets an activation and deactivation
+ * Thermometer as well as Temperature. When an allocated activationThermometer is <= the Activation Threshold an allocated Heater
+ * activates till the deactivationThermometer reaches the Deactivation Temperature.
+ * Disable the Heater and wait till the Activation Temperature is reached again.
+ */
 public interface MultipleHeaterCombinedController extends OpenemsComponent {
 
 
     enum ChannelId implements io.openems.edge.common.channel.ChannelId {
-
+        /**
+         * Is the MultipleHeaterCombined Controller ok or did an error occur while Heating.
+         *
+         * <ul>
+         * <li>Interface: MultipleHeaterCombinedController
+         * <li>Type: Boolean
+         * </ul>
+         */
         OK(Doc.of(OpenemsType.BOOLEAN)),
         ERROR(Doc.of(OpenemsType.BOOLEAN)),
         IS_HEATING(Doc.of(OpenemsType.BOOLEAN));
@@ -76,6 +88,11 @@ public interface MultipleHeaterCombinedController extends OpenemsComponent {
         this.getIsHeatingChannel().setNextValue(isHeating);
     }
 
+    /**
+     * Getter for the isHeating channel.
+     *
+     * @return a boolean.
+     */
     default boolean isHeating() {
         if (this.getIsHeatingChannel().value().isDefined()) {
             return this.getIsHeatingChannel().value().get();

@@ -17,7 +17,7 @@ class HeaterActiveWrapper {
     }
 
     boolean isActive() {
-        return active;
+        return this.active;
     }
 
     void setActive(boolean active) {

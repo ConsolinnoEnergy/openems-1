@@ -1,6 +1,10 @@
 package io.openems.edge.controller.heatnetwork.communication.responsewrapper;
 
-public abstract class AbstractResponseWrapper implements ResponseWrapper{
+/**
+ * The super class of any implementation of a Response. (E.g. Method or ChannelResponse).
+ * Contains the active and passive Value for a Response.
+ */
+public abstract class AbstractResponseWrapper implements ResponseWrapper {
     protected String activeValue;
     protected String passiveValue;
 

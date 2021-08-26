@@ -2,3 +2,10 @@
 
 This Bundle provides some Interfaces and classes for better hydraulic within systems.
 
+== Natures:
+- HeatBooster
+
+== Classes
+- MinMaxToChannel
+- HeatBoosterOneChannel
+

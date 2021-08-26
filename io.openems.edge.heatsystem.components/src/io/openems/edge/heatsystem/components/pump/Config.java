@@ -7,7 +7,7 @@ import org.osgi.service.metatype.annotations.Option;
 
 
 @ObjectClassDefinition(
-        name = "Hydraulic Pump Pwm/Relay",
+        name = "Hydraulic Pump Relay and or One Output",
         description = "A Pump mainly used for the Passing Station and Controller"
 )
 @interface Config {
@@ -24,21 +24,14 @@ import org.osgi.service.metatype.annotations.Option;
     @AttributeDefinition(name = "Configuration Type", description = "Do you want to Configure and Control the Pump via Devices or Channels")
     ConfigurationType configType() default ConfigurationType.CHANNEL;
 
-    @AttributeDefinition(name = "Pump Type", description = "What Kind of Pump is it?",
-    options = {
-            @Option(label = "Relay", value = "Relay"),
-            @Option(label = "Pwm", value = "Pwm"),
-            @Option(label = "Both", value = "Both")
-    })
-    String pump_Type() default "Both";
+    @AttributeDefinition(name = "Pump Type", description = "What Kind of Pump is it?")
+    PumpType pump_Type() default PumpType.RELAY;
 
     @AttributeDefinition(name =  "BooleanChannel or Id of (Relay) Device", description = "Either the BooleanChannel or the Relay Device.")
-    String pump_Relays() default "Relay0/WriteOnOff";
+    String pump_Relay() default "Relay0/WriteOnOff";
 
     @AttributeDefinition(name = "PWM Id/ PwmChannel", description = "Either the WriteChannel or the Pwm Device")
-    String pump_Pwm() default "PwmDevice0/WritePowerLevel";
-
-    boolean disableOnActivation() default true;
+    String pump_Pwm_or_Aio() default "PwmDevice0/WritePowerLevel";
 
     boolean enabled() default true;
 
@@ -47,6 +40,22 @@ import org.osgi.service.metatype.annotations.Option;
 
     @AttributeDefinition(name = "Default PowerLevel", description = "Default PowerLevel Value")
     double defaultPowerLevel() default 100;
+
+    boolean checkPowerLevelIsApplied() default false;
+
+    @AttributeDefinition(name = "Check ChannelAddress Relay", description = "If the Pump PowerValue is applied -> Check via Output if it's set correctly")
+    String checkRelayChannelAddress() default "SignalSensorSpi/SignalActive";
+
+    @AttributeDefinition(name = "Check ChannelAddress Pwm", description = "If the Pump PowerValue is applied -> Check via Output if it's set correctly")
+    String checkPwmOrAioChannelAddress() default "Pwm/ReadPowerLevel";
+
+    boolean useExceptionalState() default false;
+
+    @AttributeDefinition(name = "TimerId", description = "The Timer used for the ExceptionalState")
+    String timerId() default "TimerByCycles";
+
+    @AttributeDefinition(name = "Timeout ExceptionalState", description = "Time exceptionalState Value stays active after it's enable Signal is missing")
+    int maxTime() default 10;
 
     String webconsole_configurationFactory_nameHint() default "Pump [{id}]";
 }

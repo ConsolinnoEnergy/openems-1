@@ -26,6 +26,10 @@ import io.openems.edge.common.component.OpenemsComponent;
  * ExceptionalStateEnableSignal (see {@link io.openems.edge.exceptionalstate.api.ExceptionalStateHandlerImpl}).
  */
 public interface ExceptionalState extends OpenemsComponent {
+
+    int DEFAULT_MIN_EXCEPTIONAL_VALUE = 0;
+    int DEFAULT_MAX_EXCEPTIONAL_VALUE = 100;
+
     enum ChannelId implements io.openems.edge.common.channel.ChannelId {
 
         /**

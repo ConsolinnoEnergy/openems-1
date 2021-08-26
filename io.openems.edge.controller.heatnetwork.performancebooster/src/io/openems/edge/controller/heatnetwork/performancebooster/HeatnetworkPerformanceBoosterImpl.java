@@ -4,7 +4,7 @@ import io.openems.common.exceptions.OpenemsError;
 import io.openems.edge.common.component.AbstractOpenemsComponent;
 import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
-import io.openems.edge.consolinno.sensor.signal.api.SignalSensor;
+import io.openems.edge.consolinno.leaflet.sensor.signal.api.SignalSensor;
 import io.openems.edge.controller.api.Controller;
 import io.openems.edge.controller.heatnetwork.controlcenter.api.ControlCenter;
 import io.openems.edge.controller.heatnetwork.performancebooster.api.HeatnetworkPerformanceBooster;
