@@ -48,6 +48,8 @@ import org.osgi.service.metatype.annotations.Option;
     @AttributeDefinition(name = "Running Time or Cycles after Enable and missing signal", description = "Run this amount of Cycles/Time if the controller was activated before AND EnableSignal is missing.")
     int waitForSignalAfterActivation() default 10;
 
+    @AttributeDefinition(name = "ShouldCool", description = "If the controller should choose the lower temperature instead of the higher one.")
+    boolean shouldCool() default false;
 
     @AttributeDefinition(name = "use Fallback", description = "If Enabled Signal isn't arriving (due to error) after activation, wait X amount till Fallback activates")
     boolean useFallback() default true;

@@ -24,6 +24,7 @@ public class MyConfig extends AbstractComponentConfig implements Config {
         public boolean useFallback;
         public String timerForFallback;
         public int fallbackRunTime;
+        public boolean shouldCool;
         private String id;
         private String alias;
         private boolean enabled = true;
@@ -112,6 +113,11 @@ public class MyConfig extends AbstractComponentConfig implements Config {
             return this;
         }
 
+        public Builder setShouldCool(boolean shouldCool) {
+            this.shouldCool = shouldCool;
+            return this;
+        }
+
         public MyConfig build() {
             return new MyConfig(this);
         }
@@ -187,6 +193,11 @@ public class MyConfig extends AbstractComponentConfig implements Config {
     @Override
     public int waitForSignalAfterActivation() {
         return this.builder.waitForSignalAfterActivation;
+    }
+
+    @Override
+    public boolean shouldCool() {
+        return this.builder.shouldCool;
     }
 
     @Override

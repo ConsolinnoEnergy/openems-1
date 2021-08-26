@@ -59,6 +59,7 @@ public class HydraulicPositionControllerImpl extends AbstractOpenemsComponent im
     private String componentId;
     private String thermometerId;
     protected static final double TOLERANCE = 1.5;
+    private boolean shouldCool;
 
     private DateTime initialTimeStamp;
     private boolean hadToFallbackBefore;
@@ -77,6 +78,7 @@ public class HydraulicPositionControllerImpl extends AbstractOpenemsComponent im
             }
             this.componentId = config.componentToControl();
             this.thermometerId = config.thermometerId();
+            this.shouldCool = config.shouldCool();
             if (this.cpm.getComponent(config.componentToControl()) instanceof HydraulicComponent) {
                 this.controlledComponent = this.cpm.getComponent(this.componentId);
             } else {
@@ -149,22 +151,36 @@ public class HydraulicPositionControllerImpl extends AbstractOpenemsComponent im
         if ((temperature == Integer.MIN_VALUE) == false) {
             AtomicReference<HydraulicPosition> selectedPosition = new AtomicReference<>();
             selectedPosition.set(this.hydraulicPositionList.get(0));
-            this.hydraulicPositionList.forEach(hydraulicPosition -> {
-                //As long as position Temperature < current Temp && position temperature greater than current Position temp.
-                // e.g. Temperature is 50; current position in iteration is 45 and selected position temp was 42
-                if (hydraulicPosition.getTemperature() <= temperature && hydraulicPosition.getTemperature() >= selectedPosition.get().getTemperature()) {
-                    selectedPosition.set(hydraulicPosition);
-                    //if current Position is greater Than temp -> check for either : selected Pos beneath temp -> select current position
-                    // OR if current pos has lower temp but selected is greater than current --> select current
-                    //Example: Temperature 50; selected position 45; new has 55; take 55
-                    //new iteration temperature 50; selected 55; current is 52; take 52 position
-                } else if (hydraulicPosition.getTemperature() > temperature) {
-                    if (hydraulicPosition.getTemperature() <= selectedPosition.get().getTemperature()
-                            && (selectedPosition.get().getTemperature() < temperature || hydraulicPosition.getTemperature() < selectedPosition.get().getTemperature())) {
+            if (!this.shouldCool) {
+                this.hydraulicPositionList.forEach(hydraulicPosition -> {
+                    //As long as position Temperature < current Temp && position temperature greater than current Position temp.
+                    // e.g. Temperature is 50; current position in iteration is 45 and selected position temp was 42
+                    if (hydraulicPosition.getTemperature() <= temperature && hydraulicPosition.getTemperature() >= selectedPosition.get().getTemperature()) {
                         selectedPosition.set(hydraulicPosition);
+                        //if current Position is greater Than temp -> check for either : selected Pos beneath temp -> select current position
+                        // OR if current pos has lower temp but selected is greater than current --> select current
+                        //Example: Temperature 50; selected position 45; new has 55; take 55
+                        //new iteration temperature 50; selected 55; current is 52; take 52 position
+                    } else if (hydraulicPosition.getTemperature() > temperature) {
+                        if (hydraulicPosition.getTemperature() <= selectedPosition.get().getTemperature()
+                                && (selectedPosition.get().getTemperature() < temperature || hydraulicPosition.getTemperature() < selectedPosition.get().getTemperature())) {
+                            selectedPosition.set(hydraulicPosition);
+                        }
                     }
-                }
-            });
+                });
+            } else {
+                this.hydraulicPositionList.forEach(hydraulicPosition -> {
+                    if (hydraulicPosition.getTemperature() <= temperature && hydraulicPosition.getTemperature() >= selectedPosition.get().getTemperature()) {
+                        selectedPosition.set(hydraulicPosition);
+                        //this does basically the same as the above function but instead of choosing the higher temperature-position, it chooses the lower
+                    } else if (hydraulicPosition.getTemperature() < temperature) {
+                        if (hydraulicPosition.getTemperature() <= selectedPosition.get().getTemperature()
+                                && (selectedPosition.get().getTemperature() > temperature || hydraulicPosition.getTemperature() > selectedPosition.get().getTemperature())) {
+                            selectedPosition.set(hydraulicPosition);
+                        }
+                    }
+                });
+            }
             double setPosition = selectedPosition.get().getHydraulicPosition();
             if (this.controlledComponent.getPowerLevelValue() + TOLERANCE < setPosition || this.controlledComponent.getPowerLevelValue() - TOLERANCE > setPosition) {
                 try {
