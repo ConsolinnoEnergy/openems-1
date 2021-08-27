@@ -81,6 +81,7 @@ public class SimulatedKebaContact extends AbstractOpenemsComponent implements Ma
         } else {
             this._setMinimumHardwarePower(config.minHwPower());
         }
+        this._setMinimumPower(6);
         this._setPhases(0);
         this._setPowerPrecision(0.23);
 

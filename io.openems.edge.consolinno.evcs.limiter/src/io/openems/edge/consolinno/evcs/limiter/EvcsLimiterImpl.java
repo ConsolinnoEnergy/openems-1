@@ -73,6 +73,7 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
     private static final int TWO_PHASE_INDEX_2 = 3;
     private int phaseLimit;
     private int powerLimit;
+    private int initialPowerLimit;
     private int offTime;
     private boolean symmetry;
     private boolean useMeter;
@@ -100,6 +101,7 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
         this.symmetry = config.symmetry();
         this.phaseLimit = config.phaseLimit();
         this.powerLimit = config.powerLimit();
+        this.initialPowerLimit = config.powerLimit();
         this.offTime = config.offTime();
         this.updateEvcss();
 
@@ -136,6 +138,7 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
         this.evcss = new ManagedEvcs[this.ids.length];
         this.useMeter = config.useMeter();
         this.meterId = config.meter();
+        this.initialPowerLimit = config.powerLimit();
         if (this.useMeter && !this.checkMeter(config.meter())) {
             throw new ConfigurationException("Configured Meter is not an Asymmetric Meter.", "Check config");
         }
@@ -248,10 +251,13 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
      * Updates Power Limit based on the Connected Meter.
      */
     private void updatePowerLimit() {
-        int limit = Math.abs(this.meter.getActivePower().orElse(0));
+        int limit = this.initialPowerLimit - this.meter.getActivePower().orElse(0) + ((this.powerL1 + this.powerL2 + this.powerL3) * GRID_VOLTAGE);
         if (limit <= 0) {
             this.setPowerLimit(1);
         } else {
+            if (limit > this.initialPowerLimit) {
+                limit = this.initialPowerLimit;
+            }
             setPowerLimit(limit);
         }
     }
