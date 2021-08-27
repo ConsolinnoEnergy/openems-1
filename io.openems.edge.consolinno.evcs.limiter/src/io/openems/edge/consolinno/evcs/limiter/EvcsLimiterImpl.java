@@ -2485,7 +2485,7 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
                 case 3:
                     if ((phaseConfiguration[0] == this.maxIndex || phaseConfiguration[1] == this.maxIndex || phaseConfiguration[2] == this.maxIndex)
                             && overLimit) {
-                        allow = false;
+                        //allow = false;
                     }
                     break;
 
