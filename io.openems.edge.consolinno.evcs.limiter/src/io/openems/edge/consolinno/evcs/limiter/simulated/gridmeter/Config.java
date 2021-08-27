@@ -20,10 +20,16 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     @AttributeDefinition(name = "limiterId", description = "Id of the Evcs Limiter")
     String limiterId() default "";
 
+    @AttributeDefinition(name = "useOptionalDatasource", description = "Use another datasource for simulation purposes.")
+    boolean useDatasource() default false;
+
+    @AttributeDefinition(name = "datasource", description = "Id of the optional Datasource.")
+    String datasource() default "";
+
     @AttributeDefinition(name = "Is enabled?", description = "Is this Component enabled?")
     boolean enabled() default true;
 
-    @AttributeDefinition(name = "ScaleFactor", description = "Scales the Power detected by the meter from the EVCS Limiter.")
+    @AttributeDefinition(name = "ScaleFactor", description = "Scales the Power detected by the meter from the optional Meter.")
     int scaleFactor() default 1;
 
     @AttributeDefinition(name = "Minimum Ever Active Power", description = "This is automatically updated.")

@@ -1,6 +1,9 @@
 package io.openems.edge.consolinno.evcs.limiter.simulated.gridmeter;
 
+import io.openems.common.channel.Unit;
 import io.openems.common.exceptions.OpenemsError;
+import io.openems.common.types.ChannelAddress;
+import io.openems.common.types.OpenemsType;
 import io.openems.edge.common.channel.Doc;
 import io.openems.edge.common.channel.value.Value;
 import io.openems.edge.common.component.AbstractOpenemsComponent;
@@ -13,6 +16,7 @@ import io.openems.edge.ess.api.ManagedSymmetricEss;
 import io.openems.edge.meter.api.AsymmetricMeter;
 import io.openems.edge.meter.api.MeterType;
 import io.openems.edge.meter.api.SymmetricMeter;
+import io.openems.edge.simulator.datasource.api.SimulatorDatasource;
 import io.openems.edge.timedata.api.Timedata;
 import io.openems.edge.timedata.api.TimedataProvider;
 import io.openems.edge.timedata.api.utils.CalculateEnergyFromPower;
@@ -54,9 +58,13 @@ public class EvcsGridMeter extends AbstractOpenemsComponent
     private String limiterId;
     private EvcsLimiterImpl limiter;
     private int scaleFactor;
+    private String datasourceId;
+    private Boolean useDatasource;
+    private SimulatorDatasource datasource;
 
     public enum ChannelId implements io.openems.edge.common.channel.ChannelId {
-        ;
+        SIMULATED_ACTIVE_POWER(Doc.of(OpenemsType.INTEGER) //
+                .unit(Unit.WATT));
 
         private final Doc doc;
 
@@ -132,8 +140,14 @@ public class EvcsGridMeter extends AbstractOpenemsComponent
         } else {
             try {
                 this.limiter = this.cpm.getComponent(this.limiterId);
-            } catch (OpenemsError.OpenemsNamedException e) {
+            } catch (OpenemsError.OpenemsNamedException ignored) {
 
+            }
+        }
+        if (this.useDatasource && this.datasource == null) {
+            try {
+                this.datasource = this.cpm.getComponent(this.datasourceId);
+            } catch (Exception ignored) {
             }
         }
 
@@ -164,8 +178,16 @@ public class EvcsGridMeter extends AbstractOpenemsComponent
                 // ignore
             }
         }
-        if (this.limiter != null && sum != null) {
-            this._setActivePower(sum  + (this.limiter.getCurrentPowerChannel().value().orElse(0)) * this.scaleFactor);
+        if (this.limiter != null && sum != null && this.useDatasource && this.datasource != null) {
+            /*
+             * get and store Simulated Active Power
+             */
+            Integer simulatedActivePower = this.datasource.getValue(OpenemsType.INTEGER,
+                    new ChannelAddress(this.id(), "ActivePower"));
+            this.channel(ChannelId.SIMULATED_ACTIVE_POWER).setNextValue(simulatedActivePower);
+            this._setActivePower(sum + (this.limiter.getCurrentPowerChannel().value().orElse(0)) + simulatedActivePower * this.scaleFactor);
+        } else if (this.limiter != null && sum != null) {
+            this._setActivePower(sum + (this.limiter.getCurrentPowerChannel().value().orElse(0)));
         } else {
             this._setActivePower(sum);
         }
@@ -203,6 +225,10 @@ public class EvcsGridMeter extends AbstractOpenemsComponent
     void activate(ComponentContext context, Config config) throws IOException {
         super.activate(context, config.id(), config.alias(), config.enabled());
         this.limiterId = config.limiterId();
+        this.useDatasource = config.useDatasource();
+        if (this.useDatasource) {
+            this.datasourceId = config.datasource();
+        }
         this.scaleFactor = config.scaleFactor();
     }
 

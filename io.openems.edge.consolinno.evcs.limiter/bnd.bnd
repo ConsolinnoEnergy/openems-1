@@ -15,6 +15,7 @@ Bundle-Version: 1.0.0.${tstamp}
     io.openems.edge.ess.api,\
     io.openems.edge.pvinverter.api,\
     io.openems.edge.io.api,\
+    io.openems.edge.simulator;version=latest,\
     joda-time;version=2.10.8,\
 
 -testpath: \
