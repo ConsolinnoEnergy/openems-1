@@ -39,6 +39,7 @@ public interface EvcsLimiterPower extends OpenemsComponent {
         }
 
     }
+
     default Channel<Integer> getCurrentPowerChannel() {
         return this.channel(ChannelId.CURRENT_POWER);
     }
@@ -59,6 +60,10 @@ public interface EvcsLimiterPower extends OpenemsComponent {
         } else {
             return -1;
         }
+    }
+
+    default void setPowerLimit(int limit) {
+        this.getPowerLimitChannel().setNextValue(limit);
     }
 }
 
