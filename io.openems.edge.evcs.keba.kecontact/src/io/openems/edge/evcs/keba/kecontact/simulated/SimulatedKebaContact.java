@@ -212,6 +212,7 @@ public class SimulatedKebaContact extends AbstractOpenemsComponent implements Ma
         }
         this.initialPower = chargePower;
         this.phaseCount = phaseCount;
+        this._setMaximumPower(chargePower*this.phaseCount*230);
         switch (this.phases[phase]) {
             case 1:
                 this.l1Power += chargePower;
