@@ -1,18 +1,28 @@
 package io.openems.edge.heater.chp.dachs;
 
 import io.openems.common.exceptions.OpenemsError;
+import io.openems.edge.common.component.ComponentManager;
+import io.openems.edge.exceptionalstate.api.ExceptionalStateHandlerImpl;
 import io.openems.edge.heater.api.Chp;
 import io.openems.edge.common.component.AbstractOpenemsComponent;
 import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.controller.api.Controller;
+import io.openems.edge.exceptionalstate.api.ExceptionalState;
+import io.openems.edge.exceptionalstate.api.ExceptionalStateHandler;
+import io.openems.edge.heater.api.EnableSignalHandler;
+import io.openems.edge.heater.api.EnableSignalHandlerImpl;
+import io.openems.edge.heater.api.Heater;
 import io.openems.edge.heater.api.HeaterState;
-import io.openems.edge.heater.chp.dachs.api.DachsGltInterfaceChannel;
+import io.openems.edge.heater.chp.dachs.api.DachsGltInterface;
+import io.openems.edge.timer.api.TimerHandler;
+import io.openems.edge.timer.api.TimerHandlerImpl;
 import org.osgi.service.cm.ConfigurationException;
 import org.osgi.service.component.ComponentContext;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.ConfigurationPolicy;
 import org.osgi.service.component.annotations.Deactivate;
+import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,11 +45,15 @@ import java.util.Base64;
  */
 
 @Designate(ocd = Config.class, factory = true)
-@Component(name = "Chp.Dachs.GLT-Interface",
+@Component(name = "Heater.Chp.SenertecDachs",
 		configurationPolicy = ConfigurationPolicy.REQUIRE,
 		immediate = true)
 // This module uses Controller instead of EventHandler because "HttpURLConnection" does not work in "handleEvent()".
-public class DachsGltInterfaceImpl extends AbstractOpenemsComponent implements OpenemsComponent, Chp, DachsGltInterfaceChannel, Controller {
+public class DachsGltInterfaceImpl extends AbstractOpenemsComponent implements OpenemsComponent, Controller,
+		ExceptionalState, DachsGltInterface {
+
+	@Reference
+	protected ComponentManager cpm;
 
 	private final Logger log = LoggerFactory.getLogger(DachsGltInterfaceImpl.class);
 	private InputStream is = null;
@@ -50,15 +64,27 @@ public class DachsGltInterfaceImpl extends AbstractOpenemsComponent implements O
 	private boolean debug;
 	private boolean basicInfo;
 
-	// Variables for channel mapping
-	private boolean rpmChannelHasData;
-	private int rpmValue;
+	private boolean componentEnabled;
+	private boolean readOnly = false;
+	private boolean startupStateChecked = false;
+	private boolean readyForCommands;
+	private boolean chpEngineRunning;
+
+	private boolean turnOnChp;
+	private boolean useEnableSignal;
+	private EnableSignalHandler enableSignalHandler;
+	private static final String ENABLE_SIGNAL_IDENTIFIER = "DACHS_CHP_ENABLE_SIGNAL_IDENTIFIER";
+	private boolean useExceptionalState;
+	private ExceptionalStateHandler exceptionalStateHandler;
+	private static final String EXCEPTIONAL_STATE_IDENTIFIER = "DACHS_CHP_EXCEPTIONAL_STATE_IDENTIFIER";
 
 
 	public DachsGltInterfaceImpl() {
 		super(OpenemsComponent.ChannelId.values(),
-				DachsGltInterfaceChannel.ChannelId.values(),
+				DachsGltInterface.ChannelId.values(),
 				Chp.ChannelId.values(),
+				Heater.ChannelId.values(),
+				ExceptionalState.ChannelId.values(),
 				Controller.ChannelId.values());
 	}
 
@@ -66,18 +92,51 @@ public class DachsGltInterfaceImpl extends AbstractOpenemsComponent implements O
 	public void activate(ComponentContext context, Config config) throws OpenemsError.OpenemsNamedException, ConfigurationException {
 		super.activate(context, config.id(), config.alias(), config.enabled());
 
-		interval = config.interval();
+		this.componentEnabled = config.enabled();
+		this.interval = config.interval();
 		// Limit interval to 9 minutes max. Because on/off command needs to be sent to Dachs at least once every 10 minutes.
-		if (interval > 540) {
-			interval = 540;
+		if (this.interval > 540) {
+			this.interval = 540;
 		}
-		timestamp = LocalDateTime.now().minusSeconds(interval);		// Subtract interval, so polling starts immediately.
-		urlBuilderIP = config.address();
+		this.timestamp = LocalDateTime.now().minusSeconds(interval);		// Subtract interval, so polling starts immediately.
+		this.urlBuilderIP = config.address();
 		String gltpass = config.username() + ":" + config.password();
-		basicAuth = "Basic " + new String(Base64.getEncoder().encode(gltpass.getBytes()));
-		getSerialAndPartsNumber();
-		debug = config.debug();
-		basicInfo = config.basicInfo();
+		this.basicAuth = "Basic " + new String(Base64.getEncoder().encode(gltpass.getBytes()));
+		this.getSerialAndPartsNumber();
+		this.debug = config.debug();
+		this.basicInfo = config.basicInfo();
+
+		this.readOnly = config.readOnly();
+		this.startupStateChecked = false;
+		if (this.readOnly == false) {
+			this.turnOnChp = config.turnOnChp();
+			TimerHandler timer = new TimerHandlerImpl(super.id(), this.cpm);
+			this.useEnableSignal = config.useEnableSignalChannel();
+			if (this.useEnableSignal) {
+				String timerTypeEnableSignal;
+				if (config.enableSignalTimerIsCyclesNotSeconds()) {
+					timerTypeEnableSignal = "TimerByCycles";
+				} else {
+					timerTypeEnableSignal = "TimerByTime";
+				}
+				timer.addOneIdentifier(ENABLE_SIGNAL_IDENTIFIER, timerTypeEnableSignal, config.waitTimeEnableSignal());
+				this.enableSignalHandler = new EnableSignalHandlerImpl(timer, ENABLE_SIGNAL_IDENTIFIER);
+			}
+			this.useExceptionalState = config.useExceptionalState();
+			if (this.useExceptionalState) {
+				String timerTypeExceptionalState;
+				if (config.exceptionalStateTimerIsCyclesNotSeconds()) {
+					timerTypeExceptionalState = "TimerByCycles";
+				} else {
+					timerTypeExceptionalState = "TimerByTime";
+				}
+				timer.addOneIdentifier(EXCEPTIONAL_STATE_IDENTIFIER, timerTypeExceptionalState, config.waitTimeExceptionalState());
+				this.exceptionalStateHandler = new ExceptionalStateHandlerImpl(timer, EXCEPTIONAL_STATE_IDENTIFIER);
+			}
+		}
+		if (this.componentEnabled == false) {
+			this._setHeaterState(HeaterState.OFF.getValue());
+		}
 	}
 
 	@Deactivate
@@ -86,33 +145,81 @@ public class DachsGltInterfaceImpl extends AbstractOpenemsComponent implements O
 	@Override
 	public void run() throws OpenemsError.OpenemsNamedException {
 
-		// How often the Dachs is polled is determined by "interval"
-		if (ChronoUnit.SECONDS.between(timestamp, LocalDateTime.now()) >= interval) {
-			updateChannels();
-			timestamp = LocalDateTime.now();
-			
-			// Output to log depending on config settings.
-			printDataToLog();
+		if (this.componentEnabled) {
+			// How often the Dachs is polled is determined by "interval"
+			if (ChronoUnit.SECONDS.between(this.timestamp, LocalDateTime.now()) >= this.interval) {
+				this.updateChannels();
+				this.timestamp = LocalDateTime.now();
 
-			// This is supposed to be the on-off switch.
-			// Use the "ENABLE_SIGNAL" channel like a write channel is used with Modbus. getEnableSignal() is the readout,
-			// setEnableSignal(value) is the write command. The two values are separate, but should be at the same value 
-			// (with maybe a minor delay) when everything works as intended.			
-			// There are some things to watch out for:
-			// - This is not a hard command, especially the "off" command. The Dachs has a list of reasons to be running
-			// 	 (see Dachs-Lauf-Anforderungen), the "external requirement" (this on/off switch) being one of many. If
-			// 	 any one of those reasons is true, it is running. Only if all of them are false, it will shut down.
-			// 	 Bottom line, only if nothing else tells the Dachs to run will "ENABLE_SIGNAL = false" do anything. 
-			//   And "ENABLE_SIGNAL = true" might be ignored because of a limitation.
-			// - Timing: need to send "on" command at least every 10 minutes for the Dachs to keep running.
-			//   "interval" is capped at 9 minutes, so this should be taken care of.
-			// - Also: You cannot switch a CHP on/off as you want. There is a limit on how often you can start. Number of
-			//   starts should be minimized. Currently the code does not enforce any restrictions in this regard!
-			if (this.getEnableSignalChannel().getNextWriteValue().isPresent()) {
-				if (this.getEnableSignalChannel().getNextWriteValue().get()) {
-					activateDachs();
-				} else {
-					deactivateDachs();
+				// Output to log depending on config settings.
+				this.printDataToLog();
+
+				if (this.readOnly == false && this.readyForCommands) {
+
+					if (this.useEnableSignal) {
+
+						// This is supposed to be the on-off switch.
+						// Use the "ENABLE_SIGNAL" channel like a write channel is used with Modbus. getEnableSignal() is the readout,
+						// setEnableSignal(value) is the write command. The two values are separate, but should be at the same value
+						// (with maybe a minor delay) when everything works as intended.
+						// There are some things to watch out for:
+						// - This is not a hard command, especially the "off" command. The Dachs has a list of reasons to be running
+						// 	 (see Dachs-Lauf-Anforderungen), the "external requirement" (this on/off switch) being one of many. If
+						// 	 any one of those reasons is true, it is running. Only if all of them are false, it will shut down.
+						// 	 Bottom line, only if nothing else tells the Dachs to run will "ENABLE_SIGNAL = false" do anything.
+						//   And "ENABLE_SIGNAL = true" might be ignored because of a limitation.
+						// - Timing: need to send "on" command at least every 10 minutes for the Dachs to keep running.
+						//   "interval" is capped at 9 minutes, so this should be taken care of.
+						// - Also: You cannot switch a CHP on/off as you want. There is a limit on how often you can start. Number of
+						//   starts should be minimized. Currently the code does not enforce any restrictions in this regard!
+						this.turnOnChp = this.enableSignalHandler.deviceShouldBeHeating(this);
+
+						// If the component has just been started, it will most likely take a few cycles before a controller
+						// sends an EnableSignal (assuming the CHP should be running). Since no EnableSignal means ’turn off the
+						// CHP’, the component will always turn off the CHP during the first few cycles. If the CHP is already
+						// on, this would turn the CHP off and on again, which is bad for the lifetime. A scenario where this
+						// would happen is if the component or OpenEMS is restarted while the CHP is running.
+						// To avoid that, check the CHP status at the startup of the component. If it is on, the component sends
+						// the EnableSignal to itself once to keep the CHP on until the timer runs out. This gives any
+						// controllers enough time to send the EnableSignal themselves.
+						if (this.startupStateChecked == false) {
+							this.startupStateChecked = true;
+							this.turnOnChp = this.chpEngineRunning;
+							if (this.turnOnChp) {
+								try {
+									this.getEnableSignalChannel().setNextWriteValue(true);
+								} catch (OpenemsError.OpenemsNamedException e) {
+									this.log.warn("Couldn't write in Channel " + e.getMessage());
+								}
+							}
+						}
+
+					}
+
+					// Handle ExceptionalState. ExceptionalState overwrites EnableSignal.
+					if (this.useExceptionalState) {
+						boolean exceptionalStateActive = this.exceptionalStateHandler.exceptionalStateActive(this);
+						if (exceptionalStateActive) {
+							int exceptionalStateValue = this.getExceptionalStateValue();
+							if (exceptionalStateValue <= 0) {
+								// Turn off Chp when ExceptionalStateValue = 0.
+								this.turnOnChp = false;
+							} else {
+								// Turn on chp when ExceptionalStateValue > 0.
+								this.turnOnChp = true;
+
+								// This chp does not have variable power control. If it is a bigger chp containing
+								// several units, it is possible to set the number of modules that should turn on.
+								// This is not coded in yet.
+							}
+						}
+					}
+
+					if (this.turnOnChp) {
+						this.activateDachs();
+					} else {
+						this.deactivateDachs();
+					}
 				}
 			}
 		}
@@ -148,10 +255,11 @@ public class DachsGltInterfaceImpl extends AbstractOpenemsComponent implements O
 		// Test if a marker can be found in the message to see if the server message is ok. If this marker can not be
 		// found, the server message is most likely garbage.
 		if (serverMessage.contains("Hka_Bd.bStoerung=")) {
+			this.readyForCommands = true;
 			
 			// Parse error message.
 			String errorMessage = "";
-			String stoerung = readEntryAfterString(serverMessage, "Hka_Bd.bStoerung=");		// already checked that this entry exists in serverMessage.
+			String stoerung = this.readEntryAfterString(serverMessage, "Hka_Bd.bStoerung=");		// already checked that this entry exists in serverMessage.
 			if (stoerung.length() == 0) {
 				// stoerung should contain "0" for no error or the number of the error code(s). If stoerung contains 
 				// nothing, something went wrong.
@@ -428,7 +536,7 @@ public class DachsGltInterfaceImpl extends AbstractOpenemsComponent implements O
 
 			String warningMessage = "";
 			if (serverMessage.contains("Hka_Bd.bWarnung=")) {
-				String warningCode = readEntryAfterString(serverMessage, "Hka_Bd.bWarnung=");
+				String warningCode = this.readEntryAfterString(serverMessage, "Hka_Bd.bWarnung=");
 				if (warningCode.length() == 0) {
 					// warningCode should contain "0" for no warning. If it is empty, something went wrong.
 					warningMessage = "Failed to transmit warning code, ";
@@ -447,7 +555,7 @@ public class DachsGltInterfaceImpl extends AbstractOpenemsComponent implements O
 
 			if (serverMessage.contains("Hka_Mw1.sWirkleistung=")) {
 				String wirkleistung = "";	// To make sure there is no null exception when parsing.
-				wirkleistung = wirkleistung + readEntryAfterString(serverMessage, "Hka_Mw1.sWirkleistung=");
+				wirkleistung = wirkleistung + this.readEntryAfterString(serverMessage, "Hka_Mw1.sWirkleistung=");
 				try {
 					this._setEffectiveElectricPower(Double.parseDouble(wirkleistung.trim()));
 				} catch (NumberFormatException e) {		// This catches wirkleistung possibly being empty.
@@ -461,11 +569,11 @@ public class DachsGltInterfaceImpl extends AbstractOpenemsComponent implements O
 
 
 			if (serverMessage.contains("Hka_Mw1.Temp.sbVorlauf=")) {
-				String forwardTemp = "";   // To make sure there is no null exception when parsing.
-				forwardTemp = forwardTemp + readEntryAfterString(serverMessage, "Hka_Mw1.Temp.sbVorlauf=");
+				String flowTemp = "";   // To make sure there is no null exception when parsing.
+				flowTemp = flowTemp + this.readEntryAfterString(serverMessage, "Hka_Mw1.Temp.sbVorlauf=");
 				try {
-					this._setFlowTemperature(Integer.parseInt(forwardTemp.trim())*10);	// Convert to dezidegree.
-				} catch (NumberFormatException e) {		// This catches forwardTemp possibly being empty.
+					this._setFlowTemperature(Integer.parseInt(flowTemp.trim())*10);	// Convert to dezidegree.
+				} catch (NumberFormatException e) {		// This catches flowTemp possibly being empty.
 					errorMessage = errorMessage + "Can't parse foreward temperature (Vorlauf): " + e.getMessage() + ", ";
 					this._setFlowTemperature(-1);	// -1 to indicate an error.
 				}
@@ -476,11 +584,11 @@ public class DachsGltInterfaceImpl extends AbstractOpenemsComponent implements O
 
 
 			if (serverMessage.contains("Hka_Mw1.Temp.sbRuecklauf=")) {
-				String rewindTemp = "";		// To make sure there is no null exception when parsing.
-				rewindTemp = rewindTemp + readEntryAfterString(serverMessage, "Hka_Mw1.Temp.sbRuecklauf=");
+				String returnTemp = "";		// To make sure there is no null exception when parsing.
+				returnTemp = returnTemp + this.readEntryAfterString(serverMessage, "Hka_Mw1.Temp.sbRuecklauf=");
 				try {
-					this._setReturnTemperature(Integer.parseInt(rewindTemp.trim())*10);	// Convert to dezidegree.
-				} catch (NumberFormatException e) {		// This catches rewindTemp possibly being empty.
+					this._setReturnTemperature(Integer.parseInt(returnTemp.trim())*10);	// Convert to dezidegree.
+				} catch (NumberFormatException e) {		// This catches returnTemp possibly being empty.
 					errorMessage = errorMessage + "Can't parse return temperature (Ruecklauf): " + e.getMessage() + ", ";
 					this._setReturnTemperature(-1);		// -1 to indicate an error.
 				}
@@ -494,7 +602,7 @@ public class DachsGltInterfaceImpl extends AbstractOpenemsComponent implements O
 			boolean stateUndefined = false;
 			if (serverMessage.contains("Hka_Bd.UHka_Frei.usFreigabe=")) {
 				String freigabe = "";
-				freigabe = freigabe + readEntryAfterString(serverMessage, "Hka_Bd.UHka_Frei.usFreigabe=");
+				freigabe = freigabe + this.readEntryAfterString(serverMessage, "Hka_Bd.UHka_Frei.usFreigabe=");
 				if (freigabe.equals("65535")) {	// This is the int equivalent of hex FFFF. Manual discusses freigabe code in hex.
 					runClearance = true;
 					this._setNotReadyMessage("Code FFFF: Dachs is ready to run.");
@@ -592,7 +700,7 @@ public class DachsGltInterfaceImpl extends AbstractOpenemsComponent implements O
 			boolean stateStartingUp = false;
 			if (serverMessage.contains("Hka_Bd.UHka_Anf.usAnforderung=")) {
 				String laufAnforderung = "";
-				laufAnforderung = laufAnforderung + readEntryAfterString(serverMessage, "Hka_Bd.UHka_Anf.usAnforderung=");
+				laufAnforderung = laufAnforderung + this.readEntryAfterString(serverMessage, "Hka_Bd.UHka_Anf.usAnforderung=");
 				if (laufAnforderung.equals("0")) {
 					this._setRunRequestMessage("Code 0: Nothing is requesting the Dachs to run right now.");
 				} else {
@@ -649,7 +757,7 @@ public class DachsGltInterfaceImpl extends AbstractOpenemsComponent implements O
 
 			if (serverMessage.contains("Hka_Bd.Anforderung.ModulAnzahl=")) {
 				String modulzahl = "";
-				modulzahl = modulzahl + readEntryAfterString(serverMessage, "Hka_Bd.Anforderung.ModulAnzahl=");
+				modulzahl = modulzahl + this.readEntryAfterString(serverMessage, "Hka_Bd.Anforderung.ModulAnzahl=");
 				try {
 					this._setNumberOfModules(Integer.parseInt(modulzahl.trim()));
 				} catch (NumberFormatException e) {
@@ -664,7 +772,7 @@ public class DachsGltInterfaceImpl extends AbstractOpenemsComponent implements O
 
 			if (serverMessage.contains("Hka_Bd.UStromF_Frei.bFreigabe=")) {
 				String freigabeStromfuehrung = "";
-				freigabeStromfuehrung = freigabeStromfuehrung + readEntryAfterString(serverMessage, "Hka_Bd.UStromF_Frei.bFreigabe=");
+				freigabeStromfuehrung = freigabeStromfuehrung + this.readEntryAfterString(serverMessage, "Hka_Bd.UStromF_Frei.bFreigabe=");
 				if (freigabeStromfuehrung.equals("255")) {
 					this._setElectricModeClearanceMessage("Code FF: Dachs is in electric power guided mode.");
 				} else {
@@ -713,7 +821,7 @@ public class DachsGltInterfaceImpl extends AbstractOpenemsComponent implements O
 
 
 			if (serverMessage.contains("Hka_Bd.UHka_Anf.Anforderung.fStrom=")) {
-				String anforderungStrom = readEntryAfterString(serverMessage, "Hka_Bd.UHka_Anf.Anforderung.fStrom=");
+				String anforderungStrom = this.readEntryAfterString(serverMessage, "Hka_Bd.UHka_Anf.Anforderung.fStrom=");
 				if (anforderungStrom.equals("true")) {
 					this._setElectricModeRunFlag(true);
 				} else {
@@ -730,7 +838,7 @@ public class DachsGltInterfaceImpl extends AbstractOpenemsComponent implements O
 
 			if (serverMessage.contains("Hka_Bd.Anforderung.UStromF_Anf.bFlagSF=")) {
 				String stromAnforderungSettings = "";
-				stromAnforderungSettings = stromAnforderungSettings + readEntryAfterString(serverMessage, "Hka_Bd.Anforderung.UStromF_Anf.bFlagSF=");
+				stromAnforderungSettings = stromAnforderungSettings + this.readEntryAfterString(serverMessage, "Hka_Bd.Anforderung.UStromF_Anf.bFlagSF=");
 				if (stromAnforderungSettings.equals("0")) {
 					this._setElectricModeSettingsMessage("Code 0: No component is requesting electric power guided mode.");
 				} else {
@@ -776,7 +884,7 @@ public class DachsGltInterfaceImpl extends AbstractOpenemsComponent implements O
 
 			if (serverMessage.contains("Hka_Bd.ulArbeitElektr=")) {
 				String arbeitElectr = "";
-				arbeitElectr = arbeitElectr + readEntryAfterString(serverMessage, "Hka_Bd.ulArbeitElektr=");
+				arbeitElectr = arbeitElectr + this.readEntryAfterString(serverMessage, "Hka_Bd.ulArbeitElektr=");
 				try {
 					this._setElectricalWork(Double.parseDouble(arbeitElectr));
 				} catch (NumberFormatException e) {
@@ -791,7 +899,7 @@ public class DachsGltInterfaceImpl extends AbstractOpenemsComponent implements O
 
 			if (serverMessage.contains("Hka_Bd.ulArbeitThermHka=")) {
 				String arbeitTherm = "";
-				arbeitTherm = arbeitTherm + readEntryAfterString(serverMessage, "Hka_Bd.ulArbeitThermHka=");
+				arbeitTherm = arbeitTherm + this.readEntryAfterString(serverMessage, "Hka_Bd.ulArbeitThermHka=");
 				try {
 					this._setThermalWork(Double.parseDouble(arbeitTherm));
 				} catch (NumberFormatException e) {
@@ -806,7 +914,7 @@ public class DachsGltInterfaceImpl extends AbstractOpenemsComponent implements O
 
 			if (serverMessage.contains("Hka_Bd.ulArbeitThermKon=")) {
 				String arbeitThermKon = "";
-				arbeitThermKon = arbeitThermKon + readEntryAfterString(serverMessage, "Hka_Bd.ulArbeitThermKon=");
+				arbeitThermKon = arbeitThermKon + this.readEntryAfterString(serverMessage, "Hka_Bd.ulArbeitThermKon=");
 				try {
 					this._setThermalWorkCond(Double.parseDouble(arbeitThermKon));
 				} catch (NumberFormatException e) {
@@ -821,7 +929,7 @@ public class DachsGltInterfaceImpl extends AbstractOpenemsComponent implements O
 
 			if (serverMessage.contains("Hka_Bd.ulBetriebssekunden=")) {
 				String runtimeSinceRestart = "";
-				runtimeSinceRestart = runtimeSinceRestart + readEntryAfterString(serverMessage, "Hka_Bd.ulBetriebssekunden=");
+				runtimeSinceRestart = runtimeSinceRestart + this.readEntryAfterString(serverMessage, "Hka_Bd.ulBetriebssekunden=");
 				try {
 					this._setRuntimeSinceRestart(Double.parseDouble(runtimeSinceRestart));
 				} catch (NumberFormatException e) {
@@ -837,7 +945,7 @@ public class DachsGltInterfaceImpl extends AbstractOpenemsComponent implements O
 			int rpmReadout = 0;
 			if (serverMessage.contains("Hka_Mw1.usDrehzahl=")) {
 				String drehzahl = "";
-				drehzahl = drehzahl + readEntryAfterString(serverMessage, "Hka_Mw1.usDrehzahl=");
+				drehzahl = drehzahl + this.readEntryAfterString(serverMessage, "Hka_Mw1.usDrehzahl=");
 	            try {
 					rpmReadout = Integer.parseInt(drehzahl.trim());
 	                this._setRpm(rpmReadout);
@@ -853,7 +961,7 @@ public class DachsGltInterfaceImpl extends AbstractOpenemsComponent implements O
 
 			if (serverMessage.contains("Hka_Bd.ulAnzahlStarts=")) {
 				String engineStarts = "";
-				engineStarts = engineStarts + readEntryAfterString(serverMessage, "Hka_Bd.ulAnzahlStarts=");
+				engineStarts = engineStarts + this.readEntryAfterString(serverMessage, "Hka_Bd.ulAnzahlStarts=");
 				try {
 					this._setEngineStarts(Integer.parseInt(engineStarts.trim()));
 				} catch (NumberFormatException e) {
@@ -866,7 +974,7 @@ public class DachsGltInterfaceImpl extends AbstractOpenemsComponent implements O
 			}
 
 
-			String wartungFlag = readEntryAfterString(serverMessage, "Wartung_Cache.fStehtAn=");
+			String wartungFlag = this.readEntryAfterString(serverMessage, "Wartung_Cache.fStehtAn=");
 			if (serverMessage.contains("Wartung_Cache.fStehtAn=") && wartungFlag.length() > 0) {
 				if (wartungFlag.equals("true")) {
 					this._setMaintenanceFlag(true);
@@ -899,32 +1007,37 @@ public class DachsGltInterfaceImpl extends AbstractOpenemsComponent implements O
 			this._setEnableSignal(rpmReadout > 1000);
 
 			if (stateUndefined) {
+				this.chpEngineRunning = false;
 				this._setHeaterState(HeaterState.UNDEFINED.getValue());
 			} else if (rpmReadout > 2000) {
 				// Regular RPM is ~2400. An RPM > 2000 should mean normal operation.
+				this.chpEngineRunning = true;
 				this._setHeaterState(HeaterState.HEATING.getValue());
 			} else if (stateStartingUp) {
+				this.chpEngineRunning = true;
 				this._setHeaterState(HeaterState.STARTING_UP_OR_PREHEAT.getValue());
 			} else if (runClearance) {
+				this.chpEngineRunning = false;
 				this._setHeaterState(HeaterState.STANDBY.getValue());
 			} else {
+				this.chpEngineRunning = false;
 				this._setHeaterState(HeaterState.BLOCKED.getValue());
 			}
 
-
 		} else {
+			this.readyForCommands = false;
 			this._setErrorMessage("Couldn't read data from GLT interface.");
-			this._setHeaterState(HeaterState.OFF.getValue());
+			this._setHeaterState(HeaterState.UNDEFINED.getValue());
 		}
 	}
 
 
 	// Separate method for these as they don't change and only need to be requested once.
     protected void getSerialAndPartsNumber() {
-        String temp = getKeyDachs("k=Hka_Bd_Stat.uchSeriennummer&k=Hka_Bd_Stat.uchTeilenummer");
+        String temp = this.getKeyDachs("k=Hka_Bd_Stat.uchSeriennummer&k=Hka_Bd_Stat.uchTeilenummer");
         if (temp.contains("Hka_Bd_Stat.uchSeriennummer=")) {
-			this._setSerialNumber(readEntryAfterString(temp, "Hka_Bd_Stat.uchSeriennummer="));
-			this._setPartsNumber(readEntryAfterString(temp, "Hka_Bd_Stat.uchTeilenummer="));
+			this._setSerialNumber(this.readEntryAfterString(temp, "Hka_Bd_Stat.uchSeriennummer="));
+			this._setPartsNumber(this.readEntryAfterString(temp, "Hka_Bd_Stat.uchTeilenummer="));
         } else {
         	// Writing to log here is ok as this executes only once.
             this.logError(this.log, "Error: Couldn't read data from GLT interface.");
@@ -940,9 +1053,9 @@ public class DachsGltInterfaceImpl extends AbstractOpenemsComponent implements O
     
     
     protected void printDataToLog() {
-    	if (basicInfo) {
+    	if (this.basicInfo) {
     		this.logInfo(this.log, "---- CHP Senertec Dachs ----");
-    		this.logInfo(this.log, "Engine rpm: " + getRpm() + " -> Chp running: " + getEnableSignal());
+    		this.logInfo(this.log, "Engine rpm: " + getRpm());
     		this.logInfo(this.log, "Flow temp: " + getFlowTemperature());
     		this.logInfo(this.log, "Return temp: " + getReturnTemperature());
     		this.logInfo(this.log, "Effective electric power: " + getEffectiveElectricPower());
@@ -950,7 +1063,7 @@ public class DachsGltInterfaceImpl extends AbstractOpenemsComponent implements O
     		this.logInfo(this.log, "Error message: " + getErrorMessage());
     		this.logInfo(this.log, "Warning message: " + getWarningMessage());
     	}
-    	if (debug) {
+    	if (this.debug) {
     		this.logInfo(this.log, "Serial number: " + getSerialNumber());
     		this.logInfo(this.log, "Parts number: " + getPartsNumber());
     		this.logInfo(this.log, "Engine starts: " + getEngineStarts());
@@ -973,17 +1086,17 @@ public class DachsGltInterfaceImpl extends AbstractOpenemsComponent implements O
 	protected String getKeyDachs(String key) {
 		String message = "";
 		try {
-            URL url = new URL("http://" + urlBuilderIP + ":8081/getKey?" + key);
+            URL url = new URL("http://" + this.urlBuilderIP + ":8081/getKey?" + key);
 
 			HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-            connection.setRequestProperty("Authorization", basicAuth);
-            is = connection.getInputStream();
+            connection.setRequestProperty("Authorization", this.basicAuth);
+			this.is = connection.getInputStream();
 
             // Read text returned by server
-            BufferedReader reader = new BufferedReader(new InputStreamReader(is));
+            BufferedReader reader = new BufferedReader(new InputStreamReader(this.is));
             String line;
             while ((line = reader.readLine()) != null) {
-            	if (debug) {
+            	if (this.debug) {
             		this.logInfo(this.log, line);
             	}
                 message = message + line + "/n";
@@ -1000,9 +1113,9 @@ public class DachsGltInterfaceImpl extends AbstractOpenemsComponent implements O
                 this.logError(this.log, "No GLT interface at specified address.");
             }
 		} finally {
-			if (is != null) {
+			if (this.is != null) {
                 try {
-                    is.close();
+					this.is.close();
                 } catch (IOException e) {
                     this.logError(this.log, "I/O Error: " + e.getMessage());
                 }
@@ -1017,25 +1130,23 @@ public class DachsGltInterfaceImpl extends AbstractOpenemsComponent implements O
 	protected String setKeysDachs(String key) {
 		String message = "";
 		try {
-			String body = key;
-
-			URL url = new URL("http://" + urlBuilderIP + ":8081/setKeys");
+			URL url = new URL("http://" + this.urlBuilderIP + ":8081/setKeys");
 			HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-			connection.setRequestProperty("Authorization", basicAuth);
+			connection.setRequestProperty("Authorization", this.basicAuth);
 			connection.setRequestMethod("POST");
 			connection.setDoInput(true);
 			connection.setDoOutput(true);
 			connection.setUseCaches(false);
 			connection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
-			connection.setRequestProperty("Content-Length", String.valueOf(body.length()));
+			connection.setRequestProperty("Content-Length", String.valueOf(key.length()));
 
 			OutputStreamWriter writer = new OutputStreamWriter(connection.getOutputStream());
-			writer.write(body);
+			writer.write(key);
 			writer.flush();
 			writer.close();
 
-			is = connection.getInputStream();
-			BufferedReader reader = new BufferedReader(new InputStreamReader(is));
+			this.is = connection.getInputStream();
+			BufferedReader reader = new BufferedReader(new InputStreamReader(this.is));
 			String line;
 			while ((line = reader.readLine()) != null) {
 				message = message + line + "/n";
@@ -1047,9 +1158,9 @@ public class DachsGltInterfaceImpl extends AbstractOpenemsComponent implements O
 		} catch (IOException e) {
 			this.logError(this.log, "I/O Error: " + e.getMessage());
 		} finally {
-			if (is != null) {
+			if (this.is != null) {
                 try {
-                    is.close();
+					this.is.close();
                 } catch (IOException e) {
                     this.logError(this.log, "I/O Error: " + e.getMessage());
                 }
@@ -1060,15 +1171,15 @@ public class DachsGltInterfaceImpl extends AbstractOpenemsComponent implements O
 	}
 
 	protected void activateDachs() {
-		String returnMessage = setKeysDachs("Stromf_Ew.Anforderung_GLT.bAktiv=1");
-		if (debug) {
+		String returnMessage = this.setKeysDachs("Stromf_Ew.Anforderung_GLT.bAktiv=1");
+		if (this.debug) {
 			this.logInfo(this.log, "Sending \"run request\" signal to Dachs Chp. Return message: " + returnMessage);
 		}
 	}
 
 	protected void deactivateDachs() {
-		String returnMessage = setKeysDachs("Stromf_Ew.Anforderung_GLT.bAktiv=0");
-		if (debug) {
+		String returnMessage = this.setKeysDachs("Stromf_Ew.Anforderung_GLT.bAktiv=0");
+		if (this.debug) {
 			this.logInfo(this.log, "Sending \"no need to run\" signal to Dachs Chp. Return message: " + returnMessage);
 		}
 	}

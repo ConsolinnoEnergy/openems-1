@@ -15,7 +15,7 @@ import io.openems.edge.heater.api.Chp;
  * Channels for the Dachs CHP.
  */
 
-public interface DachsGltInterfaceChannel extends Chp {
+public interface DachsGltInterface extends Chp {
 
     public enum ChannelId implements io.openems.edge.common.channel.ChannelId {
 

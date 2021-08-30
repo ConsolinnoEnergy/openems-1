@@ -325,12 +325,10 @@ public class MassHeaterWoodChipsWoodChipsImpl extends AbstractOpenemsModbusCompo
             boolean turnOnHeater = this.enableSignalHandler.deviceShouldBeHeating(this);
 
             // Handle ExceptionalState. ExceptionalState overwrites EnableSignal.
-            int exceptionalStateValue = 0;
-            boolean exceptionalStateActive = false;
             if (this.useExceptionalState) {
-                exceptionalStateActive = this.exceptionalStateHandler.exceptionalStateActive(this);
+                boolean exceptionalStateActive = this.exceptionalStateHandler.exceptionalStateActive(this);
                 if (exceptionalStateActive) {
-                    exceptionalStateValue = this.getExceptionalStateValue();
+                    int exceptionalStateValue = this.getExceptionalStateValue();
                     if (exceptionalStateValue <= 0) {
                         // Turn off heater when ExceptionalStateValue = 0.
                         turnOnHeater = false;

@@ -8,7 +8,7 @@ import io.openems.edge.consolinno.sensor.signal.api.SignalSensor;
 import io.openems.edge.controller.api.Controller;
 import io.openems.edge.controller.heatnetwork.controlcenter.api.ControlCenter;
 import io.openems.edge.controller.heatnetwork.performancebooster.api.HeatnetworkPerformanceBooster;
-import io.openems.edge.heater.Storage;
+import io.openems.edge.heater.api.Storage;
 import io.openems.edge.heatsystem.components.PassingStation;
 import io.openems.edge.heatsystem.components.Valve;
 import io.openems.edge.bridge.lucidcontrol.api.LucidControlDeviceOutput;

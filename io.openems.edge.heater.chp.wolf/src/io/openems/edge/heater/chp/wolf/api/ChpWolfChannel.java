@@ -130,15 +130,8 @@ public interface ChpWolfChannel extends Chp {
 
 
     	// Non Modbus Channels
-    	
-    	/**
-         * Set point for the generated electrical power.
-         * <ul>
-         * <li>Type: integer
-         * <li>Unit: kilowatt
-         * </ul>
-         */
-    	ELECTRIC_POWER_SETPOINT(Doc.of(OpenemsType.INTEGER).unit(Unit.KILOWATT).accessMode(AccessMode.READ_WRITE)),
+
+        // EFFECTIVE_ELECTRIC_POWER_SETPOINT -> chp interface
 
         /**
          * Einspeisemanagement setpoint. Manual does not say what unit.
@@ -425,44 +418,6 @@ public interface ChpWolfChannel extends Chp {
     public default Value<Integer> getElectricalWork() {
         return this.getElectricalWorkChannel().value();
     }
-    
-    /**
-     * Gets the Channel for {@link ChannelId#ELECTRIC_POWER_SETPOINT}.
-     *
-     * @return the Channel
-     */
-    public default IntegerWriteChannel getElectricPowerSetpointChannel() {
-        return this.channel(ChannelId.ELECTRIC_POWER_SETPOINT);
-    }
-    
-    /**
-     * Electric power set point. See {@link ChannelId#ELECTRIC_POWER_SETPOINT}.
-     *
-     * @return the Channel {@link Value}
-     */
-    public default Value<Integer> getElectricPowerSetpoint() { 
-    	return this.getElectricPowerSetpointChannel().value(); 
-    }
-    
-    /**
-	 * Set electric power set point. See {@link ChannelId#ELECTRIC_POWER_SETPOINT}.
-	 * 
-	 * @param value the next write value
-	 * @throws OpenemsNamedException on error
-	 */
-    public default void setElectricPowerSetpoint(Integer value) throws OpenemsNamedException {
-		this.getElectricPowerSetpointChannel().setNextWriteValue(value);
-	}
-	
-	/**
-	 * Set electric power set point. See {@link ChannelId#ELECTRIC_POWER_SETPOINT}.
-	 * 
-	 * @param value the next write value
-	 * @throws OpenemsNamedException on error
-	 */
-	public default void setElectricPowerSetpoint(int value) throws OpenemsNamedException {
-		this.getElectricPowerSetpointChannel().setNextWriteValue(value);
-	}
 
     /**
      * Gets the Channel for {@link ChannelId#EINSPEISEMANAGEMENT_SETPOINT}.
