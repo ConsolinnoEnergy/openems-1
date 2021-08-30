@@ -22,6 +22,8 @@ import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.metatype.annotations.Designate;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -31,11 +33,17 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
-
+/**
+ * This Controller watches over Temperatures and checks if they have significantly changed or not. If not,
+ * there could be an issue with a corresponding heater, hydraulicComponent or the HeatNetwork is too cold.
+ * If an error occurred -> write to the target (ExceptionalState) to disable the component.
+ */
 @Designate(ocd = Config.class, factory = true)
-@Component(name = "Controller.Passing.Overseer")
-public class ControllerOverseerImpl extends AbstractOpenemsComponent implements Controller, OpenemsComponent {
+@Component(name = "Controller.Heatnetwork.ErrorWatchDog")
+public class ControllerHeatnetworkWatchdogImpl extends AbstractOpenemsComponent implements Controller, OpenemsComponent {
 
+
+    private final Logger log = LoggerFactory.getLogger(ControllerHeatnetworkWatchdogImpl.class);
     private static final String TIMER_ID = "TestTimer";
     private static final String ERROR_ID = "ErrorTimer";
     private String componentId;
@@ -51,7 +59,7 @@ public class ControllerOverseerImpl extends AbstractOpenemsComponent implements 
     private ExceptionalState target;
     private boolean errorState;
 
-    public ControllerOverseerImpl() {
+    public ControllerHeatnetworkWatchdogImpl() {
         super(OpenemsComponent.ChannelId.values(), Controller.ChannelId.values());
     }
 
@@ -62,7 +70,7 @@ public class ControllerOverseerImpl extends AbstractOpenemsComponent implements 
     ConfigurationAdmin cm;
 
     @Activate
-    public void activate(ComponentContext context, Config config) throws OpenemsError.OpenemsNamedException, ConfigurationException, IOException {
+    void activate(ComponentContext context, Config config) throws OpenemsError.OpenemsNamedException, ConfigurationException, IOException {
         super.activate(context, config.id(), config.alias(), config.enabled());
         this.componentId = config.componentId();
         this.activateChannel = this.cpm.getChannel(ChannelAddress.fromString(config.enableChannel()));
@@ -73,50 +81,50 @@ public class ControllerOverseerImpl extends AbstractOpenemsComponent implements 
         this.timeHandler.addOneIdentifier(TIMER_ID, config.timerId(), config.testPeriod());
         this.timeHandler.addOneIdentifier(ERROR_ID, config.timerId(), config.errorPeriod());
         this.configurationDone = config.configurationDone();
-        allocateComponents(config.sourceThermometer(), config.targetThermometer(), config.targetComponentId());
+        this.allocateComponents(config.sourceThermometer(), config.targetThermometer(), config.targetComponentId());
         if (this.componentId != null) {
-            update(cm.getConfiguration(this.servicePid(), "?"), "channelIdList", new ArrayList<>(cpm.getComponent(this.componentId).channels()), config.channelIdList().length);
+            this.update(this.cm.getConfiguration(this.servicePid(), "?"), "channelIdList", new ArrayList<>(this.cpm.getComponent(this.componentId).channels()), config.channelIdList().length);
         }
     }
 
     @Deactivate
-    public void deactivate() {
+    protected void deactivate() {
         super.deactivate();
 
     }
 
     private void allocateComponents(String thermometerOne, String thermometerTwo, String target) throws OpenemsError.OpenemsNamedException, ConfigurationException {
 
-        if (cpm.getComponent(thermometerOne) instanceof Thermometer) {
-            this.thermometerOne = cpm.getComponent(thermometerOne);
+        if (this.cpm.getComponent(thermometerOne) instanceof Thermometer) {
+            this.thermometerOne = this.cpm.getComponent(thermometerOne);
         } else {
-            throw new ConfigurationException(thermometerOne,
-                    "not a Thermometer; Check if Name is correct and try again");
+            throw new ConfigurationException("AllocateComponents",
+                    "Not a Thermometer. Check if name is correct and try again, thermometerId: " + thermometerOne);
         }
 
-        if (cpm.getComponent(thermometerTwo) instanceof Thermometer) {
-            this.thermometerTwo = cpm.getComponent(thermometerTwo);
+        if (this.cpm.getComponent(thermometerTwo) instanceof Thermometer) {
+            this.thermometerTwo = this.cpm.getComponent(thermometerTwo);
         } else {
-            throw new ConfigurationException(thermometerTwo,
-                    "not a Thermometer; Check if Name is correct and try again");
+            throw new ConfigurationException("AllocateComponents",
+                    "Not a Thermometer. Check if name is correct and try again, thermometerId: " + thermometerTwo);
         }
-        if (cpm.getComponent(target) instanceof ExceptionalState) {
-            this.target = cpm.getComponent(target);
+        if (this.cpm.getComponent(target) instanceof ExceptionalState) {
+            this.target = this.cpm.getComponent(target);
         } else {
-            throw new ConfigurationException(target,
-                    "not a ExceptionalState Component; Check if Name is correct and try again");
+            throw new ConfigurationException("AllocateComponents",
+                    "Not an ExceptionalState Component; Check if Name is correct and try again. Id: " + target);
         }
 
     }
 
 
     /**
-     * Checks if there is an Error in the Valve or Pump of the PassingStation.
+     * Checks if there is an Error in the Valve or Pump. And overwrite them with the ExcpetionalState.
      */
 
     @Override
     public void run() {
-        if (configurationDone) {
+        if (this.configurationDone) {
             boolean done = false;
             boolean error = false;
             if (!this.errorState) {
@@ -138,7 +146,8 @@ public class ControllerOverseerImpl extends AbstractOpenemsComponent implements 
             }
             try {
                 this.handleError(error);
-            } catch (OpenemsError.OpenemsNamedException ignored) {
+            } catch (OpenemsError.OpenemsNamedException e) {
+                this.log.warn("Couldn't write to the ExceptionalState Component. Reason: " + e.getMessage());
             }
         }
     }
@@ -200,7 +209,7 @@ public class ControllerOverseerImpl extends AbstractOpenemsComponent implements 
 
         try {
             Dictionary<String, Object> properties = config.getProperties();
-            properties.put(configTarget, propertyInput(Arrays.toString(channelIdArray)));
+            properties.put(configTarget, this.propertyInput(Arrays.toString(channelIdArray)));
             config.update(properties);
 
         } catch (IOException e) {
