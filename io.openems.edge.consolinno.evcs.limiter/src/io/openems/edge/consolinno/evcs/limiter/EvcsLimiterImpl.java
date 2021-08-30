@@ -256,9 +256,6 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
         if (limit <= 0) {
             this.setPowerLimit(1);
         } else {
-            if (limit > this.initialPowerLimit) {
-                limit = this.initialPowerLimit;
-            }
             setPowerLimit(limit);
         }
     }
