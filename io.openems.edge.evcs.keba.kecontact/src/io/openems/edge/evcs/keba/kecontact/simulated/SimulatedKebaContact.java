@@ -77,11 +77,11 @@ public class SimulatedKebaContact extends AbstractOpenemsComponent implements Ma
         this.l2 = this.channel(KebaChannelId.CURRENT_L2);
         this.l3 = this.channel(KebaChannelId.CURRENT_L3);
         if (config.minHwPower() == 0) {
-            this._setMinimumHardwarePower(6);
+            this._setMinimumHardwarePower(5);
         } else {
             this._setMinimumHardwarePower(config.minHwPower());
         }
-        this._setMinimumPower(6);
+        this._setMinimumPower(5);
         this._setPhases(0);
         this._setPowerPrecision(0.23);
 
@@ -106,7 +106,7 @@ public class SimulatedKebaContact extends AbstractOpenemsComponent implements Ma
         this.l2 = this.channel(KebaChannelId.CURRENT_L2);
         this.l3 = this.channel(KebaChannelId.CURRENT_L3);
         if (config.minHwPower() == 0) {
-            this._setMinimumHardwarePower(6);
+            this._setMinimumHardwarePower(5);
         } else {
             this._setMinimumHardwarePower(config.minHwPower());
         }
@@ -202,8 +202,10 @@ public class SimulatedKebaContact extends AbstractOpenemsComponent implements Ma
      * @param phaseCount  the amount of phases the evcs charges with in total
      */
     public void applyPower(int phase, int chargePower, int phaseCount) {
-        if (chargePower <= this.config.minHwPower() && chargePower > 0) {
-            chargePower = 0;
+        if (this.phaseCount != 0) {
+            if (chargePower < (this.config.minHwPower() / this.phaseCount) && chargePower > 0) {
+                chargePower = 0;
+            }
         }
         this.initialPower = chargePower;
         this.phaseCount = phaseCount;

@@ -6,6 +6,7 @@ class EvcsOnHold {
     private final int power;
     private final DateTime timestamp;
     private final int phases;
+    private boolean wantToCharge;
 
     /**
      * This Object contains the information to Identify a waiting EVCS(this is an internal Object and is designed to
@@ -15,7 +16,7 @@ class EvcsOnHold {
      * @param timestamp time when the EVCS was turned off
      * @param phases    amount of phases the EVCS has
      */
-    public EvcsOnHold(int power, DateTime timestamp, int phases) {
+    public EvcsOnHold(int power, DateTime timestamp, int phases,boolean wantToCharge) {
         this.power = power;
         this.timestamp = timestamp;
         this.phases = phases;
@@ -34,5 +35,13 @@ class EvcsOnHold {
             return 1;
         }
         return this.phases;
+    }
+
+    public void setWantToCharge(boolean wantToCharge) {
+        this.wantToCharge = wantToCharge;
+    }
+
+    public boolean getWantToCharge() {
+        return this.wantToCharge;
     }
 }
