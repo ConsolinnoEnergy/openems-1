@@ -9,7 +9,7 @@ import io.openems.edge.controller.heatnetwork.valve.api.ControlType;
 import io.openems.edge.controller.heatnetwork.valve.api.ValveController;
 import io.openems.edge.heater.Cooler;
 import io.openems.edge.heater.HeaterState;
-import io.openems.edge.cooler.decentral.api.DecentralCooler;
+import io.openems.edge.cooler.decentral.api.DecentralizeCooler;
 import io.openems.edge.heatsystem.components.Valve;
 import io.openems.edge.thermometer.api.ThermometerThreshold;
 import org.osgi.service.cm.ConfigurationException;
@@ -28,17 +28,24 @@ import org.slf4j.LoggerFactory;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 
-
+/**
+ * The Decentralized Cooler. It provides an equivalent functionality as the decentralized Heater, but it is used for cooling
+ * purposes. And therefore the "needMoreHeat" condition is swapped.
+ * It gets an HydraulicComponent, and asks, after the "EnableSignal" was set, for a startSignal from an external source.
+ * (Central Cooler).
+ * If the Signal is received, it starts an HydraulicComponent and starts the Cooling process.
+ */
 @Designate(ocd = Config.class, factory = true)
-@Component(name = "Cooler.Decentral",
+@Component(name = "Cooler.Decentralized",
         configurationPolicy = ConfigurationPolicy.REQUIRE,
         immediate = true,
         property = {EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS}
 )
 
-public class DecentralCoolerImpl extends AbstractOpenemsComponent implements OpenemsComponent, DecentralCooler, EventHandler {
+public class DecentralizedCoolerImpl extends AbstractOpenemsComponent implements OpenemsComponent, DecentralizeCooler, EventHandler {
 
-    private final Logger log = LoggerFactory.getLogger(DecentralCoolerImpl.class);
+    private static final int DEFAULT_MAXIMUM_VALVE = 100;
+    private final Logger log = LoggerFactory.getLogger(DecentralizedCoolerImpl.class);
     @Reference
     ComponentManager cpm;
 
@@ -50,22 +57,22 @@ public class DecentralCoolerImpl extends AbstractOpenemsComponent implements Ope
     private int maxWaitCyclesNeedCoolEnable;
     private boolean wasNeedCoolEnableLastCycle;
 
-    public DecentralCoolerImpl() {
+    public DecentralizedCoolerImpl() {
         super(OpenemsComponent.ChannelId.values(),
                 Cooler.ChannelId.values(),
-                DecentralCooler.ChannelId.values());
+                DecentralizeCooler.ChannelId.values());
     }
 
 
     @Activate
-    public void activate(ComponentContext context, Config config) throws OpenemsError.OpenemsNamedException, ConfigurationException {
+    void activate(ComponentContext context, Config config) throws OpenemsError.OpenemsNamedException, ConfigurationException {
         super.activate(context, config.id(), config.alias(), config.enabled());
 
         OpenemsComponent componentFetchedByComponentManager;
 
         this.isValve = config.valveOrController().equals("Valve");
         componentFetchedByComponentManager = this.cpm.getComponent(config.valveOrControllerId());
-        if (isValve) {
+        if (this.isValve) {
             if (componentFetchedByComponentManager instanceof Valve) {
                 this.configuredValve = (Valve) componentFetchedByComponentManager;
             } else {
@@ -79,7 +86,7 @@ public class DecentralCoolerImpl extends AbstractOpenemsComponent implements Ope
                     + config.valveOrControllerId() + "not an instance of ValveController");
         }
 
-        componentFetchedByComponentManager = cpm.getComponent(config.thresholdThermometerId());
+        componentFetchedByComponentManager = this.cpm.getComponent(config.thresholdThermometerId());
         if (componentFetchedByComponentManager instanceof ThermometerThreshold) {
             this.thermometerThreshold = (ThermometerThreshold) componentFetchedByComponentManager;
             this.thermometerThreshold.setSetPointTemperature(config.setPointTemperature(), super.id());
@@ -89,7 +96,7 @@ public class DecentralCoolerImpl extends AbstractOpenemsComponent implements Ope
         }
         this.setSetPointTemperature(config.setPointTemperature());
         if (config.shouldCloseOnActivation()) {
-            if (isValve) {
+            if (this.isValve) {
                 this.configuredValve.forceClose();
             } else {
                 this.configuredValveController.setEnableSignal(false);
@@ -125,13 +132,13 @@ public class DecentralCoolerImpl extends AbstractOpenemsComponent implements Ope
             if (this.errorInCooler()) {
                 //TODO DO SOMETHING (?)
             }
-            checkMissingComponents();
+            this.checkMissingComponents();
             //First things first: Is Cooler Enabled
-            boolean currentRunCoolerEnabled = checkIsCurrentRunCoolerEnabled();
+            boolean currentRunCoolerEnabled = this.checkIsCurrentRunCoolerEnabled();
             if (currentRunCoolerEnabled) {
                 this.getNeedCoolChannel().setNextValue(true);
                 //Is Cooler allowed to Cool
-                boolean currentRunNeedCoolEnable = checkIsCurrentCoolNeedEnabled();
+                boolean currentRunNeedCoolEnable = this.checkIsCurrentCoolNeedEnabled();
                 if (currentRunNeedCoolEnable || this.getIsForceCooling()) {
                     this.currentWaitCycleNeedCoolEnable.getAndSet(0);
                     this.wasNeedCoolEnableLastCycle = true;
@@ -139,7 +146,8 @@ public class DecentralCoolerImpl extends AbstractOpenemsComponent implements Ope
                     // and ask for more heat
                     try {
                         this.setThresholdAndControlValve();
-                    } catch (OpenemsError.OpenemsNamedException ignored) {
+                    } catch (OpenemsError.OpenemsNamedException e) {
+                        this.log.warn("Couldn't apply Start Signal to Valve, reason: " + e.getMessage());
                     }
                 } else {
                     this.wasNeedCoolEnableLastCycle = false;
@@ -147,7 +155,7 @@ public class DecentralCoolerImpl extends AbstractOpenemsComponent implements Ope
                     this.closeValveOrDisableValveController();
                 }
             } else {
-                deactivateControlledComponents();
+                this.deactivateControlledComponents();
             }
         }
     }
@@ -168,18 +176,18 @@ public class DecentralCoolerImpl extends AbstractOpenemsComponent implements Ope
             }
         }
         // Check if SetPointTemperature above Thermometer --> Either
-        if (this.thermometerThreshold.thermometerAboveGivenTemperature(this.getSetPointTemperature())) {
+        if (this.thermometerThreshold.thermometerBelowGivenTemperature(this.getSetPointTemperature())) {
             this.setState(HeaterState.RUNNING.name());
             this.getNeedMoreCoolChannel().setNextValue(false);
             if (this.isValve) {
-                this.configuredValve.setPointPowerLevelChannel().setNextValue(100);
+                this.configuredValve.setPointPowerLevelChannel().setNextValue(DEFAULT_MAXIMUM_VALVE);
             }
         } else {
             this.getNeedMoreCoolChannel().setNextValue(true);
             if (this.isValve) {
                 this.closeValveOrDisableValveController();
             }
-            this.setState(HeaterState.PREHEAT.name());
+            this.setState(HeaterState.PRE_COOL.name());
         }
     }
 
@@ -190,7 +198,8 @@ public class DecentralCoolerImpl extends AbstractOpenemsComponent implements Ope
      * @return enabled;
      */
     private boolean checkIsCurrentCoolNeedEnabled() {
-        boolean currentRunNeedCoolEnable = this.currentWaitCycleNeedCoolEnable.get() >= this.maxWaitCyclesNeedCoolEnable || wasNeedCoolEnableLastCycle;
+        boolean currentRunNeedCoolEnable = this.currentWaitCycleNeedCoolEnable.get() >= this.maxWaitCyclesNeedCoolEnable
+                || this.wasNeedCoolEnableLastCycle;
 
         Optional<Boolean> needCoolEnableSignal = this.getNeedCoolEnableSignalChannel().getNextWriteValueAndReset();
         if (needCoolEnableSignal.isPresent()) {
@@ -221,27 +230,26 @@ public class DecentralCoolerImpl extends AbstractOpenemsComponent implements Ope
         try {
             if (this.isValve) {
                 if (this.configuredValve.isEnabled() == false) {
-                    componentFetchedByCpm = cpm.getComponent(this.configuredValve.id());
+                    componentFetchedByCpm = this.cpm.getComponent(this.configuredValve.id());
                     if (componentFetchedByCpm instanceof Valve) {
                         this.configuredValve = (Valve) componentFetchedByCpm;
                     }
                 }
             } else {
                 if (this.configuredValveController.isEnabled() == false) {
-                    componentFetchedByCpm = cpm.getComponent(this.configuredValveController.id());
+                    componentFetchedByCpm = this.cpm.getComponent(this.configuredValveController.id());
                     if (componentFetchedByCpm instanceof ValveController) {
                         this.configuredValveController = (ValveController) componentFetchedByCpm;
                     }
                 }
             }
             if (this.thermometerThreshold.isEnabled() == false) {
-                componentFetchedByCpm = cpm.getComponent(this.thermometerThreshold.id());
+                componentFetchedByCpm = this.cpm.getComponent(this.thermometerThreshold.id());
                 if (componentFetchedByCpm instanceof ThermometerThreshold) {
                     this.thermometerThreshold = (ThermometerThreshold) componentFetchedByCpm;
                 }
             }
         } catch (OpenemsError.OpenemsNamedException ignored) {
-            //TODO (?) Was soll passieren wenn Komponente nicht gefunden werden kann/falsche instanceof nur heaterstate --> error?
             this.setState(HeaterState.ERROR.name());
         }
     }

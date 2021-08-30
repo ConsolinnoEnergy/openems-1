@@ -26,7 +26,7 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
     @AttributeDefinition(name = "Cooling Device Deactivation Temperature in dC",
             description = "Threshold of the Cooling Devices should be turned OFF(in dC --> 1°C == 10°dC). Can also be a ChannelAddress")
-    String[] deactivationTemperatures() default {"800","800", "VirtualThermometer1/Temperature"};
+    String[] deactivationTemperatures() default {"200","200", "VirtualThermometer1/Temperature"};
 
     @AttributeDefinition(name = "Activation Thermometers", description = "The Thermometer measuring the activation Temperatures.")
     String[] activationThermometers() default {"TemperatureSensor0", "TemperatureSensor2", "TemperatureSensor4"};

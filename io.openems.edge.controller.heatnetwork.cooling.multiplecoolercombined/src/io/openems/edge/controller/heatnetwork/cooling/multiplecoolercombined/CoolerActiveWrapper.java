@@ -7,7 +7,6 @@ class CoolerActiveWrapper {
 
     private boolean active;
 
-
     CoolerActiveWrapper(boolean active) {
         this.active = active;
     }
@@ -16,10 +15,18 @@ class CoolerActiveWrapper {
         this(false);
     }
 
+    /**
+     * Check if the corresponding cooler should be active or not.
+     * @return true or false
+     */
     boolean isActive() {
         return this.active;
     }
 
+    /**
+     * Sets if the Cooler should be active or not. Usually set by the MultiCooler
+     * @param active the value
+     */
     void setActive(boolean active) {
         this.active = active;
     }

@@ -4,7 +4,7 @@ import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
 @ObjectClassDefinition(
-        name = "Controller Consolinno Hydraulic Line Cooler",
+        name = "Controller Hydraulic Line Cooler",
         description = "This Controller cools down a hydraulic line."
 )
 @interface Config {
@@ -23,9 +23,9 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     String tempSensorReference() default "TemperatureSensor0";
 
     @AttributeDefinition(name = "Default Temperature", description = "How long should we cool? OFF(in dC --> 1°C == 10°dC).")
-    int temperatureDefault() default 800;
+    int temperatureDefault() default 200;
 
-    @AttributeDefinition(name = "Valve, MultiChannel, OneChannel", description = "Do you want to Access Channel, or multiple Channel directly or access Valve")
+    @AttributeDefinition(name = "Cooler Type", description = "Do you want to Access 1 Channel, or multiple Channel or access a Valve directly.")
     LineCoolerType valveOrChannel() default LineCoolerType.ONE_CHANNEL;
 
 
@@ -34,7 +34,7 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     boolean valueToWriteIsBoolean() default false;
 
     @AttributeDefinition(name = "ChannelAddress", description = "ChannelAddress, if OneChannel is selected")
-    String channelAddress() default "AM_2/ActivateHydraulicMixer";
+    String channelAddress() default "HydraulicController0/EnableSignal";
 
     @AttributeDefinition(name = "Channels To Read and Write From", description = "First Channel is to Read, Second to Write, Third for Max Value, Fourth for min Value only important if Multiple Channel are controlled")
     String[] channels() default {"valve0/PowerLevel", "valve0/SetPowerLevel", "valve0/MaxValvePower", "valve0/MinValveValue"};
@@ -56,10 +56,10 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     @AttributeDefinition(name = "Use Fallback be activated", description = "If there is no signal, hold the line on temperature")
     boolean shouldFallback() default false;
 
-    @AttributeDefinition(name = "Minute for Fallbackstart", description = "MinuteStamp to start Fallback, e.g. start at x:15")
+    @AttributeDefinition(name = "Minute for Fallback start", description = "MinuteStamp to start Fallback, e.g. start at x:15")
     int minuteFallbackStart() default 15;
 
-    @AttributeDefinition(name = "Minute for FallbackStop", description = "Minute stamp to stop Fallback, e.g. stop at x:30")
+    @AttributeDefinition(name = "Minute for Fallback stop", description = "Minute stamp to stop Fallback, e.g. stop at x:30")
     int minuteFallbackStop() default 30;
 
     boolean useMinMax() default false;

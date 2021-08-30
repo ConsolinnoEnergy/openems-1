@@ -11,7 +11,7 @@ import io.openems.edge.controller.heatnetwork.cooling.hydraulic.linecooler.helpe
 import io.openems.edge.controller.heatnetwork.cooling.hydraulic.linecooler.helperclass.LineCooler;
 import io.openems.edge.controller.heatnetwork.cooling.hydraulic.linecooler.helperclass.OneChannelLineCooler;
 import io.openems.edge.controller.heatnetwork.cooling.hydraulic.linecooler.helperclass.ValveLineCooler;
-import io.openems.edge.cooler.decentral.api.DecentralCooler;
+import io.openems.edge.cooler.decentral.api.DecentralizeCooler;
 import io.openems.edge.heatsystem.components.Valve;
 import io.openems.edge.thermometer.api.Thermometer;
 import io.openems.edge.timer.api.TimerHandler;
@@ -30,6 +30,14 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Optional;
 
+
+/**
+ * This is the HydraulicLineCooler Controller. It is equivalent to the HydraulicLineHeater and  cools a System, by
+ * Opening or Closing a Valve. In general it Either needs an EnableSignal to be activated or it needs a (optional)
+ * {@link DecentralizeCooler} to be activated. After activation, it checks, if the Temperature is above the SetPoint and
+ * then starts cooling, by either Writing to a Valve, (and/or defining the min/max) different Channel, or one Channel only.
+ * It has an optional Fallback-Method, where it cools the System in a configurable TimeFrame if no EnableSignal is Present.
+ */
 
 @Designate(ocd = Config.class, factory = true)
 @Component(name = "HydraulicLineCoolerController",
@@ -54,7 +62,7 @@ public class HydraulicLineCoolerController extends AbstractOpenemsComponent impl
     private static final String IDENTIFIER_FALLBACK = "HYDRAULIC_LINE_COOLER_FALLBACK_IDENTIFIER";
     private static final String IDENTIFIER_CYCLE_RESTART = "HYDRAULIC_LINE_COOLER_CYCLE_RESTART_IDENTIFIER";
     private Thermometer tempSensorReference;
-    private DecentralCooler decentralCoolerOptional;
+    private DecentralizeCooler decentralCoolerOptional;
 
     private int temperatureDefault = 600;
     private boolean shouldFallback = false;
@@ -65,6 +73,11 @@ public class HydraulicLineCoolerController extends AbstractOpenemsComponent impl
     private Boolean onlyMaxMin;
     private boolean useMinMax;
     //NOTE: If more Variation comes --> create extra "LineCooler"Classes in this controller etc
+
+    private enum ComponentType {
+        VALVE, DECENTRAL_COOLER, THERMOMETER
+    }
+
 
 
     public HydraulicLineCoolerController() {
@@ -84,7 +97,7 @@ public class HydraulicLineCoolerController extends AbstractOpenemsComponent impl
         this.createSpecificLineCooler(config);
 
         if (config.useDecentralCooler()) {
-            this.decentralCoolerOptional = (DecentralCooler) this.allocateComponent(config.decentralcoolerReference(),
+            this.decentralCoolerOptional = (DecentralizeCooler) this.allocateComponent(config.decentralcoolerReference(),
                     ComponentType.DECENTRAL_COOLER);
         }
         this.temperatureDefault = config.temperatureDefault();
@@ -200,7 +213,7 @@ public class HydraulicLineCoolerController extends AbstractOpenemsComponent impl
      */
 
     private OpenemsComponent allocateDecentralCooler(String deviceId) throws Exception {
-        if (this.cpm.getComponent(deviceId) instanceof DecentralCooler) {
+        if (this.cpm.getComponent(deviceId) instanceof DecentralizeCooler) {
             return this.cpm.getComponent(deviceId);
         }
         throw new Exception("Internal Error, this shouldn't occur");
@@ -222,7 +235,7 @@ public class HydraulicLineCoolerController extends AbstractOpenemsComponent impl
     }
 
     /**
-     * Allocates a Thermometer for Reference
+     * Allocates a Thermometer for Reference.
      *
      * @param device the deviceId
      * @return the component
@@ -243,7 +256,8 @@ public class HydraulicLineCoolerController extends AbstractOpenemsComponent impl
     public void run() throws OpenemsError.OpenemsNamedException {
         int tempReference = this.tempSensorReference.getTemperature().orElse(DEFAULT_TEMPERATURE);
         DateTime now = new DateTime();
-        boolean decentralCoolRequestPresent = this.decentralCoolerOptional != null && this.decentralCoolerOptional.getNeedCoolChannel().value().orElse(false);
+        boolean decentralCoolRequestPresent = this.decentralCoolerOptional != null
+                && this.decentralCoolerOptional.getNeedCoolChannel().value().orElse(false);
         boolean decentralCoolRequest = this.getCoolRequestCooler();
         Optional<Boolean> signal = this.enableSignal().getNextWriteValueAndReset();
         boolean missingEnableSignal = signal.isPresent() == false;
@@ -290,14 +304,14 @@ public class HydraulicLineCoolerController extends AbstractOpenemsComponent impl
     private void startCooling() {
         try {
             if (this.useMinMax) {
-                this.lineCooler.setMaxAndMin(maxValue().value().orElse(100.d), minValue().value().orElse(0.d));
+                this.lineCooler.setMaxAndMinValues(maxValue().value().orElse(100.d), minValue().value().orElse(0.d));
             }
-            if (onlyMaxMin == false) {
+            if (this.onlyMaxMin == false) {
                 if (this.lineCooler.startCooling()) {
                     this.isRunning().setNextValue(true);
                 }
             } else {
-                this.lineCooler.onlySetMaxMin();
+                this.lineCooler.onlyWriteMaxMinToLine();
             }
         } catch (OpenemsError.OpenemsNamedException e) {
             this.log.error("Error while trying to cool!");
@@ -311,7 +325,7 @@ public class HydraulicLineCoolerController extends AbstractOpenemsComponent impl
      */
     private void stopCooling(DateTime lifecycle) {
         try {
-            if (onlyMaxMin == false) {
+            if (this.onlyMaxMin == false) {
                 if (this.lineCooler.stopCooling(lifecycle)) {
                     this.isRunning().setNextValue(false);
                     this.timerHandler.resetTimer(IDENTIFIER_CYCLE_RESTART);
@@ -322,6 +336,10 @@ public class HydraulicLineCoolerController extends AbstractOpenemsComponent impl
         }
     }
 
+    /**
+     * Return the optional DecentralCooler CoolRequest.
+     * @return a boolean
+     */
     private boolean getCoolRequestCooler() {
         if (this.decentralCoolerOptional != null) {
             return this.decentralCoolerOptional.getNeedCool();
@@ -330,7 +348,11 @@ public class HydraulicLineCoolerController extends AbstractOpenemsComponent impl
         }
     }
 
-
+    /**
+     * Checks if the configured TimeFrame is active for Fallback.
+     * @param minuteOfHour the current Minute of the Hour.
+     * @return if the minute is within the TimeFrame.
+     */
     private boolean isMinuteFallbackStart(int minuteOfHour) {
         boolean isStartAfterStop = this.minuteFallbackStart > this.minuteFallbackStop;
         if (isStartAfterStop) {

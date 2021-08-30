@@ -8,7 +8,11 @@ import io.openems.edge.common.channel.Doc;
 import io.openems.edge.common.channel.WriteChannel;
 import io.openems.edge.heater.Cooler;
 
-public interface DecentralCooler extends Cooler {
+/**
+ * The DecentralizeCooler interface, extending the Cooler. It Provides the ability, equivalent to the Decentral Heater,
+ * to cool a Storage, by asking for cooling and open /activate an HydraulicComponent depending on the temperature.
+ */
+public interface DecentralizeCooler extends Cooler {
 
     enum ChannelId implements io.openems.edge.common.channel.ChannelId {
 
@@ -37,73 +41,86 @@ public interface DecentralCooler extends Cooler {
     }
 
     //---------------NEED_COOL--------------------//
+
+    /**
+     * Get the NeedCool channel.
+     *
+     * @return the channel.
+     */
     default Channel<Boolean> getNeedCoolChannel() {
         return this.channel(ChannelId.NEED_COOL);
     }
 
+    /**
+     * Get the NeedCool ChannelValue.
+     *
+     * @return The Value or else false.
+     */
     default boolean getNeedCool() {
-        Boolean needCool = (Boolean) getCurrentChannelValue(this.getNeedCoolChannel());
+        Boolean needCool = (Boolean) this.getCurrentChannelValue(this.getNeedCoolChannel());
         if (needCool == null) {
-            needCool = (Boolean) getNextChannelValue(this.getNeedCoolChannel());
+            needCool = (Boolean) this.getNextChannelValue(this.getNeedCoolChannel());
         }
         return needCool != null ? needCool : false;
     }
     //--------------------------------------------//
 
     //---------------NEED_COOL_ENABLE_SIGNAL--------------------//
+
+    /**
+     * Get the NeedCool Enable Signal Channel.
+     *
+     * @return the Channel.
+     */
     default WriteChannel<Boolean> getNeedCoolEnableSignalChannel() {
         return this.channel(ChannelId.NEED_COOL_ENABLE_SIGNAL);
     }
-    //REWORK at Bastis branch --> DecentralCooler uses Channel directly
-    default boolean getNeedCoolEnableSignal() {
-        Boolean needCoolEnableSignal = (Boolean) getCurrentChannelValue(this.getNeedCoolEnableSignalChannel());
-        if (needCoolEnableSignal == null) {
-            needCoolEnableSignal = (Boolean) getNextChannelValue(this.getNeedCoolEnableSignalChannel());
-        }
-        return needCoolEnableSignal != null ? needCoolEnableSignal : false;
-    }
+
     //--------------------------------------------//
 
     //---------------NEED_MORE_COOL--------------------//
+
+    /**
+     * Get the NeedMoreCool Channel.
+     *
+     * @return the Channel.
+     */
     default Channel<Boolean> getNeedMoreCoolChannel() {
         return this.channel(ChannelId.NEED_MORE_COOL);
     }
 
-    default boolean getNeedMoreCool() {
-        Boolean needMoreCool = (Boolean) getCurrentChannelValue(this.getNeedMoreCoolChannel());
-        if (needMoreCool == null) {
-            needMoreCool = (Boolean) getNextChannelValue(this.getNeedMoreCoolChannel());
-        }
-        return needMoreCool != null ? needMoreCool : false;
-    }
     //--------------------------------------------//
 
     //---------------NEED_MORE_COOL_ENABLE_SIGNAL--------------------//
 
+    /**
+     * Gets the NeedMoreCool Enable Signal Channel.
+     *
+     * @return the channel.
+     */
     default Channel<Boolean> getNeedMoreCoolEnableSignalChannel() {
-        return this.channel(ChannelId.NEED_MORE_COOL);
+        return this.channel(ChannelId.NEED_MORE_COOL_ENABLE_SIGNAL);
     }
 
-    default boolean getNeedMoreCoolEnableSignal() {
-        Boolean needMoreCool = (Boolean) getCurrentChannelValue(this.getNeedMoreCoolChannel());
-        if (needMoreCool == null) {
-            needMoreCool = (Boolean) getNextChannelValue(this.getNeedMoreCoolChannel());
-        }
-        return needMoreCool != null ? needMoreCool : false;
-    }
     //--------------------------------------------------------------//
 
 
     //-----------------FORCE_COOL---------------------------//
 
+    /**
+     * Get the ForceCoolChannel.
+     *
+     * @return the channel.
+     */
     default WriteChannel<Boolean> getForceCoolChannel() {
         return this.channel(ChannelId.FORCE_COOL);
     }
 
-    default void setForceCooling(boolean forceCooling) {
-        this.getForceCoolChannel().setNextValue(forceCooling);
-    }
-
+    /**
+     * Gets Is Force Cooling value.
+     *
+     * @return the value.
+     */
     default boolean getIsForceCooling() {
         Boolean forceCooling = (Boolean) this.getCurrentChannelValue(this.getForceCoolChannel());
         if (forceCooling == null) {
@@ -114,7 +131,12 @@ public interface DecentralCooler extends Cooler {
 
     //---------------------------------------------------//
 
-
+    /**
+     * Gets the current Value of a given Channel. If defined.
+     *
+     * @param requestedChannel the requested Channel.
+     * @return the value or null.
+     */
     default Object getCurrentChannelValue(Channel<?> requestedChannel) {
         if (requestedChannel.value().isDefined()) {
             return requestedChannel.value().get();
@@ -123,6 +145,12 @@ public interface DecentralCooler extends Cooler {
         }
     }
 
+    /**
+     * Get ne next Value of a given Channel. If defined.
+     *
+     * @param requestedChannel the Channel to get the next Value from.
+     * @return the channel Value or null.
+     */
     default Object getNextChannelValue(Channel<?> requestedChannel) {
         if (requestedChannel.getNextValue().isDefined()) {
             return requestedChannel.getNextValue().get();

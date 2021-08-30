@@ -5,15 +5,15 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 import org.osgi.service.metatype.annotations.Option;
 
 @ObjectClassDefinition(
-        name = "Cooler Decentral",
-        description = "A Valve controlled by 2 relays used in the passing station."
+        name = "Cooler Decentralize",
+        description = "A Cooler that enables an Hydraulic Controller and awaits and EnableSignal."
 )
 @interface Config {
 
     String service_pid();
 
     @AttributeDefinition(name = "Valve Name", description = "Unique Id of the Valve.")
-    String id() default "DecentralCooler0";
+    String id() default "DecentralizedCooler0";
 
     @AttributeDefinition(name = "Alias", description = "Human readable name for this Component.")
     String alias() default "";
@@ -31,7 +31,7 @@ import org.osgi.service.metatype.annotations.Option;
     @AttributeDefinition(name = "ThresholdThermometerId", description = "ThresholdThermometer to Check")
     String thresholdThermometerId() default "ThresholdThermometer0";
 
-    @AttributeDefinition(name = "SetPointTemperature", description = "Setpoint to OpenValve, only important if you control Valve directly and not via controller, Unit: Decidegree: 1°C = 10dC")
+    @AttributeDefinition(name = "SetPointTemperature", description = "SetPoint to OpenValve, if the Temperature is not reached / Above Value -> Ask for more Cooling, Unit: DeciDegree: 1°C = 10dC")
     int setPointTemperature() default 200;
 
     int maximumThermalOutputInKw() default 150;

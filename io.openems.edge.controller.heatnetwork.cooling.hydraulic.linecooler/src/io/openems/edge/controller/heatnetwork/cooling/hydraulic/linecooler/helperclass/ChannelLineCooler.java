@@ -7,6 +7,10 @@ import io.openems.edge.common.channel.WriteChannel;
 import io.openems.edge.common.component.ComponentManager;
 import org.joda.time.DateTime;
 
+/**
+ * The Channel Line Cooler. It stores 4 ChannelAddresses and Writes, depending on the configuration, to the min and max
+ * Address only or the WriteAddress too.
+ */
 public class ChannelLineCooler extends AbstractLineCooler {
 
     private final ChannelAddress writeAddress;
@@ -28,9 +32,17 @@ public class ChannelLineCooler extends AbstractLineCooler {
 
     }
 
+
+    /**
+     * Starts the Cooling process.
+     *
+     * @return true if successful.
+     * @throws OpenemsError.OpenemsNamedException if e.g. a ChannelAddress or Component does not exist.
+     */
+
     @Override
     public boolean startCooling() throws OpenemsError.OpenemsNamedException {
-        double currentPowerDouble = getLastPower();
+        double currentPowerDouble = this.getLastPower();
         if (this.isRunning == false || currentPowerDouble < previouslyCheckedPowerLevel) {
             if (this.writeToChannel(this.isBooleanControlled() ? 1 : FULL_POWER)) {
                 this.isRunning = true;
@@ -41,8 +53,15 @@ public class ChannelLineCooler extends AbstractLineCooler {
         return false;
     }
 
+    /**
+     * Gets the LastPower Value from the readChannel.
+     *
+     * @return the lastPowerValue.
+     * @throws OpenemsError.OpenemsNamedException if the Channel cannot be found.
+     */
+
     private double getLastPower() throws OpenemsError.OpenemsNamedException {
-        Object lastPower = readFromChannel();
+        Object lastPower = this.readFromChannel();
         if (lastPower instanceof Double) {
             return (Double) lastPower;
         } else {
@@ -50,13 +69,27 @@ public class ChannelLineCooler extends AbstractLineCooler {
         }
     }
 
+    /**
+     * Gets the Object from the stores channel {@link #readAddress}.
+     *
+     * @return the Value of the Channel as Obj.
+     * @throws OpenemsError.OpenemsNamedException if channel cannot be found.
+     */
     private Object readFromChannel() throws OpenemsError.OpenemsNamedException {
 
-        return this.cpm.getChannel(readAddress).value().isDefined()
-                ? this.cpm.getChannel(readAddress).value().get() : DEFAULT_LAST_POWER_VALUE;
+        return this.cpm.getChannel(this.readAddress).value().isDefined()
+                ? this.cpm.getChannel(this.readAddress).value().get() : DEFAULT_LAST_POWER_VALUE;
     }
 
-    private boolean writeToChannel(double lastPower) throws OpenemsError.OpenemsNamedException {
+    /**
+     * Writes the setPoint Power to the writeChannel Address, as well as the stored MinMax Value if configured.
+     *
+     * @param setPointPower the Power that will be written to the WriteChannel
+     * @return true n success.
+     * @throws OpenemsError.OpenemsNamedException if the wirtechannel couldn't be found.
+     */
+
+    private boolean writeToChannel(double setPointPower) throws OpenemsError.OpenemsNamedException {
         if (this.useMinMax) {
             WriteChannel<Double> doubleMaxWriteChannel = this.cpm.getChannel(this.maxAddress);
             WriteChannel<Double> doubleMinWriteChannel = this.cpm.getChannel(this.minAddress);
@@ -65,17 +98,26 @@ public class ChannelLineCooler extends AbstractLineCooler {
         }
         if (this.isBooleanControlled()) {
             WriteChannel<Boolean> booleanWriteChannel = this.cpm.getChannel(this.writeAddress);
-            booleanWriteChannel.setNextWriteValue(lastPower > 0);
+            booleanWriteChannel.setNextWriteValue(setPointPower > 0);
         } else {
             Channel<?> writeChannel = this.cpm.getChannel(this.writeAddress);
             if (writeChannel instanceof WriteChannel<?>) {
-                ((WriteChannel<?>) writeChannel).setNextWriteValueFromObject(lastPower);
+                ((WriteChannel<?>) writeChannel).setNextWriteValueFromObject(setPointPower);
             } else {
-                writeChannel.setNextValue(lastPower);
+                writeChannel.setNextValue(setPointPower);
             }
         }
         return true;
     }
+
+    /**
+     * Stops the Cooling process.
+     *
+     * @param lifecycle the currentTime when the Stop Command was set -> prevent hysteresis, by checking the lifecycle
+     *                  with the waitTime.
+     * @return true on success.
+     * @throws OpenemsError.OpenemsNamedException if the Component or Channel could not be found.
+     */
 
     @Override
     public boolean stopCooling(DateTime lifecycle) throws OpenemsError.OpenemsNamedException {
@@ -92,20 +134,33 @@ public class ChannelLineCooler extends AbstractLineCooler {
         return false;
     }
 
+    /**
+     * Sets the Max and Min Value of either a {@link io.openems.edge.heatsystem.components.Valve} or Channel.
+     * It does NOT Start a HeatingProcess.
+     * By setting the values.
+     *
+     * @param max the max Value.
+     * @param min the min Value.
+     */
+
     @Override
-    public void setMaxAndMin(Double max, Double min) {
+    public void setMaxAndMinValues(Double max, Double min) {
         this.max = max;
         this.min = min;
     }
 
+    /**
+     * Writes the stored min and Max Value to the Component of the Line.
+     */
     @Override
-    public void onlySetMaxMin() {
+    public void onlyWriteMaxMinToLine() {
         try {
             WriteChannel<Double> doubleMaxWriteChannel = this.cpm.getChannel(this.maxAddress);
             WriteChannel<Double> doubleMinWriteChannel = this.cpm.getChannel(this.minAddress);
             doubleMaxWriteChannel.setNextWriteValue(this.max);
             doubleMinWriteChannel.setNextWriteValue(this.min);
-        } catch (Exception ignored) {
+        } catch (Exception e) {
+            super.log.warn("Couldn't write to the Channel. Reason: " + e.getMessage());
         }
     }
 }

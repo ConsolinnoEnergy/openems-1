@@ -16,18 +16,18 @@ import org.osgi.service.component.annotations.ReferencePolicyOption;
 import org.osgi.service.metatype.annotations.Designate;
 
 /**
- *
+ * A Dummy Signal Sensor, it is used as a TestComponent.
  */
 
 @Component(name = "DummySignalSensor", immediate = true,
         configurationPolicy = ConfigurationPolicy.REQUIRE)
 
-public class DummySignalSensor extends AbstractOpenemsComponent implements OpenemsComponent,SignalSensor {
+public class DummySignalSensor extends AbstractOpenemsComponent implements OpenemsComponent, SignalSensor {
 
 
     public DummySignalSensor(String id, boolean enabled) throws ConfigurationException {
-        super(OpenemsComponent.ChannelId.values(),SignalSensor.ChannelId.values());
-        super.activate(null,id,"",enabled);
+        super(OpenemsComponent.ChannelId.values(), SignalSensor.ChannelId.values());
+        super.activate(null, id, "", enabled);
     }
 
 

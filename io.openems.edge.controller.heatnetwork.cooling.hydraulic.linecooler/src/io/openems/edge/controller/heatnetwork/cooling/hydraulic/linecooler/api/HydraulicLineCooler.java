@@ -7,13 +7,19 @@ import io.openems.edge.common.channel.Doc;
 import io.openems.edge.common.channel.DoubleWriteChannel;
 import io.openems.edge.common.channel.WriteChannel;
 import io.openems.edge.common.component.OpenemsComponent;
+import io.openems.edge.thermometer.api.Thermometer;
 
+/**
+ * The HydraulicLineCooler. It cools a System by checking a {@link Thermometer} and it's configured SetPoint and opening/closing a Valve after that.
+ * It also can be used as a LineReducer by Setting up a MinMax Value to a {@link io.openems.edge.heatsystem.components.Valve}.
+ * The HydraulicLineCooler reacts to an EnableSignal by getting the nextWriteValue and resetting it.
+ */
 public interface HydraulicLineCooler extends OpenemsComponent {
 
     enum ChannelId implements io.openems.edge.common.channel.ChannelId {
 
         /**
-         * Signal to remotely enable the linecooler, need to be set all the time, or it fall back in fallbackmode if activated.
+         * Signal to remotely enable the line-cooler, need to be set all the time, or it fall back in Fallback-mode if activated.
          * after a certain time
          * <ul>
          * <li>Interface: HydraulicLineCoolerApi
@@ -83,23 +89,47 @@ public interface HydraulicLineCooler extends OpenemsComponent {
         }
     }
 
-
+    /**
+     * Get the isRunning Channel.
+     *
+     * @return the channel.
+     */
     default Channel<Boolean> isRunning() {
         return this.channel(ChannelId.IS_RUNNING);
     }
 
+    /**
+     * Get the IsFallback Channel.
+     *
+     * @return the channel.
+     */
     default Channel<Boolean> isFallback() {
         return this.channel(ChannelId.IS_FALLBACK);
     }
 
+    /**
+     * Get The EnableSignalChannel.
+     *
+     * @return the channel
+     */
     default WriteChannel<Boolean> enableSignal() {
         return this.channel(ChannelId.ENABLE_SIGNAL);
     }
 
+    /**
+     * Get the maxValue Channel.
+     *
+     * @return the channel
+     */
     default WriteChannel<Double> maxValue() {
         return this.channel(ChannelId.MAX_VALVE_VALUE);
     }
 
+    /**
+     * Get the minValue Channel.
+     *
+     * @return the channel.
+     */
     default WriteChannel<Double> minValue() {
         return this.channel(ChannelId.MIN_VALVE_VALUE);
     }

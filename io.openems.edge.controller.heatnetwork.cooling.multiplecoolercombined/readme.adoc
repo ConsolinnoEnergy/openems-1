@@ -1,0 +1,6 @@
+= Heatnetwork Cooling MultipleCoolerCombined
+
+This is the MultipleCoolerCombined Controller.
+It Maps A Cooler to an activation, deactivation and reference Thermometer.
+This allows a Cooler to activate, when it is exceeding the activation Temperature. It deactivates, when it
+is exceeding the deactivation Temperature.
