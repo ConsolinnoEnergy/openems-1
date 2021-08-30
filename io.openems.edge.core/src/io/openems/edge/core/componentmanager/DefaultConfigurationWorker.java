@@ -12,6 +12,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.stream.Collectors;
 
 import io.openems.common.utils.JsonUtils;
@@ -96,6 +97,7 @@ public class DefaultConfigurationWorker extends ComponentManagerWorker {
      */
     private boolean createDefaultConfigurations(List<Config> existingConfigs) {
         final AtomicBoolean defaultConfigurationFailed = new AtomicBoolean(false);
+        final AtomicReferenceArray<Boolean> schedulersPresent = new AtomicReferenceArray<>(2);
 
         /*
          * Create Default Logging configuration
@@ -119,51 +121,69 @@ public class DefaultConfigurationWorker extends ComponentManagerWorker {
                 defaultConfigurationFailed.set(true);
             }
         }
-        if (existingConfigs.stream().noneMatch(c -> "Bridge.Modbus.Tcp".equals(c.factoryPid))) {
-            this.createConfiguration(defaultConfigurationFailed, "Bridge.Modbus.Tcp", Arrays.asList(//
-                    new Property("id", "modbus0"), //
-                    new Property("alias", ""), //
-                    new Property("ip", "localhost"), //
-                    new Property("port", 1502), //
-                    new Property("enabled", true), //
-                    new Property("invalidateElementsAfterReadErrors", 1)
-            ));
+
+        if (existingConfigs.stream().noneMatch(c -> "Scheduler.Daily".equals(c.factoryPid))) {
+            schedulersPresent.set(0, false);
         }
-        if (existingConfigs.stream().noneMatch(c -> "Consolinno.Leaflet.Configurator".equals(c.factoryPid))) {
-            this.createConfiguration(defaultConfigurationFailed, "Consolinno.Leaflet.Configurator", Arrays.asList(//
-                    new Property("id", "LeafletCore"), //
-                    new Property("alias", ""), //
-                    new Property("source", "/usr/include/leaflet/modbusregmap.csv"), //
-                    new Property("enabled", true), //
-                    new Property("modbusUnitId", 1),
-                    new Property("modbusBridgeId", "modbus0")
-            ));
+        if (existingConfigs.stream().noneMatch(c -> "Scheduler.FixedOrder".equals(c.factoryPid))) {
+            schedulersPresent.set(1, false);
         }
-        if (existingConfigs.stream().noneMatch(c -> "Controller.Api.Rest.ReadWrite".equals(c.factoryPid))) {
-            this.createConfiguration(defaultConfigurationFailed, "Controller.Api.Rest.ReadWrite", Arrays.asList(//
-                    new Property("id", "ctrlApiRest0"), //
-                    new Property("alias", ""), //
-                    new Property("enabled", true), //
-                    new Property("port", 8086),
-                    new Property("connectionlimit", 5),
-                    new Property("apiTimeout", 1),
-                    new Property("debugMode", true)
-            ));
-        }
-        if (existingConfigs.stream().noneMatch(c -> "Timer.TimerByCycles".equals(c.factoryPid))) {
-            this.createConfiguration(defaultConfigurationFailed, "Timer.TimerByCycles", Arrays.asList(//
-                    new Property("id", "TimerByCycles"), //
+        if (existingConfigs.stream().noneMatch(c -> "Scheduler.AllAlphabetically".equals(c.factoryPid)) && !schedulersPresent.get(0) && !schedulersPresent.get(1)) {
+            this.createConfiguration(defaultConfigurationFailed, "Scheduler.AllAlphabetically", Arrays.asList(//
+                    new Property("id", "scheduler0"), //
                     new Property("alias", ""), //
                     new Property("enabled", true) //
             ));
+
+            if (existingConfigs.stream().noneMatch(c -> "Bridge.Modbus.Tcp".equals(c.factoryPid))) {
+                this.createConfiguration(defaultConfigurationFailed, "Bridge.Modbus.Tcp", Arrays.asList(//
+                        new Property("id", "modbus0"), //
+                        new Property("alias", ""), //
+                        new Property("ip", "localhost"), //
+                        new Property("port", 1502), //
+                        new Property("enabled", true), //
+                        new Property("invalidateElementsAfterReadErrors", 1)
+                ));
+            }
+            if (existingConfigs.stream().noneMatch(c -> "Consolinno.Leaflet.Configurator".equals(c.factoryPid))) {
+                this.createConfiguration(defaultConfigurationFailed, "Consolinno.Leaflet.Configurator", Arrays.asList(//
+                        new Property("id", "LeafletCore"), //
+                        new Property("alias", ""), //
+                        new Property("source", "/usr/include/leaflet/modbusregmap.csv"), //
+                        new Property("enabled", true), //
+                        new Property("modbusUnitId", 1),
+                        new Property("modbusBridgeId", "modbus0")
+                ));
+            }
+
+
+            if (existingConfigs.stream().noneMatch(c -> "Controller.Api.Rest.ReadWrite".equals(c.factoryPid))) {
+                this.createConfiguration(defaultConfigurationFailed, "Controller.Api.Rest.ReadWrite", Arrays.asList(//
+                        new Property("id", "ctrlApiRest0"), //
+                        new Property("alias", ""), //
+                        new Property("enabled", true), //
+                        new Property("port", 8086),
+                        new Property("connectionlimit", 5),
+                        new Property("apiTimeout", 1),
+                        new Property("debugMode", true)
+                ));
+            }
+            if (existingConfigs.stream().noneMatch(c -> "Timer.TimerByCycles".equals(c.factoryPid))) {
+                this.createConfiguration(defaultConfigurationFailed, "Timer.TimerByCycles", Arrays.asList(//
+                        new Property("id", "TimerByCycles"), //
+                        new Property("alias", ""), //
+                        new Property("enabled", true) //
+                ));
+            }
+            if (existingConfigs.stream().noneMatch(c -> "Timer.TimerByTime".equals(c.factoryPid))) {
+                this.createConfiguration(defaultConfigurationFailed, "Timer.TimerByTime", Arrays.asList(//
+                        new Property("id", "TimerByTime"), //
+                        new Property("alias", ""), //
+                        new Property("enabled", true) //
+                ));
+            }
         }
-        if (existingConfigs.stream().noneMatch(c -> "Timer.TimerByTime".equals(c.factoryPid))) {
-            this.createConfiguration(defaultConfigurationFailed, "Timer.TimerByTime", Arrays.asList(//
-                    new Property("id", "TimerByTime"), //
-                    new Property("alias", ""), //
-                    new Property("enabled", true) //
-            ));
-        }
+
         return defaultConfigurationFailed.get();
     }
 

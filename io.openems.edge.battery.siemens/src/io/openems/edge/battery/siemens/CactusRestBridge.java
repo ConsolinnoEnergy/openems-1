@@ -130,7 +130,7 @@ public class CactusRestBridge {
 
     /**
      * Create Payload String for write Request.
-     * Note: This is dumb. But Cactus Data Api wants this exactly this way. None if this is correctly documented by the way. Too bad.
+     * Note: This is dumb. But Cactus Data Api wants this exactly this way. None of this is correctly documented by the way. Too bad.
      *
      * @param app_name  Name of the Folder on the Cloud
      * @param parameter Parameter that has to be set

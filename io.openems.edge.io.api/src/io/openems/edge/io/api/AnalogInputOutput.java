@@ -79,6 +79,11 @@ public interface AnalogInputOutput extends OpenemsComponent {
         }
         return -1;
     }
+
+    default WriteChannel<Integer> setPercentChannel() {
+        return this.channel(ChannelId.AIO_PERCENT_WRITE);
+    }
+
     default Channel<Integer> getPercentChannel() {
         return this.channel(ChannelId.AIO_CHECK_PERCENT);
     }
@@ -91,6 +96,7 @@ public interface AnalogInputOutput extends OpenemsComponent {
         }
         return -1;
     }
+
     default WriteChannel<Integer> getWriteChannel() {
         return this.channel(ChannelId.AIO_WRITE);
     }

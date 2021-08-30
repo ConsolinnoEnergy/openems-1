@@ -1,6 +1,7 @@
 package io.openems.edge.battery.siemens;
 
 import io.openems.common.exceptions.OpenemsError;
+import io.openems.edge.common.channel.IntegerWriteChannel;
 import io.openems.edge.common.component.AbstractOpenemsComponent;
 import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.common.event.EdgeEventConstants;
@@ -84,11 +85,9 @@ public class SiemensBatteryManagementImpl extends AbstractOpenemsComponent imple
             } catch (IOException ignored) {
                 this.log.error("A Read request seemed to Failed. Connection Closed or invalid input parameters.");
             }
-            if (getSetActivePowerEqualsChannel().value().isDefined()) {
-                this.charge(getSetActivePowerEqualsChannel().value().get());
-                this.cycles = 0;
-            } else if (this.cycles >= MAXCYLCES) {
-                this.fallback();
+
+            if (this.cycles >= MAXCYLCES) {
+              this.fallback();
             }
             this.cycles++;
         }
@@ -122,7 +121,7 @@ public class SiemensBatteryManagementImpl extends AbstractOpenemsComponent imple
      * Tells the Battery to charge
      *
      * @param power The Power the battery has to charge with
-     * @return "Success" if it worked, "Failure Otherwise"
+     * @return "Success" if it worked, "Failure" Otherwise
      */
     private String charge(int power) {
         EventParameter opMode = new EventParameter("App_Select_Operation_Mode", 2);
@@ -134,14 +133,14 @@ public class SiemensBatteryManagementImpl extends AbstractOpenemsComponent imple
         } catch (Exception e) {
             this.log.error("A Write request seemed to Failed. Connection Closed or invalid input parameters.");
         }
-
+        this.cycles = 0;
         return response;
     }
 
     /**
      * Tells the Battery to discharge.
      *
-     * @return "Success" if it worked, "Failure Otherwise"
+     * @return "Success" if it worked, "Failure" Otherwise
      */
     private String fallback() {
         EventParameter opMode = new EventParameter("App_Select_Operation_Mode", 1);
@@ -163,8 +162,8 @@ public class SiemensBatteryManagementImpl extends AbstractOpenemsComponent imple
     }
 
     @Override
-    public void applyPower(int activePower, int reactivePower) throws OpenemsError.OpenemsNamedException {
-        this.getSetActivePowerEqualsChannel().setNextWriteValue(activePower);
+    public void applyPower(int activePower, int reactivePower) {
+        //this.charge(activePower);
     }
 
     @Override
