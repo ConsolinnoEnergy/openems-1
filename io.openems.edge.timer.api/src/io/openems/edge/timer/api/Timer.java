@@ -1,7 +1,5 @@
 package io.openems.edge.timer.api;
 
-import java.util.Map;
-
 /**
  * The Timer interface. This is normally used by TimerHandler, but other classes can use the Timer directly. (Even though it's not recommended)
  * The Timer is used to measure, if a specific time is up. ATM it can be a cycle counter or it could be a real Time.
