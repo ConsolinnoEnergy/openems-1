@@ -1,22 +1,22 @@
-package io.openems.edge.heater.analogue;
+package io.openems.edge.cooler.analogue;
 
 import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
-@ObjectClassDefinition(name = "Heater Analogue", description = "A Heater that works with an Analogue Device/Module")
+@ObjectClassDefinition(name = "Analogue Cooler", description = "A Cooler that works with an Analogue Device/Module.")
 @interface Config {
 
     String service_pid();
 
     @AttributeDefinition(name = "Id", description = "Unique Id for the .")
-    String id() default "AnalogueHeater0";
+    String id() default "AnalogueCooler0";
 
     @AttributeDefinition(name = "Alias", description = "Human readable name of this Configurator.")
     String alias() default "";
 
     AnalogueType analogueType() default AnalogueType.LUCID_CONTROL;
 
-    @AttributeDefinition(name = "AnalogueDevice ID", description = "The Device Id that Controls the Heater in reality")
+    @AttributeDefinition(name = "AnalogueDevice ID", description = "The Device Id that Controls the Cooler in reality")
     String[] analogueId() default {"Relay0"};
 
     boolean useErrorSignals() default true;
@@ -32,7 +32,7 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     @AttributeDefinition(name = "Default PowerValue on Activation", description = "Default Power On Activation, this can be changed on RunTime via REST")
     int defaultRunPower() default 80;
 
-    @AttributeDefinition(name = "MinPower", description = "If you want to run the Heater with a minimum Power, you can set it up here")
+    @AttributeDefinition(name = "MinPower", description = "If you want to run the Cooler with a minimum Power, you can set it up here")
     int defaultMinPower() default 0;
 
     boolean autoRun() default false;
@@ -41,7 +41,7 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     String timerId() default "TimerByCycles";
 
     @AttributeDefinition(name = "Max Time Enable Signal", description = "How Long to Wait after EnableSignal is Missing"
-            + "and Heater was Active until it sets itself inactive")
+            + "and Cooler was Active until it sets itself inactive")
     int maxTimeEnableSignal() default 10;
 
     @AttributeDefinition(name = "Max Time Power Signal", description = "How Long to Wait after ")
@@ -49,5 +49,5 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
     boolean enabled() default true;
 
-    String webconsole_configurationFactory_nameHint() default "Analogue Heater {id}";
+    String webconsole_configurationFactory_nameHint() default "Analogue Cooler {id}";
 }
