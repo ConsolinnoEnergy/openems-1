@@ -1,24 +1,17 @@
 package io.openems.edge.controller.temperature.overseer;
 
-import io.openems.common.exceptions.OpenemsError;
 import io.openems.common.types.ChannelAddress;
-import io.openems.common.types.EdgeConfig;
 import io.openems.edge.common.test.AbstractComponentConfig;
 import io.openems.edge.common.test.AbstractComponentTest;
 import io.openems.edge.common.test.DummyComponentManager;
 import io.openems.edge.controller.test.ControllerTest;
-import io.openems.edge.exceptionalstate.api.ExceptionalStateHandlerImpl;
 import io.openems.edge.heater.decentral.test.DummyDecentralHeater;
 import io.openems.edge.thermometer.api.Thermometer;
 import io.openems.edge.thermometer.api.test.DummyThermometer;
 import io.openems.edge.timer.api.DummyTimer;
-import io.openems.edge.timer.api.TimerHandler;
 import io.openems.edge.timer.api.TimerType;
 import org.junit.Before;
 import org.junit.Test;
-import org.osgi.service.cm.ConfigurationException;
-
-import java.io.IOException;
 
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -144,7 +137,7 @@ public class ControllerOverseerImplTest {
 
     }
 
-    private static ControllerOverseerImpl overseer;
+    private static ControllerHeatnetworkWatchdogImpl overseer;
     private static DummyComponentManager cpm;
     private Thermometer sourceThermometer;
     private Thermometer targetThermometer;
@@ -160,7 +153,7 @@ public class ControllerOverseerImplTest {
     @Before
     public void setUp() throws Exception {
 
-        overseer = new ControllerOverseerImpl();
+        overseer = new ControllerHeatnetworkWatchdogImpl();
         cpm = new DummyComponentManager();
         overseer.cpm = cpm;
 

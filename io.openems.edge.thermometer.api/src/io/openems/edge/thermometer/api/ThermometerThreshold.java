@@ -28,7 +28,7 @@ public interface ThermometerThreshold extends Thermometer {
          * <ul>
          * <li>Interface: ThermometerThreshold
          * <li>Type: Integer
-         * <li>Unit: Dezidegree celsius
+         * <li>Unit: decimal degree Celsius
          * </ul>
          */
         THRESHOLD(Doc.of(OpenemsType.INTEGER) //
@@ -63,7 +63,7 @@ public interface ThermometerThreshold extends Thermometer {
          * <ul>
          *          <li>Interface: ThermometerThreshold
          *          <li>Type: Integer
-         *          <li> Unit: Dezidegree_Celsius
+         *          <li> Unit: decimal degree Celsius
          *          </ul>
          */
         SET_POINT_TEMPERATURE(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE).onInit(

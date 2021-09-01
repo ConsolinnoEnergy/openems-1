@@ -8,11 +8,13 @@ import io.openems.edge.bridge.modbus.api.ModbusProtocol;
 import io.openems.edge.bridge.modbus.api.element.UnsignedWordElement;
 import io.openems.edge.bridge.modbus.api.task.FC4ReadInputRegistersTask;
 import io.openems.edge.common.channel.value.Value;
+import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.common.event.EdgeEventConstants;
 import io.openems.edge.common.taskmanager.Priority;
 import io.openems.edge.consolinno.leaflet.core.api.LeafletCore;
 import io.openems.edge.consolinno.leaflet.sensor.signal.api.SignalSensor;
+import io.openems.edge.consolinno.leaflet.sensor.temperature.TemperatureSensorImpl;
 import io.openems.edge.thermometer.api.Thermometer;
 import io.openems.edge.consolinno.leaflet.core.api.Error;
 import org.osgi.service.cm.ConfigurationAdmin;
@@ -30,6 +32,8 @@ import org.osgi.service.event.Event;
 import org.osgi.service.event.EventConstants;
 import org.osgi.service.event.EventHandler;
 import org.osgi.service.metatype.annotations.Designate;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Provides a Consolinno Signal sensor. When the Sensor detects a Temperature above 100°C it will output "Error".
@@ -40,11 +44,12 @@ import org.osgi.service.metatype.annotations.Designate;
         configurationPolicy = ConfigurationPolicy.REQUIRE, property = EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE)
 
 public class SignalSensorImpl extends AbstractOpenemsModbusComponent implements OpenemsComponent, Thermometer, SignalSensor, EventHandler {
-    @Reference(policy = ReferencePolicy.STATIC, policyOption = ReferencePolicyOption.GREEDY, cardinality = ReferenceCardinality.MANDATORY)
-    LeafletCore lc;
 
     @Reference
     protected ConfigurationAdmin cm;
+
+    @Reference
+    protected ComponentManager cpm;
 
     @Reference(policy = ReferencePolicy.STATIC, policyOption = ReferencePolicyOption.GREEDY, cardinality = ReferenceCardinality.MANDATORY)
     protected void setModbus(BridgeModbus modbus) {
@@ -53,7 +58,8 @@ public class SignalSensorImpl extends AbstractOpenemsModbusComponent implements 
 
     //Decimal Degrees
     private static final int maxTemperature = 1000;
-
+    private LeafletCore lc;
+    private final Logger log = LoggerFactory.getLogger(SignalSensorImpl.class);
     private int signalModule;
     private int position;
     private int temperatureAnalogInput;
@@ -66,6 +72,11 @@ public class SignalSensorImpl extends AbstractOpenemsModbusComponent implements 
 
     @Activate
     void activate(ComponentContext context, Config config) throws ConfigurationException, OpenemsException {
+        try {
+            this.lc = this.cpm.getComponent(config.leafletId());
+        } catch (Exception e) {
+            this.log.error("The LeafletCore doesn't exist! Check Config!");
+        }
         this.signalModule = config.module();
         this.position = config.position();
         this.isInverted = config.inverted();

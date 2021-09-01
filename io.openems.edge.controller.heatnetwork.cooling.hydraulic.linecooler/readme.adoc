@@ -1,0 +1,6 @@
+= Heatnetwork Cooling Hydraulic Line Cooling
+
+This is the Hydraulic Line Cooler.
+It provides the ability to watch and cool down a Hydraulic Line, by watching a Temperature, watch an EnableSignal and writing to a Valve / Channel that provides the ability to cool a cooling line.
+Or reducing a Valve by providing min and max values.
+
