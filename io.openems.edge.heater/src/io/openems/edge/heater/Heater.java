@@ -278,5 +278,4 @@ public interface Heater extends OpenemsComponent {
     default boolean errorInHeater() {
         return this.getCurrentState().equals(HeaterState.ERROR);
     }
-
 }

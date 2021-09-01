@@ -158,7 +158,7 @@ public class ControllerHeatnetworkWatchdogImpl extends AbstractOpenemsComponent 
         }
         if (error || this.errorState) {
             this.errorState = true;
-            this.target.getExceptionalStateEnableChannel().setNextWriteValue(true);
+            this.target.getExceptionalStateEnableSignalChannel().setNextWriteValue(true);
             this.target.getExceptionalStateValueChannel().setNextWriteValue(0);
             if (this.timeHandler.checkTimeIsUp(ERROR_ID)) {
                 this.errorState = false;

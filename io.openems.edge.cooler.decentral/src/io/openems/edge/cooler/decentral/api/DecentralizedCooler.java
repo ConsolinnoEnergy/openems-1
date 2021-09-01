@@ -12,7 +12,7 @@ import io.openems.edge.heater.Cooler;
  * The DecentralizeCooler interface, extending the Cooler. It Provides the ability, equivalent to the Decentral Heater,
  * to cool a Storage, by asking for cooling and open /activate an HydraulicComponent depending on the temperature.
  */
-public interface DecentralizeCooler extends Cooler {
+public interface DecentralizedCooler extends Cooler {
 
     enum ChannelId implements io.openems.edge.common.channel.ChannelId {
 
