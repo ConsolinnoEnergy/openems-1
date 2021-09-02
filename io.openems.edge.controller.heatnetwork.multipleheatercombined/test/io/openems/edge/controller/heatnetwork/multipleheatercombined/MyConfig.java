@@ -10,6 +10,9 @@ public class MyConfig extends AbstractComponentConfig implements Config {
 
     protected static class Builder {
 
+        public boolean useTimer;
+        public int timeDelta;
+        public String timerId;
         private String id;
         private String alias;
         private boolean enabled = true;
@@ -109,6 +112,21 @@ public class MyConfig extends AbstractComponentConfig implements Config {
     @Override
     public String[] deactivationThermometers() {
         return this.builder.deactivationThermometers;
+    }
+
+    @Override
+    public boolean useTimer() {
+        return this.builder.useTimer;
+    }
+
+    @Override
+    public int timeDelta() {
+        return this.builder.timeDelta;
+    }
+
+    @Override
+    public String timerId() {
+        return this.builder.timerId;
     }
 
     @Override

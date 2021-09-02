@@ -17,9 +17,6 @@ public class AnalogueHeaterRelay extends AbstractAnalogueHeaterComponent impleme
         OpenemsComponent component = cpm.getComponent(analogueId);
         ChannelAddress address;
         if (component instanceof Relay) {
-            address = new ChannelAddress(analogueId, ((Relay) component).getRelaysWriteChannel().channelId().id());
-
-        } else if (component instanceof Relay) {
             this.isConsolinnoRelay = true;
             this.deviceId = analogueId;
             address = new ChannelAddress(analogueId, ((Relay) component).getRelaysWriteChannel().channelId().id());

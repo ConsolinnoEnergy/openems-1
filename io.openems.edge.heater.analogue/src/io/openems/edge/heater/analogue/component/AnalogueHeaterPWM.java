@@ -19,10 +19,7 @@ public class AnalogueHeaterPWM extends AbstractAnalogueHeaterComponent implement
             isConsolinnoPwm = true;
             address = new ChannelAddress(analogueId, ((Pwm) component).getWritePwmPowerLevelChannel().channelId().id());
             super.multiplier = 10;
-        } else if (component instanceof Pwm) {
-            this.deviceId = analogueId;
-            address = new ChannelAddress(analogueId, ((Pwm) component).getWritePwmPowerLevelChannel().channelId().id());
-        } else {
+        }  else {
             throw new ConfigurationException("AnalogueHeaterPWM Constructor", "Selected Device not an instance of PWM : " + analogueId);
         }
         super.initialize(cpm, address, controlType, maxPowerKw, defaultMinPower);

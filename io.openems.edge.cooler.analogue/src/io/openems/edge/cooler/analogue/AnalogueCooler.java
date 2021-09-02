@@ -264,7 +264,7 @@ public class AnalogueCooler extends AbstractOpenemsComponent implements OpenemsC
         if (this.isAutoRun) {
             return true;
         }
-        Optional<Boolean> enableValue = this.getEnableSignalChannel().getNextWriteValue();
+        Optional<Boolean> enableValue = this.getEnableSignalChannel().getNextWriteValueAndReset();
         if (enableValue.isPresent()) {
             this.timer.resetTimer(ENABLE_IDENTIFIER);
             this.getEnableSignalChannel().setNextValue(enableValue.get());

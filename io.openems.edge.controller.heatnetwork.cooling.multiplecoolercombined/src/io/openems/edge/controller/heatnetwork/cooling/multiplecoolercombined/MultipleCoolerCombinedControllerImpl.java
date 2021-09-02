@@ -256,10 +256,10 @@ public class MultipleCoolerCombinedControllerImpl extends AbstractOpenemsCompone
                 //HeatControl                                           PerformanceDemand + Time Control
                 //Enable
                 try {
-                    if (thermometerWrapper.shouldDeactivate()) {
+                    if (thermometerWrapper.shouldActivate()) {
                         coolerActiveWrapper.setActive(false);
                         //Check wrapper if thermometer below min temp
-                    } else if (thermometerWrapper.shouldActivate()) {
+                    } else if (thermometerWrapper.shouldDeactivate()) {
                         coolerActiveWrapper.setActive(true);
                     }
 
