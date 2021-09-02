@@ -4,6 +4,9 @@ import io.openems.common.channel.Unit;
 import io.openems.edge.common.channel.Channel;
 import io.openems.edge.common.taskmanager.Priority;
 
+/**
+ * PumpTask class for reading values with 8bit precision.
+ */
 public class PumpReadTask8bit extends PumpReadTask16bitOrMore {
 
     public PumpReadTask8bit(int address, int headerNumber, Channel<Double> channel, String unitString, Priority priority, double channelMultiplier) {

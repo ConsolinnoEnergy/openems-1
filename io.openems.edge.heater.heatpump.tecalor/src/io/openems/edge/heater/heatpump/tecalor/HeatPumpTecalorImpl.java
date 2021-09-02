@@ -74,7 +74,6 @@ public class HeatPumpTecalorImpl extends AbstractOpenemsModbusComponent implemen
 
 	private final Logger log = LoggerFactory.getLogger(HeatPumpTecalorImpl.class);
 	private boolean debug;
-	private boolean componentEnabled;
 	private boolean readOnly;
 	private boolean sgReadyActive;
 
@@ -106,7 +105,6 @@ public class HeatPumpTecalorImpl extends AbstractOpenemsModbusComponent implemen
 		super.activate(context, config.id(), config.alias(), config.enabled(), config.modbusUnitId(), this.cm,
 				"Modbus", config.modbus_id());
 		this.debug = config.debug();
-		this.componentEnabled = config.enabled();
 		this.readOnly = config.readOnly();
 		this.sgReadyActive = config.sgReady();
 		TimerHandler timer = new TimerHandlerImpl(super.id(), this.cpm);
@@ -132,6 +130,9 @@ public class HeatPumpTecalorImpl extends AbstractOpenemsModbusComponent implemen
 			}
 			timer.addOneIdentifier(EXCEPTIONAL_STATE_IDENTIFIER, timerIdEnableSignal, config.waitTimeExceptionalState());
 			this.exceptionalStateHandler = new ExceptionalStateHandlerImpl(timer, EXCEPTIONAL_STATE_IDENTIFIER);
+		}
+		if (this.isEnabled() == false) {
+			this._setHeaterState(HeaterState.OFF.getValue());
 		}
 	}
 
@@ -353,7 +354,7 @@ public class HeatPumpTecalorImpl extends AbstractOpenemsModbusComponent implemen
 
 	@Override
 	public void handleEvent(Event event) {
-		if (this.componentEnabled && EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE.equals(event.getTopic())) {
+		if (this.isEnabled() && EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE.equals(event.getTopic())) {
 			//channeltest();	// Just for testing
 			this.channelmapping();
 		}

@@ -4,9 +4,12 @@ import io.openems.common.channel.Unit;
 import io.openems.edge.common.channel.Channel;
 import io.openems.edge.common.taskmanager.Priority;
 
+/**
+ * PumpTask class for reading values with 16bit precision.
+ */
 public class PumpReadTask16bitOrMore extends AbstractPumpTask {
 
-    private Channel<Double> channel;
+    private final Channel<Double> channel;
     private final Priority priority;
     protected final double channelMultiplier;
     private int refreshInfoCounter = 0;
@@ -25,39 +28,39 @@ public class PumpReadTask16bitOrMore extends AbstractPumpTask {
     }
 
     @Override
-    public void setResponse(byte data) {
+    public void processResponse(byte data) {
 
         // Collect the bytes.
-        dataArray[byteCounter] = data;
-        if (byteCounter != dataByteSize - 1) {
-            byteCounter++;
+        this.dataArray[this.byteCounter] = data;
+        if (this.byteCounter != this.dataByteSize - 1) {
+            this.byteCounter++;
             return;
         }
 
         // ref_norm changes INFO if control mode is changed. If task is ref_norm (2, 49), regularly update INFO.
         if (getHeader() == 2 && getAddress() == 49) {
-            refreshInfoCounter++;
-            if (refreshInfoCounter >= 5) {
+            this. refreshInfoCounter++;
+            if (this.refreshInfoCounter >= 5) {
                 super.resetInfo();
-                refreshInfoCounter = 0;
+                this.refreshInfoCounter = 0;
             }
         }
 
         // Data is complete, now calculate value and put it in the channel.
-        if (byteCounter >= dataByteSize - 1) {
-            byteCounter = 0;
+        if (this.byteCounter >= this.dataByteSize - 1) {
+            this.byteCounter = 0;
 
             // When vi == 0 (false), then 0xFF means "data not available".
             if (super.vi == false) {
-                if ((dataArray[0] & 0xFF) == 0xFF) {
+                if ((this.dataArray[0] & 0xFF) == 0xFF) {
                     this.channel.setNextValue(null);
                     return;
                 }
             }
 
-            int[] actualDataArray = new int[dataByteSize];
-            for (int i = 0; i < dataByteSize; i++) {
-                actualDataArray[i] = Byte.toUnsignedInt(dataArray[i]);
+            int[] actualDataArray = new int[this.dataByteSize];
+            for (int i = 0; i < this.dataByteSize; i++) {
+                actualDataArray[i] = Byte.toUnsignedInt(this.dataArray[i]);
             }
 
             int range = 254;
@@ -70,7 +73,7 @@ public class PumpReadTask16bitOrMore extends AbstractPumpTask {
                 case 2:
                     // Formula working for both 8 and 16 bit
                     double sumValue = 0;
-                    for (int i = 0; i < dataByteSize; i++) {
+                    for (int i = 0; i < this.dataByteSize; i++) {
                         sumValue = sumValue +  actualDataArray[i] * ((double) super.rangeScaleFactor / (double) range * Math.pow(256, i));
                     }
                     // value w.o considering Channel
@@ -81,13 +84,13 @@ public class PumpReadTask16bitOrMore extends AbstractPumpTask {
                             + (actualDataArray[1] * ((double) super.rangeScaleFactor / ((double) range * 256)))) * super.unitCalc;
                     */
 
-                    this.channel.setNextValue(correctValueForChannel(tempValue) * channelMultiplier);
+                    this.channel.setNextValue(this.correctValueForChannel(tempValue) * this.channelMultiplier);
                     break;
                 case 3:
                     // Formula working for 8, 16, 24 and 32 bit.
                     double highPrecisionValue = 0;
                     for (int i = 0; i < dataByteSize; i++) {
-                        highPrecisionValue = highPrecisionValue + actualDataArray[i] * Math.pow(256, (dataByteSize - i - 1));
+                        highPrecisionValue = highPrecisionValue + actualDataArray[i] * Math.pow(256, (this.dataByteSize - i - 1));
                     }
                     int exponent = dataByteSize - 2;
                     if (exponent < 0) {
@@ -99,17 +102,17 @@ public class PumpReadTask16bitOrMore extends AbstractPumpTask {
                     // Extended precision, 8 bit formula.
                     //tempValue = ((256 * super.scaleFactorHighOrder + super.scaleFactorLowOrder) + actualData) * super.unitCalc;
 
-                    this.channel.setNextValue(correctValueForChannel(tempValue) * channelMultiplier);
+                    this.channel.setNextValue(this.correctValueForChannel(tempValue) * this.channelMultiplier);
                     break;
                 case 1:
                 case 0:
                 default:
                     // Formula works for 8 to 32 bit.
                     double unscaledMultiByte = 0;
-                    for (int i = 0; i < dataByteSize; i++) {
-                        unscaledMultiByte = unscaledMultiByte + actualDataArray[i] * Math.pow(256, (dataByteSize - i - 1));
+                    for (int i = 0; i < this.dataByteSize; i++) {
+                        unscaledMultiByte = unscaledMultiByte + actualDataArray[i] * Math.pow(256, (this.dataByteSize - i - 1));
                     }
-                    this.channel.setNextValue(unscaledMultiByte * channelMultiplier);
+                    this.channel.setNextValue(unscaledMultiByte * this.channelMultiplier);
                     break;
 
             }
@@ -155,6 +158,6 @@ public class PumpReadTask16bitOrMore extends AbstractPumpTask {
 
     @Override
     public Priority getPriority() {
-        return priority;
+        return this.priority;
     }
 }

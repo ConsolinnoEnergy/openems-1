@@ -24,8 +24,11 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
+/**
+ * Provides a service to communicate with Grundfos pumps using the genibus protocol.
+ */
 @Designate(ocd = Config.class, factory = true)
-@Component(name = "io.openems.edge.bridge.genibus", //
+@Component(name = "Bridge.Genibus", //
         immediate = true, //
         configurationPolicy = ConfigurationPolicy.REQUIRE, //
         property = { //
@@ -43,19 +46,19 @@ public class GenibusImpl extends AbstractOpenemsComponent implements OpenemsComp
     protected String portName;
     protected boolean connectionOk = true;  // Start with true because this boolean is also used to track if an error message should be sent.
 
-    protected Handler handler;
+    protected ConnectionHandler connectionHandler;
 
     public GenibusImpl() {
         super(OpenemsComponent.ChannelId.values());
-        handler = new Handler(this);
+        this.connectionHandler = new ConnectionHandler(this);
     }
 
     @Activate
     public void activate(ComponentContext context, Config config) throws OpenemsException {
         super.activate(context, config.id(), config.alias(), config.enabled());
-        debug = config.debug();
-        portName = config.portName();
-        connectionOk = handler.start(portName);
+        this.debug = config.debug();
+        this.portName = config.portName();
+        this.connectionOk = this.connectionHandler.startConnection(this.portName);
         if (this.isEnabled()) {
             this.worker.activate(config.id());
         }
@@ -64,27 +67,29 @@ public class GenibusImpl extends AbstractOpenemsComponent implements OpenemsComp
     @Deactivate
     public void deactivate() {
         super.deactivate();
-        worker.deactivate();
-        handler.stop();
+        this.worker.deactivate();
+        this.connectionHandler.stop();
     }
 
 
     /**
-     * <p>Handles the telegram. This is called by the GenibusWorker forever() method.
+     * Handles the telegram. This is called by the GenibusWorker forever() method.
+     * This method sends the telegram (request) and processes the response telegram. The request
+     * telegram is needed to identify the data in the response. The response has no addresses for the
+     * tasks. Instead, data in the response is transmitted in the exact same order as it was requested.
+     * The response data is then parsed by using the task list of the request telegram.
+     * The method also contains several checks to make sure the response telegram is actually the
+     * answer to the request telegram.
+     * The cycletimeLeft parameter is used to calculate how long to wait for the response telegram before
+     * timeout. This is important in a situation with multiple pumps where one or more pumps are not
+     * responding. The timeout can not be too large, or the not responding pumps block operation of the
+     * other pumps. If the timeout is too short, connection errors may happen during normal operation.
      *
      * @param telegram   telegram created beforehand.
-     *                   </p>
+     * @param cycletimeLeft     remaining time in ms of this OpenEMS cycle.
      *
-     *                   <p>This method sends the telegram (request) and processes the response telegram. The request
-     *                   telegram is needed to identify the data in the response. The response has no addresses for the
-     *                   tasks. Instead, data in the response is transmitted in the exact same order as it was requested.
-     *                   The response data is then parsed by using the task list of the request telegram.
-     *                   The method also contains several checks to make sure the response telegram is actually the
-     *                   answer to the request telegram. By
-     *                   </p>
      */
     protected void handleTelegram(Telegram telegram, long cycletimeLeft) {
-        List<ApplicationProgramDataUnit> requestApdu = telegram.getProtocolDataUnit().getApplicationProgramDataUnitList();
 
         int emptyTelegramTime = telegram.getPumpDevice().getEmptyTelegramTime();
         int telegramByteLength = Byte.toUnsignedInt(telegram.getLength()) - 2 // Subtract crc
@@ -106,10 +111,11 @@ public class GenibusImpl extends AbstractOpenemsComponent implements OpenemsComp
         if (cycletimeLeft > telegramEstimatedTimeMillis + 180) {
             telegramEstimatedTimeMillis += 100;
         }
+        // Add even more time if there is enough time left in the cycle.
         if (cycletimeLeft > telegramEstimatedTimeMillis + 180) {
             telegramEstimatedTimeMillis += 100;
         }
-        Telegram responseTelegram = handler.writeTelegram(telegramEstimatedTimeMillis, telegram, debug);
+        Telegram responseTelegram = this.connectionHandler.writeTelegram(telegramEstimatedTimeMillis, telegram, this.debug);
 
         // No answer received -> error handling
         // This will happen if the pump is switched off. Assume that is the case. Reset the device, so once data is
@@ -158,7 +164,7 @@ public class GenibusImpl extends AbstractOpenemsComponent implements OpenemsComp
         telegram.getTelegramTaskList().forEach((key, taskList) -> {
             int requestHeadClass = key / 100;
             int answerHeadClass = responseApdu.get(listCounter.get()).getHeadClass();
-            int answerAck = responseApdu.get(listCounter.get()).getHeadOSACKforRequest();
+            int answerAck = responseApdu.get(listCounter.get()).getHeadOsAckForRequest();
 
             if (requestHeadClass != answerHeadClass) {
                 this.logWarn(this.log, "Telegram mismatch! Wrong apdu Head Class: sent " + requestHeadClass
@@ -174,7 +180,7 @@ public class GenibusImpl extends AbstractOpenemsComponent implements OpenemsComp
                                 + ": Data Class unknown, reply APDU data field is empty");
                         break;
                     case 2:
-                        byte[] data = responseApdu.get(listCounter.get()).getBytes();
+                        byte[] data = responseApdu.get(listCounter.get()).getCompleteApduAsByteArray();
                         this.logWarn(this.log, "Apdu error for Head Class " + answerHeadClass
                                 + ": Data Item ID unknown, reply APDU data field contains first unknown ID - "
                                 + Byte.toUnsignedInt(data[2]));
@@ -185,23 +191,24 @@ public class GenibusImpl extends AbstractOpenemsComponent implements OpenemsComp
                         break;
                 }
             } else {
-                byte[] data = responseApdu.get(listCounter.get()).getBytes();
+                byte[] data = responseApdu.get(listCounter.get()).getCompleteApduAsByteArray();
 
                 //for the GenibusTask list --> index
                 int taskCounter = 0;
 
                 // on correct position get the header.
-                int requestOs = requestApdu.get(listCounter.get()).getHeadOSACKforRequest();
+                List<ApplicationProgramDataUnit> requestApdu = telegram.getProtocolDataUnit().getApplicationProgramDataUnitList();
+                int requestOs = requestApdu.get(listCounter.get()).getHeadOsAckForRequest();
 
                 //if (debug) { this.logInfo(this.log, "Apdu " + (listCounter.get() + 1) + ", Apdu byte number: " + data.length + ", Apdu identifier: " + key + ", requestOs: " + requestOs + ", Tasklist length: " + taskList.size()); }
 
                 if (requestOs != 2) {   // 2 = SET, contains no data in reply.
-                /*
-                if (debug) {
-                    this.logInfo(this.log, "" + Byte.toUnsignedInt(data[0]));
-                    this.logInfo(this.log, "" + Byte.toUnsignedInt(data[1]));
-                }
-                */
+                    /*
+                    if (debug) {
+                        this.logInfo(this.log, "" + Byte.toUnsignedInt(data[0]));
+                        this.logInfo(this.log, "" + Byte.toUnsignedInt(data[1]));
+                    }
+                    */
                     for (int byteCounter = 2; byteCounter < data.length; ) {
                         //if (debug) { this.logInfo(this.log, "" + Byte.toUnsignedInt(data[byteCounter])); }
 
@@ -210,7 +217,7 @@ public class GenibusImpl extends AbstractOpenemsComponent implements OpenemsComp
                         // Read ASCII. Just one ASCII task per apdu.
                         if (geniTask.getHeader() == 7) {
                             for (int i = 2; i < data.length; i++) {
-                                geniTask.setResponse(data[i]);
+                                geniTask.processResponse(data[i]);
                             }
                             break;
                         }
@@ -239,7 +246,7 @@ public class GenibusImpl extends AbstractOpenemsComponent implements OpenemsComp
                                 //bc of 4 byte data additional 3 byte incr. (or more for 16+ bit tasks)
                                 byteCounter += 3 + geniTask.getDataByteSize();
                             }
-                            if (debug) {
+                            if (this.debug) {
                                 this.logInfo(this.log, geniTask.printInfo());
                             }
                         } else {
@@ -250,7 +257,7 @@ public class GenibusImpl extends AbstractOpenemsComponent implements OpenemsComp
                                 break;
                             }
                             for (int i = 0; i < byteAmount; i++) {
-                                geniTask.setResponse(data[byteCounter]);
+                                geniTask.processResponse(data[byteCounter]);
                                 byteCounter++;
                             }
                         }
@@ -271,10 +278,8 @@ public class GenibusImpl extends AbstractOpenemsComponent implements OpenemsComp
 
     @Override
     public void handleEvent(Event event) {
-        switch (event.getTopic()) {
-            case EdgeEventConstants.TOPIC_CYCLE_EXECUTE_WRITE:
-                this.worker.triggerNextRun();
-                break;
+        if (this.isEnabled() && EdgeEventConstants.TOPIC_CYCLE_EXECUTE_WRITE.equals(event.getTopic())) {
+            this.worker.triggerNextRun();
         }
     }
 
@@ -285,12 +290,12 @@ public class GenibusImpl extends AbstractOpenemsComponent implements OpenemsComp
      */
     @Override
     public void addDevice(PumpDevice pumpDevice) {
-        worker.addDevice(pumpDevice);
+        this.worker.addDevice(pumpDevice);
     }
 
     @Override
     public void removeDevice(String deviceId) {
-        worker.removeDevice(deviceId);
+        this.worker.removeDevice(deviceId);
     }
 
     @Override
@@ -313,5 +318,11 @@ public class GenibusImpl extends AbstractOpenemsComponent implements OpenemsComp
         super.logError(log, message);
     }
 
-    public boolean getDebug() { return debug; }
+    /**
+     * If debug mode is enabled or not.
+     * @return the debug boolean
+     */
+    public boolean getDebug() {
+        return this.debug;
+    }
 }

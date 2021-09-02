@@ -4,9 +4,12 @@ import io.openems.common.exceptions.OpenemsError;
 import io.openems.edge.common.channel.WriteChannel;
 import io.openems.edge.common.taskmanager.Priority;
 
+/**
+ * PumpTask class for command tasks.
+ */
 public class PumpCommandsTask extends AbstractPumpTask {
 
-    private WriteChannel<Boolean> channel;
+    private final WriteChannel<Boolean> channel;
 
     public PumpCommandsTask(int address, int headerNumber, WriteChannel<Boolean> channel) {
         super(address, headerNumber, "", 1);
@@ -34,7 +37,7 @@ public class PumpCommandsTask extends AbstractPumpTask {
     }
 
     @Override
-    public void setResponse(byte data) {
+    public void processResponse(byte data) {
         //DO NOTHING
     }
 

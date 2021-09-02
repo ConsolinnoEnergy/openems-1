@@ -56,20 +56,35 @@ public enum WarnBits {
         this.errorBits4.addAll(Arrays.asList(errorBits4));
     }
 
-
+    /**
+     * Get error bits 1.
+     * @return error bits 1.
+     */
     public List<String> getErrorBits1() {
-        return errorBits1;
+        return this.errorBits1;
     }
 
+    /**
+     * Get error bits 2.
+     * @return error bits 2.
+     */
     public List<String> getErrorBits2() {
-        return errorBits2;
+        return this.errorBits2;
     }
 
+    /**
+     * Get error bits 3.
+     * @return error bits 3.
+     */
     public List<String> getErrorBits3() {
-        return errorBits3;
+        return this.errorBits3;
     }
 
+    /**
+     * Get error bits 4.
+     * @return error bits 4.
+     */
     public List<String> getErrorBits4() {
-        return errorBits4;
+        return this.errorBits4;
     }
 }

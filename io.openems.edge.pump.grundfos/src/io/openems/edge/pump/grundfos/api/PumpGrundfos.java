@@ -3,7 +3,10 @@ package io.openems.edge.pump.grundfos.api;
 import io.openems.common.channel.AccessMode;
 import io.openems.common.channel.Unit;
 import io.openems.common.types.OpenemsType;
-import io.openems.edge.common.channel.*;
+import io.openems.edge.common.channel.Channel;
+import io.openems.edge.common.channel.Doc;
+import io.openems.edge.common.channel.DoubleReadChannel;
+import io.openems.edge.common.channel.WriteChannel;
 import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.bridge.genibus.api.PumpDevice;
 
@@ -36,6 +39,7 @@ public interface PumpGrundfos extends OpenemsComponent {
          * </ul>
          * */
         BUF_LEN(Doc.of(OpenemsType.DOUBLE)),
+
         /**
          * In which bus mode (slave, master) is the device.
          * <ul>
@@ -56,6 +60,7 @@ public interface PumpGrundfos extends OpenemsComponent {
          * </ul>
          * */
         MULTI_PUMP_MEMBERS(Doc.of(OpenemsType.DOUBLE)),
+
         /**
          * Twinpump status.
          * 0: Single pump. Not part of a multi pump
@@ -71,10 +76,12 @@ public interface PumpGrundfos extends OpenemsComponent {
          * </ul>
          * */
         TP_STATUS(Doc.of(OpenemsType.DOUBLE)),
+
         /**
          * Multipump status, parsed to a string.
          * */
         TP_STATUS_STRING(Doc.of(OpenemsType.STRING)),
+
         /**
          * Differential Pressure Head.
          * <ul>
@@ -84,6 +91,7 @@ public interface PumpGrundfos extends OpenemsComponent {
          * </ul>
          * */
         DIFFERENTIAL_PRESSURE_HEAD(Doc.of(OpenemsType.DOUBLE).unit(Unit.BAR)),
+
         /**
          * Electronics Temperature.
          * <ul>
@@ -94,6 +102,7 @@ public interface PumpGrundfos extends OpenemsComponent {
          * </ul>
          * */
         ELECTRONICS_TEMPERATURE(Doc.of(OpenemsType.DOUBLE).unit(Unit.DEZIDEGREE_CELSIUS)),
+
         /**
          * Current Motor.
          * <ul>
@@ -103,6 +112,7 @@ public interface PumpGrundfos extends OpenemsComponent {
          * </ul>
          * */
         CURRENT_MOTOR(Doc.of(OpenemsType.DOUBLE)),
+
         /**
          * Relative speed/frequency applied to motor.
          * <ul>
@@ -113,6 +123,7 @@ public interface PumpGrundfos extends OpenemsComponent {
          * </ul>
          * */
         MOTOR_FREQUENCY(Doc.of(OpenemsType.DOUBLE).unit(Unit.HERTZ)),
+
         /**
          * Power Consumption.
          * <ul>
@@ -124,6 +135,7 @@ public interface PumpGrundfos extends OpenemsComponent {
          *
          * */
         POWER_CONSUMPTION(Doc.of(OpenemsType.DOUBLE).unit(Unit.WATT)),
+
         /**
          * Current Pressure.
          * Pressure/Head/level.
@@ -135,6 +147,7 @@ public interface PumpGrundfos extends OpenemsComponent {
          * </ul>
          * */
         CURRENT_PRESSURE(Doc.of(OpenemsType.DOUBLE).unit(Unit.BAR)),
+
         /**
          * Current Pump Flow.
          * <ul>
@@ -145,6 +158,7 @@ public interface PumpGrundfos extends OpenemsComponent {
          * </ul>
          * */
         CURRENT_PUMP_FLOW(Doc.of(OpenemsType.DOUBLE).unit(Unit.CUBICMETER_PER_HOUR)),
+
         /**
          * Currently used setpoint.
          * <ul>
@@ -154,6 +168,7 @@ public interface PumpGrundfos extends OpenemsComponent {
          * </ul>
          * */
         REF_ACT(Doc.of(OpenemsType.DOUBLE)),
+
         /**
          * Normalized setpoint.
          * <ul>
@@ -163,6 +178,7 @@ public interface PumpGrundfos extends OpenemsComponent {
          * </ul>
          * */
         REF_NORM(Doc.of(OpenemsType.DOUBLE)),
+
         /**
          * Pumped water medium Temperature.
          * <ul>
@@ -173,6 +189,7 @@ public interface PumpGrundfos extends OpenemsComponent {
          * </ul>
          * */
         PUMPED_WATER_MEDIUM_TEMPERATURE(Doc.of(OpenemsType.DOUBLE).unit(Unit.DEZIDEGREE_CELSIUS)),
+
         /**
          * Minimum allowed reference setting.
          * <ul>
@@ -182,6 +199,7 @@ public interface PumpGrundfos extends OpenemsComponent {
          * </ul>
          * */
         R_MIN(Doc.of(OpenemsType.DOUBLE)),
+
         /**
          * Maximum allowed reference setting.
          * <ul>
@@ -191,6 +209,7 @@ public interface PumpGrundfos extends OpenemsComponent {
          * </ul>
          * */
         R_MAX(Doc.of(OpenemsType.DOUBLE)),
+
         /**
          * Actual mode status No. 1 bits.
          * <ul>
@@ -200,6 +219,7 @@ public interface PumpGrundfos extends OpenemsComponent {
          * </ul>
          * */
         ACT_MODE1(Doc.of(OpenemsType.DOUBLE)),
+
         /**
          * Control source bits.
          * Currently active control source. From which source the pump is currently taking commands.
@@ -210,11 +230,13 @@ public interface PumpGrundfos extends OpenemsComponent {
          * </ul>
          * */
         CONTR_SOURCE(Doc.of(OpenemsType.DOUBLE)),
+
         /**
          * Currently active control source. From which source the pump is currently taking commands.
          * The control source bits parsed to a text message.
          * */
         CONTR_SOURCE_STRING(Doc.of(OpenemsType.STRING)),
+
         /**
          * Actual Control Mode bits.
          * <ul>
@@ -225,13 +247,15 @@ public interface PumpGrundfos extends OpenemsComponent {
          *
          * */
         ACTUAL_CONTROL_MODE(Doc.of(OpenemsType.DOUBLE)),
+
         /**
          * The Actual Control Mode bits parsed to a text message.
          *
          * */
         ACTUAL_CONTROL_MODE_STRING(Doc.of(OpenemsType.STRING)),
+
         /**
-         * Unit family code
+         * Unit family code.
          * <ul>
          * <li>Interface: PumpGrundfosChannels
          * <li>Type: Double
@@ -239,8 +263,9 @@ public interface PumpGrundfos extends OpenemsComponent {
          * </ul>
          * */
         UNIT_FAMILY(Doc.of(OpenemsType.DOUBLE)),
+
         /**
-         * Unit type code
+         * Unit type code.
          * <ul>
          * <li>Interface: PumpGrundfosChannels
          * <li>Type: Double
@@ -248,8 +273,9 @@ public interface PumpGrundfos extends OpenemsComponent {
          * </ul>
          * */
         UNIT_TYPE(Doc.of(OpenemsType.DOUBLE)),
+
         /**
-         * Unit version code
+         * Unit version code.
          * <ul>
          * <li>Interface: PumpGrundfosChannels
          * <li>Type: Double
@@ -257,10 +283,12 @@ public interface PumpGrundfos extends OpenemsComponent {
          * </ul>
          * */
         UNIT_VERSION(Doc.of(OpenemsType.DOUBLE)),
+
         /**
          * Unit family, type and version parsed to a string.
          * */
         UNIT_INFO_STRING(Doc.of(OpenemsType.STRING)),
+
         /**
          * Alarm Code Pump. Manual says this is just for setups with multiple pumps.
          * <ul>
@@ -271,6 +299,7 @@ public interface PumpGrundfos extends OpenemsComponent {
          *
          * */
         ALARM_CODE_PUMP(Doc.of(OpenemsType.DOUBLE)),
+
         /** Warn Code.
          *  <ul>
          *        <li> Interface: PumpGrundfosChannels
@@ -279,6 +308,7 @@ public interface PumpGrundfos extends OpenemsComponent {
          *  </ul>
          * */
         WARN_CODE(Doc.of(OpenemsType.DOUBLE)),
+
         /**
          * Alarm Code.
          *  <ul>
@@ -288,8 +318,9 @@ public interface PumpGrundfos extends OpenemsComponent {
          *  </ul>
          * */
         ALARM_CODE(Doc.of(OpenemsType.DOUBLE)),
+
         /**
-         * Warn Bits 1-4. See "Warn Bits" For Further Information
+         * Warn Bits 1-4. See "Warn Bits" For Further Information.
          * <ul>
          *       <li> Interface: PumpGrundfosChannels
          *       <li> Type: Double
@@ -300,6 +331,7 @@ public interface PumpGrundfos extends OpenemsComponent {
         WARN_BITS_2(Doc.of(OpenemsType.DOUBLE)),
         WARN_BITS_3(Doc.of(OpenemsType.DOUBLE)),
         WARN_BITS_4(Doc.of(OpenemsType.DOUBLE)),
+
         /**
          * Warn message. Warn Bits cumulative channel. Contains the messages from all warn bits.
          * <ul>
@@ -308,6 +340,7 @@ public interface PumpGrundfos extends OpenemsComponent {
          * </ul>
          * */
         WARN_MESSAGE(Doc.of(OpenemsType.STRING)),
+
         /**
          * Alarm log 1-5. Contains the code for the last 5 logged alarms. Newest is in 1.
          *  <ul>
@@ -335,6 +368,7 @@ public interface PumpGrundfos extends OpenemsComponent {
          * </ul>
          * */
         FREQUENCY_F_UPPER(Doc.of(OpenemsType.DOUBLE).unit(Unit.HERTZ).accessMode(AccessMode.READ_WRITE)),
+
         /**
          * Pump rotation frequency f_nom.
          * <ul>
@@ -344,6 +378,7 @@ public interface PumpGrundfos extends OpenemsComponent {
          * </ul>
          * */
         FREQUENCY_F_NOM(Doc.of(OpenemsType.DOUBLE).unit(Unit.HERTZ).accessMode(AccessMode.READ_WRITE)),
+
         /**
          * Pump rotation frequency f_min.
          * <ul>
@@ -353,6 +388,7 @@ public interface PumpGrundfos extends OpenemsComponent {
          * </ul>
          * */
         FREQUENCY_F_MIN(Doc.of(OpenemsType.DOUBLE).unit(Unit.HERTZ).accessMode(AccessMode.READ_WRITE)),
+
         /**
          * Pump rotation frequency f_max.
          * <ul>
@@ -362,6 +398,7 @@ public interface PumpGrundfos extends OpenemsComponent {
          * </ul>
          * */
         FREQUENCY_F_MAX(Doc.of(OpenemsType.DOUBLE).unit(Unit.HERTZ).accessMode(AccessMode.READ_WRITE)),
+
         /**
          * Address of the multipump master. Copied to unit_addr if it is sent to a pump that is the master.
          * <ul>
@@ -371,6 +408,7 @@ public interface PumpGrundfos extends OpenemsComponent {
          * </ul>
          * */
         MP_MASTER_ADDR(Doc.of(OpenemsType.DOUBLE).accessMode(AccessMode.READ_WRITE)),
+
         /**
          * Pump GENIbus address.
          * <ul>
@@ -380,6 +418,7 @@ public interface PumpGrundfos extends OpenemsComponent {
          * </ul>
          * */
         UNIT_ADDR(Doc.of(OpenemsType.DOUBLE).accessMode(AccessMode.READ_WRITE)),
+
         /**
          * GENIbus group address.
          * <ul>
@@ -389,6 +428,7 @@ public interface PumpGrundfos extends OpenemsComponent {
          * </ul>
          * */
         GROUP_ADDR(Doc.of(OpenemsType.DOUBLE).accessMode(AccessMode.READ_WRITE)),
+
         /**
          * Constant Pressure Mode minimum reference. INFO reads unit = 30 = 1%, min = 0, range = 100.
          * Values for this parameter are 0% - 100% (write 0 - 1.0 in channel), where % is % of the range interval
@@ -401,7 +441,9 @@ public interface PumpGrundfos extends OpenemsComponent {
          *
          * */
         H_CONST_REF_MIN(Doc.of(OpenemsType.DOUBLE).accessMode(AccessMode.READ_WRITE)),
+
         /**
+         * Constant Pressure Mode maximum reference.
          * <ul>
          *        <li> Interface: PumpGrundfosChannels
          *        <li> Type: Double
@@ -409,6 +451,7 @@ public interface PumpGrundfos extends OpenemsComponent {
          * </ul>
          * */
         H_CONST_REF_MAX(Doc.of(OpenemsType.DOUBLE).accessMode(AccessMode.READ_WRITE)),
+
         /**
          * Low flow stop dead band relative to actual setpoint.
          * <ul>
@@ -419,6 +462,7 @@ public interface PumpGrundfos extends OpenemsComponent {
          * </ul>
          * */
         SET_PRESSURE_DELTA(Doc.of(OpenemsType.DOUBLE).accessMode(AccessMode.READ_WRITE).unit(Unit.PERCENT)),
+
         /**
          * Pump maximum head/pressure.
          * <ul>
@@ -429,6 +473,7 @@ public interface PumpGrundfos extends OpenemsComponent {
          * </ul>
          * */
         SET_MAX_PRESSURE(Doc.of(OpenemsType.DOUBLE).accessMode(AccessMode.READ_WRITE).unit(Unit.BAR)),
+
         /**
          * Pump maximum flow.
          * <ul>
@@ -454,6 +499,7 @@ public interface PumpGrundfos extends OpenemsComponent {
          * </ul>
          * */
         ANA_IN_1_FUNC(Doc.of(OpenemsType.DOUBLE).accessMode(AccessMode.READ_WRITE)),
+
         /**
          * Analogue input 1 application. Which values is this sensor mapped to? For example h_diff.
          * Value 0-255, see table 8.3 on page 47 in manual.
@@ -464,6 +510,7 @@ public interface PumpGrundfos extends OpenemsComponent {
          * </ul>
          * */
         ANA_IN_1_APPLIC(Doc.of(OpenemsType.DOUBLE).accessMode(AccessMode.READ_WRITE)),
+
         /**
          * Analogue input 1 unit. Value 0-22, see table 8.2 on page 45 in manual.
          * <ul>
@@ -473,6 +520,7 @@ public interface PumpGrundfos extends OpenemsComponent {
          * </ul>
          * */
         ANA_IN_1_UNIT(Doc.of(OpenemsType.DOUBLE).accessMode(AccessMode.READ_WRITE)),
+
         /**
          * Analogue input 1 minimum range value.
          * <ul>
@@ -482,6 +530,7 @@ public interface PumpGrundfos extends OpenemsComponent {
          * </ul>
          * */
         ANA_IN_1_MIN(Doc.of(OpenemsType.DOUBLE).accessMode(AccessMode.READ_WRITE)),
+
         /**
          * Analogue input 1 maximum range value.
          * <ul>
@@ -491,6 +540,7 @@ public interface PumpGrundfos extends OpenemsComponent {
          * </ul>
          * */
         ANA_IN_1_MAX(Doc.of(OpenemsType.DOUBLE).accessMode(AccessMode.READ_WRITE)),
+
         /**
          * Grundfos pressure sensor value.
          * <ul>
@@ -500,6 +550,7 @@ public interface PumpGrundfos extends OpenemsComponent {
          * </ul>
          * */
         GRF_SENSOR_PRESS(Doc.of(OpenemsType.DOUBLE).unit(Unit.BAR).accessMode(AccessMode.READ_ONLY)),
+
         /**
          * Grundfos pressure sensor function.
          * <ul>
@@ -509,6 +560,7 @@ public interface PumpGrundfos extends OpenemsComponent {
          * </ul>
          * */
         GRF_SENSOR_PRESS_FUNC(Doc.of(OpenemsType.DOUBLE).accessMode(AccessMode.READ_WRITE)),
+
         /**
          * Twinpump/Multipump mode.
          * 0: None, not part of a multi pump
@@ -523,10 +575,12 @@ public interface PumpGrundfos extends OpenemsComponent {
          * </ul>
          * */
         TP_MODE(Doc.of(OpenemsType.DOUBLE).accessMode(AccessMode.READ_WRITE)),
+
         /**
          * Twinpump/Multipump mode parsed to a string.
          * */
         TP_MODE_STRING(Doc.of(OpenemsType.STRING).accessMode(AccessMode.READ_WRITE)),
+
         /**
          * Maximum pressure range.
          * <ul>
@@ -547,6 +601,7 @@ public interface PumpGrundfos extends OpenemsComponent {
          * </ul>
          * */
         START(Doc.of(OpenemsType.BOOLEAN).accessMode(AccessMode.READ_WRITE)),
+
         /**
          * Stops the motor.
          * <ul>
@@ -556,6 +611,7 @@ public interface PumpGrundfos extends OpenemsComponent {
          * </ul>
          * */
         STOP(Doc.of(OpenemsType.BOOLEAN).accessMode(AccessMode.READ_WRITE)),
+
         /**
          * Switch to Remote Mode.
          * <ul>
@@ -565,6 +621,7 @@ public interface PumpGrundfos extends OpenemsComponent {
          * </ul>
          * */
         REMOTE(Doc.of(OpenemsType.BOOLEAN).accessMode(AccessMode.READ_WRITE)),
+
         /**
          * Motor running on min Curve.
          * <ul>
@@ -575,6 +632,7 @@ public interface PumpGrundfos extends OpenemsComponent {
          *
          * */
         MIN_MOTOR_CURVE(Doc.of(OpenemsType.BOOLEAN).accessMode(AccessMode.READ_WRITE)),
+
         /**
          * Motor running on max Curve.
          * <ul>
@@ -584,6 +642,7 @@ public interface PumpGrundfos extends OpenemsComponent {
          * </ul>
          * */
         MAX_MOTOR_CURVE(Doc.of(OpenemsType.BOOLEAN).accessMode(AccessMode.READ_WRITE)),
+
         /**
          * Switch to control mode const. Frequency.
          * <ul>
@@ -594,6 +653,7 @@ public interface PumpGrundfos extends OpenemsComponent {
          *
          * */
         CONST_FREQUENCY(Doc.of(OpenemsType.BOOLEAN).accessMode(AccessMode.READ_WRITE)),
+
         /**
          * Switch to control mode const. Pressure.
          * <ul>
@@ -603,6 +663,7 @@ public interface PumpGrundfos extends OpenemsComponent {
          * </ul>
          * */
         CONST_PRESSURE(Doc.of(OpenemsType.BOOLEAN).accessMode(AccessMode.READ_WRITE)),
+
         /**
          * Switch the motor in control mode AutoAdapt.
          * <ul>
@@ -613,6 +674,7 @@ public interface PumpGrundfos extends OpenemsComponent {
          *
          * */
         AUTO_ADAPT(Doc.of(OpenemsType.BOOLEAN).accessMode(AccessMode.READ_WRITE)),
+
         /**
          * Multipump master. Appoints this pump the master in a multipump system.
          * <ul>
@@ -623,6 +685,7 @@ public interface PumpGrundfos extends OpenemsComponent {
          *
          * */
         MP_Master(Doc.of(OpenemsType.BOOLEAN).accessMode(AccessMode.READ_WRITE)),
+
         /**
          * Multipump start search. Start wireless multipump assistant.
          * <ul>
@@ -633,6 +696,7 @@ public interface PumpGrundfos extends OpenemsComponent {
          *
          * */
         MP_START_SEARCH(Doc.of(OpenemsType.BOOLEAN).accessMode(AccessMode.READ_WRITE)),
+
         /**
          * Accept multipump join request.
          * <ul>
@@ -643,6 +707,7 @@ public interface PumpGrundfos extends OpenemsComponent {
          *
          * */
         MP_JOIN_REQ_ACCEPTED(Doc.of(OpenemsType.BOOLEAN).accessMode(AccessMode.READ_WRITE)),
+
         /**
          * Start multipump.
          * <ul>
@@ -653,6 +718,7 @@ public interface PumpGrundfos extends OpenemsComponent {
          *
          * */
         MP_START_MULTI_PUMP(Doc.of(OpenemsType.BOOLEAN).accessMode(AccessMode.READ_WRITE)),
+
         /**
          * End multipump. If sent to master, also ends multipump on the slaves.
          * <ul>
@@ -663,6 +729,7 @@ public interface PumpGrundfos extends OpenemsComponent {
          *
          * */
         MP_END_MULTI_PUMP(Doc.of(OpenemsType.BOOLEAN).accessMode(AccessMode.READ_WRITE)),
+
         /**
          * Turn on center LED flashing.
          * <ul>
@@ -673,6 +740,7 @@ public interface PumpGrundfos extends OpenemsComponent {
          *
          * */
         WINK_ON(Doc.of(OpenemsType.BOOLEAN).accessMode(AccessMode.READ_WRITE)),
+
         /**
          * Turn off center LED flashing.
          * <ul>
@@ -705,6 +773,7 @@ public interface PumpGrundfos extends OpenemsComponent {
          * </ul>
          * */
         DEVICE_PROD_NO(Doc.of(OpenemsType.STRING).accessMode(AccessMode.READ_ONLY)),
+
         /**
          * Device serial number in production.
          * <ul>
@@ -775,7 +844,9 @@ public interface PumpGrundfos extends OpenemsComponent {
         return this.channel(ChannelId.CONTR_SOURCE_STRING);
     }
 
-    default Channel<Double> getDiffPressureHead() { return this.channel(ChannelId.DIFFERENTIAL_PRESSURE_HEAD); }
+    default Channel<Double> getDiffPressureHead() {
+        return this.channel(ChannelId.DIFFERENTIAL_PRESSURE_HEAD);
+    }
 
     default Channel<Double> getElectronicsTemperature() {
         return this.channel(ChannelId.ELECTRONICS_TEMPERATURE);
@@ -882,7 +953,9 @@ public interface PumpGrundfos extends OpenemsComponent {
         return this.channel(ChannelId.ALARM_LOG_4);
     }
 
-    default Channel<Double> getAlarmLog5() { return this.channel(ChannelId.ALARM_LOG_5); }
+    default Channel<Double> getAlarmLog5() {
+        return this.channel(ChannelId.ALARM_LOG_5);
+    }
 
     default Channel<Double> getRmin() {
         return this.channel(ChannelId.R_MIN);
@@ -1064,7 +1137,9 @@ public interface PumpGrundfos extends OpenemsComponent {
     }
 
     // Other
-    default Channel<Boolean> isConnectionOk() { return this.channel(ChannelId.CONNECTION_OK); }
+    default Channel<Boolean> isConnectionOk() {
+        return this.channel(ChannelId.CONNECTION_OK);
+    }
 
     public PumpDevice getPumpDevice();
 

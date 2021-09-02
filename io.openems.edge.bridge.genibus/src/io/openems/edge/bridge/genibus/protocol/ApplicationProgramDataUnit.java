@@ -6,79 +6,112 @@ import java.io.IOException;
 public class ApplicationProgramDataUnit {
     short apduHead;
     byte apduHeadClass;
-    byte apduHeadOSACK;
+    byte apduHeadOsAck;
     boolean isOperationSpecifier;
     // 0...63 Byte
     ByteArrayOutputStream apduDataFields = new ByteArrayOutputStream();
 
+    /**
+     * Get the APDU head.
+     * @return the APDU head.
+     */
     public int getHead() {
-        return apduHead;
+        return this.apduHead;
     }
 
+    /**
+     * Set the APDU head.
+     * @param apduHead the APDU head.
+     */
     public void setHead(short apduHead) {
         this.apduHead = apduHead;
     }
 
+    /**
+     * Get the APDU data fields.
+     * @return the APDU data fields
+     */
     public byte[] getDataFields() {
-        return apduDataFields.toByteArray();
+        return this.apduDataFields.toByteArray();
     }
 
+    /**
+     * Set the APDU data fields.
+     * @param apduDataFields the APDU data fields.
+     */
     public void setDataFields(ByteArrayOutputStream apduDataFields) {
         this.apduDataFields = apduDataFields;
     }
 
+    /**
+     * Put a single ADPU data field.
+     * @param apduDataFieldByte the APDU data field.
+     */
     public void putDataField(int apduDataFieldByte) {
         this.apduDataFields.write((byte) apduDataFieldByte);
     }
 
+    /**
+     * Get the APDU head class.
+     * @return the APDU head class.
+     */
     public byte getHeadClass() {
-        return apduHeadClass;
+        return this.apduHeadClass;
     }
 
+    /**
+     * Set the APDU head class.
+     * @param apduHeadClass the APDU head class.
+     */
     public void setHeadClass(int apduHeadClass) {
         this.apduHeadClass = (byte) apduHeadClass;
     }
 
     /**
-     * Set Class = 2
+     * Set the APDU head class to 2, meaning ’measured data’.
      */
     public void setHeadClassMeasuredData() {
         this.apduHeadClass = 2;
     }
 
     /**
-     * Set Class = 3
+     * Set the APDU head class to 3, meaning ’commands’.
      */
     public void setHeadClassCommands() {
         this.apduHeadClass = 3;
     }
 
     /**
-     * Set Class = 4
+     * Set the APDU head class to 4, meaning ’configuration parameters’.
      */
     public void setHeadClassConfigurationParameters() {
         this.apduHeadClass = 4;
     }
 
     /**
-     * Set Class = 5
+     * Set the APDU head class to 5, meaning ’class reference values’.
      */
     public void setHeadClassReferenceValues() {
         this.apduHeadClass = 5;
     }
 
     /**
-     * Set Class = 7
+     * Set the APDU head class to 7, meaning ’ASCII sting’.
      */
-    public void setHeadClassASCIIStrings() {
+    public void setHeadClassAsciiStrings() {
         this.apduHeadClass = 7;
     }
 
-    public byte getHeadOSACKShifted() {
-        return (byte) (apduHeadOSACK << 6);
+    /**
+     * Get the shifted APDU head OSACK.
+     * @return the shifted APDU head OSACK.
+     */
+    public byte getHeadOsAckShifted() {
+        return (byte) (this.apduHeadOsAck << 6);
     }
 
     /**
+     * Sets the head OSACK.
      * If isOperationSpecifier (OS) 00 / 0: GET, to read the value of Data Items 10
      * / 2: SET, to write the value of Data Items 11 / 3: INFO, to read the scaling
      * info of Data Items, an Info Data Structure will be returned Else (ACK) 00 /
@@ -87,92 +120,104 @@ public class ApplicationProgramDataUnit {
      * Operation illegal or Data Class write buffer full, APDU data field will be
      * empty
      *
-     * @param apduHeadOSACK
+     * @param apduHeadOsAck the APDU head OSACK.
      */
-    public void setHeadOSACK(int apduHeadOSACK) {
-        this.apduHeadOSACK = (byte) apduHeadOSACK;
+    public void setHeadOsAck(int apduHeadOsAck) {
+        this.apduHeadOsAck = (byte) apduHeadOsAck;
     }
 
     /**
-     * OS=0
+     * Set the APDU head OSACK to 0, meaning 'get'.
      */
-    public void setOSGet() {
-        this.apduHeadOSACK = 0;
+    public void setOsGet() {
+        this.apduHeadOsAck = 0;
     }
 
     /**
-     * OS=2, SET
+     * Set the APDU head OSACK to 2, meaning 'set'.
      */
-    public void setOSSet() {
-        this.apduHeadOSACK = 2;
+    public void setOsSet() {
+        this.apduHeadOsAck = 2;
     }
 
     /**
-     * OS=3
+     * Set the APDU head OSACK to 3, meaning ’info’.
      */
-    public void setOSInfo() {
-        this.apduHeadOSACK = 3;
+    public void setOsInfo() {
+        this.apduHeadOsAck = 3;
     }
 
-    public void setACKOK() {
-        this.apduHeadOSACK = 0;
+    public void setAckOk() {
+        this.apduHeadOsAck = 0;
     }
 
-    public void setACKDataClassUnknown() {
-        this.apduHeadOSACK = (byte) 0x01;
+    public void setAckDataClassUnknown() {
+        this.apduHeadOsAck = (byte) 0x01;
     }
 
-    public void setACKDataItemIDUnknown() {
-        this.apduHeadOSACK = (byte) 0x10;
+    public void setAckDataItemIdUnknown() {
+        this.apduHeadOsAck = (byte) 0x10;
     }
 
     /**
      * Operation illegal or Data Class write buffer is full, APDU data field will be
-     * empty
+     * empty.
      */
-    public void setACKIllegalOrBuffFull() {
-        this.apduHeadOSACK = (byte) 0x11;
+    public void setAckIllegalOrBuffFull() {
+        this.apduHeadOsAck = (byte) 0x11;
     }
 
     /**
-     * Get num bytes in apdu without header bytes
+     * Get num bytes in apdu without header bytes.
      *
-     * @return
+     * @return the APDU da fields size.
      */
     public byte getLength() {
-        return (byte) apduDataFields.size();
+        return (byte) this.apduDataFields.size();
     }
 
     /**
-     * Get apdu num bytes including header bytes
+     * Get apdu num bytes including header bytes.
      *
-     * @return
+     * @return the total length of the APDU.
      */
-    public byte getAPDULength() {
-        return (byte) (getLength() + 2);
+    public byte getApduLength() {
+        return (byte) (this.getLength() + 2);
     }
 
+    /**
+     * Get the operation specifier boolean.
+     * @return the operation specifier boolean.
+     */
     public boolean isOperationSpecifier() {
-        return isOperationSpecifier;
+        return this.isOperationSpecifier;
     }
 
     public void setOperationSpecifier(boolean isOperationSpecifier) {
         this.isOperationSpecifier = isOperationSpecifier;
     }
 
-    public byte getHeadOSACKLength() {
-        return (byte) (getHeadOSACKShifted() | getLength());
+    /**
+     * Get the length of the head OSACK.
+     * @return the length of the head OSACK.
+     */
+    public byte getHeadOsAckLength() {
+        return (byte) (this.getHeadOsAckShifted() | this.getLength());
     }
 
-    public byte[] getBytes() {
+    /**
+     * Get the complete APDU as a byte array.
+     * @return the complete APDU as a byte array.
+     */
+    public byte[] getCompleteApduAsByteArray() {
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
 
         // Head bytes
-        bytes.write(getHeadClass()); // Set Class
-        bytes.write(getHeadOSACKLength()); // Set OS/ACK, Length of APDU data field
+        bytes.write(this.getHeadClass()); // Set Class
+        bytes.write(this.getHeadOsAckLength()); // Set OS/ACK, Length of APDU data field
         // Data bytes
         try {
-            bytes.write(apduDataFields.toByteArray());
+            bytes.write(this.apduDataFields.toByteArray());
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -180,7 +225,11 @@ public class ApplicationProgramDataUnit {
         return bytes.toByteArray();
     }
 
-    public byte getHeadOSACKforRequest() {
-        return this.apduHeadOSACK;
+    /**
+     * Get the head OSACK for the request telegram.
+     * @return the head OSACK byte.
+     */
+    public byte getHeadOsAckForRequest() {
+        return this.apduHeadOsAck;
     }
 }

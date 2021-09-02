@@ -8,8 +8,8 @@ public abstract class AbstractPumpTask implements GenibusTask {
     double unitCalc;
     String unitString;
     UnitTable unitTable;
-    private byte address;
-    private int headerNumber;
+    private final byte address;
+    private final int headerNumber;
     //Scale information Factor
     int sif;
     //Value interpretation
@@ -44,12 +44,12 @@ public abstract class AbstractPumpTask implements GenibusTask {
 
     @Override
     public byte getAddress() {
-        return address;
+        return this.address;
     }
 
     @Override
     public int getHeader() {
-        return headerNumber;
+        return this.headerNumber;
     }
 
     /**
@@ -67,9 +67,9 @@ public abstract class AbstractPumpTask implements GenibusTask {
         this.sif = sif;
         this.informationAvailable = true;
         if (this.vi) {
-            range = 255;
+            this.range = 255;
         } else {
-            range = 254;
+            this.range = 254;
         }
     }
 
@@ -88,7 +88,7 @@ public abstract class AbstractPumpTask implements GenibusTask {
      */
     @Override
     public void setFourByteInformation(int vi, int bo, int sif, byte unitIndex, byte scaleFactorZeroOrHigh, byte scaleFactorRangeOrLow) {
-        setOneByteInformation(vi, bo, sif);
+        this.setOneByteInformation(vi, bo, sif);
         this.unitIndex = (unitIndex & 127);
         if (sif == 3) {
             this.scaleFactorHighOrder = Byte.toUnsignedInt(scaleFactorZeroOrHigh);
@@ -101,14 +101,14 @@ public abstract class AbstractPumpTask implements GenibusTask {
             this.unitString = this.unitTable.getInformationData().get(this.unitIndex);
 
             if (this.unitString != null) {
-                switch (unitString) {
+                switch (this.unitString) {
 
                     case "Celsius/10":
                     case "bar/10":
                     case "Ampere*0.1":
                     case "0.1*m³/h":
                     case "10%":
-                        unitCalc = 0.1;
+                        this.unitCalc = 0.1;
                         break;
 
                     case "Kelvin/100":
@@ -117,57 +117,57 @@ public abstract class AbstractPumpTask implements GenibusTask {
                     case "kPa":
                     case "0.01*Hz":
                     case "1%":
-                        unitCalc = 0.01;
+                        this.unitCalc = 0.01;
                         break;
 
                     case "bar/1000":
                     case "0.1%":
-                        unitCalc = 0.001;
+                        this.unitCalc = 0.001;
                         break;
 
                     case "0.01%":
-                        unitCalc = 0.0001;
+                        this.unitCalc = 0.0001;
                         break;
 
                     case "ppm":
-                        unitCalc = 0.000001;
+                        this.unitCalc = 0.000001;
                         break;
 
                     case "psi":
-                        unitCalc = 0.06895; // convert to bar since channel unit is bar
+                        this.unitCalc = 0.06895; // convert to bar since channel unit is bar
                         break;
 
                     case "psi*10":
-                        unitCalc = 0.6895; // convert to bar
+                        this.unitCalc = 0.6895; // convert to bar
                         break;
 
                     case "2*Hz":
-                        unitCalc = 2.0;
+                        this.unitCalc = 2.0;
                         break;
 
                     case "2.5*Hz":
-                        unitCalc = 2.5;
+                        this.unitCalc = 2.5;
                         break;
 
                     case "5*m³/h":
-                        unitCalc = 5.0;
+                        this.unitCalc = 5.0;
                         break;
 
                     case "Watt*10":
                     case "10*m³/h":
-                        unitCalc = 10.0;
+                        this.unitCalc = 10.0;
                         break;
 
                     case "Watt*100":
-                        unitCalc = 100.0;
+                        this.unitCalc = 100.0;
                         break;
 
                     case "kW":
-                        unitCalc = 1000.0;
+                        this.unitCalc = 1000.0;
                         break;
 
                     case "kW*10":
-                        unitCalc = 10000.0;
+                        this.unitCalc = 10000.0;
                         break;
 
                     case "Celsius":
@@ -179,30 +179,30 @@ public abstract class AbstractPumpTask implements GenibusTask {
                     case "m³/h":
                     case "Hz":
                     default:
-                        unitCalc = 1.0;
+                        this.unitCalc = 1.0;
                 }
 
                 if ((unitIndex & 128) == 128) {
-                    unitCalc = unitCalc * (-1);
+                    this.unitCalc = this.unitCalc * (-1);
                 }
             }
         }
 
         // Extract pressure sensor interval from h (used to be h_diff (2, 23), but that does not work with pump MGE).
-        if (headerNumber == 2 && address == 37) {
-            if (unitString != null) {
-                switch (unitString) {
+        if (this.headerNumber == 2 && this.address == 37) {
+            if (this.unitString != null) {
+                switch (this.unitString) {
                     case "m/10000":
                     case "m/100":
                     case "m/10":
                     case "m":
                     case "m*10":
-                        pumpDevice.setPressureSensorMinBar(zeroScaleFactor * unitCalc / 10);
-                        pumpDevice.setPressureSensorRangeBar(rangeScaleFactor * unitCalc / 10);
+                        this.pumpDevice.setPressureSensorMinBar(this.zeroScaleFactor * this.unitCalc / 10);
+                        this.pumpDevice.setPressureSensorRangeBar(this.rangeScaleFactor * this.unitCalc / 10);
                         break;
                     default:
-                        pumpDevice.setPressureSensorMinBar(zeroScaleFactor * unitCalc);
-                        pumpDevice.setPressureSensorRangeBar(rangeScaleFactor * unitCalc);
+                        this.pumpDevice.setPressureSensorMinBar(this.zeroScaleFactor * this.unitCalc);
+                        this.pumpDevice.setPressureSensorRangeBar(this.rangeScaleFactor * this.unitCalc);
                 }
             }
         }
@@ -210,11 +210,13 @@ public abstract class AbstractPumpTask implements GenibusTask {
 
     @Override
     public boolean informationDataAvailable() {
-        return informationAvailable;
+        return this.informationAvailable;
     }
 
     @Override
-    public void resetInfo() { informationAvailable = false; }
+    public void resetInfo() {
+        this.informationAvailable = false;
+    }
 
     @Override
     public void setPumpDevice(PumpDevice pumpDevice) {
@@ -223,7 +225,7 @@ public abstract class AbstractPumpTask implements GenibusTask {
 
     @Override
     public int getDataByteSize() {
-        return dataByteSize;
+        return this.dataByteSize;
     }
 
     @Override
@@ -239,27 +241,27 @@ public abstract class AbstractPumpTask implements GenibusTask {
     @Override
     public String printInfo() {
         StringBuilder returnString = new StringBuilder();
-        returnString.append("Task " + headerNumber + ", " + Byte.toUnsignedInt(address) + " - ");
-        if (headerNumber == 7) {
+        returnString.append("Task ").append(this.headerNumber).append(", ").append(Byte.toUnsignedInt(this.address)).append(" - ");
+        if (this.headerNumber == 7) {
             returnString.append("ASCII");
             return returnString.toString();
         }
-        if (informationAvailable) {
-            returnString.append("Unit: " + unitString + ", Format: " + dataByteSize*8 + " bit ");
-            switch (sif) {
+        if (this.informationAvailable) {
+            returnString.append("Unit: ").append(this.unitString).append(", Format: ").append(this.dataByteSize * 8).append(" bit ");
+            switch (this.sif) {
                 case 1:
                     returnString.append("bit wise interpreted value");
                     break;
                 case 2:
-                    returnString.append("scaled value, min: " + zeroScaleFactor + ", range: " + rangeScaleFactor);
+                    returnString.append("scaled value, min: ").append(this.zeroScaleFactor).append(", range: ").append(this.rangeScaleFactor);
 
                     break;
                 case 3:
-                    int exponent = dataByteSize - 2;
+                    int exponent = this.dataByteSize - 2;
                     if (exponent < 0) {
                         exponent = 0;
                     }
-                    returnString.append("extended precision, min: " + (Math.pow(256, exponent) * (256 * scaleFactorHighOrder + scaleFactorLowOrder)));
+                    returnString.append("extended precision, min: ").append(Math.pow(256, exponent) * (256 * this.scaleFactorHighOrder + this.scaleFactorLowOrder));
                     break;
                 case 0:
                 default:

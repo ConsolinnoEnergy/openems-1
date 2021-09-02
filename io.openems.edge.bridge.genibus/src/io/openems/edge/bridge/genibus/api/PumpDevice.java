@@ -34,12 +34,11 @@ public class PumpDevice {
     private final List<GenibusTask> onceTasksWithInfo = new ArrayList<>();
 
     private int deviceReadBufferLengthBytes = 70;
-    private int deviceSendBufferLengthBytes = 102;
-    private int genibusAddress;
-    private int lowPrioTasksPerCycle;
+    private final int deviceSendBufferLengthBytes = 102;
+    private final int genibusAddress;
+    private final int lowPrioTasksPerCycle;
     private boolean connectionOk = true;    // Initialize with true, to avoid "no connection" message on startup.
     private long timestamp;
-    private long executionDuration = 200;    // Milliseconds. This information is currently not used.
     private boolean allLowPrioTasksAdded;
     private boolean addAllOnceTasks = true;
     private double[] millisecondsPerByte = {2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0};    // Rough estimate. Exact value measured at runtime.
@@ -62,58 +61,96 @@ public class PumpDevice {
         this.pumpDeviceId = deviceId;
         this.lowPrioTasksPerCycle = lowPrioTasksPerCycle;
         for (GenibusTask task : tasks) {
-            addTask(task);
+            this.addTask(task);
         }
-        timestamp = System.currentTimeMillis() - 1000;
+        this.timestamp = System.currentTimeMillis() - 1000;
     }
 
+    /**
+     * Add a task for this device.
+     * @param task a Genibus task.
+     */
     public void addTask(GenibusTask task) {
         task.setPumpDevice(this);
         this.taskManager.addTask(task);
     }
 
+    /**
+     * Get the task manager.
+     * @return the task manager.
+     */
     public TasksManager<GenibusTask> getTaskManager() {
-        return taskManager;
+        return this.taskManager;
     }
 
-    public List<GenibusTask> getTaskQueue() { return taskQueue; }
+    /**
+     * Get the task queue.
+     * @return the task queue.
+     */
+    public List<GenibusTask> getTaskQueue() {
+        return this.taskQueue;
+    }
 
-    public List<GenibusTask> getOnceTasksWithInfo() { return onceTasksWithInfo; }
+    /**
+     * Get once tasks that can do ’info’.
+     * @return once tasks that can do ’info’.
+     */
+    public List<GenibusTask> getOnceTasksWithInfo() {
+        return this.onceTasksWithInfo;
+    }
 
+    /**
+     * Set the device read buffer length. Can only set values above 70.
+     * @param value the device read buffer length.
+     */
     public void setDeviceReadBufferLengthBytes(int value) {
         // 70 is minimum buffer length.
         if (value >= 70) {
-            deviceReadBufferLengthBytes = value;
+            this.deviceReadBufferLengthBytes = value;
         }
     }
 
     /**
-     * Gets the read buffer length of this GENIbus device in byte. The buffer length is the maximum length a telegram
-     * can have that is sent to this device. If this buffer overflows, the device won't answer.
-     * @return
+     * Gets the read buffer length (number of bytes) of this GENIbus device. The buffer length is the maximum length a
+     * telegram can have that is sent to this device. If this buffer overflows, the device won't answer.
+     * @return the read buffer length (number of bytes).
      */
     public int getDeviceReadBufferLengthBytes() {
-        return deviceReadBufferLengthBytes;
+        return this.deviceReadBufferLengthBytes;
     }
 
     /**
-     * Gets the send buffer length of this GENIbus device in byte. The buffer length is the maximum length a telegram
-     * can have that the device sends as answer telegram. This buffer can overflow when tasks are sent that have more
-     * return byte than send byte such as INFO and ASCII.
-     * @return
+     * Gets the send buffer length (number of bytes) of this GENIbus device. The buffer length is the maximum length a
+     * telegram can have that the device sends as answer telegram. This buffer can overflow when tasks are sent that
+     * have more return byte than send byte such as INFO and ASCII.
+     * @return the send buffer length (number of bytes).
      */
-    public int getDeviceSendBufferLengthBytes() { return deviceSendBufferLengthBytes; }
+    public int getDeviceSendBufferLengthBytes() {
+        return this.deviceSendBufferLengthBytes;
+    }
 
+    /**
+     * Get the Genibus address.
+     * @return the Genibus address.
+     */
     public int getGenibusAddress() {
-        return genibusAddress;
+        return this.genibusAddress;
     }
 
+    /**
+     * Get the number of low priority tasks to send per cycle.
+     * @return the number of low priority tasks to send per cycle.
+     */
     public int getLowPrioTasksPerCycle() {
-        return lowPrioTasksPerCycle;
+        return this.lowPrioTasksPerCycle;
     }
 
+    /**
+     * Get the pump device id.
+     * @return the pump device id.
+     */
     public String getPumpDeviceId() {
-        return pumpDeviceId;
+        return this.pumpDeviceId;
     }
 
     /**
@@ -127,19 +164,10 @@ public class PumpDevice {
     /**
      * Gets the last timestamp of this pump device.
      * This information is used to track which pump has already received a telegram this cycle.
-     * @return
+     * @return the last timestamp of this pump device.
      */
     public long getTimestamp() {
-        return timestamp;
-    }
-
-    // This information is currently not used.
-    public void setExecutionDuration(long executionDuration) {
-        this.executionDuration = executionDuration;
-    }
-
-    public long getExecutionDuration() {
-        return executionDuration;
+        return this.timestamp;
     }
 
     /**
@@ -149,7 +177,7 @@ public class PumpDevice {
      * For a more accurate timing the ms per byte is measured and stored with this method. The method saves the last
      * three values so an average can be calculated.
      *
-     * @param millisecondsPerByte
+     * @param millisecondsPerByte the number of milliseconds one byte adds to the telegram send and receive time.
      */
     public void setMillisecondsPerByte(double millisecondsPerByte) {
         // Save seven values so we can average and the value won't jump that much.
@@ -159,10 +187,10 @@ public class PumpDevice {
         if (millisecondsPerByte < 0.5) {
             millisecondsPerByte = 0.5;   // Failsafe.
         }
-        this.millisecondsPerByte[arrayTracker] = millisecondsPerByte;
-        arrayTracker++;
-        if (arrayTracker >= 7) {
-            arrayTracker = 0;
+        this.millisecondsPerByte[this.arrayTracker] = millisecondsPerByte;
+        this.arrayTracker++;
+        if (this.arrayTracker >= 7) {
+            this.arrayTracker = 0;
         }
     }
 
@@ -170,17 +198,23 @@ public class PumpDevice {
      * Gets the time in ms that is added to a telegram process (send and receive) per byte in the apdu. An empty
      * telegram takes ~33 ms to send and receive, each byte in the apdus adds "this" amount of ms to the process.
      *
-     * @return
+     * @return the number of milliseconds one byte adds to the telegram send and receive time.
      */
     public double getMillisecondsPerByte() {
         // Average over the seven entries.
         double returnValue = 0;
         for (int i = 0; i < 5; i++) {
-            returnValue += millisecondsPerByte[i];
+            returnValue += this.millisecondsPerByte[i];
         }
         return returnValue / 7;
     }
 
+    /**
+     * Set the time it takes to send and receive the response to an empty telegram. Used to calculate the timings of
+     * telegrams.
+     *
+     * @param emptyTelegramTime the time it takes to send and receive the response to an empty telegram.
+     */
     public void setEmptyTelegramTime(int emptyTelegramTime) {
         // Save five values so we can average and the value won't jump that much.
         if (emptyTelegramTime > 100) {
@@ -189,104 +223,178 @@ public class PumpDevice {
         if (emptyTelegramTime < 10) {
             emptyTelegramTime = 10;   // Failsafe.
         }
-        this.emptyTelegramTime[arrayTracker2] = emptyTelegramTime;
-        arrayTracker2++;
-        if (arrayTracker2 >= 5) {
-            arrayTracker2 = 0;
+        this.emptyTelegramTime[this.arrayTracker2] = emptyTelegramTime;
+        this.arrayTracker2++;
+        if (this.arrayTracker2 >= 5) {
+            this.arrayTracker2 = 0;
         }
     }
 
+    /**
+     * Set the time it takes to send and receive the response to an empty telegram.
+     *
+     * @return the time it takes to send and receive the response to an empty telegram.
+     */
     public int getEmptyTelegramTime() {
         // Average over the five entries.
         int returnValue = 0;
         for (int i = 0; i < 5; i++) {
-            returnValue += emptyTelegramTime[i];
+            returnValue += this.emptyTelegramTime[i];
         }
         return returnValue / 5;
     }
 
+    /**
+     * If an empty telegram been sent to this device.
+     * @return true for yes and false for no.
+     */
     public boolean isEmptyTelegramSent() {
-        return emptyTelegramSent;
+        return this.emptyTelegramSent;
     }
 
+    /**
+     * Set the empty telegram sent boolean.
+     * @param emptyTelegramSent the value for the empty telegram sent boolean.
+     */
     public void setEmptyTelegramSent(boolean emptyTelegramSent) {
         this.emptyTelegramSent = emptyTelegramSent;
     }
 
+    /**
+     * Set the ’allLowPrioTasksAdded’ boolean.
+     * @param allLowPrioTasksAdded the value for the ’allLowPrioTasksAdded’ boolean.
+     */
     public void setAllLowPrioTasksAdded(boolean allLowPrioTasksAdded) {
         this.allLowPrioTasksAdded = allLowPrioTasksAdded;
     }
 
+    /**
+     * Get the ’allLowPrioTasksAdded’ boolean.
+     * @return the ’allLowPrioTasksAdded’ boolean.
+     */
     public boolean isAllLowPrioTasksAdded() {
-        return allLowPrioTasksAdded;
+        return this.allLowPrioTasksAdded;
     }
 
+    /**
+     * Get the ’pressureSensorMinBar’ value. This is needed to calculate the value of the transmitted measurement data.
+     * @return the ’pressureSensorMinBar’ value.
+     */
     public double getPressureSensorMinBar() {
-        return pressureSensorMinBar;
+        return this.pressureSensorMinBar;
     }
 
+    /**
+     * Set the ’pressureSensorMinBar’ value. This is needed to calculate the value of the transmitted measurement data.
+     * @param pressureSensorMinBar the ’pressureSensorMinBar’ value.
+     */
     public void setPressureSensorMinBar(double pressureSensorMinBar) {
         this.pressureSensorMinBar = pressureSensorMinBar;
     }
 
+    /**
+     * Get the ’pressureSensorRangeBar’ value. This is needed to calculate the value of the transmitted measurement data.
+     * @return the ’pressureSensorRangeBar’ value.
+     */
     public double getPressureSensorRangeBar() {
-        return pressureSensorRangeBar;
+        return this.pressureSensorRangeBar;
     }
 
+    /**
+     * Set the ’pressureSensorRangeBar’ value. This is needed to calculate the value of the transmitted measurement data.
+     * @param pressureSensorRangeBar the ’pressureSensorRangeBar’ value.
+     */
     public void setPressureSensorRangeBar(double pressureSensorRangeBar) {
         this.pressureSensorRangeBar = pressureSensorRangeBar;
     }
 
+    /**
+     * Get the ’connectionOk’ value.
+     * @return the ’connectionOk’ value.
+     */
     public boolean isConnectionOk() {
-        return connectionOk;
+        return this.connectionOk;
     }
 
+    /**
+     * Set the ’connectionOk’ value.
+     * @param connectionOk the ’connectionOk’ value.
+     */
     public void setConnectionOk(boolean connectionOk) {
         this.connectionOk = connectionOk;
     }
 
+    /**
+     * Get the ’addAllOnceTasks’ value.
+     * @return the ’addAllOnceTasks’ value.
+     */
     public boolean isAddAllOnceTasks() {
-        return addAllOnceTasks;
+        return this.addAllOnceTasks;
     }
 
+    /**
+     * Set the ’addAllOnceTasks’ value.
+     * @param addAllOnceTasks the ’addAllOnceTasks’ value.
+     */
     public void setAddAllOnceTasks(boolean addAllOnceTasks) {
         this.addAllOnceTasks = addAllOnceTasks;
     }
 
-    // In case of connection loss. The pump might have been turned off and back on, or another pump is now using this
-    // address. Reset everything, as if the program had just started.
+    /**
+     * Reset the device, meaning delete all data saved so far for this device. The device will behave as if the program
+     * had just been started. Some information is only requested once from the device at startup. This is the only way
+     * to make the program request this information again from the device.
+     * This is used in case of connection loss. The pump might have been turned off and back on and changed it's settings
+     * while doing so. Or another pump is now using this address.
+     */
     public void resetDevice() {
-        taskManager.getAllTasks().forEach(task -> {
+        this.taskManager.getAllTasks().forEach(task -> {
             task.resetInfo();
             if (task instanceof GenibusWriteTask) {
                 ((GenibusWriteTask) task).setSendGet(1);
             }
         });
-        addAllOnceTasks = true;
-        pressureSensorMinBar = 0;
-        pressureSensorRangeBar = 0;
-        deviceReadBufferLengthBytes = 70;
-        millisecondsPerByte[0] = 2.0;
-        millisecondsPerByte[1] = 2.0;
-        millisecondsPerByte[2] = 2.0;
-        millisecondsPerByte[3] = 2.0;
-        millisecondsPerByte[4] = 2.0;
-        millisecondsPerByte[5] = 2.0;
-        millisecondsPerByte[6] = 2.0;
+        this.addAllOnceTasks = true;
+        this.pressureSensorMinBar = 0;
+        this.pressureSensorRangeBar = 0;
+        this.deviceReadBufferLengthBytes = 70;
+        this.millisecondsPerByte[0] = 2.0;
+        this.millisecondsPerByte[1] = 2.0;
+        this.millisecondsPerByte[2] = 2.0;
+        this.millisecondsPerByte[3] = 2.0;
+        this.millisecondsPerByte[4] = 2.0;
+        this.millisecondsPerByte[5] = 2.0;
+        this.millisecondsPerByte[6] = 2.0;
     }
 
+    /**
+     * Get the ’firstTelegram’ value.
+     * @return the ’firstTelegram’ value.
+     */
     public boolean isFirstTelegram() {
-        return firstTelegram;
+        return this.firstTelegram;
     }
 
+    /**
+     * Set the ’firstTelegram’ value.
+     * @param firstTelegram the ’firstTelegram’ value.
+     */
     public void setFirstTelegram(boolean firstTelegram) {
         this.firstTelegram = firstTelegram;
     }
 
+    /**
+     * Get the ’timeoutCounter’ value.
+     * @return the ’timeoutCounter’ value.
+     */
     public int getTimeoutCounter() {
-        return timeoutCounter;
+        return this.timeoutCounter;
     }
 
+    /**
+     * Set the ’timeoutCounter’ value.
+     * @param timeoutCounter the ’timeoutCounter’ value.
+     */
     public void setTimeoutCounter(int timeoutCounter) {
         this.timeoutCounter = timeoutCounter;
     }

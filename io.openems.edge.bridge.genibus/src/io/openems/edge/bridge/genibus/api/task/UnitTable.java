@@ -5,15 +5,12 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
+/**
+ * The Standard Unit Table for Grundfos pumps. Does not have every entry, but the ones needed for pump operations.
+ * Required to translate the data sent by the pump into the correct values.
+ */
 public enum UnitTable {
 
-
-    /**
-     * The Standard Unit Table for Grundfos pumps.
-     * Beneath is a list of the Standard unit tables supporting only temperature, active power and pressure values.
-     * The Number is written in the information Data of each HeatPump Task.
-     * Needed by the task for calculating the correct value to the Channel.
-     * */
     //only pressure,temperature watt and rotations/time atm.
     //temperature, Watt, bar
     Standard_Unit_Table(
@@ -53,7 +50,7 @@ public enum UnitTable {
                     "0.01*Hz", "0.5*Hz", "Hz", "2*Hz", "2.5*Hz"
             });
 
-    private Map<Integer, String> informationData = new HashMap<>();
+    private final Map<Integer, String> informationData = new HashMap<>();
 
     UnitTable(int[] keys, String[] values) {
         AtomicInteger counter = new AtomicInteger();
@@ -65,8 +62,12 @@ public enum UnitTable {
 
     }
 
+    /**
+     * Get the ’informationData’ map.
+     * @return the ’informationData’ map.
+     */
     public Map<Integer, String> getInformationData() {
-        return informationData;
+        return this.informationData;
     }
 }
 

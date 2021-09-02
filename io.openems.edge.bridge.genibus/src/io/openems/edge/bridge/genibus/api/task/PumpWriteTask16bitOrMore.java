@@ -5,8 +5,10 @@ import io.openems.edge.common.channel.WriteChannel;
 import io.openems.edge.common.taskmanager.Priority;
 
 
-// ToDo: Beschreibung
-public class PumpWriteTask16bitOrMore extends PumpReadTask16bitOrMore implements GenibusWriteTask{
+/**
+ * PumpTask class for writing with 16 bit precision.
+ */
+public class PumpWriteTask16bitOrMore extends PumpReadTask16bitOrMore implements GenibusWriteTask {
 
     private WriteChannel<Double> channel;
     //private boolean sendGet = false;
@@ -42,7 +44,7 @@ public class PumpWriteTask16bitOrMore extends PumpReadTask16bitOrMore implements
 
             // For values of type scaled or extended precision:
             // With INFO available, the value in nextWrite is automatically converted to the correct bytes for GENIbus.
-            double dataOfChannel = correctValueFromChannel(this.channel.getNextWriteValue().get()) / super.channelMultiplier;
+            double dataOfChannel = this.correctValueFromChannel(this.channel.getNextWriteValue().get()) / super.channelMultiplier;
             switch (super.sif) {
                 case 2:
                     // Formula working for both 8 and 16 bit
@@ -73,7 +75,7 @@ public class PumpWriteTask16bitOrMore extends PumpReadTask16bitOrMore implements
             // Also, do GET next cycle to update value.
             if (clearChannel) {
                 this.channel.getNextWriteValueAndReset();
-                sendGet = 2;
+                this.sendGet = 2;
             }
             return returnValue;
 
@@ -118,12 +120,12 @@ public class PumpWriteTask16bitOrMore extends PumpReadTask16bitOrMore implements
 
     @Override
     public void setSendGet(int value) {
-        sendGet = value;
+        this.sendGet = value;
     }
 
     @Override
     public int getSendGet() {
-        return sendGet;
+        return this.sendGet;
     }
 
 }

@@ -53,7 +53,7 @@ public enum UnitTable {
                     "0.01*Hz", "0.5*Hz", "Hz", "2*Hz", "2.5*Hz"
             });
 
-    private Map<Integer, String> informationData = new HashMap<>();
+    private final Map<Integer, String> informationData = new HashMap<>();
 
     UnitTable(int[] keys, String[] values) {
         AtomicInteger counter = new AtomicInteger();
@@ -65,8 +65,12 @@ public enum UnitTable {
 
     }
 
+    /**
+     * Get the ’informationData’ map.
+     * @return the ’informationData’ map.
+     */
     public Map<Integer, String> getInformationData() {
-        return informationData;
+        return this.informationData;
     }
 }
 
