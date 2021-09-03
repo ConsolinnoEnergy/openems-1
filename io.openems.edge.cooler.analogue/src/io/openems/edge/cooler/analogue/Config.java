@@ -3,7 +3,7 @@ package io.openems.edge.cooler.analogue;
 import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
-@ObjectClassDefinition(name = "Analogue Cooler", description = "A Cooler that works with an Analogue Device/Module.")
+@ObjectClassDefinition(name = "Cooler Analogue", description = "A Cooler that works with an Analogue Device/Module.")
 @interface Config {
 
     String service_pid();

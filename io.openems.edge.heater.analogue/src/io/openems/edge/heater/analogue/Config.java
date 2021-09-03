@@ -8,7 +8,7 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
     String service_pid();
 
-    @AttributeDefinition(name = "Id", description = "Unique Id for the .")
+    @AttributeDefinition(name = "Id", description = "Unique Id for the Heater.")
     String id() default "AnalogueHeater0";
 
     @AttributeDefinition(name = "Alias", description = "Human readable name of this Configurator.")

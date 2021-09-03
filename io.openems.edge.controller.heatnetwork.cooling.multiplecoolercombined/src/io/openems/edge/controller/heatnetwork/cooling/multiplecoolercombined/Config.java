@@ -21,7 +21,7 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     String[] coolerIds() default {"Chp0", "WoodChipCooler0", "GasBoiler0"};
 
     @AttributeDefinition(name = "Cooling Device Activation Temperature in dC", description = "Threshold of the primary Cooling Devices, when to activate the Cooler (in dC --> 1°C == 10°dC). "
-            + "If measured Temperature beneath this -> Activate cooler. Can also be a ChannelAddress!")
+            + "If measured Temperature above this -> Activate cooler. Can also be a ChannelAddress!")
     String[] activationTemperatures() default {"600","600","VirtualThermometer0/Temperature"};
 
     @AttributeDefinition(name = "Cooling Device Deactivation Temperature in dC",
@@ -33,6 +33,15 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
     @AttributeDefinition(name = "Deactivation Thermometers", description = "The Temperature-Sensor for the Cooling Device 1 Temperature MAX.")
     String[] deactivationThermometers() default {"TemperatureSensor1", "TemperatureSensor3", "TemperatureSensor5"};
+
+    @AttributeDefinition(name = "useTimer", description = "Offset the activation of the Relay by time.")
+    boolean useTimer() default false;
+
+    @AttributeDefinition(name = "timeDelta", description = "Time (in s or Cycles) between the activation of the Relay/s and reaching of the activationTemperature.")
+    int timeDelta() default 900;
+
+    @AttributeDefinition(name = "timerId", description = "Unique Id of the timer")
+    String timerId() default "TimerByTime";
 
     boolean enabled() default true;
 

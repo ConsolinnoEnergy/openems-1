@@ -21,6 +21,9 @@ import org.osgi.service.metatype.annotations.Option;
             + "e.g. at 700dC set Valve to 20%, at 500dc to 70% etc")
     String[] temperaturePositionMap() default {"700:20"};
 
+    @AttributeDefinition(name = "Tolerance", description = "The amount of leeway the component is allowed to have so its still considered to be at the correct position.")
+    double tolerance() default 1.5;
+
     @AttributeDefinition(name = "Control by", description = "Control this valve by Position or Temperature", options = {
             @Option(label = "Position", value = "Position"),
             @Option(label = "Temperature", value = "Temperature")

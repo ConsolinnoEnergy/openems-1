@@ -25,6 +25,7 @@ public class MyConfig extends AbstractComponentConfig implements Config {
         public String timerForFallback;
         public int fallbackRunTime;
         public boolean shouldCool;
+        public double tolerance;
         private String id;
         private String alias;
         private boolean enabled = true;
@@ -118,6 +119,11 @@ public class MyConfig extends AbstractComponentConfig implements Config {
             return this;
         }
 
+        public Builder setTolerance(double tolerance) {
+            this.tolerance = tolerance;
+            return this;
+        }
+
         public MyConfig build() {
             return new MyConfig(this);
         }
@@ -153,6 +159,11 @@ public class MyConfig extends AbstractComponentConfig implements Config {
     @Override
     public String[] temperaturePositionMap() {
         return this.builder.temperaturePositionMap;
+    }
+
+    @Override
+    public double tolerance() {
+        return this.builder.tolerance;
     }
 
     @Override

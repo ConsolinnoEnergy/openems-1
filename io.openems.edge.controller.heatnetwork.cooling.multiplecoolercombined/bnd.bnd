@@ -10,6 +10,7 @@ Bundle-Version: 1.0.0.${tstamp}
 	io.openems.edge.controller.api,\
 	io.openems.edge.thermometer.api,\
 	io.openems.edge.heater,\
+	io.openems.edge.timer.api,\
 
 -testpath: \
 	${testpath},\

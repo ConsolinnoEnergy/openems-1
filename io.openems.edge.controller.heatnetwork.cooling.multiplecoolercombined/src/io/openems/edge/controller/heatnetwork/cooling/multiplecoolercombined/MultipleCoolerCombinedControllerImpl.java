@@ -8,6 +8,8 @@ import io.openems.edge.controller.api.Controller;
 import io.openems.edge.controller.heatnetwork.cooling.multiplecoolercombined.api.MultipleCoolerCombinedController;
 import io.openems.edge.heater.Cooler;
 import io.openems.edge.thermometer.api.Thermometer;
+import io.openems.edge.timer.api.TimerHandler;
+import io.openems.edge.timer.api.TimerHandlerImpl;
 import org.osgi.service.cm.ConfigurationException;
 import org.osgi.service.component.ComponentContext;
 import org.osgi.service.component.annotations.Activate;
@@ -57,6 +59,10 @@ public class MultipleCoolerCombinedControllerImpl extends AbstractOpenemsCompone
     private boolean configurationSuccess;
     private final AtomicInteger configurationCounter = new AtomicInteger(0);
     private static final int MAX_WAIT_COUNT = 10;
+    private boolean useTimer;
+    private TimerHandler timer;
+    private final String timerId = "overWatch";
+    private String timerType;
 
     private Config config;
 
@@ -76,6 +82,7 @@ public class MultipleCoolerCombinedControllerImpl extends AbstractOpenemsCompone
         this.setHasError(false);
         this.setIsOk(true);
         this.config = config;
+        this.useTimer = config.useTimer();
 
         //----------------------ALLOCATE/ CONFIGURE COOLER/TemperatureSensor -----------------//
         try {
@@ -92,6 +99,7 @@ public class MultipleCoolerCombinedControllerImpl extends AbstractOpenemsCompone
     void modified(ComponentContext context, Config config) {
         super.modified(context, config.id(), config.alias(), config.enabled());
         this.config = config;
+        this.useTimer = config.useTimer();
         try {
             this.allocateConfig(config.coolerIds(), config.activationThermometers(), config.activationTemperatures(), config.deactivationThermometers(),
                     config.deactivationTemperatures());
@@ -121,6 +129,12 @@ public class MultipleCoolerCombinedControllerImpl extends AbstractOpenemsCompone
                 temperatureSensorMax.length, temperatureMax.length)) {
             throw new ConfigurationException("allocate Config of MultipleCoolerCombined: " + super.id(), "Check Config Size Entries!");
         }
+        if (this.useTimer) {
+            this.timer = new TimerHandlerImpl(this.config.id(), this.cpm);
+            this.timerType = this.config.timerId();
+            this.timer.addOneIdentifier(this.timerId, this.timerType, this.config.timeDelta());
+        }
+
         List<String> coolerIds = Arrays.asList(cooler_id);
         OpenemsError.OpenemsNamedException[] ex = {null};
         ConfigurationException[] exC = {null};
@@ -257,15 +271,22 @@ public class MultipleCoolerCombinedControllerImpl extends AbstractOpenemsCompone
                 //Enable
                 try {
                     if (thermometerWrapper.shouldActivate()) {
-                        coolerActiveWrapper.setActive(false);
+                        coolerActiveWrapper.setActive(true);
                         //Check wrapper if thermometer below min temp
                     } else if (thermometerWrapper.shouldDeactivate()) {
-                        coolerActiveWrapper.setActive(true);
+                        coolerActiveWrapper.setActive(false);
                     }
 
                     if (coolerActiveWrapper.isActive()) {
-                        cooler.getEnableSignalChannel().setNextWriteValue(coolerActiveWrapper.isActive());
-                        isCooling.set(true);
+                        if (!this.useTimer || this.timer.checkTimeIsUp(this.timerId)) {
+                            cooler.getEnableSignalChannel().setNextWriteValue(coolerActiveWrapper.isActive());
+                            isCooling.set(true);
+                            if (this.useTimer) {
+                                this.timer.resetTimer(this.timerId);
+                            }
+                        }
+                    } else if (this.useTimer) {
+                        this.timer.resetTimer(this.timerId);
                     }
                 } catch (OpenemsError.OpenemsNamedException e) {
                     coolerError.set(true);

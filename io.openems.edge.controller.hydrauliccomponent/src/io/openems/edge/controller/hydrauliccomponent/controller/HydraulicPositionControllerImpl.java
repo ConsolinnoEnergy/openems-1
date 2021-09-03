@@ -58,7 +58,7 @@ public class HydraulicPositionControllerImpl extends AbstractOpenemsComponent im
     private boolean isRunning = false;
     private String componentId;
     private String thermometerId;
-    protected static final double TOLERANCE = 1.5;
+    protected double tolerance;
     private boolean shouldCool;
 
     private DateTime initialTimeStamp;
@@ -79,6 +79,7 @@ public class HydraulicPositionControllerImpl extends AbstractOpenemsComponent im
             this.componentId = config.componentToControl();
             this.thermometerId = config.thermometerId();
             this.shouldCool = config.shouldCool();
+            this.tolerance = config.tolerance();
             if (this.cpm.getComponent(config.componentToControl()) instanceof HydraulicComponent) {
                 this.controlledComponent = this.cpm.getComponent(this.componentId);
             } else {
@@ -182,7 +183,7 @@ public class HydraulicPositionControllerImpl extends AbstractOpenemsComponent im
                 });
             }
             double setPosition = selectedPosition.get().getHydraulicPosition();
-            if (this.controlledComponent.getPowerLevelValue() + TOLERANCE < setPosition || this.controlledComponent.getPowerLevelValue() - TOLERANCE > setPosition) {
+            if (this.controlledComponent.getPowerLevelValue() + this.tolerance < setPosition || this.controlledComponent.getPowerLevelValue() - this.tolerance > setPosition) {
                 try {
                     this.controlledComponent.setPointPowerLevelChannel().setNextWriteValueFromObject(setPosition);
 
