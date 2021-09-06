@@ -84,6 +84,7 @@ public class WallbeImpl extends AbstractOpenemsModbusComponent implements Openem
         this._setMaximumHardwarePower(32 * 230);
         this._setMinimumPower(this.minPower);
         this._setPowerPrecision(1 * 230);
+        this._setIsPriority(config.priority());
         this.readHandler = new WallbeReadHandler(this);
         this.writeHandler = new WallbeWriteHandler(this);
         super.activate(context, config.id(), config.alias(), config.enabled(), config.modbusUnitId(), this.cm,

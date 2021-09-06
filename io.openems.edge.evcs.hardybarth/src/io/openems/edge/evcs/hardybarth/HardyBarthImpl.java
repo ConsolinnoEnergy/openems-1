@@ -73,6 +73,7 @@ public class HardyBarthImpl extends AbstractOpenemsComponent
         this._setMinimumHardwarePower(config.minHwCurrent() * 3 * 230);
         this._setMaximumHardwarePower(config.maxHwCurrent() * 3 * 230);
         this._setPowerPrecision(230);
+        this._setIsPriority(config.priority());
         this.phaseOrder = config.phases();
         if (!this.checkPhases()) {
             throw new ConfigurationException("Phase Configuration is not valid!", "Configuration must only contain 1,2 and 3.");

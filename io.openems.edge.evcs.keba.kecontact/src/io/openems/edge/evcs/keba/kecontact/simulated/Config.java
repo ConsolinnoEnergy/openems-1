@@ -18,6 +18,9 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     @AttributeDefinition(name = "Phases", description = "If the Phases are physically swapped, change the order here.", required = true)
     int[] phases() default {1,2,3};
 
+    @AttributeDefinition(name = "Charging Priority", description = "Tick if the EVCS should charge with a higher priority.")
+    boolean priority() default false;
+
     boolean enabled() default true;
 
     String webconsole_configurationFactory_nameHint() default "{id}";

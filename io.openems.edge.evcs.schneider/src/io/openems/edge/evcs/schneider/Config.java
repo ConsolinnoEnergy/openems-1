@@ -14,6 +14,9 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
     boolean enabled() default true;
 
+    @AttributeDefinition(name = "Charging Priority", description = "Tick if the EVCS should charge with a higher priority.")
+    boolean priority() default false;
+
     @AttributeDefinition(name = "Minimum power", description = "Minimum current of the Charger in A.", required = true)
     int minCurrent() default 8;
 

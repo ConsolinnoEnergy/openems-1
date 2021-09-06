@@ -17,6 +17,7 @@ public class MyConfig extends AbstractComponentConfig implements Config {
         public int offTime;
         public int phaseLimit;
         public int powerLimit;
+        public String[] priority;
         private String id;
         private String alias;
         private boolean enabled = true;
@@ -70,6 +71,10 @@ public class MyConfig extends AbstractComponentConfig implements Config {
             return this;
         }
 
+        public Builder setPriority(String[] priority) {
+            this.priority = priority;
+            return this;
+        }
 
         public MyConfig build() {
             return new MyConfig(this);
