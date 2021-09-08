@@ -19,6 +19,7 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
     @AttributeDefinition(name = "useMeter", description = "Tick if the controller should offset its calculation based on an existing Meter.")
     boolean useMeter() default true;
+
     @AttributeDefinition(name = "MeterID", description = "Id of the Meter.")
     String meter() default "";
 
@@ -28,11 +29,15 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     @AttributeDefinition(name = "offTime", description = "Time (in minutes) how long an EVCS should be turned off if the Power has to be balanced.")
     int offTime() default 0;
 
-    @AttributeDefinition(name = "phaseLimit", description = "Maximum Power (W) one Phase can pull from the grid.")
+    @AttributeDefinition(name = "phaseLimit", description = "Maximum Current (A) one Phase can pull from the grid.")
     int phaseLimit() default 0;
 
     @AttributeDefinition(name = "powerLimit", description = "Maximum Power (W) the entire EVCS cluster can pull from the grid.")
     int powerLimit() default 0;
+
+    @AttributeDefinition(name = "priorityCurrent", description = "Current (A) a high priority EVCS should at least charge with,"
+            + "or share with other high priority EVCS if there is not enough current present.")
+    int priorityCurrent() default 32;
 
     String webconsole_configurationFactory_nameHint() default "{id}";
 }

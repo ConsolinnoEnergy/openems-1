@@ -17,7 +17,7 @@ public class MyConfig extends AbstractComponentConfig implements Config {
         public int offTime;
         public int phaseLimit;
         public int powerLimit;
-        public String[] priority;
+        public int priorityCurrent;
         private String id;
         private String alias;
         private boolean enabled = true;
@@ -71,8 +71,8 @@ public class MyConfig extends AbstractComponentConfig implements Config {
             return this;
         }
 
-        public Builder setPriority(String[] priority) {
-            this.priority = priority;
+        public Builder setPriorityCurrent(int priorityCurrent) {
+            this.priorityCurrent = priorityCurrent;
             return this;
         }
 
@@ -136,5 +136,10 @@ public class MyConfig extends AbstractComponentConfig implements Config {
     @Override
     public int powerLimit() {
         return this.builder.powerLimit;
+    }
+
+    @Override
+    public int priorityCurrent() {
+        return this.builder.priorityCurrent;
     }
 }
