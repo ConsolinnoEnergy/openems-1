@@ -84,6 +84,8 @@ public class SimulatedKebaContact extends AbstractOpenemsComponent implements Ma
         this._setMinimumPower(5);
         this._setPhases(0);
         this._setPowerPrecision(0.23);
+        this._setMaximumPower(32*3*230);
+        this._setMaximumHardwarePower(32*3*230);
         this._setIsPriority(config.priority());
 
     }
@@ -113,7 +115,7 @@ public class SimulatedKebaContact extends AbstractOpenemsComponent implements Ma
         }
         this._setPhases(0);
         this._setMaximumPower(32*3*230);
-
+        this._setMaximumHardwarePower(32*3*230);
         this._setPowerPrecision(0.23);
     }
 
