@@ -19,11 +19,13 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     @AttributeDefinition(name = "AnalogueDevice ID", description = "The Device Id that Controls the Heater in reality")
     String analogueId() default "LucidControlOutput0";
 
+    /*
+    TODO
     boolean usesSignalSensors() default true;
 
     @AttributeDefinition(name = "SignalSensor Ids", description = "If you want to use SignalSensor as ErrorHandling, put them here")
     String[] signalSensors() default {"SignalSensor0"};
-
+    */
     @AttributeDefinition(name = "Max Power in KW", description = "Maximum available Power")
     int maxPower() default 100;
 

@@ -5,14 +5,15 @@ import io.openems.common.exceptions.OpenemsError;
 import io.openems.common.types.OpenemsType;
 import io.openems.edge.common.channel.Channel;
 import io.openems.edge.common.channel.Doc;
+import io.openems.edge.common.channel.WriteChannel;
 import io.openems.edge.common.component.AbstractOpenemsComponent;
 import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.common.event.EdgeEventConstants;
-import io.openems.edge.heater.analogue.component.AnalogueHeaterAIO;
+import io.openems.edge.heater.analogue.component.AnalogueHeaterAio;
 import io.openems.edge.heater.analogue.component.AnalogueHeaterComponent;
 import io.openems.edge.heater.analogue.component.AnalogueHeaterLucidControl;
-import io.openems.edge.heater.analogue.component.AnalogueHeaterPWM;
+import io.openems.edge.heater.analogue.component.AnalogueHeaterPwm;
 import io.openems.edge.heater.analogue.component.AnalogueHeaterRelay;
 import io.openems.edge.heater.api.Heater;
 import io.openems.edge.timer.api.TimerHandler;
@@ -37,6 +38,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.Dictionary;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * The Analogue Heater. It is a Heater, that controls a Analogue Component, connected to a Heater, such as a CHP or other
@@ -44,10 +46,10 @@ import java.util.Optional;
  * ATM Possible Analogue Heaters can be controlled by:
  * <p>
  *     <ul>
- * <li>{@link io.openems.edge.consolinno.aio.api.AioChannel}</li>
- * <li>{@link io.openems.edge.lucidcontrol.device.api.LucidControlDeviceOutput}</li>
- * <li>{@link io.openems.edge.consolinno.pwm.api.Pwm} or {@link io.openems.edge.pwm.device.api.PwmPowerLevelChannel}</li>
- * <li>{@link io.openems.edge.consolinno.relay.api.Relay}</li>
+ * <li>{@link io.openems.edge.io.api.AnalogInputOutput}</li>
+ * <li>{@link io.openems.edge.bridge.lucidcontrol.api.LucidControlDeviceOutput}</li>
+ * <li>{@link io.openems.edge.io.api.Pwm} </li>
+ * <li>{@link io.openems.edge.relay.api.Relay}</li>
  * </ul>
  * </p>
  * <p>
@@ -140,17 +142,18 @@ public class AnalogueHeater extends AbstractOpenemsComponent implements OpenemsC
 
     /**
      * This method is an internal method, that will run all basic operations/setups either if the component was activated or modified.
+     *
      * @param config the config of the component (either on activation or modification)
      * @throws OpenemsError.OpenemsNamedException if a component couldn't be found
-     * @throws ConfigurationException if a component could be found but was not the correct instance of XYZ.
+     * @throws ConfigurationException             if a component could be found but was not the correct instance of XYZ.
      */
     private void activationOrModifiedRoutine(Config config) throws OpenemsError.OpenemsNamedException, ConfigurationException {
         switch (config.analogueType()) {
             case PWM:
-                this.heaterComponent = new AnalogueHeaterPWM(this.cpm, config.analogueId(), this.maxPowerKw, config.controlType(), config.defaultMinPower());
+                this.heaterComponent = new AnalogueHeaterPwm(this.cpm, config.analogueId(), this.maxPowerKw, config.controlType(), config.defaultMinPower());
                 break;
             case AIO:
-                this.heaterComponent = new AnalogueHeaterAIO(this.cpm, config.analogueId(), this.maxPowerKw, config.controlType(), config.defaultMinPower());
+                this.heaterComponent = new AnalogueHeaterAio(this.cpm, config.analogueId(), this.maxPowerKw, config.controlType(), config.defaultMinPower());
                 break;
             case RELAY:
                 this.heaterComponent = new AnalogueHeaterRelay(this.cpm, config.analogueId(), this.maxPowerKw, config.controlType(), config.defaultMinPower());
@@ -208,7 +211,8 @@ public class AnalogueHeater extends AbstractOpenemsComponent implements OpenemsC
     /**
      * Updates the Config if either: {@link Heater.ChannelId#SET_DEFAULT_ACTIVE_POWER_VALUE} or {@link Heater.ChannelId#SET_DEFAULT_MINIMUM_POWER_VALUE}
      * is updated.
-     * @param power which powerValue should be written to an identifier of the property
+     *
+     * @param power       which powerValue should be written to an identifier of the property
      * @param activePower if the value comes from the activePowerValueChannel (true) or the MinimumPowerValueChannel(false)
      */
     private void updateConfig(Integer power, boolean activePower) {
@@ -216,7 +220,7 @@ public class AnalogueHeater extends AbstractOpenemsComponent implements OpenemsC
 
         try {
 
-            c = ca.getConfiguration(this.servicePid(), "?");
+            c = this.ca.getConfiguration(this.servicePid(), "?");
             Dictionary<String, Object> properties = c.getProperties();
             String propertyName = activePower ? "defaultRunPower" : "inactiveValue";
             int setPointValue = (int) properties.get(propertyName);
@@ -233,6 +237,7 @@ public class AnalogueHeater extends AbstractOpenemsComponent implements OpenemsC
     /**
      * Writes the CurrentPower Applied to the {@link ChannelId#CURRENT_POWER_KW} and {@link ChannelId#CURRENT_POWER_PERCENT}
      * channel. It asks/reads the value from it's {@link #heaterComponent}.
+     *
      * @param currentPowerApplied the currentPower Applied in Percent
      */
     private void updatePowerChannel(int currentPowerApplied) {
@@ -244,27 +249,28 @@ public class AnalogueHeater extends AbstractOpenemsComponent implements OpenemsC
     /**
      * Gets the correct channel and value, defined by this {@link ControlType}.
      * It Either gets a default RunPower or the setPoint, depending if the PowerValue was written into the SetPointChannel.
-     * ({@link #getSetPointPowerChannel()} for ControlType KW or {@link #getSetPointPowerPercentChannel()} for ControlType Percent)
+     * ({@link #getHeatingPowerSetpointChannel()} for ControlType KW or {@link #getHeatingPowerPercentSetpointChannel()} for ControlType Percent)
+     *
      * @return the power that will be applied.
      */
     private int powerToApply() {
-        Channel<?> channelToGetPowerValueFrom = this.getSetPointPowerPercentChannel();
-        boolean needToCheckTime = true;
+        WriteChannel<?> channelToGetPowerValueFrom = this.getHeatingPowerPercentSetpointChannel();
+        AtomicBoolean needToCheckTime = new AtomicBoolean(true);
         switch (this.type) {
             case PERCENT:
-                channelToGetPowerValueFrom = this.getSetPointPowerPercentChannel();
+                channelToGetPowerValueFrom = this.getHeatingPowerPercentSetpointChannel();
                 break;
             case KW:
-                channelToGetPowerValueFrom = this.getSetPointPowerChannel();
+                channelToGetPowerValueFrom = this.getHeatingPowerSetpointChannel();
                 break;
         }
-        if (channelToGetPowerValueFrom.value().isDefined()) {
-            this.overwritePower = (Integer) channelToGetPowerValueFrom.value().get();
+        channelToGetPowerValueFrom.getNextWriteValueAndReset().ifPresent(value -> {
+            this.overwritePower = (Integer) value;
             this.timer.resetTimer(POWER_IDENTIFIER);
-            needToCheckTime = false;
-            channelToGetPowerValueFrom.setNextValue(null);
-        }
-        if (needToCheckTime && this.timer.checkTimeIsUp(POWER_IDENTIFIER) == false) {
+            needToCheckTime.set(false);
+        });
+
+        if (needToCheckTime.get() && this.timer.checkTimeIsUp(POWER_IDENTIFIER) == false) {
             this.overwritePower = this.config.defaultRunPower();
         }
 
@@ -276,8 +282,10 @@ public class AnalogueHeater extends AbstractOpenemsComponent implements OpenemsC
      * Either -> it is set to AutoRun -> always true
      * or if an EnableSignal was Set
      * else if this Component was Active before and the Time is not up, to reset the component
+     *
      * @return true if this device should run at {@link #overwritePower}.
      */
+
     private boolean shouldHeat() {
         if (this.isAutoRun) {
             return true;
@@ -291,52 +299,4 @@ public class AnalogueHeater extends AbstractOpenemsComponent implements OpenemsC
             return this.isActive && this.timer.checkTimeIsUp(ENABLE_IDENTIFIER) == false;
         }
     }
-
-
-    //-------------------------//
-    @Override
-    public boolean setPointPowerPercentAvailable() {
-        return false;
-    }
-
-    @Override
-    public boolean setPointPowerAvailable() {
-        return false;
-    }
-
-    @Override
-    public boolean setPointTemperatureAvailable() {
-        return false;
-    }
-
-    @Override
-    public int calculateProvidedPower(int demand, float bufferValue) throws OpenemsError.OpenemsNamedException {
-        return 0;
-    }
-
-    @Override
-    public int getMaximumThermalOutput() {
-        return 0;
-    }
-
-    @Override
-    public void setOffline() throws OpenemsError.OpenemsNamedException {
-
-    }
-
-    @Override
-    public boolean hasError() {
-        return false;
-    }
-
-    @Override
-    public void requestMaximumPower() {
-
-    }
-
-    @Override
-    public void setIdle() {
-
-    }
-    //-----------------//
 }

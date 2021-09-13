@@ -12,16 +12,13 @@ Private-Package:  \
 -includeresource: {readme.md}
 
 -buildpath:  \
-	osgi.enroute.base.api;version=2.1,\
-	io.openems.edge.heater.api;version=latest,\
-	io.openems.edge.timer.api;version=latest,\
-	io.openems.edge.consolinno.pwm;version=latest,\
-	io.openems.edge.consolinno.aio;version=latest,\
-	io.openems.edge.lucidcontrol.device.api;version=latest,\
-	io.openems.edge.common;version=latest,\
-	io.openems.common;version=latest,\
-	io.openems.edge.relays.device.api;version=latest,\
-	io.openems.edge.consolinno.relay;version=latest,\
-	io.openems.edge.pwm.device.api;version=latest,\
+	${buildpath},\
+	io.openems.edge.bridge.lucidcontrol,\
+	io.openems.common,\
+	io.openems.edge.common,\
+	io.openems.edge.heater.api,\
+    io.openems.edge.io.api,\
+    io.openems.edge.relay.api,\
+    io.openems.edge.timer.api,\
 
 

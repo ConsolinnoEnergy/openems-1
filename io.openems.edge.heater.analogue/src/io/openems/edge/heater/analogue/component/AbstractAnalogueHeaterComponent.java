@@ -29,11 +29,12 @@ public abstract class AbstractAnalogueHeaterComponent implements AnalogueHeaterC
     /**
      * Initializes the AbstractAnalogueHeater. Allows to Create an Instance of this and later on, setting the variables,
      * the Component needs to function properly.
-     * @param cpm the ComponentManager passed by the {@link io.openems.edge.heater.analogue.AnalogueHeater}
-     * @param address the ChannelAddress, determined by the {@link io.openems.edge.heater.analogue.AnalogueType} and ComponentId
+     *
+     * @param cpm         the ComponentManager passed by the {@link io.openems.edge.heater.analogue.AnalogueHeater}
+     * @param address     the ChannelAddress, determined by the {@link io.openems.edge.heater.analogue.AnalogueType} and ComponentId
      * @param controlType the ControlType -> Percent or KW -> needs to be set for Conversion ->
-     * @param maxPower the Maximum available Power
-     * @param minPower the min Power
+     * @param maxPower    the Maximum available Power
+     * @param minPower    the min Power
      */
     protected void initialize(ComponentManager cpm, ChannelAddress address, ControlType controlType, int maxPower, int minPower) {
         this.cpm = cpm;
@@ -42,12 +43,15 @@ public abstract class AbstractAnalogueHeaterComponent implements AnalogueHeaterC
         this.maxPower = Math.max(maxPower, 0);
         this.minPower = Math.max(minPower, 0);
     }
+
     /**
      * Starts the Heating Process with a given PowerValue which either can be percent or a KW value depending on the
      * {@link io.openems.edge.heater.analogue.ControlType}
+     *
      * @param powerToApply the powerValue that will be applied
      * @throws OpenemsError.OpenemsNamedException if the ChannelAddress couldn't be found
      */
+
     @Override
     public void startHeating(int powerToApply) throws OpenemsError.OpenemsNamedException {
         this.writeToChannelAddress(powerToApply);
@@ -58,6 +62,7 @@ public abstract class AbstractAnalogueHeaterComponent implements AnalogueHeaterC
      * process.
      * NOTE: The Multiplier is usually 1 but on instances such as PWM or AIO the Multiplier is 10, since it expects
      * the value in thousandth not percent.
+     *
      * @param powerToApply the value written to the ChannelAddress
      * @throws OpenemsError.OpenemsNamedException when the ChannelAddress could not be found.
      */
@@ -81,6 +86,7 @@ public abstract class AbstractAnalogueHeaterComponent implements AnalogueHeaterC
 
     /**
      * Stops the Heating Process with the MinPowerValue.
+     *
      * @throws OpenemsError.OpenemsNamedException if the ChannelAddress cannot be found.
      */
     @Override
@@ -91,6 +97,7 @@ public abstract class AbstractAnalogueHeaterComponent implements AnalogueHeaterC
     /**
      * Gets the currently Applied Power to the analogueDevice.
      * The Value will always be a percent Value.
+     *
      * @return the percentPowerValue Applied
      * @throws OpenemsError.OpenemsNamedException if ChannelAddress not found.
      */
