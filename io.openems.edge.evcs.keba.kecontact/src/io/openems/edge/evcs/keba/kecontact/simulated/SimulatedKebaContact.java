@@ -150,6 +150,7 @@ public class SimulatedKebaContact extends AbstractOpenemsComponent implements Ma
             }
         }
         this._setChargePower((this.l1Power + this.l2Power + this.l3Power) * 230);
+        this._setMaximumPower(this.initialPower * this.phaseCount * 230);
 
     }
 
@@ -165,7 +166,7 @@ public class SimulatedKebaContact extends AbstractOpenemsComponent implements Ma
         } else {
             newPower = chargeLimit;
         }
-        this._setMaximumPower(newPower*this.phaseCount*230);
+     //   this._setMaximumPower(initialPower*this.phaseCount*230);
         this.chargeLimit = chargeLimit;
         for (int i = 0; i < this.phaseCount; i++) {
             switch (this.phases[i]) {
@@ -215,7 +216,7 @@ public class SimulatedKebaContact extends AbstractOpenemsComponent implements Ma
         }
         this.initialPower = chargePower;
         this.phaseCount = phaseCount;
-        this._setMaximumPower(chargePower*this.phaseCount*230);
+    //    this._setMaximumPower(initialPower*this.phaseCount*230);
         switch (this.phases[phase]) {
             case 1:
                 this.l1Power += chargePower;

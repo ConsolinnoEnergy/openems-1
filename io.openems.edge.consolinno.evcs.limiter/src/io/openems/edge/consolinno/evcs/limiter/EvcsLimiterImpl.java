@@ -2327,14 +2327,12 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
         List<String> remove = new ArrayList<>();
         Map<String, EvcsOnHold> add = new HashMap<>();
         AtomicReference<ManagedEvcs[]> active = new AtomicReference<>(this.getEvcs());
-        AtomicReference<List<ManagedEvcs>> nonPriority = new AtomicReference<>(Arrays.asList(active.get()).stream().filter(evcs -> !evcs.getIsPriority().get()).collect(Collectors.toList()));
         AtomicInteger activeLength = new AtomicInteger(active.get().length);
         DateTime current = new DateTime();
         this.powerWaitingList.forEach((id, evcs) -> {
             if (this.canActivate(id, evcs)) {
                 DateTime time = evcs.getTimestamp();
                 active.set(this.getEvcs());
-                nonPriority.set(Arrays.asList(active.get()).stream().filter(test -> !test.getIsPriority().get()).collect(Collectors.toList()));
                 if (activeLength.get() == 0 && allOff.get() && this.canActivate(id, evcs)) {
                     remove.add(id);
                     allOff.set(false);
@@ -2344,7 +2342,7 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
                         ManagedEvcs temp = this.cpm.getComponent(id);
 
                         if (time.plusMinutes(this.offTime).isBefore(current)
-                              ||  temp.getIsPriority().get() && this.active.stream().anyMatch(test ->  !test.getIsPriority().get())
+                            //  ||  temp.getIsPriority().get() && this.active.stream().anyMatch(test ->  !test.getIsPriority().get())
                         ) {
                             for (int i = 0; i < activeLength.get(); i++) {
                                 int waitingPower = evcs.getPower();
@@ -2354,9 +2352,9 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
                                     int minHwPower = active.get()[i].getMinimumHardwarePower().orElse(8);
                                     int minSwPower = active.get()[i].getMinimumPower().orElse(8);
                                     int minPower = Math.max(minHwPower, minSwPower);
-                                    add.put(nonPriority.get().get(i).id(), new EvcsOnHold(minPower, current, nonPriority.get().get(i).getPhases().orElse(0), true));
+                                    add.put(active.get()[i].id(), new EvcsOnHold(minPower, current, active.get()[i].getPhases().orElse(0), true));
                                     try {
-                                        this.turnOffEvcs(nonPriority.get().get(i));
+                                        this.turnOffEvcs(active.get()[i]);
                                         this.turnOnEvcs(id, evcs);
                                     } catch (OpenemsError.OpenemsNamedException e) {
                                         this.log.error("Couldn't turn off EVCS.");
@@ -2535,7 +2533,7 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
     private void increasePowerBy(int powerForEveryone, ManagedEvcs[] evcss) {
 
         for (int i = 0; i < evcss.length; i++) {
-            boolean allow = true;
+            boolean allow = !evcss[i].getIsPriority().get();
             boolean overLimit = ((this.getMaximumLoad() - this.getMinimumLoad()) + powerForEveryone >= MAXIMUM_LOAD_DELTA
                     || this.getMiddleLoad() - this.getMinimumLoad() + powerForEveryone >= 20);
             int[] phaseConfiguration = evcss[i].getPhaseConfiguration();
@@ -2611,10 +2609,10 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
         List<ManagedEvcs> all = Arrays.asList(this.evcss);
         List<ManagedEvcs> priorityList = this.active.stream().filter(evcs -> evcs.getIsPriority().get()).collect(Collectors.toList());
         if (priorityList.size() > 0) {
-            if ((this.powerLimit / GRID_VOLTAGE) / priorityList.size() > this.priorityCurrent) {
+            if ((this.initialPowerLimit / GRID_VOLTAGE) / priorityList.size() > this.priorityCurrent) {
                 priorityList.forEach(evcs -> {
                     try {
-                        evcs.setChargePowerLimit(Math.min(evcs.getMaximumHardwarePower().orElse(this.priorityCurrent), evcs.getMaximumPower().orElse(this.priorityCurrent)) * GRID_VOLTAGE);
+                        evcs.setChargePowerLimit(Math.min(evcs.getMaximumHardwarePower().orElse(this.priorityCurrent), evcs.getMaximumPower().orElse(this.priorityCurrent)));
                     } catch (OpenemsError.OpenemsNamedException e) {
                         this.log.error("Unable to set ChargeLimit of Priority EVCS!");
                     }
