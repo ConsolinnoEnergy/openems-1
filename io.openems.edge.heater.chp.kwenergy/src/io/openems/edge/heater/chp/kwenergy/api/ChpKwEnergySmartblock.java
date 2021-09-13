@@ -14,7 +14,9 @@ import io.openems.edge.common.channel.StringReadChannel;
 import io.openems.edge.common.channel.value.Value;
 import io.openems.edge.heater.api.Chp;
 
-
+/**
+ * Channels for the KW Energy Smartblock chp.
+ */
 public interface ChpKwEnergySmartblock extends Chp {
 
     public enum ChannelId implements io.openems.edge.common.channel.ChannelId {

@@ -492,7 +492,7 @@ public class ChpKwEnergySmartblockImpl extends AbstractOpenemsModbusComponent im
 
 					// Map EffectiveElectricPowerSetpoint channel from Chp interface.
 					if (exceptionalStateActive == false && getElectricPowerSetpointChannel().getNextWriteValue().isPresent()) {
-						int setpointValue = getElectricPowerSetpointChannel().getNextWriteValue().get();
+						double setpointValue = getElectricPowerSetpointChannel().getNextWriteValue().get();
 						if (setpointValue > this.maxChpPower) {
 							setpointValue = this.maxChpPower;
 						}

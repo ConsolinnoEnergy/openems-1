@@ -8,6 +8,7 @@ import io.openems.edge.common.channel.BooleanReadChannel;
 import io.openems.edge.common.channel.BooleanWriteChannel;
 import io.openems.edge.common.channel.Doc;
 import io.openems.edge.common.channel.DoubleReadChannel;
+import io.openems.edge.common.channel.DoubleWriteChannel;
 import io.openems.edge.common.channel.IntegerReadChannel;
 import io.openems.edge.common.channel.IntegerWriteChannel;
 import io.openems.edge.common.channel.value.Value;
@@ -44,7 +45,7 @@ public interface Chp extends Heater {
 		 *     <li> Unit: kilowatt
 		 * </ul>
 		 */
-		EFFECTIVE_ELECTRIC_POWER_SETPOINT(Doc.of(OpenemsType.INTEGER).unit(Unit.KILOWATT).accessMode(AccessMode.READ_WRITE));
+		EFFECTIVE_ELECTRIC_POWER_SETPOINT(Doc.of(OpenemsType.DOUBLE).unit(Unit.KILOWATT).accessMode(AccessMode.READ_WRITE));
     	
         private final Doc doc;
 
@@ -102,7 +103,7 @@ public interface Chp extends Heater {
 	 *
 	 * @return the Channel
 	 */
-	public default IntegerWriteChannel getElectricPowerSetpointChannel() {
+	public default DoubleWriteChannel getElectricPowerSetpointChannel() {
 		return this.channel(ChannelId.EFFECTIVE_ELECTRIC_POWER_SETPOINT);
 	}
 
@@ -111,7 +112,7 @@ public interface Chp extends Heater {
 	 *
 	 * @return the Channel {@link Value}
 	 */
-	public default Value<Integer> getElectricPowerSetpoint() {
+	public default Value<Double> getElectricPowerSetpoint() {
 		return this.getElectricPowerSetpointChannel().value();
 	}
 
@@ -121,7 +122,7 @@ public interface Chp extends Heater {
 	 *
 	 * @param value the next value
 	 */
-	public default void _setElectricPowerSetpoint(Integer value) {
+	public default void _setElectricPowerSetpoint(Double value) {
 		this.getElectricPowerSetpointChannel().setNextValue(value);
 	}
 
@@ -131,7 +132,7 @@ public interface Chp extends Heater {
 	 *
 	 * @param value the next value
 	 */
-	public default void _setElectricPowerSetpoint(int value) {
+	public default void _setElectricPowerSetpoint(double value) {
 		this.getElectricPowerSetpointChannel().setNextValue(value);
 	}
 
@@ -141,7 +142,7 @@ public interface Chp extends Heater {
 	 * @param value the next write value
 	 * @throws OpenemsNamedException on error
 	 */
-	public default void setElectricPowerSetpoint(Integer value) throws OpenemsNamedException {
+	public default void setElectricPowerSetpoint(Double value) throws OpenemsNamedException {
 		this.getElectricPowerSetpointChannel().setNextWriteValue(value);
 	}
 
@@ -151,7 +152,7 @@ public interface Chp extends Heater {
 	 * @param value the next write value
 	 * @throws OpenemsNamedException on error
 	 */
-	public default void setElectricPowerSetpoint(int value) throws OpenemsNamedException {
+	public default void setElectricPowerSetpoint(double value) throws OpenemsNamedException {
 		this.getElectricPowerSetpointChannel().setNextWriteValue(value);
 	}
 }

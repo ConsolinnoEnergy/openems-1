@@ -13,8 +13,10 @@ import io.openems.edge.common.channel.StringReadChannel;
 import io.openems.edge.common.channel.value.Value;
 import io.openems.edge.heater.api.Heater;
 
+/**
+ * Channels for the Buderus gas boiler.
+ */
 public interface HeaterBuderus extends Heater {
-
 
     public enum ChannelId implements io.openems.edge.common.channel.ChannelId {
 

@@ -106,7 +106,7 @@ public class MassHeaterWoodChipsWoodChipsImpl extends AbstractOpenemsModbusCompo
     }
 
     @Activate
-    public void activate(ComponentContext context, Config config) throws OpenemsError.OpenemsNamedException, ConfigurationException {
+    void activate(ComponentContext context, Config config) throws OpenemsError.OpenemsNamedException, ConfigurationException {
         this.config = config;
         super.activate(context, config.id(), config.alias(), config.enabled(), config.modBusUnitId(), this.cm, "Modbus", config.modBusBridgeId());
 
@@ -146,7 +146,7 @@ public class MassHeaterWoodChipsWoodChipsImpl extends AbstractOpenemsModbusCompo
     }
 
     @Deactivate
-    public void deactivate() {
+    protected void deactivate() {
         super.deactivate();
     }
 
@@ -348,23 +348,12 @@ public class MassHeaterWoodChipsWoodChipsImpl extends AbstractOpenemsModbusCompo
             }
 
             if (turnOnHeater) {
-                /* I don't think this is necessary.
-                if (this.getDisturbance().value().isDefined() && this.getDisturbance().value().get()) {
-                    try {
-                        this.getExternalControl().setNextWriteValue(false);
-                    } catch (OpenemsError.OpenemsNamedException e) {
-                        this.log.warn("Couldn't write in Channel " + e.getMessage());
-                    }
-                }
-                */
-
                 try {
                     this.getExternalControl().setNextWriteValue(true);
                     this.getSlideInMaxSetpoint().setNextWriteValue((int)Math.round(this.powerPercentSetpoint));
                 } catch (OpenemsError.OpenemsNamedException e) {
                     this.log.warn("Couldn't write in Channel " + e.getMessage());
                 }
-
             } else {
                 try {
                     this.getExternalControl().setNextWriteValue(false);

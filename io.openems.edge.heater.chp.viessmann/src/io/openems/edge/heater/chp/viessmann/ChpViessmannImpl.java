@@ -379,9 +379,9 @@ public class ChpViessmannImpl extends AbstractOpenemsModbusComponent implements 
 
             // Check write channels for values. Since there are two channels, need to have a hierarchy.
             // SET_POINT_HEATING_POWER_PERCENT (heater interface) overwrites EFFECTIVE_ELECTRIC_POWER_SETPOINT (Chp interface).
-            Optional<Integer> electricPowerWrite = this.getElectricPowerSetpointChannel().getNextWriteValueAndReset();
+            Optional<Double> electricPowerWrite = this.getElectricPowerSetpointChannel().getNextWriteValueAndReset();
             if (electricPowerWrite.isPresent()) {
-                int electricPowerSetpoint = electricPowerWrite.get();
+                double electricPowerSetpoint = electricPowerWrite.get();
                 if (electricPowerSetpoint > this.electricalOutput) {
                     electricPowerSetpoint = this.electricalOutput;
                 } else if (electricPowerSetpoint < 0) {

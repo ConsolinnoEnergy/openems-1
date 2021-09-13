@@ -26,8 +26,8 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     @AttributeDefinition(name = "Polling interval [s]", description = "Unit: seconds. Time between calls to the GLT interface to update the values. Maximum 540.")
     int interval() default 10;
 
-    @AttributeDefinition(name = "Turn on Chp", description = "The Chp will run as long as this module is running. "
-            + "Checking the \"Use EnableSignal\" box will override this option.")
+    @AttributeDefinition(name = "Always on", description = "The Chp will run as long as this module is running. "
+            + "Intended for testing. Checking the \"Use EnableSignal\" box will override this option.")
     boolean turnOnChp() default false;
 
     @AttributeDefinition(name = "Use EnableSignal", description = "React to commands from the Heater interface "

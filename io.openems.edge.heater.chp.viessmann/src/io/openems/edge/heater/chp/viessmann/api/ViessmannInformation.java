@@ -6,6 +6,9 @@ import io.openems.edge.common.channel.Channel;
 import io.openems.edge.common.channel.Doc;
 import io.openems.edge.heater.api.Chp;
 
+/**
+ * Channels for the Viessmann chp.
+ */
 public interface ViessmannInformation extends Chp {
     public enum ChannelId implements io.openems.edge.common.channel.ChannelId {
         /**

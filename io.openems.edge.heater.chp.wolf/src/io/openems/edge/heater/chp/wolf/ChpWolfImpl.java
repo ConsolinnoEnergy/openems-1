@@ -390,9 +390,9 @@ public class ChpWolfImpl extends AbstractOpenemsModbusComponent implements Opene
 					}
 					break;
 				case 2:
-					Optional<Integer> electricPowerSetpoint = this.getElectricPowerSetpointChannel().getNextWriteValueAndReset();
+					Optional<Double> electricPowerSetpoint = this.getElectricPowerSetpointChannel().getNextWriteValueAndReset();
 					if (electricPowerSetpoint.isPresent()) {
-						int writeValue = electricPowerSetpoint.get();
+						int writeValue = (int)Math.round(electricPowerSetpoint.get());
 						// Update channel.
 						_setElectricPowerSetpoint(writeValue);
 						try {
