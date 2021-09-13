@@ -1,0 +1,27 @@
+Bundle-Name: OpenEMS Edge Heater Analogue Device
+Bundle-Vendor: Consolinno Energy GmbH
+Bundle-License: https://opensource.org/licenses/EPL-2.0
+Bundle-Version: 1.0.0.${tstamp}
+Bundle-Description: \
+	This Bundle provides an Analogue Heater device
+
+Private-Package:  \
+	io.openems.edge.heater.analogue,\
+	io.openems.edge.heater.analogue.component,\
+
+-includeresource: {readme.md}
+
+-buildpath:  \
+	osgi.enroute.base.api;version=2.1,\
+	io.openems.edge.heater.api;version=latest,\
+	io.openems.edge.timer.api;version=latest,\
+	io.openems.edge.consolinno.pwm;version=latest,\
+	io.openems.edge.consolinno.aio;version=latest,\
+	io.openems.edge.lucidcontrol.device.api;version=latest,\
+	io.openems.edge.common;version=latest,\
+	io.openems.common;version=latest,\
+	io.openems.edge.relays.device.api;version=latest,\
+	io.openems.edge.consolinno.relay;version=latest,\
+	io.openems.edge.pwm.device.api;version=latest,\
+
+
