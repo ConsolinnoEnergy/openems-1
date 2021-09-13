@@ -220,4 +220,22 @@ public abstract class MqttOpenemsComponentConnector extends AbstractOpenemsCompo
         }
         return false;
     }
+
+
+    /**
+     * Checks if the mapped Component isEnabled or not.
+     * If it is not enabled, it has probably an old reference -> renew Reference.
+     *
+     * @param cpm the ComponentManager.
+     */
+    protected void renewReferenceAndMqttConfigurationComponent(ComponentManager cpm) {
+        if (this.otherComponent != null && this.otherComponent.isEnabled() == false) {
+            try {
+                this.otherComponent = cpm.getComponent(this.otherComponent.id());
+                this.mqttConfigurationComponent = null;
+            } catch (OpenemsError.OpenemsNamedException e) {
+                this.log.warn("OpenEMS component with id: " + this.otherComponent.id() + " Cannot be found!");
+            }
+        }
+    }
 }
