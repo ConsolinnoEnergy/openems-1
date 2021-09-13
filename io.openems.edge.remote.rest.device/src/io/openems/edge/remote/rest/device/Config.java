@@ -36,6 +36,14 @@ import org.osgi.service.metatype.annotations.Option;
     )
     String deviceMode() default "Read";
 
+    @AttributeDefinition(name = "Unit", description = "The Unit of the Device")
+            String deviceUnit() default "dC";
+    @AttributeDefinition(name = "TimerId",description = "Which Timer do you want to use")
+    String timerId() default "TimerByTime";
+
+    @AttributeDefinition(name = "Wait Time", description = "If no HTTP Connection available -> try again later after this time")
+    int waitTime() default 30;
+
     boolean enabled() default true;
 
     String webconsole_configurationFactory_nameHint() default "Rest Device [{id}]";

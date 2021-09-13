@@ -31,12 +31,20 @@ import java.net.URL;
 import java.util.Base64;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * Provides a RestBridge. This Bridge Communicates with another System running a different OpenEMS Edge / it's components via the Rest Protocol.
- * The reason why it has only the 'Basic' Authentication method, is bc it was designed to communicate only with different OpenEMS Edges.
- * Rest Remote Devices need to be configured and mapped to the remote OpenEMS.
+ * This RestBridge allows the communication to different OpenEMS-Edge Systems. {@link RestRequest}s are created by RestRemoteDevices
+ * Reading from or Writing to a Channel of a decentralized Edge System.
+ * This allows the ability to control/Monitor/react to different Edge Systems.
+ * To prevent locks while reading/writing when the connection is interrupted, the Read and Write Tasks will be Executed within a Thread.
+ * When the thread takes more than 10 Seconds to execute -> there must be an error, either HTTP doesn't work, the path is wrong or the Client is down.
+ * the thread will be shut down and after Time X the Connections will be checked again.
+ * If ANY request is not working -> ConnectionOk is set to false. This will be used by e.g. the CommunicationMaster
+ * enabling a Fallback handling when the Connection of the RestDevices are not ok.
  */
 @Designate(ocd = Config.class, factory = true)
 @Component(name = "Bridge.Rest",
@@ -45,6 +53,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
         property = {EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE,
                 EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_EXECUTE_WRITE})
 public class RestBridgeImpl extends AbstractOpenemsComponent implements RestBridge, OpenemsComponent, EventHandler {
+
     private final Logger log = LoggerFactory.getLogger(RestBridgeImpl.class);
 
     private final Map<String, RestRequest> tasks = new ConcurrentHashMap<>();
@@ -53,13 +62,12 @@ public class RestBridgeImpl extends AbstractOpenemsComponent implements RestBrid
     private String loginData;
     private String ipAddressAndPort;
     private int keepAlive;
-    private int dutyTime;
-    private DateTime initialDutyTime;
-    private boolean initialDutyTimeSet;
-    private boolean useDutyTime;
     AtomicBoolean connectionOk = new AtomicBoolean(true);
     DateTime initialDateTime;
     private boolean initialDateTimeSet = false;
+    private final AtomicBoolean readIsRunning = new AtomicBoolean(false);
+    private final AtomicBoolean writeIsRunning = new AtomicBoolean(false);
+    private static final int AWAIT_EXECUTOR_SHUTDOWN = 10;
 
     public RestBridgeImpl() {
         super(OpenemsComponent.ChannelId.values());
@@ -68,24 +76,59 @@ public class RestBridgeImpl extends AbstractOpenemsComponent implements RestBrid
     @Activate
     void activate(ComponentContext context, Config config) {
         super.activate(context, config.id(), config.alias(), config.enabled());
-        if (config.enabled()) {
-            this.loginData = "Basic " + Base64.getEncoder().encodeToString((config.username() + ":" + config.password()).getBytes());
-            this.ipAddressAndPort = config.ipAddress() + ":" + config.port();
-            this.keepAlive = config.keepAlive();
-            this.dutyTime = config.dutyTime();
-            this.useDutyTime = config.useDutyTime();
-        }
+        this.activationOrModifiedRoutine(config);
     }
 
     @Modified
     void modified(ComponentContext context, Config config) {
         super.modified(context, config.id(), config.alias(), config.enabled());
-        this.loginData = "Basic " + Base64.getEncoder().encodeToString((config.username() + ":" + config.password()).getBytes());
-        this.ipAddressAndPort = config.ipAddress() + ":" + config.port();
-        this.keepAlive = config.keepAlive();
-        this.dutyTime = config.dutyTime() >= 0 ? config.dutyTime() : 0;
-        this.useDutyTime = config.useDutyTime();
+        this.activationOrModifiedRoutine(config);
+        this.checkIfAllConnectionsAreOkay();
     }
+
+    private void activationOrModifiedRoutine(Config config) {
+        if (config.enabled()) {
+            this.loginData = "Basic " + Base64.getEncoder().encodeToString((config.username() + ":" + config.password()).getBytes());
+            this.ipAddressAndPort = config.ipAddress() + ":" + config.port();
+            this.keepAlive = config.keepAlive();
+        }
+    }
+
+    Runnable runnableRead = () -> {
+        this.readIsRunning.set(true);
+        this.readTasks.forEach((key, entry) -> {
+            try {
+                this.handleReadRequest((RestReadRequest) entry);
+            } catch (IOException e) {
+                this.connectionOk.set(false);
+            }
+        });
+    };
+
+    /**
+     * One of the three runnable in this class.
+     * This runnable executes the taskRoutine for all the WRITE tasks.
+     * It will be called within the EventHandler {@link #executeWrites()}
+     */
+
+    Runnable runnableWrite = () -> {
+        this.writeIsRunning.set(true);
+        this.writeTasks.forEach((key, entry) -> {
+            try {
+                this.handlePostRequest((RestWriteRequest) entry);
+            } catch (IOException e) {
+                this.connectionOk.set(false);
+            }
+        });
+    };
+
+    /**
+     * One of the three runnable in this class.
+     * This runnable executes the taskRoutine for CheckConnections.
+     * It will be called within the EventHandler {@link #checkIfAllConnectionsAreOkay()}
+     */
+
+    Runnable runnableConnectionCheck = this::checkConnections;
 
     /**
      * Check the Connection. If it's ok, read / get Data in Before Process Image,
@@ -95,31 +138,25 @@ public class RestBridgeImpl extends AbstractOpenemsComponent implements RestBrid
      */
     @Override
     public void handleEvent(Event event) {
-        if (this.isEnabled() == false || (this.useDutyTime && this.timeToHandleEvent() == false)) {
+        if (this.isEnabled() == false) {
             return;
         }
-        this.initialDutyTimeSet = false;
         switch (event.getTopic()) {
             case EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE:
                 if (this.initialDateTimeSet == false) {
                     this.initialDateTime = new DateTime();
                     this.initialDateTimeSet = true;
                 } else {
-                    DateTime now = new DateTime();
-                    if (now.isAfter(this.initialDateTime.plusSeconds(this.keepAlive))) {
-                        //only one connection read is necessary bc it was previously checked before.
-                        //so check if connection ok
-                        this.readTasks.keySet().stream().findAny().ifPresent(key -> this.connectionOk.set(this.checkConnection(this.readTasks.get(key))));
-                    }
+                    this.checkIfAllConnectionsAreOkay();
                 }
-                if (this.connectionOk.get()) {
-                    this.taskRoutine(RestRoutineType.READ);
+                if (this.connectionOk.get() && this.readIsRunning.get() == false) {
+                    this.executeReads();
                 }
                 break;
 
             case EdgeEventConstants.TOPIC_CYCLE_EXECUTE_WRITE:
-                if (this.connectionOk.get()) {
-                    this.taskRoutine(RestRoutineType.WRITE);
+                if (this.connectionOk.get() && this.writeIsRunning.get() == false) {
+                    this.executeWrites();
                 }
                 break;
 
@@ -128,18 +165,94 @@ public class RestBridgeImpl extends AbstractOpenemsComponent implements RestBrid
     }
 
     /**
-     * Checks if it's time to POST/GET REST Request.
-     *
-     * @return true if configured Time is up.
+     * Executes the Write Tasks.
+     * This Method is called by {@link #handleEvent(Event)} and executes with the help of an ExecutorService the
+     * runnable {@link #runnableWrite}. This allows to:
+     * a) Run the tasks within a thread. b) shutdown of the executor. c) allows controlled shutdown after X seconds,
+     * when the REST bridge fails to either open a connection or if the Input/OutputStreams are abruptly interrupted and
+     * therefore in a locked state. This locked state prevents OpenEMS to run at all!
+     * Therefore an await of the executor-shutdown is more than necessary.
+     * Additionally: when the tasks cannot be executed in TimeFrame X -> connectionOk will be set to false.
      */
 
-    private boolean timeToHandleEvent() {
-        if (this.initialDutyTimeSet == false) {
-            this.initialDutyTime = new DateTime();
-            this.initialDutyTimeSet = true;
-            return false;
+    private void executeWrites() {
+        ExecutorService executorService = Executors.newSingleThreadExecutor();
+        executorService.submit(() -> this.runnableWrite.run());
+        try {
+            executorService.shutdown();
+            executorService.awaitTermination(AWAIT_EXECUTOR_SHUTDOWN, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            this.log.error("Tasks Interrupted!");
+        } finally {
+            if (executorService.isTerminated() == false) {
+                this.log.error("Non Finished WRITE TASKS will be canceled");
+                this.connectionOk.set(false);
+            }
+            executorService.shutdownNow();
+            this.writeIsRunning.set(false);
         }
-        return DateTime.now().isAfter(this.initialDutyTime.plusMillis(this.dutyTime));
+    }
+
+
+    /**
+     * Executes the Read Tasks.
+     * This Method is called by {@link #handleEvent(Event)} and executes with the help of an ExecutorService the
+     * runnable {@link #runnableWrite}. This allows to:
+     * a) Run the tasks within a thread. b) shutdown of the executor. c) allows controlled shutdown after X seconds,
+     * when the REST bridge fails to either open a connection or if the Input/OutputStreams are abruptly interrupted and
+     * therefore in a locked state. This locked state prevents OpenEMS to run at all!
+     * Therefore an await of the executor-shutdown is more than necessary.
+     */
+
+    private void executeReads() {
+        ExecutorService executorService = Executors.newSingleThreadExecutor();
+        executorService.submit(() -> this.runnableRead.run());
+        try {
+            executorService.shutdown();
+            executorService.awaitTermination(AWAIT_EXECUTOR_SHUTDOWN, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            this.log.error("Tasks Interrupted!");
+        } finally {
+            if (executorService.isTerminated() == false) {
+                this.log.error("Non Finished READ TASKS will be canceled");
+                this.connectionOk.set(false);
+            }
+            executorService.shutdownNow();
+            this.readIsRunning.set(false);
+        }
+    }
+
+    /**
+     * Checks All Connections if the connections are alive.
+     * This Method is called by {@link #handleEvent(Event)} and executes with the help of an ExecutorService the
+     * runnable {@link #runnableWrite}. This allows to:
+     * a) Run the tasks within a thread. b) shutdown of the executor. c) allows controlled shutdown after X seconds,
+     * when the REST bridge fails to either open a connection or if the Input/OutputStreams are abruptly interrupted and
+     * therefore in a locked state. This locked state prevents OpenEMS to run at all!
+     * Therefore an await of the executor-shutdown is more than necessary.
+     */
+
+    private void checkIfAllConnectionsAreOkay() {
+        DateTime now = new DateTime();
+        if (now.isAfter(this.initialDateTime.plusSeconds(this.keepAlive))) {
+            ExecutorService executorService = Executors.newSingleThreadExecutor();
+            executorService.submit(() -> {
+                this.runnableConnectionCheck.run();
+            });
+            try {
+                executorService.shutdown();
+                executorService.awaitTermination(AWAIT_EXECUTOR_SHUTDOWN, TimeUnit.SECONDS);
+            } catch (InterruptedException e) {
+                this.log.error("Tasks Interrupted!");
+            } finally {
+                if (executorService.isTerminated() == false) {
+                    this.log.error("Non Finished CONNECTION CHECKS will be canceled");
+                    this.connectionOk.set(false);
+                }
+                executorService.shutdownNow();
+            }
+            this.initialDateTimeSet = false;
+        }
     }
 
     /**
@@ -161,36 +274,6 @@ public class RestBridgeImpl extends AbstractOpenemsComponent implements RestBrid
         } catch (IOException e) {
             return false;
         }
-    }
-
-    /**
-     * This method reads/writes from the RestRequests depending on the Event.
-     *
-     * @param readOrWrite RestRoutineType, usually defined by RestBridge and the handleEvent.
-     */
-    private void taskRoutine(RestRoutineType readOrWrite) {
-
-        switch (readOrWrite) {
-            case READ:
-                this.readTasks.forEach((key, entry) -> {
-                    try {
-                        this.handleReadRequest((RestReadRequest) entry);
-                    } catch (IOException e) {
-                        this.connectionOk.set(false);
-                    }
-                });
-                break;
-            case WRITE:
-                this.writeTasks.forEach((key, entry) -> {
-                    try {
-                        this.handlePostRequest((RestWriteRequest) entry);
-                    } catch (IOException e) {
-                        this.connectionOk.set(false);
-                    }
-                });
-                break;
-        }
-
     }
 
     /**
@@ -272,6 +355,20 @@ public class RestBridgeImpl extends AbstractOpenemsComponent implements RestBrid
         } else {
             entry.setResponse(false, "ERROR WITH CONNECTION");
         }
+        connection.disconnect();
+    }
+
+    /**
+     * This method checks all tasks, if either is not working -> set {@link #connectionOk} to false.
+     */
+    private void checkConnections() {
+        AtomicBoolean connectionOkThisRun = new AtomicBoolean(true);
+        this.tasks.forEach((key, value) -> {
+            if (connectionOkThisRun.get()) {
+                connectionOkThisRun.set(this.checkConnection(value));
+            }
+        });
+        this.connectionOk.set(connectionOkThisRun.get());
     }
 
     /**
@@ -296,7 +393,7 @@ public class RestBridgeImpl extends AbstractOpenemsComponent implements RestBrid
     public void addRestRequest(String id, RestRequest request) throws ConfigurationException {
 
         if (this.tasks.containsKey(id)) {
-            throw new ConfigurationException(id, "Already in RemoteTasks Check your UniqueId please.");
+            this.log.warn("ID : " + id + "Already in List, please Check your config. The previous Task will be removed now!");
         }
         if (request instanceof RestWriteRequest) {
             this.writeTasks.put(id, request);
@@ -304,10 +401,44 @@ public class RestBridgeImpl extends AbstractOpenemsComponent implements RestBrid
             this.readTasks.put(id, request);
         }
         this.tasks.put(id, request);
+        AtomicBoolean connOk = new AtomicBoolean(true);
+        this.log.info("Trying to check for Connection of RestRequest: " + id);
+        ExecutorService executorService = Executors.newSingleThreadExecutor();
+        executorService.submit(() -> {
+            Runnable runnableSingleConnectionCheck = new Runnable() {
+                RestRequest checkRequest;
+                private AtomicBoolean connectionOk;
 
-        boolean connectOk = this.checkConnection(request);
-        if (connectOk == false) {
-            throw new ConfigurationException("Internet Or Path Wrong for RemoteDevice", id);
+                @SuppressWarnings("checkstyle:RequireThis")
+                @Override
+                public void run() {
+                    this.connectionOk.set(checkConnection(this.checkRequest));
+                }
+
+                public Runnable init(RestRequest req, AtomicBoolean atomicBoolean) {
+                    this.checkRequest = req;
+                    this.connectionOk = atomicBoolean;
+                    return (this);
+                }
+            }.init(request, connOk);
+            runnableSingleConnectionCheck.run();
+            try {
+                executorService.shutdown();
+                executorService.awaitTermination(AWAIT_EXECUTOR_SHUTDOWN, TimeUnit.SECONDS);
+            } catch (InterruptedException e) {
+                this.log.error("Tasks Interrupted!");
+            } finally {
+                if (executorService.isTerminated() == false) {
+                    this.log.error("Non Finished CONNECTION CHECKS will be canceled");
+                    connOk.set(false);
+                }
+                executorService.shutdownNow();
+            }
+
+        });
+        if (connOk.get() == false) {
+            this.tasks.remove(id);
+            throw new ConfigurationException("AddRestRequest", "Internet Or Path Wrong for RemoteDevice, Host can be down too! " + id);
         }
     }
 
@@ -322,6 +453,28 @@ public class RestBridgeImpl extends AbstractOpenemsComponent implements RestBrid
         this.tasks.remove(deviceId);
         this.writeTasks.remove(deviceId);
         this.readTasks.remove(deviceId);
+    }
+
+
+    /**
+     * Gets a RestRequest from the Bridge. Mapped by the ID of the Component, that put the Request into the bridge.
+     *
+     * @param id the id of the Component/Rest Request.
+     * @return the RestRequest if available
+     */
+    @Override
+    public RestRequest getRemoteRequest(String id) {
+        return this.tasks.get(id);
+    }
+
+    /**
+     * Get all requests from the RestBridge.
+     *
+     * @return all of the stored RestRequests
+     */
+    @Override
+    public Map<String, RestRequest> getAllRequests() {
+        return this.tasks;
     }
 
 

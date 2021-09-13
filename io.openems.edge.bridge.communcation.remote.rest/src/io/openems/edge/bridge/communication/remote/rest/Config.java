@@ -31,11 +31,6 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     @AttributeDefinition(name = "Keep Alive", description = "Time Interval to Check for active Connection: Time in Seconds")
     int keepAlive() default 360;
 
-    boolean useDutyTime() default true;
-
-    @AttributeDefinition(name = "DutyCycleTime", description = "Sets the Time when RestRequests are Executed; Unit: ms")
-    int dutyTime() default 5000;
-
     boolean enabled() default true;
 
     String webconsole_configurationFactory_nameHint() default "Rest Bridge [{id}]";

@@ -7,9 +7,12 @@ import io.openems.edge.bridge.communication.remote.rest.api.RestRequest;
 import io.openems.edge.common.component.AbstractOpenemsComponent;
 import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
+import io.openems.edge.common.event.EdgeEventConstants;
 import io.openems.edge.remote.rest.device.api.RestRemoteDevice;
 import io.openems.edge.remote.rest.device.task.RestRemoteReadTask;
 import io.openems.edge.remote.rest.device.task.RestRemoteWriteTask;
+import io.openems.edge.timer.api.TimerHandler;
+import io.openems.edge.timer.api.TimerHandlerImpl;
 import org.osgi.service.cm.ConfigurationException;
 import org.osgi.service.component.ComponentContext;
 import org.osgi.service.component.annotations.Activate;
@@ -18,6 +21,9 @@ import org.osgi.service.component.annotations.ConfigurationPolicy;
 import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Modified;
 import org.osgi.service.component.annotations.Reference;
+import org.osgi.service.event.Event;
+import org.osgi.service.event.EventConstants;
+import org.osgi.service.event.EventHandler;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,8 +35,9 @@ import org.slf4j.LoggerFactory;
  */
 @Designate(ocd = Config.class, factory = true)
 @Component(name = "Rest.Remote.Device", immediate = true,
-        configurationPolicy = ConfigurationPolicy.REQUIRE)
-public class RestRemoteDeviceImpl extends AbstractOpenemsComponent implements OpenemsComponent, RestRemoteDevice {
+        configurationPolicy = ConfigurationPolicy.REQUIRE,
+        property = EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE)
+public class RestRemoteDeviceImpl extends AbstractOpenemsComponent implements OpenemsComponent, RestRemoteDevice, EventHandler {
 
     private final Logger log = LoggerFactory.getLogger(RestRemoteDeviceImpl.class);
 
@@ -38,7 +45,14 @@ public class RestRemoteDeviceImpl extends AbstractOpenemsComponent implements Op
     ComponentManager cpm;
 
     private RestBridge restBridge;
+
+    private String restBridgeId;
+    private RestRequest task;
     private boolean isRead;
+    TimerHandler timerHandler;
+    private static final String WAIT_TIME_IDENTIFIER = "WAIT_TIME_REST_REMOTE_DEVICE";
+
+    private Config config;
 
     public RestRemoteDeviceImpl() {
 
@@ -59,8 +73,8 @@ public class RestRemoteDeviceImpl extends AbstractOpenemsComponent implements Op
         super.activate(context, config.id(), config.alias(), config.enabled());
         if (config.enabled()) {
             this.activationOrModifiedRoutine(config);
+            this.getAllowRequestChannel().setNextValue(true);
         }
-        this.getAllowRequestChannel().setNextValue(true);
     }
 
     /**
@@ -71,14 +85,25 @@ public class RestRemoteDeviceImpl extends AbstractOpenemsComponent implements Op
      * @throws ConfigurationException             will be thrown if the configured BridgeId is not a RestBridge.
      */
     private void activationOrModifiedRoutine(Config config) throws OpenemsError.OpenemsNamedException, ConfigurationException {
-        if (this.cpm.getComponent(config.restBridgeId()) instanceof RestBridge) {
-            this.restBridge = this.cpm.getComponent(config.restBridgeId());
-
-            this.restBridge.addRestRequest(super.id(), this.createNewTask(config.deviceChannel(),
-                    config.id(), config.realDeviceId(), config.deviceMode()));
-        } else {
-            throw new ConfigurationException(config.restBridgeId(), "Bridge Id Incorrect for : " + super.id() + "!");
+        if (this.isEnabled()) {
+            if (this.cpm.getComponent(config.restBridgeId()) instanceof RestBridge) {
+                this.restBridge = this.cpm.getComponent(config.restBridgeId());
+                this.task = this.createNewTask(config.deviceChannel(),
+                        config.id(), config.realDeviceId(), config.deviceMode());
+                this.restBridge.addRestRequest(super.id(), this.task);
+            } else {
+                throw new ConfigurationException(config.restBridgeId(), "Bridge Id Incorrect for : " + super.id() + "!");
+            }
+            this.createTimerHandler(config);
         }
+    }
+
+    private void createTimerHandler(Config config) throws OpenemsError.OpenemsNamedException, ConfigurationException {
+        if (this.timerHandler != null) {
+            this.timerHandler.removeComponent();
+        }
+        this.timerHandler = new TimerHandlerImpl(this.id(), this.cpm);
+        this.timerHandler.addOneIdentifier(WAIT_TIME_IDENTIFIER, config.timerId(), config.waitTime());
     }
 
     /**
@@ -224,6 +249,38 @@ public class RestRemoteDeviceImpl extends AbstractOpenemsComponent implements Op
         }
 
         return false;
+    }
+
+    @Override
+    public void handleEvent(Event event) {
+        if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE)) {
+            if (this.isEnabled()) {
+                if (this.timerHandler.checkTimeIsUp(WAIT_TIME_IDENTIFIER)) {
+                    try {
+                        if (this.restBridge == null || this.restBridge.isEnabled() == false) {
+                            OpenemsComponent component = this.cpm.getComponent(this.config.restBridgeId());
+                            if (component instanceof RestBridge) {
+                                this.restBridge = (RestBridge) component;
+                            }
+                        }
+                        if (this.restBridge.getAllRequests() == null || this.restBridge.getAllRequests().containsKey(this.id()) == false) {
+                            try {
+                                if (this.task == null) {
+                                    this.task = this.createNewTask(this.config.deviceChannel(),
+                                            this.config.id(), this.config.realDeviceId(), this.config.deviceMode());
+                                }
+                                this.restBridge.addRestRequest(this.id(), this.task);
+                            } catch (ConfigurationException e) {
+                                this.log.info("Connection is not available, trying again later!");
+                            }
+                        }
+                    } catch (OpenemsError.OpenemsNamedException e) {
+                        this.log.warn("Couldn't find RestBridge! " + this.config.restBridgeId());
+                    }
+                    this.timerHandler.resetTimer(WAIT_TIME_IDENTIFIER);
+                }
+            }
+        }
     }
 
     /**
