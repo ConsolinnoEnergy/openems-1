@@ -41,7 +41,7 @@ public abstract class AbstractValve extends AbstractOpenemsComponent implements 
     protected boolean isClosing = false;
     protected boolean wasAlreadyReset = false;
     protected boolean isForced;
-    private static final int OPTIMIZE_FACTOR = 2;
+    private static final int BUFFER = 5;
 
     protected boolean useCheckOutput;
 
@@ -225,7 +225,7 @@ public abstract class AbstractValve extends AbstractOpenemsComponent implements 
         if (this.minimum == null) {
             this.minimum = (double) DEFAULT_MIN_POWER_VALUE;
         }
-        return (this.maximum >= this.minimum && this.maximum > 0 && this.minimum >= 0);
+        return (this.maximum >= this.minimum && this.maximum > DEFAULT_MIN_POWER_VALUE && this.minimum >= DEFAULT_MIN_POWER_VALUE);
     }
 
 
@@ -375,15 +375,15 @@ public abstract class AbstractValve extends AbstractOpenemsComponent implements 
             this.maximum = null;
         }
         currentPowerLevel += percentage;
-        if (this.maximum != null && this.maximum < currentPowerLevel) {
+        if (this.maximum != null && this.maximum + BUFFER < currentPowerLevel) {
             currentPowerLevel = this.maximum;
-        } else if (this.lastMaximum != null && this.lastMaximum < currentPowerLevel) {
+        } else if (this.lastMaximum != null && this.lastMaximum + BUFFER < currentPowerLevel) {
             currentPowerLevel = this.lastMaximum;
         } else if (currentPowerLevel >= DEFAULT_MAX_POWER_VALUE) {
             currentPowerLevel = DEFAULT_MAX_POWER_VALUE;
-        } else if (this.minimum != null && this.minimum > currentPowerLevel) {
+        } else if (this.minimum != null && this.minimum - BUFFER > currentPowerLevel) {
             currentPowerLevel = this.minimum;
-        } else if (this.lastMinimum != null && this.lastMinimum > currentPowerLevel) {
+        } else if (this.lastMinimum != null && this.lastMinimum - BUFFER> currentPowerLevel) {
             currentPowerLevel = this.lastMinimum;
         }
         //Set goal Percentage for future reference
