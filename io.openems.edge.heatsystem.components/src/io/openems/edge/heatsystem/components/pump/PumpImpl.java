@@ -53,8 +53,8 @@ public class PumpImpl extends AbstractOpenemsComponent implements OpenemsCompone
     private Pwm pwm;
     private AnalogInputOutput aio;
 
-    private WriteChannel<?> relayChannel;
-    private WriteChannel<?> percentageChannel;
+    private ChannelAddress relayChannel;
+    private ChannelAddress percentageChannel;
     private boolean isRelay = false;
     private boolean isPwmOrAio = false;
     private ConfigurationType configurationType;
@@ -169,10 +169,10 @@ public class PumpImpl extends AbstractOpenemsComponent implements OpenemsCompone
     private void configurePwmOrAio(Config config) throws OpenemsError.OpenemsNamedException, ConfigurationException {
         switch (this.configurationType) {
             case CHANNEL:
-                ChannelAddress pwmAddress = ChannelAddress.fromString(config.pump_Pwm_or_Aio());
-                Channel<?> pwmChannelByAddress = this.cpm.getChannel(pwmAddress);
+                ChannelAddress channelAddress = ChannelAddress.fromString(config.pump_Pwm_or_Aio());
+                Channel<?> pwmChannelByAddress = this.cpm.getChannel(channelAddress);
                 if (pwmChannelByAddress instanceof WriteChannel<?>) {
-                    this.percentageChannel = (WriteChannel<?>) pwmChannelByAddress;
+                    this.percentageChannel = channelAddress;
                 } else {
                     throw new ConfigurationException("Configure Pump in : " + super.id(), "Channel is not a WriteChannel");
                 }
@@ -186,11 +186,11 @@ public class PumpImpl extends AbstractOpenemsComponent implements OpenemsCompone
                     this.pwm = (Pwm) openemsComponent;
                     this.deviceType = DeviceType.PWM;
                     //reset pwm to 0; so pump is on activation off
-                    this.pwm.getWritePwmPowerLevelChannel().setNextWriteValueFromObject(0);
+                    this.pwm.getWritePwmPowerLevelChannel().setNextWriteValueFromObject(HydraulicComponent.DEFAULT_MIN_POWER_VALUE);
                 } else if (openemsComponent instanceof AnalogInputOutput) {
                     this.aio = (AnalogInputOutput) openemsComponent;
                     this.deviceType = DeviceType.AIO;
-                    this.aio.setPercentChannel().setNextWriteValueFromObject(0);
+                    this.aio.setPercentChannel().setNextWriteValueFromObject(HydraulicComponent.DEFAULT_MIN_POWER_VALUE);
                 } else {
                     throw new ConfigurationException("ConfigurePwmOrAio in " + super.id(), "Component instance is not an "
                             + "expected device. Make sure to configure a Pwm or Aio Device.");
@@ -213,7 +213,7 @@ public class PumpImpl extends AbstractOpenemsComponent implements OpenemsCompone
                 ChannelAddress relayAddress = ChannelAddress.fromString(config.pump_Relay());
                 Channel<?> relayChannelByAddress = this.cpm.getChannel(relayAddress);
                 if (relayChannelByAddress instanceof WriteChannel<?>) {
-                    this.relayChannel = (WriteChannel<?>) relayChannelByAddress;
+                    this.relayChannel = relayAddress;
                 } else {
                     throw new ConfigurationException("Configure Relay in : " + super.id(), "Channel is not a WriteChannel");
                 }
@@ -338,7 +338,12 @@ public class PumpImpl extends AbstractOpenemsComponent implements OpenemsCompone
         switch (this.configurationType) {
             case CHANNEL:
                 try {
-                    this.relayChannel.setNextWriteValueFromObject(activate);
+                    Channel<?> channel = this.cpm.getChannel(this.relayChannel);
+                    if (channel instanceof WriteChannel<?>) {
+                        ((WriteChannel<?>) channel).setNextWriteValueFromObject(activate);
+                    } else {
+                        channel.setNextValue(activate);
+                    }
                 } catch (OpenemsError.OpenemsNamedException e) {
                     this.log.warn("Couldn't write into Channel; Pump: " + super.id() + "Channel : " + this.relayChannel.toString());
                     return false;
@@ -366,7 +371,11 @@ public class PumpImpl extends AbstractOpenemsComponent implements OpenemsCompone
         int multiplier = 1;
         Unit unit;
         if (this.configurationType.equals(ConfigurationType.CHANNEL)) {
-            unit = this.percentageChannel.channelDoc().getUnit();
+            try {
+                unit = this.cpm.getChannel(this.percentageChannel).channelDoc().getUnit();
+            } catch (OpenemsError.OpenemsNamedException e) {
+                unit = Unit.THOUSANDTH;
+            }
         } else {
             switch (this.deviceType) {
                 case PWM:
@@ -387,7 +396,12 @@ public class PumpImpl extends AbstractOpenemsComponent implements OpenemsCompone
         switch (this.configurationType) {
             case CHANNEL:
                 try {
-                    this.percentageChannel.setNextWriteValueFromObject(percentToApply);
+                    Channel<?> channel = this.cpm.getChannel(this.percentageChannel);
+                    if (channel instanceof WriteChannel<?>) {
+                        ((WriteChannel<?>) channel).setNextWriteValueFromObject(percentToApply);
+                    } else {
+                        channel.setNextValue(percentToApply);
+                    }
                 } catch (OpenemsError.OpenemsNamedException e) {
                     this.log.warn("Couldn't apply PwmValue for Pump: " + super.id() + " Value: " + percentToApply);
                     return false;
@@ -416,12 +430,12 @@ public class PumpImpl extends AbstractOpenemsComponent implements OpenemsCompone
 
     @Override
     public void forceClose() {
-        this.setPowerLevel(0);
+        this.setPowerLevel(HydraulicComponent.DEFAULT_MIN_POWER_VALUE);
     }
 
     @Override
     public void forceOpen() {
-    this.setPowerLevel(100);
+        this.setPowerLevel(HydraulicComponent.DEFAULT_MAX_POWER_VALUE);
     }
 
     @Override
@@ -436,7 +450,7 @@ public class PumpImpl extends AbstractOpenemsComponent implements OpenemsCompone
 
     @Override
     public void reset() {
-
+        this.setPowerLevel(HydraulicComponent.DEFAULT_MIN_POWER_VALUE);
     }
 
     /**
