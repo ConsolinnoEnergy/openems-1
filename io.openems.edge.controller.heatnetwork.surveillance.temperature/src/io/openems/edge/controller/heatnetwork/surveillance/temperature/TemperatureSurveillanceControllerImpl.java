@@ -6,8 +6,8 @@ import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.controller.api.Controller;
 import io.openems.edge.controller.heatnetwork.surveillance.temperature.api.TemperatureSurveillanceController;
-import io.openems.edge.controller.heatnetwork.valve.api.ControlType;
-import io.openems.edge.controller.heatnetwork.valve.api.ValveController;
+import io.openems.edge.controller.hydrauliccomponent.api.ControlType;
+import io.openems.edge.controller.hydrauliccomponent.api.HydraulicController;
 import io.openems.edge.heater.api.Heater;
 import io.openems.edge.thermometer.api.Thermometer;
 import io.openems.edge.thermometer.api.ThermometerThreshold;
@@ -63,7 +63,7 @@ public class TemperatureSurveillanceControllerImpl extends AbstractOpenemsCompon
     private Thermometer deactivationThermometer;
     private int activationOffset;
     private int deactivationOffset;
-    private ValveController optionalValveController;
+    private HydraulicController optionalHydraulicController;
     private Heater optionalHeater;
     private TemperatureSurveillanceType surveillanceType;
     private DateTime initialWaitTimeStamp;
@@ -204,8 +204,8 @@ public class TemperatureSurveillanceControllerImpl extends AbstractOpenemsCompon
         if (this.surveillanceType.equals(TemperatureSurveillanceType.HEATER_AND_VALVE_CONTROLLER)
                 || this.surveillanceType.equals(TemperatureSurveillanceType.VALVE_CONTROLLER_ONLY)) {
             openemsComponentToAllocate = this.cpm.getComponent(config.valveControllerId());
-            if (openemsComponentToAllocate instanceof ValveController) {
-                this.optionalValveController = (ValveController) openemsComponentToAllocate;
+            if (openemsComponentToAllocate instanceof HydraulicController) {
+                this.optionalHydraulicController = (HydraulicController) openemsComponentToAllocate;
             } else {
                 throw new ConfigurationException("AllocateComponents", "ValveControllerId: "
                         + config.valveControllerId() + " Not an Instance of ValveController");
@@ -248,16 +248,16 @@ public class TemperatureSurveillanceControllerImpl extends AbstractOpenemsCompon
                             this.optionalHeater.getEnableSignalChannel().setNextWriteValueFromObject(true);
                             break;
                         case VALVE_CONTROLLER_ONLY:
-                            this.optionalValveController.setEnableSignal(true);
-                            this.optionalValveController.setControlType(ControlType.TEMPERATURE);
+                            this.optionalHydraulicController.setEnableSignal(true);
+                            this.optionalHydraulicController.setControlType(ControlType.TEMPERATURE);
                             break;
                         case HEATER_AND_VALVE_CONTROLLER:
                             this.optionalHeater.getEnableSignalChannel().setNextWriteValueFromObject(true);
                             if (this.timer.checkTimeIsUp(VALVE_IDENTIFIER)) {
-                                this.optionalValveController.setEnableSignal(true);
-                                this.optionalValveController.setControlType(ControlType.TEMPERATURE);
+                                this.optionalHydraulicController.setEnableSignal(true);
+                                this.optionalHydraulicController.setControlType(ControlType.TEMPERATURE);
                             } else {
-                                this.optionalValveController.setEnableSignal(false);
+                                this.optionalHydraulicController.setEnableSignal(false);
                             }
                             break;
                         case NOTHING:
@@ -288,8 +288,8 @@ public class TemperatureSurveillanceControllerImpl extends AbstractOpenemsCompon
         switch (this.surveillanceType) {
             case VALVE_CONTROLLER_ONLY:
             case HEATER_AND_VALVE_CONTROLLER:
-                if (this.optionalValveController != null) {
-                    this.optionalValveController.setEnableSignal(false);
+                if (this.optionalHydraulicController != null) {
+                    this.optionalHydraulicController.setEnableSignal(false);
                 }
         }
     }
@@ -328,10 +328,10 @@ public class TemperatureSurveillanceControllerImpl extends AbstractOpenemsCompon
         }
         if (this.surveillanceType.equals(TemperatureSurveillanceType.VALVE_CONTROLLER_ONLY)
                 || this.surveillanceType.equals(TemperatureSurveillanceType.HEATER_AND_VALVE_CONTROLLER)) {
-            if (this.optionalValveController.isEnabled() == false) {
-                allocatedOpenemsComponent = this.cpm.getComponent(this.optionalValveController.id());
-                if (allocatedOpenemsComponent instanceof ValveController) {
-                    this.optionalValveController = (ValveController) allocatedOpenemsComponent;
+            if (this.optionalHydraulicController.isEnabled() == false) {
+                allocatedOpenemsComponent = this.cpm.getComponent(this.optionalHydraulicController.id());
+                if (allocatedOpenemsComponent instanceof HydraulicController) {
+                    this.optionalHydraulicController = (HydraulicController) allocatedOpenemsComponent;
                 }
             }
         }

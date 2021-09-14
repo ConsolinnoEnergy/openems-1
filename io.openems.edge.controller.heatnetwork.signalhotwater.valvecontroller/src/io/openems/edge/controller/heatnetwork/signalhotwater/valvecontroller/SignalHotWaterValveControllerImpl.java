@@ -8,7 +8,7 @@ import io.openems.edge.controller.api.Controller;
 import io.openems.edge.controller.heatnetwork.signalhotwater.api.SignalHotWater;
 import io.openems.edge.controller.heatnetwork.signalhotwater.valvecontroller.api.SignalHotWaterValvecontroller;
 import io.openems.edge.controller.heatnetwork.valvepumpcontrol.api.ValvePumpControl;
-import io.openems.edge.heatsystem.components.Valve;
+import io.openems.edge.heatsystem.components.HydraulicComponent;
 import io.openems.edge.thermometer.api.Thermometer;
 import org.osgi.service.cm.Configuration;
 import org.osgi.service.cm.ConfigurationAdmin;
@@ -47,7 +47,7 @@ public class SignalHotWaterValveControllerImpl extends AbstractOpenemsComponent 
     private Thermometer waermetauscherVorlauf;
     private SignalHotWater signalHotWater;
     private ValvePumpControl valvePumpControlChannel;
-    private Valve valveTL01;
+    private HydraulicComponent valveTL01;
     private int minTempVorlauf;
     private int stepcounter;
     private LocalDateTime timestamp;
@@ -117,7 +117,7 @@ public class SignalHotWaterValveControllerImpl extends AbstractOpenemsComponent 
             throw new ConfigurationException("The configured component is not a valve override controller! Please check "
                     + config.valveUS01overrideId(), "configured component is incorrect!");
         }
-        if (cpm.getComponent(config.valveTL01Id()) instanceof Valve) {
+        if (cpm.getComponent(config.valveTL01Id()) instanceof HydraulicComponent) {
             this.valveTL01 = cpm.getComponent(config.valveTL01Id());
         } else {
             throw new ConfigurationException("The configured component is not a valve! Please check "

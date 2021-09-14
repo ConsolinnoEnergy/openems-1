@@ -26,7 +26,7 @@ import io.openems.edge.controller.heatnetwork.hydraulic.lineheater.api.Hydraulic
 import io.openems.edge.exceptionalstate.api.ExceptionalState;
 import io.openems.edge.exceptionalstate.api.ExceptionalStateHandler;
 import io.openems.edge.exceptionalstate.api.ExceptionalStateHandlerImpl;
-import io.openems.edge.heatsystem.components.Pump;
+import io.openems.edge.heatsystem.components.HydraulicComponent;
 import io.openems.edge.remote.rest.device.api.RestRemoteDevice;
 import io.openems.edge.timer.api.TimerHandler;
 import io.openems.edge.timer.api.TimerHandlerImpl;
@@ -86,7 +86,7 @@ public class CommunicationMasterControllerImpl extends AbstractOpenemsComponent 
     //The Optional HydraulicLineHeater
     private HydraulicLineHeater hydraulicLineHeater;
     //The Optional HeatPump
-    private Pump heatPump;
+    private HydraulicComponent heatPump;
     //For Subclasses -> CommunicationController and manager
     private boolean forcing;
     private int maxAllowedRequests;
@@ -177,8 +177,8 @@ public class CommunicationMasterControllerImpl extends AbstractOpenemsComponent 
 
             if (config.usePump()) {
                 optionalComponent = this.cpm.getComponent(config.pumpId());
-                if (optionalComponent instanceof Pump) {
-                    this.heatPump = (Pump) optionalComponent;
+                if (optionalComponent instanceof HydraulicComponent) {
+                    this.heatPump = (HydraulicComponent) optionalComponent;
                 } else {
                     throw new ConfigurationException("CommunicationMaster - Activate - Pump", "PumpId Component - Not an instance of Pump; PumpId: " + config.pumpId());
                 }
@@ -547,7 +547,7 @@ public class CommunicationMasterControllerImpl extends AbstractOpenemsComponent 
                 }
             }
             if (this.heatPump != null && this.heatPump.isEnabled() == false) {
-                if (this.cpm.getComponent(this.heatPump.id()) instanceof Pump) {
+                if (this.cpm.getComponent(this.heatPump.id()) instanceof HydraulicComponent) {
                     this.heatPump = this.cpm.getComponent(this.heatPump.id());
                 }
             }

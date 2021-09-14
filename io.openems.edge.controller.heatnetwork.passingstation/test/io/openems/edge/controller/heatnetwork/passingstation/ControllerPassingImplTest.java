@@ -1,16 +1,9 @@
 package io.openems.edge.controller.heatnetwork.passingstation;
 
-import io.openems.common.exceptions.HeatTooLowException;
-import io.openems.common.exceptions.OpenemsError;
 import io.openems.common.types.ChannelAddress;
 import io.openems.edge.common.test.AbstractComponentConfig;
-import io.openems.edge.common.test.AbstractComponentTest;
-import io.openems.edge.common.test.AbstractComponentTest.TestCase;
 import io.openems.edge.common.test.DummyComponentManager;
-import io.openems.edge.controller.test.ControllerTest;
-import io.openems.edge.heatsystem.components.Pump;
-import io.openems.edge.heatsystem.components.Valve;
-import io.openems.edge.heatsystem.components.test.DummyPump;
+import io.openems.edge.heatsystem.components.HydraulicComponent;
 import io.openems.edge.heatsystem.components.test.DummyValve;
 import io.openems.edge.io.api.Pwm;
 import io.openems.edge.consolinno.leaflet.pwm.test.DummyPwm;
@@ -18,10 +11,7 @@ import io.openems.edge.relay.api.Relay;
 import io.openems.edge.relay.api.test.DummyRelay;
 import io.openems.edge.thermometer.api.Thermometer;
 import io.openems.edge.thermometer.api.test.DummyThermometer;
-import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Test;
-import org.osgi.service.cm.ConfigurationException;
 
 import static org.junit.Assert.fail;
 
@@ -123,8 +113,8 @@ public class ControllerPassingImplTest {
     private ChannelAddress vOC;
     private ChannelAddress vC;
     private ChannelAddress vCc;
-    private Valve valve;
-    private Pump pump;
+    private HydraulicComponent valve;
+    private HydraulicComponent pump;
     private ChannelAddress noError;
     private ChannelAddress minTemperature;
     private ChannelAddress mainActivate;

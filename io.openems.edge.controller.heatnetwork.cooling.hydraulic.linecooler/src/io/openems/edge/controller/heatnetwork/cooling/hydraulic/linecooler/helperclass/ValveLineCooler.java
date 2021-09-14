@@ -1,7 +1,7 @@
 package io.openems.edge.controller.heatnetwork.cooling.hydraulic.linecooler.helperclass;
 
 import io.openems.common.exceptions.OpenemsError;
-import io.openems.edge.heatsystem.components.Valve;
+import io.openems.edge.heatsystem.components.HydraulicComponent;
 import org.joda.time.DateTime;
 
 /**
@@ -10,12 +10,12 @@ import org.joda.time.DateTime;
  */
 public class ValveLineCooler extends AbstractLineCooler {
 
-    private final Valve valve;
+    private final HydraulicComponent valve;
     private Double max;
     private Double min;
 
 
-    public ValveLineCooler(boolean booleanControlled, Valve valve, boolean useMinMax) {
+    public ValveLineCooler(boolean booleanControlled, HydraulicComponent valve, boolean useMinMax) {
         super(booleanControlled, useMinMax);
         this.valve = valve;
     }
@@ -72,7 +72,7 @@ public class ValveLineCooler extends AbstractLineCooler {
     }
 
     /**
-     * Sets the Max and Min Value of either a {@link io.openems.edge.heatsystem.components.Valve} or Channel.
+     * Sets the Max and Min Value of either a {@link io.openems.edge.heatsystem.components.HydraulicComponent} or Channel.
      * It does NOT Start a HeatingProcess.
      * By setting the values.
      *

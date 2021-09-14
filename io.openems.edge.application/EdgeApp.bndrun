@@ -83,7 +83,10 @@
 	bnd.identity;id='io.openems.edge.controller.evcs',\
 	bnd.identity;id='io.openems.edge.controller.evcs.fixactivepower',\
 	bnd.identity;id='io.openems.edge.controller.generic.jsonlogic',\
+	bnd.identity;id='io.openems.edge.controller.heatnetwork.cooling.multiplecoolercombined',\
+	bnd.identity;id='io.openems.edge.controller.heatnetwork.multipleheatercombined',\
 	bnd.identity;id='io.openems.edge.controller.highloadtimeslot',\
+	bnd.identity;id='io.openems.edge.controller.hydrauliccomponent',\
 	bnd.identity;id='io.openems.edge.controller.io.alarm',\
 	bnd.identity;id='io.openems.edge.controller.io.channelsinglethreshold',\
 	bnd.identity;id='io.openems.edge.controller.io.fixdigitaloutput',\
@@ -98,6 +101,7 @@
 	bnd.identity;id='io.openems.edge.controller.symmetric.peakshaving',\
 	bnd.identity;id='io.openems.edge.controller.symmetric.randompower',\
 	bnd.identity;id='io.openems.edge.controller.symmetric.timeslotpeakshaving',\
+	bnd.identity;id='io.openems.edge.cooler.analogue',\
 	bnd.identity;id='io.openems.edge.core',\
 	bnd.identity;id='io.openems.edge.ess.adstec.storaxe',\
 	bnd.identity;id='io.openems.edge.ess.byd.container',\
@@ -126,6 +130,7 @@
 	bnd.identity;id='io.openems.edge.heater.api',\
 	bnd.identity;id='io.openems.edge.heater.chp.dachs',\
 	bnd.identity;id='io.openems.edge.heater.chp.wolf',\
+	bnd.identity;id='io.openems.edge.heater.decentral',\
 	bnd.identity;id='io.openems.edge.heater.heatpump.alphainnotec',\
 	bnd.identity;id='io.openems.edge.heater.heatpump.tecalor',\
 	bnd.identity;id='io.openems.edge.heatsystem.components',\
@@ -235,7 +240,10 @@
 	io.openems.edge.controller.evcs;version=snapshot,\
 	io.openems.edge.controller.evcs.fixactivepower;version=snapshot,\
 	io.openems.edge.controller.generic.jsonlogic;version=snapshot,\
+	io.openems.edge.controller.heatnetwork.cooling.multiplecoolercombined;version=snapshot,\
+	io.openems.edge.controller.heatnetwork.multipleheatercombined;version=snapshot,\
 	io.openems.edge.controller.highloadtimeslot;version=snapshot,\
+	io.openems.edge.controller.hydrauliccomponent;version=snapshot,\
 	io.openems.edge.controller.io.alarm;version=snapshot,\
 	io.openems.edge.controller.io.channelsinglethreshold;version=snapshot,\
 	io.openems.edge.controller.io.fixdigitaloutput;version=snapshot,\
@@ -250,6 +258,7 @@
 	io.openems.edge.controller.symmetric.peakshaving;version=snapshot,\
 	io.openems.edge.controller.symmetric.randompower;version=snapshot,\
 	io.openems.edge.controller.symmetric.timeslotpeakshaving;version=snapshot,\
+	io.openems.edge.cooler.analogue;version=snapshot,\
 	io.openems.edge.core;version=snapshot,\
 	io.openems.edge.ess.adstec.storaxe;version=snapshot,\
 	io.openems.edge.ess.api;version=snapshot,\
@@ -280,6 +289,7 @@
 	io.openems.edge.heater.api;version=snapshot,\
 	io.openems.edge.heater.chp.dachs;version=snapshot,\
 	io.openems.edge.heater.chp.wolf;version=snapshot,\
+	io.openems.edge.heater.decentral;version=snapshot,\
 	io.openems.edge.heater.heatpump.alphainnotec;version=snapshot,\
 	io.openems.edge.heater.heatpump.tecalor;version=snapshot,\
 	io.openems.edge.heatsystem.components;version=snapshot,\

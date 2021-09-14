@@ -12,6 +12,8 @@ import io.openems.edge.exceptionalstate.api.ExceptionalStateHandlerImpl;
 import io.openems.edge.heater.api.Heater;
 import io.openems.edge.heater.api.HeaterState;
 import io.openems.edge.thermometer.api.Thermometer;
+import io.openems.edge.timer.api.TimerHandler;
+import io.openems.edge.timer.api.TimerHandlerImpl;
 import org.osgi.service.cm.ConfigurationException;
 import org.osgi.service.component.ComponentContext;
 import org.osgi.service.component.annotations.Activate;
@@ -63,6 +65,12 @@ public class MultipleHeaterCombinedControllerImpl extends AbstractOpenemsCompone
     private final AtomicInteger configurationCounter = new AtomicInteger(0);
     private static final int MAX_WAIT_COUNT = 10;
 
+    private boolean useTimer;
+    private TimerHandler timer;
+    private final String timerId = "overWatch";
+    private String timerType;
+
+
     private Config config;
 
     public MultipleHeaterCombinedControllerImpl() {
@@ -81,6 +89,7 @@ public class MultipleHeaterCombinedControllerImpl extends AbstractOpenemsCompone
         this.setHasError(false);
         this.setIsOk(true);
         this.config = config;
+        this.useTimer = config.useTimer();
 
         //----------------------ALLOCATE/ CONFIGURE HEATER/TemperatureSensor -----------------//
         try {
@@ -97,6 +106,7 @@ public class MultipleHeaterCombinedControllerImpl extends AbstractOpenemsCompone
     void modified(ComponentContext context, Config config) {
         super.modified(context, config.id(), config.alias(), config.enabled());
         this.config = config;
+        this.useTimer = config.useTimer();
         try {
             this.allocateConfig(config.heaterIds(), config.activationThermometers(), config.activationTemperatures(), config.deactivationThermometers(),
                     config.deactivationTemperatures());
@@ -112,7 +122,7 @@ public class MultipleHeaterCombinedControllerImpl extends AbstractOpenemsCompone
      * Allocates the config of each Heater. They will be mapped to wrapper classes for easier handling and functions etc.
      *
      * @param heater_id            the id of the heater
-     * @param temperatureSensorMin TemperatureSensor vor minimum Temperature
+     * @param temperatureSensorMin TemperatureSensor for minimum Temperature
      * @param temperatureMin       TemperatureValue for min Temp.
      * @param temperatureSensorMax TemperatureSensor for MaximumTemp.
      * @param temperatureMax       TemperatureValue max allowed.
@@ -126,6 +136,12 @@ public class MultipleHeaterCombinedControllerImpl extends AbstractOpenemsCompone
                 temperatureSensorMax.length, temperatureMax.length)) {
             throw new ConfigurationException("allocate Config of MultipleHeaterCombined: " + super.id(), "Check Config Size Entries!");
         }
+        if (this.useTimer) {
+            this.timer = new TimerHandlerImpl(this.config.id(), this.cpm);
+            this.timerType = this.config.timerId();
+            this.timer.addOneIdentifier(this.timerId, this.timerType, this.config.timeDelta());
+        }
+
         List<String> heaterIds = Arrays.asList(heater_id);
         OpenemsError.OpenemsNamedException[] ex = {null};
         ConfigurationException[] exC = {null};
@@ -140,6 +156,10 @@ public class MultipleHeaterCombinedControllerImpl extends AbstractOpenemsCompone
                         if (this.configuredHeater.stream().anyMatch(existingHeater -> existingHeater.id().equals(heater.id()))) {
                             this.allocateConfigHadError();
                             throw new ConfigurationException("Allocate Config " + super.id(), "Heater already configured with id: " + heater.id() + " in : " + super.id());
+                        }
+                        if (Arrays.toString(temperatureSensorMin).contains(Arrays.toString(temperatureSensorMax))) {
+                            this.allocateConfigHadError();
+                            throw new ConfigurationException("Allocate Config " + super.id(), "One or more TemperatureSensors where used as Activation and Deactivation Thermometer.");
                         }
                         this.configuredHeater.add(heater);
                         this.activeStateHeaterAndHeatWrapper.put(heater, new HeaterActiveWrapper());
@@ -272,8 +292,15 @@ public class MultipleHeaterCombinedControllerImpl extends AbstractOpenemsCompone
                     }
 
                     if (heaterActiveWrapper.isActive()) {
-                        heater.getEnableSignalChannel().setNextWriteValue(heaterActiveWrapper.isActive());
-                        isHeating.set(true);
+                        if (!this.useTimer || this.timer.checkTimeIsUp(this.timerId)) {
+                            heater.getEnableSignalChannel().setNextWriteValue(heaterActiveWrapper.isActive());
+                            isHeating.set(true);
+                            if (this.useTimer) {
+                                this.timer.resetTimer(this.timerId);
+                            }
+                        }
+                    } else if (this.useTimer) {
+                        this.timer.resetTimer(this.timerId);
                     }
                 } catch (OpenemsError.OpenemsNamedException e) {
                     heaterError.set(true);

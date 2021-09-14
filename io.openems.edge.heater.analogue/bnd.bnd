@@ -2,23 +2,19 @@ Bundle-Name: OpenEMS Edge Heater Analogue Device
 Bundle-Vendor: Consolinno Energy GmbH
 Bundle-License: https://opensource.org/licenses/EPL-2.0
 Bundle-Version: 1.0.0.${tstamp}
-Bundle-Description: \
-	This Bundle provides an Analogue Heater device
-
-Private-Package:  \
-	io.openems.edge.heater.analogue,\
-	io.openems.edge.heater.analogue.component,\
-
--includeresource: {readme.md}
 
 -buildpath:  \
 	${buildpath},\
-	io.openems.edge.bridge.lucidcontrol,\
 	io.openems.common,\
 	io.openems.edge.common,\
 	io.openems.edge.heater.api,\
+	io.openems.edge.heatsystem.components,\
     io.openems.edge.io.api,\
-    io.openems.edge.relay.api,\
+	io.openems.edge.bridge.lucidcontrol,\
+	io.openems.edge.relay.api,\
     io.openems.edge.timer.api,\
 
 
+
+-testpath: \
+	${testpath}

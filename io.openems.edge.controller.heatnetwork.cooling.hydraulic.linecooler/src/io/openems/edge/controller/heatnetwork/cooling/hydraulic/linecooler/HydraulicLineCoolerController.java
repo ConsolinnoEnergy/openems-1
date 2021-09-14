@@ -11,8 +11,8 @@ import io.openems.edge.controller.heatnetwork.cooling.hydraulic.linecooler.helpe
 import io.openems.edge.controller.heatnetwork.cooling.hydraulic.linecooler.helperclass.LineCooler;
 import io.openems.edge.controller.heatnetwork.cooling.hydraulic.linecooler.helperclass.OneChannelLineCooler;
 import io.openems.edge.controller.heatnetwork.cooling.hydraulic.linecooler.helperclass.ValveLineCooler;
-import io.openems.edge.cooler.decentral.api.DecentralizeCooler;
-import io.openems.edge.heatsystem.components.Valve;
+import io.openems.edge.cooler.decentral.api.DecentralizedCooler;
+import io.openems.edge.heatsystem.components.HydraulicComponent;
 import io.openems.edge.thermometer.api.Thermometer;
 import io.openems.edge.timer.api.TimerHandler;
 import io.openems.edge.timer.api.TimerHandlerImpl;
@@ -34,7 +34,7 @@ import java.util.Optional;
 /**
  * This is the HydraulicLineCooler Controller. It is equivalent to the HydraulicLineHeater and  cools a System, by
  * Opening or Closing a Valve. In general it Either needs an EnableSignal to be activated or it needs a (optional)
- * {@link DecentralizeCooler} to be activated. After activation, it checks, if the Temperature is above the SetPoint and
+ * {@link DecentralizedCooler} to be activated. After activation, it checks, if the Temperature is above the SetPoint and
  * then starts cooling, by either Writing to a Valve, (and/or defining the min/max) different Channel, or one Channel only.
  * It has an optional Fallback-Method, where it cools the System in a configurable TimeFrame if no EnableSignal is Present.
  */
@@ -62,7 +62,7 @@ public class HydraulicLineCoolerController extends AbstractOpenemsComponent impl
     private static final String IDENTIFIER_FALLBACK = "HYDRAULIC_LINE_COOLER_FALLBACK_IDENTIFIER";
     private static final String IDENTIFIER_CYCLE_RESTART = "HYDRAULIC_LINE_COOLER_CYCLE_RESTART_IDENTIFIER";
     private Thermometer tempSensorReference;
-    private DecentralizeCooler decentralCoolerOptional;
+    private DecentralizedCooler decentralCoolerOptional;
 
     private int temperatureDefault = 600;
     private boolean shouldFallback = false;
@@ -97,7 +97,7 @@ public class HydraulicLineCoolerController extends AbstractOpenemsComponent impl
         this.createSpecificLineCooler(config);
 
         if (config.useDecentralCooler()) {
-            this.decentralCoolerOptional = (DecentralizeCooler) this.allocateComponent(config.decentralcoolerReference(),
+            this.decentralCoolerOptional = (DecentralizedCooler) this.allocateComponent(config.decentralcoolerReference(),
                     ComponentType.DECENTRAL_COOLER);
         }
         this.temperatureDefault = config.temperatureDefault();
@@ -168,7 +168,7 @@ public class HydraulicLineCoolerController extends AbstractOpenemsComponent impl
      * @throws Exception thrown if valveId couldn't be found or is not an instance of valve
      */
     private void createValveLineCooler(boolean booleanControlled, String valveId) throws Exception {
-        Valve valve = (Valve) this.allocateComponent(valveId, ComponentType.VALVE);
+        HydraulicComponent valve = (HydraulicComponent) this.allocateComponent(valveId, ComponentType.VALVE);
         this.lineCooler = new ValveLineCooler(booleanControlled, valve, this.useMinMax);
     }
 
@@ -213,7 +213,7 @@ public class HydraulicLineCoolerController extends AbstractOpenemsComponent impl
      */
 
     private OpenemsComponent allocateDecentralCooler(String deviceId) throws Exception {
-        if (this.cpm.getComponent(deviceId) instanceof DecentralizeCooler) {
+        if (this.cpm.getComponent(deviceId) instanceof DecentralizedCooler) {
             return this.cpm.getComponent(deviceId);
         }
         throw new Exception("Internal Error, this shouldn't occur");
@@ -227,7 +227,7 @@ public class HydraulicLineCoolerController extends AbstractOpenemsComponent impl
      * @throws Exception if config is wrong.
      */
     private OpenemsComponent allocateValve(String device) throws Exception {
-        if (this.cpm.getComponent(device) instanceof Valve) {
+        if (this.cpm.getComponent(device) instanceof HydraulicComponent) {
             return this.cpm.getComponent(device);
         }
         throw new Exception("Internal Error, this shouldn't occur");

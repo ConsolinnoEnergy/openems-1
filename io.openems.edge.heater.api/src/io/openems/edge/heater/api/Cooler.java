@@ -27,7 +27,7 @@ public interface Cooler extends OpenemsComponent {
         )),
         READ_EFFECTIVE_POWER_PERCENT(Doc.of(OpenemsType.DOUBLE).unit(Unit.PERCENT)),
         READ_EFFECTIVE_POWER(Doc.of(OpenemsType.INTEGER).unit(Unit.KILOWATT)),
-        HEATER_STATE(Doc.of(OpenemsType.STRING)),
+        HEATER_STATE(Doc.of(HeaterState.values())),
         SET_POINT_TEMPERATURE(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE).onInit(
                 channel -> ((IntegerWriteChannel) channel).onSetNextWrite(channel::setNextValue)
         )),
@@ -69,9 +69,6 @@ public interface Cooler extends OpenemsComponent {
 
     //------------------SET_POINT_POWER_PERCENT-------------------//
 
-    // Returns false when the device does not support control by setSetPointPowerPercent()
-    boolean setPointPowerPercentAvailable();
-
     default WriteChannel<Double> getSetPointPowerPercentChannel() {
         return this.channel(ChannelId.SET_POINT_POWER_PERCENT);
     }
@@ -97,8 +94,6 @@ public interface Cooler extends OpenemsComponent {
 
     //--------------------SET_POINT_POWER----------------------//
 
-    // Returns false when the device does not support control by setSetPointPower()
-    boolean setPointPowerAvailable();
 
     default WriteChannel<Double> getSetPointPowerChannel() {
         return this.channel(ChannelId.SET_POINT_POWER);
@@ -169,19 +164,18 @@ public interface Cooler extends OpenemsComponent {
 
     //-------------------   STATE    --------------------- //
 
-    //ToDO: OpenEMS hat auch einen State Channel. Evtl. Getter + Setter in getHeaterState/setHeaterState umbenennen.
-    default Channel<String> getHeaterStateChannel() {
+    default Channel<Integer> getHeaterStateChannel() {
         return this.channel(ChannelId.HEATER_STATE);
     }
 
-    default String getCurrentState() {
-        Channel<String> selectedChannel = this.getHeaterStateChannel();
+    default HeaterState getCurrentState() {
+        Channel<Integer> selectedChannel = this.getHeaterStateChannel();
         if (selectedChannel.value().isDefined()) {
-            return selectedChannel.value().get();
+            return selectedChannel.value().asEnum();
         } else if (selectedChannel.getNextValue().isDefined()) {
-            return selectedChannel.getNextValue().get();
+            return selectedChannel.getNextValue().asEnum();
         } else {
-            return "";
+            return HeaterState.UNDEFINED;
         }
     }
 
@@ -190,9 +184,6 @@ public interface Cooler extends OpenemsComponent {
     }
     //---------------------------------------------------------//
     //-------------------SET_POINT_TEMPERATURE --------------------- //
-
-    // Returns false when the device does not support control by setSetPointTemperature()
-    boolean setPointTemperatureAvailable();
 
     default WriteChannel<Integer> getSetPointTemperatureChannel() {
         return this.channel(ChannelId.SET_POINT_TEMPERATURE);
@@ -259,18 +250,6 @@ public interface Cooler extends OpenemsComponent {
     }
 
     // ********************************************************************** //
-
-    int calculateProvidedPower(int demand, float bufferValue) throws OpenemsError.OpenemsNamedException;
-
-    int getMaximumThermalOutput();
-
-    void setOffline() throws OpenemsError.OpenemsNamedException;
-
-    boolean hasError();
-
-    void requestMaximumPower();
-
-    void setIdle();
 
     default boolean errorInCooler() {
         return this.getCurrentState().equals(HeaterState.BLOCKED_OR_ERROR.getName());

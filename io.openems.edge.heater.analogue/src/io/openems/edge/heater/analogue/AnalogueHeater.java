@@ -10,9 +10,11 @@ import io.openems.edge.common.component.AbstractOpenemsComponent;
 import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.common.event.EdgeEventConstants;
+import io.openems.edge.heater.analogue.component.AnalogueHeaterAIO;
 import io.openems.edge.heater.analogue.component.AnalogueHeaterAio;
 import io.openems.edge.heater.analogue.component.AnalogueHeaterComponent;
 import io.openems.edge.heater.analogue.component.AnalogueHeaterLucidControl;
+import io.openems.edge.heater.analogue.component.AnalogueHeaterPWM;
 import io.openems.edge.heater.analogue.component.AnalogueHeaterPwm;
 import io.openems.edge.heater.analogue.component.AnalogueHeaterRelay;
 import io.openems.edge.heater.api.Heater;
@@ -36,7 +38,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Dictionary;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -88,8 +93,7 @@ public class AnalogueHeater extends AbstractOpenemsComponent implements OpenemsC
     private ControlType type = ControlType.PERCENT;
 
 
-    private AnalogueHeaterComponent heaterComponent;
-
+    private final List<AnalogueHeaterComponent> heaterComponent = new ArrayList<>();
 
     enum ChannelId implements io.openems.edge.common.channel.ChannelId {
 
@@ -135,8 +139,8 @@ public class AnalogueHeater extends AbstractOpenemsComponent implements OpenemsC
 
     @Modified
     void modified(ComponentContext context, Config config) throws ConfigurationException, OpenemsError.OpenemsNamedException {
-        this.activationOrModifiedRoutine(config);
         super.modified(context, config.id(), config.alias(), config.enabled());
+        this.activationOrModifiedRoutine(config);
 
     }
 
@@ -148,20 +152,28 @@ public class AnalogueHeater extends AbstractOpenemsComponent implements OpenemsC
      * @throws ConfigurationException             if a component could be found but was not the correct instance of XYZ.
      */
     private void activationOrModifiedRoutine(Config config) throws OpenemsError.OpenemsNamedException, ConfigurationException {
-        switch (config.analogueType()) {
-            case PWM:
-                this.heaterComponent = new AnalogueHeaterPwm(this.cpm, config.analogueId(), this.maxPowerKw, config.controlType(), config.defaultMinPower());
-                break;
-            case AIO:
-                this.heaterComponent = new AnalogueHeaterAio(this.cpm, config.analogueId(), this.maxPowerKw, config.controlType(), config.defaultMinPower());
-                break;
-            case RELAY:
-                this.heaterComponent = new AnalogueHeaterRelay(this.cpm, config.analogueId(), this.maxPowerKw, config.controlType(), config.defaultMinPower());
-                break;
-            case LUCID_CONTROL:
-                this.heaterComponent = new AnalogueHeaterLucidControl(this.cpm, config.analogueId(), this.maxPowerKw, config.controlType(), config.defaultMinPower());
-                break;
-        }
+        this.heaterComponent.clear();
+        Arrays.stream(config.analogueId()).forEach(id -> {
+            try {
+                switch (config.analogueType()) {
+                    case PWM:
+                        this.heaterComponent.add(new AnalogueHeaterPWM(this.cpm, id, this.maxPowerKw, config.controlType(), config.defaultMinPower()));
+                        break;
+                    case AIO:
+                        this.heaterComponent.add(new AnalogueHeaterAIO(this.cpm, id, this.maxPowerKw, config.controlType(), config.defaultMinPower()));
+                        break;
+                    case RELAY:
+                        this.heaterComponent.add(new AnalogueHeaterRelay(this.cpm, id, this.maxPowerKw, config.controlType(), config.defaultMinPower()));
+                        break;
+                    case LUCID_CONTROL:
+                        this.heaterComponent.add(new AnalogueHeaterLucidControl(this.cpm, id, this.maxPowerKw, config.controlType(), config.defaultMinPower()));
+                        break;
+                }
+            } catch (Exception ignored) {
+                this.log.error("Unable to get Components. Check Config!");
+            }
+        });
+
         if (this.timer != null) {
             this.timer.removeComponent();
         }
@@ -191,20 +203,34 @@ public class AnalogueHeater extends AbstractOpenemsComponent implements OpenemsC
             this.getDefaultActivePowerChannel().getNextWriteValueAndReset().ifPresent(entry -> this.updateConfig(entry, true));
             this.getDefaultMinPowerChannel().getNextWriteValueAndReset().ifPresent(entry -> this.updateConfig(entry, false));
         } else if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS)) {
-            try {
-                if (this.shouldHeat()) {
-                    this.isActive = true;
-                    this.heaterComponent.startHeating(this.powerToApply());
-                } else {
-                    this.isActive = false;
-                    this.getEnableSignalChannel().getNextWriteValueAndReset();
-                    this.getEnableSignalChannel().setNextValue(false);
-                    this.heaterComponent.stopHeating();
-                }
-                this.updatePowerChannel(this.heaterComponent.getCurrentPowerApplied());
-            } catch (OpenemsError.OpenemsNamedException e) {
-                this.log.warn("Couldn't apply heating / stop heating! Reason: " + e.getMessage());
+            if (this.shouldHeat()) {
+                this.isActive = true;
+                this.heaterComponent.forEach(component -> {
+                    try {
+                        component.startHeating(this.powerToApply());
+                    } catch (OpenemsError.OpenemsNamedException e) {
+                        this.log.error("Unable to start heating!");
+                    }
+                });
+            } else {
+                this.isActive = false;
+                this.getEnableSignalChannel().getNextWriteValueAndReset();
+                this.getEnableSignalChannel().setNextValue(false);
+                this.heaterComponent.forEach(component -> {
+                    try {
+                        component.stopHeating();
+                    } catch (OpenemsError.OpenemsNamedException e) {
+                        this.log.error("Unable to stop heating!");
+                    }
+                });
             }
+            this.heaterComponent.stream().findAny().ifPresent(entry -> {
+                try {
+                    this.updatePowerChannel(entry.getCurrentPowerApplied());
+                } catch (OpenemsError.OpenemsNamedException e) {
+                    this.log.warn("Couldn't apply heating / stop heating! Reason: " + e.getMessage());
+                }
+            });
         }
     }
 
