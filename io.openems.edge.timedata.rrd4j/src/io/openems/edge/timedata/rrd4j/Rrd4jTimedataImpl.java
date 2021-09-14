@@ -497,12 +497,14 @@ public class Rrd4jTimedataImpl extends AbstractOpenemsComponent
 		case DECI_VOLT:
 		case DEGREE:
 		case DEGREE_CELSIUS:
-		case DEGREE_KELVIN:
 		case DEZIDEGREE_CELSIUS:
-		case DEZIDEGREE_KELVIN:
+		case DEZI_KELVIN:
+		case DEZI_KELVIN_PER_MINUTE:
 		case HECTO_PASCAL:
 		case HERTZ:
 		case HOUR:
+		case KELVIN:
+		case KELVIN_PER_MINUTE:
 		case KILOAMPERE_HOURS:
 		case KILOOHM:
 		case KILOVOLT_AMPERE:

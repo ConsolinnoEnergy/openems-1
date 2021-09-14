@@ -5,11 +5,17 @@ import io.openems.edge.common.component.AbstractOpenemsComponent;
 import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.common.event.EdgeEventConstants;
-import io.openems.edge.heater.Heater;
-import io.openems.edge.heater.HeaterState;
-import io.openems.edge.heater.gasboiler.viessmann.api.GasBoiler;
+import io.openems.edge.exceptionalstate.api.ExceptionalState;
+import io.openems.edge.exceptionalstate.api.ExceptionalStateHandler;
+import io.openems.edge.exceptionalstate.api.ExceptionalStateHandlerImpl;
+import io.openems.edge.heater.api.EnableSignalHandler;
+import io.openems.edge.heater.api.EnableSignalHandlerImpl;
+import io.openems.edge.heater.api.Heater;
+import io.openems.edge.heater.api.HeaterState;
+import io.openems.edge.timer.api.TimerHandler;
+import io.openems.edge.timer.api.TimerHandlerImpl;
 import io.openems.edge.relay.api.Relay;
-import org.osgi.service.cm.ConfigurationAdmin;
+import org.osgi.service.cm.ConfigurationException;
 import org.osgi.service.component.ComponentContext;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
@@ -22,47 +28,75 @@ import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Optional;
-
 
 @Designate(ocd = ConfigOneRelay.class, factory = true)
-@Component(name = "GasBoilerOneRelay",
+@Component(name = "Heater.Viessmann.GasBoilerOneRelay",
         configurationPolicy = ConfigurationPolicy.REQUIRE,
         immediate = true)
-public class GasBoilerOneRelayImpl extends AbstractOpenemsComponent implements OpenemsComponent, GasBoiler, Heater, EventHandler {
+public class GasBoilerOneRelayImpl extends AbstractOpenemsComponent implements OpenemsComponent, EventHandler,
+        ExceptionalState, Heater {
 
     private final Logger log = LoggerFactory.getLogger(GasBoilerOneRelayImpl.class);
 
     @Reference
-    ConfigurationAdmin cm;
-
-    @Reference
     ComponentManager cpm;
 
+    private boolean componentEnabled;
     private Relay relay;
-    private int thermalOutput;
-    private boolean isEnabled;
-    private int cycleCounter = 0;
+
+    private EnableSignalHandler enableSignalHandler;
+    private static final String ENABLE_SIGNAL_IDENTIFIER = "GASBOILER_VIESSMANN_RELAY_ENABLE_SIGNAL_IDENTIFIER";
+    private boolean useExceptionalState;
+    private ExceptionalStateHandler exceptionalStateHandler;
+    private static final String EXCEPTIONAL_STATE_IDENTIFIER = "GASBOILER_VIESSMANN_RELAY_EXCEPTIONAL_STATE_IDENTIFIER";
 
     ConfigOneRelay config;
 
 
     public GasBoilerOneRelayImpl() {
         super(OpenemsComponent.ChannelId.values(),
-                Heater.ChannelId.values());
+                Heater.ChannelId.values(),
+                ExceptionalState.ChannelId.values());
     }
 
     @Activate
-    public void activate(ComponentContext context, ConfigOneRelay config) throws OpenemsError.OpenemsNamedException {
-
+    public void activate(ComponentContext context, ConfigOneRelay config) throws OpenemsError.OpenemsNamedException,
+            ConfigurationException {
         super.activate(context, config.id(), config.alias(), config.enabled());
-
+        this.componentEnabled = config.enabled();
         this.config = config;
 
         if (this.cpm.getComponent(config.relayId()) instanceof Relay) {
             this.relay = this.cpm.getComponent(config.relayId());
+        } else {
+            throw new ConfigurationException("activate", "The Component with id: "
+                    + config.relayId() + " is not a relay module");
         }
-        this.thermalOutput = config.maxThermicalOutput();
+
+        TimerHandler timer = new TimerHandlerImpl(super.id(), this.cpm);
+        String timerTypeEnableSignal;
+        if (config.enableSignalTimerIsCyclesNotSeconds()) {
+            timerTypeEnableSignal = "TimerByCycles";
+        } else {
+            timerTypeEnableSignal = "TimerByTime";
+        }
+        timer.addOneIdentifier(ENABLE_SIGNAL_IDENTIFIER, timerTypeEnableSignal, config.waitTimeEnableSignal());
+        this.enableSignalHandler = new EnableSignalHandlerImpl(timer, ENABLE_SIGNAL_IDENTIFIER);
+        this.useExceptionalState = config.useExceptionalState();
+        if (this.useExceptionalState) {
+            String timerTypeExceptionalState;
+            if (config.exceptionalStateTimerIsCyclesNotSeconds()) {
+                timerTypeExceptionalState = "TimerByCycles";
+            } else {
+                timerTypeExceptionalState = "TimerByTime";
+            }
+            timer.addOneIdentifier(EXCEPTIONAL_STATE_IDENTIFIER, timerTypeExceptionalState, config.waitTimeExceptionalState());
+            this.exceptionalStateHandler = new ExceptionalStateHandlerImpl(timer, EXCEPTIONAL_STATE_IDENTIFIER);
+        }
+
+        if (this.componentEnabled == false) {
+            this._setHeaterState(HeaterState.OFF.getValue());
+        }
     }
 
     @Deactivate
@@ -74,87 +108,6 @@ public class GasBoilerOneRelayImpl extends AbstractOpenemsComponent implements O
             }
         } catch (OpenemsError.OpenemsNamedException e) {
             e.printStackTrace();
-        }
-    }
-
-    @Override
-    public boolean setPointPowerPercentAvailable() {
-        return false;
-    }
-
-    @Override
-    public boolean setPointPowerAvailable() {
-        return false;
-    }
-
-    @Override
-    public boolean setPointTemperatureAvailable() {
-        return false;
-    }
-
-    @Override
-    public int calculateProvidedPower(int demand, float bufferValue) throws OpenemsError.OpenemsNamedException {
-        if (this.relay != null && this.relay.isEnabled()) {
-            this.relay.getRelaysWriteChannel().setNextWriteValue(true);
-            return this.thermalOutput;
-        } else {
-            try {
-                if (cpm.getComponent(config.relayId()) instanceof Relay) {
-                    this.relay = cpm.getComponent(config.relayId());
-                    this.relay.getRelaysWriteChannel().setNextWriteValue(true);
-                    return this.thermalOutput;
-                }
-            } catch (OpenemsError.OpenemsNamedException e) {
-                log.warn("Couldn't find component!" + e.getMessage());
-                return 0;
-
-
-            }
-
-        }
-        return 0;
-    }
-
-
-    @Override
-    public int getMaximumThermalOutput() {
-        return this.thermalOutput;
-    }
-
-    @Override
-    public void setOffline() throws OpenemsError.OpenemsNamedException {
-        if (this.relay != null && this.isEnabled) {
-            this.relay.getRelaysWriteChannel().setNextWriteValue(false);
-            this.setState(HeaterState.OFFLINE.name());
-        }
-    }
-
-    @Override
-    public boolean hasError() {
-        return false;
-    }
-
-    @Override
-    public void requestMaximumPower() {
-        if (isEnabled && this.relay != null) {
-            try {
-                this.relay.getRelaysWriteChannel().setNextWriteValue(true);
-                this.setState(HeaterState.RUNNING.name());
-            } catch (OpenemsError.OpenemsNamedException e) {
-                log.warn("Couldn't write in Channel " + e.getMessage());
-            }
-        }
-    }
-
-    @Override
-    public void setIdle() {
-        if (isEnabled && this.relay != null) {
-            try {
-                this.relay.getRelaysWriteChannel().setNextWriteValue(false);
-                this.setState(HeaterState.AWAIT.name());
-            } catch (OpenemsError.OpenemsNamedException e) {
-                log.warn("Couldn't write in Channel " + e.getMessage());
-            }
         }
     }
 
@@ -172,28 +125,65 @@ public class GasBoilerOneRelayImpl extends AbstractOpenemsComponent implements O
 
     @Override
     public void handleEvent(Event event) {
-        if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE)) {
-            channelmapping();
+        if (this.componentEnabled && event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE)) {
+            this.channelmapping();
         }
     }
 
     protected void channelmapping() {
-        // Decide state of enabledSignal.
-        // The method isEnabledSignal() does get and reset. Calling it will clear the value (for that cycle). So you
-        // need to store the value in a local variable.
-        Optional<Boolean> enabledSignal = isEnabledSignal();
-        if (enabledSignal.isPresent()) {
-            isEnabled = enabledSignal.get();
-            cycleCounter = 0;
-        } else {
-            // No value in the Optional.
-            // Wait 5 cycles. If isEnabledSignal() has not been filled with a value again, switch to false.
-            if (isEnabled) {
-                cycleCounter++;
-                if (cycleCounter > 5) {
-                    isEnabled = false;
+
+        // Handle EnableSignal.
+        boolean turnOnHeater = this.enableSignalHandler.deviceShouldBeHeating(this);
+
+        // Handle ExceptionalState. ExceptionalState overwrites EnableSignal.
+        int exceptionalStateValue = 0;
+        boolean exceptionalStateActive = false;
+        if (this.useExceptionalState) {
+            exceptionalStateActive = this.exceptionalStateHandler.exceptionalStateActive(this);
+            if (exceptionalStateActive) {
+                exceptionalStateValue = this.getExceptionalStateValue();
+                if (exceptionalStateValue <= 0) {
+                    // Turn off heater when ExceptionalStateValue = 0.
+                    turnOnHeater = false;
+                } else {
+                    turnOnHeater = true;
                 }
             }
+        }
+
+        // Check missing components. The relay turns the heater on or off.
+        boolean errorDetected = false;
+        if (this.relay != null && this.relay.isEnabled()) {
+            try {
+                this.relay.getRelaysWriteChannel().setNextWriteValue(turnOnHeater);
+            } catch (OpenemsError.OpenemsNamedException e) {
+                this._setErrorMessage("OpenEMS error: Could not write in relay module command channel.");
+                this.log.warn("Couldn't write in Channel " + e.getMessage());
+                errorDetected = true;
+            }
+        } else {
+            try {
+                if (this.cpm.getComponent(this.config.relayId()) instanceof Relay) {
+                    this.relay = this.cpm.getComponent(this.config.relayId());
+                    this.relay.getRelaysWriteChannel().setNextWriteValue(turnOnHeater);
+                }
+            } catch (OpenemsError.OpenemsNamedException e) {
+                this._setErrorMessage("OpenEMS error: Could not find configured relay module.");
+                this.log.warn("Could not find configured relay module!");
+                errorDetected = true;
+            }
+        }
+
+        // Set heater state.
+        if (errorDetected == false) {
+            this._setErrorMessage("No error");
+            if (turnOnHeater) {
+                this._setHeaterState(HeaterState.RUNNING.getValue());
+            } else {
+                this._setHeaterState(HeaterState.STANDBY.getValue());
+            }
+        } else {
+            this._setHeaterState(HeaterState.OFF.getValue());
         }
     }
 }

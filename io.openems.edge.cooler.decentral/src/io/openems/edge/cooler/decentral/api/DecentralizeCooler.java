@@ -6,7 +6,7 @@ import io.openems.edge.common.channel.BooleanWriteChannel;
 import io.openems.edge.common.channel.Channel;
 import io.openems.edge.common.channel.Doc;
 import io.openems.edge.common.channel.WriteChannel;
-import io.openems.edge.heater.Cooler;
+import io.openems.edge.heater.api.Cooler;
 
 /**
  * The DecentralizeCooler interface, extending the Cooler. It Provides the ability, equivalent to the Decentral Heater,

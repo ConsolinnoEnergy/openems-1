@@ -78,7 +78,6 @@ public class HeatPumpTecalorImpl extends AbstractOpenemsModbusComponent implemen
 	private boolean readOnly;
 	private boolean sgReadyActive;
 
-	private boolean turnOnHeatpump;
 	private OperatingMode defaultModeOfOperation;
 	private boolean useEnableSignal;
 	private EnableSignalHandler enableSignalHandler;
@@ -400,11 +399,11 @@ public class HeatPumpTecalorImpl extends AbstractOpenemsModbusComponent implemen
 			notBlocked = this.getElSupBlockRelease().get();
 		}
 		if (isRunning) {
-			this._setHeaterState(HeaterState.HEATING.getValue());
+			this._setHeaterState(HeaterState.RUNNING.getValue());
 		} else if (notBlocked && signalReceived) {
 			this._setHeaterState(HeaterState.STANDBY.getValue());
 		} else if (notBlocked == false || isError) {
-			this._setHeaterState(HeaterState.BLOCKED.getValue());
+			this._setHeaterState(HeaterState.BLOCKED_OR_ERROR.getValue());
 		} else {
 			// You land here when no channel has data (’signalReceived == false’, ’notBlocked == true’, ’isError == false’).
 			this._setHeaterState(HeaterState.OFF.getValue());
@@ -463,10 +462,11 @@ public class HeatPumpTecalorImpl extends AbstractOpenemsModbusComponent implemen
 			}
 
 			if (this.useEnableSignal || this.useExceptionalState) {
+				boolean turnOnHeatpump = false;
 
 				// Handle EnableSignal.
 				if (this.useEnableSignal) {
-					this.turnOnHeatpump = this.enableSignalHandler.deviceShouldBeHeating(this);
+					turnOnHeatpump = this.enableSignalHandler.deviceShouldBeHeating(this);
 				}
 
 				// Handle ExceptionalState. ExceptionalState overwrites EnableSignal.
@@ -478,10 +478,10 @@ public class HeatPumpTecalorImpl extends AbstractOpenemsModbusComponent implemen
 						exceptionalStateValue = this.getExceptionalStateValue();
 						if (exceptionalStateValue <= 0) {
 							// Turn off heat pump when ExceptionalStateValue = 0.
-							this.turnOnHeatpump = false;
+							turnOnHeatpump = false;
 						} else {
 							// When ExceptionalStateValue is > 0, turn heat pump on.
-							this.turnOnHeatpump = true;
+							turnOnHeatpump = true;
 							/*
 							if (exceptionalStateValue > 100) {
 								exceptionalStateValue = 100;
@@ -491,7 +491,7 @@ public class HeatPumpTecalorImpl extends AbstractOpenemsModbusComponent implemen
 					}
 				}
 
-				if (this.turnOnHeatpump) {
+				if (turnOnHeatpump) {
 					try {
 						this.setOperatingMode(this.defaultModeOfOperation.getValue());
 					} catch (OpenemsError.OpenemsNamedException e) {

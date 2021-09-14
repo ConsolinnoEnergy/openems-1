@@ -16,7 +16,7 @@ import io.openems.edge.heater.api.HeatpumpSmartGrid;
  * Channels for the Tecalor heat pump.
  */
 
-public interface HeatpumpTecalor extends HeatpumpSmartGrid {
+public interface HeatpumpTecalorChannel extends HeatpumpSmartGrid {
 
     public enum ChannelId implements io.openems.edge.common.channel.ChannelId {
 
@@ -31,7 +31,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
          *     <li> Unit: Decimal degree Celsius
          * </ul>
          */
-        IR507_OUTSIDE_TEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
+        IR507_AUSSENTEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
 
         /**
          * Heating circuit 1 temperature.
@@ -40,7 +40,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
          *      <li> Unit: Decimal degree Celsius
          * </ul>
          */
-        IR508_TEMP_HC1(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
+        IR508_ISTTEMPHK1(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
 
         /**
          * Heating circuit 1 setpoint temperature, if software version is WPM 3i.
@@ -49,7 +49,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
          *      <li> Unit: Decimal degree Celsius
          * </ul>
          */
-        IR509_TEMP_HC1_SETPOINT(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
+        IR509_SOLLTEMPHK1(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
 
         /**
          * Heating circuit 1 setpoint temperature, if software version is WPMsystem and WPM 3.
@@ -58,17 +58,16 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
          *      <li> Unit: Decimal degree Celsius
          * </ul>
          */
-        IR510_TEMP_HC1_SETPOINT(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
+        IR510_SOLLTEMPHK1(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
 
         /**
-         * Heating circuit 1 setpoint temperature, independent of software version.
-         * (Mapped from the software dependent channels)
+         * Heating circuit 1 setpoint temperature. (Mapped from the software dependent channels)
          * <ul>
          *      <li> Type: Integer
          *      <li> Unit: Decimal degree Celsius
          * </ul>
          */
-        TEMP_HC1_SETPOINT(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
+        SOLLTEMPHK1(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
 
         /**
          * Heating circuit 2 temperature.
@@ -77,7 +76,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
          *      <li> Unit: Decimal degree Celsius
          * </ul>
          */
-        IR511_TEMP_HC2(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
+        IR511_ISTTEMPHK2(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
 
         /**
          * Heating circuit 2 setpoint temperature.
@@ -86,7 +85,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
          *      <li> Unit: Decimal degree Celsius
          * </ul>
          */
-        IR512_TEMP_HC2_SETPOINT(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
+        IR512_SOLLTEMPHK2(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
 
         /**
          * Flow temperature heat pump.
@@ -95,7 +94,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
          *      <li> Unit: Decimal degree Celsius
          * </ul>
          */
-        IR513_FLOW_TEMP_HEAT_PUMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
+        IR513_VORLAUFISTTEMPWP(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
 
         /**
          * Flow temperature auxiliary heater.
@@ -104,11 +103,11 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
          *      <li> Unit: Decimal degree Celsius
          * </ul>
          */
-        IR514_FLOW_TEMP_AUX(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
+        IR514_VORLAUFISTTEMPNHZ(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
 
-        //IR515_FLOW_TEMPERATURE -> Heater FLOW_TEMPERATURE
+        //IR515_VORLAUFISTTEMP -> Heater FLOW_TEMPERATURE
 
-        //IR516_RETURN_TEMPERATURE -> Heater RETURN_TEMPERATURE
+        //IR516_RUECKLAUFISTTEMP -> Heater RETURN_TEMPERATURE
 
         /**
          * Constant temperature setpoint.
@@ -117,7 +116,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
          *      <li> Unit: Decimal degree Celsius
          * </ul>
          */
-        IR517_CONST_TEMP_SETPOINT(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
+        IR517_FESTWERTSOLLTEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
 
         /**
          * Storage tank temperature.
@@ -126,7 +125,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
          *      <li> Unit: Decimal degree Celsius
          * </ul>
          */
-        IR518_STORAGE_TANK_TEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
+        IR518_PUFFERISTTEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
 
         /**
          * Storage tank temperature, setpoint.
@@ -135,7 +134,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
          *      <li> Unit: Decimal degree Celsius
          * </ul>
          */
-        IR519_STORAGE_TANK_TEMP_SETPOINT(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
+        IR519_PUFFERSOLLTEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
 
         /**
          * Heating circuit pressure.
@@ -144,7 +143,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
          *      <li> Unit: centi bar (bar e-2)
          * </ul>
          */
-        IR520_CIRCUIT_PRESSURE(Doc.of(OpenemsType.INTEGER).unit(Unit.CENTI_BAR)),
+        IR520_HEIZUNGSDRUCK(Doc.of(OpenemsType.INTEGER).unit(Unit.CENTI_BAR)),
 
         /**
          * Heating circuit current.
@@ -153,7 +152,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
          *      <li> Unit: decimal liters per minute (l/min e-1)
          * </ul>
          */
-        IR521_CIRCUIT_CURRENT(Doc.of(OpenemsType.INTEGER).unit(Unit.DECILITER_PER_MINUTE)),
+        IR521_VOLUMENSTROM(Doc.of(OpenemsType.INTEGER).unit(Unit.DECILITER_PER_MINUTE)),
 
         /**
          * Domestic hot water temperature.
@@ -162,7 +161,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
          *      <li> Unit: Decimal degree Celsius
          * </ul>
          */
-        IR522_WATER_TEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
+        IR522_WWISTTEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
 
         /**
          * Domestic hot water temperature, setpoint.
@@ -171,7 +170,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
          *      <li> Unit: Decimal degree Celsius
          * </ul>
          */
-        IR523_WATER_TEMP_SETPOINT(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
+        IR523_WWSOLLTEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
 
         /**
          * Ventilation cooling temperature.
@@ -180,7 +179,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
          *      <li> Unit: Decimal degree Kelvin
          * </ul>
          */
-        IR524_VENT_COOLING_TEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZI_KELVIN)),
+        IR524_GEBLAESEISTTEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZI_KELVIN)),
 
         /**
          * Ventilation cooling temperature, setpoint.
@@ -189,7 +188,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
          *      <li> Unit: Decimal degree Kelvin
          * </ul>
          */
-        IR525_VENT_COOLING_TEMP_SETPOINT(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZI_KELVIN)),
+        IR525_GEBLAESESOLLTEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZI_KELVIN)),
 
         /**
          * Surface cooling temperature.
@@ -198,7 +197,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
          *      <li> Unit: Decimal degree Kelvin
          * </ul>
          */
-        IR526_SURFACE_COOLING_TEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZI_KELVIN)),
+        IR526_FLAECHEISTTEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZI_KELVIN)),
 
         /**
          * Surface cooling temperature, setpoint.
@@ -207,7 +206,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
          *      <li> Unit: Decimal degree Kelvin
          * </ul>
          */
-        IR527_SURFACE_COOLING_TEMP_SETPOINT(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZI_KELVIN)),
+        IR527_FLAECHESOLLTEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZI_KELVIN)),
 
         /**
          * Status bits.
@@ -218,12 +217,12 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
         IR2501_STATUSBITS(Doc.of(OpenemsType.INTEGER)),
 
         /**
-         * Electric supplier block/release (EVU Freigabe). True = release.
+         * EVU block/release. True = release.
          * <ul>
          *      <li> Type: Boolean
          * </ul>
          */
-        IR2502_ELSUP_BLOCK_RELEASE(Doc.of(OpenemsType.BOOLEAN)),
+        IR2502_EVUFREIGABE(Doc.of(OpenemsType.BOOLEAN)),
 
         /**
          * Error status. False for no error.
@@ -264,7 +263,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
          *      <li> Unit: kilowatt hours
          * </ul>
          */
-        IR3501_HEATPRODUCED_CIRCUIT_DAILY(Doc.of(OpenemsType.INTEGER).unit(Unit.KILOWATT_HOURS)),
+        IR3501_HEATPRODUCED_VDHEIZENTAG(Doc.of(OpenemsType.INTEGER).unit(Unit.KILOWATT_HOURS)),
 
         /**
          * Produced heat for heating circuits total, all heat pumps combined. Low value.
@@ -275,7 +274,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
          *      <li> Unit: kilowatt hours
          * </ul>
          */
-        IR3502_HEATPRODUCED_CIRCUIT_SUMKWH(Doc.of(OpenemsType.INTEGER).unit(Unit.KILOWATT_HOURS)),
+        IR3502_HEATPRODUCED_VDHEIZENSUMKWH(Doc.of(OpenemsType.INTEGER).unit(Unit.KILOWATT_HOURS)),
 
         /**
          * Produced heat for heating circuits total, all heat pumps combined. High value.
@@ -286,7 +285,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
          *      <li> Unit: megawatt hours
          * </ul>
          */
-        IR3503_HEATPRODUCED_CIRCUIT_SUMMWH(Doc.of(OpenemsType.INTEGER).unit(Unit.MEGAWATT_HOURS)),
+        IR3503_HEATPRODUCED_VDHEIZENSUMMWH(Doc.of(OpenemsType.INTEGER).unit(Unit.MEGAWATT_HOURS)),
 
         /**
          * Produced heat for heating circuits total, all heat pumps combined.
@@ -295,7 +294,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
          *      <li> Unit: kilowatt hours
          * </ul>
          */
-        HEATPRODUCED_CIRCUIT_SUM(Doc.of(OpenemsType.INTEGER).unit(Unit.KILOWATT_HOURS)),
+        HEATPRODUCED_VDHEIZENSUM(Doc.of(OpenemsType.INTEGER).unit(Unit.KILOWATT_HOURS)),
 
         /**
          * Produced heat for domestic hot water, all heat pumps combined for this day.
@@ -304,7 +303,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
          *      <li> Unit: kilowatt hours
          * </ul>
          */
-        IR3504_HEATPRODUCED_WATER_DAILY(Doc.of(OpenemsType.INTEGER).unit(Unit.KILOWATT_HOURS)),
+        IR3504_HEATPRODUCED_VDWWTAG(Doc.of(OpenemsType.INTEGER).unit(Unit.KILOWATT_HOURS)),
 
         /**
          * Produced heat for domestic hot water total, all heat pumps combined. Low value.
@@ -315,7 +314,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
          *      <li> Unit: kilowatt hours
          * </ul>
          */
-        IR3505_HEATPRODUCED_WATER_SUMKWH(Doc.of(OpenemsType.INTEGER).unit(Unit.KILOWATT_HOURS)),
+        IR3505_HEATPRODUCED_VDWWSUMKWH(Doc.of(OpenemsType.INTEGER).unit(Unit.KILOWATT_HOURS)),
 
         /**
          * Produced heat for domestic hot water total, all heat pumps combined. High value.
@@ -326,7 +325,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
          *      <li> Unit: megawatt hours
          * </ul>
          */
-        IR3506_HEATPRODUCED_WATER_SUMMWH(Doc.of(OpenemsType.INTEGER).unit(Unit.MEGAWATT_HOURS)),
+        IR3506_HEATPRODUCED_VDWWSUMMWH(Doc.of(OpenemsType.INTEGER).unit(Unit.MEGAWATT_HOURS)),
 
         /**
          * Produced heat for domestic hot water total, all heat pumps combined.
@@ -335,7 +334,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
          *      <li> Unit: kilowatt hours
          * </ul>
          */
-        HEATPRODUCED_WATER_SUM(Doc.of(OpenemsType.INTEGER).unit(Unit.KILOWATT_HOURS)),
+        HEATPRODUCED_VDWWSUM(Doc.of(OpenemsType.INTEGER).unit(Unit.KILOWATT_HOURS)),
 
         /**
          * Produced heat for heating circuits total, auxiliary heater. Low value.
@@ -346,7 +345,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
          *      <li> Unit: kilowatt hours
          * </ul>
          */
-        IR3507_HEATPRODUCED_AUX_SUMKWH(Doc.of(OpenemsType.INTEGER).unit(Unit.KILOWATT_HOURS)),
+        IR3507_HEATPRODUCED_NZHHEIZENSUMKWH(Doc.of(OpenemsType.INTEGER).unit(Unit.KILOWATT_HOURS)),
 
         /**
          * Produced heat for heating circuits total, auxiliary heater. High value.
@@ -357,7 +356,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
          *      <li> Unit: kilowatt hours
          * </ul>
          */
-        IR3508_HEATPRODUCED_AUX_SUMMWH(Doc.of(OpenemsType.INTEGER).unit(Unit.MEGAWATT_HOURS)),
+        IR3508_HEATPRODUCED_NZHHEIZENSUMMWH(Doc.of(OpenemsType.INTEGER).unit(Unit.MEGAWATT_HOURS)),
 
         /**
          * Produced heat for heating circuits total, auxiliary heater.
@@ -366,7 +365,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
          *      <li> Unit: kilowatt hours
          * </ul>
          */
-        HEATPRODUCED_AUX_SUM(Doc.of(OpenemsType.INTEGER).unit(Unit.KILOWATT_HOURS)),
+        HEATPRODUCED_NZHHEIZENSUM(Doc.of(OpenemsType.INTEGER).unit(Unit.KILOWATT_HOURS)),
 
         /**
          * Produced heat for warm water total, auxiliary heater. Low value.
@@ -377,7 +376,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
          *      <li> Unit: kilowatt hours
          * </ul>
          */
-        IR3509_HEATPRODUCED_WATER_AUX_SUMKWH(Doc.of(OpenemsType.INTEGER).unit(Unit.KILOWATT_HOURS)),
+        IR3509_HEATPRODUCED_NZHWWSUMKWH(Doc.of(OpenemsType.INTEGER).unit(Unit.KILOWATT_HOURS)),
 
         /**
          * Produced heat for warm water total, auxiliary heater. High value.
@@ -388,7 +387,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
          *      <li> Unit: kilowatt hours
          * </ul>
          */
-        IR3510_HEATPRODUCED_WATER_AUX_SUMMWH(Doc.of(OpenemsType.INTEGER).unit(Unit.MEGAWATT_HOURS)),
+        IR3510_HEATPRODUCED_NZHWWSUMMWH(Doc.of(OpenemsType.INTEGER).unit(Unit.MEGAWATT_HOURS)),
 
         /**
          * Produced heat for warm water total, auxiliary heater.
@@ -397,7 +396,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
          *      <li> Unit: kilowatt hours
          * </ul>
          */
-        HEATPRODUCED_WATER_AUX_SUM(Doc.of(OpenemsType.INTEGER).unit(Unit.KILOWATT_HOURS)),
+        HEATPRODUCED_NZHWWSUM(Doc.of(OpenemsType.INTEGER).unit(Unit.KILOWATT_HOURS)),
 
         /**
          * Consumed power for heating the heating circuits, all heat pumps combined for this day.
@@ -406,7 +405,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
          *      <li> Unit: kilowatt hours
          * </ul>
          */
-        IR3511_CONSUMEDPOWER_CIRCUIT_DAILY(Doc.of(OpenemsType.INTEGER).unit(Unit.KILOWATT_HOURS)),
+        IR3511_CONSUMEDPOWER_VDHEIZENTAG(Doc.of(OpenemsType.INTEGER).unit(Unit.KILOWATT_HOURS)),
 
         /**
          * Consumed power for heating the heating circuits total, all heat pumps combined. Low value.
@@ -417,7 +416,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
          *      <li> Unit: kilowatt hours
          * </ul>
          */
-        IR3512_CONSUMEDPOWER_CIRCUIT_SUMKWH(Doc.of(OpenemsType.INTEGER).unit(Unit.KILOWATT_HOURS)),
+        IR3512_CONSUMEDPOWER_VDHEIZENSUMKWH(Doc.of(OpenemsType.INTEGER).unit(Unit.KILOWATT_HOURS)),
 
         /**
          * Consumed power for heating the heating circuits total, all heat pumps combined. High value.
@@ -428,7 +427,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
          *      <li> Unit: megawatt hours
          * </ul>
          */
-        IR3513_CONSUMEDPOWER_CIRCUIT_SUMMWH(Doc.of(OpenemsType.INTEGER).unit(Unit.MEGAWATT_HOURS)),
+        IR3513_CONSUMEDPOWER_VDHEIZENSUMMWH(Doc.of(OpenemsType.INTEGER).unit(Unit.MEGAWATT_HOURS)),
 
         /**
          * Consumed power for heating the heating circuits total, all heat pumps combined.
@@ -437,7 +436,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
          *      <li> Unit: kilowatt hours
          * </ul>
          */
-        CONSUMEDPOWER_CIRCUIT_SUM(Doc.of(OpenemsType.INTEGER).unit(Unit.KILOWATT_HOURS)),
+        CONSUMEDPOWER_VDHEIZENSUM(Doc.of(OpenemsType.INTEGER).unit(Unit.KILOWATT_HOURS)),
 
         /**
          * Consumed power for heating domestic hot water, all heat pumps combined for this day.
@@ -446,7 +445,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
          *      <li> Unit: kilowatt hours
          * </ul>
          */
-        IR3514_CONSUMEDPOWER_WATER_DAILY(Doc.of(OpenemsType.INTEGER).unit(Unit.KILOWATT_HOURS)),
+        IR3514_CONSUMEDPOWER_VDWWTAG(Doc.of(OpenemsType.INTEGER).unit(Unit.KILOWATT_HOURS)),
 
         /**
          * Consumed power for heating domestic hot water total, all heat pumps combined. Low value.
@@ -457,7 +456,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
          *      <li> Unit: kilowatt hours
          * </ul>
          */
-        IR3515_CONSUMEDPOWER_WATER_SUMKWH(Doc.of(OpenemsType.INTEGER).unit(Unit.KILOWATT_HOURS)),
+        IR3515_CONSUMEDPOWER_VDWWSUMKWH(Doc.of(OpenemsType.INTEGER).unit(Unit.KILOWATT_HOURS)),
 
         /**
          * Consumed power for heating domestic hot water total, all heat pumps combined. High value.
@@ -468,7 +467,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
          *      <li> Unit: megawatt hours
          * </ul>
          */
-        IR3516_CONSUMEDPOWER_WATER_SUMMWH(Doc.of(OpenemsType.INTEGER).unit(Unit.MEGAWATT_HOURS)),
+        IR3516_CONSUMEDPOWER_VDWWSUMMWH(Doc.of(OpenemsType.INTEGER).unit(Unit.MEGAWATT_HOURS)),
 
         /**
          * Consumed power for heating domestic hot water total, all heat pumps combined.
@@ -477,7 +476,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
          *      <li> Unit: kilowatt hours
          * </ul>
          */
-        CONSUMEDPOWER_WATER_SUM(Doc.of(OpenemsType.INTEGER).unit(Unit.KILOWATT_HOURS)),
+        CONSUMEDPOWER_VDWWSUM(Doc.of(OpenemsType.INTEGER).unit(Unit.KILOWATT_HOURS)),
 
         /**
          * SG-Ready Operating mode.
@@ -493,7 +492,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
         IR5001_SGREADY_OPERATINGMODE(Doc.of(OpenemsType.INTEGER)),
 
         /**
-         * Controller model id (Reglerkennung).
+         * Controller model (Reglerkennung).
          * <ul>
          *      <li> Type: Integer
          *      <li> Value 103: THZ 303, 403 (Integral/SOL), THD 400 AL, THZ 304 eco, 404 eco, THZ 304/404 FLEX,
@@ -504,7 +503,8 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
          *      <li> Value 449: WPMsystem
          * </ul>
          */
-        IR5002_CONTROLLER_MODEL_ID(Doc.of(OpenemsType.INTEGER)),
+        IR5002_REGLERKENNUNG(Doc.of(OpenemsType.INTEGER)),
+
 
 
         // Holding Registers, read/write. Signed 16 bit, unless stated otherwise.
@@ -522,7 +522,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
          *      <li> State 5: Domestic hot water (Warmwasserbetrieb)
          * </ul>
          */
-        HR1501_OPERATING_MODE(Doc.of(OperatingMode.values()).accessMode(AccessMode.READ_WRITE)),
+        HR1501_BERTIEBSART(Doc.of(OperatingMode.values()).accessMode(AccessMode.READ_WRITE)),
 
         /**
          * Comfort temperature setting, heating circuit 1.
@@ -531,7 +531,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
          *      <li> Unit: Decimal degree Celsius
          * </ul>
          */
-        HR1502_COMFORT_TEMP_HC1(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
+        HR1502_KOMFORTTEMPHK1(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
 
         /**
          * ECO temperature setting, heating circuit 1.
@@ -540,7 +540,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
          *      <li> Unit: Decimal degree Celsius
          * </ul>
          */
-        HR1503_ECO_TEMP_HC1(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
+        HR1503_ECOTEMPHK1(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
 
         /**
          * Heating curve slope setting, heating circuit 1.
@@ -548,7 +548,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
          *      <li> Type: Integer
          * </ul>
          */
-        HR1504_SLOPE_HC1(Doc.of(OpenemsType.INTEGER).accessMode(AccessMode.READ_WRITE)),
+        HR1504_SLOPEHK1(Doc.of(OpenemsType.INTEGER).accessMode(AccessMode.READ_WRITE)),
 
         /**
          * Comfort temperature setting, heating circuit 2.
@@ -557,7 +557,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
          *      <li> Unit: Decimal degree Celsius
          * </ul>
          */
-        HR1505_COMFORT_TEMP_HC2(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
+        HR1505_KOMFORTTEMPHK2(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
 
         /**
          * ECO temperature setting, heating circuit 2.
@@ -566,7 +566,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
          *      <li> Unit: Decimal degree Celsius
          * </ul>
          */
-        HR1506_ECO_TEMP_HC2(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
+        HR1506_ECOTEMPHK2(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
 
         /**
          * Heating curve slope setting, heating circuit 2.
@@ -574,27 +574,27 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
          *      <li> Type: Integer
          * </ul>
          */
-        HR1507_SLOPE_HC2(Doc.of(OpenemsType.INTEGER).accessMode(AccessMode.READ_WRITE)),
+        HR1507_SLOPEHK2(Doc.of(OpenemsType.INTEGER).accessMode(AccessMode.READ_WRITE)),
 
         /**
-         * Constant temperature mode setting (Festwertbetrieb). 0x9000 disables this mode, a temperature value
-         * between 200 and 700 enables this mode.
+         * Constant temperature mode setting. 0x9000 disables this mode, a temperature value between 200 and 700 enables
+         * this mode.
          * <ul>
          *      <li> Type: Integer
          *      <li> Unit: Decimal degree Celsius
          * </ul>
          */
-        HR1508_CONST_TEMP_MODE(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
+        HR1508_FESTWERTBETRIEB(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
 
         /**
-         * Auxiliary heater activation temperature, heating circuit (Bivalenztemperatur). Below this temperature the
-         * auxiliary heater will activate, depending on heat demand.
+         * Auxiliary heater activation temperature, heating circuit. Below this temperature the auxiliary heater will
+         * activate, depending on heat demand.
          * <ul>
          *      <li> Type: Integer
          *      <li> Unit: Decimal degree Celsius
          * </ul>
          */
-        HR1509_CIRCUIT_AUX_ACT_TEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
+        HR1509_BIVALENZTEMPERATURHZG(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
 
         /**
          * Comfort temperature setting, domestic hot water.
@@ -603,7 +603,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
          *      <li> Unit: Decimal degree Celsius
          * </ul>
          */
-        HR1510_COMFORT_TEMP_WATER(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
+        HR1510_KOMFORTTEMPWW(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
 
         /**
          * ECO temperature setting, domestic hot water.
@@ -612,7 +612,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
          *      <li> Unit: Decimal degree Celsius
          * </ul>
          */
-        HR1511_ECO_TEMP_WATER(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
+        HR1511_ECOTEMPWW(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
 
         /**
          * Number of stages, domestic hot water.
@@ -620,7 +620,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
          *      <li> Type: Integer
          * </ul>
          */
-        HR1512_WATER_STAGES(Doc.of(OpenemsType.INTEGER).accessMode(AccessMode.READ_WRITE)),
+        HR1512_WARMWASSERSTUFEN(Doc.of(OpenemsType.INTEGER).accessMode(AccessMode.READ_WRITE)),
 
         /**
          * Auxiliary heater activation temperature, domestic hot water. Below this temperature the auxiliary heater will
@@ -630,7 +630,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
          *      <li> Unit: Decimal degree Celsius
          * </ul>
          */
-        HR1513_WATER_AUX_ACT_TEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
+        HR1513_BIVALENZTEMPERATURWW(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
 
         /**
          * Cooling: Flow temperature setpoint, surface cooling.
@@ -639,7 +639,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
          *      <li> Unit: Decimal degree Celsius
          * </ul>
          */
-        HR1514_SURFACE_COOLING_FLOW_TEMP_SETPOINT(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
+        HR1514_VORLAUFSOLLTEMPFLAECHENKUEHLUNG(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
 
         /**
          * Cooling: Flow temperature hysteresis, surface cooling.
@@ -648,7 +648,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
          *      <li> Unit: Decimal degree Kelvin
          * </ul>
          */
-        HR1515_SURFACE_COOLING_FLOW_TEMP_HYST(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZI_KELVIN).accessMode(AccessMode.READ_WRITE)),
+        HR1515_HYSTERESEVORLAUFTEMPFLAECHENKUEHLUNG(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZI_KELVIN).accessMode(AccessMode.READ_WRITE)),
 
         /**
          * Cooling: Room temperature setpoint, surface cooling.
@@ -657,7 +657,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
          *      <li> Unit: Decimal degree Celsius
          * </ul>
          */
-        HR1516_SURFACE_COOLING_ROOM_TEMP_SETPOINT(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
+        HR1516_RAUMSOLLTEMPFLAECHENKUEHLUNG(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
 
         /**
          * Cooling: Flow temperature setpoint, ventilation cooling.
@@ -666,7 +666,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
          *      <li> Unit: Decimal degree Celsius
          * </ul>
          */
-        HR1517_VENT_COOLING_FLOW_TEMP_SETPOINT(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
+        HR1517_VORLAUFSOLLTEMPGEBLAESEKUEHLUNG(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
 
         /**
          * Cooling: Flow temperature hysteresis, ventilation cooling.
@@ -675,7 +675,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
          *      <li> Unit: Decimal degree Kelvin
          * </ul>
          */
-        HR1518_VENT_COOLING_FLOW_TEMP_HYST(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZI_KELVIN).accessMode(AccessMode.READ_WRITE)),
+        HR1518_HYSTERESEVORLAUFTEMPGEBLAESEKUEHLUNG(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZI_KELVIN).accessMode(AccessMode.READ_WRITE)),
 
         /**
          * Cooling: Room temperature setpoint, ventilation cooling.
@@ -684,7 +684,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
          *      <li> Unit: Decimal degree Celsius
          * </ul>
          */
-        HR1519_VENT_COOLING_ROOM_TEMP_SETPOINT(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
+        HR1519_RAUMSOLLTEMPGEBLAESEKUEHLUNG(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
 
         /**
          * Turn on/off SG-Ready mode.
@@ -726,12 +726,12 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
     // Input Registers. Read only.
 
     /**
-     * Gets the Channel for {@link ChannelId#IR507_OUTSIDE_TEMP}.
+     * Gets the Channel for {@link ChannelId#IR507_AUSSENTEMP}.
      *
      * @return the Channel
      */
     public default IntegerReadChannel getOutsideTempChannel() {
-        return this.channel(ChannelId.IR507_OUTSIDE_TEMP);
+        return this.channel(ChannelId.IR507_AUSSENTEMP);
     }
 
     /**
@@ -744,12 +744,12 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
     }
 
     /**
-     * Gets the Channel for {@link ChannelId#IR508_TEMP_HC1}.
+     * Gets the Channel for {@link ChannelId#IR508_ISTTEMPHK1}.
      *
      * @return the Channel
      */
     public default IntegerReadChannel getCircuit1TempChannel() {
-        return this.channel(ChannelId.IR508_TEMP_HC1);
+        return this.channel(ChannelId.IR508_ISTTEMPHK1);
     }
 
     /**
@@ -762,12 +762,12 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
     }
 
     /**
-     * Gets the Channel for {@link ChannelId#TEMP_HC1_SETPOINT}.
+     * Gets the Channel for {@link ChannelId#SOLLTEMPHK1}.
      *
      * @return the Channel
      */
     public default IntegerReadChannel getCircuit1SetpointTempChannel() {
-        return this.channel(ChannelId.TEMP_HC1_SETPOINT);
+        return this.channel(ChannelId.SOLLTEMPHK1);
     }
 
     /**
@@ -780,12 +780,12 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
     }
 
     /**
-     * Gets the Channel for {@link ChannelId#IR511_TEMP_HC2}.
+     * Gets the Channel for {@link ChannelId#IR511_ISTTEMPHK2}.
      *
      * @return the Channel
      */
     public default IntegerReadChannel getCircuit2TempChannel() {
-        return this.channel(ChannelId.IR511_TEMP_HC2);
+        return this.channel(ChannelId.IR511_ISTTEMPHK2);
     }
 
     /**
@@ -798,12 +798,12 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
     }
 
     /**
-     * Gets the Channel for {@link ChannelId#IR512_TEMP_HC2_SETPOINT}.
+     * Gets the Channel for {@link ChannelId#IR512_SOLLTEMPHK2}.
      *
      * @return the Channel
      */
     public default IntegerReadChannel getCircuit2SetpointTempChannel() {
-        return this.channel(ChannelId.IR512_TEMP_HC2_SETPOINT);
+        return this.channel(ChannelId.IR512_SOLLTEMPHK2);
     }
 
     /**
@@ -816,12 +816,12 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
     }
 
     /**
-     * Gets the Channel for {@link ChannelId#IR513_FLOW_TEMP_HEAT_PUMP}.
+     * Gets the Channel for {@link ChannelId#IR513_VORLAUFISTTEMPWP}.
      *
      * @return the Channel
      */
     public default IntegerReadChannel getFlowTempHeatPumpChannel() {
-        return this.channel(ChannelId.IR513_FLOW_TEMP_HEAT_PUMP);
+        return this.channel(ChannelId.IR513_VORLAUFISTTEMPWP);
     }
 
     /**
@@ -834,12 +834,12 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
     }
 
     /**
-     * Gets the Channel for {@link ChannelId#IR514_FLOW_TEMP_AUX}.
+     * Gets the Channel for {@link ChannelId#IR514_VORLAUFISTTEMPNHZ}.
      *
      * @return the Channel
      */
     public default IntegerReadChannel getFlowTempAuxHeaterChannel() {
-        return this.channel(ChannelId.IR514_FLOW_TEMP_AUX);
+        return this.channel(ChannelId.IR514_VORLAUFISTTEMPNHZ);
     }
 
     /**
@@ -852,12 +852,12 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
     }
 
     /**
-     * Gets the Channel for {@link ChannelId#IR517_CONST_TEMP_SETPOINT}.
+     * Gets the Channel for {@link ChannelId#IR517_FESTWERTSOLLTEMP}.
      *
      * @return the Channel
      */
     public default IntegerReadChannel getConstTempSetpointChannel() {
-        return this.channel(ChannelId.IR517_CONST_TEMP_SETPOINT);
+        return this.channel(ChannelId.IR517_FESTWERTSOLLTEMP);
     }
 
     /**
@@ -870,12 +870,12 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
     }
 
     /**
-     * Gets the Channel for {@link ChannelId#IR518_STORAGE_TANK_TEMP}.
+     * Gets the Channel for {@link ChannelId#IR518_PUFFERISTTEMP}.
      *
      * @return the Channel
      */
     public default IntegerReadChannel getStorageTankTempChannel() {
-        return this.channel(ChannelId.IR518_STORAGE_TANK_TEMP);
+        return this.channel(ChannelId.IR518_PUFFERISTTEMP);
     }
 
     /**
@@ -888,12 +888,12 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
     }
 
     /**
-     * Gets the Channel for {@link ChannelId#IR519_STORAGE_TANK_TEMP_SETPOINT}.
+     * Gets the Channel for {@link ChannelId#IR519_PUFFERSOLLTEMP}.
      *
      * @return the Channel
      */
     public default IntegerReadChannel getStorageTankTempSetpointChannel() {
-        return this.channel(ChannelId.IR519_STORAGE_TANK_TEMP_SETPOINT);
+        return this.channel(ChannelId.IR519_PUFFERSOLLTEMP);
     }
 
     /**
@@ -906,12 +906,12 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
     }
 
     /**
-     * Gets the Channel for {@link ChannelId#IR520_CIRCUIT_PRESSURE}.
+     * Gets the Channel for {@link ChannelId#IR520_HEIZUNGSDRUCK}.
      *
      * @return the Channel
      */
     public default IntegerReadChannel getHeatingCircuitPressureChannel() {
-        return this.channel(ChannelId.IR520_CIRCUIT_PRESSURE);
+        return this.channel(ChannelId.IR520_HEIZUNGSDRUCK);
     }
 
     /**
@@ -924,12 +924,12 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
     }
 
     /**
-     * Gets the Channel for {@link ChannelId#IR521_CIRCUIT_CURRENT}.
+     * Gets the Channel for {@link ChannelId#IR521_VOLUMENSTROM}.
      *
      * @return the Channel
      */
     public default IntegerReadChannel getHeatingCircuitCurrentChannel() {
-        return this.channel(ChannelId.IR521_CIRCUIT_CURRENT);
+        return this.channel(ChannelId.IR521_VOLUMENSTROM);
     }
 
     /**
@@ -942,12 +942,12 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
     }
 
     /**
-     * Gets the Channel for {@link ChannelId#IR522_WATER_TEMP}.
+     * Gets the Channel for {@link ChannelId#IR522_WWISTTEMP}.
      *
      * @return the Channel
      */
     public default IntegerReadChannel getDomesticHotWaterTempChannel() {
-        return this.channel(ChannelId.IR522_WATER_TEMP);
+        return this.channel(ChannelId.IR522_WWISTTEMP);
     }
 
     /**
@@ -960,12 +960,12 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
     }
 
     /**
-     * Gets the Channel for {@link ChannelId#IR523_WATER_TEMP_SETPOINT}.
+     * Gets the Channel for {@link ChannelId#IR523_WWSOLLTEMP}.
      *
      * @return the Channel
      */
     public default IntegerReadChannel getDomesticHotWaterTempSetpointChannel() {
-        return this.channel(ChannelId.IR523_WATER_TEMP_SETPOINT);
+        return this.channel(ChannelId.IR523_WWSOLLTEMP);
     }
 
     /**
@@ -978,12 +978,12 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
     }
 
     /**
-     * Gets the Channel for {@link ChannelId#IR524_VENT_COOLING_TEMP}.
+     * Gets the Channel for {@link ChannelId#IR524_GEBLAESEISTTEMP}.
      *
      * @return the Channel
      */
     public default IntegerReadChannel getVentilationCoolingTempChannel() {
-        return this.channel(ChannelId.IR524_VENT_COOLING_TEMP);
+        return this.channel(ChannelId.IR524_GEBLAESEISTTEMP);
     }
 
     /**
@@ -996,12 +996,12 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
     }
 
     /**
-     * Gets the Channel for {@link ChannelId#IR525_VENT_COOLING_TEMP_SETPOINT}.
+     * Gets the Channel for {@link ChannelId#IR525_GEBLAESESOLLTEMP}.
      *
      * @return the Channel
      */
     public default IntegerReadChannel getVentilationCoolingTempSetpointChannel() {
-        return this.channel(ChannelId.IR525_VENT_COOLING_TEMP_SETPOINT);
+        return this.channel(ChannelId.IR525_GEBLAESESOLLTEMP);
     }
 
     /**
@@ -1014,12 +1014,12 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
     }
 
     /**
-     * Gets the Channel for {@link ChannelId#IR526_SURFACE_COOLING_TEMP}.
+     * Gets the Channel for {@link ChannelId#IR526_FLAECHEISTTEMP}.
      *
      * @return the Channel
      */
     public default IntegerReadChannel getSurfaceCoolingTempChannel() {
-        return this.channel(ChannelId.IR526_SURFACE_COOLING_TEMP);
+        return this.channel(ChannelId.IR526_FLAECHEISTTEMP);
     }
 
     /**
@@ -1032,12 +1032,12 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
     }
 
     /**
-     * Gets the Channel for {@link ChannelId#IR527_SURFACE_COOLING_TEMP_SETPOINT}.
+     * Gets the Channel for {@link ChannelId#IR527_FLAECHESOLLTEMP}.
      *
      * @return the Channel
      */
     public default IntegerReadChannel getSurfaceCoolingTempSetpointChannel() {
-        return this.channel(ChannelId.IR527_SURFACE_COOLING_TEMP_SETPOINT);
+        return this.channel(ChannelId.IR527_FLAECHESOLLTEMP);
     }
 
     /**
@@ -1068,12 +1068,12 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
     }
 
     /**
-     * Gets the Channel for {@link ChannelId#IR2502_ELSUP_BLOCK_RELEASE}.
+     * Gets the Channel for {@link ChannelId#IR2502_EVUFREIGABE}.
      *
      * @return the Channel
      */
     public default BooleanReadChannel getElSupBlockReleaseChannel() {
-        return this.channel(ChannelId.IR2502_ELSUP_BLOCK_RELEASE);
+        return this.channel(ChannelId.IR2502_EVUFREIGABE);
     }
 
     /**
@@ -1158,12 +1158,12 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
     }
 
     /**
-     * Gets the Channel for {@link ChannelId#IR3501_HEATPRODUCED_CIRCUIT_DAILY}.
+     * Gets the Channel for {@link ChannelId#IR3501_HEATPRODUCED_VDHEIZENTAG}.
      *
      * @return the Channel
      */
     public default IntegerReadChannel getProducedHeatCircuitDailyChannel() {
-        return this.channel(ChannelId.IR3501_HEATPRODUCED_CIRCUIT_DAILY);
+        return this.channel(ChannelId.IR3501_HEATPRODUCED_VDHEIZENTAG);
     }
 
     /**
@@ -1176,12 +1176,12 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
     }
 
     /**
-     * Gets the Channel for {@link ChannelId#HEATPRODUCED_CIRCUIT_SUM}.
+     * Gets the Channel for {@link ChannelId#HEATPRODUCED_VDHEIZENSUM}.
      *
      * @return the Channel
      */
     public default IntegerReadChannel getProducedHeatCircuitTotalChannel() {
-        return this.channel(ChannelId.HEATPRODUCED_CIRCUIT_SUM);
+        return this.channel(ChannelId.HEATPRODUCED_VDHEIZENSUM);
     }
 
     /**
@@ -1194,12 +1194,12 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
     }
 
     /**
-     * Gets the Channel for {@link ChannelId#IR3504_HEATPRODUCED_WATER_DAILY}.
+     * Gets the Channel for {@link ChannelId#IR3504_HEATPRODUCED_VDWWTAG}.
      *
      * @return the Channel
      */
     public default IntegerReadChannel getProducedHeatWaterDailyChannel() {
-        return this.channel(ChannelId.IR3504_HEATPRODUCED_WATER_DAILY);
+        return this.channel(ChannelId.IR3504_HEATPRODUCED_VDWWTAG);
     }
 
     /**
@@ -1212,12 +1212,12 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
     }
 
     /**
-     * Gets the Channel for {@link ChannelId#HEATPRODUCED_WATER_SUM}.
+     * Gets the Channel for {@link ChannelId#HEATPRODUCED_VDWWSUM}.
      *
      * @return the Channel
      */
     public default IntegerReadChannel getProducedHeatWaterTotalChannel() {
-        return this.channel(ChannelId.HEATPRODUCED_WATER_SUM);
+        return this.channel(ChannelId.HEATPRODUCED_VDWWSUM);
     }
 
     /**
@@ -1230,12 +1230,12 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
     }
 
     /**
-     * Gets the Channel for {@link ChannelId#HEATPRODUCED_AUX_SUM}.
+     * Gets the Channel for {@link ChannelId#HEATPRODUCED_NZHHEIZENSUM}.
      *
      * @return the Channel
      */
     public default IntegerReadChannel getProducedHeatCircuitTotalAuxChannel() {
-        return this.channel(ChannelId.HEATPRODUCED_AUX_SUM);
+        return this.channel(ChannelId.HEATPRODUCED_NZHHEIZENSUM);
     }
 
     /**
@@ -1248,12 +1248,12 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
     }
 
     /**
-     * Gets the Channel for {@link ChannelId#HEATPRODUCED_WATER_AUX_SUM}.
+     * Gets the Channel for {@link ChannelId#HEATPRODUCED_NZHWWSUM}.
      *
      * @return the Channel
      */
     public default IntegerReadChannel getProducedHeatWaterTotalAuxChannel() {
-        return this.channel(ChannelId.HEATPRODUCED_WATER_AUX_SUM);
+        return this.channel(ChannelId.HEATPRODUCED_NZHWWSUM);
     }
 
     /**
@@ -1266,12 +1266,12 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
     }
 
     /**
-     * Gets the Channel for {@link ChannelId#IR3511_CONSUMEDPOWER_CIRCUIT_DAILY}.
+     * Gets the Channel for {@link ChannelId#IR3511_CONSUMEDPOWER_VDHEIZENTAG}.
      *
      * @return the Channel
      */
     public default IntegerReadChannel getConsumedPowerCircuitDailyChannel() {
-        return this.channel(ChannelId.IR3511_CONSUMEDPOWER_CIRCUIT_DAILY);
+        return this.channel(ChannelId.IR3511_CONSUMEDPOWER_VDHEIZENTAG);
     }
 
     /**
@@ -1284,12 +1284,12 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
     }
 
     /**
-     * Gets the Channel for {@link ChannelId#CONSUMEDPOWER_CIRCUIT_SUM}.
+     * Gets the Channel for {@link ChannelId#CONSUMEDPOWER_VDHEIZENSUM}.
      *
      * @return the Channel
      */
     public default IntegerReadChannel getConsumedPowerCircuitTotalChannel() {
-        return this.channel(ChannelId.CONSUMEDPOWER_CIRCUIT_SUM);
+        return this.channel(ChannelId.CONSUMEDPOWER_VDHEIZENSUM);
     }
 
     /**
@@ -1302,12 +1302,12 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
     }
 
     /**
-     * Gets the Channel for {@link ChannelId#IR3514_CONSUMEDPOWER_WATER_DAILY}.
+     * Gets the Channel for {@link ChannelId#IR3514_CONSUMEDPOWER_VDWWTAG}.
      *
      * @return the Channel
      */
     public default IntegerReadChannel getConsumedPowerWaterDailyChannel() {
-        return this.channel(ChannelId.IR3514_CONSUMEDPOWER_WATER_DAILY);
+        return this.channel(ChannelId.IR3514_CONSUMEDPOWER_VDWWTAG);
     }
 
     /**
@@ -1320,12 +1320,12 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
     }
 
     /**
-     * Gets the Channel for {@link ChannelId#CONSUMEDPOWER_WATER_SUM}.
+     * Gets the Channel for {@link ChannelId#CONSUMEDPOWER_VDWWSUM}.
      *
      * @return the Channel
      */
     public default IntegerReadChannel getConsumedPowerWaterTotalChannel() {
-        return this.channel(ChannelId.CONSUMEDPOWER_WATER_SUM);
+        return this.channel(ChannelId.CONSUMEDPOWER_VDWWSUM);
     }
 
     /**
@@ -1364,16 +1364,16 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
     }
 
     /**
-     * Gets the Channel for {@link ChannelId#IR5002_CONTROLLER_MODEL_ID}.
+     * Gets the Channel for {@link ChannelId#IR5002_REGLERKENNUNG}.
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getControllerModelIdChannel() {
-        return this.channel(ChannelId.IR5002_CONTROLLER_MODEL_ID);
+    public default IntegerReadChannel getControllerModelChannel() {
+        return this.channel(ChannelId.IR5002_REGLERKENNUNG);
     }
 
     /**
-     * Controller model id (Reglerkennung).
+     * Controller model (Reglerkennung).
      * <ul>
      *      <li> Type: Integer
      *      <li> Value 103: THZ 303, 403 (Integral/SOL), THD 400 AL, THZ 304 eco, 404 eco, THZ 304/404 FLEX,
@@ -1386,20 +1386,20 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getControllerModelId() {
-        return this.getControllerModelIdChannel().value();
+    public default Value<Integer> getControllerModel() {
+        return this.getControllerModelChannel().value();
     }
 
 
     // Holding Registers. Read/Write.
 
     /**
-     * Gets the Channel for {@link ChannelId#HR1501_OPERATING_MODE}.
+     * Gets the Channel for {@link ChannelId#HR1501_BERTIEBSART}.
      *
      * @return the Channel
      */
     public default IntegerWriteChannel getOperatingModeChannel() {
-        return this.channel(ChannelId.HR1501_OPERATING_MODE);
+        return this.channel(ChannelId.HR1501_BERTIEBSART);
     }
 
     /**
@@ -1414,7 +1414,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
      *      <li> State 4: ECO mode (ECO-Betrieb)
      *      <li> State 5: Domestic hot water (Warmwasserbetrieb)
      * </ul>
-	 * See {@link ChannelId#HR1501_OPERATING_MODE}.
+	 * See {@link ChannelId#HR1501_BERTIEBSART}.
 	 *
 	 * @return the Channel {@link Value}
 	 */
@@ -1434,7 +1434,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
      *      <li> State 4: ECO mode (ECO-Betrieb)
      *      <li> State 5: Domestic hot water (Warmwasserbetrieb)
      * </ul> 
-	 * See {@link ChannelId#HR1501_OPERATING_MODE}.
+	 * See {@link ChannelId#HR1501_BERTIEBSART}.
 	 * 
 	 * @param value the next write value
 	 * @throws OpenemsNamedException on error
@@ -1455,7 +1455,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
      *      <li> State 4: ECO mode (ECO-Betrieb)
      *      <li> State 5: Domestic hot water (Warmwasserbetrieb)
      * </ul>
-     * See {@link ChannelId#HR1501_OPERATING_MODE}.
+     * See {@link ChannelId#HR1501_BERTIEBSART}.
      *
      * @param value the next write value
      * @throws OpenemsNamedException on error
@@ -1465,17 +1465,17 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
     }
     
     /**
-     * Gets the Channel for {@link ChannelId#HR1502_COMFORT_TEMP_HC1}.
+     * Gets the Channel for {@link ChannelId#HR1502_KOMFORTTEMPHK1}.
      *
      * @return the Channel
      */
     public default IntegerWriteChannel getComfortTempCircuit1Channel() {
-        return this.channel(ChannelId.HR1502_COMFORT_TEMP_HC1);
+        return this.channel(ChannelId.HR1502_KOMFORTTEMPHK1);
     }
     
     /**
      * Get the comfort temperature setting, heating circuit 1. Unit is dezidegree Celsius.
-	 * See {@link ChannelId#HR1502_COMFORT_TEMP_HC1}.
+	 * See {@link ChannelId#HR1502_KOMFORTTEMPHK1}.
 	 *
 	 * @return the Channel {@link Value}
 	 */
@@ -1485,7 +1485,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
 	
 	/**
      * Set the comfort temperature setting, heating circuit 1. Unit is dezidegree Celsius.
-	 * See {@link ChannelId#HR1502_COMFORT_TEMP_HC1}.
+	 * See {@link ChannelId#HR1502_KOMFORTTEMPHK1}.
 	 * 
 	 * @param value the next write value
 	 * @throws OpenemsNamedException on error
@@ -1496,7 +1496,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
 
     /**
      * Set the comfort temperature setting, heating circuit 1. Unit is dezidegree Celsius.
-     * See {@link ChannelId#HR1502_COMFORT_TEMP_HC1}.
+     * See {@link ChannelId#HR1502_KOMFORTTEMPHK1}.
      *
      * @param value the next write value
      * @throws OpenemsNamedException on error
@@ -1506,17 +1506,17 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
     }
 
     /**
-     * Gets the Channel for {@link ChannelId#HR1503_ECO_TEMP_HC1}.
+     * Gets the Channel for {@link ChannelId#HR1503_ECOTEMPHK1}.
      *
      * @return the Channel
      */
     public default IntegerWriteChannel getEcoTempCircuit1Channel() {
-        return this.channel(ChannelId.HR1503_ECO_TEMP_HC1);
+        return this.channel(ChannelId.HR1503_ECOTEMPHK1);
     }
 
     /**
      * Get the ECO temperature setting, heating circuit 1. Unit is dezidegree Celsius.
-	 * See {@link ChannelId#HR1503_ECO_TEMP_HC1}.
+	 * See {@link ChannelId#HR1503_ECOTEMPHK1}.
 	 *
 	 * @return the Channel {@link Value}
 	 */
@@ -1526,7 +1526,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
 	
 	/**
      * Set the ECO temperature setting, heating circuit 1. Unit is dezidegree Celsius.
-	 * See {@link ChannelId#HR1503_ECO_TEMP_HC1}.
+	 * See {@link ChannelId#HR1503_ECOTEMPHK1}.
 	 * 
 	 * @param value the next write value
 	 * @throws OpenemsNamedException on error
@@ -1537,7 +1537,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
 
     /**
      * Set the ECO temperature setting, heating circuit 1. Unit is dezidegree Celsius.
-     * See {@link ChannelId#HR1503_ECO_TEMP_HC1}.
+     * See {@link ChannelId#HR1503_ECOTEMPHK1}.
      *
      * @param value the next write value
      * @throws OpenemsNamedException on error
@@ -1547,17 +1547,17 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
     }
     
     /**
-     * Gets the Channel for {@link ChannelId#HR1504_SLOPE_HC1}.
+     * Gets the Channel for {@link ChannelId#HR1504_SLOPEHK1}.
      *
      * @return the Channel
      */
     public default IntegerWriteChannel getHeatingCurveSlopeCircuit1Channel() {
-        return this.channel(ChannelId.HR1504_SLOPE_HC1);
+        return this.channel(ChannelId.HR1504_SLOPEHK1);
     }
 
     /**
      * Get the heating curve slope setting, heating circuit 1.
-	 * See {@link ChannelId#HR1504_SLOPE_HC1}.
+	 * See {@link ChannelId#HR1504_SLOPEHK1}.
 	 *
 	 * @return the Channel {@link Value}
 	 */
@@ -1567,7 +1567,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
 	
 	/**
      * Set the heating curve slope setting, heating circuit 1.
-	 * See {@link ChannelId#HR1504_SLOPE_HC1}.
+	 * See {@link ChannelId#HR1504_SLOPEHK1}.
 	 * 
 	 * @param value the next write value
 	 * @throws OpenemsNamedException on error
@@ -1578,7 +1578,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
 
     /**
      * Set the heating curve slope setting, heating circuit 1.
-     * See {@link ChannelId#HR1504_SLOPE_HC1}.
+     * See {@link ChannelId#HR1504_SLOPEHK1}.
      *
      * @param value the next write value
      * @throws OpenemsNamedException on error
@@ -1588,17 +1588,17 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
     }
     
     /**
-     * Gets the Channel for {@link ChannelId#HR1505_COMFORT_TEMP_HC2}.
+     * Gets the Channel for {@link ChannelId#HR1505_KOMFORTTEMPHK2}.
      *
      * @return the Channel
      */
     public default IntegerWriteChannel getComfortTempCircuit2Channel() {
-        return this.channel(ChannelId.HR1505_COMFORT_TEMP_HC2);
+        return this.channel(ChannelId.HR1505_KOMFORTTEMPHK2);
     }
 
     /**
      * Get the comfort temperature setting, heating circuit 2. Unit is dezidegree Celsius.
-	 * See {@link ChannelId#HR1505_COMFORT_TEMP_HC2}.
+	 * See {@link ChannelId#HR1505_KOMFORTTEMPHK2}.
 	 *
 	 * @return the Channel {@link Value}
 	 */
@@ -1608,7 +1608,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
 	
 	/**
      * Set the comfort temperature setting, heating circuit 2. Unit is dezidegree Celsius.
-	 * See {@link ChannelId#HR1505_COMFORT_TEMP_HC2}.
+	 * See {@link ChannelId#HR1505_KOMFORTTEMPHK2}.
 	 * 
 	 * @param value the next write value
 	 * @throws OpenemsNamedException on error
@@ -1619,7 +1619,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
 
     /**
      * Set the comfort temperature setting, heating circuit 2. Unit is dezidegree Celsius.
-     * See {@link ChannelId#HR1505_COMFORT_TEMP_HC2}.
+     * See {@link ChannelId#HR1505_KOMFORTTEMPHK2}.
      *
      * @param value the next write value
      * @throws OpenemsNamedException on error
@@ -1629,17 +1629,17 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
     }
     
     /**
-     * Gets the Channel for {@link ChannelId#HR1506_ECO_TEMP_HC2}.
+     * Gets the Channel for {@link ChannelId#HR1506_ECOTEMPHK2}.
      *
      * @return the Channel
      */
     public default IntegerWriteChannel getEcoTempCircuit2Channel() {
-        return this.channel(ChannelId.HR1506_ECO_TEMP_HC2);
+        return this.channel(ChannelId.HR1506_ECOTEMPHK2);
     }
 
     /**
      * Get the ECO temperature setting, heating circuit 2. Unit is dezidegree Celsius.
-	 * See {@link ChannelId#HR1506_ECO_TEMP_HC2}.
+	 * See {@link ChannelId#HR1506_ECOTEMPHK2}.
 	 *
 	 * @return the Channel {@link Value}
 	 */
@@ -1649,7 +1649,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
 	
 	/**
      * Set the ECO temperature setting, heating circuit 2. Unit is dezidegree Celsius.
-	 * See {@link ChannelId#HR1506_ECO_TEMP_HC2}.
+	 * See {@link ChannelId#HR1506_ECOTEMPHK2}.
 	 * 
 	 * @param value the next write value
 	 * @throws OpenemsNamedException on error
@@ -1660,7 +1660,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
 
     /**
      * Set the ECO temperature setting, heating circuit 2. Unit is dezidegree Celsius.
-     * See {@link ChannelId#HR1506_ECO_TEMP_HC2}.
+     * See {@link ChannelId#HR1506_ECOTEMPHK2}.
      *
      * @param value the next write value
      * @throws OpenemsNamedException on error
@@ -1670,17 +1670,17 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
     }
     
     /**
-     * Gets the Channel for {@link ChannelId#HR1507_SLOPE_HC2}.
+     * Gets the Channel for {@link ChannelId#HR1507_SLOPEHK2}.
      *
      * @return the Channel
      */
     public default IntegerWriteChannel getHeatingCurveSlopeCircuit2Channel() {
-        return this.channel(ChannelId.HR1507_SLOPE_HC2);
+        return this.channel(ChannelId.HR1507_SLOPEHK2);
     }
 
     /**
      * Get the Heating curve slope setting, heating circuit 2.
-	 * See {@link ChannelId#HR1507_SLOPE_HC2}.
+	 * See {@link ChannelId#HR1507_SLOPEHK2}.
 	 *
 	 * @return the Channel {@link Value}
 	 */
@@ -1690,7 +1690,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
 	
 	/**
      * Set the Heating curve slope setting, heating circuit 2.
-	 * See {@link ChannelId#HR1507_SLOPE_HC2}.
+	 * See {@link ChannelId#HR1507_SLOPEHK2}.
 	 * 
 	 * @param value the next write value
 	 * @throws OpenemsNamedException on error
@@ -1701,7 +1701,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
 
     /**
      * Set the Heating curve slope setting, heating circuit 2.
-     * See {@link ChannelId#HR1507_SLOPE_HC2}.
+     * See {@link ChannelId#HR1507_SLOPEHK2}.
      *
      * @param value the next write value
      * @throws OpenemsNamedException on error
@@ -1711,18 +1711,18 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
     }
     
     /**
-     * Gets the Channel for {@link ChannelId#HR1508_CONST_TEMP_MODE}.
+     * Gets the Channel for {@link ChannelId#HR1508_FESTWERTBETRIEB}.
      *
      * @return the Channel
      */
     public default IntegerWriteChannel getConstTempOperationModeChannel() {
-        return this.channel(ChannelId.HR1508_CONST_TEMP_MODE);
+        return this.channel(ChannelId.HR1508_FESTWERTBETRIEB);
     }
 
     /**
      * Get the constant temperature mode setting. A value of 0x9000 means disabled. When enabled, the value will be
      * a temperature value between 200 and 700. Unit is dezidegree Celsius.
-	 * See {@link ChannelId#HR1508_CONST_TEMP_MODE}.
+	 * See {@link ChannelId#HR1508_FESTWERTBETRIEB}.
 	 *
 	 * @return the Channel {@link Value}
 	 */
@@ -1733,7 +1733,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
 	/**
      * Set the constant temperature mode setting. 0x9000 disables this mode, a temperature value between 200 and 700
      * enables this mode. Unit is dezidegree Celsius.
-	 * See {@link ChannelId#HR1508_CONST_TEMP_MODE}.
+	 * See {@link ChannelId#HR1508_FESTWERTBETRIEB}.
 	 * 
 	 * @param value the next write value
 	 * @throws OpenemsNamedException on error
@@ -1745,7 +1745,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
     /**
      * Set the constant temperature mode setting. 0x9000 disables this mode, a temperature value between 200 and 700
      * enables this mode. Unit is dezidegree Celsius.
-     * See {@link ChannelId#HR1508_CONST_TEMP_MODE}.
+     * See {@link ChannelId#HR1508_FESTWERTBETRIEB}.
      *
      * @param value the next write value
      * @throws OpenemsNamedException on error
@@ -1755,18 +1755,18 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
     }
     
     /**
-     * Gets the Channel for {@link ChannelId#HR1509_CIRCUIT_AUX_ACT_TEMP}.
+     * Gets the Channel for {@link ChannelId#HR1509_BIVALENZTEMPERATURHZG}.
      *
      * @return the Channel
      */
     public default IntegerWriteChannel getAuxHeaterActivationTempCircuitChannel() {
-        return this.channel(ChannelId.HR1509_CIRCUIT_AUX_ACT_TEMP);
+        return this.channel(ChannelId.HR1509_BIVALENZTEMPERATURHZG);
     }
 
     /**
      * Get the auxiliary heater activation temperature of the heating circuit. Below this temperature the auxiliary
      * heater will activate, depending on heat demand. Unit is dezidegree Celsius.
-	 * See {@link ChannelId#HR1509_CIRCUIT_AUX_ACT_TEMP}.
+	 * See {@link ChannelId#HR1509_BIVALENZTEMPERATURHZG}.
 	 *
 	 * @return the Channel {@link Value}
 	 */
@@ -1777,7 +1777,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
 	/**
      * Set the auxiliary heater activation temperature of the heating circuit. Below this temperature the auxiliary
      * heater will activate, depending on heat demand. Unit is dezidegree Celsius.
-	 * See {@link ChannelId#HR1509_CIRCUIT_AUX_ACT_TEMP}.
+	 * See {@link ChannelId#HR1509_BIVALENZTEMPERATURHZG}.
 	 * 
 	 * @param value the next write value
 	 * @throws OpenemsNamedException on error
@@ -1789,7 +1789,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
     /**
      * Set the auxiliary heater activation temperature of the heating circuit. Below this temperature the auxiliary
      * heater will activate, depending on heat demand. Unit is dezidegree Celsius.
-     * See {@link ChannelId#HR1509_CIRCUIT_AUX_ACT_TEMP}.
+     * See {@link ChannelId#HR1509_BIVALENZTEMPERATURHZG}.
      *
      * @param value the next write value
      * @throws OpenemsNamedException on error
@@ -1799,17 +1799,17 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
     }
     
     /**
-     * Gets the Channel for {@link ChannelId#HR1510_COMFORT_TEMP_WATER}.
+     * Gets the Channel for {@link ChannelId#HR1510_KOMFORTTEMPWW}.
      *
      * @return the Channel
      */
     public default IntegerWriteChannel getDomesticHotWaterComfortTempChannel() {
-        return this.channel(ChannelId.HR1510_COMFORT_TEMP_WATER);
+        return this.channel(ChannelId.HR1510_KOMFORTTEMPWW);
     }
 
     /**
      * Get the comfort temperature setting for domestic hot water. Unit is dezidegree Celsius.
-	 * See {@link ChannelId#HR1510_COMFORT_TEMP_WATER}.
+	 * See {@link ChannelId#HR1510_KOMFORTTEMPWW}.
 	 *
 	 * @return the Channel {@link Value}
 	 */
@@ -1819,7 +1819,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
 	
 	/**
      * Set the comfort temperature setting for domestic hot water. Unit is dezidegree Celsius.
-	 * See {@link ChannelId#HR1510_COMFORT_TEMP_WATER}.
+	 * See {@link ChannelId#HR1510_KOMFORTTEMPWW}.
 	 * 
 	 * @param value the next write value
 	 * @throws OpenemsNamedException on error
@@ -1830,7 +1830,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
 
     /**
      * Set the comfort temperature setting for domestic hot water. Unit is dezidegree Celsius.
-     * See {@link ChannelId#HR1510_COMFORT_TEMP_WATER}.
+     * See {@link ChannelId#HR1510_KOMFORTTEMPWW}.
      *
      * @param value the next write value
      * @throws OpenemsNamedException on error
@@ -1840,17 +1840,17 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
     }
     
     /**
-     * Gets the Channel for {@link ChannelId#HR1511_ECO_TEMP_WATER}.
+     * Gets the Channel for {@link ChannelId#HR1511_ECOTEMPWW}.
      *
      * @return the Channel
      */
     public default IntegerWriteChannel getDomesticHotWaterEcoTempChannel() {
-        return this.channel(ChannelId.HR1511_ECO_TEMP_WATER);
+        return this.channel(ChannelId.HR1511_ECOTEMPWW);
     }
 
     /**
      * Get the ECO temperature setting for domestic hot water. Unit is dezidegree Celsius.
-	 * See {@link ChannelId#HR1511_ECO_TEMP_WATER}.
+	 * See {@link ChannelId#HR1511_ECOTEMPWW}.
 	 *
 	 * @return the Channel {@link Value}
 	 */
@@ -1860,7 +1860,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
 	
 	/**
      * Set the ECO temperature setting for domestic hot water. Unit is dezidegree Celsius.
-	 * See {@link ChannelId#HR1511_ECO_TEMP_WATER}.
+	 * See {@link ChannelId#HR1511_ECOTEMPWW}.
 	 * 
 	 * @param value the next write value
 	 * @throws OpenemsNamedException on error
@@ -1871,7 +1871,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
 
     /**
      * Set the ECO temperature setting for domestic hot water. Unit is dezidegree Celsius.
-     * See {@link ChannelId#HR1511_ECO_TEMP_WATER}.
+     * See {@link ChannelId#HR1511_ECOTEMPWW}.
      *
      * @param value the next write value
      * @throws OpenemsNamedException on error
@@ -1881,17 +1881,17 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
     }
     
     /**
-     * Gets the Channel for {@link ChannelId#HR1512_WATER_STAGES}.
+     * Gets the Channel for {@link ChannelId#HR1512_WARMWASSERSTUFEN}.
      *
      * @return the Channel
      */
     public default IntegerWriteChannel getDomesticHotWaterStagesChannel() {
-        return this.channel(ChannelId.HR1512_WATER_STAGES);
+        return this.channel(ChannelId.HR1512_WARMWASSERSTUFEN);
     }
     
     /**
      * Get the number of stages for domestic hot water.
-	 * See {@link ChannelId#HR1512_WATER_STAGES}.
+	 * See {@link ChannelId#HR1512_WARMWASSERSTUFEN}.
 	 *
 	 * @return the Channel {@link Value}
 	 */
@@ -1901,7 +1901,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
 	
 	/**
      * Set the Number of stages for domestic hot water.
-	 * See {@link ChannelId#HR1512_WATER_STAGES}.
+	 * See {@link ChannelId#HR1512_WARMWASSERSTUFEN}.
 	 * 
 	 * @param value the next write value
 	 * @throws OpenemsNamedException on error
@@ -1912,7 +1912,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
 
     /**
      * Set the Number of stages for domestic hot water.
-     * See {@link ChannelId#HR1512_WATER_STAGES}.
+     * See {@link ChannelId#HR1512_WARMWASSERSTUFEN}.
      *
      * @param value the next write value
      * @throws OpenemsNamedException on error
@@ -1922,18 +1922,18 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
     }
 
     /**
-     * Gets the Channel for {@link ChannelId#HR1513_WATER_AUX_ACT_TEMP}.
+     * Gets the Channel for {@link ChannelId#HR1513_BIVALENZTEMPERATURWW}.
      *
      * @return the Channel
      */
     public default IntegerWriteChannel getAuxHeaterActivationTempWaterChannel() {
-        return this.channel(ChannelId.HR1513_WATER_AUX_ACT_TEMP);
+        return this.channel(ChannelId.HR1513_BIVALENZTEMPERATURWW);
     }
     
     /**
      * Get the auxiliary heater activation temperature of the domestic hot water. Below this temperature the auxiliary
      * heater will activate, depending on heat demand. Unit is dezidegree Celsius.
-	 * See {@link ChannelId#HR1513_WATER_AUX_ACT_TEMP}.
+	 * See {@link ChannelId#HR1513_BIVALENZTEMPERATURWW}.
 	 *
 	 * @return the Channel {@link Value}
 	 */
@@ -1944,7 +1944,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
 	/**
      * Set the auxiliary heater activation temperature of the domestic hot water. Below this temperature the auxiliary
      * heater will activate, depending on heat demand. Unit is dezidegree Celsius.
-	 * See {@link ChannelId#HR1513_WATER_AUX_ACT_TEMP}.
+	 * See {@link ChannelId#HR1513_BIVALENZTEMPERATURWW}.
 	 * 
 	 * @param value the next write value
 	 * @throws OpenemsNamedException on error
@@ -1956,7 +1956,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
     /**
      * Set the auxiliary heater activation temperature of the domestic hot water. Below this temperature the auxiliary
      * heater will activate, depending on heat demand. Unit is dezidegree Celsius.
-     * See {@link ChannelId#HR1513_WATER_AUX_ACT_TEMP}.
+     * See {@link ChannelId#HR1513_BIVALENZTEMPERATURWW}.
      *
      * @param value the next write value
      * @throws OpenemsNamedException on error
@@ -1966,17 +1966,17 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
     }
 
     /**
-     * Gets the Channel for {@link ChannelId#HR1514_SURFACE_COOLING_FLOW_TEMP_SETPOINT}.
+     * Gets the Channel for {@link ChannelId#HR1514_VORLAUFSOLLTEMPFLAECHENKUEHLUNG}.
      *
      * @return the Channel
      */
     public default IntegerWriteChannel getSurfaceCoolingFlowTempChannel() {
-        return this.channel(ChannelId.HR1514_SURFACE_COOLING_FLOW_TEMP_SETPOINT);
+        return this.channel(ChannelId.HR1514_VORLAUFSOLLTEMPFLAECHENKUEHLUNG);
     }
     
     /**
      * Get the flow temperature setpoint, surface cooling. Unit is dezidegree Celsius.
-	 * See {@link ChannelId#HR1514_SURFACE_COOLING_FLOW_TEMP_SETPOINT}.
+	 * See {@link ChannelId#HR1514_VORLAUFSOLLTEMPFLAECHENKUEHLUNG}.
 	 *
 	 * @return the Channel {@link Value}
 	 */
@@ -1986,7 +1986,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
 	
 	/**
      * Set the flow temperature setpoint, surface cooling. Unit is dezidegree Celsius.
-	 * See {@link ChannelId#HR1514_SURFACE_COOLING_FLOW_TEMP_SETPOINT}.
+	 * See {@link ChannelId#HR1514_VORLAUFSOLLTEMPFLAECHENKUEHLUNG}.
 	 * 
 	 * @param value the next write value
 	 * @throws OpenemsNamedException on error
@@ -1997,7 +1997,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
 
     /**
      * Set the flow temperature setpoint, surface cooling. Unit is dezidegree Celsius.
-     * See {@link ChannelId#HR1514_SURFACE_COOLING_FLOW_TEMP_SETPOINT}.
+     * See {@link ChannelId#HR1514_VORLAUFSOLLTEMPFLAECHENKUEHLUNG}.
      *
      * @param value the next write value
      * @throws OpenemsNamedException on error
@@ -2007,17 +2007,17 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
     }
 
     /**
-     * Gets the Channel for {@link ChannelId#HR1515_SURFACE_COOLING_FLOW_TEMP_HYST}.
+     * Gets the Channel for {@link ChannelId#HR1515_HYSTERESEVORLAUFTEMPFLAECHENKUEHLUNG}.
      *
      * @return the Channel
      */
     public default IntegerWriteChannel getSurfaceCoolingFlowTempHysteresisChannel() {
-        return this.channel(ChannelId.HR1515_SURFACE_COOLING_FLOW_TEMP_HYST);
+        return this.channel(ChannelId.HR1515_HYSTERESEVORLAUFTEMPFLAECHENKUEHLUNG);
     }
     
     /**
      * Get the flow temperature hysteresis, surface cooling. Unit is dezidegree Kelvin.
-	 * See {@link ChannelId#HR1515_SURFACE_COOLING_FLOW_TEMP_HYST}.
+	 * See {@link ChannelId#HR1515_HYSTERESEVORLAUFTEMPFLAECHENKUEHLUNG}.
 	 *
 	 * @return the Channel {@link Value}
 	 */
@@ -2027,7 +2027,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
 	
 	/**
      * Set the flow temperature hysteresis, surface cooling. Unit is dezidegree Kelvin.
-	 * See {@link ChannelId#HR1515_SURFACE_COOLING_FLOW_TEMP_HYST}.
+	 * See {@link ChannelId#HR1515_HYSTERESEVORLAUFTEMPFLAECHENKUEHLUNG}.
 	 * 
 	 * @param value the next write value
 	 * @throws OpenemsNamedException on error
@@ -2038,7 +2038,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
 
     /**
      * Set the flow temperature hysteresis, surface cooling. Unit is dezidegree Kelvin.
-     * See {@link ChannelId#HR1515_SURFACE_COOLING_FLOW_TEMP_HYST}.
+     * See {@link ChannelId#HR1515_HYSTERESEVORLAUFTEMPFLAECHENKUEHLUNG}.
      *
      * @param value the next write value
      * @throws OpenemsNamedException on error
@@ -2048,17 +2048,17 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
     }
 
     /**
-     * Gets the Channel for {@link ChannelId#HR1516_SURFACE_COOLING_ROOM_TEMP_SETPOINT}.
+     * Gets the Channel for {@link ChannelId#HR1516_RAUMSOLLTEMPFLAECHENKUEHLUNG}.
      *
      * @return the Channel
      */
     public default IntegerWriteChannel getSurfaceCoolingRoomTempChannel() {
-        return this.channel(ChannelId.HR1516_SURFACE_COOLING_ROOM_TEMP_SETPOINT);
+        return this.channel(ChannelId.HR1516_RAUMSOLLTEMPFLAECHENKUEHLUNG);
     }
     
     /**
      * Get the room temperature setpoint, surface cooling. Unit is dezidegree Celsius.
-	 * See {@link ChannelId#HR1516_SURFACE_COOLING_ROOM_TEMP_SETPOINT}.
+	 * See {@link ChannelId#HR1516_RAUMSOLLTEMPFLAECHENKUEHLUNG}.
 	 *
 	 * @return the Channel {@link Value}
 	 */
@@ -2068,7 +2068,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
 	
 	/**
      * Set the room temperature setpoint, surface cooling. Unit is dezidegree Celsius.
-	 * See {@link ChannelId#HR1516_SURFACE_COOLING_ROOM_TEMP_SETPOINT}.
+	 * See {@link ChannelId#HR1516_RAUMSOLLTEMPFLAECHENKUEHLUNG}.
 	 * 
 	 * @param value the next write value
 	 * @throws OpenemsNamedException on error
@@ -2079,7 +2079,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
 
     /**
      * Set the room temperature setpoint, surface cooling. Unit is dezidegree Celsius.
-     * See {@link ChannelId#HR1516_SURFACE_COOLING_ROOM_TEMP_SETPOINT}.
+     * See {@link ChannelId#HR1516_RAUMSOLLTEMPFLAECHENKUEHLUNG}.
      *
      * @param value the next write value
      * @throws OpenemsNamedException on error
@@ -2089,17 +2089,17 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
     }
 
     /**
-     * Gets the Channel for {@link ChannelId#HR1517_VENT_COOLING_FLOW_TEMP_SETPOINT}.
+     * Gets the Channel for {@link ChannelId#HR1517_VORLAUFSOLLTEMPGEBLAESEKUEHLUNG}.
      *
      * @return the Channel
      */
     public default IntegerWriteChannel getVentilationCoolingFlowTempChannel() {
-        return this.channel(ChannelId.HR1517_VENT_COOLING_FLOW_TEMP_SETPOINT);
+        return this.channel(ChannelId.HR1517_VORLAUFSOLLTEMPGEBLAESEKUEHLUNG);
     }
     
     /**
      * Get the flow temperature setpoint, ventilation cooling. Unit is dezidegree Celsius.
-	 * See {@link ChannelId#HR1517_VENT_COOLING_FLOW_TEMP_SETPOINT}.
+	 * See {@link ChannelId#HR1517_VORLAUFSOLLTEMPGEBLAESEKUEHLUNG}.
 	 *
 	 * @return the Channel {@link Value}
 	 */
@@ -2109,7 +2109,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
 	
 	/**
      * Set the flow temperature setpoint, ventilation cooling. Unit is dezidegree Celsius.
-	 * See {@link ChannelId#HR1517_VENT_COOLING_FLOW_TEMP_SETPOINT}.
+	 * See {@link ChannelId#HR1517_VORLAUFSOLLTEMPGEBLAESEKUEHLUNG}.
 	 * 
 	 * @param value the next write value
 	 * @throws OpenemsNamedException on error
@@ -2120,7 +2120,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
 
     /**
      * Set the flow temperature setpoint, ventilation cooling. Unit is dezidegree Celsius.
-     * See {@link ChannelId#HR1517_VENT_COOLING_FLOW_TEMP_SETPOINT}.
+     * See {@link ChannelId#HR1517_VORLAUFSOLLTEMPGEBLAESEKUEHLUNG}.
      *
      * @param value the next write value
      * @throws OpenemsNamedException on error
@@ -2130,17 +2130,17 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
     }
 
     /**
-     * Gets the Channel for {@link ChannelId#HR1518_VENT_COOLING_FLOW_TEMP_HYST}.
+     * Gets the Channel for {@link ChannelId#HR1518_HYSTERESEVORLAUFTEMPGEBLAESEKUEHLUNG}.
      *
      * @return the Channel
      */
     public default IntegerWriteChannel getVentilationCoolingFlowTempHysteresisChannel() {
-        return this.channel(ChannelId.HR1518_VENT_COOLING_FLOW_TEMP_HYST);
+        return this.channel(ChannelId.HR1518_HYSTERESEVORLAUFTEMPGEBLAESEKUEHLUNG);
     }
 
     /**
      * Get the flow temperature hysteresis, ventilation cooling. Unit is dezidegree Kelvin.
-	 * See {@link ChannelId#HR1518_VENT_COOLING_FLOW_TEMP_HYST}.
+	 * See {@link ChannelId#HR1518_HYSTERESEVORLAUFTEMPGEBLAESEKUEHLUNG}.
 	 *
 	 * @return the Channel {@link Value}
 	 */
@@ -2150,7 +2150,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
 	
 	/**
      * Set the flow temperature hysteresis, ventilation cooling. Unit is dezidegree Kelvin.
-	 * See {@link ChannelId#HR1518_VENT_COOLING_FLOW_TEMP_HYST}.
+	 * See {@link ChannelId#HR1518_HYSTERESEVORLAUFTEMPGEBLAESEKUEHLUNG}.
 	 * 
 	 * @param value the next write value
 	 * @throws OpenemsNamedException on error
@@ -2161,7 +2161,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
 
     /**
      * Set the flow temperature hysteresis, ventilation cooling. Unit is dezidegree Kelvin.
-     * See {@link ChannelId#HR1518_VENT_COOLING_FLOW_TEMP_HYST}.
+     * See {@link ChannelId#HR1518_HYSTERESEVORLAUFTEMPGEBLAESEKUEHLUNG}.
      *
      * @param value the next write value
      * @throws OpenemsNamedException on error
@@ -2171,17 +2171,17 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
     }
     
     /**
-     * Gets the Channel for {@link ChannelId#HR1519_VENT_COOLING_ROOM_TEMP_SETPOINT}.
+     * Gets the Channel for {@link ChannelId#HR1519_RAUMSOLLTEMPGEBLAESEKUEHLUNG}.
      *
      * @return the Channel
      */
     public default IntegerWriteChannel getVentilationCoolingRoomTempChannel() {
-        return this.channel(ChannelId.HR1519_VENT_COOLING_ROOM_TEMP_SETPOINT);
+        return this.channel(ChannelId.HR1519_RAUMSOLLTEMPGEBLAESEKUEHLUNG);
     }
 
     /**
      * Get the room temperature setpoint, ventilation cooling. Unit is dezidegree Celsius.
-	 * See {@link ChannelId#HR1519_VENT_COOLING_ROOM_TEMP_SETPOINT}.
+	 * See {@link ChannelId#HR1519_RAUMSOLLTEMPGEBLAESEKUEHLUNG}.
 	 *
 	 * @return the Channel {@link Value}
 	 */
@@ -2191,7 +2191,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
 	
 	/**
      * Set the room temperature setpoint, ventilation cooling. Unit is dezidegree Celsius.
-	 * See {@link ChannelId#HR1519_VENT_COOLING_ROOM_TEMP_SETPOINT}.
+	 * See {@link ChannelId#HR1519_RAUMSOLLTEMPGEBLAESEKUEHLUNG}.
 	 * 
 	 * @param value the next write value
 	 * @throws OpenemsNamedException on error
@@ -2202,7 +2202,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
 
     /**
      * Set the room temperature setpoint, ventilation cooling. Unit is dezidegree Celsius.
-     * See {@link ChannelId#HR1519_VENT_COOLING_ROOM_TEMP_SETPOINT}.
+     * See {@link ChannelId#HR1519_RAUMSOLLTEMPGEBLAESEKUEHLUNG}.
      *
      * @param value the next write value
      * @throws OpenemsNamedException on error

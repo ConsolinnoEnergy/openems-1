@@ -12,7 +12,7 @@ Bundle-Description: \
 	io.openems.common;version=latest,\
 	io.openems.edge.common;version=latest,\
 	io.openems.edge.thermometer.api;version=latest,\
-	io.openems.edge.heater;version=latest,\
+	io.openems.edge.heater.api;version=latest,\
 	io.openems.edge.heater.decentral;version=latest,\
 	io.openems.edge.controller.heatnetwork.multipleheatercombined;version=latest,\
 	io.openems.edge.controller.heatnetwork.master;version=latest,\

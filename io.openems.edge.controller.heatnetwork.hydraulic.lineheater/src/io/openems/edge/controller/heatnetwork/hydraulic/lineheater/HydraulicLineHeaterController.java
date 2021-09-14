@@ -14,6 +14,7 @@ import io.openems.edge.controller.heatnetwork.hydraulic.lineheater.helperclass.O
 import io.openems.edge.controller.heatnetwork.hydraulic.lineheater.helperclass.ValveLineHeater;
 import io.openems.edge.exceptionalstate.api.ExceptionalState;
 import io.openems.edge.heater.decentral.api.DecentralHeater;
+import io.openems.edge.heater.api.Heater;
 import io.openems.edge.heatsystem.components.Valve;
 import io.openems.edge.thermometer.api.Thermometer;
 import io.openems.edge.timer.api.TimerHandler;

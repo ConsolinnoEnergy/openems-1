@@ -6,7 +6,11 @@ import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.controller.api.Controller;
 import io.openems.edge.controller.heatnetwork.multipleheatercombined.api.MultipleHeaterCombinedController;
-import io.openems.edge.heater.Heater;
+import io.openems.edge.exceptionalstate.api.ExceptionalState;
+import io.openems.edge.exceptionalstate.api.ExceptionalStateHandler;
+import io.openems.edge.exceptionalstate.api.ExceptionalStateHandlerImpl;
+import io.openems.edge.heater.api.Heater;
+import io.openems.edge.heater.api.HeaterState;
 import io.openems.edge.thermometer.api.Thermometer;
 import org.osgi.service.cm.ConfigurationException;
 import org.osgi.service.component.ComponentContext;
@@ -27,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * The MultipleHeaterCombined controller allows the monitoring and enabling of any {@link Heater}.
@@ -241,13 +246,16 @@ public class MultipleHeaterCombinedControllerImpl extends AbstractOpenemsCompone
     @Override
     public void run() {
         if (this.configurationSuccess) {
+            this.checkMissingThermometer();
+            this.checkMissingHeaterComponents();
             AtomicBoolean heaterError = new AtomicBoolean(false);
             AtomicBoolean isHeating = new AtomicBoolean(false);
 
             this.configuredHeater.forEach(heater -> {
-                if (heater.hasError()) {
+                if (heater.getHeaterState().isDefined() && heater.getHeaterState().get().equals(HeaterState.BLOCKED_OR_ERROR.getValue())) {
                     heaterError.set(true);
                 }
+
                 //ThermometerWrapper holding min and max values as well as Thermometer corresponding to the heater
                 ThermometerWrapper thermometerWrapper = this.heaterTemperatureWrapperMap.get(heater);
                 //HeatWrapper holding activeState and alwaysActive
@@ -274,8 +282,6 @@ public class MultipleHeaterCombinedControllerImpl extends AbstractOpenemsCompone
                     heaterError.set(true);
                     this.log.warn("Couldn't read from Configured TemperatureChannel of Heater: " + heater.id());
                 }
-
-
             });
             //Sets both error and ok
             this.setIsHeating(isHeating.get());
@@ -296,6 +302,94 @@ public class MultipleHeaterCombinedControllerImpl extends AbstractOpenemsCompone
                 }
             }
         }
+    }
+
+
+    private void checkMissingHeaterComponents() {
+        List<Heater> missingHeater = new ArrayList<>();
+        this.heaterTemperatureWrapperMap.forEach((heater, wrapper) -> {
+            if (heater.isEnabled() == false) {
+                missingHeater.add(heater);
+            }
+        });
+        if (missingHeater.size() > 0) {
+            missingHeater.forEach(heaterOfMissingHeaterList -> {
+                try {
+                    //get new heater
+                    OpenemsComponent component = this.cpm.getComponent(heaterOfMissingHeaterList.id());
+                    if (component instanceof Heater) {
+                        Heater newHeater = (Heater) component;
+                        AtomicReference<Heater> oldHeater = new AtomicReference<>();
+                        AtomicBoolean heaterFound = new AtomicBoolean(false);
+                        //get old heater
+                        this.heaterTemperatureWrapperMap.keySet().forEach(heaterKey -> {
+                            if (heaterFound.get() == false && heaterKey.id().equals(newHeater.id())) {
+                                heaterFound.set(true);
+                                oldHeater.set(heaterKey);
+                            }
+                        });
+                        //replace old heater in temperatureWrapperMap
+                        ThermometerWrapper wrapperOfMap = this.heaterTemperatureWrapperMap.get(oldHeater.get());
+                        this.heaterTemperatureWrapperMap.remove(oldHeater.get());
+                        this.heaterTemperatureWrapperMap.put(newHeater, wrapperOfMap);
+                        //replace in old HeaterActiveWrapperMap
+                        HeaterActiveWrapper wrapper = this.activeStateHeaterAndHeatWrapper.get(oldHeater.get());
+                        this.activeStateHeaterAndHeatWrapper.remove(oldHeater.get());
+                        this.activeStateHeaterAndHeatWrapper.put(newHeater, wrapper);
+                        //replace old Heater
+                        AtomicInteger index = new AtomicInteger(-1);
+                        this.configuredHeater.stream().filter(entry ->
+                                entry.id().equals(newHeater.id())).findFirst().ifPresent(entry -> index.set(this.configuredHeater.indexOf(entry)));
+                        if (index.get() >= 0) {
+                            this.configuredHeater.remove(index.get());
+                            this.configuredHeater.add(newHeater);
+                        }
+
+                    }
+                } catch (OpenemsError.OpenemsNamedException e) {
+                    this.log.warn("Heater: " + heaterOfMissingHeaterList.id() + " is Missing! It won't run/heat anymore!");
+                }
+            });
+        }
+    }
+
+    private void checkMissingThermometer() {
+        this.heaterTemperatureWrapperMap.forEach((heater, wrapper) -> {
+            Thermometer max = wrapper.getDeactivationThermometer();
+            Thermometer min = wrapper.getActivationThermometer();
+            Thermometer maxNew = null;
+            Thermometer minNew = null;
+
+            if (max.isEnabled() == false) {
+                try {
+                    OpenemsComponent component = this.cpm.getComponent(max.id());
+
+                    if (component instanceof Thermometer) {
+                        maxNew = (Thermometer) component;
+                        wrapper.renewThermometer(ThermometerType.DEACTIVATE_THERMOMETER, maxNew);
+                    } else {
+                        this.log.warn("New Instance of Thermometer : " + max.id() + " is not a Thermometer. MultiHeater won't work!");
+                    }
+                } catch (OpenemsError.OpenemsNamedException e) {
+                    this.log.warn("Couldn't find Max Thermometer : " + max.id() + " MultiHeater might not be working!");
+                }
+            }
+            if (min.isEnabled() == false) {
+                try {
+                    OpenemsComponent component = this.cpm.getComponent(min.id());
+
+                    if (component instanceof Thermometer) {
+                        minNew = (Thermometer) component;
+                        wrapper.renewThermometer(ThermometerType.ACTIVATE_THERMOMETER, minNew);
+                    } else {
+                        this.log.warn("New Instance of Thermometer : " + min.id() + " is not a Thermometer. MultiHeater won't work!");
+                    }
+                } catch (OpenemsError.OpenemsNamedException e) {
+                    this.log.warn("Couldn't find Max Thermometer : " + min.id() + " MultiHeater might not be working!");
+                }
+
+            }
+        });
     }
 
     @Deactivate

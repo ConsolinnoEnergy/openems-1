@@ -6,9 +6,12 @@ import io.openems.edge.common.channel.BooleanWriteChannel;
 import io.openems.edge.common.channel.Channel;
 import io.openems.edge.common.channel.Doc;
 import io.openems.edge.common.channel.WriteChannel;
-import io.openems.edge.heater.Heater;
+import io.openems.edge.heater.api.Heater;
 
 public interface DecentralHeater extends Heater {
+
+    // Default SetPointTemperature for DecentralHeater, if SetPoint is not defined.
+    int DEFAULT_SETPOINT_TEMPERATURE = 500;
 
     enum ChannelId implements io.openems.edge.common.channel.ChannelId {
 

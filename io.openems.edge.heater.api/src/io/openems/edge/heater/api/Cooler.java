@@ -1,4 +1,4 @@
-package io.openems.edge.heater;
+package io.openems.edge.heater.api;
 
 import io.openems.common.channel.AccessMode;
 import io.openems.common.channel.Unit;
@@ -175,7 +175,7 @@ public interface Cooler extends OpenemsComponent {
     }
 
     default String getCurrentState() {
-        Channel<String> selectedChannel = getHeaterStateChannel();
+        Channel<String> selectedChannel = this.getHeaterStateChannel();
         if (selectedChannel.value().isDefined()) {
             return selectedChannel.value().get();
         } else if (selectedChannel.getNextValue().isDefined()) {
@@ -185,12 +185,9 @@ public interface Cooler extends OpenemsComponent {
         }
     }
 
-    default void setState(String state) {
-        if (HeaterState.contains(state)) {
-            this.getStateChannel().setNextValue(state);
-        }
+    default void setState(HeaterState state) {
+        this.getStateChannel().setNextValue(state);
     }
-
     //---------------------------------------------------------//
     //-------------------SET_POINT_TEMPERATURE --------------------- //
 
@@ -276,7 +273,7 @@ public interface Cooler extends OpenemsComponent {
     void setIdle();
 
     default boolean errorInCooler() {
-        return this.getCurrentState().equals(HeaterState.ERROR);
+        return this.getCurrentState().equals(HeaterState.BLOCKED_OR_ERROR.getName());
     }
 
 }

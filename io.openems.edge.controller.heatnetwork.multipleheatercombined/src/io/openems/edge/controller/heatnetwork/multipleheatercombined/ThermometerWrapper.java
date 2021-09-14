@@ -36,6 +36,15 @@ class ThermometerWrapper {
 
     }
 
+    public void renewThermometer(ThermometerType thermometerType, Thermometer newThermometer) {
+        Thermometer oldThermometer = this.getThermometerKindThermometerMap().get(thermometerType);
+        this.getThermometerKindThermometerMap().remove(thermometerType);
+        this.getThermometerKindThermometerMap().put(thermometerType, newThermometer);
+        ThermometerValue value = this.getThermometerAndValue().get(oldThermometer);
+        this.getThermometerAndValue().remove(oldThermometer);
+        this.getThermometerAndValue().put(newThermometer, value);
+    }
+
     /**
      * The inner static Class Thermometer Value, containing  a temperature Value or a ChannelAddress depending what is configured.
      * This is determined, if the channelAddressOrValue String (usually from MultiHeaterConfig) contains only numbers,
@@ -152,6 +161,14 @@ class ThermometerWrapper {
 
     boolean shouldActivate() throws OpenemsError.OpenemsNamedException, ConfigurationException {
         return this.getActivationThermometer().getTemperatureValue() <= this.getActivationTemperature();
+    }
+
+    public Map<Thermometer, ThermometerValue> getThermometerAndValue() {
+        return this.thermometerAndValue;
+    }
+
+    public Map<ThermometerType, Thermometer> getThermometerKindThermometerMap() {
+        return this.thermometerTypeThermometerMap;
     }
 
 }

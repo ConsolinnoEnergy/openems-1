@@ -9,12 +9,14 @@ import io.openems.edge.common.channel.DoubleReadChannel;
 import io.openems.edge.common.channel.IntegerReadChannel;
 import io.openems.edge.common.channel.StringReadChannel;
 import io.openems.edge.common.channel.value.Value;
-import io.openems.edge.heater.api.ChpBasic;
+import io.openems.edge.heater.api.Chp;
 
-public interface DachsGltInterfaceChannel extends ChpBasic {
+/**
+ * Channels for the Dachs CHP.
+ */
+public interface DachsGltInterface extends Chp {
 
     public enum ChannelId implements io.openems.edge.common.channel.ChannelId {
-
 
         /**
          * Run request message of the chp as a string. 
@@ -23,7 +25,6 @@ public interface DachsGltInterfaceChannel extends ChpBasic {
          * <li>Type: string
          * </ul>
          */
-
         RUN_REQUEST_MESSAGE(Doc.of(OpenemsType.STRING).accessMode(AccessMode.READ_ONLY)),
 
         /**
@@ -33,7 +34,6 @@ public interface DachsGltInterfaceChannel extends ChpBasic {
          * <li>Type: integer
          * </ul>
          */
-
         NUMBER_OF_MODULES(Doc.of(OpenemsType.INTEGER).unit(Unit.NONE).accessMode(AccessMode.READ_ONLY)),
 
         /**
@@ -43,7 +43,6 @@ public interface DachsGltInterfaceChannel extends ChpBasic {
          * <li>Type: string
          * </ul>
          */
-
         NOT_READY_MESSAGE(Doc.of(OpenemsType.STRING).accessMode(AccessMode.READ_ONLY)),
 
         /**
@@ -53,7 +52,6 @@ public interface DachsGltInterfaceChannel extends ChpBasic {
          * <li>Type: string
          * </ul>
          */
-
         ELECTRICITY_GUIDED_OPERATION_CLEARANCE(Doc.of(OpenemsType.STRING).accessMode(AccessMode.READ_ONLY)),
 
         /**
@@ -63,7 +61,6 @@ public interface DachsGltInterfaceChannel extends ChpBasic {
          * <li>Type: boolean
          * </ul>
          */
-
         ELECTRICITY_GUIDED_OPERATION_RUNFLAG(Doc.of(OpenemsType.BOOLEAN).accessMode(AccessMode.READ_ONLY)),
 
         /**
@@ -73,7 +70,6 @@ public interface DachsGltInterfaceChannel extends ChpBasic {
          * <li>Type: string
          * </ul>
          */
-
         ELECTRICITY_GUIDED_OPERATION_SETTINGS(Doc.of(OpenemsType.STRING).accessMode(AccessMode.READ_ONLY)),
 
         /**
@@ -84,7 +80,6 @@ public interface DachsGltInterfaceChannel extends ChpBasic {
          * <li>Unit: kilowatt hours
          * </ul>
          */
-
         ELECTRICAL_WORK(Doc.of(OpenemsType.DOUBLE).unit(Unit.KILOWATT_HOURS).accessMode(AccessMode.READ_ONLY)),
 
         /**
@@ -95,7 +90,6 @@ public interface DachsGltInterfaceChannel extends ChpBasic {
          * <li>Unit: kilowatt hours
          * </ul>
          */
-
         THERMAL_WORK(Doc.of(OpenemsType.DOUBLE).unit(Unit.KILOWATT_HOURS).accessMode(AccessMode.READ_ONLY)),
 
         /**
@@ -106,7 +100,6 @@ public interface DachsGltInterfaceChannel extends ChpBasic {
          * <li>Unit: kilowatt hours
          * </ul>
          */
-
         THERMAL_WORK_COND(Doc.of(OpenemsType.DOUBLE).unit(Unit.KILOWATT_HOURS).accessMode(AccessMode.READ_ONLY)),
 
         /**
@@ -117,7 +110,6 @@ public interface DachsGltInterfaceChannel extends ChpBasic {
          * <li>Unit: hours
          * </ul>
          */
-
         RUNTIME(Doc.of(OpenemsType.DOUBLE).unit(Unit.HOUR).accessMode(AccessMode.READ_ONLY)),
 
         /**
@@ -128,7 +120,6 @@ public interface DachsGltInterfaceChannel extends ChpBasic {
          * <li>Unit: rotation per minute
          * </ul>
          */
-
         RPM(Doc.of(OpenemsType.INTEGER).unit(Unit.ROTATION_PER_MINUTE).accessMode(AccessMode.READ_ONLY)),
 
         /**
@@ -138,7 +129,6 @@ public interface DachsGltInterfaceChannel extends ChpBasic {
          * <li>Type: integer
          * </ul>
          */
-
         ENGINE_STARTS(Doc.of(OpenemsType.INTEGER).unit(Unit.NONE).accessMode(AccessMode.READ_ONLY)),
 
         /**
@@ -148,7 +138,6 @@ public interface DachsGltInterfaceChannel extends ChpBasic {
          * <li>Type: string
          * </ul>
          */
-
         SERIAL_NUMBER(Doc.of(OpenemsType.STRING).accessMode(AccessMode.READ_ONLY)),
 
         /**
@@ -158,7 +147,6 @@ public interface DachsGltInterfaceChannel extends ChpBasic {
          * <li>Type: string
          * </ul>
          */
-
         PARTS_NUMBER(Doc.of(OpenemsType.STRING).accessMode(AccessMode.READ_ONLY)),
 
         /**
@@ -168,29 +156,12 @@ public interface DachsGltInterfaceChannel extends ChpBasic {
          * <li>Type: boolean
          * </ul>
          */
-
         MAINTENANCE(Doc.of(OpenemsType.BOOLEAN).accessMode(AccessMode.READ_ONLY)),
 
-        /**
-         * All warning messages of the chp as a string. 
-         * Hka_Bd.bWarnung
-         * <ul>
-         * <li>Type: string
-         * </ul>
-         */
+		// Warning message, Hka_Bd.bWarnung - included in Heater
 
-        WARNING_MESSAGE(Doc.of(OpenemsType.STRING).accessMode(AccessMode.READ_ONLY)),
-
-        /**
-         * All error messages of the chp as a string. 
-         * Hka_Bd.bStoerung
-         * <ul>
-         * <li>Type: string
-         * </ul>
-         */
-
-        ERROR_MESSAGE(Doc.of(OpenemsType.STRING).accessMode(AccessMode.READ_ONLY));
-
+		// Error message, Hka_Bd.bStoerung - included in Heater
+		;
 
         private final Doc doc;
 
@@ -210,7 +181,7 @@ public interface DachsGltInterfaceChannel extends ChpBasic {
      *
      * @return the Channel
      */
-    public default StringReadChannel getRunRequestMessageChannel(){
+    public default StringReadChannel getRunRequestMessageChannel() {
         return this.channel(ChannelId.RUN_REQUEST_MESSAGE);
     }
     
@@ -220,7 +191,7 @@ public interface DachsGltInterfaceChannel extends ChpBasic {
 	 *
 	 * @return the Channel {@link Value}
 	 */
-	public default Value<String> getRunRequestMessage() {
+    public default Value<String> getRunRequestMessage() {
 		return this.getRunRequestMessageChannel().value();
 	}
 	
@@ -239,7 +210,7 @@ public interface DachsGltInterfaceChannel extends ChpBasic {
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getNumberOfModulesChannel(){
+    public default IntegerReadChannel getNumberOfModulesChannel() {
         return this.channel(ChannelId.NUMBER_OF_MODULES);
     }
     
@@ -250,7 +221,7 @@ public interface DachsGltInterfaceChannel extends ChpBasic {
 	 *
 	 * @return the Channel {@link Value}
 	 */
-	public default Value<Integer> getNumberOfModules() {
+    public default Value<Integer> getNumberOfModules() {
 		return this.getNumberOfModulesChannel().value();
 	}
 	
@@ -279,7 +250,7 @@ public interface DachsGltInterfaceChannel extends ChpBasic {
      *
      * @return the Channel
      */
-    public default StringReadChannel getNotReadyMessageChannel(){
+    public default StringReadChannel getNotReadyMessageChannel() {
         return this.channel(ChannelId.NOT_READY_MESSAGE);
     }
     
@@ -289,7 +260,7 @@ public interface DachsGltInterfaceChannel extends ChpBasic {
 	 *
 	 * @return the Channel {@link Value}
 	 */
-	public default Value<String> getNotReadyMessage() {
+    public default Value<String> getNotReadyMessage() {
 		return this.getNotReadyMessageChannel().value();
 	}
 	
@@ -308,7 +279,7 @@ public interface DachsGltInterfaceChannel extends ChpBasic {
      *
      * @return the Channel
      */
-    public default StringReadChannel getElectricModeClearanceMessageChannel(){
+    public default StringReadChannel getElectricModeClearanceMessageChannel() {
         return this.channel(ChannelId.ELECTRICITY_GUIDED_OPERATION_CLEARANCE);
     }
     
@@ -319,7 +290,7 @@ public interface DachsGltInterfaceChannel extends ChpBasic {
 	 *
 	 * @return the Channel {@link Value}
 	 */
-	public default Value<String> getElectricModeClearanceMessage() {
+    public default Value<String> getElectricModeClearanceMessage() {
 		return this.getElectricModeClearanceMessageChannel().value();
 	}
 	
@@ -338,7 +309,7 @@ public interface DachsGltInterfaceChannel extends ChpBasic {
      *
      * @return the Channel
      */
-    public default BooleanReadChannel getElectricModeRunFlagChannel(){
+	public default BooleanReadChannel getElectricModeRunFlagChannel() {
         return this.channel(ChannelId.ELECTRICITY_GUIDED_OPERATION_RUNFLAG);
     }
     
@@ -349,7 +320,7 @@ public interface DachsGltInterfaceChannel extends ChpBasic {
 	 *
 	 * @return the Channel {@link Value}
 	 */
-	public default Value<Boolean> getElectricModeRunFlag() {
+    public default Value<Boolean> getElectricModeRunFlag() {
 		return this.getElectricModeRunFlagChannel().value();
 	}
 	
@@ -368,7 +339,7 @@ public interface DachsGltInterfaceChannel extends ChpBasic {
      *
      * @return the Channel
      */
-    public default StringReadChannel getElectricModeSettingsMessageChannel(){
+	public default StringReadChannel getElectricModeSettingsMessageChannel() {
         return this.channel(ChannelId.ELECTRICITY_GUIDED_OPERATION_SETTINGS);
     }
     
@@ -379,7 +350,7 @@ public interface DachsGltInterfaceChannel extends ChpBasic {
 	 *
 	 * @return the Channel {@link Value}
 	 */
-	public default Value<String> getElectricModeSettingsMessage() {
+    public default Value<String> getElectricModeSettingsMessage() {
 		return this.getElectricModeSettingsMessageChannel().value();
 	}
 	
@@ -398,7 +369,7 @@ public interface DachsGltInterfaceChannel extends ChpBasic {
      *
      * @return the Channel
      */
-    public default DoubleReadChannel getElectricalWorkChannel(){
+	public default DoubleReadChannel getElectricalWorkChannel() {
         return this.channel(ChannelId.ELECTRICAL_WORK);
     }
     
@@ -408,7 +379,7 @@ public interface DachsGltInterfaceChannel extends ChpBasic {
 	 *
 	 * @return the Channel {@link Value}
 	 */
-	public default Value<Double> getElectricalWork() {
+    public default Value<Double> getElectricalWork() {
 		return this.getElectricalWorkChannel().value();
 	}
 	
@@ -437,7 +408,7 @@ public interface DachsGltInterfaceChannel extends ChpBasic {
      *
      * @return the Channel
      */
-    public default DoubleReadChannel getThermalWorkChannel(){
+	public default DoubleReadChannel getThermalWorkChannel() {
         return this.channel(ChannelId.THERMAL_WORK);
     }
     
@@ -447,7 +418,7 @@ public interface DachsGltInterfaceChannel extends ChpBasic {
 	 *
 	 * @return the Channel {@link Value}
 	 */
-	public default Value<Double> getThermalWork() {
+    public default Value<Double> getThermalWork() {
 		return this.getThermalWorkChannel().value();
 	}
 	
@@ -476,7 +447,7 @@ public interface DachsGltInterfaceChannel extends ChpBasic {
      *
      * @return the Channel
      */
-    public default DoubleReadChannel getThermalWorkCondChannel(){
+	public default DoubleReadChannel getThermalWorkCondChannel() {
         return this.channel(ChannelId.THERMAL_WORK_COND);
     }
     
@@ -486,7 +457,7 @@ public interface DachsGltInterfaceChannel extends ChpBasic {
 	 *
 	 * @return the Channel {@link Value}
 	 */
-	public default Value<Double> getThermalWorkCond() {
+    public default Value<Double> getThermalWorkCond() {
 		return this.getThermalWorkCondChannel().value();
 	}
 	
@@ -515,7 +486,7 @@ public interface DachsGltInterfaceChannel extends ChpBasic {
      *
      * @return the Channel
      */
-    public default DoubleReadChannel getRuntimeSinceRestartChannel(){
+	public default DoubleReadChannel getRuntimeSinceRestartChannel() {
         return this.channel(ChannelId.RUNTIME);
     }
     
@@ -525,7 +496,7 @@ public interface DachsGltInterfaceChannel extends ChpBasic {
 	 *
 	 * @return the Channel {@link Value}
 	 */
-	public default Value<Double> getRuntimeSinceRestart() {
+    public default Value<Double> getRuntimeSinceRestart() {
 		return this.getRuntimeSinceRestartChannel().value();
 	}
 	
@@ -554,7 +525,7 @@ public interface DachsGltInterfaceChannel extends ChpBasic {
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getRpmChannel(){
+	public default IntegerReadChannel getRpmChannel() {
         return this.channel(ChannelId.RPM);
     }
     
@@ -564,7 +535,7 @@ public interface DachsGltInterfaceChannel extends ChpBasic {
 	 *
 	 * @return the Channel {@link Value}
 	 */
-	public default Value<Integer> getRpm() {
+    public default Value<Integer> getRpm() {
 		return this.getRpmChannel().value();
 	}
 	
@@ -593,7 +564,7 @@ public interface DachsGltInterfaceChannel extends ChpBasic {
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getEngineStartsChannel(){
+	public default IntegerReadChannel getEngineStartsChannel() {
         return this.channel(ChannelId.ENGINE_STARTS);
     }
     
@@ -603,7 +574,7 @@ public interface DachsGltInterfaceChannel extends ChpBasic {
 	 *
 	 * @return the Channel {@link Value}
 	 */
-	public default Value<Integer> getEngineStarts() {
+    public default Value<Integer> getEngineStarts() {
 		return this.getEngineStartsChannel().value();
 	}
 	
@@ -632,7 +603,7 @@ public interface DachsGltInterfaceChannel extends ChpBasic {
      *
      * @return the Channel
      */
-    public default StringReadChannel getSerialNumberChannel(){
+	public default StringReadChannel getSerialNumberChannel() {
         return this.channel(ChannelId.SERIAL_NUMBER);
     }
     
@@ -642,7 +613,7 @@ public interface DachsGltInterfaceChannel extends ChpBasic {
 	 *
 	 * @return the Channel {@link Value}
 	 */
-	public default Value<String> getSerialNumber() {
+    public default Value<String> getSerialNumber() {
 		return this.getSerialNumberChannel().value();
 	}
 	
@@ -661,7 +632,7 @@ public interface DachsGltInterfaceChannel extends ChpBasic {
      *
      * @return the Channel
      */
-    public default StringReadChannel getPartsNumberChannel(){
+	public default StringReadChannel getPartsNumberChannel() {
         return this.channel(ChannelId.PARTS_NUMBER);
     }
     
@@ -671,7 +642,7 @@ public interface DachsGltInterfaceChannel extends ChpBasic {
 	 *
 	 * @return the Channel {@link Value}
 	 */
-	public default Value<String> getPartsNumber() {
+    public default Value<String> getPartsNumber() {
 		return this.getPartsNumberChannel().value();
 	}
 	
@@ -690,7 +661,7 @@ public interface DachsGltInterfaceChannel extends ChpBasic {
      *
      * @return the Channel
      */
-    public default BooleanReadChannel getMaintenanceFlagChannel(){
+	public default BooleanReadChannel getMaintenanceFlagChannel() {
         return this.channel(ChannelId.MAINTENANCE);
     }
     
@@ -701,7 +672,7 @@ public interface DachsGltInterfaceChannel extends ChpBasic {
 	 *
 	 * @return the Channel {@link Value}
 	 */
-	public default Value<Boolean> getMaintenanceFlag() {
+    public default Value<Boolean> getMaintenanceFlag() {
 		return this.getMaintenanceFlagChannel().value();
 	}
 	
@@ -714,63 +685,4 @@ public interface DachsGltInterfaceChannel extends ChpBasic {
 	public default void _setMaintenanceFlag(Boolean value) {
 		this.getMaintenanceFlagChannel().setNextValue(value);
 	}
-	
-	/**
-     * Gets the Channel for {@link ChannelId#WARNING_MESSAGE}.
-     *
-     * @return the Channel
-     */
-    public default StringReadChannel getWarningMessageChannel(){
-        return this.channel(ChannelId.WARNING_MESSAGE);
-    }
-    
-    /**
-	 * If a warning occurred, get the warning messages. Hka_Bd.bWarnung
-	 * See {@link ChannelId#WARNING_MESSAGE}.
-	 *
-	 * @return the Channel {@link Value}
-	 */
-	public default Value<String> getWarningMessage() {
-		return this.getWarningMessageChannel().value();
-	}
-	
-	/**
-	 * Internal method to set the 'nextValue' on {@link ChannelId#WARNING_MESSAGE}
-	 * Channel.
-	 *
-	 * @param value the next value
-	 */
-	public default void _setWarningMessage(String value) {
-		this.getWarningMessageChannel().setNextValue(value);
-	}
-	
-	/**
-     * Gets the Channel for {@link ChannelId#ERROR_MESSAGE}.
-     *
-     * @return the Channel
-     */
-    public default StringReadChannel getErrorMessageChannel(){
-        return this.channel(ChannelId.ERROR_MESSAGE);
-    }
-    
-    /**
-	 * If an error occurred, get the error messages. Hka_Bd.bStoerung
-	 * See {@link ChannelId#ERROR_MESSAGE}.
-	 *
-	 * @return the Channel {@link Value}
-	 */
-	public default Value<String> getErrorMessage() {
-		return this.getErrorMessageChannel().value();
-	}
-	
-	/**
-	 * Internal method to set the 'nextValue' on {@link ChannelId#ERROR_MESSAGE}
-	 * Channel.
-	 *
-	 * @param value the next value
-	 */
-	public default void _setErrorMessage(String value) {
-		this.getErrorMessageChannel().setNextValue(value);
-	}
-
 }
