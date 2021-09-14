@@ -77,11 +77,11 @@ public class SimulatedKebaContact extends AbstractOpenemsComponent implements Ma
         this.l2 = this.channel(KebaChannelId.CURRENT_L2);
         this.l3 = this.channel(KebaChannelId.CURRENT_L3);
         if (config.minHwPower() == 0) {
-            this._setMinimumHardwarePower(5);
+            this._setMinimumHardwarePower(5*3*230);
         } else {
-            this._setMinimumHardwarePower(config.minHwPower());
+            this._setMinimumHardwarePower(config.minHwPower()*3*230);
         }
-        this._setMinimumPower(5);
+        this._setMinimumPower(5*3*230);
         this._setPhases(0);
         this._setPowerPrecision(0.23);
         this._setMaximumPower(32*3*230);
@@ -109,14 +109,16 @@ public class SimulatedKebaContact extends AbstractOpenemsComponent implements Ma
         this.l2 = this.channel(KebaChannelId.CURRENT_L2);
         this.l3 = this.channel(KebaChannelId.CURRENT_L3);
         if (config.minHwPower() == 0) {
-            this._setMinimumHardwarePower(5);
+            this._setMinimumHardwarePower(5*3*230);
         } else {
-            this._setMinimumHardwarePower(config.minHwPower());
+            this._setMinimumHardwarePower(config.minHwPower()*3*230);
         }
+        this._setMinimumPower(5*3*230);
         this._setPhases(0);
         this._setMaximumPower(32*3*230);
         this._setMaximumHardwarePower(32*3*230);
         this._setPowerPrecision(0.23);
+        this._setIsPriority(config.priority());
     }
 
     @Override

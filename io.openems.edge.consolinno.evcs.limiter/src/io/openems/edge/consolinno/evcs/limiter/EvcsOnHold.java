@@ -12,7 +12,7 @@ class EvcsOnHold {
      * This Object contains the information to Identify a waiting EVCS(this is an internal Object and is designed to
      * be used in a Map where the key is the id.
      *
-     * @param power     last known power request
+     * @param power     last known power request in A
      * @param timestamp time when the EVCS was turned off
      * @param phases    amount of phases the EVCS has
      */
