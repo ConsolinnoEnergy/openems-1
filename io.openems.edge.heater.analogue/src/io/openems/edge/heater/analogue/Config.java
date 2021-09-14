@@ -3,12 +3,12 @@ package io.openems.edge.heater.analogue;
 import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
-@ObjectClassDefinition(name = "Heater Analogue ", description = "A Heater that works with an Analogue Device/Module")
+@ObjectClassDefinition(name = "Heater Analogue", description = "A Heater that works with an Analogue Device/Module")
 @interface Config {
 
     String service_pid();
 
-    @AttributeDefinition(name = "Id", description = "Unique Id for the .")
+    @AttributeDefinition(name = "Id", description = "Unique Id for the Heater.")
     String id() default "AnalogueHeater0";
 
     @AttributeDefinition(name = "Alias", description = "Human readable name of this Configurator.")
@@ -17,15 +17,13 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     AnalogueType analogueType() default AnalogueType.LUCID_CONTROL;
 
     @AttributeDefinition(name = "AnalogueDevice ID", description = "The Device Id that Controls the Heater in reality")
-    String analogueId() default "LucidControlOutput0";
+    String[] analogueId() default {"Relay0"};
 
-    /*
-    TODO
-    boolean usesSignalSensors() default true;
+    boolean useErrorSignals() default true;
 
     @AttributeDefinition(name = "SignalSensor Ids", description = "If you want to use SignalSensor as ErrorHandling, put them here")
     String[] signalSensors() default {"SignalSensor0"};
-    */
+
     @AttributeDefinition(name = "Max Power in KW", description = "Maximum available Power")
     int maxPower() default 100;
 

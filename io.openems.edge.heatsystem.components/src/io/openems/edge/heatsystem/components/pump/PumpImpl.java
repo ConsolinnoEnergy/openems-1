@@ -13,8 +13,8 @@ import io.openems.edge.exceptionalstate.api.ExceptionalState;
 import io.openems.edge.exceptionalstate.api.ExceptionalStateHandler;
 import io.openems.edge.exceptionalstate.api.ExceptionalStateHandlerImpl;
 import io.openems.edge.heatsystem.components.ConfigurationType;
-import io.openems.edge.heatsystem.components.HeatsystemComponent;
-import io.openems.edge.heatsystem.components.Pump;
+import io.openems.edge.heatsystem.components.HydraulicChannel;
+import io.openems.edge.heatsystem.components.HydraulicComponent;
 import io.openems.edge.io.api.AnalogInputOutput;
 import io.openems.edge.io.api.Pwm;
 import io.openems.edge.relay.api.Relay;
@@ -46,7 +46,7 @@ import org.slf4j.LoggerFactory;
                 EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE,
                 EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS
         })
-public class PumpImpl extends AbstractOpenemsComponent implements OpenemsComponent, Pump, ExceptionalState, EventHandler {
+public class PumpImpl extends AbstractOpenemsComponent implements OpenemsComponent, HydraulicComponent, ExceptionalState, EventHandler {
     private final Logger log = LoggerFactory.getLogger(PumpImpl.class);
 
     private Relay relay;
@@ -83,7 +83,7 @@ public class PumpImpl extends AbstractOpenemsComponent implements OpenemsCompone
 
     public PumpImpl() {
         super(OpenemsComponent.ChannelId.values(),
-                HeatsystemComponent.ChannelId.values(),
+                HydraulicChannel.ChannelId.values(),
                 ExceptionalState.ChannelId.values());
     }
 
@@ -311,7 +311,7 @@ public class PumpImpl extends AbstractOpenemsComponent implements OpenemsCompone
         powerLevel = Math.max(DEFAULT_MIN_POWER_VALUE, powerLevel);
         powerLevel = Math.min(DEFAULT_MAX_POWER_VALUE, powerLevel);
         //sets pwm/aio
-        if (this.isPwmOrAio && (this.isRelay == false || changeSuccess)) {
+        if (this.isPwmOrAio && (this.isRelay == false || changeSuccess == false)) {
             changeSuccess = this.controlPercentDevice(powerLevel);
         }
         if (changeSuccess) {
@@ -412,6 +412,31 @@ public class PumpImpl extends AbstractOpenemsComponent implements OpenemsCompone
                 break;
         }
         return true;
+    }
+
+    @Override
+    public void forceClose() {
+        this.setPowerLevel(0);
+    }
+
+    @Override
+    public void forceOpen() {
+    this.setPowerLevel(100);
+    }
+
+    @Override
+    public boolean powerLevelReached() {
+        return false;
+    }
+
+    @Override
+    public boolean isChanging() {
+        return false;
+    }
+
+    @Override
+    public void reset() {
+
     }
 
     /**

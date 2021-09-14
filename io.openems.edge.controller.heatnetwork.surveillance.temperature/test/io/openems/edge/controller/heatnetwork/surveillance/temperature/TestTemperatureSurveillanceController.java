@@ -6,7 +6,7 @@ import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.common.test.AbstractComponentTest;
 import io.openems.edge.common.test.DummyComponentManager;
 import io.openems.edge.common.test.TimeLeapClock;
-import io.openems.edge.controller.heatnetwork.valve.api.DummyValveController;
+import io.openems.edge.controller.hydrauliccomponent.api.DummyHydraulicController;
 import io.openems.edge.controller.test.ControllerTest;
 import io.openems.edge.common.test.AbstractComponentTest.TestCase;
 import io.openems.edge.heater.api.test.DummyHeater;
@@ -63,7 +63,7 @@ public class TestTemperatureSurveillanceController {
                 this.thermometerMap.put(entry, th);
                 channelId = "Temperature";
             }  else if (entry.contains("Valve")) {
-                this.cpm.addComponent(new DummyValveController(entry));
+                this.cpm.addComponent(new DummyHydraulicController(entry));
             } else if (entry.contains("Timer")) {
                 TimerType type = TimerType.TIME;
                 if (entry.contains("Cycles")) {

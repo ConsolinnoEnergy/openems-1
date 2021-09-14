@@ -1,17 +1,17 @@
 package io.openems.edge.controller.heatnetwork.hydraulic.lineheater.helperclass;
 
 import io.openems.common.exceptions.OpenemsError;
-import io.openems.edge.heatsystem.components.Valve;
+import io.openems.edge.heatsystem.components.HydraulicComponent;
 import org.joda.time.DateTime;
 
 public class ValveLineHeater extends AbstractLineHeater {
 
-    private Valve valve;
+    private HydraulicComponent valve;
     private Double max;
     private Double min;
 
 
-    public ValveLineHeater(boolean booleanControlled, Valve valve, boolean useMinMax) {
+    public ValveLineHeater(boolean booleanControlled, HydraulicComponent valve, boolean useMinMax) {
         super(booleanControlled, useMinMax);
         this.valve = valve;
     }

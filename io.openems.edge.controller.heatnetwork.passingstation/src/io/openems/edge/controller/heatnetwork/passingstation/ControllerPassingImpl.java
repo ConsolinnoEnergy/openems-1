@@ -10,9 +10,8 @@ import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.controller.api.Controller;
 import io.openems.edge.controller.heatnetwork.passingstation.api.ControllerPassing;
 import io.openems.edge.heatsystem.components.PassingStation;
-import io.openems.edge.heatsystem.components.HeatsystemComponent;
-import io.openems.edge.heatsystem.components.Pump;
-import io.openems.edge.heatsystem.components.Valve;
+import io.openems.edge.heatsystem.components.HydraulicChannel;
+import io.openems.edge.heatsystem.components.HydraulicComponent;
 import io.openems.edge.thermometer.api.Thermometer;
 import org.osgi.service.cm.ConfigurationException;
 import org.osgi.service.component.ComponentContext;
@@ -34,8 +33,8 @@ public class ControllerPassingImpl extends AbstractOpenemsComponent implements O
     private Thermometer primaryRewind;
     private Thermometer secondaryForward;
     private Thermometer secondaryRewind;
-    private Valve valve;
-    private Pump pump;
+    private HydraulicComponent valve;
+    private HydraulicComponent pump;
     private boolean pumpActive = false;
 
     private boolean isOpen = false;
@@ -263,14 +262,14 @@ public class ControllerPassingImpl extends AbstractOpenemsComponent implements O
 
                 break;
             case "Pump":
-                if (cpm.getComponent(id) instanceof HeatsystemComponent) {
+                if (cpm.getComponent(id) instanceof HydraulicChannel) {
                     this.pump = cpm.getComponent(id);
                 } else {
                     throw new ConfigurationException(id, "The Pump " + id + " Is not a (configured) Pump.");
                 }
                 break;
             case "Valve":
-                if (cpm.getComponent(id) instanceof HeatsystemComponent) {
+                if (cpm.getComponent(id) instanceof HydraulicChannel) {
                     this.valve = cpm.getComponent(id);
                 } else {
                     throw new ConfigurationException(id, "The Valve " + id + " Is not a (configured) Valve.");

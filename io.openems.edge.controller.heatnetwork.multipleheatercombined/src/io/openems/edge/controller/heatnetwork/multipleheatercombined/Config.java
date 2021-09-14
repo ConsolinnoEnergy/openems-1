@@ -34,6 +34,15 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     @AttributeDefinition(name = "Deactivation Thermometers", description = "The Temperature-Sensor for the Heating Device 1 Temperature MAX.")
     String[] deactivationThermometers() default {"TemperatureSensor1", "TemperatureSensor3", "TemperatureSensor5"};
 
+    @AttributeDefinition(name = "useTimer", description = "Offset the activation of the Relay by time.")
+    boolean useTimer() default false;
+
+    @AttributeDefinition(name = "timeDelta", description = "Time (in s or Cycles) between the activation of the Relay/s and reaching of the activationTemperature.")
+    int timeDelta() default 900;
+
+    @AttributeDefinition(name = "timerId", description = "Unique Id of the timer")
+    String timerId() default "TimerByTime";
+
     boolean enabled() default true;
 
     String webconsole_configurationFactory_nameHint() default "Controller Multiple Heater Combined [{id}]";

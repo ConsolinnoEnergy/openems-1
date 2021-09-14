@@ -7,10 +7,12 @@ Bundle-Version: 1.0.0.${tstamp}
 	${buildpath},\
 	io.openems.common,\
 	io.openems.edge.common,\
-	io.openems.edge.controller.heatnetwork.valve,\
+	io.openems.edge.controller.hydrauliccomponent,\
 	io.openems.edge.heater.api,\
 	io.openems.edge.heatsystem.components,\
 	io.openems.edge.thermometer.api,\
+	io.openems.edge.exceptionalstate.api,\
+    io.openems.edge.timer.api,\
 
 
 -testpath: \

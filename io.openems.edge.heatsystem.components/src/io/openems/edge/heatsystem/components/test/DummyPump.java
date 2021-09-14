@@ -2,8 +2,8 @@ package io.openems.edge.heatsystem.components.test;
 
 import io.openems.edge.common.component.AbstractOpenemsComponent;
 import io.openems.edge.common.component.OpenemsComponent;
-import io.openems.edge.heatsystem.components.Pump;
-import io.openems.edge.heatsystem.components.HeatsystemComponent;
+import io.openems.edge.heatsystem.components.HydraulicComponent;
+import io.openems.edge.heatsystem.components.HydraulicChannel;
 import io.openems.edge.io.api.Pwm;
 import io.openems.edge.consolinno.leaflet.pwm.test.DummyPwm;
 import io.openems.edge.relay.api.Relay;
@@ -14,7 +14,7 @@ import java.util.Random;
 /**
  * This Device acts as a Dummy for Unittests.
  */
-public class DummyPump extends AbstractOpenemsComponent implements OpenemsComponent, Pump {
+public class DummyPump extends AbstractOpenemsComponent implements OpenemsComponent, HydraulicComponent {
 
     private final Relay relays;
     //private PwmPowerLevelChannel pwm;
@@ -23,7 +23,7 @@ public class DummyPump extends AbstractOpenemsComponent implements OpenemsCompon
     private final Pwm pwm;
 
     public DummyPump(String id, Relay relays, Pwm pwm, String type) {
-        super(OpenemsComponent.ChannelId.values(), HeatsystemComponent.ChannelId.values());
+        super(OpenemsComponent.ChannelId.values(), HydraulicChannel.ChannelId.values());
 
         super.activate(null, id, "", true);
 
@@ -99,6 +99,31 @@ public class DummyPump extends AbstractOpenemsComponent implements OpenemsCompon
         } else {
             System.out.println("Relays is " + !activate);
         }
+    }
+
+    @Override
+    public void forceClose() {
+
+    }
+
+    @Override
+    public void forceOpen() {
+
+    }
+
+    @Override
+    public boolean powerLevelReached() {
+        return false;
+    }
+
+    @Override
+    public boolean isChanging() {
+        return false;
+    }
+
+    @Override
+    public void reset() {
+
     }
 
     @Override

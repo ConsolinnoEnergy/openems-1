@@ -12,27 +12,28 @@ import org.osgi.service.metatype.annotations.Option;
 
     String service_pid();
 
-    @AttributeDefinition(name = "Valve Name", description = "Unique Id of the Valve.")
-    String id() default "DecentralizedCooler0";
+    @AttributeDefinition(name = "Cooler Name", description = "Unique Id of the Cooler.")
+    String id() default "DecentralCooler0";
 
     @AttributeDefinition(name = "Alias", description = "Human readable name for this Component.")
     String alias() default "";
 
-    @AttributeDefinition(name = "ValveOrValveController", description = "Control a Valve directly or via Controller",
+    @AttributeDefinition(name = "ComponentOrComponentController", description = "Control a Valve directly or via Controller",
             options = {
-                    @Option(label = "ValveController", value = "ValveController"),
-                    @Option(label = "Valve", value = "Valve")}
+                    @Option(label = "ComponentController", value = "ComponentController"),
+                    @Option(label = "Component", value = "Component"),
+            }
     )
-    String valveOrController() default "ValveController";
+    String componentOrController() default "ComponentController";
 
-    @AttributeDefinition(name = "ValveOrControllerId", description = "The Valve that will be controlled, or the Controller you want to set")
-    String valveOrControllerId() default "StaticValveController0";
+    @AttributeDefinition(name = "ComponentOrControllerId", description = "The Component that will be controlled, or the Controller you want to set")
+    String componentOrControllerId() default "HydraulicController0";
 
     @AttributeDefinition(name = "ThresholdThermometerId", description = "ThresholdThermometer to Check")
     String thresholdThermometerId() default "ThresholdThermometer0";
 
-    @AttributeDefinition(name = "SetPointTemperature", description = "SetPoint to OpenValve, if the Temperature is not reached / Above Value -> Ask for more Cooling, Unit: DeciDegree: 1°C = 10dC")
-    int setPointTemperature() default 200;
+    @AttributeDefinition(name = "SetPointTemperature", description = "SetPoint to OpenValve, also setPoint To Tell: NeedMoreCool, Unit: DeciDegree: 1°C = 10dC")
+    int setPointTemperature() default 700;
 
     int maximumThermalOutputInKw() default 150;
 
@@ -41,8 +42,19 @@ import org.osgi.service.metatype.annotations.Option;
     @AttributeDefinition(name = "Force Cooling", description = "On CoolerEnabled Signal -> Force Cooling no matter if the Response/Callback says ok or not")
     boolean forceCooling() default false;
 
+    @AttributeDefinition(name = "Timer for NeedCoolResponse", description = "Timer Id either TimerByTime or TimerByCycles")
+    String timerNeedCoolResponse() default "TimerByCycles";
+
     @AttributeDefinition(name = "Cycles to wait when Need Cool Enable Signal (Central Controller) isn't present", description = "How many Cycles do you wait for the Central Communication Controller if Communication is lost")
-    int waitCyclesNeedCoolResponse() default 8;
+    int timeNeedCoolResponse() default 8;
+
+    boolean enableExceptionalStateHandling() default true;
+
+    @AttributeDefinition(name = "Timer for ExceptionalState", description = "Timer Id for ExceptionalState Handling, either TimerByTimer or TimerByCycles")
+    String timerExceptionalState() default "TimerByCycles";
+
+    @AttributeDefinition(name = "Wait Time/Cycles for ExceptionalState", description = "How long do you await a new Exceptional State enable Signal.")
+    int timeToWaitExceptionalState() default 60;
 
     boolean enabled() default true;
 

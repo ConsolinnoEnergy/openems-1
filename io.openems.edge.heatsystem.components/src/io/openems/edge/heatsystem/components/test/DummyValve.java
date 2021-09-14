@@ -2,8 +2,8 @@ package io.openems.edge.heatsystem.components.test;
 
 import io.openems.edge.common.component.AbstractOpenemsComponent;
 import io.openems.edge.common.component.OpenemsComponent;
-import io.openems.edge.heatsystem.components.HeatsystemComponent;
-import io.openems.edge.heatsystem.components.Valve;
+import io.openems.edge.heatsystem.components.HydraulicChannel;
+import io.openems.edge.heatsystem.components.HydraulicComponent;
 import io.openems.edge.relay.api.Relay;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,7 +13,7 @@ import org.slf4j.LoggerFactory;
  * Osgi Activate and Deactivate Methods for obv Reasons. It should be combined with the Passing Station + the DummyPump.
  */
 
-public class DummyValve extends AbstractOpenemsComponent implements Valve, OpenemsComponent {
+public class DummyValve extends AbstractOpenemsComponent implements HydraulicComponent, OpenemsComponent {
 
     private final Logger log = LoggerFactory.getLogger(DummyValve.class);
 
@@ -25,7 +25,7 @@ public class DummyValve extends AbstractOpenemsComponent implements Valve, Opene
 
 
     public DummyValve(Relay valveOpen, Relay valveClose, String id, double valveTimeInSeconds) {
-        super(OpenemsComponent.ChannelId.values(), HeatsystemComponent.ChannelId.values());
+        super(OpenemsComponent.ChannelId.values(), HydraulicChannel.ChannelId.values());
         super.activate(null, id, "", true);
         this.opens = valveOpen;
         this.closing = valveClose;
@@ -139,6 +139,14 @@ public class DummyValve extends AbstractOpenemsComponent implements Valve, Opene
     @Override
     public void reset() {
 
+    }
+
+    @Override
+    public void setPowerLevel(double percent) {
+        percent -= this.getPowerLevelValue();
+        if (this.changeByPercentage(percent)) {
+            this.setPointPowerLevelChannel().setNextValue(-1);
+        }
     }
 
     @Override
