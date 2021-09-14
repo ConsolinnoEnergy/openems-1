@@ -5,7 +5,7 @@ import io.openems.edge.common.test.AbstractComponentConfig;
 import io.openems.edge.common.test.AbstractComponentTest;
 import io.openems.edge.common.test.DummyComponentManager;
 import io.openems.edge.controller.test.ControllerTest;
-import io.openems.edge.heater.decentral.test.DummyDecentralHeater;
+import io.openems.edge.heater.decentral.test.DummyDecentralizedHeater;
 import io.openems.edge.thermometer.api.Thermometer;
 import io.openems.edge.thermometer.api.test.DummyThermometer;
 import io.openems.edge.timer.api.DummyTimer;
@@ -141,7 +141,7 @@ public class ControllerOverseerImplTest {
     private static DummyComponentManager cpm;
     private Thermometer sourceThermometer;
     private Thermometer targetThermometer;
-    private DummyDecentralHeater heater;
+    private DummyDecentralizedHeater heater;
     private DummyTimer timer;
     private ChannelAddress source;
     private ChannelAddress target;
@@ -163,7 +163,7 @@ public class ControllerOverseerImplTest {
                 "target", 20, true, 200, 0, "test", "source/Temperature", "300", "exception", 0, true);
         sourceThermometer = new DummyThermometer(config.sourceThermometer());
         targetThermometer = new DummyThermometer(config.targetThermometer());
-        heater = new DummyDecentralHeater("exception");
+        heater = new DummyDecentralizedHeater("exception");
         timer = new DummyTimer(config.timerId(), TimerType.TIME);
 
         source = new ChannelAddress(config.sourceThermometer(), "Temperature");

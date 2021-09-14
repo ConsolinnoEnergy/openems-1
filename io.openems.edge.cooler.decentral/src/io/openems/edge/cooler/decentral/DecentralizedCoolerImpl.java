@@ -10,6 +10,7 @@ import io.openems.edge.controller.hydrauliccomponent.api.HydraulicController;
 import io.openems.edge.exceptionalstate.api.ExceptionalState;
 import io.openems.edge.exceptionalstate.api.ExceptionalStateHandler;
 import io.openems.edge.exceptionalstate.api.ExceptionalStateHandlerImpl;
+import io.openems.edge.heater.api.ComponentType;
 import io.openems.edge.heater.api.Cooler;
 import io.openems.edge.heater.api.HeaterState;
 import io.openems.edge.cooler.decentral.api.DecentralizedCooler;
@@ -45,29 +46,25 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @Component(name = "Cooler.Decentralized",
         configurationPolicy = ConfigurationPolicy.REQUIRE,
         immediate = true,
-        property = {EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS}
-)
+        property = {EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS})
+public class DecentralizedCoolerImpl extends AbstractOpenemsComponent implements OpenemsComponent, DecentralizedCooler, ExceptionalState, EventHandler {
 
-public class DecentralizedCoolerImpl extends AbstractOpenemsComponent implements OpenemsComponent, DecentralizedCooler,ExceptionalState, EventHandler {
-
-    private static final int DEFAULT_MAXIMUM_VALVE = 100;
     private final Logger log = LoggerFactory.getLogger(DecentralizedCoolerImpl.class);
     @Reference
     ComponentManager cpm;
 
-    private final static String NEED_COOL_RESPONSE_IDENTIFIER = "DECENTRAL_COOLER_NEED_COOL_RESPONSE_IDENTIFIER";
-    private final static String EXCEPTIONAL_STATE_IDENTIFIER = "DECENTRAL_COOLER_EXCEPTIONAL_STATE_IDENTIFIER";
+    private static final String NEED_COOL_RESPONSE_IDENTIFIER = "DECENTRAL_COOLER_NEED_COOL_RESPONSE_IDENTIFIER";
+    private static final String EXCEPTIONAL_STATE_IDENTIFIER = "DECENTRAL_COOLER_EXCEPTIONAL_STATE_IDENTIFIER";
 
     private TimerHandler timer;
     private ExceptionalStateHandler exceptionalStateHandler;
 
     private HydraulicComponent hydraulicComponent;
     private HydraulicController configuredHydraulicController;
-    private boolean isComponent;
+    private ComponentType componentType;
     private ThermometerThreshold thresholdThermometer;
-    private boolean wasNeedCoolEnableLastCycle;
     private boolean useExceptionalState;
-    private boolean exceptionalStatePresentBefore = false;
+    private boolean wasNeedCoolEnableLastCycle;
 
     public DecentralizedCoolerImpl() {
         super(OpenemsComponent.ChannelId.values(),
@@ -78,7 +75,7 @@ public class DecentralizedCoolerImpl extends AbstractOpenemsComponent implements
 
 
     @Activate
-    public void activate(ComponentContext context, Config config) throws OpenemsError.OpenemsNamedException, ConfigurationException {
+    void activate(ComponentContext context, Config config) throws OpenemsError.OpenemsNamedException, ConfigurationException {
         super.activate(context, config.id(), config.alias(), config.enabled());
         if (config.enabled() == false) {
             return;
@@ -86,23 +83,29 @@ public class DecentralizedCoolerImpl extends AbstractOpenemsComponent implements
 
         OpenemsComponent componentFetchedByComponentManager;
 
-        this.isComponent = config.componentOrController().equals("Component");
+        this.componentType = config.componentOrController();
         componentFetchedByComponentManager = this.cpm.getComponent(config.componentOrControllerId());
-        if (isComponent) {
-            if (componentFetchedByComponentManager instanceof HydraulicComponent) {
-                this.hydraulicComponent = (HydraulicComponent) componentFetchedByComponentManager;
-            } else {
-                throw new ConfigurationException("activate", "The Component with id: "
-                        + config.componentOrControllerId() + " is not a HydraulicComponent");
-            }
-        } else if (componentFetchedByComponentManager instanceof HydraulicController) {
-            this.configuredHydraulicController = (HydraulicController) componentFetchedByComponentManager;
-        } else {
-            throw new ConfigurationException("activate", "The Component with id "
-                    + config.componentOrControllerId() + "not an instance of ValveController");
+        switch (this.componentType) {
+
+            case COMPONENT:
+                if (componentFetchedByComponentManager instanceof HydraulicComponent) {
+                    this.hydraulicComponent = (HydraulicComponent) componentFetchedByComponentManager;
+                } else {
+                    throw new ConfigurationException("activate", "The Component with id: "
+                            + config.componentOrControllerId() + " is not a HydraulicComponent");
+                }
+                break;
+            case CONTROLLER:
+                if (componentFetchedByComponentManager instanceof HydraulicController) {
+                    this.configuredHydraulicController = (HydraulicController) componentFetchedByComponentManager;
+                } else {
+                    throw new ConfigurationException("activate", "The Component with id "
+                            + config.componentOrControllerId() + "not an instance of ValveController");
+                }
+                break;
         }
 
-        componentFetchedByComponentManager = cpm.getComponent(config.thresholdThermometerId());
+        componentFetchedByComponentManager = this.cpm.getComponent(config.thresholdThermometerId());
         if (componentFetchedByComponentManager instanceof ThermometerThreshold) {
             this.thresholdThermometer = (ThermometerThreshold) componentFetchedByComponentManager;
             this.thresholdThermometer.setSetPointTemperature(config.setPointTemperature(), super.id());
@@ -112,25 +115,23 @@ public class DecentralizedCoolerImpl extends AbstractOpenemsComponent implements
         }
         this.setSetPointTemperature(config.setPointTemperature());
         if (config.shouldCloseOnActivation()) {
-            if (isComponent) {
-                this.hydraulicComponent.forceClose();
-            } else {
-                this.configuredHydraulicController.setEnableSignal(false);
+            switch (this.componentType) {
+
+                case COMPONENT:
+                    this.hydraulicComponent.forceClose();
+                    break;
+                case CONTROLLER:
+                    this.configuredHydraulicController.setEnableSignal(false);
+                    break;
             }
         }
+
         this.getForceCoolChannel().setNextValue(config.forceCooling());
         this.setState(HeaterState.OFF);
-        this.maxWaitCyclesNeedCoolEnable = config.waitCyclesNeedCoolResponse();
         this.useExceptionalState = config.enableExceptionalStateHandling();
         this.initializeTimer(config);
         this.getNeedCoolChannel().setNextValue(false);
         this.getNeedMoreCoolChannel().setNextValue(false);
-    }
-
-
-    @Override
-    public void setOffline() throws OpenemsError.OpenemsNamedException {
-        this.getEnableSignalChannel().setNextWriteValue(false);
     }
 
     /**
@@ -149,10 +150,7 @@ public class DecentralizedCoolerImpl extends AbstractOpenemsComponent implements
     @Override
     public void handleEvent(Event event) {
         if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS) && super.isEnabled()) {
-            if (this.errorInCooler()) {
-                //TODO DO SOMETHING (?)
-            }
-            checkMissingComponents();
+            this.checkMissingComponents();
             AtomicBoolean currentRunCoolerEnabled = new AtomicBoolean();
             AtomicBoolean exceptionalStateOverride = new AtomicBoolean(false);
             currentRunCoolerEnabled.set(checkIsCurrentRunCoolerEnabled());
@@ -175,14 +173,14 @@ public class DecentralizedCoolerImpl extends AbstractOpenemsComponent implements
                         this.setThresholdAndControlValve();
                     } else {
                         this.wasNeedCoolEnableLastCycle = false;
-                        this.setState(HeaterState.AWAIT.name());
+                        this.setState(HeaterState.STARTING_UP_OR_PREHEAT);
                         this.closeComponentOrDisableComponentController();
                     }
                 } catch (OpenemsError.OpenemsNamedException e) {
                     this.log.warn("Couldn't enable/Disable the ValveController!");
                 }
             } else {
-                deactivateControlledComponents();
+                this.deactivateControlledComponents();
                 this.timer.resetTimer(NEED_COOL_RESPONSE_IDENTIFIER);
             }
         }
@@ -208,20 +206,20 @@ public class DecentralizedCoolerImpl extends AbstractOpenemsComponent implements
     private void setThresholdAndControlValve() throws OpenemsError.OpenemsNamedException {
         this.thresholdThermometer.setSetPointTemperatureAndActivate(this.getSetPointTemperature(), super.id());
         //Static Valve Controller Works on it's own with given Temperature
-        if (this.isComponent == false) {
+        if (this.componentType.equals(ComponentType.CONTROLLER)) {
             this.configuredHydraulicController.getEnableSignalChannel().setNextWriteValueFromObject(true);
             this.configuredHydraulicController.setControlType(ControlType.TEMPERATURE);
         }
         // Check if SetPointTemperature above Thermometer --> Either
-        if (this.thermometerThreshold.thermometerBelowGivenTemperature(this.getSetPointTemperature())) {
+        if (this.thresholdThermometer.thermometerBelowGivenTemperature(this.getSetPointTemperature())) {
             this.setState(HeaterState.RUNNING);
             this.getNeedMoreCoolChannel().setNextValue(false);
-            if (this.isComponent) {
-                this.hydraulicComponent.setPointPowerLevelChannel().setNextValue(100);
+            if (this.componentType.equals(ComponentType.COMPONENT)) {
+                this.hydraulicComponent.setPointPowerLevelChannel().setNextValue(HydraulicComponent.DEFAULT_MAX_POWER_VALUE);
             }
         } else {
             this.getNeedMoreCoolChannel().setNextValue(true);
-            if (this.isComponent) {
+            if (this.componentType.equals(ComponentType.CONTROLLER)) {
                 this.closeComponentOrDisableComponentController();
             }
             this.setState(HeaterState.STARTING_UP_OR_PREHEAT);
@@ -265,23 +263,27 @@ public class DecentralizedCoolerImpl extends AbstractOpenemsComponent implements
     private void checkMissingComponents() {
         OpenemsComponent componentFetchedByCpm;
         try {
-            if (this.isComponent) {
-                if (this.hydraulicComponent.isEnabled() == false) {
-                    componentFetchedByCpm = cpm.getComponent(this.hydraulicComponent.id());
-                    if (componentFetchedByCpm instanceof HydraulicComponent) {
-                        this.hydraulicComponent = (HydraulicComponent) componentFetchedByCpm;
+            switch (this.componentType) {
+
+                case COMPONENT:
+                    if (this.hydraulicComponent.isEnabled() == false) {
+                        componentFetchedByCpm = cpm.getComponent(this.hydraulicComponent.id());
+                        if (componentFetchedByCpm instanceof HydraulicComponent) {
+                            this.hydraulicComponent = (HydraulicComponent) componentFetchedByCpm;
+                        }
                     }
-                }
-            } else {
-                if (this.configuredHydraulicController.isEnabled() == false) {
-                    componentFetchedByCpm = cpm.getComponent(this.configuredHydraulicController.id());
-                    if (componentFetchedByCpm instanceof HydraulicController) {
-                        this.configuredHydraulicController = (HydraulicController) componentFetchedByCpm;
+                    break;
+                case CONTROLLER:
+                    if (this.configuredHydraulicController.isEnabled() == false) {
+                        componentFetchedByCpm = cpm.getComponent(this.configuredHydraulicController.id());
+                        if (componentFetchedByCpm instanceof HydraulicController) {
+                            this.configuredHydraulicController = (HydraulicController) componentFetchedByCpm;
+                        }
                     }
-                }
+                    break;
             }
             if (this.thresholdThermometer.isEnabled() == false) {
-                componentFetchedByCpm = cpm.getComponent(this.thresholdThermometer.id());
+                componentFetchedByCpm = this.cpm.getComponent(this.thresholdThermometer.id());
                 if (componentFetchedByCpm instanceof ThermometerThreshold) {
                     this.thresholdThermometer = (ThermometerThreshold) componentFetchedByCpm;
                 }
@@ -307,64 +309,21 @@ public class DecentralizedCoolerImpl extends AbstractOpenemsComponent implements
         } catch (OpenemsError.OpenemsNamedException e) {
             this.log.warn("Couldn't disable ValveController!");
         }
-        this.setState(HeaterState.OFFLINE.name());
+        this.setState(HeaterState.OFF);
     }
 
     /**
      * When Called close the Valve (if configured) or otherwise disable the ValveController.
      */
     private void closeComponentOrDisableComponentController() throws OpenemsError.OpenemsNamedException {
-        if (this.isComponent) {
-            this.hydraulicComponent.setPointPowerLevelChannel().setNextValue(0);
-        } else {
-            this.configuredHydraulicController.getEnableSignalChannel().setNextWriteValueFromObject(false);
+        switch (this.componentType) {
+            case COMPONENT:
+                this.hydraulicComponent.setPointPowerLevelChannel().setNextValue(HydraulicComponent.DEFAULT_MIN_POWER_VALUE);
+                break;
+            case CONTROLLER:
+                this.configuredHydraulicController.getEnableSignalChannel().setNextWriteValueFromObject(false);
+                break;
         }
-    }
-
-
-    //_---------------------------------TODOS---------------------------------//
-
-
-    //TODO IDK What to do here --> Override methods of Cooler
-    @Override
-    public boolean hasError() {
-        return this.errorInCooler();
-    }
-
-    @Override
-    public void requestMaximumPower() {
-
-    }
-
-    @Override
-    public void setIdle() {
-    }
-
-    @Override
-    public boolean setPointPowerPercentAvailable() {
-        return false;
-    }
-
-    @Override
-    public boolean setPointPowerAvailable() {
-        return false;
-    }
-
-    @Override
-    public boolean setPointTemperatureAvailable() {
-        return true;
-    }
-
-    @Override
-    public int calculateProvidedPower(int demand, float bufferValue) throws OpenemsError.OpenemsNamedException {
-        //TODO (?)
-        return 0;
-    }
-
-    @Override
-    public int getMaximumThermalOutput() {
-        //TODO
-        return 0;
     }
 
 
@@ -381,7 +340,7 @@ public class DecentralizedCoolerImpl extends AbstractOpenemsComponent implements
 
         if (config.enableExceptionalStateHandling()) {
             this.timer.addOneIdentifier(EXCEPTIONAL_STATE_IDENTIFIER, config.timerExceptionalState(), config.timeToWaitExceptionalState());
-            this.getExceptionalStateValueChannel().setNextValue(100);
+            this.getExceptionalStateValueChannel().setNextValue(ExceptionalState.DEFAULT_MAX_EXCEPTIONAL_VALUE);
             this.exceptionalStateHandler = new ExceptionalStateHandlerImpl(this.timer, EXCEPTIONAL_STATE_IDENTIFIER);
         }
     }
@@ -393,5 +352,4 @@ public class DecentralizedCoolerImpl extends AbstractOpenemsComponent implements
         }
         super.deactivate();
     }
-
 }

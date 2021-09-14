@@ -7,7 +7,7 @@ import io.openems.edge.common.test.AbstractComponentTest.TestCase;
 import io.openems.edge.common.test.DummyComponentManager;
 import io.openems.edge.common.test.TimeLeapClock;
 import io.openems.edge.controller.test.ControllerTest;
-import io.openems.edge.heater.test.DummyCooler;
+import io.openems.edge.heater.api.test.DummyCooler;
 import io.openems.edge.thermometer.api.test.DummyThermometer;
 import org.junit.Assert;
 import org.junit.Before;

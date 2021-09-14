@@ -7,6 +7,7 @@ import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.controller.api.Controller;
 import io.openems.edge.controller.heatnetwork.cooling.multiplecoolercombined.api.MultipleCoolerCombinedController;
 import io.openems.edge.heater.api.Cooler;
+import io.openems.edge.heater.api.HeaterState;
 import io.openems.edge.thermometer.api.Thermometer;
 import io.openems.edge.timer.api.TimerHandler;
 import io.openems.edge.timer.api.TimerHandlerImpl;
@@ -259,7 +260,7 @@ public class MultipleCoolerCombinedControllerImpl extends AbstractOpenemsCompone
             AtomicBoolean isCooling = new AtomicBoolean(false);
 
             this.configuredCooler.forEach(cooler -> {
-                if (cooler.hasError()) {
+                if (cooler.getCurrentState().equals(HeaterState.BLOCKED_OR_ERROR)) {
                     coolerError.set(true);
                 }
                 //ThermometerWrapper holding min and max values as well as Thermometer corresponding to the cooler

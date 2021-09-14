@@ -665,6 +665,18 @@ public interface Heater extends OpenemsComponent {
      * Internal method to set the 'nextValue' on {@link ChannelId#HEATER_STATE}
      * Channel.
      *
+     * @param state the next value
+     */
+
+    default void _setHeaterState(HeaterState state) {
+        this.getHeaterStateChannel().setNextValue(state.getValue());
+    }
+
+
+    /**
+     * Internal method to set the 'nextValue' on {@link ChannelId#HEATER_STATE}
+     * Channel.
+     *
      * @param value the next value
      */
     public default void _setHeaterState(int value) {
