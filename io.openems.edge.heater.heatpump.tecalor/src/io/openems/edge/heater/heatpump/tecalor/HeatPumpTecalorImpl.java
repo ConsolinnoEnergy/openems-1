@@ -78,8 +78,7 @@ public class HeatPumpTecalorImpl extends AbstractOpenemsModbusComponent implemen
 	private boolean readOnly;
 	private boolean sgReadyActive;
 
-	private boolean turnOnHeatpump;
-	private OperatingMode defaultModeOfOperation;
+	private String defaultModeOfOperation;
 	private boolean useEnableSignal;
 	private EnableSignalHandler enableSignalHandler;
 	private static final String ENABLE_SIGNAL_IDENTIFIER = "HEAT_PUMP_TECALOR_ENABLE_SIGNAL_IDENTIFIER";
@@ -463,10 +462,11 @@ public class HeatPumpTecalorImpl extends AbstractOpenemsModbusComponent implemen
 			}
 
 			if (this.useEnableSignal || this.useExceptionalState) {
+				boolean turnOnHeatpump = false;
 
 				// Handle EnableSignal.
 				if (this.useEnableSignal) {
-					this.turnOnHeatpump = this.enableSignalHandler.deviceShouldBeHeating(this);
+					turnOnHeatpump = this.enableSignalHandler.deviceShouldBeHeating(this);
 				}
 
 				// Handle ExceptionalState. ExceptionalState overwrites EnableSignal.
@@ -478,10 +478,10 @@ public class HeatPumpTecalorImpl extends AbstractOpenemsModbusComponent implemen
 						exceptionalStateValue = this.getExceptionalStateValue();
 						if (exceptionalStateValue <= 0) {
 							// Turn off heat pump when ExceptionalStateValue = 0.
-							this.turnOnHeatpump = false;
+							turnOnHeatpump = false;
 						} else {
 							// When ExceptionalStateValue is > 0, turn heat pump on.
-							this.turnOnHeatpump = true;
+							turnOnHeatpump = true;
 							/*
 							if (exceptionalStateValue > 100) {
 								exceptionalStateValue = 100;
@@ -491,7 +491,24 @@ public class HeatPumpTecalorImpl extends AbstractOpenemsModbusComponent implemen
 					}
 				}
 
-				if (this.turnOnHeatpump) {
+				if (turnOnHeatpump) {
+					OperatingMode setModeTo = OperatingMode.STANDBY;
+					switch (this.defaultModeOfOperation) {
+						case "Programmbetrieb":
+							setModeTo = OperatingMode.PROGRAM_MODE;
+							break;
+						case "Komfortbetrieb":
+							setModeTo = OperatingMode.COMFORT_MODE;
+							break;
+						case "ECO-Betrieb":
+							setModeTo = OperatingMode.ECO_MODE;
+							break;
+						case "Warmwasserbetrieb":
+							setModeTo = OperatingMode.DOMESTIC_HOT_WATER;
+							break;
+
+						// "Bereitschaftsbetrieb" is OperatingMode.STANDBY, ’setModeTo’ is initialized as that.
+					}
 					try {
 						this.setOperatingMode(this.defaultModeOfOperation.getValue());
 					} catch (OpenemsError.OpenemsNamedException e) {

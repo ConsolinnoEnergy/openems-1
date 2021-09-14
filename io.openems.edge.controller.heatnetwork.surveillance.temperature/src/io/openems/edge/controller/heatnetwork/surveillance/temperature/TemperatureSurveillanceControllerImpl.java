@@ -8,7 +8,7 @@ import io.openems.edge.controller.api.Controller;
 import io.openems.edge.controller.heatnetwork.surveillance.temperature.api.TemperatureSurveillanceController;
 import io.openems.edge.controller.heatnetwork.valve.api.ControlType;
 import io.openems.edge.controller.heatnetwork.valve.api.ValveController;
-import io.openems.edge.heater.Heater;
+import io.openems.edge.heater.api.Heater;
 import io.openems.edge.thermometer.api.Thermometer;
 import io.openems.edge.thermometer.api.ThermometerThreshold;
 import io.openems.edge.timer.api.TimerHandler;

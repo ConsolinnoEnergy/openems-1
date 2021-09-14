@@ -154,4 +154,12 @@ class ThermometerWrapper {
         return this.getActivationThermometer().getTemperatureValue() <= this.getActivationTemperature();
     }
 
+    public Map<Thermometer, Integer> getThermometerAndValue() {
+        return this.thermometerAndValue;
+    }
+
+    public Map<ThermometerKind, Thermometer> getThermometerKindThermometerMap() {
+        return this.thermometerKindThermometerMap;
+    }
+
 }

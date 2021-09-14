@@ -230,12 +230,26 @@ public enum Unit {
 	/**
 	 * Unit of Temperature [K]
 	 */
-	DEGREE_KELVIN("K"),
+	KELVIN("K"),
 
 	/**
 	 * Unit of Temperature [dK]
 	 */
-	DEZIDEGREE_KELVIN("dK", DEGREE_KELVIN, -1),
+	DEZI_KELVIN("dK", KELVIN, -1),
+
+	// ##########
+	// Temperature change
+	// ##########
+
+	/**
+	 * Unit of Temperature Change [K/min]
+	 */
+	KELVIN_PER_MINUTE("K/min"),
+
+	/**
+	 * Unit of Temperature Change [dK]
+	 */
+	DEZI_KELVIN_PER_MINUTE("dK/min", KELVIN_PER_MINUTE, -1),
 
 	// ##########
 	// Time
@@ -446,8 +460,10 @@ public enum Unit {
 			case MILLIHERTZ:
 			case DEGREE_CELSIUS:
 			case DEZIDEGREE_CELSIUS:
-			case DEGREE_KELVIN:
-			case DEZIDEGREE_KELVIN:
+			case KELVIN:
+			case DEZI_KELVIN:
+			case KELVIN_PER_MINUTE:
+			case DEZI_KELVIN_PER_MINUTE:
 			case SECONDS:
 			case CENTISECONDS:
 			case MILLISECONDS:

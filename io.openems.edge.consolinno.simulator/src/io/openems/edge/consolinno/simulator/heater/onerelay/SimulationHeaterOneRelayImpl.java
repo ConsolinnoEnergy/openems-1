@@ -9,7 +9,7 @@ import io.openems.edge.common.component.AbstractOpenemsComponent;
 import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.common.event.EdgeEventConstants;
-import io.openems.edge.heater.Heater;
+import io.openems.edge.heater.api.Heater;
 import org.osgi.service.cm.ConfigurationException;
 import org.osgi.service.component.ComponentContext;
 import org.osgi.service.component.annotations.Activate;
@@ -70,56 +70,6 @@ public class SimulationHeaterOneRelayImpl extends AbstractOpenemsComponent imple
             e.printStackTrace();
         }
         super.deactivate();
-    }
-
-
-    @Override
-    public boolean setPointPowerPercentAvailable() {
-        return false;
-    }
-
-    @Override
-    public boolean setPointPowerAvailable() {
-        return false;
-    }
-
-    @Override
-    public boolean setPointTemperatureAvailable() {
-        return false;
-    }
-
-    @Override
-    public int calculateProvidedPower(int demand, float bufferValue) throws OpenemsError.OpenemsNamedException {
-        return 0;
-    }
-
-    @Override
-    public int getMaximumThermalOutput() {
-        return 0;
-    }
-
-    @Override
-    public void setOffline() throws OpenemsError.OpenemsNamedException {
-        this.writeChannel.setNextWriteValue(false);
-    }
-
-    @Override
-    public boolean hasError() {
-        return false;
-    }
-
-    @Override
-    public void requestMaximumPower() {
-        try {
-            this.writeChannel.setNextWriteValue(true);
-        } catch (OpenemsError.OpenemsNamedException e) {
-            e.printStackTrace();
-        }
-    }
-
-    @Override
-    public void setIdle() {
-
     }
 
     @Override
