@@ -12,8 +12,8 @@ public enum ControlMode implements OptionsEnum {
 	POWER(1, "Control mode electric power"), //
 	CONSUMPTION(2, "Control mode consumption"); //
 
-	private int value;
-	private String name;
+	private final int value;
+	private final String name;
 
 	private ControlMode(int value, String name) {
 		this.value = value;

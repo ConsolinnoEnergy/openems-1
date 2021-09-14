@@ -24,7 +24,7 @@ import org.osgi.service.metatype.annotations.Option;
     @AttributeDefinition(name = "ModBus-Unit Id", description = "Integer Unit Id of the Component.")
     int modbusUnitId() default 1;
 
-    @AttributeDefinition(name = "Turn on Chp", description = "The Chp will run as long as this module is running. "
+    @AttributeDefinition(name = "Always on", description = "The Chp will run as long as this module is running. "
             + "Checking the \"Use EnableSignal\" box will override this option.")
     boolean turnOnChp() default false;
 
@@ -36,9 +36,8 @@ import org.osgi.service.metatype.annotations.Option;
             + "no longer received before the Chp is switched off. Unit is seconds, unless cycles option is selected.")
     int waitTimeEnableSignal() default 30;
 
-    @AttributeDefinition(name = "EnableSignal timer unit is cycles not seconds", description = "Use OpenEMS cycles "
-            + "instead of seconds as the unit for the timer.")
-    boolean enableSignalTimerIsCyclesNotSeconds() default false;
+    @AttributeDefinition(name = "EnableSignal timer Id", description = "Name of the timer used for the EnableSignal.")
+    String enableSignalTimerId() default "TimerByTime";
 
     @AttributeDefinition(name = "Use ExceptionalState", description = "React to commands from the Exceptional State "
             + "interface. When the Exceptional State is active, this will override any other commands.")
@@ -49,9 +48,8 @@ import org.osgi.service.metatype.annotations.Option;
             + "seconds, unless cycles option is selected.")
     int waitTimeExceptionalState() default 30;
 
-    @AttributeDefinition(name = "ExceptionalState timer unit is cycles not seconds", description = "Use OpenEMS cycles "
-            + "instead of seconds as the unit for the timer.")
-    boolean exceptionalStateTimerIsCyclesNotSeconds() default false;
+    @AttributeDefinition(name = "ExceptionalState timer Id", description = "Name of the timer used for the ExceptionalState.")
+    String exceptionalStateTimerId() default "TimerByTime";
 
     @AttributeDefinition(name = "Default control mode", description = "Control mode of the Chp until a mode is set via "
             + "channel ControlMode. Control mode \"power consumption\" requires the CHP to get the current power "

@@ -1,6 +1,7 @@
 package io.openems.edge.heater.chp.dachs;
 
 import org.osgi.service.metatype.annotations.AttributeDefinition;
+import org.osgi.service.metatype.annotations.AttributeType;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
 @ObjectClassDefinition(
@@ -20,7 +21,7 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     @AttributeDefinition(name = "Username", description = "Username for the GLT web interface")
     String username() default "glt";
 
-    @AttributeDefinition(name = "Password", description = "Password for the GLT web interface")
+    @AttributeDefinition(name = "Password", description = "Password for the GLT web interface", type = AttributeType.PASSWORD)
     String password() default "";
 
     @AttributeDefinition(name = "Polling interval [s]", description = "Unit: seconds. Time between calls to the GLT interface to update the values. Maximum 540.")
@@ -38,9 +39,8 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
             + "no longer received before the Chp is switched off. Unit is seconds, unless cycles option is selected.")
     int waitTimeEnableSignal() default 30;
 
-    @AttributeDefinition(name = "EnableSignal timer unit is cycles not seconds", description = "Use OpenEMS cycles "
-            + "instead of seconds as the unit for the timer.")
-    boolean enableSignalTimerIsCyclesNotSeconds() default false;
+    @AttributeDefinition(name = "EnableSignal timer Id", description = "Name of the timer used for the EnableSignal.")
+    String enableSignalTimerId() default "TimerByTime";
 
     @AttributeDefinition(name = "Use ExceptionalState", description = "React to commands from the Exceptional State "
             + "interface. When the Exceptional State is active, this will override any other commands.")
@@ -51,9 +51,8 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
             + "seconds, unless cycles option is selected.")
     int waitTimeExceptionalState() default 30;
 
-    @AttributeDefinition(name = "ExceptionalState timer unit is cycles not seconds", description = "Use OpenEMS cycles "
-            + "instead of seconds as the unit for the timer.")
-    boolean exceptionalStateTimerIsCyclesNotSeconds() default false;
+    @AttributeDefinition(name = "ExceptionalState timer Id", description = "Name of the timer used for the ExceptionalState.")
+    String exceptionalStateTimerId() default "TimerByTime";
 
     @AttributeDefinition(name = "Read only", description = "Only read values from Modbus, don't send commands.")
     boolean readOnly() default false;

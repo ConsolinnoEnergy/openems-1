@@ -49,20 +49,19 @@ import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 
 
-@Designate(ocd = Config.class, factory = true)
-@Component(name = "Heater.Chp.KwEnergySmartblock",
-		immediate = true,
-		configurationPolicy = ConfigurationPolicy.REQUIRE,
-		property = EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE)
-
 /**
  * This module reads the most important variables available via Modbus from a KW Energy Smartblock CHP and maps them to
  * OpenEMS channels. The module is written to be used with the Heater interface methods.
  * When setEnableSignal() from the Heater interface is set to true with no other parameters like setPointPowerPercent()
  * specified, the CHP will turn on with default settings. The default settings are configurable in the config.
- * The CHP can be controlled with setSetPointPowerPercent() or setSetPointElectricPower().
- * setSetPointTemperature() and related methods are not supported by this CHP.
+ * The CHP can be controlled with setHeatingPowerSetpoint() or setElectricPowerSetpoint().
+ * setTemperatureSetpoint() and related methods are not supported by this CHP.
  */
+@Designate(ocd = Config.class, factory = true)
+@Component(name = "Heater.Chp.KwEnergySmartblock",
+		immediate = true,
+		configurationPolicy = ConfigurationPolicy.REQUIRE,
+		property = EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE)
 public class ChpKwEnergySmartblockImpl extends AbstractOpenemsModbusComponent implements OpenemsComponent, EventHandler,
 		ExceptionalState, ChpKwEnergySmartblock {
 
@@ -105,14 +104,16 @@ public class ChpKwEnergySmartblockImpl extends AbstractOpenemsModbusComponent im
 	}
 
 	@Activate
-	public void activate(ComponentContext context, Config config) throws OpenemsError.OpenemsNamedException, ConfigurationException {
+	void activate(ComponentContext context, Config config) throws OpenemsError.OpenemsNamedException, ConfigurationException {
 		super.activate(context, config.id(), config.alias(), config.enabled(), config.modbusUnitId(), this.cm,
 				"Modbus", config.modbusBridgeId());
 		this.componentEnabled = config.enabled();
 		this.debug = config.debug();
-		this.connectionTimestamp = LocalDateTime.now().minusMinutes(5);    // Initialize with past time value so connection test is negative at start.
-		this.maxChpPower = config.maxChpPower();
 
+		// Initialize with past time value so connection test is negative at start.
+		this.connectionTimestamp = LocalDateTime.now().minusMinutes(5);
+
+		this.maxChpPower = config.maxChpPower();
 		this.readOnly = config.readOnly();
 		this.startupStateChecked = false;
 		if (this.readOnly == false) {
@@ -120,24 +121,12 @@ public class ChpKwEnergySmartblockImpl extends AbstractOpenemsModbusComponent im
 			TimerHandler timer = new TimerHandlerImpl(super.id(), this.cpm);
 			this.useEnableSignal = config.useEnableSignalChannel();
 			if (this.useEnableSignal) {
-				String timerTypeEnableSignal;
-				if (config.enableSignalTimerIsCyclesNotSeconds()) {
-					timerTypeEnableSignal = "TimerByCycles";
-				} else {
-					timerTypeEnableSignal = "TimerByTime";
-				}
-				timer.addOneIdentifier(ENABLE_SIGNAL_IDENTIFIER, timerTypeEnableSignal, config.waitTimeEnableSignal());
+				timer.addOneIdentifier(ENABLE_SIGNAL_IDENTIFIER, config.enableSignalTimerId(), config.waitTimeEnableSignal());
 				this.enableSignalHandler = new EnableSignalHandlerImpl(timer, ENABLE_SIGNAL_IDENTIFIER);
 			}
 			this.useExceptionalState = config.useExceptionalState();
 			if (this.useExceptionalState) {
-				String timerTypeExceptionalState;
-				if (config.exceptionalStateTimerIsCyclesNotSeconds()) {
-					timerTypeExceptionalState = "TimerByCycles";
-				} else {
-					timerTypeExceptionalState = "TimerByTime";
-				}
-				timer.addOneIdentifier(EXCEPTIONAL_STATE_IDENTIFIER, timerTypeExceptionalState, config.waitTimeExceptionalState());
+				timer.addOneIdentifier(EXCEPTIONAL_STATE_IDENTIFIER, config.exceptionalStateTimerId(), config.waitTimeExceptionalState());
 				this.exceptionalStateHandler = new ExceptionalStateHandlerImpl(timer, EXCEPTIONAL_STATE_IDENTIFIER);
 			}
 			switch (config.controlMode()) {
@@ -163,7 +152,7 @@ public class ChpKwEnergySmartblockImpl extends AbstractOpenemsModbusComponent im
 	}
 
 	@Deactivate
-	public void deactivate() {
+	protected void deactivate() {
 		super.deactivate();
 	}
 
@@ -252,22 +241,9 @@ public class ChpKwEnergySmartblockImpl extends AbstractOpenemsModbusComponent im
 		);
 		if (this.readOnly == false) {
 			protocol.addTasks(
-					// Holding register write.
-					// Modbus write tasks take the "setNextWriteValue" value of a channel and send them to the device.
-					// Modbus read tasks put values in the "setNextValue" field, which get automatically transferred to the
-					// "value" field of the channel. By default, the "setNextWriteValue" field is NOT copied to the
-					// "setNextValue" and "value" field. In essence, this makes "setNextWriteValue" and "setNextValue"/"value"
-					// two separate channels.
-					// That means: Modbus read tasks will not overwrite any "setNextWriteValue" values. You do not have to
-					// watch the order in which you call read and write tasks.
-					// Also: if you do not add a Modbus read task for a write channel, any "setNextWriteValue" values will
-					// not be transferred to the "value" field of the channel, unless you add code that does that.
 					new FC16WriteRegistersTask(109,
 							m(ChpKwEnergySmartblock.ChannelId.HR109_COMMAND_BITS_1_to_16, new UnsignedWordElement(109),
 									ElementToChannelConverter.DIRECT_1_TO_1),
-							// A Modbus read commands reads everything from start address to finish address. If there is a
-							// gap, you must place a dummy element to fill the gap or end the read command there and start
-							// with a new read where you want to continue.
 							new DummyRegisterElement(110),
 							m(Heater.ChannelId.SET_POINT_HEATING_POWER_PERCENT, new UnsignedWordElement(111),
 									ElementToChannelConverter.SCALE_FACTOR_MINUS_1),
@@ -279,7 +255,6 @@ public class ChpKwEnergySmartblockImpl extends AbstractOpenemsModbusComponent im
 									ElementToChannelConverter.DIRECT_1_TO_1)
 					)
 			);
-
 		}
 		return protocol;
 	}
@@ -296,7 +271,7 @@ public class ChpKwEnergySmartblockImpl extends AbstractOpenemsModbusComponent im
 
 		// Pass effective electric power to Chp interface channel.
 		if (getModbusEffectiveElectricPower().isDefined()) {
-			double powerInKiloWatt = getModbusEffectiveElectricPower().get() / 10;
+			double powerInKiloWatt = getModbusEffectiveElectricPower().get() / 10.0;
 			_setEffectiveElectricPower(powerInKiloWatt);
 		}
 
@@ -449,14 +424,10 @@ public class ChpKwEnergySmartblockImpl extends AbstractOpenemsModbusComponent im
 					if (exceptionalStateActive) {
 						exceptionalStateValue = this.getExceptionalStateValue();
 						if (exceptionalStateValue <= 0) {
-							// Turn off Chp when ExceptionalStateValue = 0.
 							this.turnOnChp = false;
 						} else {
-							// When ExceptionalStateValue is between 0 and 100, set Chp to this PowerPercentage.
 							this.turnOnChp = true;
-							if (exceptionalStateValue > 100) {
-								exceptionalStateValue = 100;
-							}
+							exceptionalStateValue = Math.min(exceptionalStateValue, 100);
 						}
 					}
 				}
@@ -493,12 +464,8 @@ public class ChpKwEnergySmartblockImpl extends AbstractOpenemsModbusComponent im
 					// Map EffectiveElectricPowerSetpoint channel from Chp interface.
 					if (exceptionalStateActive == false && getElectricPowerSetpointChannel().getNextWriteValue().isPresent()) {
 						double setpointValue = getElectricPowerSetpointChannel().getNextWriteValue().get();
-						if (setpointValue > this.maxChpPower) {
-							setpointValue = this.maxChpPower;
-						}
-						if (setpointValue < this.maxChpPower / 2) {
-							setpointValue = this.maxChpPower / 2;
-						}
+						setpointValue = Math.min(setpointValue, this.maxChpPower);
+						setpointValue = Math.max(setpointValue, this.maxChpPower / 2.0);
 						double calculatedPercent = 1.0 *  getElectricPowerSetpointChannel().getNextWriteValue().get() / this.maxChpPower;
 						try {
 							this.setHeatingPowerPercentSetpoint(calculatedPercent);
@@ -542,7 +509,7 @@ public class ChpKwEnergySmartblockImpl extends AbstractOpenemsModbusComponent im
 				} else {
 					commandBits1to16 = 0b01;    // Turn off chp.
 				}
-				// At this point commandBits1to16 have been set. Now send them.
+
 				try {
 					setCommandBits1to16(commandBits1to16);
 				} catch (OpenemsError.OpenemsNamedException e) {
@@ -642,7 +609,7 @@ public class ChpKwEnergySmartblockImpl extends AbstractOpenemsModbusComponent im
 			this.logInfo(this.log, "Engine rpm: " + this.getEngineRpm());
 			this.logInfo(this.log, "Engine temperature: " + this.getEngineTemperature());
 			this.logInfo(this.log, "Effective electrical power: " + this.getEffectiveElectricPower() + " of max "
-					+ this.maxChpPower + " kW (" + (1.0 * this.getEffectiveElectricPower().get() / this.maxChpPower) + "%)");
+					+ this.maxChpPower + " kW (" + (1.0 * this.getEffectiveElectricPower().orElse(0.0) / this.maxChpPower) + "%)");
 			this.logInfo(this.log, "Power set point: " + this.getPowerSetpoint());
 			this.logInfo(this.log, "Flow temperature: " + this.getFlowTemperature() + " d°C");
 			this.logInfo(this.log, "Return temperature: " + this.getReturnTemperature() + " d°C");

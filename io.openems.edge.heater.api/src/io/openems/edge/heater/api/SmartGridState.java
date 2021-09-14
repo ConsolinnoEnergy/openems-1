@@ -13,8 +13,8 @@ public enum SmartGridState implements OptionsEnum {
 	SG3_STANDARD(3, "Smart Grid state 3: Standard"), //
 	SG4_HIGH(4, "Smart Grid state 4: High energy consumption"); //
 
-	private int value;
-	private String name;
+	private final int value;
+	private final String name;
 
 	private SmartGridState(int value, String name) {
 		this.value = value;

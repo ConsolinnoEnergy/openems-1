@@ -89,6 +89,10 @@ public enum ErrorPossibilities {
         this.errors = errors;
     }
 
+    /**
+     * Gets the error list.
+     * @return the error list.
+     */
     public String[] getErrorList() {
         return this.errors;
     }

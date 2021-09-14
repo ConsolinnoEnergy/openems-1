@@ -52,7 +52,19 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-
+/**
+ * This module reads the most important variables available via Modbus from a Viessmann chp and maps them to
+ * OpenEMS channels.
+ * This chp does not support sending commands via Modbus. Instead, an AiO module and a relay (depending on chp model)
+ * is needed to control the chp. Just reading the chp values available from Modbus does not need these modules.
+ * The module is written to be used with the Heater interface methods.
+ * When setEnableSignal() from the Heater interface is set to true with no other parameters like setPointPowerPercent()
+ * specified, the CHP will turn on with default settings. The default settings are configurable in the config.
+ * The CHP can be controlled with setHeatingPowerSetpoint() or setElectricPowerSetpoint(). However, both are mapped to
+ * the same AiO output, so a hierarchy is needed. setHeatingPowerSetpoint() overwrites setElectricPowerSetpoint(), if
+ * both are used.
+ * setTemperatureSetpoint() and related methods are not supported by this CHP.
+ */
 @Designate(ocd = Config.class, factory = true)
 @Component(name = "Heater.Chp.Viessmann",
         configurationPolicy = ConfigurationPolicy.REQUIRE,
@@ -65,8 +77,8 @@ public class ChpViessmannImpl extends AbstractOpenemsModbusComponent implements 
 
     private boolean componentEnabled;
     private ViessmannChpType chpType;
-    private int thermicalOutput;
-    private int electricalOutput;
+    private int thermalOutput;
+    private int electricOutput;
     private double powerPercentSetpoint;
     private Relay relay;
     private boolean useRelay;
@@ -107,13 +119,13 @@ public class ChpViessmannImpl extends AbstractOpenemsModbusComponent implements 
     }
 
     @Activate
-    public void activate(ComponentContext context, Config config) throws OpenemsError.OpenemsNamedException, ConfigurationException {
+    void activate(ComponentContext context, Config config) throws OpenemsError.OpenemsNamedException, ConfigurationException {
         super.activate(context, config.id(), config.alias(), config.enabled(), config.modbusUnitId(), this.cm, "Modbus", config.modbusBridgeId());
         this.componentEnabled = config.enabled();
         this.setChpType(config.chpType());
         this.printInfoToLog = config.printInfoToLog();
-        this.thermicalOutput = Math.round(this.chpType.getThermalOutput());
-        this.electricalOutput = Math.round(this.chpType.getElectricalOutput());
+        this.thermalOutput = Math.round(this.chpType.getThermalOutput());
+        this.electricOutput = Math.round(this.chpType.getElectricOutput());
         this.readOnly = config.readOnly();
 
         if (this.readOnly == false) {
@@ -140,23 +152,11 @@ public class ChpViessmannImpl extends AbstractOpenemsModbusComponent implements 
             this.startupStateChecked = false;
             this.powerPercentSetpoint = config.defaultSetPointPowerPercent();
             TimerHandler timer = new TimerHandlerImpl(super.id(), this.cpm);
-            String timerTypeEnableSignal;
-            if (config.enableSignalTimerIsCyclesNotSeconds()) {
-                timerTypeEnableSignal = "TimerByCycles";
-            } else {
-                timerTypeEnableSignal = "TimerByTime";
-            }
-            timer.addOneIdentifier(ENABLE_SIGNAL_IDENTIFIER, timerTypeEnableSignal, config.waitTimeEnableSignal());
+            timer.addOneIdentifier(ENABLE_SIGNAL_IDENTIFIER, config.enableSignalTimerId(), config.waitTimeEnableSignal());
             this.enableSignalHandler = new EnableSignalHandlerImpl(timer, ENABLE_SIGNAL_IDENTIFIER);
             this.useExceptionalState = config.useExceptionalState();
             if (this.useExceptionalState) {
-                String timerTypeExceptionalState;
-                if (config.exceptionalStateTimerIsCyclesNotSeconds()) {
-                    timerTypeExceptionalState = "TimerByCycles";
-                } else {
-                    timerTypeExceptionalState = "TimerByTime";
-                }
-                timer.addOneIdentifier(EXCEPTIONAL_STATE_IDENTIFIER, timerTypeExceptionalState, config.waitTimeExceptionalState());
+                timer.addOneIdentifier(EXCEPTIONAL_STATE_IDENTIFIER, config.exceptionalStateTimerId(), config.waitTimeExceptionalState());
                 this.exceptionalStateHandler = new ExceptionalStateHandlerImpl(timer, EXCEPTIONAL_STATE_IDENTIFIER);
             }
         }
@@ -230,17 +230,6 @@ public class ChpViessmannImpl extends AbstractOpenemsModbusComponent implements 
     @Deactivate
     public void deactivate() {
         super.deactivate();
-        /*  Don't turn off chp. Restarting the component should not also restart the chp.
-        if (this.readOnly == false) {
-            if (this.useRelay) {
-                try {
-                    this.relay.getRelaysWriteChannel().setNextWriteValue(false);
-                } catch (OpenemsError.OpenemsNamedException e) {
-                    this.log.warn("Couldn't write in Channel " + e.getMessage());
-                }
-            }
-        }
-        */
     }
 
     @Override
@@ -382,27 +371,21 @@ public class ChpViessmannImpl extends AbstractOpenemsModbusComponent implements 
             Optional<Double> electricPowerWrite = this.getElectricPowerSetpointChannel().getNextWriteValueAndReset();
             if (electricPowerWrite.isPresent()) {
                 double electricPowerSetpoint = electricPowerWrite.get();
-                if (electricPowerSetpoint > this.electricalOutput) {
-                    electricPowerSetpoint = this.electricalOutput;
-                } else if (electricPowerSetpoint < 0) {
-                    electricPowerSetpoint = 0;
-                }
+                electricPowerSetpoint = Math.min(electricPowerSetpoint, this.electricOutput);
+                electricPowerSetpoint = Math.max(electricPowerSetpoint, 0);
                 this._setElectricPowerSetpoint(electricPowerSetpoint);
-                this.powerPercentSetpoint = 100.0 * electricPowerSetpoint / this.electricalOutput;
+                this.powerPercentSetpoint = 100.0 * electricPowerSetpoint / this.electricOutput;
             }
             Optional<Double> heatingPowerPercentWrite = this.getHeatingPowerPercentSetpointChannel().getNextWriteValueAndReset();
             if (heatingPowerPercentWrite.isPresent()) {
                 this.powerPercentSetpoint = heatingPowerPercentWrite.get();
             }
-            if (this.powerPercentSetpoint > 100) {
-                this.powerPercentSetpoint = 100;
-            } else if (this.powerPercentSetpoint < 0) {
-                this.powerPercentSetpoint = 0;
-            }
+            this.powerPercentSetpoint = Math.min(this.powerPercentSetpoint, 100);
+            this.powerPercentSetpoint = Math.max(this.powerPercentSetpoint, 0);
             this._setHeatingPowerPercentSetpoint(this.powerPercentSetpoint);
 
             // Maps setpoint % to a mA value on the range minValue to maxValue.
-            writeToAioValue = (int)Math.round(this.minValue + ((powerPercentSetpoint - this.percentageRange)
+            writeToAioValue = (int)Math.round(this.minValue + ((this.powerPercentSetpoint - this.percentageRange)
                     / ((100.f - this.percentageRange) / (this.maxValue - this.minValue))));
         } else {
             if (this.useRelay) {
@@ -476,10 +459,7 @@ public class ChpViessmannImpl extends AbstractOpenemsModbusComponent implements 
         // Calculate values not directly supplied by modbus.
         if (this.getEffectiveHeatingPowerPercentChannel().value().isDefined()) {
             double powerPercent = this.getEffectiveHeatingPowerPercent().get();
-            // Heating power does not scale linearly with powerPercent (= electric power percent).
-            // Datasheet of EM_140_207 says at 50% electric power, heating power is at 62% of maximum.
-            // This formula is an estimate based on that scaling.
-            int heatingPowerEstimate = (int)Math.round(powerPercent * this.thermicalOutput * (1 + (100 - powerPercent) * 0.48));
+            int heatingPowerEstimate = this.calculateHeatingPower(powerPercent);
             this._setEffectiveHeatingPower(heatingPowerEstimate);
         }
 
@@ -527,14 +507,11 @@ public class ChpViessmannImpl extends AbstractOpenemsModbusComponent implements 
                 if (exceptionalStateActive) {
                     exceptionalStateValue = this.getExceptionalStateValue();
                     if (exceptionalStateValue <= 0) {
-                        // Turn off Chp when ExceptionalStateValue = 0.
                         turnOnChp = false;
                     } else {
                         // When ExceptionalStateValue is between 0 and 100, set Chp to this PowerPercentage.
                         turnOnChp = true;
-                        if (exceptionalStateValue > 100) {
-                            exceptionalStateValue = 100;
-                        }
+                        exceptionalStateValue = Math.min(exceptionalStateValue, 100);
                         try {
                             this.setHeatingPowerPercentSetpoint(exceptionalStateValue);
                         } catch (OpenemsError.OpenemsNamedException e) {
@@ -572,7 +549,7 @@ public class ChpViessmannImpl extends AbstractOpenemsModbusComponent implements 
             this.logInfo(this.log, "Engine rpm: " + this.getRotationPerMinute().value().get());
             this.logInfo(this.log, "Power percent set point (write mode only): " + this.getHeatingPowerPercentSetpoint());
             this.logInfo(this.log, "Effective electrical power: " + this.getEffectiveElectricPower() + " of max "
-                    + this.electricalOutput + " kW (" + (1.0 * this.getEffectiveElectricPower().get() / this.electricalOutput) + "%)");
+                    + this.electricOutput + " kW (" + (1.0 * this.getEffectiveElectricPower().orElse(0.0) / this.electricOutput) + "%)");
             this.logInfo(this.log, "Flow temperature: " + this.getFlowTemperature());
             this.logInfo(this.log, "Return temperature: " + this.getReturnTemperature());
             this.logInfo(this.log, "Operating hours: " + this.getOperatingHours().value());
@@ -583,8 +560,33 @@ public class ChpViessmannImpl extends AbstractOpenemsModbusComponent implements 
         }
     }
 
-    private char[] generateErrorAsCharArray() {
+    /**
+     * This chp does not provide the current heating power as a readable value. However, an estimate can be calculated
+     * from the electric power percent value and the information in the data sheet. For most models, the datasheet lists
+     * the heat output at 75% and 50% electric power. We use the 50% and 100% value to do a simple linear fit, then use
+     * this fit to calculate a heating power estimate for any % value of electric power.
+     * If there is no value for 50% in the datasheet, we assume that at 50% electric power, heating power is at 61% of
+     * maximum (average of the available data).
+     *
+     * @param powerPercent the electric power percent value.
+     * @return the estimated heating power in kW
+     */
+    private int calculateHeatingPower(double powerPercent) {
+        float thermalOutput100 = this.chpType.getThermalOutput();
+        float thermalOutput50 = this.chpType.getHeatOutputAt50Percent();
+        float scaleFactor = 0.61f;
+        if (thermalOutput50 > 0) {  // if no data available, thermalOutput50 = -1
+            scaleFactor = thermalOutput50 / thermalOutput100;
+        }
+        float multiplier = (2 - (scaleFactor * 4));
+        return (int)Math.round(powerPercent * thermalOutput100 * (1 + (100 - powerPercent) * multiplier));
+    }
 
+    /**
+     * Collects all the error messages and puts them in a char array.
+     * @return the error messages.
+     */
+    private char[] generateErrorAsCharArray() {
         String errorBitsAsString = "";
         String dummyString = "0000000000000000";
         if (getErrorOne().getNextValue().isDefined()) {

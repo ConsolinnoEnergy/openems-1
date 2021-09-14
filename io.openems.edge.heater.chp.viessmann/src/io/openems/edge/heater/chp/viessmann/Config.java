@@ -77,9 +77,8 @@ import org.osgi.service.metatype.annotations.Option;
             + "no longer received before the chp is switched off. Unit is seconds, unless cycles option is selected.")
     int waitTimeEnableSignal() default 30;
 
-    @AttributeDefinition(name = "EnableSignal timer unit is cycles not seconds", description = "Use OpenEMS cycles "
-            + "instead of seconds as the unit for the timer.")
-    boolean enableSignalTimerIsCyclesNotSeconds() default false;
+    @AttributeDefinition(name = "EnableSignal timer Id", description = "Name of the timer used for the EnableSignal.")
+    String enableSignalTimerId() default "TimerByTime";
 
     @AttributeDefinition(name = "Use ExceptionalState", description = "React to commands from the Exceptional State "
             + "interface. When the Exceptional State is active, this will override any other commands.")
@@ -90,9 +89,8 @@ import org.osgi.service.metatype.annotations.Option;
             + "seconds, unless cycles option is selected.")
     int waitTimeExceptionalState() default 30;
 
-    @AttributeDefinition(name = "ExceptionalState timer unit is cycles not seconds", description = "Use OpenEMS cycles "
-            + "instead of seconds as the unit for the timer.")
-    boolean exceptionalStateTimerIsCyclesNotSeconds() default false;
+    @AttributeDefinition(name = "ExceptionalState timer Id", description = "Name of the timer used for the ExceptionalState.")
+    String exceptionalStateTimerId() default "TimerByTime";
 
     @AttributeDefinition(name = "Read only", description = "Only read values from Modbus, don't send commands.")
     boolean readOnly() default false;
@@ -103,6 +101,6 @@ import org.osgi.service.metatype.annotations.Option;
     boolean enabled() default true;
 
 
-    String webconsole_configurationFactory_nameHint() default "Chp Device [{id}]";
+    String webconsole_configurationFactory_nameHint() default "Chp Viessmann [{id}]";
 
 }

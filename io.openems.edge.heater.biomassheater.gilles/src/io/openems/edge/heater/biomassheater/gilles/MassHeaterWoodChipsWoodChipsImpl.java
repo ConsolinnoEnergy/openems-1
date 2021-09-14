@@ -48,6 +48,10 @@ import org.slf4j.LoggerFactory;
 import java.util.Optional;
 
 /**
+ * This module reads the most important variables available via Modbus from a Gilles woodchip heater and maps them to
+ * OpenEMS channels.
+ * The module is written to be used with the Heater interface methods.
+ *
  * Die Steuerung der Hackgutanlage ist etwas eigen. An/aus erfolgt über den nicht dokumentierten Coil mit Register
  * Nummer 16387. Leistungsregelung erfolgt über den slide-in-max Regler. Slide-in ist der Einschub an Brennmaterial.
  * Es wird nicht direkt die Einschub % eingestellt (Register 24578), sondern nur der Max Einschub limitiert.
@@ -62,7 +66,6 @@ import java.util.Optional;
  * Für etwaige Fragen ist der Ansprechpartner bei Gilles (mittlerweile von Hargassner übernommen):
  * Wolfgang Mampel, Tel. +43 664 8573374
  */
-
 @Designate(ocd = Config.class, factory = true)
 @Component(name = "Heater.Gilles.WoodChip",
         immediate = true,
@@ -119,23 +122,11 @@ public class MassHeaterWoodChipsWoodChipsImpl extends AbstractOpenemsModbusCompo
             this.setHeatingPowerPercentSetpoint(config.defaultSetPointPowerPercent());
 
             TimerHandler timer = new TimerHandlerImpl(super.id(), this.cpm);
-            String timerTypeEnableSignal;
-            if (config.enableSignalTimerIsCyclesNotSeconds()) {
-                timerTypeEnableSignal = "TimerByCycles";
-            } else {
-                timerTypeEnableSignal = "TimerByTime";
-            }
-            timer.addOneIdentifier(ENABLE_SIGNAL_IDENTIFIER, timerTypeEnableSignal, config.waitTimeEnableSignal());
+            timer.addOneIdentifier(ENABLE_SIGNAL_IDENTIFIER, config.enableSignalTimerId(), config.waitTimeEnableSignal());
             this.enableSignalHandler = new EnableSignalHandlerImpl(timer, ENABLE_SIGNAL_IDENTIFIER);
             this.useExceptionalState = config.useExceptionalState();
             if (this.useExceptionalState) {
-                String timerTypeExceptionalState;
-                if (config.exceptionalStateTimerIsCyclesNotSeconds()) {
-                    timerTypeExceptionalState = "TimerByCycles";
-                } else {
-                    timerTypeExceptionalState = "TimerByTime";
-                }
-                timer.addOneIdentifier(EXCEPTIONAL_STATE_IDENTIFIER, timerTypeExceptionalState, config.waitTimeExceptionalState());
+                timer.addOneIdentifier(EXCEPTIONAL_STATE_IDENTIFIER, config.exceptionalStateTimerId(), config.waitTimeExceptionalState());
                 this.exceptionalStateHandler = new ExceptionalStateHandlerImpl(timer, EXCEPTIONAL_STATE_IDENTIFIER);
             }
         }
@@ -315,9 +306,7 @@ public class MassHeaterWoodChipsWoodChipsImpl extends AbstractOpenemsModbusCompo
             if (writeValue.isPresent() && this.getSlideInMinReadOnly().value().isDefined()) {
                 this.powerPercentSetpoint = writeValue.get();
                 int slideInMinValue = this.getSlideInMinReadOnly().value().get();
-                if (this.powerPercentSetpoint < slideInMinValue) {
-                    this.powerPercentSetpoint = slideInMinValue;
-                }
+                this.powerPercentSetpoint = Math.max(this.powerPercentSetpoint, slideInMinValue);
                 this._setHeatingPowerPercentSetpoint(this.powerPercentSetpoint);
             }
 
@@ -330,14 +319,11 @@ public class MassHeaterWoodChipsWoodChipsImpl extends AbstractOpenemsModbusCompo
                 if (exceptionalStateActive) {
                     int exceptionalStateValue = this.getExceptionalStateValue();
                     if (exceptionalStateValue <= 0) {
-                        // Turn off heater when ExceptionalStateValue = 0.
                         turnOnHeater = false;
                     } else {
                         // When ExceptionalStateValue is between 0 and 100, set heater to this PowerPercentage.
                         turnOnHeater = true;
-                        if (exceptionalStateValue > 100) {
-                            exceptionalStateValue = 100;
-                        }
+                        exceptionalStateValue = Math.min(exceptionalStateValue, 100);
                         try {
                             this.setHeatingPowerPercentSetpoint(exceptionalStateValue);
                         } catch (OpenemsError.OpenemsNamedException e) {
