@@ -1,5 +1,6 @@
 package io.openems.edge.controller.hydrauliccomponent.controller;
 
+import io.openems.edge.controller.hydrauliccomponent.api.ControlType;
 import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 import org.osgi.service.metatype.annotations.Option;
@@ -24,11 +25,8 @@ import org.osgi.service.metatype.annotations.Option;
     @AttributeDefinition(name = "Tolerance", description = "The amount of leeway the component is allowed to have so its still considered to be at the correct position.")
     double tolerance() default 1.5;
 
-    @AttributeDefinition(name = "Control by", description = "Control this valve by Position or Temperature", options = {
-            @Option(label = "Position", value = "Position"),
-            @Option(label = "Temperature", value = "Temperature")
-    })
-    String controlType() default "Temperature";
+    @AttributeDefinition(name = "Control by", description = "Control this valve by Position or Temperature")
+    ControlType controlType() default ControlType.TEMPERATURE;
 
     @AttributeDefinition(name = "ThermometerId", description = "The Thermometer you want to use for Temperature the ValveController reacts to")
     String thermometerId() default "TemperatureThreshold0";

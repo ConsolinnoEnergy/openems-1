@@ -1,6 +1,7 @@
 package io.openems.edge.controller.hydrauliccomponent.controller;
 
 import io.openems.edge.common.test.AbstractComponentConfig;
+import io.openems.edge.controller.hydrauliccomponent.api.ControlType;
 
 
 @SuppressWarnings("all")
@@ -13,7 +14,7 @@ public class MyConfig extends AbstractComponentConfig implements Config {
         public String service_pid;
         public String componentToControl;
         public String[] temperaturePositionMap;
-        public String controlType;
+        public ControlType controlType;
         public String thermometerId;
         public boolean autorun;
         public boolean allowForcing;
@@ -59,7 +60,7 @@ public class MyConfig extends AbstractComponentConfig implements Config {
             return this;
         }
 
-        public Builder setControlType(String controlType) {
+        public Builder setControlType(ControlType controlType) {
             this.controlType = controlType;
             return this;
         }
@@ -167,7 +168,7 @@ public class MyConfig extends AbstractComponentConfig implements Config {
     }
 
     @Override
-    public String controlType() {
+    public ControlType controlType() {
         return this.builder.controlType;
     }
 

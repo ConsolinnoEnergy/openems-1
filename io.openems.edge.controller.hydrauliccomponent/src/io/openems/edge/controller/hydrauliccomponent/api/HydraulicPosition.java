@@ -12,11 +12,11 @@ public class HydraulicPosition {
     }
 
     public int getTemperature() {
-        return temperature;
+        return this.temperature;
     }
 
     public double getHydraulicPosition() {
-        return hydraulicPosition;
+        return this.hydraulicPosition;
     }
 
     public void setTemperature(int temperature) {

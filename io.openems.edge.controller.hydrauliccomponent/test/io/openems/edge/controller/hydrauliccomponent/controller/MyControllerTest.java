@@ -3,6 +3,7 @@ package io.openems.edge.controller.hydrauliccomponent.controller;
 import io.openems.common.types.ChannelAddress;
 import io.openems.edge.common.test.DummyComponentManager;
 import io.openems.edge.common.test.TimeLeapClock;
+import io.openems.edge.controller.hydrauliccomponent.api.ControlType;
 import io.openems.edge.controller.test.ControllerTest;
 import io.openems.edge.common.test.AbstractComponentTest.TestCase;
 import io.openems.edge.heatsystem.components.test.DummyValve;
@@ -31,21 +32,21 @@ public class MyControllerTest {
 
         final TimeLeapClock clock = new TimeLeapClock(
                 Instant.ofEpochSecond(1577836800) /* starts at 1. January 2020 00:00:00 */, ZoneOffset.UTC);
-DummyRelay close = new DummyRelay(relayCloseId);
-DummyRelay open = new DummyRelay(relayOpenId);
+        DummyRelay close = new DummyRelay(relayCloseId);
+        DummyRelay open = new DummyRelay(relayOpenId);
         new ControllerTest(new HydraulicPositionControllerImpl())
                 .addReference("cpm", new DummyComponentManager(clock))
                 .addComponent(new DummyThermometer(tempId))
                 .addComponent(close)
                 .addComponent(open)
-                .addComponent(new DummyValve(open,close,valveId,10))
+                .addComponent(new DummyValve(open, close, valveId, 10))
                 .addComponent(new DummyTimer(timerId, TimerType.CYCLES))
                 .activate(MyConfig.create()
                         .setId(id)
                         .setService_pid("")
                         .setComponentToControl(valveId)
                         .setTemperaturePositionMap(new String[]{"700:20"})
-                        .setControlType("Temperature")
+                        .setControlType(ControlType.TEMPERATURE)
                         .setThermometerId(tempId)
                         .setAutorun(true)
                         .setAllowForcing(false)
@@ -60,14 +61,14 @@ DummyRelay open = new DummyRelay(relayOpenId);
                         .build())
                 .next(new TestCase()
                         .timeleap(clock, 1, ChronoUnit.SECONDS)
-                        .input(input,700)
+                        .input(input, 700)
                 )
                 .next(new TestCase()
                         .timeleap(clock, 1, ChronoUnit.SECONDS)
                 )
                 .next(new TestCase()
-                        .timeleap(clock, 1, ChronoUnit.SECONDS)
-           //             .output(output,true)
+                                .timeleap(clock, 1, ChronoUnit.SECONDS)
+                        //             .output(output,true)
                 )
                 .getSut().run();
     }

@@ -70,8 +70,11 @@ public class HydraulicPositionControllerImpl extends AbstractOpenemsComponent im
                 HydraulicController.ChannelId.values());
     }
 
+    Config config;
+
     @Activate
     void activate(ComponentContext context, Config config) throws ConfigurationException, OpenemsError.OpenemsNamedException {
+        this.config = config;
         try {
             if (config.enabled() == false) {
                 return;
@@ -120,11 +123,8 @@ public class HydraulicPositionControllerImpl extends AbstractOpenemsComponent im
         if (exceptions[0] != null) {
             throw exceptions[0];
         }
-        if (ControlType.contains(config.controlType().toUpperCase().trim())) {
-            this.controlType = ControlType.valueOf(config.controlType().toUpperCase().trim());
-        } else {
-            throw new ConfigurationException("ControlTypeConfig", config.controlType() + " does not exist");
-        }
+        this.controlType = config.controlType();
+
         this.setAutoRun(config.autorun());
         this.closeWhenNeitherAutoRunNorEnableSignal = config.shouldCloseWhenNoSignal();
         this.forceAllowedChannel().setNextValue(config.allowForcing());
@@ -149,52 +149,56 @@ public class HydraulicPositionControllerImpl extends AbstractOpenemsComponent im
      * @param temperature the temperature the valveController orientates it's position.
      */
     private void setPositionByTemperature(int temperature) {
-        if ((temperature == Integer.MIN_VALUE) == false) {
+        if ((temperature != Integer.MIN_VALUE)) {
             AtomicReference<HydraulicPosition> selectedPosition = new AtomicReference<>();
             selectedPosition.set(this.hydraulicPositionList.get(0));
             if (!this.shouldCool) {
                 this.hydraulicPositionList.forEach(hydraulicPosition -> {
                     //As long as position Temperature < current Temp && position temperature greater than current Position temp.
                     // e.g. Temperature is 50; current position in iteration is 45 and selected position temp was 42
-                    if (hydraulicPosition.getTemperature() <= temperature && hydraulicPosition.getTemperature() >= selectedPosition.get().getTemperature()) {
+                    if (hydraulicPosition.getTemperature() >= selectedPosition.get().getTemperature()
+                            && selectedPosition.get().getTemperature() < temperature) {
                         selectedPosition.set(hydraulicPosition);
                         //if current Position is greater Than temp -> check for either : selected Pos beneath temp -> select current position
                         // OR if current pos has lower temp but selected is greater than current --> select current
                         //Example: Temperature 50; selected position 45; new has 55; take 55
                         //new iteration temperature 50; selected 55; current is 52; take 52 position
-                    } else if (hydraulicPosition.getTemperature() > temperature) {
-                        if (hydraulicPosition.getTemperature() <= selectedPosition.get().getTemperature()
-                                && (selectedPosition.get().getTemperature() < temperature || hydraulicPosition.getTemperature() < selectedPosition.get().getTemperature())) {
+                    } else if (hydraulicPosition.getTemperature() >= temperature) {
+                        if (hydraulicPosition.getTemperature() < selectedPosition.get().getTemperature()) {
                             selectedPosition.set(hydraulicPosition);
                         }
                     }
                 });
             } else {
                 this.hydraulicPositionList.forEach(hydraulicPosition -> {
-                    if (hydraulicPosition.getTemperature() <= temperature && hydraulicPosition.getTemperature() >= selectedPosition.get().getTemperature()) {
+                    //As long as position Temperature > current Temp && position temperature lesser than current Position temp.
+                    // e.g. Temperature is 40; selected position in iteration is 42 and selected position temp was 45
+                    if (hydraulicPosition.getTemperature() <= selectedPosition.get().getTemperature()
+                            && selectedPosition.get().getTemperature() > temperature) {
                         selectedPosition.set(hydraulicPosition);
-                        //this does basically the same as the above function but instead of choosing the higher temperature-position, it chooses the lower
-                    } else if (hydraulicPosition.getTemperature() < temperature) {
-                        if (hydraulicPosition.getTemperature() <= selectedPosition.get().getTemperature()
-                                && (selectedPosition.get().getTemperature() > temperature || hydraulicPosition.getTemperature() > selectedPosition.get().getTemperature())) {
+                        //if current Position is less than temp -> check for either : selected Pos above temp -> select current position
+                        // OR if current pos has lower temp but selected is greater than current --> select current
+                        //Example: Temperature 50; selected position 45; new has 48; take 48
+                    } else if (hydraulicPosition.getTemperature() <= temperature) {
+                        if (hydraulicPosition.getTemperature() > selectedPosition.get().getTemperature()) {
                             selectedPosition.set(hydraulicPosition);
                         }
                     }
                 });
             }
             double setPosition = selectedPosition.get().getHydraulicPosition();
-            if (this.controlledComponent.getPowerLevelValue() + this.tolerance < setPosition || this.controlledComponent.getPowerLevelValue() - this.tolerance > setPosition) {
+            double currentPowerLevelValue = this.controlledComponent.getPowerLevelValue();
+            if (currentPowerLevelValue + this.tolerance < setPosition
+                    || currentPowerLevelValue - this.tolerance > setPosition) {
                 try {
                     this.controlledComponent.setPointPowerLevelChannel().setNextWriteValueFromObject(setPosition);
-
                 } catch (OpenemsError.OpenemsNamedException e) {
-                    e.printStackTrace();
+                    this.log.warn("Couldn't set SetPoint for HydraulicComponent " + this.componentId);
                 }
-                this.log.info("Setting: " + this.controlledComponent.id() + " to : " + setPosition);
+                //this.log.info("Setting: " + this.controlledComponent.id() + " to : " + setPosition);
                 this.setSetPointPosition((int) setPosition);
             }
         }
-
     }
 
     /**
@@ -207,12 +211,8 @@ public class HydraulicPositionControllerImpl extends AbstractOpenemsComponent im
             this.controlledComponent.setPointPowerLevelChannel().setNextValue(percent);
             this.setSetPointPosition(percent);
             if (this.controlledComponent.powerLevelReached()) {
-                try {
-                    this.getRequestedPositionChannel().setNextWriteValue(null);
-                } catch (OpenemsError.OpenemsNamedException ignored) {
-                }
+                this.getRequestedPositionChannel().getNextWriteValueAndReset();
             }
-
         }
     }
 
@@ -225,25 +225,26 @@ public class HydraulicPositionControllerImpl extends AbstractOpenemsComponent im
     @Override
     public void run() throws OpenemsError.OpenemsNamedException {
         //Check Requested Position
+        ControlType controlTypeOfThisRun = this.getControlType();
+
+        this.controlType = controlTypeOfThisRun != null ? controlTypeOfThisRun : ControlType.TEMPERATURE;
+
         if (this.controlledComponent == null || this.referenceThermometer == null) {
             try {
-                if (this.cpm.getComponent(this.componentId) instanceof HydraulicComponent) {
-                    this.controlledComponent = this.cpm.getComponent(this.componentId);
+                OpenemsComponent componentToFetch;
+                componentToFetch = this.cpm.getComponent(this.config.componentToControl());
+                if (componentToFetch instanceof HydraulicComponent) {
+                    this.controlledComponent = (HydraulicComponent) componentToFetch;
                 }
-                ControlType controlTypeOfThisRun = this.getControlType();
-
-                this.controlType = controlTypeOfThisRun != null ? controlTypeOfThisRun : ControlType.TEMPERATURE;
-
-
-                OpenemsComponent componentToFetch = this.cpm.getComponent(this.thermometerId);
+                componentToFetch = this.cpm.getComponent(this.thermometerId);
                 if (componentToFetch instanceof Thermometer) {
                     this.referenceThermometer = (Thermometer) componentToFetch;
                 }
             } catch (Exception e) {
+                this.log.warn("Couldn't set Controlled Components of " + this.id());
             }
         } else {
-            checkComponentsStillEnabled();
-            //TODO Do getNextWriteValueAndReset!
+            this.checkComponentsStillEnabled();
             if (this.isEnabledOrAutoRun()) {
                 this.isRunning = true;
                 //check for forceOpen/Close
@@ -323,8 +324,7 @@ public class HydraulicPositionControllerImpl extends AbstractOpenemsComponent im
             //check if WaitTime is up and then run till min Run Time for Fallback is over
             if (this.timer.checkTimeIsUp(MAX_WAIT_CYCLE_IDENTIFIER)) {
                 //tun till fallback is up
-                if (this.timer
-                        .checkTimeIsUp(MIN_RUN_TIME_AFTER_FALLBACK_IDENTIFIER) == false) {
+                if (this.timer.checkTimeIsUp(MIN_RUN_TIME_AFTER_FALLBACK_IDENTIFIER) == false) {
                     return true;
                 } else {
                     //reset fallback

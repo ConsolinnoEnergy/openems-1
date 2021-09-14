@@ -11,7 +11,7 @@ import io.openems.edge.common.component.AbstractOpenemsComponent;
 import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.common.event.EdgeEventConstants;
-import io.openems.edge.heater.Cooler;
+import io.openems.edge.heater.api.Cooler;
 import io.openems.edge.cooler.analogue.component.AnalogueCoolerAIO;
 import io.openems.edge.cooler.analogue.component.AnalogueCoolerComponent;
 import io.openems.edge.cooler.analogue.component.AnalogueCoolerLucidControl;
@@ -76,7 +76,7 @@ public class AnalogueCooler extends AbstractOpenemsComponent implements OpenemsC
     private ControlType type = ControlType.PERCENT;
 
 
-    private List<AnalogueCoolerComponent> coolerComponent = new ArrayList<>();
+    private final List<AnalogueCoolerComponent> coolerComponent = new ArrayList<>();
 
 
     enum ChannelId implements io.openems.edge.common.channel.ChannelId {
@@ -272,53 +272,6 @@ public class AnalogueCooler extends AbstractOpenemsComponent implements OpenemsC
         } else {
             return this.isActive && this.timer.checkTimeIsUp(ENABLE_IDENTIFIER) == false;
         }
-    }
-
-
-    //-------------------------//
-    @Override
-    public boolean setPointPowerPercentAvailable() {
-        return false;
-    }
-
-    @Override
-    public boolean setPointPowerAvailable() {
-        return false;
-    }
-
-    @Override
-    public boolean setPointTemperatureAvailable() {
-        return false;
-    }
-
-    @Override
-    public int calculateProvidedPower(int demand, float bufferValue) throws OpenemsError.OpenemsNamedException {
-        return 0;
-    }
-
-    @Override
-    public int getMaximumThermalOutput() {
-        return 0;
-    }
-
-    @Override
-    public void setOffline() throws OpenemsError.OpenemsNamedException {
-
-    }
-
-    @Override
-    public boolean hasError() {
-        return false;
-    }
-
-    @Override
-    public void requestMaximumPower() {
-
-    }
-
-    @Override
-    public void setIdle() {
-
     }
 
     //-----------------//
