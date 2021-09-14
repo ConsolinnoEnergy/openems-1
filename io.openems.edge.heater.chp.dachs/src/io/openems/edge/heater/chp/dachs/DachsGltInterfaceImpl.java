@@ -1012,7 +1012,7 @@ public class DachsGltInterfaceImpl extends AbstractOpenemsComponent implements O
 			} else if (rpmReadout > 2000) {
 				// Regular RPM is ~2400. An RPM > 2000 should mean normal operation.
 				this.chpEngineRunning = true;
-				this._setHeaterState(HeaterState.HEATING.getValue());
+				this._setHeaterState(HeaterState.RUNNING.getValue());
 			} else if (stateStartingUp) {
 				this.chpEngineRunning = true;
 				this._setHeaterState(HeaterState.STARTING_UP_OR_PREHEAT.getValue());
@@ -1021,7 +1021,7 @@ public class DachsGltInterfaceImpl extends AbstractOpenemsComponent implements O
 				this._setHeaterState(HeaterState.STANDBY.getValue());
 			} else {
 				this.chpEngineRunning = false;
-				this._setHeaterState(HeaterState.BLOCKED.getValue());
+				this._setHeaterState(HeaterState.BLOCKED_OR_ERROR.getValue());
 			}
 
 		} else {

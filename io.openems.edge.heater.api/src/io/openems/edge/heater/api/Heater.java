@@ -149,21 +149,23 @@ public interface Heater extends OpenemsComponent {
          * </ul>
          */
         ERROR_MESSAGE(Doc.of(OpenemsType.STRING).accessMode(AccessMode.READ_ONLY)),
-        /** Sets the Default Active Power Value for a Heater.
-            Note: Not all Heater can support this feature.
-        <ul>
+        /**
+         * Sets the Default Active Power Value for a Heater.
+         * Note: Not all Heater can support this feature.
+         * <ul>
          *     <li> Interface: Heater
          *     <li> Type: String
          * </ul>
-        */
+         */
         SET_DEFAULT_ACTIVE_POWER_VALUE(Doc.of(OpenemsType.INTEGER).accessMode(AccessMode.READ_WRITE)),
-          /** Sets the Default Minimum Power Value for a Heater. (Often: Instead of turning the Heater off -> The minimum Power Value will be used instead.)
-            Note: Not all Heater can support this feature.
-        <ul>
+        /**
+         * Sets the Default Minimum Power Value for a Heater. (Often: Instead of turning the Heater off -> The minimum Power Value will be used instead.)
+         * Note: Not all Heater can support this feature.
+         * <ul>
          *     <li> Interface: Heater
          *     <li> Type: String
          * </ul>
-        */
+         */
         SET_DEFAULT_MINIMUM_POWER_VALUE(Doc.of(OpenemsType.INTEGER).accessMode(AccessMode.READ_WRITE)),
 
         /**
@@ -493,92 +495,83 @@ public interface Heater extends OpenemsComponent {
         this.getReturnTemperatureChannel().setNextValue(value);
     }
 
-	/**
-	 * Gets the Channel for {@link ChannelId#EFFECTIVE_HEATING_POWER}.
-	 *
-	 * @return the Channel
-	 */
-	public default IntegerReadChannel getEffectiveHeatingPowerChannel() {
-		return this.channel(ChannelId.EFFECTIVE_HEATING_POWER);
-	}
+    /**
+     * Gets the Channel for {@link ChannelId#EFFECTIVE_HEATING_POWER}.
+     *
+     * @return the Channel
+     */
+    public default IntegerReadChannel getEffectiveHeatingPowerChannel() {
+        return this.channel(ChannelId.EFFECTIVE_HEATING_POWER);
+    }
 
-	/**
-	 * Get the effective (current) heating power, unit is kilowatt.
-	 * See {@link ChannelId#EFFECTIVE_HEATING_POWER}.
-	 *
-	 * @return the Channel {@link Value}
-	 */
-	public default Value<Integer> getEffectiveHeatingPower() {
-		return this.getEffectiveHeatingPowerChannel().value();
-	}
+    /**
+     * Get the effective (current) heating power, unit is kilowatt.
+     * See {@link ChannelId#EFFECTIVE_HEATING_POWER}.
+     *
+     * @return the Channel {@link Value}
+     */
+    public default Value<Integer> getEffectiveHeatingPower() {
+        return this.getEffectiveHeatingPowerChannel().value();
+    }
 
-	/**
-	 * Internal method to set the 'nextValue' on {@link ChannelId#EFFECTIVE_HEATING_POWER}
-	 * Channel.
-	 *
-	 * @param value the next value
-	 */
-	public default void _setEffectiveHeatingPower(Integer value) {
-		this.getEffectiveHeatingPowerChannel().setNextValue(value);
-	}
+    /**
+     * Internal method to set the 'nextValue' on {@link ChannelId#EFFECTIVE_HEATING_POWER}
+     * Channel.
+     *
+     * @param value the next value
+     */
+    public default void _setEffectiveHeatingPower(Integer value) {
+        this.getEffectiveHeatingPowerChannel().setNextValue(value);
+    }
 
-	/**
-	 * Internal method to set the 'nextValue' on {@link ChannelId#EFFECTIVE_HEATING_POWER}
-	 * Channel.
-	 *
-	 * @param value the next value
-	 */
-	public default void _setEffectiveHeatingPower(int value) {
-		this.getEffectiveHeatingPowerChannel().setNextValue(value);
-	}
+    /**
+     * Internal method to set the 'nextValue' on {@link ChannelId#EFFECTIVE_HEATING_POWER}
+     * Channel.
+     *
+     * @param value the next value
+     */
+    public default void _setEffectiveHeatingPower(int value) {
+        this.getEffectiveHeatingPowerChannel().setNextValue(value);
+    }
 
-	/**
-	 * Gets the Channel for {@link ChannelId#EFFECTIVE_HEATING_POWER_PERCENT}.
-	 *
-	 * @return the Channel
-	 */
-	public default IntegerReadChannel getEffectiveHeatingPowerPercentChannel() {
-		return this.channel(ChannelId.EFFECTIVE_HEATING_POWER_PERCENT);
-	}
+    /**
+     * Gets the Channel for {@link ChannelId#EFFECTIVE_HEATING_POWER_PERCENT}.
+     *
+     * @return the Channel
+     */
+    public default IntegerReadChannel getEffectiveHeatingPowerPercentChannel() {
+        return this.channel(ChannelId.EFFECTIVE_HEATING_POWER_PERCENT);
+    }
 
-	/**
-	 * Get the effective (current) heating power in percent. A value of 50 in the channel means 50%.
-	 * See {@link ChannelId#EFFECTIVE_HEATING_POWER_PERCENT}.
-	 *
-	 * @return the Channel {@link Value}
-	 */
-	public default Value<Integer> getEffectiveHeatingPowerPercent() {
-		return this.getEffectiveHeatingPowerPercentChannel().value();
-	}
+    /**
+     * Get the effective (current) heating power in percent. A value of 50 in the channel means 50%.
+     * See {@link ChannelId#EFFECTIVE_HEATING_POWER_PERCENT}.
+     *
+     * @return the Channel {@link Value}
+     */
+    public default Value<Integer> getEffectiveHeatingPowerPercent() {
+        return this.getEffectiveHeatingPowerPercentChannel().value();
+    }
 
-	/**
-	 * Internal method to set the 'nextValue' on {@link ChannelId#EFFECTIVE_HEATING_POWER_PERCENT}
-	 * Channel.
-	 *
-	 * @param value the next value
-	 */
-	public default void _setEffectiveHeatingPowerPercent(Integer value) {
-		this.getEffectiveHeatingPowerPercentChannel().setNextValue(value);
-	}
+    /**
+     * Internal method to set the 'nextValue' on {@link ChannelId#EFFECTIVE_HEATING_POWER_PERCENT}
+     * Channel.
+     *
+     * @param value the next value
+     */
+    public default void _setEffectiveHeatingPowerPercent(Integer value) {
+        this.getEffectiveHeatingPowerPercentChannel().setNextValue(value);
+    }
 
-	/**
-	 * Internal method to set the 'nextValue' on {@link ChannelId#EFFECTIVE_HEATING_POWER_PERCENT}
-	 * Channel.
-	 *
-	 * @param value the next value
-	 */
-	public default void _setEffectiveHeatingPowerPercent(int value) {
-		this.getEffectiveHeatingPowerPercentChannel().setNextValue(value);
-	}
-
-	/**
-	 * Gets the Channel for {@link ChannelId#WARNING_MESSAGE}.
-	 *
-	 * @return the Channel
-	 */
-	public default StringReadChannel getWarningMessageChannel() {
-		return this.channel(ChannelId.WARNING_MESSAGE);
-	}
+    /**
+     * Internal method to set the 'nextValue' on {@link ChannelId#EFFECTIVE_HEATING_POWER_PERCENT}
+     * Channel.
+     *
+     * @param value the next value
+     */
+    public default void _setEffectiveHeatingPowerPercent(int value) {
+        this.getEffectiveHeatingPowerPercentChannel().setNextValue(value);
+    }
 
     /**
      * Gets the Channel for {@link ChannelId#WARNING_MESSAGE}.
@@ -690,6 +683,7 @@ public interface Heater extends OpenemsComponent {
 
     /**
      * Sets a Default Active Power for a Heater.
+     *
      * @return the {@link ChannelId#SET_DEFAULT_ACTIVE_POWER_VALUE} channel.
      */
     default WriteChannel<Integer> getDefaultActivePowerChannel() {
@@ -698,10 +692,10 @@ public interface Heater extends OpenemsComponent {
 
     /**
      * Sets a Default MINIMUM Power for a Heater.
+     *
      * @return the {@link ChannelId#SET_DEFAULT_MINIMUM_POWER_VALUE} channel.
      */
     default WriteChannel<Integer> getDefaultMinPowerChannel() {
         return this.channel(ChannelId.SET_DEFAULT_MINIMUM_POWER_VALUE);
     }
-
 }

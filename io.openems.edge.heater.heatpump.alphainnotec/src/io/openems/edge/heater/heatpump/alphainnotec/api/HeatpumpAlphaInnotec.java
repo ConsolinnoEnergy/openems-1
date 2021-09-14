@@ -298,7 +298,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
          *     <li> Unit: decimal degree Kelvin
          * </ul>
          */
-        IR_22_OVERHEAT(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_KELVIN)),
+        IR_22_OVERHEAT(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZI_KELVIN)),
 
         /**
          * Overheating setpoint (Überhitzung Soll).
@@ -307,7 +307,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
          *     <li> Unit: decimal degree Kelvin
          * </ul>
          */
-        IR_23_OVERHEAT_SETPOINT(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_KELVIN)),
+        IR_23_OVERHEAT_SETPOINT(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZI_KELVIN)),
 
         /**
          * RBE room temperature actual (RBE, Raumbedieneinheit Raumtemperatur Ist).

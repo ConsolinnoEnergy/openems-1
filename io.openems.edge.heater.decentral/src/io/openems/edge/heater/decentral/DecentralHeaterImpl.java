@@ -85,7 +85,7 @@ public class DecentralHeaterImpl extends AbstractOpenemsComponent implements Ope
 
 
     @Activate
-    public void activate(ComponentContext context, Config config) throws OpenemsError.OpenemsNamedException, ConfigurationException {
+    void activate(ComponentContext context, Config config) throws OpenemsError.OpenemsNamedException, ConfigurationException {
         super.activate(context, config.id(), config.alias(), config.enabled());
         if (config.enabled() == false) {
             return;
@@ -258,7 +258,8 @@ public class DecentralHeaterImpl extends AbstractOpenemsComponent implements Ope
      * If no: close valves, write ’true’ in ’NeedMoreHeat’ channel.
      */
     private void setThresholdAndControlValve() throws OpenemsError.OpenemsNamedException {
-        this.thermometerThreshold.setSetPointTemperatureAndActivate(this.getSetPointTemperature(), super.id());
+        int temperatureSetPoint = this.getTemperatureSetpoint().orElse(DecentralHeater.DEFAULT_SETPOINT_TEMPERATURE);
+        this.thresholdThermometer.setSetPointTemperatureAndActivate(temperatureSetPoint, super.id());
         //Static Valve Controller Works on it's own with given Temperature
         if (this.isValve == false) {
             try {
@@ -269,8 +270,8 @@ public class DecentralHeaterImpl extends AbstractOpenemsComponent implements Ope
             }
         }
         // Check if SetPointTemperature above Thermometer --> Either
-        if (this.thresholdThermometer.thermometerAboveGivenTemperature(temperatureSetpoint)) {
-            this._setHeaterState(HeaterState.HEATING.getValue());
+        if (this.thresholdThermometer.thermometerAboveGivenTemperature(temperatureSetPoint)) {
+            this._setHeaterState(HeaterState.RUNNING.getValue());
             this.getNeedMoreHeatChannel().setNextValue(false);
             if (this.isValve) {
                 this.configuredValve.setPointPowerLevelChannel().setNextValue(100);

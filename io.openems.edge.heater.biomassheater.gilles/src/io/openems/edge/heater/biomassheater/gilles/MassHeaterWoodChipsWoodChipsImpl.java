@@ -296,7 +296,7 @@ public class MassHeaterWoodChipsWoodChipsImpl extends AbstractOpenemsModbusCompo
             if (this.getExternalControl().value().get()) {
                 int powerPercentRead = (int)Math.round(this.getEffectiveHeatingPowerPercent().get());
                 if (powerPercentRead > 0) {
-                    this._setHeaterState(HeaterState.HEATING.getValue());
+                    this._setHeaterState(HeaterState.RUNNING.getValue());
                 } else {
                     // ToDo: probably the state ’starting up or preheat’ can also be determined.
                     this._setHeaterState(HeaterState.STANDBY.getValue());

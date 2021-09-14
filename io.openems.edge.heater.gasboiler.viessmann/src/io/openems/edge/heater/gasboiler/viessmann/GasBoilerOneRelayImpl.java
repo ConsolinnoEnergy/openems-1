@@ -178,7 +178,7 @@ public class GasBoilerOneRelayImpl extends AbstractOpenemsComponent implements O
         if (errorDetected == false) {
             this._setErrorMessage("No error");
             if (turnOnHeater) {
-                this._setHeaterState(HeaterState.HEATING.getValue());
+                this._setHeaterState(HeaterState.RUNNING.getValue());
             } else {
                 this._setHeaterState(HeaterState.STANDBY.getValue());
             }

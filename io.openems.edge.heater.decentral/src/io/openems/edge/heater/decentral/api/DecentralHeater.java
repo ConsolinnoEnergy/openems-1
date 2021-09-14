@@ -10,6 +10,9 @@ import io.openems.edge.heater.api.Heater;
 
 public interface DecentralHeater extends Heater {
 
+    // Default SetPointTemperature for DecentralHeater, if SetPoint is not defined.
+    int DEFAULT_SETPOINT_TEMPERATURE = 500;
+
     enum ChannelId implements io.openems.edge.common.channel.ChannelId {
 
         NEED_HEAT(Doc.of(OpenemsType.BOOLEAN)),

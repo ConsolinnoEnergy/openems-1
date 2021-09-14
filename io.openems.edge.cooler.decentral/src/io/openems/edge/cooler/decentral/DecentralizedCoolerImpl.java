@@ -7,8 +7,8 @@ import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.common.event.EdgeEventConstants;
 import io.openems.edge.controller.heatnetwork.valve.api.ControlType;
 import io.openems.edge.controller.heatnetwork.valve.api.ValveController;
-import io.openems.edge.heater.Cooler;
-import io.openems.edge.heater.HeaterState;
+import io.openems.edge.heater.api.Cooler;
+import io.openems.edge.heater.api.HeaterState;
 import io.openems.edge.cooler.decentral.api.DecentralizeCooler;
 import io.openems.edge.heatsystem.components.Valve;
 import io.openems.edge.thermometer.api.ThermometerThreshold;
@@ -104,7 +104,7 @@ public class DecentralizedCoolerImpl extends AbstractOpenemsComponent implements
         }
         this.getForceCoolChannel().setNextValue(config.forceCooling());
         this.maxWaitCyclesNeedCoolEnable = config.waitCyclesNeedCoolResponse();
-        this.setState(HeaterState.OFFLINE.name());
+        this.setState(HeaterState.OFF);
     }
 
 
@@ -151,7 +151,7 @@ public class DecentralizedCoolerImpl extends AbstractOpenemsComponent implements
                     }
                 } else {
                     this.wasNeedCoolEnableLastCycle = false;
-                    this.setState(HeaterState.AWAIT.name());
+                    this.setState(HeaterState.STANDBY);
                     this.closeValveOrDisableValveController();
                 }
             } else {
@@ -177,7 +177,7 @@ public class DecentralizedCoolerImpl extends AbstractOpenemsComponent implements
         }
         // Check if SetPointTemperature above Thermometer --> Either
         if (this.thermometerThreshold.thermometerBelowGivenTemperature(this.getSetPointTemperature())) {
-            this.setState(HeaterState.RUNNING.name());
+            this.setState(HeaterState.RUNNING);
             this.getNeedMoreCoolChannel().setNextValue(false);
             if (this.isValve) {
                 this.configuredValve.setPointPowerLevelChannel().setNextValue(DEFAULT_MAXIMUM_VALVE);
@@ -187,7 +187,7 @@ public class DecentralizedCoolerImpl extends AbstractOpenemsComponent implements
             if (this.isValve) {
                 this.closeValveOrDisableValveController();
             }
-            this.setState(HeaterState.PRE_COOL.name());
+            this.setState(HeaterState.STARTING_UP_OR_PREHEAT);
         }
     }
 
@@ -250,7 +250,7 @@ public class DecentralizedCoolerImpl extends AbstractOpenemsComponent implements
                 }
             }
         } catch (OpenemsError.OpenemsNamedException ignored) {
-            this.setState(HeaterState.ERROR.name());
+            this.setState(HeaterState.BLOCKED_OR_ERROR);
         }
     }
 
@@ -266,7 +266,7 @@ public class DecentralizedCoolerImpl extends AbstractOpenemsComponent implements
         this.getNeedMoreCoolChannel().setNextValue(false);
         this.thermometerThreshold.releaseSetPointTemperatureId(super.id());
         this.closeValveOrDisableValveController();
-        this.setState(HeaterState.OFFLINE.name());
+        this.setState(HeaterState.OFF);
     }
 
     /**

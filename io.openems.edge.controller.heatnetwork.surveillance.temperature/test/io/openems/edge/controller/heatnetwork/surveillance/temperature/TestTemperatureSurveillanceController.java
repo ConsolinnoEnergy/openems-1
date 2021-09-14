@@ -9,7 +9,7 @@ import io.openems.edge.common.test.TimeLeapClock;
 import io.openems.edge.controller.heatnetwork.valve.api.DummyValveController;
 import io.openems.edge.controller.test.ControllerTest;
 import io.openems.edge.common.test.AbstractComponentTest.TestCase;
-import io.openems.edge.heater.test.DummyHeater;
+import io.openems.edge.heater.api.test.DummyHeater;
 import io.openems.edge.thermometer.api.Thermometer;
 import io.openems.edge.thermometer.api.test.DummyThermometer;
 import io.openems.edge.timer.api.DummyTimer;

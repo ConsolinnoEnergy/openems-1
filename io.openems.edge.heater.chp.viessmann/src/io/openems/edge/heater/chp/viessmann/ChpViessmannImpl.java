@@ -2,7 +2,6 @@ package io.openems.edge.heater.chp.viessmann;
 
 import io.openems.common.exceptions.OpenemsError;
 import io.openems.common.exceptions.OpenemsException;
-import io.openems.edge.consolinno.aio.api.AioChannel;
 import io.openems.edge.bridge.modbus.api.AbstractOpenemsModbusComponent;
 import io.openems.edge.bridge.modbus.api.BridgeModbus;
 import io.openems.edge.bridge.modbus.api.ElementToChannelConverter;
@@ -26,6 +25,7 @@ import io.openems.edge.heater.api.EnableSignalHandlerImpl;
 import io.openems.edge.heater.api.Heater;
 import io.openems.edge.heater.api.HeaterState;
 import io.openems.edge.heater.chp.viessmann.api.ModuleStatus;
+import io.openems.edge.io.api.AnalogInputOutput;
 import io.openems.edge.timer.api.TimerHandler;
 import io.openems.edge.timer.api.TimerHandlerImpl;
 import io.openems.edge.heater.chp.viessmann.api.ViessmannInformation;
@@ -70,7 +70,7 @@ public class ChpViessmannImpl extends AbstractOpenemsModbusComponent implements 
     private double powerPercentSetpoint;
     private Relay relay;
     private boolean useRelay;
-    private AioChannel aioChannel;
+    private AnalogInputOutput aio;
     private int minValue;
     private int maxValue;
     private int percentageRange;
@@ -117,8 +117,8 @@ public class ChpViessmannImpl extends AbstractOpenemsModbusComponent implements 
         this.readOnly = config.readOnly();
 
         if (this.readOnly == false) {
-            if (this.cpm.getComponent(config.aioModuleId()) instanceof AioChannel) {
-                this.aioChannel = this.cpm.getComponent(config.aioModuleId());
+            if (this.cpm.getComponent(config.aioModuleId()) instanceof AnalogInputOutput) {
+                this.aio = this.cpm.getComponent(config.aioModuleId());
             } else {
                 throw new ConfigurationException("activate", "The Component with id: "
                         + config.aioModuleId() + " is not an AIO module");
@@ -402,7 +402,7 @@ public class ChpViessmannImpl extends AbstractOpenemsModbusComponent implements 
             this._setHeatingPowerPercentSetpoint(this.powerPercentSetpoint);
 
             // Maps setpoint % to a mA value on the range minValue to maxValue.
-            writeToAioValue = (int)Math.round(this.minValue + ((powerPercentSetpoint - this.percentageRange)
+            writeToAioValue = (int) Math.round(this.minValue + ((powerPercentSetpoint - this.percentageRange)
                     / ((100.f - this.percentageRange) / (this.maxValue - this.minValue))));
         } else {
             if (this.useRelay) {
@@ -414,7 +414,7 @@ public class ChpViessmannImpl extends AbstractOpenemsModbusComponent implements 
             }
         }
         try {
-            this.aioChannel.getWriteChannel().setNextWriteValue(writeToAioValue);
+            this.aio.getWriteChannel().setNextWriteValue(writeToAioValue);
         } catch (OpenemsError.OpenemsNamedException e) {
             this.log.warn("Couldn't write in Channel " + e.getMessage());
         }
@@ -440,30 +440,30 @@ public class ChpViessmannImpl extends AbstractOpenemsModbusComponent implements 
         if (this.readOnly == false) {
             try {
                 OpenemsComponent componentFetchedByCpm;
-                if (this.aioChannel.isEnabled() == false) {
-                    componentFetchedByCpm = this.cpm.getComponent(this.aioChannel.id());
-                    if (componentFetchedByCpm instanceof AioChannel) {
-                        this.aioChannel = (AioChannel) componentFetchedByCpm;
+                if (this.aio.isEnabled() == false) {
+                    componentFetchedByCpm = this.cpm.getComponent(this.aio.id());
+                    if (componentFetchedByCpm instanceof AnalogInputOutput) {
+                        this.aio = (AnalogInputOutput) componentFetchedByCpm;
                     }
                 }
             } catch (OpenemsError.OpenemsNamedException ignored) {
                 errorSummary.add("OpenEMS error: Could not find configured AIO module.");
                 this.log.warn("Could not find configured AIO module!");
             }
-                if (this.useRelay) {
-                    try {
-                        if (this.relay.isEnabled() == false) {
-                            OpenemsComponent componentFetchedByCpm;
-                            componentFetchedByCpm = this.cpm.getComponent(this.relay.id());
-                            if (componentFetchedByCpm instanceof Relay) {
-                                this.relay = (Relay) componentFetchedByCpm;
-                            }
+            if (this.useRelay) {
+                try {
+                    if (this.relay.isEnabled() == false) {
+                        OpenemsComponent componentFetchedByCpm;
+                        componentFetchedByCpm = this.cpm.getComponent(this.relay.id());
+                        if (componentFetchedByCpm instanceof Relay) {
+                            this.relay = (Relay) componentFetchedByCpm;
                         }
-                    } catch (OpenemsError.OpenemsNamedException ignored) {
-                        errorSummary.add("OpenEMS error: Could not find configured relay module.");
-                        this.log.warn("Could not find configured relay module!");
                     }
+                } catch (OpenemsError.OpenemsNamedException ignored) {
+                    errorSummary.add("OpenEMS error: Could not find configured relay module.");
+                    this.log.warn("Could not find configured relay module!");
                 }
+            }
         }
 
         // Write errors to error channel.
@@ -479,7 +479,7 @@ public class ChpViessmannImpl extends AbstractOpenemsModbusComponent implements 
             // Heating power does not scale linearly with powerPercent (= electric power percent).
             // Datasheet of EM_140_207 says at 50% electric power, heating power is at 62% of maximum.
             // This formula is an estimate based on that scaling.
-            int heatingPowerEstimate = (int)Math.round(powerPercent * this.thermicalOutput * (1 + (100 - powerPercent) * 0.48));
+            int heatingPowerEstimate = (int) Math.round(powerPercent * this.thermicalOutput * (1 + (100 - powerPercent) * 0.48));
             this._setEffectiveHeatingPower(heatingPowerEstimate);
         }
 
@@ -502,7 +502,7 @@ public class ChpViessmannImpl extends AbstractOpenemsModbusComponent implements 
                     break;
                 case RUNNING:
                     chpEngineRunning = true;
-                    this._setHeaterState(HeaterState.HEATING.getValue());
+                    this._setHeaterState(HeaterState.RUNNING.getValue());
                     break;
                 case UNDEFINED:
                 default:

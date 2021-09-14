@@ -454,7 +454,7 @@ public class HeatPumpAlphaInnotecImpl extends AbstractOpenemsModbusComponent imp
 				this._setHeaterState(HeaterState.OFF.getValue());
 				break;
 			case BLOCKED:
-				this._setHeaterState(HeaterState.BLOCKED.getValue());
+				this._setHeaterState(HeaterState.BLOCKED_OR_ERROR.getValue());
 				break;
 			case DEFROST:
 			case COOLING:
@@ -462,7 +462,7 @@ public class HeatPumpAlphaInnotecImpl extends AbstractOpenemsModbusComponent imp
 			case ROOM_HEATING:
 			case DOMESTIC_HOT_WATER_HEATING:
 			case EXTERNAL_ENERGY_SOURCE:
-				this._setHeaterState(HeaterState.HEATING.getValue());
+				this._setHeaterState(HeaterState.RUNNING.getValue());
 				break;
 			case UNDEFINED:
 			default:

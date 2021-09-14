@@ -78,7 +78,7 @@ public class HeatPumpTecalorImpl extends AbstractOpenemsModbusComponent implemen
 	private boolean readOnly;
 	private boolean sgReadyActive;
 
-	private String defaultModeOfOperation;
+	private OperatingMode defaultModeOfOperation;
 	private boolean useEnableSignal;
 	private EnableSignalHandler enableSignalHandler;
 	private static final String ENABLE_SIGNAL_IDENTIFIER = "HEAT_PUMP_TECALOR_ENABLE_SIGNAL_IDENTIFIER";
@@ -399,11 +399,11 @@ public class HeatPumpTecalorImpl extends AbstractOpenemsModbusComponent implemen
 			notBlocked = this.getElSupBlockRelease().get();
 		}
 		if (isRunning) {
-			this._setHeaterState(HeaterState.HEATING.getValue());
+			this._setHeaterState(HeaterState.RUNNING.getValue());
 		} else if (notBlocked && signalReceived) {
 			this._setHeaterState(HeaterState.STANDBY.getValue());
 		} else if (notBlocked == false || isError) {
-			this._setHeaterState(HeaterState.BLOCKED.getValue());
+			this._setHeaterState(HeaterState.BLOCKED_OR_ERROR.getValue());
 		} else {
 			// You land here when no channel has data (’signalReceived == false’, ’notBlocked == true’, ’isError == false’).
 			this._setHeaterState(HeaterState.OFF.getValue());
@@ -492,23 +492,6 @@ public class HeatPumpTecalorImpl extends AbstractOpenemsModbusComponent implemen
 				}
 
 				if (turnOnHeatpump) {
-					OperatingMode setModeTo = OperatingMode.STANDBY;
-					switch (this.defaultModeOfOperation) {
-						case "Programmbetrieb":
-							setModeTo = OperatingMode.PROGRAM_MODE;
-							break;
-						case "Komfortbetrieb":
-							setModeTo = OperatingMode.COMFORT_MODE;
-							break;
-						case "ECO-Betrieb":
-							setModeTo = OperatingMode.ECO_MODE;
-							break;
-						case "Warmwasserbetrieb":
-							setModeTo = OperatingMode.DOMESTIC_HOT_WATER;
-							break;
-
-						// "Bereitschaftsbetrieb" is OperatingMode.STANDBY, ’setModeTo’ is initialized as that.
-					}
 					try {
 						this.setOperatingMode(this.defaultModeOfOperation.getValue());
 					} catch (OpenemsError.OpenemsNamedException e) {

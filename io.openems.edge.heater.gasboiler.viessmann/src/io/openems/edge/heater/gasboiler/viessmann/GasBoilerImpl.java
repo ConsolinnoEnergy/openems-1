@@ -9,7 +9,6 @@ import io.openems.edge.bridge.modbus.api.ModbusProtocol;
 import io.openems.edge.bridge.modbus.api.element.CoilElement;
 import io.openems.edge.bridge.modbus.api.element.DummyRegisterElement;
 import io.openems.edge.bridge.modbus.api.element.UnsignedWordElement;
-import io.openems.edge.bridge.modbus.api.task.FC16WriteRegistersTask;
 import io.openems.edge.bridge.modbus.api.task.FC2ReadInputsTask;
 import io.openems.edge.bridge.modbus.api.task.FC3ReadRegistersTask;
 import io.openems.edge.bridge.modbus.api.task.FC4ReadInputRegistersTask;
@@ -513,7 +512,7 @@ public class GasBoilerImpl extends AbstractOpenemsModbusComponent implements Ope
         if (getBoilerState().value().isDefined()) {
             int boilerState = getBoilerState().value().get();
             if (boilerState > 0) {
-                this._setHeaterState(HeaterState.HEATING.getValue());
+                this._setHeaterState(HeaterState.RUNNING.getValue());
             } else {
                 this._setHeaterState(HeaterState.STANDBY.getValue());
             }

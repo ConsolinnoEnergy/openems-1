@@ -292,10 +292,10 @@ public class ChpWolfImpl extends AbstractOpenemsModbusComponent implements Opene
 			readyForCommands = true;
 			if (getRpm().get() > 10) {
 				chpEngineRunning = true;
-				this._setHeaterState(HeaterState.HEATING.getValue());
+				this._setHeaterState(HeaterState.RUNNING.getValue());
 			} else {
 				if (statusError) {
-					this._setHeaterState(HeaterState.BLOCKED.getValue());
+					this._setHeaterState(HeaterState.BLOCKED_OR_ERROR.getValue());
 				} else if (statusReady) {
 					this._setHeaterState(HeaterState.STANDBY.getValue());
 				} else {
