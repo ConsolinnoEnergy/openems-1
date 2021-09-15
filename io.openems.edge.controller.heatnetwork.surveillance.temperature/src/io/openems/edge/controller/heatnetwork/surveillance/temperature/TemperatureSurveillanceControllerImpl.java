@@ -66,7 +66,6 @@ public class TemperatureSurveillanceControllerImpl extends AbstractOpenemsCompon
     private HydraulicController optionalHydraulicController;
     private Heater optionalHeater;
     private TemperatureSurveillanceType surveillanceType;
-    private DateTime initialWaitTimeStamp;
     private boolean isRunning;
     private static final String VALVE_IDENTIFIER = "TEMP_SURVEILLANCE_VALVE_IDENTIFIER";
     private TimerHandler timer;
@@ -338,20 +337,20 @@ public class TemperatureSurveillanceControllerImpl extends AbstractOpenemsCompon
     }
 
     /**
-     * The Deactivation Condition is: DeactivationThermometer > SetPoint.
+     * The Deactivation Condition is: DeactivationThermometer > SetPoint +- Offset.
      *
      * @return the comparison boolean.
      */
     private boolean deactivationConditionsApply() {
-        return this.referenceThermometer.getTemperatureValue() > (this.deactivationThermometer.getTemperatureValue() + this.deactivationOffset);
+        return this.deactivationThermometer.getTemperatureValue() >= (this.referenceThermometer.getTemperatureValue() + this.deactivationOffset);
     }
 
     /**
-     * The ActivationCondition is ActivationThermometer < setPoint+Offset.
+     * The ActivationCondition is ActivationThermometer < setPoint+-Offset.
      *
      * @return the comparison boolean.
      */
     private boolean activationConditionsApply() {
-        return this.referenceThermometer.getTemperatureValue() < this.activationThermometer.getTemperatureValue() + this.activationOffset;
+        return this.activationThermometer.getTemperatureValue() <= (this.referenceThermometer.getTemperatureValue() + this.activationOffset);
     }
 }
