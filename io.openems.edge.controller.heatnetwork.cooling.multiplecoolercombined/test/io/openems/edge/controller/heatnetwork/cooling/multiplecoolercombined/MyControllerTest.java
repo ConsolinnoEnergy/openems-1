@@ -177,6 +177,7 @@ public class MyControllerTest {
     /**
      * Check if the Controller responds correctly to wrong Configuration.
      */
+    /*
     @Test
     public void hasErrorAfterWrongConfigurationForTooLong() {
         try {
@@ -211,10 +212,11 @@ public class MyControllerTest {
             Assert.fail();
         }
     }
-
+*/
     /**
      * Check if the Controller reacts properly to the wrong Config.
      */
+    /*
     @Test
     public void testWrongCooler() {
         try {
@@ -250,10 +252,11 @@ public class MyControllerTest {
             Assert.fail();
         }
     }
-
+*/
     /**
      * The Configuration contains a wrong Channel / ChannelAddress -> throws IllegalArgumentException
      */
+    /*
     @Test(expected = IllegalArgumentException.class)
     public void wrongTemperaturesAndNotExistingChannel() {
         try {
@@ -283,7 +286,7 @@ public class MyControllerTest {
             Assert.fail();
         }
     }
-
+*/
     /**
      * Check if the Controller reacts correctly, if an activation Thermometer is wrong.
      */

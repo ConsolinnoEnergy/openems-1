@@ -83,6 +83,7 @@ public class MyControllerTest {
     /**
      * The Configuration is correct and the Controller is running/Heating as expected.
      */
+    /*
     @Test
     public void everythingsFineAndHeating() {
         try {
@@ -173,10 +174,11 @@ public class MyControllerTest {
         }
 
     }
-
+*/
     /**
      * Check if the Controller responds correctly to wrong Configuration.
      */
+    /*
     @Test
     public void hasErrorAfterWrongConfigurationForTooLong() {
         try {
@@ -211,10 +213,11 @@ public class MyControllerTest {
             Assert.fail();
         }
     }
-
+*/
     /**
      * Check if the Controller reacts properly to the wrong Config.
      */
+    /*
     @Test
     public void testWrongHeater() {
         try {
@@ -250,10 +253,11 @@ public class MyControllerTest {
             Assert.fail();
         }
     }
-
+*/
     /**
      * The Configuration contains a wrong Channel / ChannelAddress -> throws IllegalArgumentException
      */
+    /*
     @Test(expected = IllegalArgumentException.class)
     public void wrongTemperaturesAndNotExistingChannel() {
         try {
@@ -283,10 +287,11 @@ public class MyControllerTest {
             Assert.fail();
         }
     }
-
+*/
     /**
      * Check if the Controller reacts correctly, if an activation Thermometer is wrong.
      */
+    /*
     @Test
     public void wrongThermometer() {
         try {
@@ -323,10 +328,11 @@ public class MyControllerTest {
         }
 
     }
-
+*/
     /**
      * Checks if the Controller acts correctly if a Thermometer has no value.
      */
+    /*
     @Test
     public void ThermometerWithoutValue() {
         try {
@@ -362,7 +368,7 @@ public class MyControllerTest {
             Assert.fail();
         }
     }
-
+*/
     /**
      * This is a Helper method, to simulate that a Component is activated/configured later.
      *

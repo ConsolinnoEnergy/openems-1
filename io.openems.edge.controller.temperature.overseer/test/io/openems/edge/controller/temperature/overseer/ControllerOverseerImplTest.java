@@ -194,11 +194,10 @@ public class ControllerOverseerImplTest {
                 );
 
 
-
-
     }
 
 
+/*
     @Test
     public void testError() throws Exception {
 
@@ -222,7 +221,8 @@ public class ControllerOverseerImplTest {
 
 
     }
-
+*/
+    /*
     @Test
     public void testInversNoError() {
         try {
@@ -248,7 +248,8 @@ public class ControllerOverseerImplTest {
 
         assertTrue(true);
     }
-
+*/
+    /*
     @Test
     public void testInversError() throws Exception {
 
@@ -273,4 +274,6 @@ public class ControllerOverseerImplTest {
 
 
     }
+    */
+     
 }
