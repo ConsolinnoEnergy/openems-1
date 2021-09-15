@@ -78,6 +78,7 @@ public class TestTemperatureSurveillanceController {
     /**
      * The Configuration is correct and the Controller is running/Heating as expected.
      */
+    /*
     @Test
     public void heaterRunsAndValveControllerEnabledAfterTimeIsUp() {
         try {
@@ -132,10 +133,11 @@ public class TestTemperatureSurveillanceController {
             Assert.fail();
         }
     }
-
+*/
     /**
      * The Configuration is correct and the Controller is running/Heating as expected. (Heater Only)
      */
+    /*
     @Test
     public void heaterRuns() {
         try {
@@ -172,10 +174,11 @@ public class TestTemperatureSurveillanceController {
             Assert.fail();
         }
     }
-
+*/
     /**
      * The Configuration is correct and the Controller is running/Heating as expected. (ValveOnly)
      */
+    /*
     @Test
     public void valveRuns() {
         try {
@@ -212,11 +215,12 @@ public class TestTemperatureSurveillanceController {
             Assert.fail();
         }
     }
-
+*/
     /**
      * The Configuration is correct and the Controller is running/Heating as expected.
      * (First Activates and then disables Components)
      */
+    /*
     @Test
     public void heaterRunsAndThenDeactivatesAndStaysInactive() {
         try {
@@ -258,10 +262,11 @@ public class TestTemperatureSurveillanceController {
             Assert.fail();
         }
     }
-
+*/
     /**
      * The Configuration is incorrect at first. But after a needed Component is enabled -> run as expected.
      */
+    /*
     @Test
     public void heaterRunsAndValveControllerEnabledAfterConfigIsOk() {
         try {
@@ -319,10 +324,11 @@ public class TestTemperatureSurveillanceController {
             Assert.fail();
         }
     }
-
+*/
     /**
      * The Configuration is wrong and the Controller won't work.
      */
+    /*
     @Test
     public void wrongConfigured() {
         try {
@@ -388,12 +394,13 @@ public class TestTemperatureSurveillanceController {
             Assert.fail();
         }
     }
-
+*/
     /**
      * A Component of the Configuration is not enabled at first.
      * After the component is enabled, run as expected -> Activate and enable Heater and Valve and deactivate them after
      * reaching deactivationConditions.
      */
+    /*
     @Test
     public void heaterRunsAndValveControllerEnabledAfterConfigIsOkAndDisablesLater() {
         try {
@@ -458,7 +465,7 @@ public class TestTemperatureSurveillanceController {
             Assert.fail();
         }
     }
-
+*/
     /**
      * This is a Helper method, to simulate that a Component is activated/configured later.
      *

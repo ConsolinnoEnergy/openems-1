@@ -71,8 +71,8 @@ public class RestRemoteDeviceImpl extends AbstractOpenemsComponent implements Op
     @Activate
     public void activate(ComponentContext context, Config config) throws ConfigurationException, OpenemsError.OpenemsNamedException {
         super.activate(context, config.id(), config.alias(), config.enabled());
+        this.activationOrModifiedRoutine(config);
         if (config.enabled()) {
-            this.activationOrModifiedRoutine(config);
             this.getAllowRequestChannel().setNextValue(true);
         }
     }
@@ -85,6 +85,7 @@ public class RestRemoteDeviceImpl extends AbstractOpenemsComponent implements Op
      * @throws ConfigurationException             will be thrown if the configured BridgeId is not a RestBridge.
      */
     private void activationOrModifiedRoutine(Config config) throws OpenemsError.OpenemsNamedException, ConfigurationException {
+        this.config = config;
         if (this.isEnabled()) {
             if (this.cpm.getComponent(config.restBridgeId()) instanceof RestBridge) {
                 this.restBridge = this.cpm.getComponent(config.restBridgeId());
@@ -146,10 +147,7 @@ public class RestRemoteDeviceImpl extends AbstractOpenemsComponent implements Op
     void modified(ComponentContext context, Config config) throws OpenemsError.OpenemsNamedException, ConfigurationException {
         this.restBridge.removeRestRemoteDevice(super.id());
         super.modified(context, config.id(), config.alias(), config.enabled());
-        if (config.enabled()) {
             this.activationOrModifiedRoutine(config);
-        }
-
     }
 
 

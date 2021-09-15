@@ -71,6 +71,7 @@ public class MqttBridgeImpl extends AbstractOpenemsComponent implements OpenemsC
 
     private final Logger log = LoggerFactory.getLogger(MqttBridgeImpl.class);
 
+    private Config config;
 
     //Add to Manager
     //MAP OF ALL TASKS <-- ID and values in list
@@ -128,25 +129,28 @@ public class MqttBridgeImpl extends AbstractOpenemsComponent implements OpenemsC
      * @throws MqttException    thrown if publish/subscribe manager couldn't connect.
      */
     private void basicActivationOrModifiedSetup(Config config) throws OpenemsException, MqttException {
-        this.timeZone = config.locale().equals("") ? DateTimeZone.UTC : DateTimeZone.forID(config.locale());
-        //Important for last will.
-        this.bridgePublisher = new MqttConnectionPublishImpl();
-        try {
-            this.createMqttSession(config);
-        } catch (MqttException e) {
-            this.log.warn(e.getMessage());
-            throw new OpenemsException(e.getMessage());
-        }
+        this.config = config;
+        if (config.enabled()) {
+            this.timeZone = config.locale().equals("") ? DateTimeZone.UTC : DateTimeZone.forID(config.locale());
+            //Important for last will.
+            this.bridgePublisher = new MqttConnectionPublishImpl();
+            try {
+                this.createMqttSession(config);
+            } catch (MqttException e) {
+                this.log.warn(e.getMessage());
+                throw new OpenemsException(e.getMessage());
+            }
 
-        this.publishManager = new MqttPublishManager(this.publishTasks, this.mqttBroker, this.mqttUsername,
-                this.mqttPassword, config.keepAlive(), this.mqttClientId, this.timeZone);
-        //ClientId --> + CLIENT_SUB_0
-        this.subscribeManager = new MqttSubscribeManager(this.subscribeTasks, this.mqttBroker, this.mqttUsername,
-                this.mqttPassword, this.mqttClientId, config.keepAlive(), this.timeZone);
-        this.publishManager.setComponentManager(this.cpm);
-        this.subscribeManager.setComponentManager(this.cpm);
-        this.publishManager.setCoreCycle(config.useCoreCycleTime());
-        this.subscribeManager.setCoreCycle(config.useCoreCycleTime());
+            this.publishManager = new MqttPublishManager(this.publishTasks, this.mqttBroker, this.mqttUsername,
+                    this.mqttPassword, config.keepAlive(), this.mqttClientId, this.timeZone);
+            //ClientId --> + CLIENT_SUB_0
+            this.subscribeManager = new MqttSubscribeManager(this.subscribeTasks, this.mqttBroker, this.mqttUsername,
+                    this.mqttPassword, this.mqttClientId, config.keepAlive(), this.timeZone);
+            this.publishManager.setComponentManager(this.cpm);
+            this.subscribeManager.setComponentManager(this.cpm);
+            this.publishManager.setCoreCycle(config.useCoreCycleTime());
+            this.subscribeManager.setCoreCycle(config.useCoreCycleTime());
+        }
     }
 
     /**
@@ -448,11 +452,11 @@ public class MqttBridgeImpl extends AbstractOpenemsComponent implements OpenemsC
     private void subscribeToMissingTopics() {
         Map<String, List<MqttTask>> stillMissingTasks = new HashMap<>();
         this.missingSubscriptionsAfterReconnect.forEach((id, taskList) -> {
-            taskList.forEach(task->{
+            taskList.forEach(task -> {
                 try {
                     this.subscribeManager.subscribeToTopic(task, id);
                 } catch (MqttException e) {
-                    if(stillMissingTasks.containsKey(id)){
+                    if (stillMissingTasks.containsKey(id)) {
                         stillMissingTasks.get(id).add(task);
                     } else {
                         List<MqttTask> tasks = new ArrayList<>();
@@ -495,27 +499,25 @@ public class MqttBridgeImpl extends AbstractOpenemsComponent implements OpenemsC
         try {
             this.publishManager.deactivate();
             this.subscribeManager.deactivate();
-            publishManager = new MqttPublishManager(publishTasks, this.mqttBroker, this.mqttUsername,
-                    this.mqttPassword, this.keepAlive, this.mqttClientId, timeZone);
+            this.publishManager = new MqttPublishManager(this.publishTasks, this.mqttBroker, this.mqttUsername,
+                    this.mqttPassword, this.keepAlive, this.mqttClientId, this.timeZone);
             //ClientId --> + CLIENT_SUB_0
-            subscribeManager = new MqttSubscribeManager(subscribeTasks, this.mqttBroker, this.mqttUsername,
-                    this.mqttPassword, this.mqttClientId, this.keepAlive, timeZone);
-            this.subscribeTasks.forEach((key, value) -> {
-                value.forEach(entry -> {
-                    try {
-                        this.subscribeManager.subscribeToTopic(entry, key);
-                    } catch (MqttException e) {
-                        this.log.warn("Couldn't apply subscription, try again later");
-                        if (this.missingSubscriptionsAfterReconnect.containsKey(key)) {
-                            this.missingSubscriptionsAfterReconnect.get(key).add(entry);
-                        } else {
-                            List<MqttTask> missingTaskList = new ArrayList<>();
-                            missingTaskList.add(entry);
-                            this.missingSubscriptionsAfterReconnect.put(key, missingTaskList);
-                        }
+            this.subscribeManager = new MqttSubscribeManager(this.subscribeTasks, this.mqttBroker, this.mqttUsername,
+                    this.mqttPassword, this.mqttClientId, this.keepAlive, this.timeZone);
+            this.subscribeTasks.forEach((key, value) -> value.forEach(entry -> {
+                try {
+                    this.subscribeManager.subscribeToTopic(entry, key);
+                } catch (MqttException e) {
+                    this.log.warn("Couldn't apply subscription, try again later");
+                    if (this.missingSubscriptionsAfterReconnect.containsKey(key)) {
+                        this.missingSubscriptionsAfterReconnect.get(key).add(entry);
+                    } else {
+                        List<MqttTask> missingTaskList = new ArrayList<>();
+                        missingTaskList.add(entry);
+                        this.missingSubscriptionsAfterReconnect.put(key, missingTaskList);
                     }
-                });
-            });
+                }
+            }));
         } catch (MqttException e) {
             this.log.warn("Couldn't connect to Broker, somethings wrong!");
         }
