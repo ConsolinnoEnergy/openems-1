@@ -8,7 +8,7 @@ import io.openems.edge.common.channel.Doc;
 import io.openems.edge.common.channel.WriteChannel;
 import io.openems.edge.heater.api.Heater;
 
-public interface DecentralHeater extends Heater {
+public interface DecentralizedHeater extends Heater {
 
     // Default SetPointTemperature for DecentralHeater, if SetPoint is not defined.
     int DEFAULT_SETPOINT_TEMPERATURE = 500;
@@ -45,9 +45,9 @@ public interface DecentralHeater extends Heater {
     }
 
     default boolean getNeedHeat() {
-        Boolean needHeat = (Boolean) getCurrentChannelValue(this.getNeedHeatChannel());
+        Boolean needHeat = (Boolean) this.getCurrentChannelValue(this.getNeedHeatChannel());
         if (needHeat == null) {
-            needHeat = (Boolean) getNextChannelValue(this.getNeedHeatChannel());
+            needHeat = (Boolean) this.getNextChannelValue(this.getNeedHeatChannel());
         }
         return needHeat != null ? needHeat : false;
     }
@@ -59,9 +59,9 @@ public interface DecentralHeater extends Heater {
     }
     //REWORK at Bastis branch --> DecentralHeater uses Channel directly
     default boolean getNeedHeatEnableSignal() {
-        Boolean needHeatEnableSignal = (Boolean) getCurrentChannelValue(this.getNeedHeatEnableSignalChannel());
+        Boolean needHeatEnableSignal = (Boolean) this.getCurrentChannelValue(this.getNeedHeatEnableSignalChannel());
         if (needHeatEnableSignal == null) {
-            needHeatEnableSignal = (Boolean) getNextChannelValue(this.getNeedHeatEnableSignalChannel());
+            needHeatEnableSignal = (Boolean) this.getNextChannelValue(this.getNeedHeatEnableSignalChannel());
         }
         return needHeatEnableSignal != null ? needHeatEnableSignal : false;
     }
@@ -72,10 +72,11 @@ public interface DecentralHeater extends Heater {
         return this.channel(ChannelId.NEED_MORE_HEAT);
     }
 
+
     default boolean getNeedMoreHeat() {
-        Boolean needMoreHeat = (Boolean) getCurrentChannelValue(this.getNeedMoreHeatChannel());
+        Boolean needMoreHeat = (Boolean) this.getCurrentChannelValue(this.getNeedMoreHeatChannel());
         if (needMoreHeat == null) {
-            needMoreHeat = (Boolean) getNextChannelValue(this.getNeedMoreHeatChannel());
+            needMoreHeat = (Boolean) this.getNextChannelValue(this.getNeedMoreHeatChannel());
         }
         return needMoreHeat != null ? needMoreHeat : false;
     }
@@ -83,14 +84,14 @@ public interface DecentralHeater extends Heater {
 
     //---------------NEED_MORE_HEAT_ENABLE_SIGNAL--------------------//
 
-    default Channel<Boolean> getNeedMoreHeatEnableSignalChannel() {
-        return this.channel(ChannelId.NEED_MORE_HEAT);
+    default WriteChannel<Boolean> getNeedMoreHeatEnableSignalChannel() {
+        return this.channel(ChannelId.NEED_MORE_HEAT_ENABLE_SIGNAL);
     }
 
     default boolean getNeedMoreHeatEnableSignal() {
-        Boolean needMoreHeat = (Boolean) getCurrentChannelValue(this.getNeedMoreHeatChannel());
+        Boolean needMoreHeat = (Boolean) this.getCurrentChannelValue(this.getNeedMoreHeatChannel());
         if (needMoreHeat == null) {
-            needMoreHeat = (Boolean) getNextChannelValue(this.getNeedMoreHeatChannel());
+            needMoreHeat = (Boolean) this.getNextChannelValue(this.getNeedMoreHeatChannel());
         }
         return needMoreHeat != null ? needMoreHeat : false;
     }

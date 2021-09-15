@@ -14,7 +14,7 @@ import io.openems.edge.exceptionalstate.api.ExceptionalStateHandlerImpl;
 import io.openems.edge.heater.api.ComponentType;
 import io.openems.edge.heater.api.Heater;
 import io.openems.edge.heater.api.HeaterState;
-import io.openems.edge.heater.decentral.api.DecentralHeater;
+import io.openems.edge.heater.decentral.api.DecentralizedHeater;
 import io.openems.edge.heatsystem.components.HydraulicComponent;
 import io.openems.edge.thermometer.api.ThermometerThreshold;
 
@@ -56,7 +56,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
         immediate = true,
         property = {EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS}
 )
-public class DecentralizedHeaterImpl extends AbstractOpenemsComponent implements OpenemsComponent, DecentralHeater, ExceptionalState, EventHandler {
+public class DecentralizedHeaterImpl extends AbstractOpenemsComponent implements OpenemsComponent, DecentralizedHeater, ExceptionalState, EventHandler {
 
     private final Logger log = LoggerFactory.getLogger(DecentralizedHeaterImpl.class);
 
@@ -77,7 +77,7 @@ public class DecentralizedHeaterImpl extends AbstractOpenemsComponent implements
     public DecentralizedHeaterImpl() {
         super(OpenemsComponent.ChannelId.values(),
                 Heater.ChannelId.values(),
-                DecentralHeater.ChannelId.values(),
+                DecentralizedHeater.ChannelId.values(),
                 ExceptionalState.ChannelId.values());
     }
 
@@ -307,13 +307,20 @@ public class DecentralizedHeaterImpl extends AbstractOpenemsComponent implements
      * if ValveController --> force close or close?
      */
     void deactivateControlledComponents() {
+        this.getEnableSignalChannel().getNextWriteValueAndReset();
+        this.getEnableSignalChannel().setNextValue(false);
         this.getNeedHeatChannel().setNextValue(false);
+        this.getNeedHeatEnableSignalChannel().getNextWriteValueAndReset();
+        this.getNeedHeatEnableSignalChannel().setNextValue(false);
         this.getNeedMoreHeatChannel().setNextValue(false);
+        this.getNeedMoreHeatEnableSignalChannel().getNextWriteValueAndReset();
+        this.getNeedMoreHeatEnableSignalChannel().setNextValue(false);
+        this._setHeaterState(HeaterState.OFF);
         this.thresholdThermometer.releaseSetPointTemperatureId(super.id());
         try {
             this.closeComponentOrDisableComponentController();
         } catch (OpenemsError.OpenemsNamedException e) {
-            this.log.warn("Couldn't disable ValveController!");
+            this.log.warn("Couldn't disable HydraulicController!");
         }
         this._setHeaterState(HeaterState.OFF);
     }

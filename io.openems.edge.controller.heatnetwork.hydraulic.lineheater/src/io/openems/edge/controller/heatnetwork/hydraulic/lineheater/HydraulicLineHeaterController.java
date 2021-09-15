@@ -11,8 +11,7 @@ import io.openems.edge.controller.heatnetwork.hydraulic.lineheater.api.Hydraulic
 import io.openems.edge.controller.heatnetwork.hydraulic.lineheater.helperclass.ChannelLineHeater;
 import io.openems.edge.controller.heatnetwork.hydraulic.lineheater.helperclass.OneChannelLineHeater;
 import io.openems.edge.controller.heatnetwork.hydraulic.lineheater.helperclass.ValveLineHeater;
-import io.openems.edge.heater.decentral.api.DecentralHeater;
-import io.openems.edge.heater.api.Heater;
+import io.openems.edge.heater.decentral.api.DecentralizedHeater;
 import io.openems.edge.heatsystem.components.HydraulicComponent;
 import io.openems.edge.thermometer.api.Thermometer;
 import io.openems.edge.timer.api.TimerHandler;
@@ -55,7 +54,7 @@ public class HydraulicLineHeaterController extends AbstractOpenemsComponent impl
     private static final String IDENTIFIER_FALLBACK = "HYDRAULIC_LINE_HEATER_FALLBACK_IDENTIFIER";
     private static final String IDENTIFIER_CYCLE_RESTART = "HYDRAULIC_LINE_HEATER_CYCLE_RESTART_IDENTIFIER";
     private Thermometer tempSensorReference;
-    private DecentralHeater decentralHeaterOptional;
+    private DecentralizedHeater decentralHeaterOptional;
 
     private int temperatureDefault = 600;
     private boolean shouldFallback = false;
@@ -85,7 +84,7 @@ public class HydraulicLineHeaterController extends AbstractOpenemsComponent impl
         this.createSpecificLineHeater(config);
 
         if (config.useDecentralHeater()) {
-            this.decentralHeaterOptional = (DecentralHeater) this.allocateComponent(config.decentralheaterReference(),
+            this.decentralHeaterOptional = (DecentralizedHeater) this.allocateComponent(config.decentralheaterReference(),
                     ComponentType.DECENTRAL_HEATER);
         }
         this.temperatureDefault = config.temperatureDefault();
@@ -201,7 +200,7 @@ public class HydraulicLineHeaterController extends AbstractOpenemsComponent impl
      */
 
     private OpenemsComponent allocateDecentralHeater(String deviceId) throws Exception {
-        if (this.cpm.getComponent(deviceId) instanceof DecentralHeater) {
+        if (this.cpm.getComponent(deviceId) instanceof DecentralizedHeater) {
             return this.cpm.getComponent(deviceId);
         }
         throw new Exception("Internal Error, this shouldn't occur");
