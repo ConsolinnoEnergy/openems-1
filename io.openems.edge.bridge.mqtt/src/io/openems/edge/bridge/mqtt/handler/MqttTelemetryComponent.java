@@ -56,7 +56,14 @@ public class MqttTelemetryComponent extends MqttOpenemsComponentConnector implem
     void activate(ComponentContext context, TelemetryComponentConfig config) throws OpenemsError.OpenemsNamedException, IOException, ConfigurationException, MqttException {
         this.config = config;
         if (super.activate(context, config.id(), config.alias(), config.enabled(), this.cpm, config.mqttBridgeId())) {
+            try {
                 this.configureMqtt(config);
+            } catch (OpenemsError.OpenemsNamedException e) {
+                if (this.mqttBridge.get() != null) {
+                    this.mqttBridge.get().removeMqttComponent(this.id());
+                }
+                throw e;
+            }
         } else {
             throw new ConfigurationException("Something went wrong", "Somethings wrong in Activate method");
         }
@@ -67,7 +74,7 @@ public class MqttTelemetryComponent extends MqttOpenemsComponentConnector implem
         this.config = config;
         super.connectorDeactivate();
         if (super.modified(context, config.id(), config.alias(), config.enabled(), this.cpm, config.mqttBridgeId())) {
-                this.configureMqtt(config);
+            this.configureMqtt(config);
         }
     }
 
@@ -98,7 +105,7 @@ public class MqttTelemetryComponent extends MqttOpenemsComponentConnector implem
 
     @Override
     public void handleEvent(Event event) {
-        if (this.isEnabled()) {
+        if (this.isEnabled() && this.config.configurationDone()) {
             if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE)) {
                 super.renewReferenceAndMqttConfigurationComponent(this.cpm);
                 if ((this.mqttConfigurationComponent == null && this.mqttBridge.get() != null && this.mqttBridge.get().isEnabled())) {

@@ -171,10 +171,8 @@ public abstract class MqttOpenemsComponentConnector extends AbstractOpenemsCompo
      */
     void connectorDeactivate() {
         super.deactivate();
-        if (this.mqttConfigurationComponent != null) {
             if (this.mqttBridge.get() != null) {
                 this.mqttBridge.get().removeMqttComponent(super.id());
-            }
         }
     }
 
