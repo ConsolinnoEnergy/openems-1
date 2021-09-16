@@ -104,7 +104,7 @@ public class SimulationCommunicationMasterImpl extends AbstractOpenemsComponent 
         AtomicBoolean atLeastOneRequest = new AtomicBoolean(false);
         if (this.useHeater) {
             this.decentralHeaterList.forEach(decentralHeater -> {
-                if (decentralHeater.getNeedHeat()) {
+                if (decentralHeater.getRequestHeatNetworkActivation().orElse(false)) {
                     atLeastOneRequest.set(true);
                     currentRequests.getAndIncrement();
                     if (this.managedHeaterList.size() < this.maxRequests) {
@@ -130,7 +130,7 @@ public class SimulationCommunicationMasterImpl extends AbstractOpenemsComponent 
                     if (value == false) {
                         this.managedHeaterList.remove(key);
                         try {
-                            key.getNeedHeatEnableSignalChannel().setNextWriteValue(false);
+                            key.setHeatNetworkReadySignal(false);
                         } catch (OpenemsError.OpenemsNamedException e) {
                             e.printStackTrace();
                         }
@@ -147,7 +147,7 @@ public class SimulationCommunicationMasterImpl extends AbstractOpenemsComponent 
     private void enableOrDisableHeater(DecentralHeater decentralHeater, boolean enable) {
         try {
             this.isManaged.put(decentralHeater, enable);
-            decentralHeater.getNeedHeatEnableSignalChannel().setNextWriteValue(enable);
+            decentralHeater.setHeatNetworkReadySignal(enable);
             if (enable) {
                 this.managedHeaterList.add(decentralHeater);
                 this.workMap.put(decentralHeater, new DateTime());

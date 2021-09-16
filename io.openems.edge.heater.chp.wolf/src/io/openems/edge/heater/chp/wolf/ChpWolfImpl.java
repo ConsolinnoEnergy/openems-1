@@ -46,16 +46,16 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Optional;
 
-@Designate(ocd = Config.class, factory = true)
-@Component(name = "Heater.Chp.Wolf",
-		immediate = true,
-		configurationPolicy = ConfigurationPolicy.REQUIRE,
-		property = EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE)
 
 /**
  * This module reads all variables available via Modbus from a Wolf CHP and maps them to OpenEMS
  * channels. WriteChannels can be used to send commands to the CHP via "setNextWriteValue" method.
  */
+@Designate(ocd = Config.class, factory = true)
+@Component(name = "Heater.Chp.Wolf",
+		immediate = true,
+		configurationPolicy = ConfigurationPolicy.REQUIRE,
+		property = EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE)
 public class ChpWolfImpl extends AbstractOpenemsModbusComponent implements OpenemsComponent, EventHandler,
 		ExceptionalState, ChpWolfChannel {
 
@@ -69,6 +69,7 @@ public class ChpWolfImpl extends AbstractOpenemsModbusComponent implements Opene
 	private int testcounter = 0;
 	private boolean debug;
 	private int commandCycler = 0;
+	private static final int ENGINE_RPM_RUNNING_INDICATOR = 10; // If rpm is above this value, consider the chp to be running.
 
 	private boolean componentEnabled;
 	private boolean turnOnChp;
@@ -99,7 +100,7 @@ public class ChpWolfImpl extends AbstractOpenemsModbusComponent implements Opene
 
 
 	@Activate
-	public void activate(ComponentContext context, Config config) throws OpenemsError.OpenemsNamedException, ConfigurationException {
+	void activate(ComponentContext context, Config config) throws OpenemsError.OpenemsNamedException, ConfigurationException {
 		super.activate(context, config.id(), config.alias(), config.enabled(), config.modbusUnitId(), this.cm,
 				"Modbus", config.modbus_id());
 		this.componentEnabled = config.enabled();
@@ -114,24 +115,12 @@ public class ChpWolfImpl extends AbstractOpenemsModbusComponent implements Opene
 			TimerHandler timer = new TimerHandlerImpl(super.id(), this.cpm);
 			this.useEnableSignal = config.useEnableSignalChannel();
 			if (this.useEnableSignal) {
-				String timerTypeEnableSignal;
-				if (config.enableSignalTimerIsCyclesNotSeconds()) {
-					timerTypeEnableSignal = "TimerByCycles";
-				} else {
-					timerTypeEnableSignal = "TimerByTime";
-				}
-				timer.addOneIdentifier(ENABLE_SIGNAL_IDENTIFIER, timerTypeEnableSignal, config.waitTimeEnableSignal());
+				timer.addOneIdentifier(ENABLE_SIGNAL_IDENTIFIER, config.enableSignalTimerId(), config.waitTimeEnableSignal());
 				this.enableSignalHandler = new EnableSignalHandlerImpl(timer, ENABLE_SIGNAL_IDENTIFIER);
 			}
 			this.useExceptionalState = config.useExceptionalState();
 			if (this.useExceptionalState) {
-				String timerTypeExceptionalState;
-				if (config.exceptionalStateTimerIsCyclesNotSeconds()) {
-					timerTypeExceptionalState = "TimerByCycles";
-				} else {
-					timerTypeExceptionalState = "TimerByTime";
-				}
-				timer.addOneIdentifier(EXCEPTIONAL_STATE_IDENTIFIER, timerTypeExceptionalState, config.waitTimeExceptionalState());
+				timer.addOneIdentifier(EXCEPTIONAL_STATE_IDENTIFIER, config.exceptionalStateTimerId(), config.waitTimeExceptionalState());
 				this.exceptionalStateHandler = new ExceptionalStateHandlerImpl(timer, EXCEPTIONAL_STATE_IDENTIFIER);
 			}
 		}
@@ -142,7 +131,7 @@ public class ChpWolfImpl extends AbstractOpenemsModbusComponent implements Opene
 
 
 	@Deactivate
-	public void deactivate() {
+	protected void deactivate() {
 		super.deactivate();
 	}
 
@@ -290,7 +279,7 @@ public class ChpWolfImpl extends AbstractOpenemsModbusComponent implements Opene
 		boolean chpEngineRunning = false;
 		if (getRpm().isDefined()) {
 			readyForCommands = true;
-			if (getRpm().get() > 10) {
+			if (getRpm().get() > ENGINE_RPM_RUNNING_INDICATOR) {
 				chpEngineRunning = true;
 				this._setHeaterState(HeaterState.HEATING.getValue());
 			} else {
@@ -349,9 +338,7 @@ public class ChpWolfImpl extends AbstractOpenemsModbusComponent implements Opene
 
 						// When ExceptionalStateValue is between 0 and 100, set Chp to this PowerPercentage.
 						this.turnOnChp = true;
-						if (exceptionalStateValue > 100) {
-							exceptionalStateValue = 100;
-						}
+						exceptionalStateValue = Math.min(exceptionalStateValue, 100);
 						int electricPowerSetpoint = (int)Math.round(this.chpMaxElectricPower * exceptionalStateValue / 100.0);
 						try {
 							this.setElectricPowerSetpoint(electricPowerSetpoint);
@@ -362,18 +349,23 @@ public class ChpWolfImpl extends AbstractOpenemsModbusComponent implements Opene
 				}
 			}
 
-			// Write bits mapping.
-			// This chp has an unusual way of handling write commands. Instead of mapping one command to one
-			// register, four commands are mapped to three registers that need to be set simultaneously.
-			// HR6358 - always 2.
-			// HR6359 - the value you want to write.
-			// HR6360 - code deciding which command it is.
-			//			35 = Sollwert elektrische Leistung in kW
-			//			36 = Sollwert Einspeisemanagement (optional)
-			//			37 = Reserve
-			//			38 = on/off, send 1 for on, 0 for off.
-			//
-			// You can only send one command per cycle (need to write all three registers for one command)
+			/*
+			Write bits mapping.
+			This chp has an unusual way of handling write commands. Instead of mapping one command to one
+			register, four commands are mapped to three registers that need to be set simultaneously.
+			HR6358 - always 2.
+			HR6359 - the value you want to write.
+			HR6360 - code deciding which command it is.
+					35 = Sollwert elektrische Leistung in kW
+					36 = Sollwert Einspeisemanagement (optional)
+					37 = Reserve
+					38 = on/off, send 1 for on, 0 for off.
+			You can only send one command per cycle (need to write all three registers for one command).
+			 */
+			final int setElectricPower = 35;
+			final int setEinspeisemanagement = 36;
+			final int setReserve = 37;
+			final int setOnOff = 38;
 			this.commandCycler++;
 			switch (this.commandCycler) {
 				case 1:
@@ -384,7 +376,7 @@ public class ChpWolfImpl extends AbstractOpenemsModbusComponent implements Opene
 					try {
 						setWriteBits1(2);
 						setWriteBits2(writeValueCase1);
-						setWriteBits3(38);
+						setWriteBits3(setOnOff);
 					} catch (OpenemsNamedException e) {
 						this.logError(this.log, "Error setting next write value: " + e);
 					}
@@ -394,26 +386,26 @@ public class ChpWolfImpl extends AbstractOpenemsModbusComponent implements Opene
 					if (electricPowerSetpoint.isPresent()) {
 						int writeValue = (int)Math.round(electricPowerSetpoint.get());
 						// Update channel.
-						_setElectricPowerSetpoint(writeValue);
+						this._setElectricPowerSetpoint(writeValue);
 						try {
 							setWriteBits1(2);
 							setWriteBits2(writeValue);
-							setWriteBits3(35);
+							setWriteBits3(setElectricPower);
 						} catch (OpenemsNamedException e) {
 							this.logError(this.log, "Error setting next write value: " + e);
 						}
 					}
 					break;
 				case 3:
-					Optional<Integer> einspeisemenagement = getEinspeisemanagementSetpointChannel().getNextWriteValueAndReset();
+					Optional<Integer> einspeisemenagement = this.getEinspeisemanagementSetpointChannel().getNextWriteValueAndReset();
 					if (einspeisemenagement.isPresent()) {
 						int writeValue = einspeisemenagement.get();
 						// Update channel.
-						getEinspeisemanagementSetpointChannel().setNextValue(writeValue);
+						this.getEinspeisemanagementSetpointChannel().setNextValue(writeValue);
 						try {
 							setWriteBits1(2);
 							setWriteBits2(writeValue);
-							setWriteBits3(36);
+							setWriteBits3(setEinspeisemanagement);
 						} catch (OpenemsNamedException e) {
 							this.logError(this.log, "Error setting next write value: " + e);
 						}
@@ -421,15 +413,15 @@ public class ChpWolfImpl extends AbstractOpenemsModbusComponent implements Opene
 					break;
 				default:
 					this.commandCycler = 0;
-					Optional<Integer> reserve = getReserveSetpointChannel().getNextWriteValueAndReset();
+					Optional<Integer> reserve = this.getReserveSetpointChannel().getNextWriteValueAndReset();
 					if (reserve.isPresent()) {
 						int writeValue = reserve.get();
 						// Update channel.
-						getReserveSetpointChannel().setNextValue(writeValue);
+						this.getReserveSetpointChannel().setNextValue(writeValue);
 						try {
 							setWriteBits1(2);
 							setWriteBits2(writeValue);
-							setWriteBits3(37);
+							setWriteBits3(setReserve);
 						} catch (OpenemsNamedException e) {
 							this.logError(this.log, "Error setting next write value: " + e);
 						}

@@ -41,10 +41,13 @@ import java.util.Optional;
  * This heater gets heat from a heat network that is monitored by a heat network controller (HNC). A heat network
  * constantly looses energy when it is hot, so it is more energy efficient to let it cool down when it is not needed.
  * The job of the HNC is then to turn it on only when it is needed.
- * If this heater wants to heat (= get heat from the heat network), it tells that to the HNC via the ’NeedHeat’
- * channel. The HNC then prepares the heat network and writes in the ’NeedHeatEnableSignal’ channel of this heater
- * if the heat network is ready or not. If the HNC is not responding, this heater will wait until a timer runs out
- * and then open the valves to the heat network anyway.
+ * If this heater wants to heat (= get heat from the heat network), it tells that to the HNC via the
+ * ’RequestHeatNetworkActivation’ channel. The HNC then prepares the heat network and writes in the ’HeatNetworkReadySignal’
+ * channel of this heater if the heat network is ready or not. If the HNC is not responding (= no ’true’ in channel
+ * ’HeatNetworkReadySignal’), this heater will wait until a timer runs out and then open the valves to the heat network
+ * anyway.
+ * If the heater is activated by exceptional state or the ’force heating’ option is selected, it will ignore the HNC
+ * and open the valves to the heat network immediately.
  */
 @Designate(ocd = Config.class, factory = true)
 @Component(name = "Heater.Decentral",
@@ -61,7 +64,7 @@ public class DecentralHeaterImpl extends AbstractOpenemsComponent implements Ope
     @Reference
     ComponentManager cpm;
 
-    private static final String NEED_HEAT_RESPONSE_IDENTIFIER = "DECENTRAL_HEATER_NEED_HEAT_RESPONSE_IDENTIFIER";
+    private static final String WAIT_FOR_HEAT_NETWORK_IDENTIFIER = "DECENTRAL_HEATER_WAIT_FOR_HEAT_NETWORK_IDENTIFIER";
     private static final String ENABLE_SIGNAL_IDENTIFIER = "DECENTRAL_HEATER_ENABLE_SIGNAL_IDENTIFIER";
     private static final String EXCEPTIONAL_STATE_IDENTIFIER = "DECENTRAL_HEATER_EXCEPTIONAL_STATE_IDENTIFIER";
 
@@ -69,12 +72,11 @@ public class DecentralHeaterImpl extends AbstractOpenemsComponent implements Ope
     private EnableSignalHandler enableSignalHandler;
     private ExceptionalStateHandler exceptionalStateHandler;
 
-    private boolean componentEnabled;
     private Valve configuredValve;
     private ValveController configuredValveController;
     private boolean isValve;
     private ThermometerThreshold thresholdThermometer;
-    private boolean wasNeedHeatEnableLastCycle;
+    private boolean useHeatNetworkLastCycle;
     private boolean useExceptionalState;
 
     public DecentralHeaterImpl() {
@@ -86,12 +88,11 @@ public class DecentralHeaterImpl extends AbstractOpenemsComponent implements Ope
 
 
     @Activate
-    public void activate(ComponentContext context, Config config) throws OpenemsError.OpenemsNamedException, ConfigurationException {
+    void activate(ComponentContext context, Config config) throws OpenemsError.OpenemsNamedException, ConfigurationException {
         super.activate(context, config.id(), config.alias(), config.enabled());
         if (config.enabled() == false) {
             return;
         }
-        this.componentEnabled = config.enabled();
 
         OpenemsComponent componentFetchedByComponentManager;
 
@@ -128,11 +129,11 @@ public class DecentralHeaterImpl extends AbstractOpenemsComponent implements Ope
                 this.configuredValveController.setEnableSignal(false);
             }
         }
-        this.getForceHeatChannel().setNextValue(config.forceHeating());
+        this._setForceHeat(config.forceHeating());
         this._setHeaterState(HeaterState.OFF.getValue());
         this.useExceptionalState = config.useExceptionalState();
         this.initializeTimer(config);
-        this.getNeedHeatChannel().setNextValue(false);
+        this.getRequestHeatNetworkActivationChannel().setNextValue(false);
         this.getNeedMoreHeatChannel().setNextValue(false);
         this._setErrorMessage("No error");
         this.getErrorMessageChannel().nextProcessImage();
@@ -147,38 +148,19 @@ public class DecentralHeaterImpl extends AbstractOpenemsComponent implements Ope
      */
     private void initializeTimer(Config config) throws OpenemsError.OpenemsNamedException, ConfigurationException {
         this.timer = new TimerHandlerImpl(this.id(), this.cpm);
-        String timerTypeHeatResponse;
-        if (config.heatResponseTimerIsSecondsNotCycles()) {
-            timerTypeHeatResponse = "TimerByTime";
-        } else {
-            timerTypeHeatResponse = "TimerByCycles";
-        }
-        this.timer.addOneIdentifier(NEED_HEAT_RESPONSE_IDENTIFIER, timerTypeHeatResponse, config.waitTimeNeedHeatResponse());
-
-        String timerTypeEnableSignal;
-        if (config.exceptionalStateTimerIsCyclesNotSeconds()) {
-            timerTypeEnableSignal = "TimerByCycles";
-        } else {
-            timerTypeEnableSignal = "TimerByTime";
-        }
-        this.timer.addOneIdentifier(EXCEPTIONAL_STATE_IDENTIFIER, timerTypeEnableSignal, config.waitTimeExceptionalState());
+        this.timer.addOneIdentifier(WAIT_FOR_HEAT_NETWORK_IDENTIFIER, config.heatResponseTimerId(), config.waitTimeNeedHeatResponse());
+        this.timer.addOneIdentifier(ENABLE_SIGNAL_IDENTIFIER, config.enableSignalTimerId(), config.waitTimeEnableSignal());
         this.enableSignalHandler = new EnableSignalHandlerImpl(this.timer, ENABLE_SIGNAL_IDENTIFIER);
 
         if (config.useExceptionalState()) {
-            String timerTypeExceptionalState;
-            if (config.exceptionalStateTimerIsCyclesNotSeconds()) {
-                timerTypeExceptionalState = "TimerByCycles";
-            } else {
-                timerTypeExceptionalState = "TimerByTime";
-            }
-            this.timer.addOneIdentifier(EXCEPTIONAL_STATE_IDENTIFIER, timerTypeExceptionalState, config.waitTimeExceptionalState());
+            this.timer.addOneIdentifier(EXCEPTIONAL_STATE_IDENTIFIER, config.exceptionalStateTimerId(), config.waitTimeExceptionalState());
             this.getExceptionalStateValueChannel().setNextValue(100);
             this.exceptionalStateHandler = new ExceptionalStateHandlerImpl(this.timer, EXCEPTIONAL_STATE_IDENTIFIER);
         }
     }
 
     @Deactivate
-    public void deactivate() {
+    protected void deactivate() {
         super.deactivate();
         this.deactivateControlledComponents();
     }
@@ -186,26 +168,26 @@ public class DecentralHeaterImpl extends AbstractOpenemsComponent implements Ope
     /**
      * The Logic of the Heater.
      * - Evaluate enable signal and exceptional state, decide if heater should be heating or not.
-     * - If heater should heat: write ’true’ in channel ’NeedHeat’ to request heat network to warm up.
+     * - If heater should heat: write ’true’ in channel ’RequestHeatNetworkActivation’ to request heat network to warm up.
      * - Skip this if ’force heating’ is on or heater is active because of exceptional state. Otherwise:
-     *   React to signal in channel ’NeedHeatEnableSignal’ (= answer from heat network controller). Wait if ’false’,
+     *   React to signal in channel ’HeatNetworkReadySignal’ (= answer from heat network controller). Wait if ’false’,
      *   continue when ’true’. If no value in the channel (= connection to heat network controller lost), wait until
      *   timer runs out. Then continue.
      *   To be clear: When the heater is turned on by exceptional state, it will not wait for the heat network to be
      *   ready!
      * - Start heating by calling ’setThresholdAndControlValve()’ method.
      *
-     * Heating is stopped when:
+     * <p>Heating is stopped when:
      * - Heat network controller writes ’false’ in channel ’NeedHeatEnableSignal’.
      * - Enable signal ’false’
-     * - If exceptional state -> Exceptional state value <= 0, or end of exceptional state.
-     * When heating is stopped, method ’deactivateControlledComponents()’ is called.
+     * - If exceptional state: Exceptional state value <= 0, or end of exceptional state.
+     * When heating is stopped, method ’deactivateControlledComponents()’ is called.<p/>
      *
      * @param event The Event of OpenemsEdge.
      */
     @Override
     public void handleEvent(Event event) {
-        if (this.componentEnabled && event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS)) {
+        if (this.isEnabled() && event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS)) {
             this.checkMissingComponents();
             if (this.getErrorMessage().get().equals("No error") == false) {
                 //TODO DO SOMETHING (?)
@@ -227,17 +209,22 @@ public class DecentralHeaterImpl extends AbstractOpenemsComponent implements Ope
                 }
             }
             if (currentRunHeaterEnabled) {
+
+                // ToDo: Logik scheint nicht zu passen. Temperatur vom thresholdThermometer sollte geprüft werden
+                //  bevor man ’requestHeatNetworkActivation’ sendet. Weil wenn die Temperatur hoch genug ist,
+                //  braucht man das heat network nicht einschalten.
+
+                this._setRequestHeatNetworkActivation(true);
+                // Check if heat network is ready. Ignore if ’forceHeating’ option is on or heater is activated by exceptional state.
+                boolean useHeatNetwork = this.checkHeatNetworkAndTimer();
                 try {
-                    this.getNeedHeatChannel().setNextValue(true);
-                    // Check if heat network is ready. Ignore if ’forceHeating’ option is on or heater is activated by exceptional state.
-                    boolean currentRunNeedHeatEnable = this.checkIsCurrentHeatNeedEnabled();
-                    if (currentRunNeedHeatEnable || this.getIsForceHeating() || exceptionalStateOverride) {
-                        this.wasNeedHeatEnableLastCycle = true;
+                    if (useHeatNetwork || this.getForceHeat().orElse(false) || exceptionalStateOverride) {
+                        this.useHeatNetworkLastCycle = true;
                         // Activate thresholdThermometer and check if temperature setpoint can be met. Otherwise close
                         // valve and ask for more heat.
                         this.setThresholdAndControlValve();
                     } else {
-                        this.wasNeedHeatEnableLastCycle = false;
+                        this.useHeatNetworkLastCycle = false;
                         this._setHeaterState(HeaterState.STANDBY.getValue());
                         this.closeValveOrDisableValveController();
                     }
@@ -246,8 +233,8 @@ public class DecentralHeaterImpl extends AbstractOpenemsComponent implements Ope
                 }
             } else {
                 this.deactivateControlledComponents();
-                this.timer.resetTimer(NEED_HEAT_RESPONSE_IDENTIFIER);
-                this.wasNeedHeatEnableLastCycle = false;
+                this.timer.resetTimer(WAIT_FOR_HEAT_NETWORK_IDENTIFIER);
+                this.useHeatNetworkLastCycle = false;
             }
         }
     }
@@ -286,48 +273,52 @@ public class DecentralHeaterImpl extends AbstractOpenemsComponent implements Ope
     }
 
     /**
-     * Takes the ’nextWrite’ of 'NeedHeatEnableSignal' with get and reset, then returns it. If no value is present, the
-     * following fallback rules apply:
-     * - If return value was ’true’ last cycle, keep returning ’true’.
-     * - If return value was ’false’ last cycle, keep returning ’false’ until timer is up. If timer is up, return ’true’.
+     * Checks if the heat network is ready or the timer is 0.
+     * Connection to the heat network controller is tested with ’getNextWriteValueAndReset()’ on channel
+     * 'HeatNetworkReadySignal'. The timer is reset each time a value is present.
+     * If no value is present (= heat network controller offline), the following fallback
+     * rules apply:
+     * - If the heater was using the heat network last cycle, keep using it.
+     * - If the heater was not using the heat network last cycle: timer starts ticking.
+     *   Wait until the timer is 0, then use the heat network.
      *
      * @return the ’nextWrite’ of 'NeedHeatEnableSignal' channel, or the fallback value;
      */
-    private boolean checkIsCurrentHeatNeedEnabled() {
-        boolean currentRunNeedHeatEnable =
-                this.timer.checkTimeIsUp(NEED_HEAT_RESPONSE_IDENTIFIER) || this.wasNeedHeatEnableLastCycle;
+    private boolean checkHeatNetworkAndTimer() {
+        boolean currentRunUseHeatNetwork =
+                this.timer.checkTimeIsUp(WAIT_FOR_HEAT_NETWORK_IDENTIFIER) || this.useHeatNetworkLastCycle;
 
-        Optional<Boolean> needHeatEnableSignal = this.getNeedHeatEnableSignalChannel().getNextWriteValueAndReset();
-        if (needHeatEnableSignal.isPresent()) {
-            this.timer.resetTimer(NEED_HEAT_RESPONSE_IDENTIFIER);
-            currentRunNeedHeatEnable = needHeatEnableSignal.get();
+        Optional<Boolean> heatNetworkReadySignal = this.getHeatNetworkReadySignalChannel().getNextWriteValueAndReset();
+        if (heatNetworkReadySignal.isPresent()) {
+            this.timer.resetTimer(WAIT_FOR_HEAT_NETWORK_IDENTIFIER);
+            currentRunUseHeatNetwork = heatNetworkReadySignal.get();
         }
-        return currentRunNeedHeatEnable;
+        return currentRunUseHeatNetwork;
     }
 
     /**
-     * Check if any component isn't enabled anymore and references needs to be set again.
+     * Check if any component isn't enabled anymore and references need to be set again.
      */
     private void checkMissingComponents() {
         OpenemsComponent componentFetchedByCpm;
         try {
             if (this.isValve) {
                 if (this.configuredValve.isEnabled() == false) {
-                    componentFetchedByCpm = cpm.getComponent(this.configuredValve.id());
+                    componentFetchedByCpm = this.cpm.getComponent(this.configuredValve.id());
                     if (componentFetchedByCpm instanceof Valve) {
                         this.configuredValve = (Valve) componentFetchedByCpm;
                     }
                 }
             } else {
                 if (this.configuredValveController.isEnabled() == false) {
-                    componentFetchedByCpm = cpm.getComponent(this.configuredValveController.id());
+                    componentFetchedByCpm = this.cpm.getComponent(this.configuredValveController.id());
                     if (componentFetchedByCpm instanceof ValveController) {
                         this.configuredValveController = (ValveController) componentFetchedByCpm;
                     }
                 }
             }
             if (this.thresholdThermometer.isEnabled() == false) {
-                componentFetchedByCpm = cpm.getComponent(this.thresholdThermometer.id());
+                componentFetchedByCpm = this.cpm.getComponent(this.thresholdThermometer.id());
                 if (componentFetchedByCpm instanceof ThermometerThreshold) {
                     this.thresholdThermometer = (ThermometerThreshold) componentFetchedByCpm;
                 }
@@ -347,7 +338,7 @@ public class DecentralHeaterImpl extends AbstractOpenemsComponent implements Ope
      * if ValveController --> force close or close?
      */
     void deactivateControlledComponents() {
-        this.getNeedHeatChannel().setNextValue(false);
+        this._setRequestHeatNetworkActivation(false);
         this.getNeedMoreHeatChannel().setNextValue(false);
         this.thresholdThermometer.releaseSetPointTemperatureId(super.id());
         try {

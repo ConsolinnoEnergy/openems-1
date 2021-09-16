@@ -2,7 +2,6 @@ package io.openems.edge.controller.heatnetwork.hydraulic.lineheater;
 
 import io.openems.common.exceptions.OpenemsError;
 import io.openems.common.types.ChannelAddress;
-import io.openems.edge.common.channel.WriteChannel;
 import io.openems.edge.common.component.AbstractOpenemsComponent;
 import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
@@ -12,9 +11,7 @@ import io.openems.edge.controller.heatnetwork.hydraulic.lineheater.api.Hydraulic
 import io.openems.edge.controller.heatnetwork.hydraulic.lineheater.helperclass.ChannelLineHeater;
 import io.openems.edge.controller.heatnetwork.hydraulic.lineheater.helperclass.OneChannelLineHeater;
 import io.openems.edge.controller.heatnetwork.hydraulic.lineheater.helperclass.ValveLineHeater;
-import io.openems.edge.exceptionalstate.api.ExceptionalState;
 import io.openems.edge.heater.decentral.api.DecentralHeater;
-import io.openems.edge.heater.api.Heater;
 import io.openems.edge.heatsystem.components.Valve;
 import io.openems.edge.thermometer.api.Thermometer;
 import io.openems.edge.timer.api.TimerHandler;
@@ -246,7 +243,7 @@ public class HydraulicLineHeaterController extends AbstractOpenemsComponent impl
     public void run() throws OpenemsError.OpenemsNamedException {
         int tempReference = this.tempSensorReference.getTemperature().orElse(DEFAULT_TEMPERATURE);
         DateTime now = new DateTime();
-        boolean decentralHeatRequestPresent = this.decentralHeaterOptional != null && this.decentralHeaterOptional.getNeedHeatChannel().value().orElse(false);
+        boolean decentralHeatRequestPresent = this.decentralHeaterOptional != null && this.decentralHeaterOptional.getRequestHeatNetworkActivationChannel().value().orElse(false);
         boolean decentralHeatRequest = this.getHeatRequestHeater();
         Optional<Boolean> signal = this.enableSignal().getNextWriteValueAndReset();
         boolean missingEnableSignal = signal.isPresent() == false;
@@ -327,7 +324,7 @@ public class HydraulicLineHeaterController extends AbstractOpenemsComponent impl
 
     private boolean getHeatRequestHeater() {
         if (this.decentralHeaterOptional != null) {
-            return this.decentralHeaterOptional.getNeedHeat();
+            return this.decentralHeaterOptional.getRequestHeatNetworkActivation().orElse(false);
         } else {
             return false;
         }
