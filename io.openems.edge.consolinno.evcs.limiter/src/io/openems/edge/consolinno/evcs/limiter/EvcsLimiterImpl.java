@@ -2560,6 +2560,9 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
                     || this.getMiddleLoad() - this.getMinimumLoad() + powerForEveryone >= 20);
             int[] phaseConfiguration = evcss[i].getPhaseConfiguration();
             int phaseCount = evcss[i].getPhases().orElse(0);
+            if (evcss[i].getChargePower().get() + powerForEveryone < (Math.min(evcss[i].getMinimumHardwarePower().get(), evcss[i].getMinimumPower().get()) / GRID_VOLTAGE)) {
+                allow = false;
+            }
             switch (phaseCount) {
                 case 1:
                     if ((phaseConfiguration[0] == this.maxIndex)
@@ -2713,6 +2716,9 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
     private void turnOnEvcs(String id, EvcsOnHold evcsOnHold) throws OpenemsError.OpenemsNamedException {
         ManagedEvcs evcs = this.cpm.getComponent(id);
         int newPower = evcsOnHold.getPower();
+        if (newPower < MINIMUM_POWER * evcsOnHold.getPhases()) {
+            newPower = MINIMUM_POWER * evcsOnHold.getPhases();
+        }
         evcs.setChargePowerLimit(newPower * GRID_VOLTAGE);
 
     }

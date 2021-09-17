@@ -77,15 +77,15 @@ public class SimulatedKebaContact extends AbstractOpenemsComponent implements Ma
         this.l2 = this.channel(KebaChannelId.CURRENT_L2);
         this.l3 = this.channel(KebaChannelId.CURRENT_L3);
         if (config.minHwPower() == 0) {
-            this._setMinimumHardwarePower(5*3*230);
+            this._setMinimumHardwarePower(5 * 3 * 230);
         } else {
-            this._setMinimumHardwarePower(config.minHwPower()*3*230);
+            this._setMinimumHardwarePower(config.minHwPower() * 3 * 230);
         }
-        this._setMinimumPower(5*3*230);
+        this._setMinimumPower(5 * 3 * 230);
         this._setPhases(0);
         this._setPowerPrecision(0.23);
-        this._setMaximumPower(32*3*230);
-        this._setMaximumHardwarePower(32*3*230);
+        this._setMaximumPower(32 * 3 * 230);
+        this._setMaximumHardwarePower(32 * 3 * 230);
         this._setIsPriority(config.priority());
 
     }
@@ -109,14 +109,14 @@ public class SimulatedKebaContact extends AbstractOpenemsComponent implements Ma
         this.l2 = this.channel(KebaChannelId.CURRENT_L2);
         this.l3 = this.channel(KebaChannelId.CURRENT_L3);
         if (config.minHwPower() == 0) {
-            this._setMinimumHardwarePower(5*3*230);
+            this._setMinimumHardwarePower(5 * 3 * 230);
         } else {
-            this._setMinimumHardwarePower(config.minHwPower()*3*230);
+            this._setMinimumHardwarePower(config.minHwPower() * 3 * 230);
         }
-        this._setMinimumPower(5*3*230);
+        this._setMinimumPower(5 * 3 * 230);
         this._setPhases(0);
-        this._setMaximumPower(32*3*230);
-        this._setMaximumHardwarePower(32*3*230);
+        this._setMaximumPower(32 * 3 * 230);
+        this._setMaximumHardwarePower(32 * 3 * 230);
         this._setPowerPrecision(0.23);
         this._setIsPriority(config.priority());
     }
@@ -168,7 +168,15 @@ public class SimulatedKebaContact extends AbstractOpenemsComponent implements Ma
         } else {
             newPower = chargeLimit;
         }
-     //   this._setMaximumPower(initialPower*this.phaseCount*230);
+
+        /*
+        if (chargeLimit < ((this.config.minHwPower() / 230) / this.phaseCount) && chargeLimit > 0) {
+            chargeLimit = 0;
+        }
+
+         */
+
+        //   this._setMaximumPower(initialPower*this.phaseCount*230);
         this.chargeLimit = chargeLimit;
         for (int i = 0; i < this.phaseCount; i++) {
             switch (this.phases[i]) {
@@ -212,13 +220,16 @@ public class SimulatedKebaContact extends AbstractOpenemsComponent implements Ma
      */
     public void applyPower(int phase, int chargePower, int phaseCount) {
         if (this.phaseCount != 0) {
-            if (chargePower < (this.config.minHwPower() / this.phaseCount) && chargePower > 0) {
-                chargePower = 0;
-            }
+        /*
+        if (chargeLimit < ((this.config.minHwPower() / 230) / this.phaseCount) && chargeLimit > 0) {
+            chargeLimit = 0;
+        }
+
+         */
         }
         this.initialPower = chargePower;
         this.phaseCount = phaseCount;
-    //    this._setMaximumPower(initialPower*this.phaseCount*230);
+        //    this._setMaximumPower(initialPower*this.phaseCount*230);
         switch (this.phases[phase]) {
             case 1:
                 this.l1Power += chargePower;
