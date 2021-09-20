@@ -6,12 +6,11 @@ import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.controller.api.Controller;
 import io.openems.edge.controller.heatnetwork.multipleheatercombined.api.MultipleHeaterCombinedController;
-import io.openems.edge.exceptionalstate.api.ExceptionalState;
-import io.openems.edge.exceptionalstate.api.ExceptionalStateHandler;
-import io.openems.edge.exceptionalstate.api.ExceptionalStateHandlerImpl;
 import io.openems.edge.heater.api.Heater;
 import io.openems.edge.heater.api.HeaterState;
 import io.openems.edge.thermometer.api.Thermometer;
+import io.openems.edge.thermometer.api.ThermometerType;
+import io.openems.edge.thermometer.api.ThermometerWrapperImpl;
 import io.openems.edge.timer.api.TimerHandler;
 import io.openems.edge.timer.api.TimerHandlerImpl;
 import org.osgi.service.cm.ConfigurationException;
@@ -58,7 +57,7 @@ public class MultipleHeaterCombinedControllerImpl extends AbstractOpenemsCompone
     @Reference
     protected ComponentManager cpm;
 
-    private final Map<Heater, ThermometerWrapper> heaterTemperatureWrapperMap = new HashMap<>();
+    private final Map<Heater, ThermometerWrapperImpl> heaterTemperatureWrapperMap = new HashMap<>();
     private final List<Heater> configuredHeater = new ArrayList<>();
     private final Map<Heater, HeaterActiveWrapper> activeStateHeaterAndHeatWrapper = new HashMap<>();
     private boolean configurationSuccess;
@@ -230,12 +229,12 @@ public class MultipleHeaterCombinedControllerImpl extends AbstractOpenemsCompone
      * @throws OpenemsError.OpenemsNamedException if Ids cannot be found
      * @throws ConfigurationException             if ThermometerIds not an Instance of Thermometer
      */
-    private ThermometerWrapper createTemperatureWrapper(String temperatureSensorMin,
-                                                        String temperatureMin, String temperatureSensorMax, String temperatureMax)
+    private ThermometerWrapperImpl createTemperatureWrapper(String temperatureSensorMin,
+                                                            String temperatureMin, String temperatureSensorMax, String temperatureMax)
             throws OpenemsError.OpenemsNamedException, ConfigurationException {
         Thermometer min;
         Thermometer max;
-        ThermometerWrapper wrapper;
+        ThermometerWrapperImpl wrapper;
         if (this.cpm.getComponent(temperatureSensorMin) instanceof Thermometer) {
             min = this.cpm.getComponent(temperatureSensorMin);
         } else {
@@ -246,7 +245,7 @@ public class MultipleHeaterCombinedControllerImpl extends AbstractOpenemsCompone
         } else {
             throw new ConfigurationException("createTemperatureWrapper", temperatureSensorMax + " is not an Instance of Thermometer");
         }
-        wrapper = new ThermometerWrapper(min, max, temperatureMin, temperatureMax, this.cpm);
+        wrapper = new ThermometerWrapperImpl(min, max, temperatureMin, temperatureMax, this.cpm);
 
         return wrapper;
     }
@@ -277,7 +276,7 @@ public class MultipleHeaterCombinedControllerImpl extends AbstractOpenemsCompone
                 }
 
                 //ThermometerWrapper holding min and max values as well as Thermometer corresponding to the heater
-                ThermometerWrapper thermometerWrapper = this.heaterTemperatureWrapperMap.get(heater);
+                ThermometerWrapperImpl thermometerWrapper = this.heaterTemperatureWrapperMap.get(heater);
                 //HeatWrapper holding activeState and alwaysActive
                 HeaterActiveWrapper heaterActiveWrapper = this.activeStateHeaterAndHeatWrapper.get(heater);
                 //Get the WrapperClass and check if Heater should be turned of, as well as Checking performance demand
@@ -356,7 +355,7 @@ public class MultipleHeaterCombinedControllerImpl extends AbstractOpenemsCompone
                             }
                         });
                         //replace old heater in temperatureWrapperMap
-                        ThermometerWrapper wrapperOfMap = this.heaterTemperatureWrapperMap.get(oldHeater.get());
+                        ThermometerWrapperImpl wrapperOfMap = this.heaterTemperatureWrapperMap.get(oldHeater.get());
                         this.heaterTemperatureWrapperMap.remove(oldHeater.get());
                         this.heaterTemperatureWrapperMap.put(newHeater, wrapperOfMap);
                         //replace in old HeaterActiveWrapperMap
