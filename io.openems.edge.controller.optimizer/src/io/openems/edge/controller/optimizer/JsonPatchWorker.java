@@ -53,10 +53,10 @@ class JsonPatchWorker {
      */
     void addSchedule(List<List<String>> schedule) {
         if (schedule.get(Index.SCHEDULE_INDEX.getNumVal()).isEmpty() == false) {
-            JsonArray newArray = splitList(schedule);
+            JsonArray newArray = this.splitList(schedule);
             JsonArray copy = newArray.deepCopy();
             if (this.jsonObject.size() > 0) {
-                addToExistingObject(copy, this.jsonObject);
+                this.addToExistingObject(copy, this.jsonObject);
 
             } else {
                 this.jsonObject.add("time", copy);
@@ -90,10 +90,10 @@ class JsonPatchWorker {
             for (n = 0; n < oldSize; n++) {
                 this.taskPosition = 0;
                 if (old.get("time").getAsJsonArray().get(n).getAsJsonObject().get(time) != null) {
-                    if (checkForDuplicateEntry(old, now, n, time)) {
+                    if (this.checkForDuplicateEntry(old, now, n, time)) {
                         //Doesn't do anything if the Task already exists with the same value
                         alreadyHere = true;
-                    } else if (checkComponentChannelAlreadyHere(old, now, n, time)) {
+                    } else if (this.checkComponentChannelAlreadyHere(old, now, n, time)) {
                         //Modifies Component if its already in the Schedule
                         old.get("time").getAsJsonArray().get(n).getAsJsonObject().get(time).getAsJsonArray().get(this.taskPosition)
                                 .getAsJsonObject().remove("channel_value");
@@ -113,10 +113,10 @@ class JsonPatchWorker {
                 old.get("time").getAsJsonArray().add(now);
                 }
         }
-        if (lastTimestampArray.size() < old.get("time").getAsJsonArray().size()) {
+        if (this.lastTimestampArray.size() < old.get("time").getAsJsonArray().size()) {
             int hitTime = -1;
             for (int k = 0; k < old.get("time").getAsJsonArray().size(); k++) {
-                if (lastTimestampArray.toString().contains(old.get("time").getAsJsonArray().get(k).getAsJsonObject().keySet().iterator().next()) == false) {
+                if (this.lastTimestampArray.toString().contains(old.get("time").getAsJsonArray().get(k).getAsJsonObject().keySet().iterator().next()) == false) {
                     hitTime = k;
                 }
             }
@@ -142,7 +142,7 @@ class JsonPatchWorker {
                 .get(time).getAsJsonArray().size()) {
             for (int i = 0; i < old.get("time").getAsJsonArray().get(n).getAsJsonObject()
                     .get(time).getAsJsonArray().size(); i++) {
-                if (checkThisTask(old, n, time, now)) {
+                if (this.checkThisTask(old, n, time, now)) {
                     return true;
                 } else {
                     this.taskPosition++;
@@ -219,8 +219,8 @@ class JsonPatchWorker {
      * @return The JsonArray in the correct form for the optimizer.
      */
     private JsonArray splitList(List<List<String>> schedule) {
-        lastTimestampArray = new ArrayList<>();
-        JsonElement component = new JsonParser().parse(schedule.get(Index.COMPONENT_INDEX.getNumVal()).get(0));
+        this.lastTimestampArray = new ArrayList<>();
+        JsonElement component =  JsonParser.parseString(schedule.get(Index.COMPONENT_INDEX.getNumVal()).get(0));
         String channel = schedule.get(Index.CHANNEL_INDEX.getNumVal()).get(0);
         String enableChannel = null;
         if (schedule.size() == 4) {
@@ -255,18 +255,18 @@ class JsonPatchWorker {
                 } else {
                     time = DateTime.parse(timeStamps.get(i).getAsString()).getHourOfDay() + "" + DateTime.parse(timeStamps.get(i).getAsString()).getMinuteOfHour() + "";
                 }
-                channelInternal = new JsonParser().parse(channel);
+                channelInternal = JsonParser.parseString(channel);
                 if (i >= value.size()) {
-                    valueInternal = new JsonParser().parse("null");
+                    valueInternal = JsonParser.parseString("null");
                 } else {
-                    valueInternal = new JsonParser().parse(value.get(i).toString());
+                    valueInternal = JsonParser.parseString(value.get(i).toString());
                 }
                 if (enableChannel != null) {
-                    enableInternal = new JsonParser().parse(enableChannel);
+                    enableInternal = JsonParser.parseString(enableChannel);
                     if (valueInternal.toString().equals("null") == false) {
-                        enableValueInternal = new JsonParser().parse("\"true\"");
+                        enableValueInternal = JsonParser.parseString("\"true\"");
                     } else {
-                        enableValueInternal = new JsonParser().parse("\"false\"");
+                        enableValueInternal = JsonParser.parseString("\"false\"");
                     }
                 }
 
@@ -303,7 +303,7 @@ class JsonPatchWorker {
                 timeInternal.remove("channel_value");
                 timeArray.remove(timeInternal);
                 outputInternal.remove(time);
-                lastTimestampArray.add(time);
+                this.lastTimestampArray.add(time);
             }
         }
 
@@ -320,18 +320,18 @@ class JsonPatchWorker {
     void deleteChannel(String errorChannelId) {
         String component = errorChannelId.substring(0, errorChannelId.indexOf("/"));
         String channel = errorChannelId.substring(errorChannelId.indexOf("/") + 1);
-        for (int i = 0; i < lastTimestampArray.size(); i++) {
-            String time = lastTimestampArray.get(i);
+        for (int i = 0; i < this.lastTimestampArray.size(); i++) {
+            String time = this.lastTimestampArray.get(i);
             int objectSize = this.jsonObject.get("time").getAsJsonArray().get(i).getAsJsonObject().get(time).getAsJsonArray().size();
             for (int n = 0; n < objectSize; n++) {
-                if (checkThisTask(this.jsonObject, i, n, time, component, channel)) {
+                if (this.checkThisTask(this.jsonObject, i, n, time, component, channel)) {
                     this.jsonObject.get("time").getAsJsonArray().get(i).getAsJsonObject().get(time).getAsJsonArray().remove(n);
                 }
 
             }
 
         }
-        this.jsonString = jsonObject.toString();
+        this.jsonString = this.jsonObject.toString();
     }
 
 
@@ -343,14 +343,14 @@ class JsonPatchWorker {
         if (fallbackSchedulePart.get(Index.SCHEDULE_INDEX.getNumVal()).isEmpty() == false) {
             JsonArray newFallback = new JsonArray();
             JsonObject fallbackObject = new JsonObject();
-            JsonArray newArray = splitList(fallbackSchedulePart);
+            JsonArray newArray = this.splitList(fallbackSchedulePart);
             JsonArray copy = newArray.deepCopy();
             String timestamp = copy.getAsJsonArray().get(0).getAsJsonObject().keySet().iterator().next();
             //Add Fallback to 00:00 so its always the value the Optimizer will take as the active value
             fallbackObject.add("000",copy.getAsJsonArray().get(0).getAsJsonObject().get(timestamp));
             newFallback.add(fallbackObject);
             if (this.fallbackObject.size() > 0) {
-                addToExistingObject(newFallback, this.fallbackObject);
+                this.addToExistingObject(newFallback, this.fallbackObject);
 
             } else {
                 this.fallbackObject.add("time", newFallback);
