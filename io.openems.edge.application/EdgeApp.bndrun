@@ -89,7 +89,6 @@
 	bnd.identity;id='io.openems.edge.controller.heatnetwork.apartmentmodule',\
 	bnd.identity;id='io.openems.edge.controller.heatnetwork.communication',\
 	bnd.identity;id='io.openems.edge.controller.heatnetwork.controlcenter',\
-	bnd.identity;id='io.openems.edge.controller.heatnetwork.cooling.multiplecoolercombined',\
 	bnd.identity;id='io.openems.edge.controller.heatnetwork.heatingcurveregulator',\
 	bnd.identity;id='io.openems.edge.controller.heatnetwork.hydraulic.lineheater',\
 	bnd.identity;id='io.openems.edge.controller.heatnetwork.multipleheatercombined',\
@@ -263,7 +262,6 @@
 	io.openems.edge.controller.heatnetwork.apartmentmodule;version=snapshot,\
     io.openems.edge.controller.heatnetwork.communication;version=snapshot,\
     io.openems.edge.controller.heatnetwork.controlcenter;version=snapshot,\
-    io.openems.edge.controller.heatnetwork.cooling.multiplecoolercombined;version=snapshot,\
     io.openems.edge.controller.heatnetwork.heatingcurveregulator;version=snapshot,\
     io.openems.edge.controller.heatnetwork.hydraulic.lineheater;version=snapshot,\
     io.openems.edge.controller.heatnetwork.multipleheatercombined;version=snapshot,\
