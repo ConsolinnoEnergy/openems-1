@@ -9,6 +9,8 @@ import io.openems.edge.controller.heatnetwork.cooling.multiplecoolercombined.api
 import io.openems.edge.heater.api.Cooler;
 import io.openems.edge.heater.api.HeaterState;
 import io.openems.edge.thermometer.api.Thermometer;
+import io.openems.edge.thermometer.api.ThermometerWrapper;
+import io.openems.edge.thermometer.api.ThermometerWrapperForCoolingImpl;
 import io.openems.edge.timer.api.TimerHandler;
 import io.openems.edge.timer.api.TimerHandlerImpl;
 import org.osgi.service.cm.ConfigurationException;
@@ -236,7 +238,7 @@ public class MultipleCoolerCombinedControllerImpl extends AbstractOpenemsCompone
         } else {
             throw new ConfigurationException("createTemperatureWrapper", temperatureSensorMax + " is not an Instance of Thermometer");
         }
-        wrapper = new ThermometerWrapper(min, max, temperatureMin, temperatureMax, this.cpm);
+        wrapper = new ThermometerWrapperForCoolingImpl(min, max, temperatureMin, temperatureMax, this.cpm);
 
         return wrapper;
     }

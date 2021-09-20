@@ -1,4 +1,4 @@
-package io.openems.edge.controller.heatnetwork.multipleheatercombined;
+package io.openems.edge.thermometer.api;
 
 /**
  *  Helper Enum for Thermometer and Thermometer Wrapper -> OFF and ON Temp

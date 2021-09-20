@@ -17,6 +17,7 @@ import io.openems.edge.cooler.analogue.component.AnalogueCoolerComponent;
 import io.openems.edge.cooler.analogue.component.AnalogueCoolerLucidControl;
 import io.openems.edge.cooler.analogue.component.AnalogueCoolerPWM;
 import io.openems.edge.cooler.analogue.component.AnalogueCoolerRelay;
+import io.openems.edge.heater.api.Heater;
 import io.openems.edge.timer.api.TimerHandler;
 import io.openems.edge.timer.api.TimerHandlerImpl;
 import org.osgi.service.cm.Configuration;
@@ -53,7 +54,7 @@ import java.util.Optional;
         property = {EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE,
                 EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS})
 
-public class AnalogueCooler extends AbstractOpenemsComponent implements OpenemsComponent, Cooler, EventHandler {
+public class AnalogueCooler extends AbstractOpenemsComponent implements OpenemsComponent, Cooler, Heater, EventHandler {
 
     @Reference
     ConfigurationAdmin ca;
@@ -113,7 +114,7 @@ public class AnalogueCooler extends AbstractOpenemsComponent implements OpenemsC
 
     public AnalogueCooler() {
         super(OpenemsComponent.ChannelId.values(),
-                Cooler.ChannelId.values(),
+                Heater.ChannelId.values(),
                 ChannelId.values());
     }
 
@@ -236,14 +237,14 @@ public class AnalogueCooler extends AbstractOpenemsComponent implements OpenemsC
     }
 
     private int powerToApply() {
-        Channel<?> channelToGetPowerValueFrom = this.getSetPointPowerPercentChannel();
+        Channel<?> channelToGetPowerValueFrom = this.getHeatingPowerPercentSetpointChannel();
         boolean needToCheckTime = true;
         switch (this.type) {
             case PERCENT:
-                channelToGetPowerValueFrom = this.getSetPointPowerPercentChannel();
+                channelToGetPowerValueFrom = this.getHeatingPowerPercentSetpointChannel();
                 break;
             case KW:
-                channelToGetPowerValueFrom = this.getSetPointPowerChannel();
+                channelToGetPowerValueFrom = this.getEffectiveHeatingPowerChannel();
                 break;
         }
         if (channelToGetPowerValueFrom.value().isDefined()) {
@@ -273,14 +274,4 @@ public class AnalogueCooler extends AbstractOpenemsComponent implements OpenemsC
             return this.isActive && this.timer.checkTimeIsUp(ENABLE_IDENTIFIER) == false;
         }
     }
-
-    //-----------------//
-    private WriteChannel<Integer> getDefaultActivePowerChannel() {
-        return this.channel(ChannelId.SET_DEFAULT_ACTIVE_POWER_VALUE);
-    }
-
-    private WriteChannel<Integer> getDefaultMinPowerChannel() {
-        return this.channel(ChannelId.SET_DEFAULT_MINIMUM_POWER_VALUE);
-    }
-
 }

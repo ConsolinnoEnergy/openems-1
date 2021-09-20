@@ -89,7 +89,6 @@
 	bnd.identity;id='io.openems.edge.controller.heatnetwork.apartmentmodule',\
 	bnd.identity;id='io.openems.edge.controller.heatnetwork.communication',\
 	bnd.identity;id='io.openems.edge.controller.heatnetwork.controlcenter',\
-	bnd.identity;id='io.openems.edge.controller.heatnetwork.cooling.multiplecoolercombined',\
 	bnd.identity;id='io.openems.edge.controller.heatnetwork.heatingcurveregulator',\
 	bnd.identity;id='io.openems.edge.controller.heatnetwork.hydraulic.lineheater',\
 	bnd.identity;id='io.openems.edge.controller.heatnetwork.multipleheatercombined',\
@@ -114,7 +113,6 @@
 	bnd.identity;id='io.openems.edge.controller.symmetric.randompower',\
 	bnd.identity;id='io.openems.edge.controller.symmetric.timeslotpeakshaving',\
 	bnd.identity;id='io.openems.edge.cooler.analogue',\
-	bnd.identity;id='io.openems.edge.cooler.decentral',\
 	bnd.identity;id='io.openems.edge.core',\
 	bnd.identity;id='io.openems.edge.ess.adstec.storaxe',\
 	bnd.identity;id='io.openems.edge.ess.byd.container',\
@@ -264,7 +262,6 @@
 	io.openems.edge.controller.heatnetwork.apartmentmodule;version=snapshot,\
     io.openems.edge.controller.heatnetwork.communication;version=snapshot,\
     io.openems.edge.controller.heatnetwork.controlcenter;version=snapshot,\
-    io.openems.edge.controller.heatnetwork.cooling.multiplecoolercombined;version=snapshot,\
     io.openems.edge.controller.heatnetwork.heatingcurveregulator;version=snapshot,\
     io.openems.edge.controller.heatnetwork.hydraulic.lineheater;version=snapshot,\
     io.openems.edge.controller.heatnetwork.multipleheatercombined;version=snapshot,\
@@ -289,7 +286,6 @@
 	io.openems.edge.controller.symmetric.randompower;version=snapshot,\
 	io.openems.edge.controller.symmetric.timeslotpeakshaving;version=snapshot,\
 	io.openems.edge.cooler.analogue;version=snapshot,\
-	io.openems.edge.cooler.decentral;version=snapshot,\
 	io.openems.edge.core;version=snapshot,\
 	io.openems.edge.ess.adstec.storaxe;version=snapshot,\
 	io.openems.edge.ess.api;version=snapshot,\

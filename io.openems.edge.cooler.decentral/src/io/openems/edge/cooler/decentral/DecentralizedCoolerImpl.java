@@ -12,6 +12,7 @@ import io.openems.edge.exceptionalstate.api.ExceptionalStateHandler;
 import io.openems.edge.exceptionalstate.api.ExceptionalStateHandlerImpl;
 import io.openems.edge.heater.api.ComponentType;
 import io.openems.edge.heater.api.Cooler;
+import io.openems.edge.heater.api.Heater;
 import io.openems.edge.heater.api.HeaterState;
 import io.openems.edge.cooler.decentral.api.DecentralizedCooler;
 import io.openems.edge.heatsystem.components.HydraulicComponent;
@@ -47,7 +48,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
         configurationPolicy = ConfigurationPolicy.REQUIRE,
         immediate = true,
         property = {EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS})
-public class DecentralizedCoolerImpl extends AbstractOpenemsComponent implements OpenemsComponent, DecentralizedCooler, ExceptionalState, EventHandler {
+public class DecentralizedCoolerImpl extends AbstractOpenemsComponent implements OpenemsComponent, DecentralizedCooler, Heater, ExceptionalState, EventHandler {
 
     private final Logger log = LoggerFactory.getLogger(DecentralizedCoolerImpl.class);
     @Reference
@@ -68,7 +69,7 @@ public class DecentralizedCoolerImpl extends AbstractOpenemsComponent implements
 
     public DecentralizedCoolerImpl() {
         super(OpenemsComponent.ChannelId.values(),
-                Cooler.ChannelId.values(),
+                Heater.ChannelId.values(),
                 DecentralizedCooler.ChannelId.values(),
                 ExceptionalState.ChannelId.values());
     }
@@ -113,7 +114,7 @@ public class DecentralizedCoolerImpl extends AbstractOpenemsComponent implements
             throw new ConfigurationException("activate",
                     "Component with ID: " + config.thresholdThermometerId() + " not an instance of Threshold");
         }
-        this.setSetPointTemperature(config.setPointTemperature());
+        this.setTemperatureSetpoint(config.setPointTemperature());
         if (config.shouldCloseOnActivation()) {
             switch (this.componentType) {
 
@@ -127,7 +128,7 @@ public class DecentralizedCoolerImpl extends AbstractOpenemsComponent implements
         }
 
         this.getForceCoolChannel().setNextValue(config.forceCooling());
-        this.setState(HeaterState.OFF);
+        this._setHeaterState(HeaterState.OFF);
         this.useExceptionalState = config.enableExceptionalStateHandling();
         this.initializeTimer(config);
         this.getNeedCoolChannel().setNextValue(false);
@@ -204,7 +205,7 @@ public class DecentralizedCoolerImpl extends AbstractOpenemsComponent implements
      * Check if ThermometerThreshold is ok --> if yes activate Valve/ValveController --> Else Close Valve and say "I need more Cool".
      */
     private void setThresholdAndControlValve() throws OpenemsError.OpenemsNamedException {
-        this.thresholdThermometer.setSetPointTemperatureAndActivate(this.getSetPointTemperature(), super.id());
+        this.thresholdThermometer.setSetPointTemperatureAndActivate(this.getTemperatureSetpoint().get(), super.id());
         //Static Valve Controller Works on it's own with given Temperature
         if (this.componentType.equals(ComponentType.CONTROLLER)) {
             this.configuredHydraulicController.getEnableSignalChannel().setNextWriteValueFromObject(true);

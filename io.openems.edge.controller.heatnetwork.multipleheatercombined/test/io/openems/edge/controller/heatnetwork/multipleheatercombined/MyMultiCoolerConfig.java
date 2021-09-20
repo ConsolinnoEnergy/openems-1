@@ -5,7 +5,7 @@ import io.openems.edge.common.test.AbstractComponentConfig;
 
 @SuppressWarnings("all")
 
-public class MyConfig extends AbstractComponentConfig implements Config {
+public class MyMultiCoolerConfig extends AbstractComponentConfig implements ConfigMultipleCooler {
 
 
     protected static class Builder {
@@ -16,7 +16,7 @@ public class MyConfig extends AbstractComponentConfig implements Config {
         private String id;
         private String alias;
         private boolean enabled = true;
-        private String[] heaterIds;
+        private String[] coolerIds;
         private String[] activationTemperatures;
         private String[] deactivationTemperatures;
         private String[] activationThermometers;
@@ -37,8 +37,8 @@ public class MyConfig extends AbstractComponentConfig implements Config {
             return this;
         }
 
-        public Builder setHeaterIds(String[] heaterIds) {
-            this.heaterIds = heaterIds;
+        public Builder setCoolerIds(String[] coolerIds) {
+            this.coolerIds = coolerIds;
             return this;
         }
         public Builder setActivationTemperatures(String[] activationTemperatures){
@@ -57,12 +57,27 @@ public class MyConfig extends AbstractComponentConfig implements Config {
             this.deactivationThermometers = deactivationThermometers;
             return this;
         }
-        public MyConfig build() {
-            return new MyConfig(this);
+        public MyMultiCoolerConfig build() {
+            return new MyMultiCoolerConfig(this);
         }
 
         public Builder setServicePid(String pid) {
             this.servicePid = pid;
+            return this;
+        }
+
+        public Builder setUseTimer(boolean useTimer) {
+            this.useTimer = useTimer;
+            return this;
+        }
+
+        public Builder setTimeDelta(int timeDelta) {
+            this.timeDelta = timeDelta;
+            return this;
+        }
+
+        public Builder setTimerId(String timerId) {
+            this.timerId = timerId;
             return this;
         }
     }
@@ -78,8 +93,8 @@ public class MyConfig extends AbstractComponentConfig implements Config {
 
     private final Builder builder;
 
-    private MyConfig(Builder builder) {
-        super(Config.class, builder.id);
+    private MyMultiCoolerConfig(Builder builder) {
+        super(ConfigMultipleCooler.class, builder.id);
         this.builder = builder;
     }
 
@@ -90,8 +105,8 @@ public class MyConfig extends AbstractComponentConfig implements Config {
     }
 
     @Override
-    public String[] heaterIds() {
-        return this.builder.heaterIds;
+    public String[] coolerIds() {
+        return this.builder.coolerIds;
     }
 
     @Override

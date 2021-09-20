@@ -86,7 +86,7 @@ public interface ExceptionalState extends OpenemsComponent {
      *
      * @return the Channel
      */
-    public default BooleanWriteChannel getExceptionalStateEnableSignalChannel() {
+    default WriteChannel<Boolean> getExceptionalStateEnableSignalChannel() {
         return this.channel((ChannelId.EXCEPTIONAL_STATE_ENABLE_SIGNAL));
     }
 
