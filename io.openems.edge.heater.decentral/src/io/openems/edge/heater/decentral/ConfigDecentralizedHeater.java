@@ -8,7 +8,7 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
         name = "Heater Decentralized",
         description = "A Heater that is controlled, via a HydraulicComponent or a HydraulicComponentController."
 )
-@interface Config {
+@interface ConfigDecentralizedHeater {
 
     String service_pid();
 

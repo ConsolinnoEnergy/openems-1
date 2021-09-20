@@ -12,7 +12,7 @@ import java.util.Map;
  * Provides the methods to check if min or max temperature is reached --> therefore heater can activate/deactivate correctly.
  */
 
-public class ThermometerWrapperImpl implements ThermometerWrapper {
+public abstract class AbstractThermometerWrapper implements ThermometerWrapper {
 
     private final ComponentManager cpm;
     //Map the Thermometer to their min/max Value
@@ -21,7 +21,7 @@ public class ThermometerWrapperImpl implements ThermometerWrapper {
     private final Map<ThermometerType, Thermometer> thermometerTypeThermometerMap = new HashMap<>();
 
 
-    public ThermometerWrapperImpl(Thermometer activateThermometer, Thermometer deactivateThermometer, String activateValue, String deactivateValue, ComponentManager cpm)
+    public AbstractThermometerWrapper(Thermometer activateThermometer, Thermometer deactivateThermometer, String activateValue, String deactivateValue, ComponentManager cpm)
             throws OpenemsError.OpenemsNamedException, ConfigurationException {
         this.cpm = cpm;
         this.thermometerTypeThermometerMap.put(ThermometerType.ACTIVATE_THERMOMETER, activateThermometer);
@@ -77,7 +77,7 @@ public class ThermometerWrapperImpl implements ThermometerWrapper {
      * @return the ActivationTemperature value.
      */
 
-    private int getActivationTemperature() throws OpenemsError.OpenemsNamedException, ConfigurationException {
+    protected int getActivationTemperature() throws OpenemsError.OpenemsNamedException, ConfigurationException {
         return this.thermometerAndValue.get(this.thermometerTypeThermometerMap.get(ThermometerType.ACTIVATE_THERMOMETER))
                 .validateChannelAndGetValue(this.cpm);
     }
@@ -87,33 +87,9 @@ public class ThermometerWrapperImpl implements ThermometerWrapper {
      *
      * @return the DeactivationTemperature value.
      */
-    private int getDeactivationTemperature() throws OpenemsError.OpenemsNamedException, ConfigurationException {
+    protected int getDeactivationTemperature() throws OpenemsError.OpenemsNamedException, ConfigurationException {
         return this.thermometerAndValue.get(this.thermometerTypeThermometerMap.get(ThermometerType.DEACTIVATE_THERMOMETER))
                 .validateChannelAndGetValue(this.cpm);
-    }
-
-    /**
-     * Method, usually called by Heater Controller.
-     * to determine if the enabled Value should be set to true within the heater.
-     *
-     * @return the result of the Comparison of the DeactivationThermometer Temperature Value and the stored deactivation Temperature.
-     */
-
-    @Override
-    public boolean shouldDeactivate() throws OpenemsError.OpenemsNamedException, ConfigurationException {
-        return this.getDeactivationThermometer().getTemperatureValue() >= this.getDeactivationTemperature();
-    }
-
-    /**
-     * Method, usually called by Heater Controller.
-     * to determine if the enabled Value should be set to true within the heater.
-     *
-     * @return the result of the Comparison of the ActivationThermometer Temperature Value and the stored activation Temperature.
-     */
-
-    @Override
-    public boolean shouldActivate() throws OpenemsError.OpenemsNamedException, ConfigurationException {
-        return this.getActivationThermometer().getTemperatureValue() <= this.getActivationTemperature();
     }
 
     Map<Thermometer, ThermometerValueWrapper> getThermometerAndValue() {
