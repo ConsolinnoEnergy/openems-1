@@ -169,12 +169,12 @@ public class SimulatedKebaContact extends AbstractOpenemsComponent implements Ma
             newPower = chargeLimit;
         }
 
-        /*
-        if (chargeLimit < ((this.config.minHwPower() / 230) / this.phaseCount) && chargeLimit > 0) {
-            chargeLimit = 0;
+/*
+        if (chargeLimit < ((this.config.minHwPower())) && chargeLimit > 0) {
+            newPower = 0;
         }
 
-         */
+*/
 
         //   this._setMaximumPower(initialPower*this.phaseCount*230);
         this.chargeLimit = chargeLimit;
@@ -220,12 +220,12 @@ public class SimulatedKebaContact extends AbstractOpenemsComponent implements Ma
      */
     public void applyPower(int phase, int chargePower, int phaseCount) {
         if (this.phaseCount != 0) {
-        /*
-        if (chargeLimit < ((this.config.minHwPower() / 230) / this.phaseCount) && chargeLimit > 0) {
-            chargeLimit = 0;
+/*
+        if (chargePower < ((this.config.minHwPower())) && chargePower > 0) {
+            chargePower = 0;
         }
+*/
 
-         */
         }
         this.initialPower = chargePower;
         this.phaseCount = phaseCount;
