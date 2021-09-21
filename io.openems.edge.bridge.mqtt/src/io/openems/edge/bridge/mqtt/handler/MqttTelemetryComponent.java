@@ -108,8 +108,9 @@ public class MqttTelemetryComponent extends MqttOpenemsComponentConnector implem
         if (this.isEnabled() && this.config.configurationDone()) {
             if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE)) {
                 super.renewReferenceAndMqttConfigurationComponent(this.cpm);
-                if ((this.mqttConfigurationComponent == null && this.mqttBridge.get() != null && this.mqttBridge.get().isEnabled())) {
-                    this.mqttBridge.get().removeMqttComponent(this.id());
+                if (this.mqttBridge.get() != null && this.mqttBridge.get().isEnabled()
+                        && (!this.mqttBridge.get().containsComponent(this.id()) || this.mqttConfigurationComponent == null)) {
+                    this.mqttBridge.get().addMqttComponent(this.id(), this);
                     try {
                         super.setConfiguration(MqttType.TELEMETRY, this.config.subscriptionList(), this.config.publishList(),
                                 this.config.payloads(), this.config.createdByOsgi(), this.config.mqttId(), this.cm, this.config.channelIdList().length,

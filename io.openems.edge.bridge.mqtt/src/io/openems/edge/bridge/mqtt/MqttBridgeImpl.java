@@ -43,6 +43,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 
 /**
@@ -90,6 +94,8 @@ public class MqttBridgeImpl extends AbstractOpenemsComponent implements OpenemsC
     private String mqttBroker;
     private String mqttClientId;
     private int keepAlive = 100;
+    private AtomicInteger executorCurrent = new AtomicInteger(10);
+    private static final int EXECUTOR_MAX = 60;
 
     private DateTime initialTime;
     private boolean initialized;
@@ -249,33 +255,47 @@ public class MqttBridgeImpl extends AbstractOpenemsComponent implements OpenemsC
      * @throws MqttException thrown if deactivate/disconnect fails bc of Mqtt reasons.
      */
 
-    private void disconnectPublishAndSubscriber() throws MqttException {
+    private void disconnectPublishAndSubscriber() {
         if (this.bridgePublisher != null) {
-            this.bridgePublisher.disconnect();
+            try {
+                this.bridgePublisher.disconnect();
+            } catch (MqttException e) {
+               this.log.warn("An error occurred while disconnecting the bridge Publisher: " + e.getMessage());
+            }
         }
         if (this.publishManager != null) {
-            this.publishManager.deactivate();
+            try {
+                this.publishManager.deactivate();
+            } catch (Exception e) {
+                this.log.warn("An error occurred while disconnecting the Publish Manager: " + e.getMessage());
+            }
         }
         if (this.subscribeManager != null) {
-            this.subscribeManager.deactivate();
+            try {
+                this.subscribeManager.deactivate();
+            } catch (Exception e) {
+                this.log.warn("An error occurred while disconnecting the Subscribe Manager: " + e.getMessage());
+            }
         }
 
     }
 
     @Deactivate
     protected void deactivate() {
-        try {
             //Disconnect every connection
             this.disconnectPublishAndSubscriber();
-        } catch (MqttException e) {
-            this.log.warn("Mqtt Exception on deactivation of this Bridge " + super.id() + "\nReason: " + e.getMessage());
-        }
+            super.deactivate();
     }
 
 
     @Override
     public DateTimeZone getTimeZone() {
         return this.timeZone;
+    }
+
+    @Override
+    public boolean containsComponent(String id) {
+        return this.components.containsKey(id);
     }
 
     /**
@@ -402,7 +422,11 @@ public class MqttBridgeImpl extends AbstractOpenemsComponent implements OpenemsC
      */
 
     public boolean isConnected() {
-        return this.subscribeManager.isConnected() || this.publishManager.isConnected();
+        if (this.subscribeManager == null || this.publishManager == null) {
+            return false;
+        } else {
+            return this.subscribeManager.isConnected() || this.publishManager.isConnected();
+        }
     }
 
     /**
@@ -417,15 +441,34 @@ public class MqttBridgeImpl extends AbstractOpenemsComponent implements OpenemsC
             return;
         }
         if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE)) {
-            if (this.isConnected() == false && this.tryReconnect()) {
-                this.createNewMqttSession();
+            if (this.isConnected() == false && (this.tryReconnect() || this.publishManager == null || this.subscribeManager == null)) {
+                ExecutorService executorService = Executors.newSingleThreadExecutor();
+                executorService.submit(() -> this.createNewMqttSession.run());
+                try {
+                    executorService.shutdown();
+                    executorService.awaitTermination(Math.max(this.executorCurrent.get(), EXECUTOR_MAX), TimeUnit.SECONDS);
+                } catch (InterruptedException e) {
+                    this.log.error("Create MQTT Session Interrupted");
+                } finally {
+                    if (executorService.isTerminated() == false) {
+                        this.log.error("Failed to establish connection, Trying again");
+                        this.publishManager = null;
+                        this.subscribeManager = null;
+                        this.executorCurrent.getAndAdd(5);
+                    } else {
+                        this.executorCurrent.set(10);
+                    }
+                    executorService.shutdownNow();
+                }
             }
-            if (this.missingSubscriptionsAfterReconnect.size() > 0) {
-                this.subscribeToMissingTopics();
+            if (this.publishManager != null && this.subscribeManager != null) {
+                if (this.missingSubscriptionsAfterReconnect.size() > 0) {
+                    this.subscribeToMissingTopics();
+                }
+                //handle all Tasks
+                this.subscribeManager.forever();
+                this.publishManager.forever();
             }
-            //handle all Tasks
-            this.subscribeManager.forever();
-            this.publishManager.forever();
             //Update the components Config if available
             this.components.forEach((key, value) -> {
                 if (value.getConfiguration().value().isDefined() && !value.getConfiguration().value().get().equals("")) {
@@ -495,10 +538,15 @@ public class MqttBridgeImpl extends AbstractOpenemsComponent implements OpenemsC
      * Creates a new MqttSession, should the connection to the broker be lost, and the autoReconnect of the Library can't handle it.
      * Or the Broker actively disconnects the Client (KeepAlive or something).
      */
-    private void createNewMqttSession() {
+    Runnable createNewMqttSession = () -> {
         try {
-            this.publishManager.deactivate();
-            this.subscribeManager.deactivate();
+            if (this.publishManager != null) {
+                this.publishManager.deactivate();
+            }
+            if (this.subscribeManager != null) {
+                this.subscribeManager.deactivate();
+            }
+
             this.publishManager = new MqttPublishManager(this.publishTasks, this.mqttBroker, this.mqttUsername,
                     this.mqttPassword, this.keepAlive, this.mqttClientId, this.timeZone);
             //ClientId --> + CLIENT_SUB_0
@@ -521,5 +569,5 @@ public class MqttBridgeImpl extends AbstractOpenemsComponent implements OpenemsC
         } catch (MqttException e) {
             this.log.warn("Couldn't connect to Broker, somethings wrong!");
         }
-    }
+    };
 }
