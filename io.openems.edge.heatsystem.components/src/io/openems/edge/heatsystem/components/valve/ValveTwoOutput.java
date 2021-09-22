@@ -12,7 +12,6 @@ import io.openems.edge.common.event.EdgeEventConstants;
 
 import io.openems.edge.exceptionalstate.api.ExceptionalState;
 import io.openems.edge.heatsystem.components.ConfigurationType;
-import io.openems.edge.heatsystem.components.HydraulicChannel;
 import io.openems.edge.heatsystem.components.HydraulicComponent;
 import io.openems.edge.relay.api.Relay;
 import org.osgi.service.cm.ConfigurationException;
@@ -74,7 +73,7 @@ public class ValveTwoOutput extends AbstractValve implements OpenemsComponent, H
 
 
     public ValveTwoOutput() {
-        super(OpenemsComponent.ChannelId.values(), HydraulicChannel.ChannelId.values(),
+        super(OpenemsComponent.ChannelId.values(), HydraulicComponent.ChannelId.values(),
                 ExceptionalState.ChannelId.values());
     }
 
@@ -138,6 +137,7 @@ public class ValveTwoOutput extends AbstractValve implements OpenemsComponent, H
         if (config.useExceptionalState()) {
             super.createExcpetionalStateHandler(config.timerId(), config.maxTime(), this.cpm, this);
         }
+        super.percentPossiblePerCycle = super.cycle.getCycleTime() / (this.secondsPerPercentage * MILLI_SECONDS_TO_SECONDS);
         this.configSuccess = true;
     }
 

@@ -14,6 +14,7 @@ import io.openems.edge.controller.heatnetwork.communication.request.api.RequestT
 import io.openems.edge.controller.heatnetwork.hydraulic.lineheater.api.HydraulicLineHeater;
 import io.openems.edge.controller.heatnetwork.hydraulic.lineheater.test.DummyHydraulicLineHeater;
 import io.openems.edge.controller.test.ControllerTest;
+import io.openems.edge.heatsystem.components.PumpType;
 import io.openems.edge.heatsystem.components.test.DummyPump;
 import io.openems.edge.remote.rest.device.api.DummyRestDevice;
 import io.openems.edge.remote.rest.device.api.RestRemoteDevice;
@@ -102,7 +103,7 @@ public class CommunicationMasterControllerTest {
     public void setup() {
         this.timer = new DummyTimer(TIMER_ID, TimerType.CYCLES);
         this.dummyThermometer = new DummyVirtualThermometer(THERMOMETER_ID);
-        this.pump = new DummyPump(HEAT_PUMP_ID, "Relays");
+        this.pump = new DummyPump(HEAT_PUMP_ID, PumpType.RELAY);
         this.cpm = new DummyComponentManager(clock);
         this.dummyLineHeater = new DummyHydraulicLineHeater(HYDRAULIC_LINE_HEATER_ID);
         restDeviceIds = new String[]{"Rest0", "Rest1", "Rest2", "Rest3", "Rest4", "Rest5", "Rest6", "Rest7", "Rest8", "Rest9", "Rest10", "Rest11"};

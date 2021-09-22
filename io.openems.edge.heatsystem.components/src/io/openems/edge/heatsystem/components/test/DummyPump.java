@@ -3,7 +3,7 @@ package io.openems.edge.heatsystem.components.test;
 import io.openems.edge.common.component.AbstractOpenemsComponent;
 import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.heatsystem.components.HydraulicComponent;
-import io.openems.edge.heatsystem.components.HydraulicChannel;
+import io.openems.edge.heatsystem.components.PumpType;
 import io.openems.edge.io.api.Pwm;
 import io.openems.edge.consolinno.leaflet.pwm.test.DummyPwm;
 import io.openems.edge.relay.api.Relay;
@@ -22,8 +22,8 @@ public class DummyPump extends AbstractOpenemsComponent implements OpenemsCompon
     private boolean isPwm = false;
     private final Pwm pwm;
 
-    public DummyPump(String id, Relay relays, Pwm pwm, String type) {
-        super(OpenemsComponent.ChannelId.values(), HydraulicChannel.ChannelId.values());
+    public DummyPump(String id, Relay relays, Pwm pwm, PumpType type) {
+        super(OpenemsComponent.ChannelId.values(), HydraulicComponent.ChannelId.values());
 
         super.activate(null, id, "", true);
 
@@ -31,14 +31,15 @@ public class DummyPump extends AbstractOpenemsComponent implements OpenemsCompon
         this.pwm = pwm;
 
         switch (type) {
-            case "Relays":
+            case RELAY:
                 this.isRelays = true;
                 break;
 
-            case "Pwm":
+            case PWM_OR_AIO:
                 this.isPwm = true;
                 break;
 
+            case RELAY_AND_PWM_OR_AIO:
             default:
                 this.isRelays = true;
                 this.isPwm = true;
@@ -50,7 +51,7 @@ public class DummyPump extends AbstractOpenemsComponent implements OpenemsCompon
 
     }
 
-    public DummyPump(String id, String type) {
+    public DummyPump(String id, PumpType type) {
         this(id, new DummyRelay(String.valueOf(new Random().nextInt())), new DummyPwm(String.valueOf(new Random().nextInt())), type);
     }
 

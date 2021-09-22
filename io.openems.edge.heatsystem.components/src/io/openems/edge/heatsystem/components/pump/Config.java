@@ -1,9 +1,9 @@
 package io.openems.edge.heatsystem.components.pump;
 
 import io.openems.edge.heatsystem.components.ConfigurationType;
+import io.openems.edge.heatsystem.components.PumpType;
 import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
-import org.osgi.service.metatype.annotations.Option;
 
 
 @ObjectClassDefinition(
@@ -50,6 +50,9 @@ import org.osgi.service.metatype.annotations.Option;
     String checkPwmOrAioChannelAddress() default "Pwm/ReadPowerLevel";
 
     boolean useExceptionalState() default false;
+
+    @AttributeDefinition(name = "TimerId", description = "Timer to check for missing Components")
+    String timerIdMissingComponents() default "TimerByCycles";
 
     @AttributeDefinition(name = "TimerId", description = "The Timer used for the ExceptionalState")
     String timerId() default "TimerByCycles";

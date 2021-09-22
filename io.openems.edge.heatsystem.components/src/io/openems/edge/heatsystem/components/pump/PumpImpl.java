@@ -13,8 +13,8 @@ import io.openems.edge.exceptionalstate.api.ExceptionalState;
 import io.openems.edge.exceptionalstate.api.ExceptionalStateHandler;
 import io.openems.edge.exceptionalstate.api.ExceptionalStateHandlerImpl;
 import io.openems.edge.heatsystem.components.ConfigurationType;
-import io.openems.edge.heatsystem.components.HydraulicChannel;
 import io.openems.edge.heatsystem.components.HydraulicComponent;
+import io.openems.edge.heatsystem.components.PumpType;
 import io.openems.edge.io.api.AnalogInputOutput;
 import io.openems.edge.io.api.Pwm;
 import io.openems.edge.relay.api.Relay;
@@ -68,7 +68,8 @@ public class PumpImpl extends AbstractOpenemsComponent implements OpenemsCompone
     private ExceptionalStateHandler exceptionalStateHandler;
     private boolean useExceptionalState;
     private static final String EXCEPTIONAL_STATE_IDENTIFIER = "EXCEPTIONAL_STATE_IDENTIFIER_HYDRAULIC_PUMP";
-    private Config config;
+    private boolean configSuccess;
+    Config config;
 
     enum DeviceType {
         PWM, AIO
@@ -83,14 +84,20 @@ public class PumpImpl extends AbstractOpenemsComponent implements OpenemsCompone
 
     public PumpImpl() {
         super(OpenemsComponent.ChannelId.values(),
-                HydraulicChannel.ChannelId.values(),
+                HydraulicComponent.ChannelId.values(),
                 ExceptionalState.ChannelId.values());
     }
 
     @Activate
     void activate(ComponentContext context, Config config) throws OpenemsError.OpenemsNamedException, ConfigurationException {
         super.activate(context, config.id(), config.alias(), config.enabled());
-        this.activateOrModifiedRoutine(config);
+        this.config = config;
+        try {
+            this.activateOrModifiedRoutine(config);
+            this.configSuccess = true;
+        } catch (OpenemsError.OpenemsNamedException | ConfigurationException e) {
+            this.configSuccess = false;
+        }
         this.getIsBusyChannel().setNextValue(false);
 
         if (config.useDefault()) {
@@ -151,12 +158,12 @@ public class PumpImpl extends AbstractOpenemsComponent implements OpenemsCompone
             this.timerHandler.removeComponent();
         }
         this.useExceptionalState = config.useExceptionalState();
+        this.timerHandler = new TimerHandlerImpl(this.id(), this.cpm);
+        this.timerHandler.addOneIdentifier(CHECK_COMPONENT_IDENTIFIER, config.timerIdMissingComponents(), WAIT_TIME_CHECK_COMPONENTS);
         if (this.useExceptionalState) {
-            this.timerHandler = new TimerHandlerImpl(this.id(), this.cpm);
             this.timerHandler.addOneIdentifier(EXCEPTIONAL_STATE_IDENTIFIER, config.timerId(), config.maxTime());
             this.exceptionalStateHandler = new ExceptionalStateHandlerImpl(this.timerHandler, EXCEPTIONAL_STATE_IDENTIFIER);
         }
-        this.config = config;
     }
 
     /**
@@ -235,6 +242,7 @@ public class PumpImpl extends AbstractOpenemsComponent implements OpenemsCompone
     @Modified
     void modified(ComponentContext context, Config config) throws OpenemsError.OpenemsNamedException, ConfigurationException {
         super.modified(context, config.id(), config.alias(), config.enabled());
+        this.config = config;
         this.isPwmOrAio = false;
         this.isRelay = false;
         this.pwm = null;
@@ -299,9 +307,7 @@ public class PumpImpl extends AbstractOpenemsComponent implements OpenemsCompone
                     }
                 } else {
                     //activate relay, set Pwm Later
-                    if (this.controlRelay(true) == false) {
-                        changeSuccess = false;
-                    }
+                    this.controlRelay(true);
                 }
             } else {
                 changeSuccess = this.controlRelay((powerLevel + percentage <= DEFAULT_MIN_POWER_VALUE) == false);
@@ -472,14 +478,29 @@ public class PumpImpl extends AbstractOpenemsComponent implements OpenemsCompone
     public void handleEvent(Event event) {
         if (this.isEnabled()) {
             if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE)) {
-                if (this.shouldCheckOutput && this.getPowerLevelChannel().value().isDefined()) {
+                if (this.configSuccess) {
+                    if (this.shouldCheckOutput && this.getPowerLevelChannel().value().isDefined()) {
+                        try {
+                            this.checkIfPowerValueIsMatching();
+                        } catch (OpenemsError.OpenemsNamedException e) {
+                            this.log.warn("Couldn't check if PowerValue is correctly set! " + super.id());
+                        }
+                    }
+                    if (this.configurationType.equals(ConfigurationType.DEVICE) && this.timerHandler.checkTimeIsUp(CHECK_COMPONENT_IDENTIFIER)) {
+                        this.checkMissingComponents();
+                        this.timerHandler.resetTimer(CHECK_COMPONENT_IDENTIFIER);
+                    }
+                } else {
                     try {
-                        this.checkIfPowerValueIsMatching();
-                    } catch (OpenemsError.OpenemsNamedException e) {
-                        this.log.warn("Couldn't check if PowerValue is correctly set! " + super.id());
+                        this.activateOrModifiedRoutine(this.config);
+                        this.configSuccess = true;
+                    } catch (OpenemsError.OpenemsNamedException | ConfigurationException e) {
+                        this.log.warn("Couldn't apply Config yet!");
+                        this.configSuccess = false;
                     }
                 }
-            } else if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS)) {
+
+            } else if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS) && this.configSuccess) {
                 if (this.useExceptionalState && this.exceptionalStateHandler.exceptionalStateActive(this)) {
                     int value = this.getExceptionalStateValue();
                     value = Math.max(value, DEFAULT_MIN_EXCEPTIONAL_VALUE);
@@ -492,6 +513,50 @@ public class PumpImpl extends AbstractOpenemsComponent implements OpenemsCompone
                 } else if (this.setPointPowerLevelChannel().getNextValue().isDefined()) {
                     this.setPowerLevel(this.setPointPowerLevelChannel().getNextValue().get());
                     this.setPointPowerLevelChannel().setNextValue(null);
+                }
+            }
+        }
+    }
+
+    /**
+     * This Method will only be called, when someone configured the Pump with the {@link ConfigurationType#DEVICE}.
+     * It sometimes happens, that devices restart or get deactivated etc. The Pump will check for old references and refreshes them
+     * every 30 deltaTime (Depends on the Timer).
+     */
+    private void checkMissingComponents() {
+        if (this.isRelay) {
+            try {
+                OpenemsComponent component = this.cpm.getComponent(this.relay.id());
+                if (component instanceof Relay) {
+                    Relay otherRelay = (Relay) component;
+                    if (!otherRelay.equals(this.relay)) {
+                        this.relay = otherRelay;
+                    }
+                }
+            } catch (OpenemsError.OpenemsNamedException e) {
+                this.log.warn("Couldn't find Relay with id: " + this.relay.id());
+            }
+            if (this.isPwmOrAio) {
+                OpenemsComponent foundComponent;
+                try {
+                    switch (this.deviceType) {
+
+                        case PWM:
+                            foundComponent = this.cpm.getComponent(this.pwm.id());
+                            if (foundComponent instanceof Pwm && !foundComponent.equals(this.pwm)) {
+                                this.pwm = (Pwm) foundComponent;
+                            }
+                            break;
+                        case AIO:
+                        default:
+                            foundComponent = this.cpm.getComponent(this.aio.id());
+                            if (foundComponent instanceof AnalogInputOutput && !foundComponent.equals(this.aio)) {
+                                this.aio = (AnalogInputOutput) foundComponent;
+                            }
+                            break;
+                    }
+                } catch (OpenemsError.OpenemsNamedException e) {
+                    this.log.warn("Couldn't find PWM or AIO");
                 }
             }
         }
