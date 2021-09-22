@@ -9,7 +9,6 @@ import io.openems.edge.bridge.modbus.api.ModbusProtocol;
 import io.openems.edge.bridge.modbus.api.element.CoilElement;
 import io.openems.edge.bridge.modbus.api.element.DummyRegisterElement;
 import io.openems.edge.bridge.modbus.api.element.UnsignedWordElement;
-import io.openems.edge.bridge.modbus.api.task.FC16WriteRegistersTask;
 import io.openems.edge.bridge.modbus.api.task.FC2ReadInputsTask;
 import io.openems.edge.bridge.modbus.api.task.FC3ReadRegistersTask;
 import io.openems.edge.bridge.modbus.api.task.FC4ReadInputRegistersTask;
@@ -50,9 +49,15 @@ import java.util.ArrayList;
 import java.util.List;
 
 
-// ToDo: The heater can do setpoint power percent and setpoint temperature. Currently only default values for
-//  setpoint power percent are set. Also, I do not know how exactly the heater switches between these two control modes
-
+/**
+ * This module reads the most important variables available via Modbus from a Viessmann gas boiler and maps them to OpenEMS
+ * channels. The module is written to be used with the Heater interface methods.
+ * When setEnableSignal() from the Heater interface is set to true with no other parameters like temperature specified,
+ * the heater will turn on with default settings. The default settings are configurable in the config.
+ * The heater can be controlled with setHeatingPowerPercentSetpoint() (set power in %) or setTemperatureSetpoint().
+ * However, currently the code does not yet support setTemperatureSetpoint().
+ * setHeatingPowerSetpoint() (set power in kW) and related methods are not supported by this heater.
+ */
 @Designate(ocd = Config.class, factory = true)
 @Component(name = "Heater.Viessmann.GasBoiler",
         configurationPolicy = ConfigurationPolicy.REQUIRE,
@@ -66,7 +71,6 @@ public class GasBoilerImpl extends AbstractOpenemsModbusComponent implements Ope
     @Reference
     ComponentManager cpm;
 
-    private boolean componentEnabled;
     GasBoilerType gasBoilerType;
     private boolean printInfoToLog;
     private boolean readOnly = false;
@@ -95,45 +99,34 @@ public class GasBoilerImpl extends AbstractOpenemsModbusComponent implements Ope
     }
 
     @Activate
-    public void activate(ComponentContext context, Config config) throws OpenemsError.OpenemsNamedException,
+    void activate(ComponentContext context, Config config) throws OpenemsError.OpenemsNamedException,
             ConfigurationException {
         this.allocateGasBoilerType(config.gasBoilerType());
         super.activate(context, config.id(), config.alias(), config.enabled(), config.modbusUnitId(), this.cm, "Modbus", config.modbusBridgeId());
-        this.componentEnabled = config.enabled();
+
         this.printInfoToLog = config.printInfoToLog();
         this.setHeatingPowerPercentSetpoint(config.defaultSetPointPowerPercent());
         this.readOnly = config.readOnly();
+        if (this.isEnabled() == false) {
+            this._setHeaterState(HeaterState.OFF.getValue());
+        }
 
+        // Settings needed when not in ’read only’ mode.
         if (this.readOnly == false) {
             TimerHandler timer = new TimerHandlerImpl(super.id(), this.cpm);
-            String timerTypeEnableSignal;
-            if (config.enableSignalTimerIsCyclesNotSeconds()) {
-                timerTypeEnableSignal = "TimerByCycles";
-            } else {
-                timerTypeEnableSignal = "TimerByTime";
-            }
-            timer.addOneIdentifier(ENABLE_SIGNAL_IDENTIFIER, timerTypeEnableSignal, config.waitTimeEnableSignal());
+            timer.addOneIdentifier(ENABLE_SIGNAL_IDENTIFIER, config.enableSignalTimerId(), config.waitTimeEnableSignal());
             this.enableSignalHandler = new EnableSignalHandlerImpl(timer, ENABLE_SIGNAL_IDENTIFIER);
             this.useExceptionalState = config.useExceptionalState();
             if (this.useExceptionalState) {
-                String timerTypeExceptionalState;
-                if (config.exceptionalStateTimerIsCyclesNotSeconds()) {
-                    timerTypeExceptionalState = "TimerByCycles";
-                } else {
-                    timerTypeExceptionalState = "TimerByTime";
-                }
-                timer.addOneIdentifier(EXCEPTIONAL_STATE_IDENTIFIER, timerTypeExceptionalState, config.waitTimeExceptionalState());
+                timer.addOneIdentifier(EXCEPTIONAL_STATE_IDENTIFIER, config.exceptionalStateTimerId(), config.waitTimeExceptionalState());
                 this.exceptionalStateHandler = new ExceptionalStateHandlerImpl(timer, EXCEPTIONAL_STATE_IDENTIFIER);
             }
 
             // Deactivating controllers for heating circuits because we will not need them
-            this.getHc1OperationMode().setNextWriteValue(6);
-            this.getHc2OperationMode().setNextWriteValue(6);
-            this.getHc3OperationMode().setNextWriteValue(6);
-        }
-
-        if (this.componentEnabled == false) {
-            this._setHeaterState(HeaterState.OFF.getValue());
+            final int hvac_off = 6;
+            this.setHc1OperationMode(hvac_off);
+            this.setHc2OperationMode(hvac_off);
+            this.setHc3OperationMode(hvac_off);
         }
     }
 
@@ -147,7 +140,7 @@ public class GasBoilerImpl extends AbstractOpenemsModbusComponent implements Ope
     }
 
     @Deactivate
-    public void deactivate() {
+    protected void deactivate() {
         super.deactivate();
     }
 
@@ -483,8 +476,8 @@ public class GasBoilerImpl extends AbstractOpenemsModbusComponent implements Ope
     private List<String> generateErrorList() {
         List<String> errorList = new ArrayList<>();
         for (int i = 0; i < 255; i++) {
-            if (this.getError(i + 1).getNextValue().isDefined()) {
-                if (this.getError(i + 1).getNextValue().get()) {
+            if (this.getErrorChannel(i + 1).getNextValue().isDefined()) {
+                if (this.getErrorChannel(i + 1).getNextValue().get()) {
                     errorList.add(this.errorList[i]);
                 }
             }
@@ -494,11 +487,23 @@ public class GasBoilerImpl extends AbstractOpenemsModbusComponent implements Ope
 
     @Override
     public void handleEvent(Event event) {
-        if (this.componentEnabled && event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE)) {
+        if (this.isEnabled() == false) {
+            return;
+        }
+        if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE)) {
             this.channelmapping();
+            if (this.printInfoToLog) {
+                this.printInfo();
+            }
+        }
+        if (this.readOnly == false && event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS)) {
+            this.writeValues();
         }
     }
 
+    /**
+     * Put values in channels that are not directly Modbus read values but derivatives.
+     */
     protected void channelmapping() {
 
         // Parse errors.
@@ -508,10 +513,11 @@ public class GasBoilerImpl extends AbstractOpenemsModbusComponent implements Ope
         } else {
             this._setErrorMessage("No error");
         }
+        this.getErrorMessageChannel().nextProcessImage();
 
         // Parse state.
-        if (getBoilerState().value().isDefined()) {
-            int boilerState = getBoilerState().value().get();
+        if (getBoilerState().isDefined()) {
+            int boilerState = getBoilerState().get();
             if (boilerState > 0) {
                 this._setHeaterState(HeaterState.HEATING.getValue());
             } else {
@@ -520,63 +526,65 @@ public class GasBoilerImpl extends AbstractOpenemsModbusComponent implements Ope
         } else {
             this._setHeaterState(HeaterState.UNDEFINED.getValue());
         }
+        this.getHeaterStateChannel().nextProcessImage();
+    }
 
-        if (this.readOnly == false) {
-            // Handle EnableSignal.
-            boolean turnOnHeater = this.enableSignalHandler.deviceShouldBeHeating(this);
+    /**
+     * Determine commands and send them to the heater.
+     */
+    protected void writeValues() {
 
-            // Handle ExceptionalState. ExceptionalState overwrites EnableSignal.
-            int exceptionalStateValue = 0;
-            boolean exceptionalStateActive = false;
-            if (this.useExceptionalState) {
-                exceptionalStateActive = this.exceptionalStateHandler.exceptionalStateActive(this);
-                if (exceptionalStateActive) {
-                    exceptionalStateValue = this.getExceptionalStateValue();
-                    if (exceptionalStateValue <= 0) {
-                        // Turn off heater when ExceptionalStateValue = 0.
-                        turnOnHeater = false;
-                    } else {
-                        // When ExceptionalStateValue is between 0 and 100, set heater to this PowerPercentage.
-                        turnOnHeater = true;
-                        if (exceptionalStateValue > 100) {
-                            exceptionalStateValue = 100;
-                        }
-                        try {
-                            this.setHeatingPowerPercentSetpoint(exceptionalStateValue);
-                        } catch (OpenemsError.OpenemsNamedException e) {
-                            this.log.warn("Couldn't write in Channel " + e.getMessage());
-                        }
+        // Handle EnableSignal.
+        boolean turnOnHeater = this.enableSignalHandler.deviceShouldBeHeating(this);
+
+        // Handle ExceptionalState. ExceptionalState overwrites EnableSignal.
+        int exceptionalStateValue = 0;
+        boolean exceptionalStateActive = false;
+        if (this.useExceptionalState) {
+            exceptionalStateActive = this.exceptionalStateHandler.exceptionalStateActive(this);
+            if (exceptionalStateActive) {
+                exceptionalStateValue = this.getExceptionalStateValue();
+                if (exceptionalStateValue <= 0) {
+                    turnOnHeater = false;
+                } else {
+                    // When ExceptionalStateValue is between 0 and 100, set heater to this PowerPercentage.
+                    turnOnHeater = true;
+                    exceptionalStateValue = Math.min(exceptionalStateValue, 100);
+                    try {
+                        this.setHeatingPowerPercentSetpoint(exceptionalStateValue);
+                    } catch (OpenemsError.OpenemsNamedException e) {
+                        this.log.warn("Couldn't write in Channel " + e.getMessage());
                     }
                 }
             }
+        }
 
-            // Switch heater on or off.
-            if (turnOnHeater) {
-                try {
-                    this.getDevicePowerMode().setNextWriteValue(1);
-                } catch (OpenemsError.OpenemsNamedException e) {
-                    this.log.warn("Couldn't write in Channel " + e.getMessage());
-                }
-            } else {
-                try {
-                    this.getDevicePowerMode().setNextWriteValue(0);
-                } catch (OpenemsError.OpenemsNamedException e) {
-                    this.log.warn("Couldn't write in Channel " + e.getMessage());
-                }
+        // Switch heater on or off.
+        if (turnOnHeater) {
+            try {
+                this.setDevicePowerMode(1);
+            } catch (OpenemsError.OpenemsNamedException e) {
+                this.log.warn("Couldn't write in Channel " + e.getMessage());
+            }
+        } else {
+            try {
+                this.setDevicePowerMode(0);
+            } catch (OpenemsError.OpenemsNamedException e) {
+                this.log.warn("Couldn't write in Channel " + e.getMessage());
             }
         }
+    }
 
-        if (this.printInfoToLog) {
-            this.logInfo(this.log, "--Gasboiler Viessmann Vitotronic 100--");
-            this.logInfo(this.log, "Power percent set point (write mode only): " + this.getHeatingPowerPercentSetpoint());
-            this.logInfo(this.log, "Flow temperature: " + this.getFlowTemperature());
-            this.logInfo(this.log, "Return temperature: " + this.getReturnTemperature());
-            this.logInfo(this.log, "Operation mode: " + this.getDeviceOperationMode().value());
-            this.logInfo(this.log, "Operating hours tier1: " + this.getOperatingHoursTier1().value());
-            this.logInfo(this.log, "Operating hours tier2: " + this.getOperatingHoursTier2().value());
-            this.logInfo(this.log, "Boiler start counter: " + this.getBoilerStarts().value());
-            this.logInfo(this.log, "Heater state: " + this.getHeaterState());
-            this.logInfo(this.log, "Error message: " + this.getErrorMessage().get());
-        }
+    protected void printInfo() {
+        this.logInfo(this.log, "--Gasboiler Viessmann Vitotronic 100--");
+        this.logInfo(this.log, "Power percent set point (write mode only): " + this.getHeatingPowerPercentSetpoint());
+        this.logInfo(this.log, "Flow temperature: " + this.getFlowTemperature());
+        this.logInfo(this.log, "Return temperature: " + this.getReturnTemperature());
+        this.logInfo(this.log, "Operation mode: " + this.getDeviceOperationMode());
+        this.logInfo(this.log, "Operating hours tier1: " + this.getOperatingHoursTier1());
+        this.logInfo(this.log, "Operating hours tier2: " + this.getOperatingHoursTier2());
+        this.logInfo(this.log, "Boiler start counter: " + this.getBoilerStarts());
+        this.logInfo(this.log, "Heater state: " + this.getHeaterState());
+        this.logInfo(this.log, "Error message: " + this.getErrorMessage().get());
     }
 }

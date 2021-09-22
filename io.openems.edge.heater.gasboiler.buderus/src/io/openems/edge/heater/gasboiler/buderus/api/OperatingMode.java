@@ -7,8 +7,8 @@ public enum OperatingMode implements OptionsEnum {
 	SET_POINT_TEMPERATURE(0, "Set point temperature"), //
 	SET_POINT_POWER_PERCENT(1, "Set point power percent"); //
 
-	private int value;
-	private String name;
+	private final int value;
+	private final String name;
 
 	private OperatingMode(int value, String name) {
 		this.value = value;
@@ -17,12 +17,12 @@ public enum OperatingMode implements OptionsEnum {
 
 	@Override
 	public int getValue() {
-		return value;
+		return this.value;
 	}
 
 	@Override
 	public String getName() {
-		return name;
+		return this.name;
 	}
 	
 	@Override

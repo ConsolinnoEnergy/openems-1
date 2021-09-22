@@ -56,6 +56,6 @@ import org.osgi.service.metatype.annotations.Option;
 
     boolean enabled() default true;
 
-    String webconsole_configurationFactory_nameHint() default "MassHeater - Device [{id}]";
+    String webconsole_configurationFactory_nameHint() default "Heater Woodchips Gilles [{id}]";
 
 }

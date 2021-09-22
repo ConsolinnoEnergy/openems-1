@@ -23,19 +23,19 @@ public interface HeaterBuderus extends Heater {
         // Input Registers, read only. The register address is in the channel name, so IR0 means input register 0.
         // Unsigned 16 bit, unless stated otherwise.
 
-        //IR384_STRATEGIE_RETURN_TEMPERATURE -> Heater, RETURN_TEMPERATURE. Funktioniert nicht. Fällt weg. Nimm Wert vom Kessel.
+        //IR384_STRATEGIE_RETURN_TEMPERATURE -> Does not work. Use IR8003_RETURN_TEMP_TANK1.
 
-        //IR385_STRATEGIE_FLOW_TEMPERATURE -> Heater, FLOW_TEMPERATURE. Fällt weg. Nimm Wert vom Kessel.
+        //IR385_STRATEGIE_FLOW_TEMPERATURE -> Use IR8001_FLOW_TEMP_TANK1.
 
         /**
          * Status Strategie.
-         * 0-Ubekannt
-         * 1-Warnung
-         * 2-Störung
-         * 3-OK
-         * 4-Nicht aktiv
-         * 5-Kritisch
-         * 6-Keine Info
+         * 0 - Unknown (Ubekannt)
+         * 1 - Warning (Warnung)
+         * 2 - Error (Stoerung)
+         * 3 - OK
+         * 4 - Not active (Nicht aktiv)
+         * 5 - Critical (Kritisch)
+         * 6 - No info (Keine Info)
          * <ul>
          *      <li> Type: Integer
          * </ul>
@@ -109,7 +109,7 @@ public interface HeaterBuderus extends Heater {
          */
         IR482_FEHLERREGISTER4(Doc.of(OpenemsType.INTEGER).accessMode(AccessMode.READ_ONLY)),
 
-        //IR8001_FLOW_TEMP_KESSEL1 -> Heater, FLOW_TEMPERATURE. d°C, signed.
+        //IR8001_FLOW_TEMP_TANK1 -> Heater, FLOW_TEMPERATURE. d°C, signed.
 
         /**
          * Temperatur Vorlauf Änderungsgeschwindigkeit. Unit dezi Kelvin / min, signed.
@@ -120,9 +120,9 @@ public interface HeaterBuderus extends Heater {
          */
         IR8002_FLOW_TEMP_AENDERUNGSGESCHWINDIGKEIT_KESSEL1(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZI_KELVIN_PER_MINUTE).accessMode(AccessMode.READ_ONLY)),
 
-        //IR8003_RETURN_TEMP_KESSEL1 -> Heater, RETURN_TEMPERATURE. d°C, signed.
+        //IR8003_RETURN_TEMP_TANK1 -> Heater, RETURN_TEMPERATURE. d°C, signed.
 
-        //IR8004_LEISTUNG_ISTWERT_KESSEL1 -> Heater, EFFECTIVE_HEATING_POWER_PERCENT. %, unsigned.
+        //IR8004_EFFECTIVE_POWER_TANK1 -> Heater, EFFECTIVE_HEATING_POWER_PERCENT. %, unsigned.
 
         /**
          * Wärmeerzeuger in Lastbegrenzung Kessel 1.

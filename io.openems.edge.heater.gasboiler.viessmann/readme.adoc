@@ -1,8 +1,8 @@
-# io.openems.edge.heater.gasboiler.viessmann Provider
 
-${Bundle-Description}
+ToDo: The heater can do setpoint power percent and setpoint temperature. Currently only default values for
+setpoint power percent are set.
 
-## Example
-
-## References
-
+Unclear how to switch to setpoint temperature mode.
+Speculation:
+DEVICE_POWER_MODE -> 255 is needed for sure.
+DEVICE_OPERATION_MODE -> not sure here. Probably 0 or 1.

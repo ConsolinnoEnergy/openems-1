@@ -66,5 +66,5 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     @AttributeDefinition(name = "Is enabled?", description = "Is this Component enabled?")
 	boolean enabled() default true;
 
-    String webconsole_configurationFactory_nameHint() default "Chp Dachs GLT-Interface [{id}]";
+    String webconsole_configurationFactory_nameHint() default "Heater Chp Dachs GLT-Interface [{id}]";
 }

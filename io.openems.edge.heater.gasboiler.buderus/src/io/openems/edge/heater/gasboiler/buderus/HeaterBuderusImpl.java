@@ -50,12 +50,6 @@ import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 
 
-@Designate(ocd = Config.class, factory = true)
-@Component(name = "Heater.Buderus.GasBoiler",
-		immediate = true,
-		configurationPolicy = ConfigurationPolicy.REQUIRE,
-		property = EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE)
-
 /**
  * This module reads the most important variables available via Modbus from a Buderus heater and maps them to OpenEMS
  * channels. The module is written to be used with the Heater interface methods.
@@ -64,6 +58,11 @@ import java.time.temporal.ChronoUnit;
  * The heater can be controlled with setSetPointPowerPercent() or setSetPointTemperature().
  * setSetPointPower() and related methods are not supported by this heater.
  */
+@Designate(ocd = Config.class, factory = true)
+@Component(name = "Heater.Buderus.GasBoiler",
+		immediate = true,
+		configurationPolicy = ConfigurationPolicy.REQUIRE,
+		property = EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE)
 public class HeaterBuderusImpl extends AbstractOpenemsModbusComponent implements OpenemsComponent, EventHandler,
 		ExceptionalState, HeaterBuderus {
 
@@ -101,7 +100,7 @@ public class HeaterBuderusImpl extends AbstractOpenemsModbusComponent implements
 	}
 
 	@Activate
-	public void activate(ComponentContext context, Config config) throws OpenemsError.OpenemsNamedException, ConfigurationException {
+	void activate(ComponentContext context, Config config) throws OpenemsError.OpenemsNamedException, ConfigurationException {
 		super.activate(context, config.id(), config.alias(), config.enabled(), config.modbusUnitId(), this.cm,
 				"Modbus", config.modbusBridgeId());
 		this.componentEnabled = config.enabled();
@@ -116,23 +115,11 @@ public class HeaterBuderusImpl extends AbstractOpenemsModbusComponent implements
 			this.setHeatingPowerPercentSetpoint(config.defaultSetPointPowerPercent());
 
 			TimerHandler timer = new TimerHandlerImpl(super.id(), this.cpm);
-			String timerTypeEnableSignal;
-			if (config.enableSignalTimerIsCyclesNotSeconds()) {
-				timerTypeEnableSignal = "TimerByCycles";
-			} else {
-				timerTypeEnableSignal = "TimerByTime";
-			}
-			timer.addOneIdentifier(ENABLE_SIGNAL_IDENTIFIER, timerTypeEnableSignal, config.waitTimeEnableSignal());
+			timer.addOneIdentifier(ENABLE_SIGNAL_IDENTIFIER, config.enableSignalTimerId(), config.waitTimeEnableSignal());
 			this.enableSignalHandler = new EnableSignalHandlerImpl(timer, ENABLE_SIGNAL_IDENTIFIER);
 			this.useExceptionalState = config.useExceptionalState();
 			if (this.useExceptionalState) {
-				String timerTypeExceptionalState;
-				if (config.exceptionalStateTimerIsCyclesNotSeconds()) {
-					timerTypeExceptionalState = "TimerByCycles";
-				} else {
-					timerTypeExceptionalState = "TimerByTime";
-				}
-				timer.addOneIdentifier(EXCEPTIONAL_STATE_IDENTIFIER, timerTypeExceptionalState, config.waitTimeExceptionalState());
+				timer.addOneIdentifier(EXCEPTIONAL_STATE_IDENTIFIER, config.exceptionalStateTimerId(), config.waitTimeExceptionalState());
 				this.exceptionalStateHandler = new ExceptionalStateHandlerImpl(timer, EXCEPTIONAL_STATE_IDENTIFIER);
 			}
 		}
@@ -143,7 +130,7 @@ public class HeaterBuderusImpl extends AbstractOpenemsModbusComponent implements
 	}
 
 	@Deactivate
-	public void deactivate() {
+	protected void deactivate() {
 		super.deactivate();
 	}
 
@@ -153,9 +140,6 @@ public class HeaterBuderusImpl extends AbstractOpenemsModbusComponent implements
 		ModbusProtocol protocol = new ModbusProtocol(this,
 				// Input register read.
 				new FC4ReadInputRegistersTask(386, Priority.HIGH,
-						// Use SignedWordElement when the number can be negative. Signed 16bit maps every number >32767
-						// to negative. That means if the value you read is positive and <32767, there is no difference
-						// between signed and unsigned.
 						m(HeaterBuderus.ChannelId.IR386_STATUS_STRATEGIE, new UnsignedWordElement(386),
 								ElementToChannelConverter.DIRECT_1_TO_1)
 				),
@@ -239,16 +223,6 @@ public class HeaterBuderusImpl extends AbstractOpenemsModbusComponent implements
 		);
 		if (this.readOnly == false) {
 			protocol.addTasks(
-					// Holding register write.
-					// Modbus write tasks take the "setNextWriteValue" value of a channel and send them to the device.
-					// Modbus read tasks put values in the "setNextValue" field, which get automatically transferred to the
-					// "value" field of the channel. By default, the "setNextWriteValue" field is NOT copied to the
-					// "setNextValue" and "value" field. In essence, this makes "setNextWriteValue" and "setNextValue"/"value"
-					// two separate channels.
-					// That means: Modbus read tasks will not overwrite any "setNextWriteValue" values. You do not have to
-					// watch the order in which you call read and write tasks.
-					// Also: if you do not add a Modbus read task for a write channel, any "setNextWriteValue" values will
-					// not be transferred to the "value" field of the channel, unless you add code that does that.
 					new FC16WriteRegistersTask(0,
 							m(HeaterBuderus.ChannelId.HR0_HEARTBEAT_IN, new UnsignedWordElement(0),
 									ElementToChannelConverter.DIRECT_1_TO_1)
@@ -277,7 +251,9 @@ public class HeaterBuderusImpl extends AbstractOpenemsModbusComponent implements
 		}
 	}
 
-	// Put values in channels that are not directly Modbus read values but derivatives.
+	/**
+	 * Put values in channels that are not directly Modbus read values but derivatives.
+	 */
 	protected void channelmapping() {
 
 		if (this.readOnly == false) {
