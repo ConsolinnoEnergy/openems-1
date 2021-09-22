@@ -41,8 +41,11 @@ public class DecentralizedCoolerImpl extends AbstractDecentralizedComponent impl
                 ExceptionalState.ChannelId.values());
     }
 
+    ConfigDecentralizedCooler config;
+
     @Activate
-    void activate(ComponentContext context, ConfigDecentralizedCooler config) throws OpenemsError.OpenemsNamedException, ConfigurationException {
+    void activate(ComponentContext context, ConfigDecentralizedCooler config) {
+        this.config = config;
         super.activate(context, config.id(), config.alias(), config.enabled(), config.componentOrController(),
                 config.componentOrControllerId(), config.thresholdThermometerId(), config.setPointTemperature(),
                 config.forceCooling(), config.enableExceptionalStateHandling(),
@@ -56,11 +59,13 @@ public class DecentralizedCoolerImpl extends AbstractDecentralizedComponent impl
 
 
     @Modified
-    void modified(ComponentContext context, ConfigDecentralizedHeater config) throws OpenemsError.OpenemsNamedException, ConfigurationException {
+    void modified(ComponentContext context, ConfigDecentralizedCooler config) {
+        this.configurationSuccess = false;
+        this.config = config;
         super.modified(context, config.id(), config.alias(), config.enabled(), config.componentOrController(), config.componentOrControllerId(),
                 config.thresholdThermometerId(), config.setPointTemperature(),
-                config.forceHeating(), config.useExceptionalState(),
-                config.timerNeedHeatResponse(), config.waitTimeNeedHeatResponse(),
+                config.forceCooling(), config.enableExceptionalStateHandling(),
+                config.timerNeedCoolResponse(), config.timeToWaitExceptionalState(),
                 config.timerExceptionalState(), config.timeToWaitExceptionalState(),
                 this.getForceCoolChannel(), this.getNeedCoolEnableSignalChannel());
     }
@@ -93,9 +98,25 @@ public class DecentralizedCoolerImpl extends AbstractDecentralizedComponent impl
     public void handleEvent(Event event) {
         if (this.isEnabled()) {
             if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE)) {
-                super.checkMissingComponents();
+                if (super.configurationSuccess) {
+                    super.checkMissingComponents();
+                } else {
+                    try {
+                        super.activationOrModifiedRoutine(this.config.componentOrController(), this.config.componentOrControllerId(),
+                                this.config.thresholdThermometerId(), this.config.setPointTemperature(),
+                                this.config.forceCooling(), this.config.enableExceptionalStateHandling(),
+                                this.config.timerNeedCoolResponse(), this.config.timeToWaitExceptionalState(),
+                                this.config.timerExceptionalState(), this.config.timeToWaitExceptionalState(),
+                                this.getForceCoolChannel(), this.getNeedCoolEnableSignalChannel());
+
+                    } catch (OpenemsError.OpenemsNamedException | ConfigurationException e) {
+                        this.log.warn("Couldn't apply config, trying again later");
+                        this.configurationSuccess = false;
+                    }
+                }
             }
-            if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS) && super.isEnabled()) {
+            if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS)
+                    && super.isEnabled() && super.configurationSuccess) {
                 if (super.currentRunEnabled()) {
                     if (super.checkAllowedToExecuteLogic()) {
                         int setPointTemperature = this.getTemperatureSetpoint().orElse(DEFAULT_SETPOINT_TEMPERATURE);
@@ -104,6 +125,8 @@ public class DecentralizedCoolerImpl extends AbstractDecentralizedComponent impl
                         super.setThresholdAndControlValve(temperatureOk, setPointTemperature);
                     }
                 } else {
+                    this.getEnableSignalChannel().getNextWriteValueAndReset();
+                    this.getEnableSignalChannel().setNextValue(false);
                     this.getNeedCoolChannel().setNextValue(false);
                     this.getNeedCoolEnableSignalChannel().getNextWriteValueAndReset();
                     this.getNeedCoolEnableSignalChannel().setNextValue(false);

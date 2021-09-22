@@ -37,7 +37,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public abstract class AbstractDecentralizedComponent extends AbstractOpenemsComponent implements OpenemsComponent, EventHandler, Heater, ExceptionalState {
 
-    private final Logger log = LoggerFactory.getLogger(AbstractDecentralizedComponent.class);
+    protected final Logger log = LoggerFactory.getLogger(AbstractDecentralizedComponent.class);
 
     @Reference
     protected ComponentManager cpm;
@@ -54,6 +54,7 @@ public abstract class AbstractDecentralizedComponent extends AbstractOpenemsComp
     private boolean useExceptionalState;
     WriteChannel<Boolean> response;
     WriteChannel<Boolean> forced;
+    protected boolean configurationSuccess;
 
 
     public AbstractDecentralizedComponent(io.openems.edge.common.channel.ChannelId[] firstInitialChannelIds,
@@ -65,15 +66,20 @@ public abstract class AbstractDecentralizedComponent extends AbstractOpenemsComp
                   String componentId, String thresholdId, int tempSetPoint, boolean forceHeatingOrCooling,
                   boolean useExceptionalState, String timerResponse, int waitTimeResponse,
                   String timerExceptionalState, int timeToWaitExceptionalState,
-                  WriteChannel<Boolean> forced, WriteChannel<Boolean> response) throws OpenemsError.OpenemsNamedException, ConfigurationException {
+                  WriteChannel<Boolean> forced, WriteChannel<Boolean> response) {
         super.activate(context, id, alias, enabled);
         if (enabled == false) {
             return;
         }
-        this.activationOrModifiedRoutine(componentType, componentId, thresholdId, tempSetPoint,
-                forceHeatingOrCooling, useExceptionalState,
-                timerResponse, waitTimeResponse,
-                timerExceptionalState, timeToWaitExceptionalState, forced, response);
+        try {
+            this.activationOrModifiedRoutine(componentType, componentId, thresholdId, tempSetPoint,
+                    forceHeatingOrCooling, useExceptionalState,
+                    timerResponse, waitTimeResponse,
+                    timerExceptionalState, timeToWaitExceptionalState, forced, response);
+        } catch (OpenemsError.OpenemsNamedException | ConfigurationException e) {
+            this.log.warn("Couldn't apply Config. Try again later");
+            this.configurationSuccess = false;
+        }
     }
 
     /**
@@ -94,7 +100,7 @@ public abstract class AbstractDecentralizedComponent extends AbstractOpenemsComp
      * @throws ConfigurationException             if something is wrong configured
      * @throws OpenemsError.OpenemsNamedException if Component cannot be found.
      */
-    private void activationOrModifiedRoutine(ComponentType componentType, String componentId, String thresholdId, int tempSetPoint,
+    protected void activationOrModifiedRoutine(ComponentType componentType, String componentId, String thresholdId, int tempSetPoint,
                                              boolean forceHeatingOrCooling, boolean useExceptionalState,
                                              String timerResponse, int waitTimeResponse,
                                              String timerExceptionalState, int timeToWaitExceptionalState,
@@ -138,6 +144,7 @@ public abstract class AbstractDecentralizedComponent extends AbstractOpenemsComp
         this._setHeaterState(HeaterState.OFF.getValue());
         this.useExceptionalState = useExceptionalState;
         this.initializeTimer(timerResponse, waitTimeResponse, timerExceptionalState, timeToWaitExceptionalState);
+        this.configurationSuccess = true;
     }
 
 
@@ -146,15 +153,19 @@ public abstract class AbstractDecentralizedComponent extends AbstractOpenemsComp
                   boolean forceHeating, boolean useExceptionalState,
                   String timerNeedHeatResponse, int waitTimeNeedHeatResponse,
                   String timerExceptionalState, int timeToWaitExceptionalState,
-                  WriteChannel<Boolean> forced, WriteChannel<Boolean> needResponse) throws OpenemsError.OpenemsNamedException, ConfigurationException {
+                  WriteChannel<Boolean> forced, WriteChannel<Boolean> needResponse) {
         super.modified(context, id, alias, enabled);
         this.timer.removeComponent();
-        this.activationOrModifiedRoutine(componentType, componentId, thresholdId, tempSetPoint,
-                forceHeating, useExceptionalState,
-                timerNeedHeatResponse, waitTimeNeedHeatResponse,
-                timerExceptionalState, timeToWaitExceptionalState,
-                forced, needResponse);
-
+        try {
+            this.activationOrModifiedRoutine(componentType, componentId, thresholdId, tempSetPoint,
+                    forceHeating, useExceptionalState,
+                    timerNeedHeatResponse, waitTimeNeedHeatResponse,
+                    timerExceptionalState, timeToWaitExceptionalState,
+                    forced, needResponse);
+        } catch (OpenemsError.OpenemsNamedException | ConfigurationException e) {
+            this.log.warn("Couldn't apply Config. Try again later");
+            this.configurationSuccess = false;
+        }
     }
 
     /**
