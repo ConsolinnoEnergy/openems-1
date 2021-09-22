@@ -10,14 +10,14 @@ import io.openems.edge.relay.api.Relay;
 import org.osgi.service.cm.ConfigurationException;
 
 /**
- * The AnalogueHeaterRelay. An extension of the {@link AbstractAnalogueHeaterComponent}
+ * The AnalogueHeaterRelay. An extension of the {@link AbstractAnalogueHeaterOrCoolerComponent}
  * It provides the ability to use a Relay as a Heater.
  * A Relay is an all or nothing device -> therefore that % value what you will apply is what you will see in the PowerChannel.
  */
-public class AnalogueHeaterRelay extends AbstractAnalogueHeaterComponent implements AnalogueHeaterComponent {
+public class AnalogueHeaterOrCoolerRelay extends AbstractAnalogueHeaterOrCoolerComponent implements AnalogueHeaterOrCoolerComponent {
     private final String deviceId;
 
-    public AnalogueHeaterRelay(ComponentManager cpm, String analogueId, int maxPowerKw, ControlType controlType, int defaultMinPower) throws OpenemsError.OpenemsNamedException, ConfigurationException {
+    public AnalogueHeaterOrCoolerRelay(ComponentManager cpm, String analogueId, int maxPowerKw, ControlType controlType, int defaultMinPower) throws OpenemsError.OpenemsNamedException, ConfigurationException {
         OpenemsComponent component = cpm.getComponent(analogueId);
         ChannelAddress address;
         if (component instanceof Relay) {

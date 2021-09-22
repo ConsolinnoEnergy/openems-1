@@ -9,13 +9,13 @@ import io.openems.edge.heater.analogue.ControlType;
 import org.osgi.service.cm.ConfigurationException;
 
 /**
- * The AnalogueHeaterLucidControl. An Extension of the {@link AbstractAnalogueHeaterComponent}
+ * The AnalogueHeaterLucidControl. An Extension of the {@link AbstractAnalogueHeaterOrCoolerComponent}
  * It gets the {@link LucidControlDeviceOutput},
  * the Corresponding ChannelAddress and initializes the abstractAnalogueHeaterComponent.
  */
-public class AnalogueHeaterLucidControl extends AbstractAnalogueHeaterComponent implements AnalogueHeaterComponent {
-    public AnalogueHeaterLucidControl(ComponentManager cpm, String analogueId, int maxPowerKw,
-                                      ControlType controlType, int defaultMinPower) throws ConfigurationException, OpenemsError.OpenemsNamedException {
+public class AnalogueHeaterOrCoolerLucidControl extends AbstractAnalogueHeaterOrCoolerComponent implements AnalogueHeaterOrCoolerComponent {
+    public AnalogueHeaterOrCoolerLucidControl(ComponentManager cpm, String analogueId, int maxPowerKw,
+                                              ControlType controlType, int defaultMinPower) throws ConfigurationException, OpenemsError.OpenemsNamedException {
         OpenemsComponent component = cpm.getComponent(analogueId);
         if (component instanceof LucidControlDeviceOutput) {
             ChannelAddress address = new ChannelAddress(analogueId, ((LucidControlDeviceOutput) component).getPercentageChannel().channelId().id());

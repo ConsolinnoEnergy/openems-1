@@ -10,14 +10,14 @@ import io.openems.edge.io.api.AnalogInputOutput;
 import org.osgi.service.cm.ConfigurationException;
 
 /**
- * The AnalogueHeaterAIO. An Extending class of the {@link AbstractAnalogueHeaterComponent}.
+ * The AnalogueHeaterAIO. An Extending class of the {@link AbstractAnalogueHeaterOrCoolerComponent}.
  * It is responsible for getting the {@link AnalogInputOutput} component and the ChannelAddress.
  * Initializing the AbstractAnalogueHeaterComponent and Returning the correct currently applied PowerValue.
  */
-public class AnalogueHeaterAio extends AbstractAnalogueHeaterComponent implements AnalogueHeaterComponent {
+public class AnalogueHeaterOrCoolerAio extends AbstractAnalogueHeaterOrCoolerComponent implements AnalogueHeaterOrCoolerComponent {
     private final String analogueId;
 
-    public AnalogueHeaterAio(ComponentManager cpm, String analogueId, int maxPowerKw, ControlType controlType, int defaultMinPower) throws OpenemsError.OpenemsNamedException, ConfigurationException {
+    public AnalogueHeaterOrCoolerAio(ComponentManager cpm, String analogueId, int maxPowerKw, ControlType controlType, int defaultMinPower) throws OpenemsError.OpenemsNamedException, ConfigurationException {
         OpenemsComponent component = cpm.getComponent(analogueId);
         if (component instanceof AnalogInputOutput) {
             ChannelAddress address = new ChannelAddress(analogueId, ((AnalogInputOutput) component).setPercentChannel().channelId().id());

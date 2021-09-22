@@ -1,10 +1,10 @@
-package io.openems.edge.cooler.analogue;
+package io.openems.edge.heater.analogue;
 
 import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
 @ObjectClassDefinition(name = "Cooler Analogue", description = "A Cooler that works with an Analogue Device/Module.")
-@interface Config {
+@interface ConfigCoolerAnalogue {
 
     String service_pid();
 
@@ -19,10 +19,10 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     @AttributeDefinition(name = "AnalogueDevice ID", description = "The Device Id that Controls the Cooler in reality")
     String[] analogueId() default {"Relay0"};
 
-    boolean useErrorSignals() default true;
+    /*boolean useErrorSignals() default true;
 
     @AttributeDefinition(name = "SignalSensor Ids", description = "If you want to use SignalSensor as ErrorHandling, put them here")
-    String[] signalSensors() default {"SignalSensor0"};
+    String[] signalSensors() default {"SignalSensor0"};*/
 
     @AttributeDefinition(name = "Max Power in KW", description = "Maximum available Power")
     int maxPower() default 100;

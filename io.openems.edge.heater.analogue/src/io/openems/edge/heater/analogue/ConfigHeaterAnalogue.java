@@ -4,7 +4,7 @@ import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
 @ObjectClassDefinition(name = "Heater Analogue", description = "A Heater that works with an Analogue Device/Module")
-@interface Config {
+@interface ConfigHeaterAnalogue {
 
     String service_pid();
 
@@ -19,10 +19,10 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     @AttributeDefinition(name = "AnalogueDevice ID", description = "The Device Id that Controls the Heater in reality")
     String[] analogueId() default {"Relay0"};
 
-    boolean useErrorSignals() default true;
+    //boolean useErrorSignals() default true;
 
-    @AttributeDefinition(name = "SignalSensor Ids", description = "If you want to use SignalSensor as ErrorHandling, put them here")
-    String[] signalSensors() default {"SignalSensor0"};
+    /*@AttributeDefinition(name = "SignalSensor Ids", description = "If you want to use SignalSensor as ErrorHandling, put them here")
+    String[] signalSensors() default {"SignalSensor0"};*/
 
     @AttributeDefinition(name = "Max Power in KW", description = "Maximum available Power")
     int maxPower() default 100;

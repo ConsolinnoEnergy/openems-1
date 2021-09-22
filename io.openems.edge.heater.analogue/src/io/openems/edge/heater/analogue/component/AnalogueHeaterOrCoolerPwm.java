@@ -9,15 +9,15 @@ import io.openems.edge.io.api.Pwm;
 import org.osgi.service.cm.ConfigurationException;
 
 /**
- * The AnalogueHeaterPwm. An Extension of the {@link AbstractAnalogueHeaterComponent}
+ * The AnalogueHeaterPwm. An Extension of the {@link AbstractAnalogueHeaterOrCoolerComponent}
  * It provides the ability to use a PWM Device as a Heater.
  * expects Percent values (multiplier does not change).
  */
-public class AnalogueHeaterPwm extends AbstractAnalogueHeaterComponent implements AnalogueHeaterComponent {
+public class AnalogueHeaterOrCoolerPwm extends AbstractAnalogueHeaterOrCoolerComponent implements AnalogueHeaterOrCoolerComponent {
 
     private final String componentId;
 
-    public AnalogueHeaterPwm(ComponentManager cpm, String analogueId, int maxPowerKw, ControlType controlType, int defaultMinPower) throws OpenemsError.OpenemsNamedException, ConfigurationException {
+    public AnalogueHeaterOrCoolerPwm(ComponentManager cpm, String analogueId, int maxPowerKw, ControlType controlType, int defaultMinPower) throws OpenemsError.OpenemsNamedException, ConfigurationException {
         OpenemsComponent component = cpm.getComponent(analogueId);
         ChannelAddress address;
         if (component instanceof Pwm) {

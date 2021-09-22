@@ -4,6 +4,7 @@ import io.openems.common.exceptions.OpenemsError;
 import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.common.event.EdgeEventConstants;
 import io.openems.edge.heater.analogue.component.AbstractAnalogueHeaterOrCoolerComponent;
+import io.openems.edge.heater.api.Cooler;
 import io.openems.edge.heater.api.Heater;
 import org.osgi.service.cm.ConfigurationException;
 import org.osgi.service.component.ComponentContext;
@@ -18,7 +19,7 @@ import org.osgi.service.event.EventHandler;
 import org.osgi.service.metatype.annotations.Designate;
 
 /**
- * The Analogue Heater. It is a Heater, that controls a Analogue Component, connected to a Heater, such as a CHP or other
+ * The Analogue Cooler. It is a Cooler, that controls a Analogue Component, connected to a Cooler, such as a CHP or other
  * PowerPlant.
  * ATM Possible Analogue Heaters can be controlled by:
  * <p>
@@ -36,31 +37,33 @@ import org.osgi.service.metatype.annotations.Designate;
  * </p>
  */
 
-@Designate(ocd = ConfigHeaterAnalogue.class, factory = true)
-@Component(name = "AnalogueHeater", immediate = true,
+@Designate(ocd = ConfigCoolerAnalogue.class, factory = true)
+@Component(name = "AnalogueCooler", immediate = true,
         configurationPolicy = ConfigurationPolicy.REQUIRE,
         property = {EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE,
                 EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS})
 
-public class AnalogueHeater extends AbstractAnalogueHeaterOrCooler implements OpenemsComponent, Heater, EventHandler {
-
-    private ConfigHeaterAnalogue config;
+public class AnalogueCooler extends AbstractAnalogueHeaterOrCooler implements OpenemsComponent, Cooler, Heater, EventHandler {
 
 
-    public AnalogueHeater() {
+    private ConfigCoolerAnalogue config;
+
+    public AnalogueCooler() {
         super(OpenemsComponent.ChannelId.values(),
                 Heater.ChannelId.values());
     }
 
     @Activate
-    void activate(ComponentContext context, ConfigHeaterAnalogue config) {
+    void activate(ComponentContext context, ConfigCoolerAnalogue config) {
+        this.config = config;
         super.activate(context, config.id(), config.alias(), config.enabled(), config.analogueId(), config.analogueType(),
                 config.controlType(), config.defaultMinPower(), config.timerId(), config.maxTimeEnableSignal(),
                 config.maxTimePowerSignal(), config.defaultRunPower(), config.autoRun(), config.maxPower());
     }
 
     @Modified
-    void modified(ComponentContext context, ConfigHeaterAnalogue config) {
+    void modified(ComponentContext context, ConfigCoolerAnalogue config) {
+        this.config = config;
         super.modified(context, config.id(), config.alias(), config.enabled(), config.analogueId(), config.analogueType(),
                 config.controlType(), config.defaultMinPower(), config.timerId(), config.maxTimeEnableSignal(),
                 config.maxTimePowerSignal(), config.defaultRunPower(), config.autoRun(), config.maxPower());
