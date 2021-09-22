@@ -44,7 +44,7 @@
 	bnd.identity;id='io.openems.edge.batteryinverter.sunspec',\
 	bnd.identity;id='io.openems.edge.battery.siemens',\
 	bnd.identity;id='io.openems.edge.battery.soltaro',\
-	bnd.identity;id='io.openems.edge.bridge.communication.remote.rest',\
+	bnd.identity;id='io.openems.edge.bridge.rest',\
 	bnd.identity;id='io.openems.edge.bridge.genibus',\
 	bnd.identity;id='io.openems.edge.bridge.lucidcontrol',\
 	bnd.identity;id='io.openems.edge.bridge.mbus',\
@@ -112,7 +112,6 @@
 	bnd.identity;id='io.openems.edge.controller.symmetric.peakshaving',\
 	bnd.identity;id='io.openems.edge.controller.symmetric.randompower',\
 	bnd.identity;id='io.openems.edge.controller.symmetric.timeslotpeakshaving',\
-	bnd.identity;id='io.openems.edge.cooler.analogue',\
 	bnd.identity;id='io.openems.edge.core',\
 	bnd.identity;id='io.openems.edge.ess.adstec.storaxe',\
 	bnd.identity;id='io.openems.edge.ess.byd.container',\
@@ -181,12 +180,12 @@
 	bnd.identity;id='io.openems.edge.pvinverter.solarlog',\
 	bnd.identity;id='io.openems.edge.pvinverter.sunspec',\
 	bnd.identity;id='io.openems.edge.relay.api',\
-	bnd.identity;id='io.openems.edge.remote.rest.device',\
 	bnd.identity;id='io.openems.edge.scheduler.allalphabetically',\
 	bnd.identity;id='io.openems.edge.scheduler.daily',\
 	bnd.identity;id='io.openems.edge.scheduler.fixedorder',\
 	bnd.identity;id='io.openems.edge.simulator',\
 	bnd.identity;id='io.openems.edge.solaredge',\
+	bnd.identity;id='io.openems.edge.utility',\
 	bnd.identity;id='io.openems.edge.tesla.powerwall2',\
 	bnd.identity;id='io.openems.edge.thermometer.threshold',\
 	bnd.identity;id='io.openems.edge.thermometer.virtual',\
@@ -216,7 +215,7 @@
 	io.openems.edge.batteryinverter.kaco.blueplanetgridsave;version=snapshot,\
 	io.openems.edge.batteryinverter.refu88k;version=snapshot,\
 	io.openems.edge.batteryinverter.sunspec;version=snapshot,\
-	io.openems.edge.bridge.communcation.remote.rest;version=snapshot,\
+	io.openems.edge.bridge.rest;version=snapshot,\
 	io.openems.edge.bridge.genibus;version=snapshot,\
 	io.openems.edge.bridge.lucidcontrol;version=snapshot,\
 	io.openems.edge.bridge.mbus;version=snapshot,\
@@ -285,7 +284,6 @@
 	io.openems.edge.controller.symmetric.peakshaving;version=snapshot,\
 	io.openems.edge.controller.symmetric.randompower;version=snapshot,\
 	io.openems.edge.controller.symmetric.timeslotpeakshaving;version=snapshot,\
-	io.openems.edge.cooler.analogue;version=snapshot,\
 	io.openems.edge.core;version=snapshot,\
 	io.openems.edge.ess.adstec.storaxe;version=snapshot,\
 	io.openems.edge.ess.api;version=snapshot,\
@@ -360,13 +358,13 @@
 	io.openems.edge.pvinverter.solarlog;version=snapshot,\
 	io.openems.edge.pvinverter.sunspec;version=snapshot,\
 	io.openems.edge.relay.api;version=snapshot,\
-	io.openems.edge.remote.rest.device;version=snapshot,\
 	io.openems.edge.scheduler.allalphabetically;version=snapshot,\
 	io.openems.edge.scheduler.api;version=snapshot,\
 	io.openems.edge.scheduler.daily;version=snapshot,\
 	io.openems.edge.scheduler.fixedorder;version=snapshot,\
 	io.openems.edge.simulator;version=snapshot,\
 	io.openems.edge.solaredge;version=snapshot,\
+	io.openems.edge.utility;version=snapshot,\
 	io.openems.edge.tesla.powerwall2;version=snapshot,\
 	io.openems.edge.thermometer.api;version=snapshot,\
 	io.openems.edge.thermometer.threshold;version=snapshot,\

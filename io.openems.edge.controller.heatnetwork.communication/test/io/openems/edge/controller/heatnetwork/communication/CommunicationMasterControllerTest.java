@@ -1,6 +1,8 @@
 package io.openems.edge.controller.heatnetwork.communication;
 
 import io.openems.common.types.ChannelAddress;
+import io.openems.edge.bridge.rest.api.DummyRestDevice;
+import io.openems.edge.bridge.rest.api.RestRemoteDevice;
 import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.common.test.AbstractComponentTest.TestCase;
 import io.openems.edge.common.test.DummyComponentManager;
@@ -16,8 +18,6 @@ import io.openems.edge.controller.heatnetwork.hydraulic.lineheater.test.DummyHyd
 import io.openems.edge.controller.test.ControllerTest;
 import io.openems.edge.heatsystem.components.PumpType;
 import io.openems.edge.heatsystem.components.test.DummyPump;
-import io.openems.edge.remote.rest.device.api.DummyRestDevice;
-import io.openems.edge.remote.rest.device.api.RestRemoteDevice;
 import io.openems.edge.thermometer.api.test.DummyVirtualThermometer;
 import io.openems.edge.timer.api.DummyTimer;
 import io.openems.edge.timer.api.TimerType;

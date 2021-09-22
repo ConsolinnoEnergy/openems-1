@@ -1,8 +1,9 @@
 package io.openems.edge.controller.heatnetwork.communication.api;
 
 
+import io.openems.edge.bridge.rest.api.RestRemoteDevice;
 import io.openems.edge.controller.heatnetwork.communication.request.api.RequestType;
-import io.openems.edge.remote.rest.device.api.RestRemoteDevice;
+
 
 /**
  * The RestRequest Interface. It contains Methods to get the Request and the Callback as well as the RequestType.

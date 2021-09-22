@@ -11,7 +11,7 @@ Bundle-Version: 1.0.0.${tstamp}
 	io.openems.edge.controller.heatnetwork.hydraulic.lineheater,\
 	io.openems.edge.controller.hydrauliccomponent,\
 	io.openems.edge.heatsystem.components,\
-	io.openems.edge.remote.rest.device,\
+	io.openems.edge.bridge.rest,\
 	io.openems.edge.thermometer.api,\
 	io.openems.edge.timer.api,\
 	io.openems.edge.exceptionalstate.api,\
