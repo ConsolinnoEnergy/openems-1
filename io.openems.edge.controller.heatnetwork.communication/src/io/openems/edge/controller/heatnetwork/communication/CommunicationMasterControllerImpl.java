@@ -1,6 +1,7 @@
 package io.openems.edge.controller.heatnetwork.communication;
 
 import io.openems.common.exceptions.OpenemsError;
+import io.openems.edge.bridge.rest.api.RestRemoteDevice;
 import io.openems.edge.common.component.AbstractOpenemsComponent;
 import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
@@ -27,7 +28,6 @@ import io.openems.edge.exceptionalstate.api.ExceptionalState;
 import io.openems.edge.exceptionalstate.api.ExceptionalStateHandler;
 import io.openems.edge.exceptionalstate.api.ExceptionalStateHandlerImpl;
 import io.openems.edge.heatsystem.components.HydraulicComponent;
-import io.openems.edge.remote.rest.device.api.RestRemoteDevice;
 import io.openems.edge.timer.api.TimerHandler;
 import io.openems.edge.timer.api.TimerHandlerImpl;
 import org.osgi.service.cm.Configuration;

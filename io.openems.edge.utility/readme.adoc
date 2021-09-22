@@ -1,0 +1,9 @@
+= Utility
+
+This Bundle provides Utility classes.
+
+
+== Classes
+- MinMaxToChannel
+
+

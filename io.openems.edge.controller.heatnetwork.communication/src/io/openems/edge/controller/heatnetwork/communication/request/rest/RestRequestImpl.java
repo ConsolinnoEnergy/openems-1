@@ -1,9 +1,9 @@
 package io.openems.edge.controller.heatnetwork.communication.request.rest;
 
 
+import io.openems.edge.bridge.rest.api.RestRemoteDevice;
 import io.openems.edge.controller.heatnetwork.communication.api.RestRequest;
 import io.openems.edge.controller.heatnetwork.communication.request.api.RequestType;
-import io.openems.edge.remote.rest.device.api.RestRemoteDevice;
 import org.osgi.service.cm.ConfigurationException;
 
 /**

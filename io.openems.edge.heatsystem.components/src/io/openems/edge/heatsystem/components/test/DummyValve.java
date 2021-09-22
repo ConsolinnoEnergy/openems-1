@@ -2,7 +2,6 @@ package io.openems.edge.heatsystem.components.test;
 
 import io.openems.edge.common.component.AbstractOpenemsComponent;
 import io.openems.edge.common.component.OpenemsComponent;
-import io.openems.edge.heatsystem.components.HydraulicChannel;
 import io.openems.edge.heatsystem.components.HydraulicComponent;
 import io.openems.edge.relay.api.Relay;
 import org.slf4j.Logger;
@@ -25,7 +24,7 @@ public class DummyValve extends AbstractOpenemsComponent implements HydraulicCom
 
 
     public DummyValve(Relay valveOpen, Relay valveClose, String id, double valveTimeInSeconds) {
-        super(OpenemsComponent.ChannelId.values(), HydraulicChannel.ChannelId.values());
+        super(OpenemsComponent.ChannelId.values(), HydraulicComponent.ChannelId.values());
         super.activate(null, id, "", true);
         this.opens = valveOpen;
         this.closing = valveClose;

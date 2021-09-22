@@ -3,6 +3,7 @@ package io.openems.edge.heatsystem.components.test;
 import io.openems.edge.common.component.AbstractOpenemsComponent;
 import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.common.event.EdgeEventConstants;
+import io.openems.edge.io.api.AnalogInputOutput;
 import io.openems.edge.io.api.Pwm;
 import io.openems.edge.relay.api.Relay;
 import org.osgi.service.component.ComponentContext;
@@ -20,7 +21,7 @@ import org.slf4j.LoggerFactory;
 import java.util.Optional;
 
 /**
- * This Component allows a Valve  to be configured and controlled.
+ * This Component allows a Valve or Pump to be configured and controlled.
  * It either works with 2 Relays or 2 ChannelAddresses.
  * It updates it's opening/closing state and shows up the percentage value of itself.
  */
@@ -31,7 +32,7 @@ import java.util.Optional;
         property = {
                 EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE}
 )
-public class HeatSystemComponentTester extends AbstractOpenemsComponent implements OpenemsComponent, Relay, Pwm, EventHandler {
+public class HeatSystemComponentTester extends AbstractOpenemsComponent implements OpenemsComponent, Relay, Pwm, AnalogInputOutput, EventHandler {
 
     private final Logger log = LoggerFactory.getLogger(HeatSystemComponentTester.class);
 
@@ -63,6 +64,7 @@ public class HeatSystemComponentTester extends AbstractOpenemsComponent implemen
         if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE)) {
             this.getRelaysWriteChannel().getNextWriteValueAndReset().ifPresent(bool -> this.getRelaysReadChannel().setNextValue(bool));
             this.getWritePwmPowerLevelChannel().getNextWriteValueAndReset().ifPresent(entry -> this.getReadPwmPowerLevelChannel().setNextValue(entry));
+            this.getWriteChannel().getNextWriteValueAndReset().ifPresent(entry -> this.getPercentChannel().setNextValue(entry));
         }
     }
 }

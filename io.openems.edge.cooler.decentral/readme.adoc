@@ -1,7 +1,0 @@
-= Decentralized Cooler
-
-This is the Decentralized Cooler.
-It works equivalent to the Decentralized Heater.
-It cools down a Storage or anything else by starting a HydraulicComponent.
-The Decentralized Cooler asks for more cooling if on activation/while running,
-the Temperature is above a certain SetPoint.

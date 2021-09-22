@@ -11,7 +11,6 @@ import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.common.event.EdgeEventConstants;
 import io.openems.edge.exceptionalstate.api.ExceptionalState;
 import io.openems.edge.heatsystem.components.ConfigurationType;
-import io.openems.edge.heatsystem.components.HydraulicChannel;
 import io.openems.edge.heatsystem.components.HydraulicComponent;
 import io.openems.edge.io.api.AnalogInputOutput;
 import io.openems.edge.io.api.Pwm;
@@ -67,7 +66,7 @@ public class ValveOneOutput extends AbstractValve implements OpenemsComponent, H
 
     public ValveOneOutput() {
         super(OpenemsComponent.ChannelId.values(),
-                HydraulicChannel.ChannelId.values(),
+                HydraulicComponent.ChannelId.values(),
                 ExceptionalState.ChannelId.values());
     }
 
@@ -128,6 +127,7 @@ public class ValveOneOutput extends AbstractValve implements OpenemsComponent, H
                 break;
         }
         this.secondsPerPercentage = ((double) config.timeToOpenValve() / 100.d);
+        super.percentPossiblePerCycle = super.cycle.getCycleTime() / (this.secondsPerPercentage * MILLI_SECONDS_TO_SECONDS);
     }
 
     @Modified

@@ -15,7 +15,7 @@ Bundle-Description: \
 	io.openems.edge.heater.api,\
 	io.openems.edge.heater.decentral,\
 	io.openems.edge.controller.heatnetwork.multipleheatercombined,\
-	io.openems.edge.remote.rest.device,\
+	io.openems.edge.bridge.rest,\
 	io.openems.edge.controller.api,\
 	io.openems.edge.controller.heatnetwork.hydraulic.lineheater,\
 	joda-time;version=2.8.10,\
