@@ -184,13 +184,13 @@
 	bnd.identity;id='io.openems.edge.scheduler.fixedorder',\
 	bnd.identity;id='io.openems.edge.simulator',\
 	bnd.identity;id='io.openems.edge.solaredge',\
-	bnd.identity;id='io.openems.edge.utility',\
 	bnd.identity;id='io.openems.edge.tesla.powerwall2',\
 	bnd.identity;id='io.openems.edge.thermometer.threshold',\
 	bnd.identity;id='io.openems.edge.thermometer.virtual',\
 	bnd.identity;id='io.openems.edge.timedata.influxdb',\
 	bnd.identity;id='io.openems.edge.timedata.rrd4j',\
 	bnd.identity;id='io.openems.edge.timer.api',\
+	bnd.identity;id='io.openems.edge.utility',\
 
 
 -runbundles: \
@@ -362,7 +362,6 @@
 	io.openems.edge.scheduler.fixedorder;version=snapshot,\
 	io.openems.edge.simulator;version=snapshot,\
 	io.openems.edge.solaredge;version=snapshot,\
-	io.openems.edge.utility;version=snapshot,\
 	io.openems.edge.tesla.powerwall2;version=snapshot,\
 	io.openems.edge.thermometer.api;version=snapshot,\
 	io.openems.edge.thermometer.threshold;version=snapshot,\
@@ -371,6 +370,7 @@
 	io.openems.edge.timedata.influxdb;version=snapshot,\
 	io.openems.edge.timedata.rrd4j;version=snapshot,\
 	io.openems.edge.timer.api;version=snapshot,\
+	io.openems.edge.utility;version=snapshot,\
 	io.openems.shared.influxdb;version=snapshot,\
 	io.openems.wrapper.eu.chargetime.ocpp;version=snapshot,\
 	io.openems.wrapper.fastexcel;version=snapshot,\
