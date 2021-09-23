@@ -1,4 +1,4 @@
-package io.openems.edge.condition.applier;
+package io.openems.edge.utility.conditionapplier;
 
 /**
  * The SupportedOperation, like the SupportedDataType, will be used in future versions, when the Condition Applier work will be

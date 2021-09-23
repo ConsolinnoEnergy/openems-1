@@ -1,4 +1,4 @@
-package io.openems.edge.condition.applier;
+package io.openems.edge.utility.conditionapplier;
 
 /**
  * The SupportedData will be used in future versions. When the ConditionApplier is in further development.

@@ -1,4 +1,4 @@
-package io.openems.edge.condition.applier;
+package io.openems.edge.utility.conditionapplier;
 
 import io.openems.common.exceptions.OpenemsError;
 import io.openems.common.types.ChannelAddress;
@@ -50,9 +50,9 @@ import org.slf4j.LoggerFactory;
         configurationPolicy = ConfigurationPolicy.REQUIRE,
         property = EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS)
 
-public class ConditionApplier extends AbstractOpenemsComponent implements OpenemsComponent, EventHandler {
+public class ConditionApplierImpl extends AbstractOpenemsComponent implements OpenemsComponent, EventHandler {
 
-    private final Logger log = LoggerFactory.getLogger(ConditionApplier.class);
+    private final Logger log = LoggerFactory.getLogger(ConditionApplierImpl.class);
 
     @Reference
     ComponentManager cpm;
@@ -63,8 +63,8 @@ public class ConditionApplier extends AbstractOpenemsComponent implements Openem
     private int trueConditionAnswer;
     private int falseConditionAnswer;
 
-    public ConditionApplier() {
-        super(OpenemsComponent.ChannelId.values());
+    public ConditionApplierImpl() {
+        super(ChannelId.values());
     }
 
     @Activate

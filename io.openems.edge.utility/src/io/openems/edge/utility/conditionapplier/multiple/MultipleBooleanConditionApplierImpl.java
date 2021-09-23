@@ -1,4 +1,4 @@
-package io.openems.edge.condition.applier.multiple;
+package io.openems.edge.utility.conditionapplier.multiple;
 
 import io.openems.common.exceptions.OpenemsError;
 import io.openems.common.types.ChannelAddress;
@@ -9,10 +9,9 @@ import io.openems.edge.common.component.AbstractOpenemsComponent;
 import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.common.event.EdgeEventConstants;
-import io.openems.edge.condition.applier.api.ConditionApplier;
+import io.openems.edge.utility.api.ConditionApplier;
 import org.osgi.service.cm.Configuration;
 import org.osgi.service.cm.ConfigurationAdmin;
-import org.osgi.service.cm.ConfigurationException;
 import org.osgi.service.component.ComponentContext;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;

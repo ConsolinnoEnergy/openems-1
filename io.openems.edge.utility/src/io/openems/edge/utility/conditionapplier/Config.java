@@ -1,4 +1,4 @@
-package io.openems.edge.condition.applier;
+package io.openems.edge.utility.conditionapplier;
 
 import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
