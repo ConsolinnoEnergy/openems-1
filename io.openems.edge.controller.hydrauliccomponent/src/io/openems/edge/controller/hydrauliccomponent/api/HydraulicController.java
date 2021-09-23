@@ -12,44 +12,91 @@ import io.openems.edge.common.channel.StringWriteChannel;
 import io.openems.edge.common.channel.WriteChannel;
 import io.openems.edge.common.component.OpenemsComponent;
 
+/**
+ * The HydraulicController Nature. It Allows to control {@link io.openems.edge.heatsystem.components.HydraulicComponent}s with ease.
+ * At the moment there are 2 Main Controller. A {@link PidHydraulicController} and a
+ * {@link io.openems.edge.controller.hydrauliccomponent.controller.HydraulicPositionControllerImpl}.
+ * The HydraulicPosition Controller gets a Key:Value map where a Temperature is mapped to a position.
+ * The PID controller, receives a (changeable) SetPointTemperature and an EnableSignal. It automatically sets the HydraulicComponent.
+ */
 public interface HydraulicController extends OpenemsComponent {
 
 
     enum ChannelId implements io.openems.edge.common.channel.ChannelId {
         /**
          * This channel is to Request a Position <-- Only necessary if you want to control Valve by position.
+         * <ul>
+         * <li>Interface: HydraulicController
+         * <li>Type: Integer
+         * </ul>
          */
         REQUEST_POSITION(Doc.of(OpenemsType.INTEGER).accessMode(AccessMode.READ_WRITE).onInit(
                 channel -> ((IntegerWriteChannel) channel).onSetNextWrite(channel::setNextValue)
         )),
         /**
          * Current SetPoint Position.
+         * <ul>
+         * <li>Interface: HydraulicController
+         * <li>Type: Integer
+         * </ul>
          */
         SET_POINT_POSITION(Doc.of(OpenemsType.INTEGER)),
         /**
-         * Check if Valve forced Open.
+         * Check if HydraulicComponent forced to
+         * {@link io.openems.edge.heatsystem.components.HydraulicComponent#DEFAULT_MAX_POWER_VALUE}.
+         *
+         * <ul>
+         * <li>Interface: HydraulicController
+         * <li>Type: Boolean
+         * </ul>
          */
         IS_FORCED_OPEN(Doc.of(OpenemsType.BOOLEAN)),
         /**
-         * Check if Valve is forced Close.
+         * Check if HydraulicComponent is forced to
+         * {@link io.openems.edge.heatsystem.components.HydraulicComponent#DEFAULT_MIN_POWER_VALUE}.
+         *
+         * <ul>
+         * <li>Interface: HydraulicController
+         * <li>Type: Boolean
+         * </ul>
          */
         IS_FORCED_CLOSE(Doc.of(OpenemsType.BOOLEAN)),
         /**
          * Enable/Disable ForceControl --> Force Open/Close.
+         * <ul>
+         * <li>Interface: HydraulicController
+         * <li>Type: Boolean
+         * </ul>
          */
         FORCE_CONTROL_ALLOWED(Doc.of(OpenemsType.BOOLEAN).accessMode(AccessMode.READ_WRITE).onInit(
                 channel -> ((BooleanWriteChannel) channel).onSetNextWrite(channel::setNextValue)
         )),
         /**
          * ControlType --> Position (Percent Value) or Temperature see "ControlType" for possible ControlTypes.
+         * <ul>
+         * <li>Interface: HydraulicController
+         * <li>Type: Integer
+         * </ul>
          */
         CONTROL_TYPE(Doc.of(OpenemsType.STRING).accessMode(AccessMode.READ_WRITE).onInit(
                 channel -> ((StringWriteChannel) channel).onSetNextWrite(channel::setNextValue)
         )),
         /**
          * "Enable" The Controller --> Run Logic.
+         * <ul>
+         * <li>Interface: HydraulicController
+         * <li>Type: Boolean
+         * </ul>
          */
         ENABLE_SIGNAL(Doc.of(OpenemsType.BOOLEAN).accessMode(AccessMode.READ_WRITE)),
+
+        /**
+         * Ignore Enable Signal and run as long as this component is enabled.
+         * <ul>
+         * <li>Interface: HydraulicController
+         * <li>Type: Boolean
+         * </ul>
+         */
         AUTO_RUN(Doc.of(OpenemsType.BOOLEAN).accessMode(AccessMode.READ_WRITE).onInit(
                 channel -> ((BooleanWriteChannel) channel).onSetNextWrite(channel::setNextValue)
         ));
@@ -212,7 +259,7 @@ public interface HydraulicController extends OpenemsComponent {
     }
 
 
-    default boolean isAutorun(){
+    default boolean isAutorun() {
         Boolean enabledSignal = (Boolean) this.getCurrentChannelValue(this.autoRunChannel());
         if (enabledSignal == null) {
             enabledSignal = (Boolean) this.getNextChannelValue(this.autoRunChannel());

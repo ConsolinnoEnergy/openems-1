@@ -6,7 +6,7 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 import org.osgi.service.metatype.annotations.Option;
 
 @ObjectClassDefinition(name = "Controller Hydraulic Position", description = "Static Valve Controller: Has a Valve and sets by Temperature:Value Mapping")
-@interface Config {
+@interface ConfigHydraulicStaticPosition {
     String service_pid();
 
     @AttributeDefinition(name = "Id", description = "Unique Id for this Controller.")
@@ -20,7 +20,7 @@ import org.osgi.service.metatype.annotations.Option;
 
     @AttributeDefinition(name = "temperatureToPosition", description = "Map in each entry the Temperature to the Position, "
             + "e.g. at 700dC set Valve to 20%, at 500dc to 70% etc")
-    String[] temperaturePositionMap() default {"700:20"};
+    String[] temperaturePositionMap() default {"700:100", "500:50"};
 
     @AttributeDefinition(name = "Tolerance", description = "The amount of leeway the component is allowed to have so its still considered to be at the correct position.")
     double tolerance() default 1.5;

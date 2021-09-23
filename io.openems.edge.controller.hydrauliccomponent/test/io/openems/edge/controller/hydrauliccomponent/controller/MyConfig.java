@@ -6,7 +6,7 @@ import io.openems.edge.controller.hydrauliccomponent.api.ControlType;
 
 @SuppressWarnings("all")
 
-public class MyConfig extends AbstractComponentConfig implements Config {
+public class MyConfig extends AbstractComponentConfig implements ConfigHydraulicStaticPosition {
 
 
     protected static class Builder {
@@ -142,7 +142,7 @@ public class MyConfig extends AbstractComponentConfig implements Config {
     private final Builder builder;
 
     private MyConfig(Builder builder) {
-        super(Config.class, builder.id);
+        super(ConfigHydraulicStaticPosition.class, builder.id);
         this.builder = builder;
     }
 

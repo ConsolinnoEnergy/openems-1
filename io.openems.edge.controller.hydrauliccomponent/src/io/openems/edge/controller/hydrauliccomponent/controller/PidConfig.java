@@ -52,7 +52,7 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
     boolean morePercentEqualsCooling() default false;
 
-    //boolean debugMode() default false;
+    boolean autoRun() default false;
 
     boolean enabled() default true;
 

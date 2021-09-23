@@ -478,9 +478,10 @@ public interface HydraulicComponent extends OpenemsComponent {
     boolean changeByPercentage(double percentage);
 
     /**
-     * Check if Valve has an active Exceptional State
+     * Check for containing only Numbers.
      *
-     * @return
+     * @param channelValue the channelValue
+     * @return true if the channelValue has only numbers.
      */
     default boolean containsOnlyNumbers(String channelValue) {
         String regex = "[-+]?([0-9]*[.][0-9]+|[0-9]+)";
@@ -512,6 +513,7 @@ public interface HydraulicComponent extends OpenemsComponent {
 
     /**
      * Checks if the Valve is Changing atm.
+     *
      * @return true if the valve is changing (opening/closing)
      */
     boolean isChanging();
