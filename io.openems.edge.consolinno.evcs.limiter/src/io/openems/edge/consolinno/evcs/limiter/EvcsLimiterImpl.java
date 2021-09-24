@@ -2718,8 +2718,9 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
      * Updates Power Limit based on the Connected Meter.
      */
     private void updatePowerLimit() {
+
         int limit = this.initialPowerLimit;
-        if (this.powerL1 != null && this.powerL2 != null && this.powerL3 != null && this.useMeter) {
+        if (this.powerL1 != null && this.powerL2 != null && this.powerL3 != null) {
             limit = this.initialPowerLimit - this.meter.getActivePower().orElse(0) + ((this.powerL1 + this.powerL2 + this.powerL3) * GRID_VOLTAGE);
         }
         if (limit <= 0) {
