@@ -41,7 +41,7 @@ import org.slf4j.LoggerFactory;
  * Additionally you can use the ExceptionalState to apply an Output.
  */
 @Designate(ocd = Config.class, factory = true)
-@Component(name = "HeatsystemComponent.Pump",
+@Component(name = "HeatsystemComponent.Hydraulic.Pump",
         property = {
                 EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE,
                 EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS
@@ -89,21 +89,33 @@ public class PumpImpl extends AbstractOpenemsComponent implements OpenemsCompone
     }
 
     @Activate
-    void activate(ComponentContext context, Config config) throws OpenemsError.OpenemsNamedException, ConfigurationException {
+    void activate(ComponentContext context, Config config) {
         super.activate(context, config.id(), config.alias(), config.enabled());
         this.config = config;
         try {
             this.activateOrModifiedRoutine(config);
             this.configSuccess = true;
+            this.deactivateDevices();
         } catch (OpenemsError.OpenemsNamedException | ConfigurationException e) {
             this.configSuccess = false;
         }
+        this.getPowerLevelChannel().setNextValue(0);
+        this.getPowerLevelChannel().nextProcessImage();
         this.getIsBusyChannel().setNextValue(false);
-
         if (config.useDefault()) {
-            this.getPowerLevelChannel().setNextValue(0);
             this.setPowerLevel(config.defaultPowerLevel());
         }
+    }
+
+    @Modified
+    void modified(ComponentContext context, Config config) throws OpenemsError.OpenemsNamedException, ConfigurationException {
+        super.modified(context, config.id(), config.alias(), config.enabled());
+        this.config = config;
+        this.isPwmOrAio = false;
+        this.isRelay = false;
+        this.pwm = null;
+        this.relay = null;
+        this.activateOrModifiedRoutine(config);
     }
 
     /**
@@ -237,17 +249,6 @@ public class PumpImpl extends AbstractOpenemsComponent implements OpenemsCompone
                 }
                 break;
         }
-    }
-
-    @Modified
-    void modified(ComponentContext context, Config config) throws OpenemsError.OpenemsNamedException, ConfigurationException {
-        super.modified(context, config.id(), config.alias(), config.enabled());
-        this.config = config;
-        this.isPwmOrAio = false;
-        this.isRelay = false;
-        this.pwm = null;
-        this.relay = null;
-        this.activateOrModifiedRoutine(config);
     }
 
 

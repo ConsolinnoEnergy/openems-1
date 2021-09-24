@@ -23,6 +23,7 @@ import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.ConfigurationPolicy;
 import org.osgi.service.component.annotations.Deactivate;
+import org.osgi.service.component.annotations.Modified;
 import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
@@ -30,9 +31,16 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Optional;
 
-
+/**
+ * The Hydraulic Line Heater Implementation. It allows a Line to heat up fast and can regulate a MinMax Value,
+ * when: either Decentralized Heater has a request
+ * OR if externally an EnableSignal was set.
+ * After that, it either Activates One Channel with a true/false value, a Valve, Sets the MinMax amount, or you can set up
+ * 4 Different channel for reading and writing.
+ * Depends on the Configuration of the {@link LineHeaterType}.
+ */
 @Designate(ocd = Config.class, factory = true)
-@Component(name = "HydraulicLineHeaterController",
+@Component(name = "Controller.Heatnetwork.LineHeater",
         configurationPolicy = ConfigurationPolicy.REQUIRE,
         immediate = true)
 public class HydraulicLineHeaterController extends AbstractOpenemsComponent implements OpenemsComponent, Controller, HydraulicLineHeater {
@@ -64,6 +72,10 @@ public class HydraulicLineHeaterController extends AbstractOpenemsComponent impl
     private LineHeater lineHeater;
     private Boolean onlyMaxMin;
     private boolean useMinMax;
+    private boolean wasActiveBefore;
+    private DecentralizedReactionType reactionType;
+    private boolean configSuccess;
+    Config config;
     //NOTE: If more Variation comes --> create extra "LineHeater"Classes in this controller etc
 
 
@@ -76,9 +88,34 @@ public class HydraulicLineHeaterController extends AbstractOpenemsComponent impl
     }
 
     @Activate
-    void activate(ComponentContext context, Config config) throws Exception {
-
+    void activate(ComponentContext context, Config config) {
+        this.config = config;
         super.activate(context, config.id(), config.alias(), config.enabled());
+        try {
+            this.activateOrModifiedRoutine(config);
+        } catch (Exception e) {
+            this.log.warn("Couldn't apply config. Try again later.");
+        }
+    }
+
+    @Modified
+    void modified(ComponentContext context, Config config) {
+        super.modified(context, config.id(), config.alias(), config.enabled());
+        this.configSuccess = false;
+        try {
+            this.activateOrModifiedRoutine(config);
+        } catch (Exception e) {
+            this.log.warn("Couldn't apply config. Try again later");
+        }
+    }
+
+    /**
+     * Sets up the configuration for this controller. Called on activation and modification.
+     *
+     * @param config the config of this component
+     * @throws Exception if either the Components cannot be found or the Configuration is wrong.
+     */
+    private void activateOrModifiedRoutine(Config config) throws Exception {
         this.tempSensorReference = (Thermometer) this.allocateComponent(config.tempSensorReference(), ComponentType.THERMOMETER);
         this.useMinMax = config.useMinMax();
         this.createSpecificLineHeater(config);
@@ -86,17 +123,22 @@ public class HydraulicLineHeaterController extends AbstractOpenemsComponent impl
         if (config.useDecentralHeater()) {
             this.decentralHeaterOptional = (DecentralizedHeater) this.allocateComponent(config.decentralheaterReference(),
                     ComponentType.DECENTRAL_HEATER);
+            this.reactionType = config.reactionType();
         }
         this.temperatureDefault = config.temperatureDefault();
         this.shouldFallback = config.shouldFallback();
         this.minuteFallbackStart = config.minuteFallbackStart() % FULL_MINUTE;
         this.minuteFallbackStop = config.minuteFallbackStop() % FULL_MINUTE;
-        this.maxValue().setNextWriteValueFromObject(config.maxValveValue());
-        this.minValue().setNextWriteValueFromObject(config.minValveValue());
+        this.maxValueChannel().setNextWriteValueFromObject(config.maxValveValue());
+        this.minValueChannel().setNextWriteValueFromObject(config.minValveValue());
         this.onlyMaxMin = config.maxMinOnly();
+        if (this.timerHandler != null) {
+            this.timerHandler.removeComponent();
+        }
         this.timerHandler = new TimerHandlerImpl(super.id(), this.cpm);
         this.timerHandler.addOneIdentifier(IDENTIFIER_FALLBACK, config.timerIdFallback(), config.timeoutMaxRemote());
         this.timerHandler.addOneIdentifier(IDENTIFIER_CYCLE_RESTART, config.timerIdRestartCycle(), config.timeoutRestartCycle());
+        this.configSuccess = true;
     }
 
     /**
@@ -107,7 +149,7 @@ public class HydraulicLineHeaterController extends AbstractOpenemsComponent impl
      */
     private void createSpecificLineHeater(Config config) throws Exception {
 
-        switch (config.valveOrChannel()) {
+        switch (config.lineHeaterType()) {
             case VALVE:
                 this.createValveLineHeater(config.valueToWriteIsBoolean(), config.valveBypass());
                 break;
@@ -222,7 +264,7 @@ public class HydraulicLineHeaterController extends AbstractOpenemsComponent impl
     }
 
     /**
-     * Allocates a Thermometer for Reference
+     * Allocates a Thermometer for Reference.
      *
      * @param device the deviceId
      * @return the component
@@ -240,45 +282,68 @@ public class HydraulicLineHeaterController extends AbstractOpenemsComponent impl
 
 
     @Override
-    public void run() throws OpenemsError.OpenemsNamedException {
-        int tempReference = this.tempSensorReference.getTemperature().orElse(DEFAULT_TEMPERATURE);
-        DateTime now = new DateTime();
-        boolean decentralHeatRequestPresent = this.decentralHeaterOptional != null && this.decentralHeaterOptional.getNeedHeatChannel().value().orElse(false);
-        boolean decentralHeatRequest = this.getHeatRequestHeater();
-        Optional<Boolean> signal = this.enableSignal().getNextWriteValueAndReset();
-        boolean missingEnableSignal = signal.isPresent() == false;
-        boolean enableSignal = signal.orElse(false);
-
-        if (missingEnableSignal) {
-            if (this.shouldFallback && this.timerHandler.checkTimeIsUp(IDENTIFIER_FALLBACK)) {
-                this.isFallback = true;
-                this.isFallback().setNextValue(true);
+    public void run() {
+        if (this.configSuccess) {
+            int tempReference = this.tempSensorReference.getTemperature().orElse(DEFAULT_TEMPERATURE);
+            DateTime now = new DateTime();
+            boolean decentralHeatRequestPresent = false;
+            if (this.decentralHeaterOptional != null) {
+                switch (this.reactionType) {
+                    case NEED_HEAT:
+                        decentralHeatRequestPresent = this.decentralHeaterOptional.getNeedHeatChannel().value().isDefined();
+                        break;
+                    case NEED_MORE_HEAT:
+                        decentralHeatRequestPresent = this.decentralHeaterOptional.getNeedMoreHeatChannel().value().isDefined();
+                        break;
+                }
             }
-        } else {
-            this.timerHandler.resetTimer(IDENTIFIER_FALLBACK);
-            this.isFallback = false;
-            this.isFallback().setNextValue(false);
-        }
+            boolean decentralizedHeatRequest = this.getRequestDecentralizedHeater();
+            Optional<Boolean> signal = this.enableSignalChannel().getNextWriteValueAndReset();
+            boolean missingEnableSignal = signal.isPresent() == false;
+            boolean enableSignal = signal.orElse(false);
+            this.enableSignalChannel().setNextValue(enableSignal);
 
-        if (this.isFallback) {
-            if (this.isMinuteFallbackStart(now.getMinuteOfHour())) {
-                this.startHeating();
+            if (missingEnableSignal) {
+                if (this.shouldFallback && this.timerHandler.checkTimeIsUp(IDENTIFIER_FALLBACK)) {
+                    this.isFallback = true;
+                    this.isFallbackChannel().setNextValue(true);
+                }
             } else {
-                this.stopHeating(now);
+                this.timerHandler.resetTimer(IDENTIFIER_FALLBACK);
+                this.isFallback = false;
+                this.isFallbackChannel().setNextValue(false);
             }
-        } else if (decentralHeatRequestPresent || missingEnableSignal == false) {
-            if (decentralHeatRequest || enableSignal) {
-                if (tempReference < this.temperatureDefault) {
-                    if (this.lineHeater.getLifeCycle() == null || this.timerHandler.checkTimeIsUp(IDENTIFIER_CYCLE_RESTART)) {
-                        this.startHeating();
+
+            if (this.isFallback) {
+                if (this.isMinuteFallbackStart(now.getMinuteOfHour())) {
+                    this.startHeating();
+                } else {
+                    this.stopHeating(now);
+                }
+            } else if (decentralHeatRequestPresent || missingEnableSignal == false) {
+                if (decentralizedHeatRequest || enableSignal) {
+                    if (tempReference < this.temperatureDefault) {
+                        if (this.lineHeater.getLifeCycle() == null || (this.timerHandler.checkTimeIsUp(IDENTIFIER_CYCLE_RESTART))
+                                || this.wasActiveBefore) {
+                            this.startHeating();
+                            this.timerHandler.resetTimer(IDENTIFIER_CYCLE_RESTART);
+                        }
+                    } else {
+                        //temperature Reached
+                        this.stopHeating(now);
                     }
                 } else {
-                    //temperature Reached
+                    //heat enabled is False
                     this.stopHeating(now);
                 }
             } else {
-                //heat enabled is False
                 this.stopHeating(now);
+            }
+        } else {
+            try {
+                this.activateOrModifiedRoutine(this.config);
+            } catch (Exception e) {
+                this.log.warn("Couldn't apply Config. Try again later or check your configuration!");
             }
         }
     }
@@ -290,17 +355,19 @@ public class HydraulicLineHeaterController extends AbstractOpenemsComponent impl
     private void startHeating() {
         try {
             if (this.useMinMax) {
-                this.lineHeater.setMaxAndMin(maxValue().value().orElse(100.d), minValue().value().orElse(0.d));
+                this.lineHeater.setMaxAndMin(maxValueChannel().value().orElse(100.d), minValueChannel().value().orElse(0.d));
             }
-            if (onlyMaxMin == false) {
+            if (this.onlyMaxMin == false) {
                 if (this.lineHeater.startHeating()) {
-                    this.isRunning().setNextValue(true);
+                    this.isRunningChannel().setNextValue(true);
                 }
             } else {
                 this.lineHeater.onlySetMaxMin();
             }
+            this.wasActiveBefore = true;
         } catch (OpenemsError.OpenemsNamedException e) {
             this.log.error("Error while trying to heat!");
+            this.wasActiveBefore = false;
         }
     }
 
@@ -313,24 +380,46 @@ public class HydraulicLineHeaterController extends AbstractOpenemsComponent impl
         try {
             if (onlyMaxMin == false) {
                 if (this.lineHeater.stopHeating(lifecycle)) {
-                    this.isRunning().setNextValue(false);
-                    this.timerHandler.resetTimer(IDENTIFIER_CYCLE_RESTART);
+                    this.isRunningChannel().setNextValue(false);
                 }
             }
+            this.wasActiveBefore = false;
         } catch (OpenemsError.OpenemsNamedException e) {
             this.log.error("Error while trying to stop Heating");
         }
     }
 
-    private boolean getHeatRequestHeater() {
+    /**
+     * Returns a request of the decentralized Heater. If the optional decentralized Heater is configured.
+     *
+     * @return the request or else false.
+     */
+    private boolean getRequestDecentralizedHeater() {
         if (this.decentralHeaterOptional != null) {
-            return this.decentralHeaterOptional.getNeedHeat();
+            switch (this.reactionType) {
+
+                case NEED_HEAT:
+                    return this.decentralHeaterOptional.getNeedHeat();
+                case NEED_MORE_HEAT:
+                    return this.decentralHeaterOptional.getNeedMoreHeat();
+                default:
+                    return false;
+            }
         } else {
             return false;
         }
     }
 
-
+    /**
+     * <p>
+     * Check if {@link Config#shouldFallback} should be set to true.
+     * If this lineHeater activates it's fallback lineHeating.
+     * -> e.g. Heat up Line for 15 min -> start at 00 and stop at 15.
+     * </p>
+     *
+     * @param minuteOfHour current Minute of the hour.
+     * @return true if HydraulicLineHeater should start fallback heating.
+     */
     private boolean isMinuteFallbackStart(int minuteOfHour) {
         boolean isStartAfterStop = this.minuteFallbackStart > this.minuteFallbackStop;
         if (isStartAfterStop) {

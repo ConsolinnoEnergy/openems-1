@@ -140,7 +140,7 @@ public class SimulationCommunicationMasterImpl extends AbstractOpenemsComponent 
         }
         if (this.useHydraulicLineHeater) {
             boolean enableSignal = atLeastOneRequest.get() && random.nextInt(100) < 90;
-            this.hydraulicLineHeater.enableSignal().setNextWriteValue(enableSignal);
+            this.hydraulicLineHeater.enableSignalChannel().setNextWriteValue(enableSignal);
         }
     }
 

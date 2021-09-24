@@ -7,8 +7,9 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
 
 @ObjectClassDefinition(
-        name = "Hydraulic Pump Relay and or One Output",
-        description = "A Pump mainly used for the Passing Station and Controller"
+        name = "Hydraulic Pump",
+        description = "A HydraulicComponent. Allows an analogue Pump to run. With a Relay and or analogueOutputs, either"
+                + "with channel Addresses or Components (AIO and Pwm)"
 )
 @interface Config {
 
@@ -27,7 +28,7 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     @AttributeDefinition(name = "Pump Type", description = "What Kind of Pump is it?")
     PumpType pump_Type() default PumpType.RELAY;
 
-    @AttributeDefinition(name =  "BooleanChannel or Id of (Relay) Device", description = "Either the BooleanChannel or the Relay Device.")
+    @AttributeDefinition(name = "BooleanChannel or Id of (Relay) Device", description = "Either the BooleanChannel or the Relay Device.")
     String pump_Relay() default "Relay0/WriteOnOff";
 
     @AttributeDefinition(name = "PWM Id/ PwmChannel", description = "Either the WriteChannel or the Pwm Device")

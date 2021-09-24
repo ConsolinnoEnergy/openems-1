@@ -6,7 +6,7 @@ import org.joda.time.DateTime;
 
 public class ValveLineHeater extends AbstractLineHeater {
 
-    private HydraulicComponent valve;
+    private final HydraulicComponent valve;
     private Double max;
     private Double min;
 
@@ -21,8 +21,8 @@ public class ValveLineHeater extends AbstractLineHeater {
 
         if (this.isRunning == false || this.valve.powerLevelReached() == false) {
             if (super.useMinMax) {
-                this.valve.maxValueChannel().setNextWriteValue(max);
-                this.valve.minValueChannel().setNextWriteValue(min);
+                this.valve.maxValueChannel().setNextWriteValue(this.max);
+                this.valve.minValueChannel().setNextWriteValue(this.min);
             }
             this.isRunning = true;
             //Either fullpower set .--> ValveManager handles OR you could change Valve directly

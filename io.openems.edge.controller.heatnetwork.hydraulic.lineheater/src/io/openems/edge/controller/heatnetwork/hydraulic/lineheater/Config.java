@@ -18,8 +18,6 @@ import org.osgi.service.metatype.annotations.Option;
     @AttributeDefinition(name = "alias", description = "Human readable name of Controller.")
     String alias() default "Hydraulic-Line";
 
-
-
     @AttributeDefinition(name = "Reference Temperature", description = "The Temperature-Sensor for the LineHeater.")
     String tempSensorReference() default "TemperatureSensor0";
 
@@ -27,7 +25,7 @@ import org.osgi.service.metatype.annotations.Option;
     int temperatureDefault() default 800;
 
     @AttributeDefinition(name = "Valve, MultiChannel, OneChannel", description = "Do you want to Access Channel, or multiple Channel directly or access Valve")
-    LineHeaterType valveOrChannel() default LineHeaterType.ONE_CHANNEL;
+    LineHeaterType lineHeaterType() default LineHeaterType.ONE_CHANNEL;
 
 
     @AttributeDefinition(name = "Value to Write is Boolean", description = "Is the Value you want to write a Boolean "
@@ -48,6 +46,7 @@ import org.osgi.service.metatype.annotations.Option;
 
     @AttributeDefinition(name = "Timeout of Remote signal", description = "Seconds after no signal that the fallback starts")
     int timeoutMaxRemote() default 30;
+
     @AttributeDefinition(name = "TimerId Restart Cycle", description = "Timer Id for a RestartCycle")
     String timerIdRestartCycle() default "TimerByCycles";
 
@@ -57,7 +56,7 @@ import org.osgi.service.metatype.annotations.Option;
     @AttributeDefinition(name = "Use Fallback be activated", description = "If there is no signal, hold the line on temperature")
     boolean shouldFallback() default false;
 
-    @AttributeDefinition(name = "Minute for Fallbackstart", description = "MinuteStamp to start Fallback, e.g. start at x:15")
+    @AttributeDefinition(name = "Minute for FallbackStart", description = "MinuteStamp to start Fallback, e.g. start at x:15")
     int minuteFallbackStart() default 15;
 
     @AttributeDefinition(name = "Minute for FallbackStop", description = "Minute stamp to stop Fallback, e.g. stop at x:30")
@@ -78,6 +77,9 @@ import org.osgi.service.metatype.annotations.Option;
 
     @AttributeDefinition(name = "optional Decentralheater", description = "If a Decentralheater directly needs a communication")
     String decentralheaterReference() default "Decentralheater0";
+
+    @AttributeDefinition(name = "ReactionType", description = "Should the LineHeater open, when the DecentralHeater sends a Heat request or MORE Heat request")
+    DecentralizedReactionType reactionType() default DecentralizedReactionType.NEED_HEAT;
 
     boolean enabled() default true;
 

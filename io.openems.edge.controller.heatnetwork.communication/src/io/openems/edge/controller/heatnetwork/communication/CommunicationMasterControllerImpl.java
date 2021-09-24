@@ -516,7 +516,7 @@ public class CommunicationMasterControllerImpl extends AbstractOpenemsComponent 
                     if (value != null || value.equals("null") == false) {
                         lineHeaterActivation = Boolean.valueOf(value);
                     }
-                    this.hydraulicLineHeater.enableSignal().setNextWriteValueFromObject(lineHeaterActivation);
+                    this.hydraulicLineHeater.enableSignalChannel().setNextWriteValueFromObject(lineHeaterActivation);
                 } else {
                     this.log.warn("Wanted to set HydraulicLineHeater to : " + value + " But it is not instantiated! " + super.id());
                 }
