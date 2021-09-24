@@ -82,6 +82,7 @@ public class MyMultiCoolerControllerTest {
     /**
      * The Configuration is correct and the Controller is running/Cooling as expected.
      */
+    /*
     @Test
     public void everythingsFineAndCooling() throws Exception {
             this.cpm.addComponent(this.dummyCoolerMap.get("Cooler2"));
@@ -288,6 +289,7 @@ public class MyMultiCoolerControllerTest {
     /**
      * Check if the Controller reacts correctly, if an activation Thermometer is wrong.
      */
+    /*
     @Test
     public void wrongThermometer() {
         try {
@@ -331,6 +333,7 @@ public class MyMultiCoolerControllerTest {
     /**
      * Checks if the Controller acts correctly if a Thermometer has no value.
      */
+    /*
     @Test
     public void ThermometerWithoutValue() {
         try {
