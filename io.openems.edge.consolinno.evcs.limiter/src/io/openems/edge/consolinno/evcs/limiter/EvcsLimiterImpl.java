@@ -2372,7 +2372,9 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
                         ManagedEvcs temp = this.cpm.getComponent(id);
 
                         if (time.plusMinutes(this.offTime).isBefore(current)
-                                || (temp.getIsPriority().get() && this.nonPriorityAmount > 0)
+                                || (temp.getIsPriority().get()
+                                && (this.powerWaitingList.containsKey(temp.id()) && this.powerWaitingList.get(temp.id()).getWantToCharge()) || (!this.powerWaitingList.containsKey(temp.id()) && temp.getChargePower().orElse(0) > 0)
+                                && this.nonPriorityAmount > 0)
                         ) {
                             for (int i = 0; i < activeLength.get(); i++) {
                                 int waitingPower = evcs.getPower();
@@ -2418,12 +2420,12 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
         int minPower = MINIMUM_POWER;
         try {
             ManagedEvcs temp = this.cpm.getComponent(id);
-
+/*
             if (temp.getIsPriority().get() && this.powerLimit > 0) {
                 return true;
             }
 
-
+ */
             int minHwPower = temp.getMinimumHardwarePower().orElse(1150);
             int minSwPower = temp.getMinimumPower().orElse(1150);
             minPower = Math.max(minHwPower, minSwPower) / GRID_VOLTAGE;
@@ -2665,7 +2667,11 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
             if ((this.initialPowerLimit / GRID_VOLTAGE) / this.priorityAmount > this.priorityCurrent) {
                 this.priorityList.forEach(evcs -> {
                     try {
-                        evcs.setChargePowerLimit(Math.min(evcs.getMaximumHardwarePower().orElse(this.priorityCurrent), evcs.getMaximumPower().orElse(this.priorityCurrent)));
+                        if ((this.powerWaitingList.containsKey(evcs.id()) && this.powerWaitingList.get(evcs.id()).getWantToCharge()) || (!this.powerWaitingList.containsKey(evcs.id()) && evcs.getChargePower().orElse(0) > 0)) {
+                            evcs.setChargePowerLimit(Math.min(evcs.getMaximumHardwarePower().orElse(this.priorityCurrent), evcs.getMaximumPower().orElse(this.priorityCurrent)));
+                        } else {
+                            this.turnOffEvcs(evcs);
+                        }
                     } catch (OpenemsError.OpenemsNamedException e) {
                         this.log.error("Unable to set ChargeLimit of Priority EVCS!");
                     }
