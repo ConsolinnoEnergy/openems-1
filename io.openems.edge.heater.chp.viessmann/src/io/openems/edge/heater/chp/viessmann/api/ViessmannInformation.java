@@ -112,12 +112,12 @@ public interface ViessmannInformation extends Chp {
          * <li>Type: Signed Int</li>
          * <li> Unit: Deci-degree Celsius</li>
          */
-        PT_100_1(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
+        PT_100_1(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS)),
         //PT_100_2(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)), -> Heater RETURN_TEMPERATURE
         //PT_100_3(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)), -> Heater FLOW_TEMPERATURE
-        PT_100_4(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
-        PT_100_5(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
-        PT_100_6(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
+        PT_100_4(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS)),
+        PT_100_5(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS)),
+        PT_100_6(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS)),
 
         /**
          * Voltage of the Battery.
@@ -144,7 +144,7 @@ public interface ViessmannInformation extends Chp {
          * <li>Unit: Degree Celsius</li>
          * <li>Type: Signed Int</li>
          */
-        TEMPERATURE_CONTROLLER(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
+        TEMPERATURE_CONTROLLER(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS)),
 
         /**
          * Temperature Clearance/release.

@@ -19,16 +19,16 @@ public interface MassHeaterWoodChips extends Heater {
         //BOILER_TEMPERATURE_SET_POINT(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
         // -> Heater SET_POINT_TEMPERATURE
 
-        BOILER_TEMPERATURE_MINIMAL_FORWARD(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)
+        BOILER_TEMPERATURE_MINIMAL_FORWARD(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS)
                 .accessMode(AccessMode.READ_WRITE)),
 
         //SLIDE_IN_PERCENTAGE_VALUE_READ(Doc.of(OpenemsType.INTEGER).unit(Unit.PERCENT)),
         //SLIDE_IN_PERCENTAGE_VALUE(Doc.of(OpenemsType.INTEGER).unit(Unit.PERCENT).accessMode(AccessMode.READ_WRITE)),
         SLIDE_IN_PERCENTAGE_VALUE_SETPOINT(Doc.of(OpenemsType.INTEGER).unit(Unit.PERCENT).accessMode(AccessMode.READ_WRITE)),
 
-        EXHAUST_PERFORMANCE_MIN(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)
+        EXHAUST_PERFORMANCE_MIN(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS)
                 .accessMode(AccessMode.READ_WRITE)),
-        EXHAUST_PERFORMANCE_MAX(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)
+        EXHAUST_PERFORMANCE_MAX(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS)
                 .accessMode(AccessMode.READ_WRITE)),
         OXYGEN_PERFORMANCE_MIN(Doc.of(OpenemsType.FLOAT).unit(Unit.PERCENT)
                 .accessMode(AccessMode.READ_WRITE)),
@@ -51,8 +51,8 @@ public interface MassHeaterWoodChips extends Heater {
         //REWIND_TEMPERATURE(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
         // -> Heater RETURN_TEMPERATURE
 
-        EXHAUST_TEMPERATURE(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
-        FIRE_ROOM_TEMPERATURE(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
+        EXHAUST_TEMPERATURE(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS)),
+        FIRE_ROOM_TEMPERATURE(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS)),
 
         //SLIDE_IN_ACTIVE(Doc.of(OpenemsType.INTEGER).unit(Unit.PERCENT)),
         // -> Heater EFFECTIVE_HEATING_POWER_PERCENT
@@ -67,30 +67,30 @@ public interface MassHeaterWoodChips extends Heater {
 
         PERFORMANCE_WM(Doc.of(OpenemsType.INTEGER).unit(Unit.KILOWATT_HOURS)),
         PERCOLATION(Doc.of(OpenemsType.INTEGER).unit(Unit.CUBICMETER_PER_HOUR)),
-        REWIND_GRID(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
-        BUFFER_SENSOR_1(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
-        BUFFER_SENSOR_2(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
-        BUFFER_SENSOR_3(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
-        BUFFER_SENSOR_4(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
-        BUFFER_SENSOR_5(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
-        BUFFER_SENSOR_6(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
-        BUFFER_SENSOR_7(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
-        BUFFER_SENSOR_8(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
-        BUFFER_SENSOR_9(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
-        BUFFER_SENSOR_10(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
-        BUFFER_SENSOR_11(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
-        BUFFER_SENSOR_12(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
-        BUFFER_SENSOR_13(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
-        BUFFER_SENSOR_14(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
-        BUFFER_SENSOR_15(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
-        BUFFER_SENSOR_16(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
-        BOILER_TEMPERATURE_SET_POINT_READ_ONLY(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
-        TEMPERATURE_FORWARD_MIN(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
+        REWIND_GRID(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS)),
+        BUFFER_SENSOR_1(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS)),
+        BUFFER_SENSOR_2(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS)),
+        BUFFER_SENSOR_3(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS)),
+        BUFFER_SENSOR_4(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS)),
+        BUFFER_SENSOR_5(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS)),
+        BUFFER_SENSOR_6(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS)),
+        BUFFER_SENSOR_7(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS)),
+        BUFFER_SENSOR_8(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS)),
+        BUFFER_SENSOR_9(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS)),
+        BUFFER_SENSOR_10(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS)),
+        BUFFER_SENSOR_11(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS)),
+        BUFFER_SENSOR_12(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS)),
+        BUFFER_SENSOR_13(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS)),
+        BUFFER_SENSOR_14(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS)),
+        BUFFER_SENSOR_15(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS)),
+        BUFFER_SENSOR_16(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS)),
+        BOILER_TEMPERATURE_SET_POINT_READ_ONLY(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS)),
+        TEMPERATURE_FORWARD_MIN(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS)),
         SLIDE_IN_PERCENTAGE_VALUE_READ_ONLY(Doc.of(OpenemsType.INTEGER).unit(Unit.PERCENT)),
-        EXHAUST_PERFORMANCE_MIN_READ_ONLY(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
-        EXHAUST_PERFORMANCE_MAX_READ_ONLY(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
-        OXYGEN_PERFORMANCE_MIN_READ_ONLY(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
-        OXYGEN_PERFORMANCE_MAX_READ_ONLY(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
+        EXHAUST_PERFORMANCE_MIN_READ_ONLY(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS)),
+        EXHAUST_PERFORMANCE_MAX_READ_ONLY(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS)),
+        OXYGEN_PERFORMANCE_MIN_READ_ONLY(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS)),
+        OXYGEN_PERFORMANCE_MAX_READ_ONLY(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS)),
         SLIDE_IN_MIN_READ_ONLY(Doc.of(OpenemsType.INTEGER).unit(Unit.PERCENT)),
         SLIDE_IN_MAX_READ_ONLY(Doc.of(OpenemsType.INTEGER).unit(Unit.PERCENT)),
 

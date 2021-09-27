@@ -58,7 +58,7 @@ public interface ChpKwEnergySmartblock extends Chp {
          *      <li> Unit: Dezidegree Celsius
          * </ul>
          */
-        HR24_ENGINE_TEMPERATURE(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_ONLY)),
+        HR24_ENGINE_TEMPERATURE(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS).accessMode(AccessMode.READ_ONLY)),
 
         // HR25_RETURN_TEMPERATURE -> Heater, RETURN_TEMPERATURE, d°C. Value from CHP is same unit.
 

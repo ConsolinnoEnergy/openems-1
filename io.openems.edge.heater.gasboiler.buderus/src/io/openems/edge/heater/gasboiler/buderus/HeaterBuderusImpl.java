@@ -51,18 +51,23 @@ import java.time.temporal.ChronoUnit;
 
 
 /**
- * This module reads the most important variables available via Modbus from a Buderus heater and maps them to OpenEMS
- * channels. The module is written to be used with the Heater interface methods.
+ * This module reads the most important variables available via Modbus from a Buderus gas boiler and maps them to OpenEMS
+ * channels. The module is written to be used with the Heater interface methods (EnableSignal) and ExceptionalState.
  * When setEnableSignal() from the Heater interface is set to true with no other parameters like temperature specified,
  * the heater will turn on with default settings. The default settings are configurable in the config.
- * The heater can be controlled with setSetPointPowerPercent() or setSetPointTemperature().
- * setSetPointPower() and related methods are not supported by this heater.
+ * The heater can be controlled with setHeatingPowerPercentSetpoint() (set power in %) or setTemperatureSetpoint().
+ * setHeatingPowerSetpoint() (set power in kW) and related methods are currently not supported by this heater.
+ * When ExceptionalState is used, the heater will automatically switch to control mode ’heating power percent’.
+ * With the current code, setTemperatureSetpoint() is then only usable when ExceptionalState is disabled.
  */
 @Designate(ocd = Config.class, factory = true)
 @Component(name = "Heater.Buderus.GasBoiler",
 		immediate = true,
 		configurationPolicy = ConfigurationPolicy.REQUIRE,
-		property = EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE)
+		property = { //
+				EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE, //
+				EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS //
+		})
 public class HeaterBuderusImpl extends AbstractOpenemsModbusComponent implements OpenemsComponent, EventHandler,
 		ExceptionalState, HeaterBuderus {
 
@@ -74,7 +79,6 @@ public class HeaterBuderusImpl extends AbstractOpenemsModbusComponent implements
 
 	private final Logger log = LoggerFactory.getLogger(HeaterBuderusImpl.class);
 	private boolean printInfoToLog;
-	private boolean componentEnabled;
 	private int heartbeatCounter = 0;
 	private boolean connectionAlive = false;
 	private LocalDateTime connectionTimestamp;
@@ -103,29 +107,30 @@ public class HeaterBuderusImpl extends AbstractOpenemsModbusComponent implements
 	void activate(ComponentContext context, Config config) throws OpenemsError.OpenemsNamedException, ConfigurationException {
 		super.activate(context, config.id(), config.alias(), config.enabled(), config.modbusUnitId(), this.cm,
 				"Modbus", config.modbusBridgeId());
-		this.componentEnabled = config.enabled();
+
 		this.printInfoToLog = config.printInfoToLog();
-		this.connectionTimestamp = LocalDateTime.now().minusMinutes(5);	// Initialize with past time value so connection test is negative at start.
 		this.readOnly = config.readOnly();
-
-		this.setOperatingMode(config.operatingMode().getValue());
-
-		if (this.readOnly == false) {
-			this.setTemperatureSetpoint(config.defaultSetPointTemperature() * 10);	// Convert to d°C.
-			this.setHeatingPowerPercentSetpoint(config.defaultSetPointPowerPercent());
-
-			TimerHandler timer = new TimerHandlerImpl(super.id(), this.cpm);
-			timer.addOneIdentifier(ENABLE_SIGNAL_IDENTIFIER, config.enableSignalTimerId(), config.waitTimeEnableSignal());
-			this.enableSignalHandler = new EnableSignalHandlerImpl(timer, ENABLE_SIGNAL_IDENTIFIER);
-			this.useExceptionalState = config.useExceptionalState();
-			if (this.useExceptionalState) {
-				timer.addOneIdentifier(EXCEPTIONAL_STATE_IDENTIFIER, config.exceptionalStateTimerId(), config.waitTimeExceptionalState());
-				this.exceptionalStateHandler = new ExceptionalStateHandlerImpl(timer, EXCEPTIONAL_STATE_IDENTIFIER);
-			}
+		if (this.isEnabled() == false) {
+			this._setHeaterState(HeaterState.OFF.getValue());
 		}
 
-		if (this.componentEnabled == false) {
-			this._setHeaterState(HeaterState.OFF.getValue());
+		if (this.readOnly == false) {
+			this.connectionTimestamp = LocalDateTime.now().minusMinutes(5);	// Initialize with past time value so connection test is negative at start.
+			this.setOperatingMode(config.operatingMode().getValue());
+			this.setTemperatureSetpoint(config.defaultSetPointTemperature() * 10);	// Convert to d°C.
+			this.setHeatingPowerPercentSetpoint(config.defaultSetPointPowerPercent());
+			this.initializeTimers(config);
+		}
+	}
+
+	private void initializeTimers(Config config) throws OpenemsError.OpenemsNamedException, ConfigurationException {
+		TimerHandler timer = new TimerHandlerImpl(super.id(), this.cpm);
+		timer.addOneIdentifier(ENABLE_SIGNAL_IDENTIFIER, config.enableSignalTimerId(), config.waitTimeEnableSignal());
+		this.enableSignalHandler = new EnableSignalHandlerImpl(timer, ENABLE_SIGNAL_IDENTIFIER);
+		this.useExceptionalState = config.useExceptionalState();
+		if (this.useExceptionalState) {
+			timer.addOneIdentifier(EXCEPTIONAL_STATE_IDENTIFIER, config.exceptionalStateTimerId(), config.waitTimeExceptionalState());
+			this.exceptionalStateHandler = new ExceptionalStateHandlerImpl(timer, EXCEPTIONAL_STATE_IDENTIFIER);
 		}
 	}
 
@@ -140,7 +145,7 @@ public class HeaterBuderusImpl extends AbstractOpenemsModbusComponent implements
 		ModbusProtocol protocol = new ModbusProtocol(this,
 				// Input register read.
 				new FC4ReadInputRegistersTask(386, Priority.HIGH,
-						m(HeaterBuderus.ChannelId.IR386_STATUS_STRATEGIE, new UnsignedWordElement(386),
+						m(HeaterBuderus.ChannelId.IR386_STATUS_STRATEGY, new UnsignedWordElement(386),
 								ElementToChannelConverter.DIRECT_1_TO_1)
 				),
 				new FC4ReadInputRegistersTask(390, Priority.HIGH,
@@ -148,60 +153,60 @@ public class HeaterBuderusImpl extends AbstractOpenemsModbusComponent implements
 								ElementToChannelConverter.DIRECT_1_TO_1)
 				),
 				new FC4ReadInputRegistersTask(394, Priority.HIGH,
-						m(HeaterBuderus.ChannelId.IR394_STRATEGIE_BITBLOCK, new UnsignedWordElement(394),
+						m(HeaterBuderus.ChannelId.IR394_STRATEGY_BITBLOCK, new UnsignedWordElement(394),
 								ElementToChannelConverter.DIRECT_1_TO_1),
-						m(HeaterBuderus.ChannelId.IR395_MAX_FLOW_TEMP_ANGEFORDERT, new SignedWordElement(395),
+						m(HeaterBuderus.ChannelId.IR395_MAX_FLOW_TEMP_REQUESTED, new SignedWordElement(395),
 								ElementToChannelConverter.SCALE_FACTOR_1)
 				),
 				new FC4ReadInputRegistersTask(476, Priority.HIGH,
-						m(HeaterBuderus.ChannelId.IR476_FEHLERREGISTER1, new UnsignedDoublewordElement(476),
+						m(HeaterBuderus.ChannelId.IR476_ERROR_REGISTER1, new UnsignedDoublewordElement(476),
 								ElementToChannelConverter.DIRECT_1_TO_1),
-						m(HeaterBuderus.ChannelId.IR478_FEHLERREGISTER2, new UnsignedDoublewordElement(478),
+						m(HeaterBuderus.ChannelId.IR478_ERROR_REGISTER2, new UnsignedDoublewordElement(478),
 								ElementToChannelConverter.DIRECT_1_TO_1),
-						m(HeaterBuderus.ChannelId.IR480_FEHLERREGISTER3, new UnsignedDoublewordElement(480),
+						m(HeaterBuderus.ChannelId.IR480_ERROR_REGISTER3, new UnsignedDoublewordElement(480),
 								ElementToChannelConverter.DIRECT_1_TO_1),
-						m(HeaterBuderus.ChannelId.IR482_FEHLERREGISTER4, new UnsignedDoublewordElement(482),
+						m(HeaterBuderus.ChannelId.IR482_ERROR_REGISTER4, new UnsignedDoublewordElement(482),
 								ElementToChannelConverter.DIRECT_1_TO_1)
 				),
 				new FC4ReadInputRegistersTask(8001, Priority.HIGH,
 						m(Heater.ChannelId.FLOW_TEMPERATURE, new SignedWordElement(8001),
 								ElementToChannelConverter.DIRECT_1_TO_1),
-						m(HeaterBuderus.ChannelId.IR8002_FLOW_TEMP_AENDERUNGSGESCHWINDIGKEIT_KESSEL1, new SignedWordElement(8002),
+						m(HeaterBuderus.ChannelId.IR8002_FLOW_TEMP_RATE_OF_CHANGE_BOILER1, new SignedWordElement(8002),
 								ElementToChannelConverter.DIRECT_1_TO_1),
 						m(Heater.ChannelId.RETURN_TEMPERATURE, new SignedWordElement(8003),
 								ElementToChannelConverter.DIRECT_1_TO_1),
 						m(Heater.ChannelId.EFFECTIVE_HEATING_POWER_PERCENT, new UnsignedWordElement(8004),
 								ElementToChannelConverter.DIRECT_1_TO_1),
-						m(HeaterBuderus.ChannelId.IR8005_WAERMEERZEUGER_IN_LASTBEGRENZUNG_KESSEL1, new UnsignedWordElement(8002),
+						m(HeaterBuderus.ChannelId.IR8005_HEATER_AT_LOAD_LIMIT_BOILER1, new UnsignedWordElement(8002),
 								ElementToChannelConverter.DIRECT_1_TO_1),
 						new DummyRegisterElement(8006),
-						m(HeaterBuderus.ChannelId.IR8007_MAXIMUM_POWER_KESSEL1, new UnsignedWordElement(8007),
+						m(HeaterBuderus.ChannelId.IR8007_MAXIMUM_POWER_BOILER1, new UnsignedWordElement(8007),
 								ElementToChannelConverter.DIRECT_1_TO_1),
-						m(HeaterBuderus.ChannelId.IR8008_MINIMUM_POWER_PERCENT_KESSEL1, new UnsignedWordElement(8008),
+						m(HeaterBuderus.ChannelId.IR8008_MINIMUM_POWER_PERCENT_BOILER1, new UnsignedWordElement(8008),
 								ElementToChannelConverter.DIRECT_1_TO_1),
 						new DummyRegisterElement(8009),
 						new DummyRegisterElement(8010),
-						m(HeaterBuderus.ChannelId.IR8011_MAXIMALE_VORLAUFTEMP_KESSEL1, new UnsignedWordElement(8011),
+						m(HeaterBuderus.ChannelId.IR8011_MAXIMUM_FLOW_TEMP_BOILER1, new UnsignedWordElement(8011),
 								ElementToChannelConverter.SCALE_FACTOR_1),
-						m(HeaterBuderus.ChannelId.IR8012_STATUS_KESSEL1, new UnsignedWordElement(8012),
+						m(HeaterBuderus.ChannelId.IR8012_STATUS_BOILER1, new UnsignedWordElement(8012),
 								ElementToChannelConverter.DIRECT_1_TO_1),
-						m(HeaterBuderus.ChannelId.IR8013_BITBLOCK_KESSEL1, new UnsignedWordElement(8013),
+						m(HeaterBuderus.ChannelId.IR8013_BITBLOCK_BOILER1, new UnsignedWordElement(8013),
 								ElementToChannelConverter.DIRECT_1_TO_1),
 						new DummyRegisterElement(8014),
-						m(HeaterBuderus.ChannelId.IR8015_ANGEFORDERTE_SOLLWERTTEMP_KESSEL1, new UnsignedWordElement(8015),
+						m(HeaterBuderus.ChannelId.IR8015_REQUESTED_TEMPERATURE_SETPOINT_BOILER1, new UnsignedWordElement(8015),
 								ElementToChannelConverter.SCALE_FACTOR_1),
-						m(HeaterBuderus.ChannelId.IR8016_SOLLWERT_LEISTUNG_KESSEL1, new UnsignedWordElement(8016),
+						m(HeaterBuderus.ChannelId.IR8016_SETPOINT_POWER_PERCENT_BOILER1, new UnsignedWordElement(8016),
 								ElementToChannelConverter.DIRECT_1_TO_1),
-						m(HeaterBuderus.ChannelId.IR8017_DRUCK_KESSEL1, new SignedWordElement(8017),
+						m(HeaterBuderus.ChannelId.IR8017_PRESSURE_BOILER1, new SignedWordElement(8017),
 								ElementToChannelConverter.DIRECT_1_TO_1),
-						m(HeaterBuderus.ChannelId.IR8018_FEHLERCODE_KESSEL1, new UnsignedWordElement(8018),
+						m(HeaterBuderus.ChannelId.IR8018_ERROR_CODE_BOILER1, new UnsignedWordElement(8018),
 								ElementToChannelConverter.DIRECT_1_TO_1),
-						m(HeaterBuderus.ChannelId.IR8019_FEHLERCODE_DISPLAY_KESSEL1, new UnsignedWordElement(8019),
+						m(HeaterBuderus.ChannelId.IR8019_DISPLAY_ERROR_CODE_BOILER1, new UnsignedWordElement(8019),
 								ElementToChannelConverter.DIRECT_1_TO_1),
 						new DummyRegisterElement(8020),
-						m(HeaterBuderus.ChannelId.IR8021_ANZAHL_STARTS_KESSEL1, new UnsignedDoublewordElement(8021),
+						m(HeaterBuderus.ChannelId.IR8021_NUMBER_OF_STARTS_BOILER1, new UnsignedDoublewordElement(8021),
 								ElementToChannelConverter.DIRECT_1_TO_1),
-						m(HeaterBuderus.ChannelId.IR8023_BETRIEBSZEIT_KESSEL1, new UnsignedDoublewordElement(8023),
+						m(HeaterBuderus.ChannelId.IR8023_RUNNING_TIME_BOILER1, new UnsignedDoublewordElement(8023),
 								ElementToChannelConverter.DIRECT_1_TO_1)
 				),
 
@@ -246,8 +251,17 @@ public class HeaterBuderusImpl extends AbstractOpenemsModbusComponent implements
 
 	@Override
 	public void handleEvent(Event event) {
-		if (this.componentEnabled && event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE)) {
+		if (this.isEnabled() == false) {
+			return;
+		}
+		if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE)) {
 			this.channelmapping();
+			if (this.printInfoToLog) {
+				this.printInfo();
+			}
+		}
+		if (this.readOnly == false && event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS)) {
+			this.writeCommands();
 		}
 	}
 
@@ -256,287 +270,116 @@ public class HeaterBuderusImpl extends AbstractOpenemsModbusComponent implements
 	 */
 	protected void channelmapping() {
 
-		if (this.readOnly == false) {
-
-			// Send and increment heartbeatCounter.
-			try {
-				setHeartBeatIn(this.heartbeatCounter);	// Send heartbeatCounter.
-			} catch (OpenemsError.OpenemsNamedException e) {
-				this.log.warn("Couldn't write in Channel " + e.getMessage());
-			}
-			if (getHeartBeatOut().isDefined()) {
-				int receivedHeartbeatCounter = getHeartBeatOut().get();	// Get last received heartbeatCounter value.
-				if (receivedHeartbeatCounter == heartbeatCounter) {		// Test if the sent value was received.
-					this.connectionTimestamp = LocalDateTime.now();			// Now we know the connection is alive. Set timestamp.
-					this.heartbeatCounter++;
-				}
-			}
-			if (ChronoUnit.SECONDS.between(this.connectionTimestamp, LocalDateTime.now()) >= 30) {	// No heart beat match for 30 seconds means connection is dead.
-				this.connectionAlive = false;
-			} else {
-				this.connectionAlive = true;
-			}
-			if (this.heartbeatCounter >= 100) {	// Overflow protection.
-				this.heartbeatCounter = 1;
-			}
-
-			boolean turnOnHeater = this.enableSignalHandler.deviceShouldBeHeating(this);
-
-			// Handle ExceptionalState. ExceptionalState overwrites EnableSignal.
-			int exceptionalStateValue = 0;
-			boolean exceptionalStateActive = false;
-			if (this.useExceptionalState) {
-				exceptionalStateActive = this.exceptionalStateHandler.exceptionalStateActive(this);
-				if (exceptionalStateActive) {
-					exceptionalStateValue = this.getExceptionalStateValue();
-					if (exceptionalStateValue <= 0) {
-						// Turn off heater when ExceptionalStateValue = 0.
-						turnOnHeater = false;
-					} else {
-						// When ExceptionalStateValue is between 0 and 100, set heater to this PowerPercentage.
-						turnOnHeater = true;
-						if (exceptionalStateValue > 100) {
-							exceptionalStateValue = 100;
-						}
-						try {
-							this.setHeatingPowerPercentSetpoint(exceptionalStateValue);
-
-							// Todo: Should heater switch to control mode power percent in exceptional state?
-							// ExceptoinalStateValue is Setting power percent setpoint. If heater is in control mode
-							// temperature, this won't do anything.
-						} catch (OpenemsError.OpenemsNamedException e) {
-							this.log.warn("Couldn't write in Channel " + e.getMessage());
-						}
-					}
-				}
-			}
-
-			// Wait for connection. Then turn on heater and send CommandBits when enableSignal == true.
-			if (this.connectionAlive) {
-				if (turnOnHeater) {
-
-					/* //ToDo: This is done in activate(). Test if it works, then delete this.
-					// Set default set point (defined in config) if the selected control mode does not have a set point specified.
-					boolean noSetPoint =
-							// Control mode is SetPointPowerPercent, and SET_POINT_POWER_PERCENT channel is empty.
-							(((getOperatingMode().isDefined() == false) || (getOperatingMode().asEnum() == OperatingMode.SET_POINT_POWER_PERCENT)) // No value in getOperatingMode() counts as "Control mode is SetPointPowerPercent", which is the default.
-									&& (getHeatingPowerPercentSetpointChannel().getNextWriteValue().isPresent() == false))
-									||	// or
-									// Control mode is SetPointTemperature, and SET_POINT_TEMPERATURE channel is empty.
-									(((getOperatingMode().isDefined()) && (getOperatingMode().asEnum() == OperatingMode.SET_POINT_TEMPERATURE))
-											&& (getTemperatureSetpointChannel().getNextWriteValue().isPresent() == false));
-					if (noSetPoint) {
-						try {
-							setTemperatureSetpoint(this.defaultSetPointTemperature);
-							setHeatingPowerPercentSetpoint(this.defaultSetPointPowerPercent);
-						} catch (OpenemsError.OpenemsNamedException e) {
-							this.log.warn("Couldn't write in Channel " + e.getMessage());
-						}
-					} */
-
-					try {
-						setRunPermission(true);	// Nicht sicher ob das so stimmt. Das eine Handbuch sagt 0 = an, das andere sagt 1 = an.
-					} catch (OpenemsError.OpenemsNamedException e) {
-						this.log.warn("Couldn't write in Channel " + e.getMessage());
-					}
-
-					// If nothing is in the channel yet, take set point power percent as default behavior.
-					boolean useSetPointTemperature = getOperatingMode().isDefined() && (getOperatingMode().asEnum() == OperatingMode.SET_POINT_TEMPERATURE);
-					try {
-						if (useSetPointTemperature) {
-							setCommandBits(0b0101); // Temperaturgefuehrte Regelung
-						} else {
-							setCommandBits(0b1001);	// Leistungsgefuehrte Regelung
-						}
-					} catch (OpenemsError.OpenemsNamedException e) {
-						this.log.warn("Couldn't write in Channel " + e.getMessage());
-					}
-				} else {
-					try {
-						setRunPermission(false);
-					} catch (OpenemsError.OpenemsNamedException e) {
-						log.warn("Couldn't write in Channel " + e.getMessage());
-					}
-				}
-			}
-
-		}
-
 		boolean heaterRunning = false;
-		boolean heaterReadySignal = false;	// Bedeutet status "4-Nicht aktiv" bereit? Kann Status "3-OK" sein wenn der Kessel aus ist?
+		boolean heaterReadySignal = false;
 		String statusMessage = "";
 		String errorMessage = "";
 		String warningMessage = "";
 
 		int ir386Status = 0;
-		if (getIR386StatusStrategie().isDefined()) {
+		if (this.getIR386StatusStrategy().isDefined()) {
 			if (this.readOnly) {
 				// readOnly disables the heartbeat register, so heartbeat can't work. But "connectionAlive = false"
 				// overwrites any status message with "Modbus not connected". So get "connectionAlive = true" this way
 				// to get status messages in readOnly mode.
 				this.connectionAlive = true;
 			}
-			ir386Status = getIR386StatusStrategie().get();
+			ir386Status = this.getIR386StatusStrategy().get();
 		}
 		switch (ir386Status) {
 			case 1:
 				warningMessage = "Warning flag active, ";
-				statusMessage = "Heater status: Warnung, ";
+				statusMessage = "Heater state: warning, ";
 				break;
 			case 2:
 				errorMessage = "Error flag active, ";
-				statusMessage = "Heater status: Störung, ";
+				statusMessage = "Heater state: error, ";
 				break;
 			case 3:
-				heaterReadySignal = true;	// ir386Status ist OK auch wenn Heater aus.
-				statusMessage = "Heater status: OK, ";
+				heaterReadySignal = true;	// ir386Status ist also OK when heater is not running.
+				statusMessage = "Heater state: OK, ";
 				break;
 			case 4:
-				statusMessage = "Heater status: Nicht aktiv, ";
+				statusMessage = "Heater state: not active, ";
 				break;
 			case 5:
 				errorMessage = "Heater state critical, ";
-				statusMessage = "Heater status: Kritisch, ";
+				statusMessage = "Heater state: critical, ";
 				break;
 			case 6:
-				statusMessage = "Heater status: Keine Info, ";
+				statusMessage = "Heater state: no info, ";
 				break;
 			case 0:
 			default:
-				statusMessage = "Heater status: Unbekannt, ";
+				statusMessage = "Heater state: unknown, ";
 				break;
 		}
 
 		int ir390runrequestInitiator = 0;
-		if (getIR390RunrequestInitiator().isDefined()) {
-			ir390runrequestInitiator = getIR390RunrequestInitiator().get();
+		if (this.getIR390RunrequestInitiator().isDefined()) {
+			ir390runrequestInitiator = this.getIR390RunrequestInitiator().get();
 		}
-		switch (ir390runrequestInitiator) {
-			case 1:
-				statusMessage = statusMessage + "running requested by Regelgerät, ";
-				break;
-			case 2:
-				statusMessage = statusMessage + "running requested by Intern, ";
-				break;
-			case 3:
-				statusMessage = statusMessage + "running requested by Manueller Betrieb, ";
-				break;
-			case 4:
-				statusMessage = statusMessage + "running requested by Extern, ";
-				break;
-			case 5:
-				statusMessage = statusMessage + "running requested by Intern+Extern, ";
-				break;
-			case 0:
-			default:
-				statusMessage = statusMessage + "currently off, ";
-				break;
-		}
+		statusMessage = statusMessage + this.parseIr390runrequestInitiator(ir390runrequestInitiator);
 
-		int ir394strategieBitblock = 0;
-		if (getIR394StrategieBitblock().isDefined()) {
-			ir394strategieBitblock = getIR394StrategieBitblock().get();
+		int ir394strategyBitblock = 0;
+		if (this.getIR394StrategyBitblock().isDefined()) {
+			ir394strategyBitblock = this.getIR394StrategyBitblock().get();
 		}
-		if ((ir394strategieBitblock & 0b01) == 0b01) {
-			statusMessage = statusMessage + "Fremdwärme erkannt, ";
-		}
-		if ((ir394strategieBitblock & 0b010) == 0b010) {
-			statusMessage = statusMessage + "Frostschutz aktiv, ";
-		}
-		if ((ir394strategieBitblock & 0b0100) == 0b0100) {
-			statusMessage = statusMessage + "Priorität angefordert, ";	// Scheint immer aktiv zu sein. Evtl. rausnehmen.
-		}
-		if ((ir394strategieBitblock & 0b01000) == 0b01000) {
-			statusMessage = statusMessage + "Führung angefordert, ";	// Scheint immer aktiv zu sein. Evtl. rausnehmen.
-		}
-		if ((ir394strategieBitblock & 0b010000) == 0b010000) {
-			statusMessage = statusMessage + "Vorlaufregelung angefordert aktiv, ";
-		}
-		if ((ir394strategieBitblock & 0b0100000) == 0b0100000) {
-			statusMessage = statusMessage + "Leistungsregelung angefordert aktiv, ";
-		}
-		if ((ir394strategieBitblock & 0b01000000) == 0b01000000) {
-			statusMessage = statusMessage + "Externe Wärmeanforderung, ";
-		}
+		statusMessage = statusMessage + this.parseIr394strategieBitblock(ir394strategyBitblock);
 
-		if (getIR476Fehlerregister1().isDefined()) {
-			if (getIR476Fehlerregister1().get() > 0) {
-				errorMessage = errorMessage + "Error code register 2: " + getIR476Fehlerregister1().get() + ", ";
-				statusMessage = statusMessage + "Fehlerregister 1: " + getIR476Fehlerregister1().get() + ", ";
-			}
-		}
-		if (getIR478Fehlerregister2().isDefined()) {
-			if (getIR478Fehlerregister2().get() > 0) {
-				errorMessage = errorMessage + "Error code register 2: " + getIR476Fehlerregister1().get() + ", ";
-				statusMessage = statusMessage + "Fehlerregister 2: " + getIR478Fehlerregister2().get() + ", ";
-			}
-		}
-		if (getIR480Fehlerregister3().isDefined()) {
-			if (getIR480Fehlerregister3().get() > 0) {
-				errorMessage = errorMessage + "Error code register 3: " + getIR476Fehlerregister1().get() + ", ";
-				statusMessage = statusMessage + "Fehlerregister 3: " + getIR480Fehlerregister3().get() + ", ";
-			}
-		}
-		if (getIR482Fehlerregister4().isDefined()) {
-			if (getIR482Fehlerregister4().get() > 0) {
-				errorMessage = errorMessage + "Error code register 4: " + getIR476Fehlerregister1().get() + ", ";
-				statusMessage = statusMessage + "Fehlerregister 4: " + getIR482Fehlerregister4().get() + ", ";
-			}
-		}
+		errorMessage = errorMessage + this.getErrorRegistersContent();
 
 		int ir8013kessel1Bitblock = 0;
-		if (getBitblockKessel1().isDefined()) {
-			ir8013kessel1Bitblock = getBitblockKessel1().get();
+		if (this.getBitblockBoiler1().isDefined()) {
+			ir8013kessel1Bitblock = this.getBitblockBoiler1().get();
 		}
 		if ((ir8013kessel1Bitblock & 0b01) == 0) {	// Bit NOT active
 			warningMessage = warningMessage + "Heater not able to process commands, ";
-			statusMessage = statusMessage + "Warnung: Wärmeerzeuger nicht steuerbar, ";
+			statusMessage = statusMessage + "Heater not able to process commands, ";
 		}
 		if ((ir8013kessel1Bitblock & 0b010) == 0b010) {
-			statusMessage = statusMessage + "Zwangsdurchströmung, ";
+			statusMessage = statusMessage + "Forced current flow (Zwangsdurchstroemung), ";
 		}
 		if ((ir8013kessel1Bitblock & 0b0100) == 0b0100) {
-			statusMessage = statusMessage + "Warmhaltefunktion, ";
+			statusMessage = statusMessage + "Keep temperature function (Warmhaltefunktion), ";
 		}
 		if ((ir8013kessel1Bitblock & 0b01000) == 0b01000) {
-			statusMessage = statusMessage + "Kesselsperre durch Kontakt, ";
+			statusMessage = statusMessage + "Boiler blocked by contact switch (Kesselsperre durch Kontakt), ";
 		}
 		if ((ir8013kessel1Bitblock & 0b010000) == 0b010000) {
-			statusMessage = statusMessage + "Kesselsperre negativer Sollwertsprung, ";
+			statusMessage = statusMessage + "Boiler blocked because of set point decrease (Kesselsperre negativer Sollwertsprung), ";
 		}
 		if ((ir8013kessel1Bitblock & 0b0100000) == 0b0100000) {
-			// Brenner an.
+			// Incinerator on.
 			heaterRunning = true;
 		}
-		// 0b01000000 == Führung angefordert. Schon bei ir394strategieBitblock drin.
-		// 0b010000000 == Priorität angefordert. Schon bei ir394strategieBitblock drin.
-		// 0b0100000000 == Vorlaufregelung angefordert. Schon bei ir394strategieBitblock drin.
-		// 0b01000000000 == Leistungsregelung angefordert. Schon bei ir394strategieBitblock drin.
+		// 0b01000000 == Command requested (Fuehrung angefordert). Already transmitted by ir394strategyBitblock.
+		// 0b010000000 == Priority requested (Prioritaet angefordert). Already transmitted by ir394strategyBitblock.
+		// 0b0100000000 == Control mode flow temperature requested (Vorlaufregelung angefordert aktiv). Already transmitted by ir394strategyBitblock.
+		// 0b01000000000 == Control mode power requested (Leistungsregelung angefordert aktiv). Already transmitted by ir394strategyBitblock.
 		if ((ir8013kessel1Bitblock & 0b010000000000) == 0b010000000000) {
-			errorMessage = errorMessage + "Heater locked because of error: ";
-			statusMessage = statusMessage + "Verriegelnde Störung, ";
+			errorMessage = errorMessage + "Heater locked because of error (Verriegelnde Stoerung), ";
 		}
 		if ((ir8013kessel1Bitblock & 0b0100000000000) == 0b0100000000000) {
-			errorMessage = errorMessage + "Heater blocked because of error: ";
-			statusMessage = statusMessage + "Blockierende Störung, ";
+			errorMessage = errorMessage + "Heater blocked because of error (Blockierende Stoerung), ";
 		}
 		if ((ir8013kessel1Bitblock & 0b01000000000000) == 0b01000000000000) {
 			warningMessage = warningMessage + "Maintenance needed, ";
-			statusMessage = statusMessage + "Wartungsmeldung anstehend, ";
+			statusMessage = statusMessage + "Maintenance needed, ";
 		}
 
-		if (getErrorCodeKessel1().isDefined()) {
-			if (getErrorCodeKessel1().get() > 0) {
-				errorMessage = errorMessage + "Error code boiler 1: " + getErrorCodeKessel1().get() + ", ";
-				statusMessage = statusMessage + "Fehlercode Kessel 1: " + getErrorCodeKessel1().get() + ", ";
+		if (this.getErrorCodeBoiler1().isDefined()) {
+			if (this.getErrorCodeBoiler1().get() > 0) {
+				errorMessage = errorMessage + "Error code boiler 1: " + this.getErrorCodeBoiler1().get() + ", ";
 			}
 		}
-		if (getErrorCodeDisplayKessel1().isDefined()) {
-			if (getErrorCodeDisplayKessel1().get() > 0) {
-				// Scheint kein wirklicher Fehler zu sein. Kessel läuft auch wenn hier was drin steht. Rausnehmen?
-				// Die angezeigten Codes stehen nicht in der Fehlerliste. Vermutlich einfach nur das, was am Display
-				// angezeigt wird.
-				statusMessage = statusMessage + "Fehleranzeigecode im Display Kessel 1: " + getErrorCodeDisplayKessel1().get() + ", ";
+		if (this.getErrorCodeDisplayBoiler1().isDefined()) {
+			if (this.getErrorCodeDisplayBoiler1().get() > 0) {
+				// Doesn't seem to be a real error. The register gives an error code, but the boiler is running without
+				// problems. Remove this indicator?
+				// The error codes are not in the error list. Speculation: this is the code for what is shown in the
+				// display of the device?
+				statusMessage = statusMessage + "Display error code boiler 1 (Fehleranzeigecode im Display Kessel 1): " + this.getErrorCodeDisplayBoiler1().get() + ", ";
 			}
 		}
 
@@ -548,8 +391,7 @@ public class HeaterBuderusImpl extends AbstractOpenemsModbusComponent implements
 			this._setHeaterState(HeaterState.HEATING.getValue());
 		} else if (heaterReadySignal) {
 			this._setHeaterState(HeaterState.STANDBY.getValue());
-		}
-		else {
+		} else {
 			// If the code gets to here, the state is undefined.
 			this._setHeaterState(HeaterState.UNDEFINED.getValue());
 		}
@@ -577,26 +419,187 @@ public class HeaterBuderusImpl extends AbstractOpenemsModbusComponent implements
 			this._setErrorMessage("Modbus not connected");
 			this._setWarningMessage("Modbus not connected");
 		}
+		this.getStatusMessageChannel().nextProcessImage();
+		this.getErrorMessageChannel().nextProcessImage();
+		this.getWarningMessageChannel().nextProcessImage();
+	}
+
+	protected String parseIr390runrequestInitiator(int ir390runrequestInitiator) {
+		switch (ir390runrequestInitiator) {
+			case 1:
+				return "running requested by controller (Regelgeraet), ";
+			case 2:
+				return "running requested by device (Intern), ";
+			case 3:
+				return "running requested by manual operation (Manueller Betrieb), ";
+			case 4:
+				return "running requested by external connection (Extern), ";
+			case 5:
+				return "running requested by device + external connection (Intern+Extern), ";
+			case 0:
+			default:
+				return "currently off, ";
+		}
+	}
+
+	protected String parseIr394strategieBitblock(int ir394strategieBitblock) {
+		String returnString = "";
+		if ((ir394strategieBitblock & 0b01) == 0b01) {
+			returnString = "External heat source detected (Fremdwaerme erkannt), ";
+		}
+		if ((ir394strategieBitblock & 0b010) == 0b010) {
+			returnString = returnString + "Frost protection active (Frostschutz aktiv), ";
+		}
+		if ((ir394strategieBitblock & 0b0100) == 0b0100) {
+			returnString = returnString + "Priority requested (Prioritaet angefordert), ";	// Seems to be always active. Remove indicator?
+		}
+		if ((ir394strategieBitblock & 0b01000) == 0b01000) {
+			returnString = returnString + "Command requested (Fuehrung angefordert), ";	// Seems to be always active. Remove indicator?
+		}
+		if ((ir394strategieBitblock & 0b010000) == 0b010000) {
+			returnString = returnString + "Control mode flow temperature requested (Vorlaufregelung angefordert aktiv), ";
+		}
+		if ((ir394strategieBitblock & 0b0100000) == 0b0100000) {
+			returnString = returnString + "Control mode power requested (Leistungsregelung angefordert aktiv), ";
+		}
+		if ((ir394strategieBitblock & 0b01000000) == 0b01000000) {
+			returnString = returnString + "Heat request from external (Externe Waermeanforderung), ";
+		}
+		return returnString;
+	}
+
+	protected String getErrorRegistersContent() {
+		String returnString = "";
+		if (this.getIR476ErrorRegister1().isDefined()) {
+			if (this.getIR476ErrorRegister1().get() > 0) {
+				returnString = returnString + "Error code register 1: " + this.getIR476ErrorRegister1().get() + ", ";
+			}
+		}
+		if (this.getIR478ErrorRegister2().isDefined()) {
+			if (this.getIR478ErrorRegister2().get() > 0) {
+				returnString = returnString + "Error code register 2: " + this.getIR476ErrorRegister1().get() + ", ";
+			}
+		}
+		if (this.getIR480ErrorRegister3().isDefined()) {
+			if (this.getIR480ErrorRegister3().get() > 0) {
+				returnString = returnString + "Error code register 3: " + this.getIR476ErrorRegister1().get() + ", ";
+			}
+		}
+		if (this.getIR482ErrorRegister4().isDefined()) {
+			if (getIR482ErrorRegister4().get() > 0) {
+				returnString = returnString + "Error code register 4: " + this.getIR476ErrorRegister1().get() + ", ";
+			}
+		}
+		return returnString;
+	}
 
 
-		if (this.printInfoToLog) {
-			this.logInfo(this.log, "--Buderus Kessel--");
-			this.logInfo(this.log, "Heater STATE channel: " + getHeaterState());
-			this.logInfo(this.log, "Heater flow temperature: " + getFlowTemperature() + " d°C");
-			this.logInfo(this.log, "Heater maximum flow temperature: " + getMaximumFlowTempKessel1().get() + " d°C");
-			this.logInfo(this.log, "Heater flow temperature change speed: " + getIR8002FlowTempChangeSpeed().get() + " dK/min");
-			this.logInfo(this.log, "Heater return temperature: " + getReturnTemperature() + " d°C");
-			this.logInfo(this.log, "Heater effective power percent: " + getEffectiveHeatingPowerPercent() + " %");
-			this.logInfo(this.log, "Heater minimum power percent: " + getMinimumPowerPercentKessel1().get() + " %");
-			this.logInfo(this.log, "Heater set point flow temp: " + getRequestedTemperatureSetPointKessel1().get() + " d°C");
-			this.logInfo(this.log, "Heater set point power percent: " + getRequestedPowerPercentSetPointKessel1().get() + " %");
-			this.logInfo(this.log, "Heater pressure: " + getPressureKessel1().get() + " dBar");
-			this.logInfo(this.log, "Heater number of startups: " + getNumberOfStartsKessel1().get());
-			this.logInfo(this.log, "Heater running time: " + getRunningTimeKessel1().get() + " minutes");
-			this.logInfo(this.log, "Register 402: " + getRunPermissionChannel().value().get());
-			this.logInfo(this.log, "Heater status message: " + getStatusMessageChannel().value().get());
-			this.logInfo(this.log, "");
+	/**
+	 * Determine commands and send them to the heater.
+	 */
+	protected void writeCommands() {
+
+		// Send and increment heartbeatCounter.
+		try {
+			this.setHeartBeatIn(this.heartbeatCounter);	// Send heartbeatCounter.
+		} catch (OpenemsError.OpenemsNamedException e) {
+			this.log.warn("Couldn't write in Channel " + e.getMessage());
+		}
+		if (this.getHeartBeatOut().isDefined()) {
+			int receivedHeartbeatCounter = this.getHeartBeatOut().get();	// Get last received heartbeatCounter value.
+			if (receivedHeartbeatCounter == this.heartbeatCounter) {		// Test if the sent value was received.
+				this.connectionTimestamp = LocalDateTime.now();			// Now we know the connection is alive. Set timestamp.
+				this.heartbeatCounter++;
+			}
+		}
+		if (ChronoUnit.SECONDS.between(this.connectionTimestamp, LocalDateTime.now()) >= 30) {	// No heart beat match for 30 seconds means connection is dead.
+			this.connectionAlive = false;
+		} else {
+			this.connectionAlive = true;
+		}
+		if (this.heartbeatCounter >= 100) {	// Overflow protection.
+			this.heartbeatCounter = 1;
 		}
 
+		boolean turnOnHeater = this.enableSignalHandler.deviceShouldBeHeating(this);
+
+		// Handle ExceptionalState. ExceptionalState overwrites EnableSignal.
+		int exceptionalStateValue = 0;
+		boolean exceptionalStateActive = false;
+		if (this.useExceptionalState) {
+			exceptionalStateActive = this.exceptionalStateHandler.exceptionalStateActive(this);
+			if (exceptionalStateActive) {
+				exceptionalStateValue = this.getExceptionalStateValue();
+				if (exceptionalStateValue <= 0) {
+					turnOnHeater = false;
+				} else {
+					// When ExceptionalStateValue is between 0 and 100, set heater to this PowerPercentage.
+					turnOnHeater = true;
+					if (exceptionalStateValue > 100) {
+						exceptionalStateValue = 100;
+					}
+					try {
+						// Set heater to control mode power percent, as ExceptionalState value uses that.
+						this.setOperatingMode(OperatingMode.SET_POINT_POWER_PERCENT.getValue());
+						this.setHeatingPowerPercentSetpoint(exceptionalStateValue);
+					} catch (OpenemsError.OpenemsNamedException e) {
+						this.log.warn("Couldn't write in Channel " + e.getMessage());
+					}
+				}
+			}
+		}
+
+		// Wait for connection. Then turn on heater and send CommandBits when enableSignal == true.
+		if (this.connectionAlive) {
+			if (turnOnHeater) {
+				try {
+					this.setRunPermission(true);	// Nicht sicher ob das so stimmt. Das eine Handbuch sagt 0 = an, das andere sagt 1 = an.
+				} catch (OpenemsError.OpenemsNamedException e) {
+					this.log.warn("Couldn't write in Channel " + e.getMessage());
+				}
+
+				// If nothing is in the channel yet, take set point power percent as default behavior.
+				boolean useSetPointTemperature = this.getOperatingMode().isDefined() && (this.getOperatingMode().asEnum() == OperatingMode.SET_POINT_TEMPERATURE);
+				try {
+					if (useSetPointTemperature) {
+						this.setCommandBits(0b0101); // Control mode temperature (Temperaturgefuehrte Regelung).
+					} else {
+						this.setCommandBits(0b1001);	// Control mode power (Leistungsgefuehrte Regelung).
+					}
+				} catch (OpenemsError.OpenemsNamedException e) {
+					this.log.warn("Couldn't write in Channel " + e.getMessage());
+				}
+			} else {
+				try {
+					this.setRunPermission(false);
+				} catch (OpenemsError.OpenemsNamedException e) {
+					this.log.warn("Couldn't write in Channel " + e.getMessage());
+				}
+			}
+		}
+	}
+
+	/**
+	 * Information that is printed to the log if ’print info to log’ option is enabled.
+	 */
+	protected void printInfo() {
+		this.logInfo(this.log, "--Buderus Kessel--");
+		this.logInfo(this.log, "Heater STATE channel: " + this.getHeaterState());
+		this.logInfo(this.log, "Heater flow temperature: " + this.getFlowTemperature() + " d°C");
+		this.logInfo(this.log, "Heater maximum flow temperature: " + this.getMaximumFlowTempBoiler1().get() + " d°C");
+		this.logInfo(this.log, "Heater flow temperature change speed: " + this.getIR8002FlowTempRateOfChange().get() + " dK/min");
+		this.logInfo(this.log, "Heater return temperature: " + this.getReturnTemperature() + " d°C");
+		this.logInfo(this.log, "Heater effective power percent: " + this.getEffectiveHeatingPowerPercent() + " %");
+		this.logInfo(this.log, "Heater minimum power percent: " + this.getMinimumPowerPercentBoiler1().get() + " %");
+		this.logInfo(this.log, "Heater set point flow temp: " + this.getRequestedTemperatureSetPointBoiler1().get() + " d°C");
+		this.logInfo(this.log, "Heater set point power percent: " + this.getRequestedPowerPercentSetPointBoiler1().get() + " %");
+		this.logInfo(this.log, "Heater pressure: " + this.getPressureBoiler1().get() + " dBar");
+		this.logInfo(this.log, "Heater number of startups: " + this.getNumberOfStartsBoiler1().get());
+		this.logInfo(this.log, "Heater running time: " + this.getRunningTimeBoiler1().get() + " minutes");
+		this.logInfo(this.log, "Register 402: " + this.getRunPermissionChannel().value().get());
+		this.logInfo(this.log, "Heater status message: " + this.getStatusMessage().get());
+		this.logInfo(this.log, "Heater warning message: " + this.getWarningMessage().get());
+		this.logInfo(this.log, "Heater error message: " + this.getErrorMessage().get());
+		this.logInfo(this.log, "");
 	}
 }

@@ -31,7 +31,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGrid {
          *     <li> Unit: Decimal degree Celsius
          * </ul>
          */
-        IR507_AUSSENTEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
+        IR507_AUSSENTEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS)),
 
         /**
          * Heating circuit 1 temperature.
@@ -40,7 +40,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGrid {
          *      <li> Unit: Decimal degree Celsius
          * </ul>
          */
-        IR508_ISTTEMPHK1(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
+        IR508_ISTTEMPHK1(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS)),
 
         /**
          * Heating circuit 1 setpoint temperature, if software version is WPM 3i.
@@ -49,7 +49,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGrid {
          *      <li> Unit: Decimal degree Celsius
          * </ul>
          */
-        IR509_SOLLTEMPHK1(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
+        IR509_SOLLTEMPHK1(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS)),
 
         /**
          * Heating circuit 1 setpoint temperature, if software version is WPMsystem and WPM 3.
@@ -58,7 +58,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGrid {
          *      <li> Unit: Decimal degree Celsius
          * </ul>
          */
-        IR510_SOLLTEMPHK1(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
+        IR510_SOLLTEMPHK1(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS)),
 
         /**
          * Heating circuit 1 setpoint temperature. (Mapped from the software dependent channels)
@@ -67,7 +67,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGrid {
          *      <li> Unit: Decimal degree Celsius
          * </ul>
          */
-        SOLLTEMPHK1(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
+        SOLLTEMPHK1(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS)),
 
         /**
          * Heating circuit 2 temperature.
@@ -76,7 +76,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGrid {
          *      <li> Unit: Decimal degree Celsius
          * </ul>
          */
-        IR511_ISTTEMPHK2(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
+        IR511_ISTTEMPHK2(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS)),
 
         /**
          * Heating circuit 2 setpoint temperature.
@@ -85,7 +85,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGrid {
          *      <li> Unit: Decimal degree Celsius
          * </ul>
          */
-        IR512_SOLLTEMPHK2(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
+        IR512_SOLLTEMPHK2(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS)),
 
         /**
          * Flow temperature heat pump.
@@ -94,7 +94,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGrid {
          *      <li> Unit: Decimal degree Celsius
          * </ul>
          */
-        IR513_VORLAUFISTTEMPWP(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
+        IR513_VORLAUFISTTEMPWP(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS)),
 
         /**
          * Flow temperature auxiliary heater.
@@ -103,7 +103,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGrid {
          *      <li> Unit: Decimal degree Celsius
          * </ul>
          */
-        IR514_VORLAUFISTTEMPNHZ(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
+        IR514_VORLAUFISTTEMPNHZ(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS)),
 
         //IR515_VORLAUFISTTEMP -> Heater FLOW_TEMPERATURE
 
@@ -116,7 +116,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGrid {
          *      <li> Unit: Decimal degree Celsius
          * </ul>
          */
-        IR517_FESTWERTSOLLTEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
+        IR517_FESTWERTSOLLTEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS)),
 
         /**
          * Storage tank temperature.
@@ -125,7 +125,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGrid {
          *      <li> Unit: Decimal degree Celsius
          * </ul>
          */
-        IR518_PUFFERISTTEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
+        IR518_PUFFERISTTEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS)),
 
         /**
          * Storage tank temperature, setpoint.
@@ -134,7 +134,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGrid {
          *      <li> Unit: Decimal degree Celsius
          * </ul>
          */
-        IR519_PUFFERSOLLTEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
+        IR519_PUFFERSOLLTEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS)),
 
         /**
          * Heating circuit pressure.
@@ -161,7 +161,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGrid {
          *      <li> Unit: Decimal degree Celsius
          * </ul>
          */
-        IR522_WWISTTEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
+        IR522_WWISTTEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS)),
 
         /**
          * Domestic hot water temperature, setpoint.
@@ -170,7 +170,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGrid {
          *      <li> Unit: Decimal degree Celsius
          * </ul>
          */
-        IR523_WWSOLLTEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
+        IR523_WWSOLLTEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS)),
 
         /**
          * Ventilation cooling temperature.
@@ -179,7 +179,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGrid {
          *      <li> Unit: Decimal degree Kelvin
          * </ul>
          */
-        IR524_GEBLAESEISTTEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZI_KELVIN)),
+        IR524_GEBLAESEISTTEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DECI_KELVIN)),
 
         /**
          * Ventilation cooling temperature, setpoint.
@@ -188,7 +188,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGrid {
          *      <li> Unit: Decimal degree Kelvin
          * </ul>
          */
-        IR525_GEBLAESESOLLTEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZI_KELVIN)),
+        IR525_GEBLAESESOLLTEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DECI_KELVIN)),
 
         /**
          * Surface cooling temperature.
@@ -197,7 +197,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGrid {
          *      <li> Unit: Decimal degree Kelvin
          * </ul>
          */
-        IR526_FLAECHEISTTEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZI_KELVIN)),
+        IR526_FLAECHEISTTEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DECI_KELVIN)),
 
         /**
          * Surface cooling temperature, setpoint.
@@ -206,7 +206,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGrid {
          *      <li> Unit: Decimal degree Kelvin
          * </ul>
          */
-        IR527_FLAECHESOLLTEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZI_KELVIN)),
+        IR527_FLAECHESOLLTEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DECI_KELVIN)),
 
         /**
          * Status bits.
@@ -531,7 +531,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGrid {
          *      <li> Unit: Decimal degree Celsius
          * </ul>
          */
-        HR1502_KOMFORTTEMPHK1(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
+        HR1502_KOMFORTTEMPHK1(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
 
         /**
          * ECO temperature setting, heating circuit 1.
@@ -540,7 +540,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGrid {
          *      <li> Unit: Decimal degree Celsius
          * </ul>
          */
-        HR1503_ECOTEMPHK1(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
+        HR1503_ECOTEMPHK1(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
 
         /**
          * Heating curve slope setting, heating circuit 1.
@@ -557,7 +557,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGrid {
          *      <li> Unit: Decimal degree Celsius
          * </ul>
          */
-        HR1505_KOMFORTTEMPHK2(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
+        HR1505_KOMFORTTEMPHK2(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
 
         /**
          * ECO temperature setting, heating circuit 2.
@@ -566,7 +566,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGrid {
          *      <li> Unit: Decimal degree Celsius
          * </ul>
          */
-        HR1506_ECOTEMPHK2(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
+        HR1506_ECOTEMPHK2(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
 
         /**
          * Heating curve slope setting, heating circuit 2.
@@ -584,7 +584,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGrid {
          *      <li> Unit: Decimal degree Celsius
          * </ul>
          */
-        HR1508_FESTWERTBETRIEB(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
+        HR1508_FESTWERTBETRIEB(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
 
         /**
          * Auxiliary heater activation temperature, heating circuit. Below this temperature the auxiliary heater will
@@ -594,7 +594,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGrid {
          *      <li> Unit: Decimal degree Celsius
          * </ul>
          */
-        HR1509_BIVALENZTEMPERATURHZG(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
+        HR1509_BIVALENZTEMPERATURHZG(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
 
         /**
          * Comfort temperature setting, domestic hot water.
@@ -603,7 +603,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGrid {
          *      <li> Unit: Decimal degree Celsius
          * </ul>
          */
-        HR1510_KOMFORTTEMPWW(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
+        HR1510_KOMFORTTEMPWW(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
 
         /**
          * ECO temperature setting, domestic hot water.
@@ -612,7 +612,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGrid {
          *      <li> Unit: Decimal degree Celsius
          * </ul>
          */
-        HR1511_ECOTEMPWW(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
+        HR1511_ECOTEMPWW(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
 
         /**
          * Number of stages, domestic hot water.
@@ -630,7 +630,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGrid {
          *      <li> Unit: Decimal degree Celsius
          * </ul>
          */
-        HR1513_BIVALENZTEMPERATURWW(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
+        HR1513_BIVALENZTEMPERATURWW(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
 
         /**
          * Cooling: Flow temperature setpoint, surface cooling.
@@ -639,7 +639,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGrid {
          *      <li> Unit: Decimal degree Celsius
          * </ul>
          */
-        HR1514_VORLAUFSOLLTEMPFLAECHENKUEHLUNG(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
+        HR1514_VORLAUFSOLLTEMPFLAECHENKUEHLUNG(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
 
         /**
          * Cooling: Flow temperature hysteresis, surface cooling.
@@ -648,7 +648,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGrid {
          *      <li> Unit: Decimal degree Kelvin
          * </ul>
          */
-        HR1515_HYSTERESEVORLAUFTEMPFLAECHENKUEHLUNG(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZI_KELVIN).accessMode(AccessMode.READ_WRITE)),
+        HR1515_HYSTERESEVORLAUFTEMPFLAECHENKUEHLUNG(Doc.of(OpenemsType.INTEGER).unit(Unit.DECI_KELVIN).accessMode(AccessMode.READ_WRITE)),
 
         /**
          * Cooling: Room temperature setpoint, surface cooling.
@@ -657,7 +657,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGrid {
          *      <li> Unit: Decimal degree Celsius
          * </ul>
          */
-        HR1516_RAUMSOLLTEMPFLAECHENKUEHLUNG(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
+        HR1516_RAUMSOLLTEMPFLAECHENKUEHLUNG(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
 
         /**
          * Cooling: Flow temperature setpoint, ventilation cooling.
@@ -666,7 +666,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGrid {
          *      <li> Unit: Decimal degree Celsius
          * </ul>
          */
-        HR1517_VORLAUFSOLLTEMPGEBLAESEKUEHLUNG(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
+        HR1517_VORLAUFSOLLTEMPGEBLAESEKUEHLUNG(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
 
         /**
          * Cooling: Flow temperature hysteresis, ventilation cooling.
@@ -675,7 +675,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGrid {
          *      <li> Unit: Decimal degree Kelvin
          * </ul>
          */
-        HR1518_HYSTERESEVORLAUFTEMPGEBLAESEKUEHLUNG(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZI_KELVIN).accessMode(AccessMode.READ_WRITE)),
+        HR1518_HYSTERESEVORLAUFTEMPGEBLAESEKUEHLUNG(Doc.of(OpenemsType.INTEGER).unit(Unit.DECI_KELVIN).accessMode(AccessMode.READ_WRITE)),
 
         /**
          * Cooling: Room temperature setpoint, ventilation cooling.
@@ -684,7 +684,7 @@ public interface HeatpumpTecalorChannel extends HeatpumpSmartGrid {
          *      <li> Unit: Decimal degree Celsius
          * </ul>
          */
-        HR1519_RAUMSOLLTEMPGEBLAESEKUEHLUNG(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
+        HR1519_RAUMSOLLTEMPGEBLAESEKUEHLUNG(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
 
         /**
          * Turn on/off SG-Ready mode.

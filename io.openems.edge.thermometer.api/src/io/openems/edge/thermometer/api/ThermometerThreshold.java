@@ -32,7 +32,7 @@ public interface ThermometerThreshold extends Thermometer {
          * </ul>
          */
         THRESHOLD(Doc.of(OpenemsType.INTEGER) //
-                .unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE).onInit(
+                .unit(Unit.DECIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE).onInit(
                         channel -> ((IntegerWriteChannel) channel).onSetNextWrite(channel::setNextValue)
                 )),
         /**
@@ -66,7 +66,7 @@ public interface ThermometerThreshold extends Thermometer {
          *          <li> Unit: decimal degree Celsius
          *          </ul>
          */
-        SET_POINT_TEMPERATURE(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE).onInit(
+        SET_POINT_TEMPERATURE(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE).onInit(
                 channel -> ((IntegerWriteChannel) channel).onSetNextWrite(channel::setNextValue)
         ));
 

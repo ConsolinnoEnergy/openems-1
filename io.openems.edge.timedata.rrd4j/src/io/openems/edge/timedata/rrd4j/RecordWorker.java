@@ -230,9 +230,9 @@ public class RecordWorker extends AbstractImmediateWorker {
 		case DECI_VOLT:
 		case DEGREE:
 		case DEGREE_CELSIUS:
-		case DEZIDEGREE_CELSIUS:
-		case DEZI_KELVIN:
-		case DEZI_KELVIN_PER_MINUTE:
+		case DECIDEGREE_CELSIUS:
+		case DECI_KELVIN:
+		case DECI_KELVIN_PER_MINUTE:
 		case HECTO_PASCAL:
 		case HERTZ:
 		case HOUR:

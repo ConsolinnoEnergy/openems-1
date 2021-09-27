@@ -26,7 +26,7 @@ public interface HeatingCurveRegulatorChannel extends OpenemsComponent {
          * </ul>
          */
 
-        HEATING_TEMPERATURE(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_ONLY)),
+        HEATING_TEMPERATURE(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS).accessMode(AccessMode.READ_ONLY)),
 
         /**
          * Activate the heater.

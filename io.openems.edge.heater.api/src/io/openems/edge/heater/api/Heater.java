@@ -59,7 +59,7 @@ public interface Heater extends OpenemsComponent {
 		 *     <li> Unit: dezidegree Celsius
 		 * </ul>
 		 */
-		SET_POINT_TEMPERATURE(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
+		SET_POINT_TEMPERATURE(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
 
 		/**
 		 * The heating power set point.
@@ -94,7 +94,7 @@ public interface Heater extends OpenemsComponent {
 		 *     <li> Unit: dezidegree Celsius
 		 * </ul>
          */
-		FLOW_TEMPERATURE(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_ONLY)),
+		FLOW_TEMPERATURE(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS).accessMode(AccessMode.READ_ONLY)),
 
         /**
          * Temperature value of the water return flow.
@@ -105,7 +105,7 @@ public interface Heater extends OpenemsComponent {
 		 *     <li> Unit: dezidegree Celsius
 		 * </ul>
          */
-        RETURN_TEMPERATURE(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_ONLY)),
+        RETURN_TEMPERATURE(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS).accessMode(AccessMode.READ_ONLY)),
 
 		/**
 		 * Effective (current) heating power.

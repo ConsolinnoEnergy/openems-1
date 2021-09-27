@@ -7,7 +7,6 @@ import io.openems.common.types.OpenemsType;
 import io.openems.edge.common.channel.Doc;
 import io.openems.edge.common.channel.IntegerReadChannel;
 import io.openems.edge.common.channel.IntegerWriteChannel;
-import io.openems.edge.common.channel.StringReadChannel;
 import io.openems.edge.common.channel.value.Value;
 import io.openems.edge.heater.api.Chp;
 
@@ -74,7 +73,7 @@ public interface ChpWolfChannel extends Chp {
          * <li>Unit: Decimal degree Celsius
          * </ul>
          */
-        HR32_BUFFERTANK_TEMP_UPPER(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_ONLY)),
+        HR32_BUFFERTANK_TEMP_UPPER(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS).accessMode(AccessMode.READ_ONLY)),
 
         /**
          * Buffer tank temperature middle sensor.
@@ -83,7 +82,7 @@ public interface ChpWolfChannel extends Chp {
          * <li>Unit: Decimal degree Celsius
          * </ul>
          */
-        HR33_BUFFERTANK_TEMP_MIDDLE(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_ONLY)),
+        HR33_BUFFERTANK_TEMP_MIDDLE(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS).accessMode(AccessMode.READ_ONLY)),
 
         /**
          * Buffer tank temperature lower sensor.
@@ -92,7 +91,7 @@ public interface ChpWolfChannel extends Chp {
          * <li>Unit: Decimal degree Celsius
          * </ul>
          */
-        HR34_BUFFERTANK_TEMP_LOWER(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_ONLY)),
+        HR34_BUFFERTANK_TEMP_LOWER(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS).accessMode(AccessMode.READ_ONLY)),
 
         // HR263_ELECTRICAL_POWER - Included in ChpBasic
 

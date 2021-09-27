@@ -3,6 +3,7 @@ package io.openems.edge.heater.gasboiler.buderus.api;
 import io.openems.common.channel.AccessMode;
 import io.openems.common.channel.Unit;
 import io.openems.common.exceptions.OpenemsError;
+import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
 import io.openems.common.types.OpenemsType;
 import io.openems.edge.common.channel.BooleanWriteChannel;
 import io.openems.edge.common.channel.Doc;
@@ -18,17 +19,17 @@ import io.openems.edge.heater.api.Heater;
  */
 public interface HeaterBuderus extends Heater {
 
-    public enum ChannelId implements io.openems.edge.common.channel.ChannelId {
+    enum ChannelId implements io.openems.edge.common.channel.ChannelId {
 
         // Input Registers, read only. The register address is in the channel name, so IR0 means input register 0.
         // Unsigned 16 bit, unless stated otherwise.
 
-        //IR384_STRATEGIE_RETURN_TEMPERATURE -> Does not work. Use IR8003_RETURN_TEMP_TANK1.
+        //IR384_STRATEGY_RETURN_TEMPERATURE -> Does not work. Use IR8003_RETURN_TEMP_TANK1.
 
-        //IR385_STRATEGIE_FLOW_TEMPERATURE -> Use IR8001_FLOW_TEMP_TANK1.
+        //IR385_STRATEGY_FLOW_TEMPERATURE -> Use IR8001_FLOW_TEMP_TANK1.
 
         /**
-         * Status Strategie.
+         * Status strategy.
          * 0 - Unknown (Ubekannt)
          * 1 - Warning (Warnung)
          * 2 - Error (Stoerung)
@@ -40,18 +41,18 @@ public interface HeaterBuderus extends Heater {
          *      <li> Type: Integer
          * </ul>
          */
-        IR386_STATUS_STRATEGIE(Doc.of(OpenemsType.INTEGER).accessMode(AccessMode.READ_ONLY)),
+        IR386_STATUS_STRATEGY(Doc.of(OpenemsType.INTEGER).accessMode(AccessMode.READ_ONLY)),
 
-        //IR387_STRATEGIE_READ_EFFECTIVE_POWER_PERCENT -> Heater, READ_EFFECTIVE_POWER_PERCENT. Fällt weg. Nimm Wert vom Kessel.
+        //IR387_STRATEGY_READ_EFFECTIVE_POWER_PERCENT -> Heater, READ_EFFECTIVE_POWER_PERCENT. Fällt weg. Nimm Wert vom Kessel.
 
         /**
-         * Who requested heater to turn on?
-         * 0-Nicht aktiv
-         * 1-Regelgerät
-         * 2-Intern
-         * 3-Manueller Betrieb
-         * 4-Extern
-         * 5-Intern+Extern
+         * Who requested heater to turn on.
+         * 0 - Not active (Nicht aktiv)
+         * 1 - Controller (Regelgerät)
+         * 2 - Internal (Intern)
+         * 3 - Manual operation (Manueller Betrieb)
+         * 4 - External (Extern)
+         * 5 - Internal + external (Intern + Extern)
          * <ul>
          *      <li> Type: Integer
          * </ul>
@@ -59,192 +60,193 @@ public interface HeaterBuderus extends Heater {
         IR390_RUNREQUEST_INITIATOR(Doc.of(OpenemsType.INTEGER).accessMode(AccessMode.READ_ONLY)),
 
         /**
-         * Strategie Bitblock.
+         * Strategy bitblock.
          * <ul>
          *      <li> Type: Integer
          * </ul>
          */
-        IR394_STRATEGIE_BITBLOCK(Doc.of(OpenemsType.INTEGER).accessMode(AccessMode.READ_ONLY)),
+        IR394_STRATEGY_BITBLOCK(Doc.of(OpenemsType.INTEGER).accessMode(AccessMode.READ_ONLY)),
 
         /**
-         * Maximale Vorlauftemperatur angefordert. Degree Celsius (NOT dezidegree) vom Kessel, auf Umwandlung achten!
-         * Signed.
-         * Bedeutung vermutlich: Höchster Wert, der für die Vorlauftemperatur angefordert wurde.
+         * Maximum flow temperature requested (Maximale Vorlauftemperatur angefordert).
+         * Modbus value is degree Celsius (NOT decidegree), watch the conversion! Signed.
+         * Not exactly sure what this does.
          * <ul>
          *      <li> Type: Integer
-         *      <li> Unit: Dezidegree Celsius
+         *      <li> Unit: Decidegree Celsius
          * </ul>
          */
-        IR395_MAX_FLOW_TEMP_ANGEFORDERT(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_ONLY)),
+        IR395_MAX_FLOW_TEMP_REQUESTED(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS).accessMode(AccessMode.READ_ONLY)),
 
         /**
-         * Fehlerregister 1. Doubleword.
-         * <ul>
-         *      <li> Type: Integer
-         * </ul>
-         */
-        IR476_FEHLERREGISTER1(Doc.of(OpenemsType.INTEGER).accessMode(AccessMode.READ_ONLY)),
-
-        /**
-         * Fehlerregister 2. Doubleword.
+         * Error register 1. Doubleword.
          * <ul>
          *      <li> Type: Integer
          * </ul>
          */
-        IR478_FEHLERREGISTER2(Doc.of(OpenemsType.INTEGER).accessMode(AccessMode.READ_ONLY)),
+        IR476_ERROR_REGISTER1(Doc.of(OpenemsType.INTEGER).accessMode(AccessMode.READ_ONLY)),
 
         /**
-         * Fehlerregister 3. Doubleword.
+         * Error register 2. Doubleword.
          * <ul>
          *      <li> Type: Integer
          * </ul>
          */
-        IR480_FEHLERREGISTER3(Doc.of(OpenemsType.INTEGER).accessMode(AccessMode.READ_ONLY)),
+        IR478_ERROR_REGISTER2(Doc.of(OpenemsType.INTEGER).accessMode(AccessMode.READ_ONLY)),
 
         /**
-         * Fehlerregister 4. Doubleword.
+         * Error register 3. Doubleword.
          * <ul>
          *      <li> Type: Integer
          * </ul>
          */
-        IR482_FEHLERREGISTER4(Doc.of(OpenemsType.INTEGER).accessMode(AccessMode.READ_ONLY)),
-
-        //IR8001_FLOW_TEMP_TANK1 -> Heater, FLOW_TEMPERATURE. d°C, signed.
+        IR480_ERROR_REGISTER3(Doc.of(OpenemsType.INTEGER).accessMode(AccessMode.READ_ONLY)),
 
         /**
-         * Temperatur Vorlauf Änderungsgeschwindigkeit. Unit dezi Kelvin / min, signed.
+         * Error register 4. Doubleword.
          * <ul>
          *      <li> Type: Integer
-         *      <li> Unit: Dezi Kelvin / min
          * </ul>
          */
-        IR8002_FLOW_TEMP_AENDERUNGSGESCHWINDIGKEIT_KESSEL1(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZI_KELVIN_PER_MINUTE).accessMode(AccessMode.READ_ONLY)),
+        IR482_ERROR_REGISTER4(Doc.of(OpenemsType.INTEGER).accessMode(AccessMode.READ_ONLY)),
 
-        //IR8003_RETURN_TEMP_TANK1 -> Heater, RETURN_TEMPERATURE. d°C, signed.
-
-        //IR8004_EFFECTIVE_POWER_TANK1 -> Heater, EFFECTIVE_HEATING_POWER_PERCENT. %, unsigned.
+        //IR8001_FLOW_TEMP_BOILER1 -> Heater, FLOW_TEMPERATURE. d°C, signed.
 
         /**
-         * Wärmeerzeuger in Lastbegrenzung Kessel 1.
+         * Flow temperature rate of change (Aenderungsgeschwindigkeit). Unit is deci Kelvin / min, signed.
+         * <ul>
+         *      <li> Type: Integer
+         *      <li> Unit: Deci Kelvin / min
+         * </ul>
+         */
+        IR8002_FLOW_TEMP_RATE_OF_CHANGE_BOILER1(Doc.of(OpenemsType.INTEGER).unit(Unit.DECI_KELVIN_PER_MINUTE).accessMode(AccessMode.READ_ONLY)),
+
+        //IR8003_RETURN_TEMP_BOILER1 -> Heater, RETURN_TEMPERATURE. d°C, signed.
+
+        //IR8004_EFFECTIVE_POWER_BOILER1 -> Heater, EFFECTIVE_HEATING_POWER_PERCENT. %, unsigned.
+
+        /**
+         * Heater at load limit boiler 1 (Wärmeerzeuger in Lastbegrenzung Kessel 1).
          * <ul>
          *      <li> Type: Integer
          *      <li> Unit: Percent
          * </ul>
          */
-        IR8005_WAERMEERZEUGER_IN_LASTBEGRENZUNG_KESSEL1(Doc.of(OpenemsType.INTEGER).unit(Unit.PERCENT).accessMode(AccessMode.READ_ONLY)),
+        IR8005_HEATER_AT_LOAD_LIMIT_BOILER1(Doc.of(OpenemsType.INTEGER).unit(Unit.PERCENT).accessMode(AccessMode.READ_ONLY)),
 
         //IR8006_BETRIEBS_TEMPERATUR -> liefert keinen Wert.
 
         /**
-         * Maximale Leistung Kessel 1.
+         * Maximum power boiler 1 (Maximale Leistung Kessel 1).
          * <ul>
          *      <li> Type: Integer
          *      <li> Unit: Kilowatt
          * </ul>
          */
-        IR8007_MAXIMUM_POWER_KESSEL1(Doc.of(OpenemsType.INTEGER).unit(Unit.KILOWATT).accessMode(AccessMode.READ_ONLY)),
+        IR8007_MAXIMUM_POWER_BOILER1(Doc.of(OpenemsType.INTEGER).unit(Unit.KILOWATT).accessMode(AccessMode.READ_ONLY)),
 
         /**
-         * Minimale Leistung Kessel 1.
+         * Minimum power boiler 1 (Minimale Leistung Kessel 1). Unit is percent!
          * <ul>
          *      <li> Type: Integer
          *      <li> Unit: Percent
          * </ul>
          */
-        IR8008_MINIMUM_POWER_PERCENT_KESSEL1(Doc.of(OpenemsType.INTEGER).unit(Unit.PERCENT).accessMode(AccessMode.READ_ONLY)),
+        IR8008_MINIMUM_POWER_PERCENT_BOILER1(Doc.of(OpenemsType.INTEGER).unit(Unit.PERCENT).accessMode(AccessMode.READ_ONLY)),
 
         /**
-         * Maximale Vorlauftemp Kessel 1. Degree Celsius (NOT dezidegree) vom Kessel, auf Umwandlung achten! unsigned.
+         * Maximum flow temperature boiler 1 (Maximale Vorlauftemp Kessel 1). 
+         * Modbus value is degree Celsius (NOT decidegree), watch the conversion! Unsigned.
          * <ul>
          *      <li> Type: Integer
-         *      <li> Unit: Dezidegree Celsius
+         *      <li> Unit: Decidegree Celsius
          * </ul>
          */
-        IR8011_MAXIMALE_VORLAUFTEMP_KESSEL1(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_ONLY)),
+        IR8011_MAXIMUM_FLOW_TEMP_BOILER1(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS).accessMode(AccessMode.READ_ONLY)),
 
         /**
-         * Status Kessel 1.
-         * 0-Ubekannt
-         * 1-Warnung
-         * 2-Störung
-         * 3-OK
-         * 4-Nicht aktiv
-         * 5-Kritisch
-         * 6-Keine Info
-         * <ul>
-         *      <li> Type: Integer
-         * </ul>
-         */
-        IR8012_STATUS_KESSEL1(Doc.of(OpenemsType.INTEGER).accessMode(AccessMode.READ_ONLY)),
-
-        /**
-         * Bitblock Kessel 1.
+         * Status boiler 1.
+         * 0 - Unknown (Ubekannt)
+         * 1 - Warning (Warnung)
+         * 2 - Error (Stoerung)
+         * 3 - OK
+         * 4 - Not active (Nicht aktiv)
+         * 5 - Critical (Kritisch)
+         * 6 - No info (Keine Info)
          * <ul>
          *      <li> Type: Integer
          * </ul>
          */
-        IR8013_BITBLOCK_KESSEL1(Doc.of(OpenemsType.INTEGER).accessMode(AccessMode.READ_ONLY)),
+        IR8012_STATUS_BOILER1(Doc.of(OpenemsType.INTEGER).accessMode(AccessMode.READ_ONLY)),
 
         /**
-         * Angeforderte Sollwertemperatur Kessel 1. Degree Celsius (NOT dezidegree) vom Kessel, auf Umwandlung achten!
-         * unsigned.
+         * Bitblock boiler 1.
          * <ul>
          *      <li> Type: Integer
-         *      <li> Unit: Dezidegree Celsius
          * </ul>
          */
-        IR8015_ANGEFORDERTE_SOLLWERTTEMP_KESSEL1(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_ONLY)),
+        IR8013_BITBLOCK_BOILER1(Doc.of(OpenemsType.INTEGER).accessMode(AccessMode.READ_ONLY)),
 
         /**
-         * Sollwert Leistung Kessel 1, %.
+         * Requested temperature set point boiler 1 (Angeforderte Sollwertemperatur Kessel 1). 
+         * Modbus value is degree Celsius (NOT decidegree), watch the conversion! Unsigned.
+         * <ul>
+         *      <li> Type: Integer
+         *      <li> Unit: Decidegree Celsius
+         * </ul>
+         */
+        IR8015_REQUESTED_TEMPERATURE_SETPOINT_BOILER1(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS).accessMode(AccessMode.READ_ONLY)),
+
+        /**
+         * Set point power percent boiler 1 (Sollwert Leistung Kessel 1, %).
          * <ul>
          *      <li> Type: Integer
          *      <li> Unit: Percent
          * </ul>
          */
-        IR8016_SOLLWERT_LEISTUNG_KESSEL1(Doc.of(OpenemsType.INTEGER).unit(Unit.PERCENT).accessMode(AccessMode.READ_ONLY)),
+        IR8016_SETPOINT_POWER_PERCENT_BOILER1(Doc.of(OpenemsType.INTEGER).unit(Unit.PERCENT).accessMode(AccessMode.READ_ONLY)),
 
         /**
-         * Druck Kessel 1. Decibar, signed.
+         * Pressure boiler 1. Decibar, signed.
          * <ul>
          *      <li> Type: Integer
          *      <li> Unit: Decibar
          * </ul>
          */
-        IR8017_DRUCK_KESSEL1(Doc.of(OpenemsType.INTEGER).unit(Unit.DECI_BAR).accessMode(AccessMode.READ_ONLY)),
+        IR8017_PRESSURE_BOILER1(Doc.of(OpenemsType.INTEGER).unit(Unit.DECI_BAR).accessMode(AccessMode.READ_ONLY)),
 
         /**
-         * Fehlercode Kessel 1.
+         * Error code boiler 1 (Fehlercode Kessel 1).
          * <ul>
          *      <li> Type: Integer
          * </ul>
          */
-        IR8018_FEHLERCODE_KESSEL1(Doc.of(OpenemsType.INTEGER).accessMode(AccessMode.READ_ONLY)),
+        IR8018_ERROR_CODE_BOILER1(Doc.of(OpenemsType.INTEGER).accessMode(AccessMode.READ_ONLY)),
 
         /**
-         * Fehleranzeigecode im Display Kessel 1.
+         * Display error code boiler 1 (Fehleranzeigecode im Display Kessel 1).
          * <ul>
          *      <li> Type: Integer
          * </ul>
          */
-        IR8019_FEHLERCODE_DISPLAY_KESSEL1(Doc.of(OpenemsType.INTEGER).accessMode(AccessMode.READ_ONLY)),
+        IR8019_DISPLAY_ERROR_CODE_BOILER1(Doc.of(OpenemsType.INTEGER).accessMode(AccessMode.READ_ONLY)),
 
         /**
-         * Anzahl Starts Kessel 1. Doubleword.
+         * Number of starts boiler 1 (Anzahl Starts Kessel 1). Doubleword.
          * <ul>
          *      <li> Type: Integer
          * </ul>
          */
-        IR8021_ANZAHL_STARTS_KESSEL1(Doc.of(OpenemsType.INTEGER).accessMode(AccessMode.READ_ONLY)),
+        IR8021_NUMBER_OF_STARTS_BOILER1(Doc.of(OpenemsType.INTEGER).accessMode(AccessMode.READ_ONLY)),
 
         /**
-         * Betriebszeit Kessel 1. Doubleword.
+         * Running time boiler 1 (Betriebszeit Kessel 1). Doubleword.
          * <ul>
          *      <li> Type: Integer
          *      <li> Unit: Minutes
          * </ul>
          */
-        IR8023_BETRIEBSZEIT_KESSEL1(Doc.of(OpenemsType.INTEGER).unit(Unit.MINUTE).accessMode(AccessMode.READ_ONLY)),
+        IR8023_RUNNING_TIME_BOILER1(Doc.of(OpenemsType.INTEGER).unit(Unit.MINUTE).accessMode(AccessMode.READ_ONLY)),
 
         // Holding Registers, read/write. The register address is in the channel name, so HR0 means holding register 0.
         // Unsigned 16 bit, unless stated otherwise.
@@ -330,28 +332,29 @@ public interface HeaterBuderus extends Heater {
     // Input Registers. Read only.
 
     /**
-     * Gets the Channel for {@link ChannelId#IR386_STATUS_STRATEGIE}.
+     * Gets the Channel for {@link ChannelId#IR386_STATUS_STRATEGY}.
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getIR386StatusStrategieChannel() {
-        return this.channel(ChannelId.IR386_STATUS_STRATEGIE);
+    public default IntegerReadChannel getIR386StatusStrategyChannel() {
+        return this.channel(ChannelId.IR386_STATUS_STRATEGY);
     }
 
     /**
-     * Status Strategie.
-     * 0-Ubekannt
-     * 1-Warnung
-     * 2-Störung
-     * 3-OK
-     * 4-Nicht aktiv
-     * 5-Kritisch
-     * 6-Keine Info
+     * Status strategy.
+     * 0 - Unknown (Ubekannt)
+     * 1 - Warning (Warnung)
+     * 2 - Error (Stoerung)
+     * 3 - OK
+     * 4 - Not active (Nicht aktiv)
+     * 5 - Critical (Kritisch)
+     * 6 - No info (Keine Info)
+     * See {@link ChannelId#IR386_STATUS_STRATEGY}.
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getIR386StatusStrategie() {
-        return this.getIR386StatusStrategieChannel().value();
+    public default Value<Integer> getIR386StatusStrategy() {
+        return this.getIR386StatusStrategyChannel().value();
     }
 
     /**
@@ -364,13 +367,14 @@ public interface HeaterBuderus extends Heater {
     }
 
     /**
-     * Who requested heater to turn on?
-     * 0-Nicht aktiv
-     * 1-Regelgerät
-     * 2-Intern
-     * 3-Manueller Betrieb
-     * 4-Extern
-     * 5-Intern+Extern
+     * Who requested heater to turn on.
+     * 0 - Not active (Nicht aktiv)
+     * 1 - Controller (Regelgerät)
+     * 2 - Internal (Intern)
+     * 3 - Manual operation (Manueller Betrieb)
+     * 4 - External (Extern)
+     * 5 - Internal + external (Intern + Extern)
+     * See {@link ChannelId#IR390_RUNREQUEST_INITIATOR}.
      *
      * @return the Channel {@link Value}
      */
@@ -379,371 +383,391 @@ public interface HeaterBuderus extends Heater {
     }
 
     /**
-     * Gets the Channel for {@link ChannelId#IR394_STRATEGIE_BITBLOCK}.
+     * Gets the Channel for {@link ChannelId#IR394_STRATEGY_BITBLOCK}.
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getIR394StrategieBitblockChannel() {
-        return this.channel(ChannelId.IR394_STRATEGIE_BITBLOCK);
+    public default IntegerReadChannel getIR394StrategyBitblockChannel() {
+        return this.channel(ChannelId.IR394_STRATEGY_BITBLOCK);
     }
 
     /**
-     * Strategie Bitblock.
+     * Strategy bitblock.
+     * See {@link ChannelId#IR394_STRATEGY_BITBLOCK}.
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getIR394StrategieBitblock() {
-        return this.getIR394StrategieBitblockChannel().value();
+    public default Value<Integer> getIR394StrategyBitblock() {
+        return this.getIR394StrategyBitblockChannel().value();
     }
 
     /**
-     * Gets the Channel for {@link ChannelId#IR395_MAX_FLOW_TEMP_ANGEFORDERT}.
+     * Gets the Channel for {@link ChannelId#IR395_MAX_FLOW_TEMP_REQUESTED}.
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getIR395MaxFlowTempAngefordertChannel() {
-        return this.channel(ChannelId.IR395_MAX_FLOW_TEMP_ANGEFORDERT);
+    public default IntegerReadChannel getIR395MaxFlowTempRequestedChannel() {
+        return this.channel(ChannelId.IR395_MAX_FLOW_TEMP_REQUESTED);
     }
 
     /**
-     * Maximale Vorlauftemperatur angefordert.
-     * Bedeutung vermutlich: Höchster Wert, der für die Vorlauftemperatur angefordert wurde.
+     * Maximum flow temperature requested (Maximale Vorlauftemperatur angefordert).
+     * Not exactly sure what this does.
+     * See {@link ChannelId#IR395_MAX_FLOW_TEMP_REQUESTED}.
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getIR395MaxFlowTempAngefordert() {
-        return this.getIR395MaxFlowTempAngefordertChannel().value();
+    public default Value<Integer> getIR395MaxFlowTempRequested() {
+        return this.getIR395MaxFlowTempRequestedChannel().value();
     }
 
     /**
-     * Gets the Channel for {@link ChannelId#IR476_FEHLERREGISTER1}.
+     * Gets the Channel for {@link ChannelId#IR476_ERROR_REGISTER1}.
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getIR476Fehlerregister1Channel() {
-        return this.channel(ChannelId.IR476_FEHLERREGISTER1);
+    public default IntegerReadChannel getIR476ErrorRegister1Channel() {
+        return this.channel(ChannelId.IR476_ERROR_REGISTER1);
     }
 
     /**
-     * Fehlerregister 1.
+     * Error register 1.
+     * See {@link ChannelId#IR476_ERROR_REGISTER1}.
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getIR476Fehlerregister1() {
-        return this.getIR476Fehlerregister1Channel().value();
+    public default Value<Integer> getIR476ErrorRegister1() {
+        return this.getIR476ErrorRegister1Channel().value();
     }
 
     /**
-     * Gets the Channel for {@link ChannelId#IR478_FEHLERREGISTER2}.
+     * Gets the Channel for {@link ChannelId#IR478_ERROR_REGISTER2}.
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getIR478Fehlerregister2Channel() {
-        return this.channel(ChannelId.IR478_FEHLERREGISTER2);
+    public default IntegerReadChannel getIR478ErrorRegister2Channel() {
+        return this.channel(ChannelId.IR478_ERROR_REGISTER2);
     }
 
     /**
-     * Fehlerregister 2.
+     * Error register 2.
+     * See {@link ChannelId#IR478_ERROR_REGISTER2}.
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getIR478Fehlerregister2() {
-        return this.getIR478Fehlerregister2Channel().value();
+    public default Value<Integer> getIR478ErrorRegister2() {
+        return this.getIR478ErrorRegister2Channel().value();
     }
 
     /**
-     * Gets the Channel for {@link ChannelId#IR480_FEHLERREGISTER3}.
+     * Gets the Channel for {@link ChannelId#IR480_ERROR_REGISTER3}.
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getIR480Fehlerregister3Channel() {
-        return this.channel(ChannelId.IR480_FEHLERREGISTER3);
+    public default IntegerReadChannel getIR480ErrorRegister3Channel() {
+        return this.channel(ChannelId.IR480_ERROR_REGISTER3);
     }
 
     /**
-     * Fehlerregister 3.
+     * Error register 3.
+     * See {@link ChannelId#IR480_ERROR_REGISTER3}.
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getIR480Fehlerregister3() {
-        return this.getIR480Fehlerregister3Channel().value();
+    public default Value<Integer> getIR480ErrorRegister3() {
+        return this.getIR480ErrorRegister3Channel().value();
     }
 
     /**
-     * Gets the Channel for {@link ChannelId#IR482_FEHLERREGISTER4}.
+     * Gets the Channel for {@link ChannelId#IR482_ERROR_REGISTER4}.
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getIR482Fehlerregister4Channel() {
-        return this.channel(ChannelId.IR482_FEHLERREGISTER4);
+    public default IntegerReadChannel getIR482ErrorRegister4Channel() {
+        return this.channel(ChannelId.IR482_ERROR_REGISTER4);
     }
 
     /**
-     * Fehlerregister 4.
+     * Error register 4.
+     * See {@link ChannelId#IR482_ERROR_REGISTER4}.
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getIR482Fehlerregister4() {
-        return this.getIR482Fehlerregister4Channel().value();
+    public default Value<Integer> getIR482ErrorRegister4() {
+        return this.getIR482ErrorRegister4Channel().value();
     }
 
     /**
-     * Gets the Channel for {@link ChannelId#IR8002_FLOW_TEMP_AENDERUNGSGESCHWINDIGKEIT_KESSEL1}.
+     * Gets the Channel for {@link ChannelId#IR8002_FLOW_TEMP_RATE_OF_CHANGE_BOILER1}.
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getIR8002FlowTempChangeSpeedChannel() {
-        return this.channel(ChannelId.IR8002_FLOW_TEMP_AENDERUNGSGESCHWINDIGKEIT_KESSEL1);
+    public default IntegerReadChannel getIR8002FlowTempRateOfChangeChannel() {
+        return this.channel(ChannelId.IR8002_FLOW_TEMP_RATE_OF_CHANGE_BOILER1);
     }
 
     /**
-     * Flow temperature change speed, unit is deci Kelvin / min.
+     * Flow temperature rate of change (Aenderungsgeschwindigkeit). Unit is deci Kelvin / min.
+     * See {@link ChannelId#IR8002_FLOW_TEMP_RATE_OF_CHANGE_BOILER1}.
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getIR8002FlowTempChangeSpeed() {
-        return this.getIR8002FlowTempChangeSpeedChannel().value();
+    public default Value<Integer> getIR8002FlowTempRateOfChange() {
+        return this.getIR8002FlowTempRateOfChangeChannel().value();
     }
 
     /**
-     * Gets the Channel for {@link ChannelId#IR8005_WAERMEERZEUGER_IN_LASTBEGRENZUNG_KESSEL1}.
+     * Gets the Channel for {@link ChannelId#IR8005_HEATER_AT_LOAD_LIMIT_BOILER1}.
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getIR8005WaermeerzeugerInLastbegrenzungChannel() {
-        return this.channel(ChannelId.IR8005_WAERMEERZEUGER_IN_LASTBEGRENZUNG_KESSEL1);
+    public default IntegerReadChannel getIR8005HeaterAtLoadLimitChannel() {
+        return this.channel(ChannelId.IR8005_HEATER_AT_LOAD_LIMIT_BOILER1);
     }
 
     /**
-     * Waermeerzeuger in Lastbegrenzung, unit is %.
+     * Heater at load limit boiler 1 (Wärmeerzeuger in Lastbegrenzung Kessel 1), unit is %.
+     * See {@link ChannelId#IR8005_HEATER_AT_LOAD_LIMIT_BOILER1}.
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getIR8005WaermeerzeugerInLastbegrenzung() {
-        return this.getIR8005WaermeerzeugerInLastbegrenzungChannel().value();
+    public default Value<Integer> getIR8005HeaterAtLoadLimit() {
+        return this.getIR8005HeaterAtLoadLimitChannel().value();
     }
 
     /**
-     * Gets the Channel for {@link ChannelId#IR8007_MAXIMUM_POWER_KESSEL1}.
+     * Gets the Channel for {@link ChannelId#IR8007_MAXIMUM_POWER_BOILER1}.
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getMaximumPowerKessel1Channel() {
-        return this.channel(ChannelId.IR8007_MAXIMUM_POWER_KESSEL1);
+    public default IntegerReadChannel getMaximumPowerBoiler1Channel() {
+        return this.channel(ChannelId.IR8007_MAXIMUM_POWER_BOILER1);
     }
 
     /**
      * Get the maximum thermal output of Kessel 1, unit is kW.
+     * See {@link ChannelId#IR8007_MAXIMUM_POWER_BOILER1}.
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getMaximumPowerKessel1() {
-        return this.getMaximumPowerKessel1Channel().value();
+    public default Value<Integer> getMaximumPowerBoiler1() {
+        return this.getMaximumPowerBoiler1Channel().value();
     }
 
     /**
-     * Gets the Channel for {@link ChannelId#IR8008_MINIMUM_POWER_PERCENT_KESSEL1}.
+     * Gets the Channel for {@link ChannelId#IR8008_MINIMUM_POWER_PERCENT_BOILER1}.
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getMinimumPowerPercentKessel1Channel() {
-        return this.channel(ChannelId.IR8008_MINIMUM_POWER_PERCENT_KESSEL1);
+    public default IntegerReadChannel getMinimumPowerPercentBoiler1Channel() {
+        return this.channel(ChannelId.IR8008_MINIMUM_POWER_PERCENT_BOILER1);
     }
 
     /**
      * Get the minimum thermal output of Kessel 1 in percent.
+     * See {@link ChannelId#IR8008_MINIMUM_POWER_PERCENT_BOILER1}.
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getMinimumPowerPercentKessel1() {
-        return this.getMinimumPowerPercentKessel1Channel().value();
+    public default Value<Integer> getMinimumPowerPercentBoiler1() {
+        return this.getMinimumPowerPercentBoiler1Channel().value();
     }
 
     /**
-     * Gets the Channel for {@link ChannelId#IR8011_MAXIMALE_VORLAUFTEMP_KESSEL1}.
+     * Gets the Channel for {@link ChannelId#IR8011_MAXIMUM_FLOW_TEMP_BOILER1}.
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getMaximumFlowTempKessel1Channel() {
-        return this.channel(ChannelId.IR8011_MAXIMALE_VORLAUFTEMP_KESSEL1);
+    public default IntegerReadChannel getMaximumFlowTempBoiler1Channel() {
+        return this.channel(ChannelId.IR8011_MAXIMUM_FLOW_TEMP_BOILER1);
     }
 
     /**
-     * Get the maximum flow temperature of Kessel 1, unit is dezidegree Celsius.
+     * Get the maximum flow temperature of boiler 1, unit is decidegree Celsius.
+     * See {@link ChannelId#IR8011_MAXIMUM_FLOW_TEMP_BOILER1}.
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getMaximumFlowTempKessel1() {
-        return this.getMaximumFlowTempKessel1Channel().value();
+    public default Value<Integer> getMaximumFlowTempBoiler1() {
+        return this.getMaximumFlowTempBoiler1Channel().value();
     }
 
     /**
-     * Gets the Channel for {@link ChannelId#IR8012_STATUS_KESSEL1}.
+     * Gets the Channel for {@link ChannelId#IR8012_STATUS_BOILER1}.
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getStatusKessel1Channel() {
-        return this.channel(ChannelId.IR8012_STATUS_KESSEL1);
+    public default IntegerReadChannel getStatusBoiler1Channel() {
+        return this.channel(ChannelId.IR8012_STATUS_BOILER1);
     }
 
     /**
-     * Status Kessel 1.
-     * 0-Ubekannt
-     * 1-Warnung
-     * 2-Störung
-     * 3-OK
-     * 4-Nicht aktiv
-     * 5-Kritisch
-     * 6-Keine Info
+     * Status boiler 1.
+     * 0 - Unknown (Ubekannt)
+     * 1 - Warning (Warnung)
+     * 2 - Error (Stoerung)
+     * 3 - OK
+     * 4 - Not active (Nicht aktiv)
+     * 5 - Critical (Kritisch)
+     * 6 - No info (Keine Info)
+     * See {@link ChannelId#IR8012_STATUS_BOILER1}.
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getStatusKessel1() {
-        return this.getStatusKessel1Channel().value();
+    public default Value<Integer> getStatusBoiler1() {
+        return this.getStatusBoiler1Channel().value();
     }
 
     /**
-     * Gets the Channel for {@link ChannelId#IR8013_BITBLOCK_KESSEL1}.
+     * Gets the Channel for {@link ChannelId#IR8013_BITBLOCK_BOILER1}.
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getBitblockKessel1Channel() {
-        return this.channel(ChannelId.IR8013_BITBLOCK_KESSEL1);
+    public default IntegerReadChannel getBitblockBoiler1Channel() {
+        return this.channel(ChannelId.IR8013_BITBLOCK_BOILER1);
     }
 
     /**
-     * Bitblock Kessel 1.
+     * Bitblock boiler 1.
+     * See {@link ChannelId#IR8013_BITBLOCK_BOILER1}.
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getBitblockKessel1() {
-        return this.getBitblockKessel1Channel().value();
+    public default Value<Integer> getBitblockBoiler1() {
+        return this.getBitblockBoiler1Channel().value();
     }
 
     /**
-     * Gets the Channel for {@link ChannelId#IR8015_ANGEFORDERTE_SOLLWERTTEMP_KESSEL1}.
+     * Gets the Channel for {@link ChannelId#IR8015_REQUESTED_TEMPERATURE_SETPOINT_BOILER1}.
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getRequestedTemperatureSetPointKessel1Channel() {
-        return this.channel(ChannelId.IR8015_ANGEFORDERTE_SOLLWERTTEMP_KESSEL1);
+    public default IntegerReadChannel getRequestedTemperatureSetPointBoiler1Channel() {
+        return this.channel(ChannelId.IR8015_REQUESTED_TEMPERATURE_SETPOINT_BOILER1);
     }
 
     /**
-     * Requested temperature set point Kessel 1, unit is dezidegree Celsius.
+     * Requested temperature set point boiler 1, unit is decidegree Celsius.
+     * See {@link ChannelId#IR8015_REQUESTED_TEMPERATURE_SETPOINT_BOILER1}.
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getRequestedTemperatureSetPointKessel1() {
-        return this.getRequestedTemperatureSetPointKessel1Channel().value();
+    public default Value<Integer> getRequestedTemperatureSetPointBoiler1() {
+        return this.getRequestedTemperatureSetPointBoiler1Channel().value();
     }
 
     /**
-     * Gets the Channel for {@link ChannelId#IR8016_SOLLWERT_LEISTUNG_KESSEL1}.
+     * Gets the Channel for {@link ChannelId#IR8016_SETPOINT_POWER_PERCENT_BOILER1}.
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getRequestedPowerPercentSetPointKessel1Channel() {
-        return this.channel(ChannelId.IR8016_SOLLWERT_LEISTUNG_KESSEL1);
+    public default IntegerReadChannel getRequestedPowerPercentSetPointBoiler1Channel() {
+        return this.channel(ChannelId.IR8016_SETPOINT_POWER_PERCENT_BOILER1);
     }
 
     /**
      * Requested power percent set point Kessel 1, unit is percent.
+     * See {@link ChannelId#IR8016_SETPOINT_POWER_PERCENT_BOILER1}.
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getRequestedPowerPercentSetPointKessel1() {
-        return this.getRequestedPowerPercentSetPointKessel1Channel().value();
+    public default Value<Integer> getRequestedPowerPercentSetPointBoiler1() {
+        return this.getRequestedPowerPercentSetPointBoiler1Channel().value();
     }
 
     /**
-     * Gets the Channel for {@link ChannelId#IR8017_DRUCK_KESSEL1}.
+     * Gets the Channel for {@link ChannelId#IR8017_PRESSURE_BOILER1}.
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getPressureKessel1Channel() {
-        return this.channel(ChannelId.IR8017_DRUCK_KESSEL1);
+    public default IntegerReadChannel getPressureBoiler1Channel() {
+        return this.channel(ChannelId.IR8017_PRESSURE_BOILER1);
     }
 
     /**
      * Pressure Kessel 1, unit is deci Bar.
+     * See {@link ChannelId#IR8017_PRESSURE_BOILER1}.
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getPressureKessel1() {
-        return this.getPressureKessel1Channel().value();
+    public default Value<Integer> getPressureBoiler1() {
+        return this.getPressureBoiler1Channel().value();
     }
 
     /**
-     * Gets the Channel for {@link ChannelId#IR8018_FEHLERCODE_KESSEL1}.
+     * Gets the Channel for {@link ChannelId#IR8018_ERROR_CODE_BOILER1}.
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getErrorCodeKessel1Channel() {
-        return this.channel(ChannelId.IR8018_FEHLERCODE_KESSEL1);
+    public default IntegerReadChannel getErrorCodeBoiler1Channel() {
+        return this.channel(ChannelId.IR8018_ERROR_CODE_BOILER1);
     }
 
     /**
-     * Error code Kessel 1.
+     * Error code boiler 1.
+     * See {@link ChannelId#IR8018_ERROR_CODE_BOILER1}.
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getErrorCodeKessel1() {
-        return this.getErrorCodeKessel1Channel().value();
+    public default Value<Integer> getErrorCodeBoiler1() {
+        return this.getErrorCodeBoiler1Channel().value();
     }
 
     /**
-     * Gets the Channel for {@link ChannelId#IR8019_FEHLERCODE_DISPLAY_KESSEL1}.
+     * Gets the Channel for {@link ChannelId#IR8019_DISPLAY_ERROR_CODE_BOILER1}.
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getErrorCodeDisplayKessel1Channel() {
-        return this.channel(ChannelId.IR8019_FEHLERCODE_DISPLAY_KESSEL1);
+    public default IntegerReadChannel getErrorCodeDisplayBoiler1Channel() {
+        return this.channel(ChannelId.IR8019_DISPLAY_ERROR_CODE_BOILER1);
     }
 
     /**
-     * Error code display Kessel 1.
+     * Display error code boiler 1.
+     * See {@link ChannelId#IR8019_DISPLAY_ERROR_CODE_BOILER1}.
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getErrorCodeDisplayKessel1() {
-        return this.getErrorCodeDisplayKessel1Channel().value();
+    public default Value<Integer> getErrorCodeDisplayBoiler1() {
+        return this.getErrorCodeDisplayBoiler1Channel().value();
     }
 
     /**
-     * Gets the Channel for {@link ChannelId#IR8021_ANZAHL_STARTS_KESSEL1}.
+     * Gets the Channel for {@link ChannelId#IR8021_NUMBER_OF_STARTS_BOILER1}.
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getNumberOfStartsKessel1Channel() {
-        return this.channel(ChannelId.IR8021_ANZAHL_STARTS_KESSEL1);
+    public default IntegerReadChannel getNumberOfStartsBoiler1Channel() {
+        return this.channel(ChannelId.IR8021_NUMBER_OF_STARTS_BOILER1);
     }
 
     /**
-     * Number of starts Kessel 1.
+     * Number of starts boiler 1.
+     * See {@link ChannelId#IR8021_NUMBER_OF_STARTS_BOILER1}.
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getNumberOfStartsKessel1() {
-        return this.getNumberOfStartsKessel1Channel().value();
+    public default Value<Integer> getNumberOfStartsBoiler1() {
+        return this.getNumberOfStartsBoiler1Channel().value();
     }
 
     /**
-     * Gets the Channel for {@link ChannelId#IR8023_BETRIEBSZEIT_KESSEL1}.
+     * Gets the Channel for {@link ChannelId#IR8023_RUNNING_TIME_BOILER1}.
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getRunningTimeKessel1Channel() {
-        return this.channel(ChannelId.IR8023_BETRIEBSZEIT_KESSEL1);
+    public default IntegerReadChannel getRunningTimeBoiler1Channel() {
+        return this.channel(ChannelId.IR8023_RUNNING_TIME_BOILER1);
     }
 
     /**
-     * Running time Kessel 1, unit is minutes.
+     * Running time boiler 1, unit is minutes.
+     * See {@link ChannelId#IR8023_RUNNING_TIME_BOILER1}.
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getRunningTimeKessel1() {
-        return this.getRunningTimeKessel1Channel().value();
+    public default Value<Integer> getRunningTimeBoiler1() {
+        return this.getRunningTimeBoiler1Channel().value();
     }
 
     // Holding Registers. Read/write.
@@ -764,8 +788,12 @@ public interface HeaterBuderus extends Heater {
      * algorithm is to read the value from getHeartBeatOut, increment it and then send it to setHeartBeatIn. With an
      * overflow protection, to start again with 1 if the counter has reached a certain threshold (remember 16 bit
      * limitation).
+     * See {@link ChannelId#HR0_HEARTBEAT_IN}.
+     *
+     * @param value the next write value
+     * @throws OpenemsNamedException on error
      */
-    public default void setHeartBeatIn(Integer value) throws OpenemsError.OpenemsNamedException {
+    public default void setHeartBeatIn(Integer value) throws OpenemsNamedException {
         this.getHeartBeatInChannel().setNextWriteValue(value);
     }
 
@@ -776,8 +804,12 @@ public interface HeaterBuderus extends Heater {
      * algorithm is to read the value from getHeartBeatOut, increment it and then send it to setHeartBeatIn. With an
      * overflow protection, to start again with 1 if the counter has reached a certain threshold (remember 16 bit
      * limitation).
+     * See {@link ChannelId#HR0_HEARTBEAT_IN}.
+     *
+     * @param value the next write value
+     * @throws OpenemsNamedException on error
      */
-    public default void setHeartBeatIn(int value) throws OpenemsError.OpenemsNamedException {
+    public default void setHeartBeatIn(int value) throws OpenemsNamedException {
         this.getHeartBeatInChannel().setNextWriteValue(value);
     }
 
@@ -797,6 +829,7 @@ public interface HeaterBuderus extends Heater {
      * value. The suggested algorithm is to read the value from getHeartBeatOut, increment it and then send it to
      * setHeartBeatIn. With an overflow protection, to start again with 1 if the counter has reached a certain threshold
      * (remember 16 bit limitation).
+     * See {@link ChannelId#HR1_HEARTBEAT_OUT}.
      *
      * @return the Channel {@link Value}
      */
@@ -815,8 +848,12 @@ public interface HeaterBuderus extends Heater {
 
     /**
      * Give the heater permission to run or not.
+     * See {@link ChannelId#HR402_RUN_PERMISSION}.
+     *
+     * @param value the next write value
+     * @throws OpenemsNamedException on error
      */
-    public default void setRunPermission(Boolean value) throws OpenemsError.OpenemsNamedException {
+    public default void setRunPermission(Boolean value) throws OpenemsNamedException {
         this.getRunPermissionChannel().setNextWriteValue(value);
     }
 
@@ -831,15 +868,23 @@ public interface HeaterBuderus extends Heater {
 
     /**
      * Sets the command bits.
+     * See {@link ChannelId#HR405_COMMAND_BITS}.
+     *
+     * @param value the next write value
+     * @throws OpenemsNamedException on error
      */
-    public default void setCommandBits(Integer value) throws OpenemsError.OpenemsNamedException {
+    public default void setCommandBits(Integer value) throws OpenemsNamedException {
         this.getCommandBitsChannel().setNextWriteValue(value);
     }
 
     /**
      * Sets the command bits.
+     * See {@link ChannelId#HR405_COMMAND_BITS}.
+     *
+     * @param value the next write value
+     * @throws OpenemsNamedException on error
      */
-    public default void setCommandBits(int value) throws OpenemsError.OpenemsNamedException {
+    public default void setCommandBits(int value) throws OpenemsNamedException {
         this.getCommandBitsChannel().setNextWriteValue(value);
     }
 
@@ -854,6 +899,7 @@ public interface HeaterBuderus extends Heater {
 
     /**
      * Get the operating mode.
+     * See {@link ChannelId#OPERATING_MODE}.
      *
      * @return the Channel {@link Value}
      */
@@ -863,15 +909,23 @@ public interface HeaterBuderus extends Heater {
 
     /**
      * Operating mode, set point temperature (0) or set point power percent (1). Default is set point power percent.
+     * See {@link ChannelId#OPERATING_MODE}.
+     *
+     * @param value the next write value
+     * @throws OpenemsNamedException on error
      */
-    public default void setOperatingMode(Integer value) throws OpenemsError.OpenemsNamedException {
+    public default void setOperatingMode(Integer value) throws OpenemsNamedException {
         this.getOperatingModeChannel().setNextWriteValue(value);
     }
 
     /**
      * Operating mode, set point temperature (0) or set point power percent (1). Default is set point power percent.
+     * See {@link ChannelId#OPERATING_MODE}.
+     *
+     * @param value the next write value
+     * @throws OpenemsNamedException on error
      */
-    public default void setOperatingMode(int value) throws OpenemsError.OpenemsNamedException {
+    public default void setOperatingMode(int value) throws OpenemsNamedException {
         this.getOperatingModeChannel().setNextWriteValue(value);
     }
 
@@ -886,6 +940,7 @@ public interface HeaterBuderus extends Heater {
 
     /**
      * Get the status message.
+     * See {@link ChannelId#STATUS_MESSAGE}.
      *
      * @return the Channel {@link Value}
      */
@@ -894,7 +949,10 @@ public interface HeaterBuderus extends Heater {
     }
 
     /**
-     * Internal method.
+     * Internal method to set the 'nextValue' on {@link ChannelId#STATUS_MESSAGE} Channel.
+     * See {@link ChannelId#STATUS_MESSAGE}.
+     *
+     * @param value the next value
      */
     public default void _setStatusMessage(String value) {
         this.getStatusMessageChannel().setNextValue(value);

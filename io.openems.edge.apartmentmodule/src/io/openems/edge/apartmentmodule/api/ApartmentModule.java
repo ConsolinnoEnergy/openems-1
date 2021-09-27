@@ -88,7 +88,7 @@ public interface ApartmentModule extends OpenemsComponent {
          * </ul>
          */
 
-        IR_6_TEMPERATURE(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_ONLY)),
+        IR_6_TEMPERATURE(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS).accessMode(AccessMode.READ_ONLY)),
 
         /**
          * State of relay 1.
@@ -230,7 +230,7 @@ public interface ApartmentModule extends OpenemsComponent {
 
         EXTERNAL_HEAT_FLAG(Doc.of(OpenemsType.BOOLEAN)),
         VALVE_STATUS(Doc.of(ValveStatus.values())),
-        LAST_KNOWN_TEMPERATURE(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
+        LAST_KNOWN_TEMPERATURE(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS)),
         LAST_KNOWN_REQUEST_STATUS(Doc.of(OpenemsType.BOOLEAN)),
         IS_TOP_AM(Doc.of(OpenemsType.BOOLEAN));
 

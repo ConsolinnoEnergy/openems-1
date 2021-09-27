@@ -24,14 +24,6 @@ import org.osgi.service.metatype.annotations.Option;
     @AttributeDefinition(name = "ModBus-Unit Id", description = "Integer Unit Id of the Component.")
     int modbusUnitId() default 1;
 
-    @AttributeDefinition(name = "GasBoiler Type", description = "Select used Gasboiler.",
-            options = {
-                    @Option(label = "VITOTRONIC_100", value = "VITOTRONIC_100"),
-                    @Option(label = "Placeholder2", value = "Placeholder2"),
-                    @Option(label = "Not in List", value = "Not in List")
-            })
-    String gasBoilerType() default "VITOTRONIC_100";
-
     @AttributeDefinition(name = "Default power percent setpoint [%]", description = "Value for "
             + "The default power percent setting of the heater until a value is set via channel SetPointHeatingPowerPercent. "
             + "Valid values are 50 to 100, unit is percent. So 50 means 50% of maximum power.")

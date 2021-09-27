@@ -51,8 +51,8 @@ public interface ApartmentHuFChannel extends OpenemsComponent {
          * </ul>
          */
 
-        IR_6_WALL_TEMPERATURE_HUF(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
-        IR_6_WALL_TEMPERATURE(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_ONLY)),
+        IR_6_WALL_TEMPERATURE_HUF(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS)),
+        IR_6_WALL_TEMPERATURE(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS).accessMode(AccessMode.READ_ONLY)),
 
         /**
          * Air temperature.
@@ -61,8 +61,8 @@ public interface ApartmentHuFChannel extends OpenemsComponent {
          * <li> Unit: dezidegree celsius
          * </ul>
          */
-        IR_7_AIR_TEMPERATURE_HUF(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
-        IR_7_AIR_TEMPERATURE(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_ONLY)),
+        IR_7_AIR_TEMPERATURE_HUF(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS)),
+        IR_7_AIR_TEMPERATURE(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS).accessMode(AccessMode.READ_ONLY)),
 
         /**
          * Air humidity. Channel unit is percent, so a channel value of 50 then means 50%.

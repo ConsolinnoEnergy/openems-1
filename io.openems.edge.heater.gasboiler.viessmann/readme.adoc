@@ -1,6 +1,15 @@
+= Viessmann gas boiler
+
+This module reads the most important variables available via Modbus from a Viessmann gas boiler and maps them to OpenEMS channels. The module is written to be used with the Heater interface methods (EnableSignal) and ExceptionalState. When setEnableSignal() from the Heater interface is set to true with no other parameters like temperature specified, the heater will turn on with default settings. The default settings are configurable in the config.
+
+The heater can be controlled with setHeatingPowerPercentSetpoint() (set power in %) or setTemperatureSetpoint(). However, currently the code does not yet support setTemperatureSetpoint().
+
+setHeatingPowerSetpoint() (set power in kW) and related methods are currently not supported by this heater.
+
 
 ToDo: The heater can do setpoint power percent and setpoint temperature. Currently only default values for
 setpoint power percent are set.
+setHeatingPowerSetpoint() can be added by mapping it to setHeatingPowerPercentSetpoint().
 
 Unclear how to switch to setpoint temperature mode.
 Speculation:

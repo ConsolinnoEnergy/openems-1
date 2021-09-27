@@ -51,18 +51,21 @@ import java.util.List;
 
 /**
  * This module reads the most important variables available via Modbus from a Viessmann gas boiler and maps them to OpenEMS
- * channels. The module is written to be used with the Heater interface methods.
+ * channels. The module is written to be used with the Heater interface methods (EnableSignal) and ExceptionalState.
  * When setEnableSignal() from the Heater interface is set to true with no other parameters like temperature specified,
  * the heater will turn on with default settings. The default settings are configurable in the config.
  * The heater can be controlled with setHeatingPowerPercentSetpoint() (set power in %) or setTemperatureSetpoint().
  * However, currently the code does not yet support setTemperatureSetpoint().
- * setHeatingPowerSetpoint() (set power in kW) and related methods are not supported by this heater.
+ * setHeatingPowerSetpoint() (set power in kW) and related methods are currently not supported by this heater.
  */
 @Designate(ocd = Config.class, factory = true)
 @Component(name = "Heater.Viessmann.GasBoiler",
         configurationPolicy = ConfigurationPolicy.REQUIRE,
         immediate = true,
-        property = EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE)
+        property = { //
+        EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE, //
+        EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS //
+        })
 public class GasBoilerImpl extends AbstractOpenemsModbusComponent implements OpenemsComponent, EventHandler,
         ExceptionalState, GasBoiler {
 
@@ -71,7 +74,6 @@ public class GasBoilerImpl extends AbstractOpenemsModbusComponent implements Ope
     @Reference
     ComponentManager cpm;
 
-    GasBoilerType gasBoilerType;
     private boolean printInfoToLog;
     private boolean readOnly = false;
 
@@ -101,11 +103,9 @@ public class GasBoilerImpl extends AbstractOpenemsModbusComponent implements Ope
     @Activate
     void activate(ComponentContext context, Config config) throws OpenemsError.OpenemsNamedException,
             ConfigurationException {
-        this.allocateGasBoilerType(config.gasBoilerType());
         super.activate(context, config.id(), config.alias(), config.enabled(), config.modbusUnitId(), this.cm, "Modbus", config.modbusBridgeId());
 
         this.printInfoToLog = config.printInfoToLog();
-        this.setHeatingPowerPercentSetpoint(config.defaultSetPointPowerPercent());
         this.readOnly = config.readOnly();
         if (this.isEnabled() == false) {
             this._setHeaterState(HeaterState.OFF.getValue());
@@ -113,14 +113,8 @@ public class GasBoilerImpl extends AbstractOpenemsModbusComponent implements Ope
 
         // Settings needed when not in ’read only’ mode.
         if (this.readOnly == false) {
-            TimerHandler timer = new TimerHandlerImpl(super.id(), this.cpm);
-            timer.addOneIdentifier(ENABLE_SIGNAL_IDENTIFIER, config.enableSignalTimerId(), config.waitTimeEnableSignal());
-            this.enableSignalHandler = new EnableSignalHandlerImpl(timer, ENABLE_SIGNAL_IDENTIFIER);
-            this.useExceptionalState = config.useExceptionalState();
-            if (this.useExceptionalState) {
-                timer.addOneIdentifier(EXCEPTIONAL_STATE_IDENTIFIER, config.exceptionalStateTimerId(), config.waitTimeExceptionalState());
-                this.exceptionalStateHandler = new ExceptionalStateHandlerImpl(timer, EXCEPTIONAL_STATE_IDENTIFIER);
-            }
+            this.setHeatingPowerPercentSetpoint(config.defaultSetPointPowerPercent());
+            this.initializeTimers(config);
 
             // Deactivating controllers for heating circuits because we will not need them
             final int hvac_off = 6;
@@ -130,12 +124,14 @@ public class GasBoilerImpl extends AbstractOpenemsModbusComponent implements Ope
         }
     }
 
-    private void allocateGasBoilerType(String gasBoilerType) {
-        switch (gasBoilerType) {
-            case "Placeholder":
-            case "VITOTRONIC_100":
-            default:
-                this.gasBoilerType = GasBoilerType.VITOTRONIC_100;
+    private void initializeTimers(Config config) throws OpenemsError.OpenemsNamedException, ConfigurationException {
+        TimerHandler timer = new TimerHandlerImpl(super.id(), this.cpm);
+        timer.addOneIdentifier(ENABLE_SIGNAL_IDENTIFIER, config.enableSignalTimerId(), config.waitTimeEnableSignal());
+        this.enableSignalHandler = new EnableSignalHandlerImpl(timer, ENABLE_SIGNAL_IDENTIFIER);
+        this.useExceptionalState = config.useExceptionalState();
+        if (this.useExceptionalState) {
+            timer.addOneIdentifier(EXCEPTIONAL_STATE_IDENTIFIER, config.exceptionalStateTimerId(), config.waitTimeExceptionalState());
+            this.exceptionalStateHandler = new ExceptionalStateHandlerImpl(timer, EXCEPTIONAL_STATE_IDENTIFIER);
         }
     }
 
@@ -476,8 +472,8 @@ public class GasBoilerImpl extends AbstractOpenemsModbusComponent implements Ope
     private List<String> generateErrorList() {
         List<String> errorList = new ArrayList<>();
         for (int i = 0; i < 255; i++) {
-            if (this.getErrorChannel(i + 1).getNextValue().isDefined()) {
-                if (this.getErrorChannel(i + 1).getNextValue().get()) {
+            if (this.getError(i + 1).isDefined()) {
+                if (this.getError(i + 1).get()) {
                     errorList.add(this.errorList[i]);
                 }
             }
@@ -497,7 +493,7 @@ public class GasBoilerImpl extends AbstractOpenemsModbusComponent implements Ope
             }
         }
         if (this.readOnly == false && event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS)) {
-            this.writeValues();
+            this.writeCommands();
         }
     }
 
@@ -532,7 +528,7 @@ public class GasBoilerImpl extends AbstractOpenemsModbusComponent implements Ope
     /**
      * Determine commands and send them to the heater.
      */
-    protected void writeValues() {
+    protected void writeCommands() {
 
         // Handle EnableSignal.
         boolean turnOnHeater = this.enableSignalHandler.deviceShouldBeHeating(this);
@@ -575,12 +571,15 @@ public class GasBoilerImpl extends AbstractOpenemsModbusComponent implements Ope
         }
     }
 
+    /**
+     * Information that is printed to the log if ’print info to log’ option is enabled.
+     */
     protected void printInfo() {
         this.logInfo(this.log, "--Gasboiler Viessmann Vitotronic 100--");
         this.logInfo(this.log, "Power percent set point (write mode only): " + this.getHeatingPowerPercentSetpoint());
         this.logInfo(this.log, "Flow temperature: " + this.getFlowTemperature());
         this.logInfo(this.log, "Return temperature: " + this.getReturnTemperature());
-        this.logInfo(this.log, "Operation mode: " + this.getDeviceOperationMode());
+        //this.logInfo(this.log, "Operation mode: " + this.getDeviceOperationMode());
         this.logInfo(this.log, "Operating hours tier1: " + this.getOperatingHoursTier1());
         this.logInfo(this.log, "Operating hours tier2: " + this.getOperatingHoursTier2());
         this.logInfo(this.log, "Boiler start counter: " + this.getBoilerStarts());

@@ -21,7 +21,7 @@ public interface HeatnetworkPerformanceBooster extends OpenemsComponent {
          * <li> Unit: Dezidegree Celsius
          * </ul>
          */
-        SET_POINT_TEMPERATURE_ACTIVATE_OFFSET(Doc.of(OpenemsType.INTEGER).accessMode(AccessMode.READ_WRITE).unit(Unit.DEZIDEGREE_CELSIUS).onInit(
+        SET_POINT_TEMPERATURE_ACTIVATE_OFFSET(Doc.of(OpenemsType.INTEGER).accessMode(AccessMode.READ_WRITE).unit(Unit.DECIDEGREE_CELSIUS).onInit(
                 channel -> {
                     ((IntegerWriteChannel) channel).onSetNextWrite(channel::setNextValue);
                 }
@@ -114,7 +114,7 @@ public interface HeatnetworkPerformanceBooster extends OpenemsComponent {
          * </ul>
          */
         PRIMARY_FORWARD(Doc.of(OpenemsType.INTEGER) //
-                .unit(Unit.DEZIDEGREE_CELSIUS)),
+                .unit(Unit.DECIDEGREE_CELSIUS)),
         /**
          * Primary Rewind Temperature.
          *
@@ -125,7 +125,7 @@ public interface HeatnetworkPerformanceBooster extends OpenemsComponent {
          * </ul>
          */
         PRIMARY_REWIND(Doc.of(OpenemsType.INTEGER) //
-                .unit(Unit.DEZIDEGREE_CELSIUS)),
+                .unit(Unit.DECIDEGREE_CELSIUS)),
         /**
          * Secondary Forward Temperature.
          *
@@ -136,7 +136,7 @@ public interface HeatnetworkPerformanceBooster extends OpenemsComponent {
          * </ul>
          */
         SECONDARY_FORWARD(Doc.of(OpenemsType.INTEGER) //
-                .unit(Unit.DEZIDEGREE_CELSIUS)),
+                .unit(Unit.DECIDEGREE_CELSIUS)),
         /**
          * Secondary Rewind Temperature.
          *
@@ -147,7 +147,7 @@ public interface HeatnetworkPerformanceBooster extends OpenemsComponent {
          * </ul>
          */
         SECONDARY_REWIND(Doc.of(OpenemsType.INTEGER) //
-                .unit(Unit.DEZIDEGREE_CELSIUS)),
+                .unit(Unit.DECIDEGREE_CELSIUS)),
 
         BOOSTER_ACTIVE(Doc.of(OpenemsType.BOOLEAN) //
                 );

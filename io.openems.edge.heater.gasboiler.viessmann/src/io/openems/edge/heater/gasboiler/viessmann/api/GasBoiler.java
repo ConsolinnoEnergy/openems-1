@@ -1060,6 +1060,16 @@ public interface GasBoiler extends Heater {
         return this.channel(ChannelId.valueOf("ERROR_BIT_" + errNo));
     }
 
+    /**
+     * Get the error number errNo.
+     *
+     * @param errNo the error number.
+     * @return the Channel {@link Value}
+     */
+    default Value<Boolean> getError(int errNo) {
+        return this.getErrorChannel(errNo).value();
+    }
+
 
 //     * Following Channels get the Value of member Channels and returns them as an actual Percentage Value
 //     * */

@@ -21,7 +21,7 @@ public interface Storage extends OpenemsComponent {
          * </ul>
          */
 
-        SET_POINT_TEMPERATURE_MIN(Doc.of(OpenemsType.INTEGER).accessMode(AccessMode.READ_WRITE).unit(Unit.DEZIDEGREE_CELSIUS).onInit(
+        SET_POINT_TEMPERATURE_MIN(Doc.of(OpenemsType.INTEGER).accessMode(AccessMode.READ_WRITE).unit(Unit.DECIDEGREE_CELSIUS).onInit(
                 channel -> {
                     ((IntegerWriteChannel) channel).onSetNextWrite(channel::setNextValue);
                 }
@@ -35,7 +35,7 @@ public interface Storage extends OpenemsComponent {
          * <li> Unit: Dezidegree Celsius
          * </ul>
          */
-        SET_POINT_TEMPERATURE_MAX(Doc.of(OpenemsType.INTEGER).accessMode(AccessMode.READ_WRITE).unit(Unit.DEZIDEGREE_CELSIUS).onInit(
+        SET_POINT_TEMPERATURE_MAX(Doc.of(OpenemsType.INTEGER).accessMode(AccessMode.READ_WRITE).unit(Unit.DECIDEGREE_CELSIUS).onInit(
                 channel -> {
                     ((IntegerWriteChannel) channel).onSetNextWrite(channel::setNextValue);
                 }
@@ -51,11 +51,11 @@ public interface Storage extends OpenemsComponent {
         STORAGE_LITRES_CURRENT(Doc.of(OpenemsType.INTEGER).accessMode(AccessMode.READ_ONLY).unit(Unit.LITRES)),
         STORAGE_ENERGY(Doc.of(OpenemsType.INTEGER).accessMode(AccessMode.READ_ONLY).unit(Unit.KILOWATT_HOURS)),
         MAX_TEMPERATURE(Doc.of(OpenemsType.INTEGER) //
-                .unit(Unit.DEZIDEGREE_CELSIUS)),
+                .unit(Unit.DECIDEGREE_CELSIUS)),
         MIN_TEMPERATURE(Doc.of(OpenemsType.INTEGER) //
-                .unit(Unit.DEZIDEGREE_CELSIUS)),
+                .unit(Unit.DECIDEGREE_CELSIUS)),
         AVERAGE_TEMPERATURE(Doc.of(OpenemsType.INTEGER) //
-                .unit(Unit.DEZIDEGREE_CELSIUS));
+                .unit(Unit.DECIDEGREE_CELSIUS));
 
 
         private final Doc doc;
