@@ -42,7 +42,7 @@ import java.util.Arrays;
 @Component(name = "Meter.Modbus.Meter.Heat.Generic", immediate = true,
         configurationPolicy = ConfigurationPolicy.REQUIRE,
         property = {EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE})
-public class HeatMeterModbus extends AbstractGenericModbusComponent implements OpenemsComponent, HeatMeter, Meter, EventHandler, MeterModbusGeneric {
+public class HeatMeterModbusImpl extends AbstractGenericModbusComponent implements OpenemsComponent, HeatMeter, Meter, EventHandler, MeterModbusGeneric {
 
     @Reference
     protected ConfigurationAdmin cm;
@@ -78,7 +78,7 @@ public class HeatMeterModbus extends AbstractGenericModbusComponent implements O
     }
 
 
-    public HeatMeterModbus() {
+    public HeatMeterModbusImpl() {
         super(OpenemsComponent.ChannelId.values(),
                 ChannelId.values(),
                 HeatMeter.ChannelId.values(),
@@ -114,6 +114,7 @@ public class HeatMeterModbus extends AbstractGenericModbusComponent implements O
             handleChannelUpdate(this.getTimestampChannel(), this._hasTimeStamp());
             handleChannelUpdate(this.getReturnTempChannel(), this._hasReturnTemp());
             handleChannelUpdate(this.getReadingPowerChannel(), this._hasReadingPower());
+            handleChannelUpdate(this.getFlowTempChannel(), this._hasFlowTemp());
         }
     }
 

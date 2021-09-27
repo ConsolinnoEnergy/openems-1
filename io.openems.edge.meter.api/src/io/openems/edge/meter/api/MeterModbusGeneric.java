@@ -82,6 +82,28 @@ public interface MeterModbusGeneric extends OpenemsComponent {
         RETURN_TEMP_DOUBLE(Doc.of(OpenemsType.DOUBLE)),
 
         /**
+         * Flow Temp.
+         *
+         * <ul>
+         * <li>Interface: MeterModbusGeneric
+         * <li>Type: Long
+         * <li>Unit:
+         * </ul>
+         */
+        FLOW_TEMP_LONG(Doc.of(OpenemsType.LONG)),
+
+        /**
+         * Flow Temp.
+         *
+         * <ul>
+         * <li>Interface: MeterModbusGeneric
+         * <li>Type: Double
+         * <li>Unit: Dezidegree Celsius
+         * </ul>
+         */
+        FLOW_TEMP_DOUBLE(Doc.of(OpenemsType.DOUBLE)),
+
+        /**
          * Total Energy Reading.
          *
          * <ul>
@@ -213,6 +235,30 @@ public interface MeterModbusGeneric extends OpenemsComponent {
         return this.channel(ChannelId.RETURN_TEMP_LONG);
     }
 
+    /**
+     * Get the ReturnTempDouble Channel.
+     * Only Call by Generic Meter!
+     * The actual Reading Power will be written into {@link HeatMeter#getReturnTempChannel()}.
+     *
+     * @return the Channel.
+     */
+
+    default Channel<Double> _getFlowTempDoubleChannel() {
+        return this.channel(ChannelId.FLOW_TEMP_DOUBLE);
+    }
+
+    /**
+     * Get the ReturnTempLong Channel.
+     * Only Call by Generic Meter!
+     * The actual Reading Power will be written into {@link HeatMeter#getReturnTempChannel()}.
+     *
+     * @return the Channel.
+     */
+
+    default Channel<Long> _getFlowTempLongChannel() {
+        return this.channel(ChannelId.FLOW_TEMP_LONG);
+    }
+
 
     /**
      * Get the ReadingEnergyDouble Channel.
@@ -261,6 +307,15 @@ public interface MeterModbusGeneric extends OpenemsComponent {
      */
     default Channel<?> _hasReturnTemp() {
         return MeterModbusGeneric.getValueDefinedChannel(this._getReturnTempDoubleChannel(), this._getReturnTempLongChannel());
+    }
+
+    /**
+     * Checks if the Meter has a Flow Temp set. After that the stored value will be written to the actual {@link Meter}
+     * Only call this within the implementing Class.
+     * @return the channel that contains the value or else null.
+     */
+    default Channel<?> _hasFlowTemp() {
+        return MeterModbusGeneric.getValueDefinedChannel(this._getFlowTempDoubleChannel(), this._getFlowTempLongChannel());
     }
     /**
      * Checks if the Meter has a Reading Energy set. After that the stored value will be written to the actual {@link Meter}

@@ -3,6 +3,7 @@ package io.openems.edge.generator.electrolyzer;
 import io.openems.common.exceptions.OpenemsError;
 import io.openems.edge.bridge.modbus.api.BridgeModbus;
 import io.openems.edge.bridge.modbus.api.generic.AbstractGenericModbusComponent;
+import io.openems.edge.common.channel.WriteChannel;
 import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.common.event.EdgeEventConstants;
@@ -14,6 +15,7 @@ import io.openems.edge.generator.api.ElectrolyzerAccessMode;
 import io.openems.edge.generator.api.ControlMode;
 import io.openems.edge.generator.api.Electrolyzer;
 import io.openems.edge.generator.api.ElectrolyzerModbusGeneric;
+import io.openems.edge.generator.api.EnergyControlMode;
 import io.openems.edge.generator.api.Generator;
 import io.openems.edge.generator.api.GeneratorModbus;
 import io.openems.edge.heater.Heater;
@@ -62,6 +64,9 @@ public class GenericModbusElectrolyzerImpl extends AbstractGenericModbusComponen
     private boolean useExceptionalState;
     private ControlMode controlMode = ControlMode.READ;
     private ElectrolyzerAccessMode accessMode = ElectrolyzerAccessMode.HEATER;
+    private EnergyControlMode energyControlMode = EnergyControlMode.PERCENT;
+    private boolean isAutoRun;
+
 
     @Reference
     protected ConfigurationAdmin cm;
@@ -90,15 +95,16 @@ public class GenericModbusElectrolyzerImpl extends AbstractGenericModbusComponen
     @Activate
     void activate(ComponentContext context, Config config) throws OpenemsError.OpenemsNamedException, ConfigurationException, IOException {
         this.config = config;
-        super.activate(context, config.id(), config.alias(), config.enabled(), config.modbusUnitId(), this.cm, config.modbusBridgeId(), this.cpm, Arrays.asList(config.configurationList()));
+        super.activate(context, config.id(), config.alias(), config.enabled(), config.modbusUnitId(),
+                this.cm, config.modbusBridgeId(), this.cpm, Arrays.asList(config.configurationList()));
         if (super.update(this.cm, "channelIds", new ArrayList<>(this.channels()), this.config.channelIds().length)) {
             this.baseConfiguration();
         }
-
     }
 
     private void baseConfiguration() throws OpenemsError.OpenemsNamedException, ConfigurationException {
         this.controlMode = this.config.controlMode();
+        this.energyControlMode = this.config.energyControlMode();
         this.accessMode = this.config.accessMode();
         this.timerHandler = new TimerHandlerImpl(super.id(), this.cpm);
         this.timerHandler.addOneIdentifier(ENABLE_SIGNAL_IDENTIFIER, this.config.timerNeedHeatResponse(), this.config.timeNeedHeatResponse());
@@ -107,6 +113,9 @@ public class GenericModbusElectrolyzerImpl extends AbstractGenericModbusComponen
             this.timerHandler.addOneIdentifier(EXCEPTIONAL_STATE_IDENTIFIER, this.config.timerExceptionalState(), this.config.timeToWaitExceptionalState());
             this.exceptionalStateHandler = new ExceptionalStateHandlerImpl(this.timerHandler, EXCEPTIONAL_STATE_IDENTIFIER);
         }
+        this.isAutoRun = this.config.autoRun();
+        this.getDefaultPower().setNextValue(this.config.defaultRunPower());
+        this.getDefaultPower().nextProcessImage();
     }
 
     @Modified
@@ -128,14 +137,18 @@ public class GenericModbusElectrolyzerImpl extends AbstractGenericModbusComponen
     public void handleEvent(Event event) {
         switch (event.getTopic()) {
             case EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE:
-                handleChannelUpdate(this.getPowerPercent(), this._hasPowerPercent());
-                handleChannelUpdate(this.getPowerChannel(), this._hasPower());
                 handleChannelUpdate(this.getWMZEnergyProducedChannel(), this._hasWMZEnergyProduced());
                 handleChannelUpdate(this.getWMZTempSourceChannel(), this._hasWMZTempSource());
                 handleChannelUpdate(this.getWMZTempSinkChannel(), this._hasWMZTempSink());
                 handleChannelUpdate(this.getWMZPowerChannel(), this._hasWMZPower());
-                handleChannelUpdate(this.getEffectivePowerChannel(), this._hasPower());
-                handleChannelUpdate(this.getEffectivePowerPercentChannel(), this._hasPowerPercent());
+                if (this.accessMode.equals(ElectrolyzerAccessMode.HEATER) || this.accessMode.equals(ElectrolyzerAccessMode.HEATER_AND_ELECTROLYZER)) {
+                    handleChannelUpdate(this.getEffectivePowerChannel(), this._hasPower());
+                    handleChannelUpdate(this.getEffectivePowerPercentChannel(), this._hasPowerPercent());
+                }
+                if (this.accessMode.equals(ElectrolyzerAccessMode.HEATER_AND_ELECTROLYZER) || this.accessMode.equals(ElectrolyzerAccessMode.ELECTROLYZER)) {
+                    handleChannelUpdate(this.getPowerChannelGenerator(), this._hasPower());
+                    handleChannelUpdate(this.getPowerPercentChannelGenerator(), this._hasPowerPercent());
+                }
                 handleChannelUpdate(this.getFlowTemperatureChannel(), this._hasWMZTempSource());
                 handleChannelUpdate(this.getReturnTemperatureChannel(), this._hasWMZTempSink());
                 break;
@@ -149,32 +162,23 @@ public class GenericModbusElectrolyzerImpl extends AbstractGenericModbusComponen
                         }
                     }
                     try {
-                        /*
-                         only check this condition if :
-                         Electrolyzer is handled by controller accessing Heater or if heater and
-                         Electrolyzer controller controls them and the Electrolyzer signal is missing)*/
-                        if ((this.accessMode.equals(ElectrolyzerAccessMode.HEATER) || this.accessMode.equals(ElectrolyzerAccessMode.HEATER_AND_ELECTROLYZER)
-                                && this.getEnableElectrolyzer().getNextWriteValue().isPresent() == false) && (this.getEnableSignalChannel().getNextWriteValue().isPresent()
-                                || this.isRunning && this.timerHandler.checkTimeIsUp(ENABLE_SIGNAL_IDENTIFIER) == false)) {
+                        if (this.isAutoRun || (this.getEnableSignalChannel().getNextWriteValue().isPresent())
+                                || this.getEnableElectrolyzer().getNextWriteValue().isPresent()
+                                || (this.isRunning && this.timerHandler.checkTimeIsUp(ENABLE_SIGNAL_IDENTIFIER) == false)) {
                             this.isRunning = true;
-                            this.timerHandler.resetTimer(ENABLE_SIGNAL_IDENTIFIER);
-
+                            if (this.getEnableSignalChannel().getNextWriteValue().isPresent() || this.getEnableElectrolyzer().getNextWriteValue().isPresent()) {
+                                this.timerHandler.resetTimer(ENABLE_SIGNAL_IDENTIFIER);
+                            }
                             this.getEnableElectrolyzer().setNextWriteValueFromObject(this.getEnableSignalChannel().getNextWriteValueAndReset().orElse(false));
-                            this.getPowerPercent().setNextWriteValueFromObject(this.getSetPointPowerChannel().getNextValue().orElse(100.d));
-
                         } else {
                             this.isRunning = false;
                             this.getEnableElectrolyzer().setNextWriteValue(false);
-                            this.getPowerPercent().setNextWriteValue(0.f);
+                            this.timerHandler.resetTimer(ENABLE_SIGNAL_IDENTIFIER);
                         }
-
-
                     } catch (OpenemsError.OpenemsNamedException e) {
                         this.log.warn("Couldn't proceed to write EnableSignal etc in " + super.id() + " Reason: " + e.getMessage());
                     }
-
                     this.updateWriteValuesToModbus();
-
                     break;
                 }
         }
@@ -187,21 +191,45 @@ public class GenericModbusElectrolyzerImpl extends AbstractGenericModbusComponen
      */
     private void updateWriteValuesToModbus() {
         this.getEnableElectrolyzer().setNextValue(this.getEnableElectrolyzer().getNextWriteValue().orElse(false));
-        if (this.getPowerPercent().getNextWriteValue().isPresent()) {
-            this.getPowerPercent().setNextValue(this.getPowerPercent().getNextWriteValue().get());
-            if (this.getModbusConfig().containsKey(this._getPowerPercentLongChannel().channelId())) {
-                this.handleChannelWriteFromOriginalToModbus(this._getPowerPercentLongChannel(), this.getPowerPercent());
-            } else if (this.getModbusConfig().containsKey(this._getPowerPercentDoubleChannel().channelId())) {
-                this.handleChannelWriteFromOriginalToModbus(this._getPowerPercentDoubleChannel(), this.getPowerPercent());
-            }
+        WriteChannel<?> choosenChannel = this.getDefaultPower();
+        switch (this.energyControlMode) {
+            case KW:
+                //TODO IF BOTH CONTROLMODES: HEAT AND ELECTROLYZER -> WHAT TO DO -> PRIORITY ETC
+                if (this.getModbusConfig().containsKey(this._getSetPointPowerLongChannel().channelId())) {
+                    if (this.getSetPointPowerChannelGenerator().getNextWriteValue().isPresent()) {
+                        choosenChannel = this.getSetPointPowerChannelGenerator();
+                    }
+                    this.handleChannelWriteFromOriginalToModbus(this._getSetPointPowerLongChannel(), choosenChannel);
+                } else if (this.getModbusConfig().containsKey(this._getSetPointPowerDoubleChannel().channelId())) {
+                    this.handleChannelWriteFromOriginalToModbus(this._getSetPointPowerDoubleChannel(), choosenChannel);
+                }
+                break;
+            case PERCENT:
+                if (this.getSetPointPowerPercentChannelGenerator().getNextWriteValue().isPresent()) {
+                    choosenChannel = this.getSetPointPowerChannelGenerator();
+                }
+                if (this.getModbusConfig().containsKey(this._getSetPointPowerPercentLongChannel().channelId())) {
+                    this.handleChannelWriteFromOriginalToModbus(this._getSetPointPowerPercentLongChannel(), choosenChannel);
+                } else if (this.getModbusConfig().containsKey(this._getPowerPercentDoubleChannel().channelId())) {
+                    this.handleChannelWriteFromOriginalToModbus(this._getSetPointPowerPercentDoubleChannel(), choosenChannel);
+                }
+                break;
         }
     }
+
 
     private void handleExceptionalState() {
         try {
             int signalValue = this.getExceptionalStateValue();
             this.getEnableElectrolyzer().setNextWriteValue(signalValue > 0);
-            this.getPowerPercent().setNextWriteValueFromObject(signalValue);
+            switch (this.energyControlMode) {
+                case KW:
+                    this.getSetPointPowerChannelGenerator().setNextValue(signalValue);
+                    break;
+                case PERCENT:
+                    this.getSetPointPowerPercentChannelGenerator().setNextValue(signalValue);
+                    break;
+            }
         } catch (OpenemsError.OpenemsNamedException e) {
             this.log.warn("Couldn't apply Exceptional State in : " + super.id() + " Reason: " + e.getMessage());
         }

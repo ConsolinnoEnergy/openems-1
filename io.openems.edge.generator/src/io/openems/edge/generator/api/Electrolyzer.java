@@ -24,9 +24,7 @@ public interface Electrolyzer extends Generator {
         WMZ_TEMP_SOURCE(Doc.of(OpenemsType.FLOAT).accessMode(AccessMode.READ_ONLY)),
         WMZ_TEMP_SINK(Doc.of(OpenemsType.FLOAT).accessMode(AccessMode.READ_ONLY)),
         WMZ_POWER(Doc.of(OpenemsType.FLOAT).accessMode(AccessMode.READ_ONLY)),
-        ENABLE_ELECTROLYZER(Doc.of(OpenemsType.BOOLEAN).accessMode(AccessMode.READ_WRITE)),
-        POWER_PERCENT(Doc.of(OpenemsType.DOUBLE).accessMode(AccessMode.READ_WRITE));
-
+        ENABLE_ELECTROLYZER(Doc.of(OpenemsType.BOOLEAN).accessMode(AccessMode.READ_WRITE));
         private final Doc doc;
 
         ChannelId(Doc doc) {
@@ -77,10 +75,6 @@ public interface Electrolyzer extends Generator {
 
     default WriteChannel<Boolean> getEnableElectrolyzer() {
         return this.channel(ChannelId.ENABLE_ELECTROLYZER);
-    }
-
-    default WriteChannel<Float> getPowerPercent() {
-        return this.channel(ChannelId.POWER_PERCENT);
     }
 
 }

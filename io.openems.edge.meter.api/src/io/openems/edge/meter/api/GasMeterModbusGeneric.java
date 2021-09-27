@@ -112,30 +112,6 @@ public interface GasMeterModbusGeneric extends MeterModbusGeneric {
     }
 
 
-    /**
-     * Get the _getFlowTempLongChannelFlowTempLong Channel.
-     * Only Call by Generic Meter!
-     * The actual Reading Energy will be written into {@link GasMeter#getFlowTempChannel()}.
-     *
-     * @return the Channel.
-     */
-
-    default Channel<Long> _getFlowTempLongChannel() {
-        return this.channel(ChannelId.FLOW_TEMP_DOUBLE);
-    }
-
-    /**
-     * Get the ReadEnergyDouble Channel.
-     * Only Call by Generic Meter!
-     * The actual Reading Energy will be written into {@link GasMeter#getTotalConsumedEnergyCubicMeterChannel()}.
-     *
-     * @return the Channel.
-     */
-
-    default Channel<Double> _getFlowTempDoubleChannel() {
-        return this.channel(ChannelId.FLOW_TEMP_DOUBLE);
-    }
-
     default Channel<?> _hasPercolation() {
         return MeterModbusGeneric.getValueDefinedChannel(this._getReadPercolationDoubleChannel(), this._getReadPercolationLongChannel());
     }

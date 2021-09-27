@@ -2,6 +2,7 @@ package io.openems.edge.generator.electrolyzer;
 
 import io.openems.edge.generator.api.ElectrolyzerAccessMode;
 import io.openems.edge.generator.api.ControlMode;
+import io.openems.edge.generator.api.EnergyControlMode;
 import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
@@ -22,11 +23,10 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     @AttributeDefinition(name = "ModBus-Unit Id", description = "Unit Id of the Component.")
     int modbusUnitId() default 1;
 
-    @AttributeDefinition(name = "Modbus Register Enable Signal", description = "Modbus Register for Enabling the Electrolyzer")
-    int modbusRegisterEnableSignal() default -1;
+    boolean autoRun() default false;
 
-    @AttributeDefinition(name = "Modbus Register Power Write", description = "Modbus Register for Power Write")
-    int modbusRegisterWritePower() default -1;
+    @AttributeDefinition(name = "Default Power", description = "Default Run Power, either % or KW depends on Configuration")
+    int defaultRunPower() default 100;
 
     @AttributeDefinition(name = "Timer for NeedHeatResponse", description = "Timer Id either TimerByTime or TimerByCycles")
     String timerNeedHeatResponse() default "TimerByCycles";
@@ -71,6 +71,8 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     ControlMode controlMode() default ControlMode.READ;
 
     ElectrolyzerAccessMode accessMode() default ElectrolyzerAccessMode.HEATER;
+
+    EnergyControlMode energyControlMode() default EnergyControlMode.KW;
 
     boolean enabled() default true;
 

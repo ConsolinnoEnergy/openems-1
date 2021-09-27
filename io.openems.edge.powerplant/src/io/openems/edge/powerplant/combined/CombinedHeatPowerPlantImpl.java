@@ -150,7 +150,7 @@ public class CombinedHeatPowerPlantImpl extends AbstractGenericModbusComponent i
             handleChannelUpdate(this.getWmzTempSourceChannel(), this._hasWMZTempSource());
             handleChannelUpdate(this.getWmzEnergyAmountChannel(), this._hasWMZEnergyAmount());
             handleChannelUpdate(this.getMaximumKw(), this._hasMaximumKw());
-            handleChannelUpdate(this.getPowerChannel(), this._hasPower());
+            handleChannelUpdate(this.getPowerChannelGenerator(), this._hasPower());
 
         }
 

@@ -12,9 +12,9 @@ public interface ElectrolyzerModbusGeneric extends GeneratorModbus {
         // Input Registers
 
         /**
-         * Electrolyzer get temperature
+         *
          * <ul>
-         *      <li> Type: Float
+         *      <li>
          * </ul>
          */
 
@@ -25,10 +25,7 @@ public interface ElectrolyzerModbusGeneric extends GeneratorModbus {
         WMZ_TEMP_SINK_LONG(Doc.of(OpenemsType.LONG).accessMode(AccessMode.READ_ONLY)),
         WMZ_TEMP_SINK_DOUBLE(Doc.of(OpenemsType.DOUBLE).accessMode(AccessMode.READ_ONLY)),
         WMZ_POWER_LONG(Doc.of(OpenemsType.LONG).accessMode(AccessMode.READ_ONLY)),
-        WMZ_POWER_DOUBLE(Doc.of(OpenemsType.DOUBLE).accessMode(AccessMode.READ_ONLY)),
-        POWER_PERCENT_LONG(Doc.of(OpenemsType.LONG).accessMode(AccessMode.READ_WRITE)),
-        POWER_PERCENT_DOUBLE(Doc.of(OpenemsType.DOUBLE).accessMode(AccessMode.READ_WRITE));
-
+        WMZ_POWER_DOUBLE(Doc.of(OpenemsType.DOUBLE).accessMode(AccessMode.READ_ONLY));
         private final Doc doc;
 
         ChannelId(Doc doc) {
@@ -155,31 +152,20 @@ public interface ElectrolyzerModbusGeneric extends GeneratorModbus {
     }
 
     /**
-     * Gets the Channel for {@link ChannelId#POWER_PERCENT_LONG}.
-     *
-     * @return the Channel
+     * Checks if the Electrolyzer has a WMZ Energy Produced set. After that the stored value will be written to the actual {@link Electrolyzer}
+     * Only call this within the implementing Class.
+     * @return the channel that contains the value or else null.
      */
-    default WriteChannel<Long> _getPowerPercentLongChannel() {
-        return this.channel(ChannelId.POWER_PERCENT_LONG);
+    default Channel<?> _hasPowerSetPointPercent() {
+        return GeneratorModbus.getValueDefinedChannel(this._getSetPointPowerPercentLongChannel(), this._getSetPointPowerPercentDoubleChannel());
     }
-
-    /**
-     * Gets the Channel for {@link ChannelId#POWER_PERCENT_DOUBLE}.
-     *
-     * @return the Channel
-     */
-    default WriteChannel<Long> _getPowerPercentDoubleChannel() {
-        return this.channel(ChannelId.POWER_PERCENT_DOUBLE);
-    }
-
     /**
      * Checks if the Electrolyzer has a WMZ Energy Produced set. After that the stored value will be written to the actual {@link Electrolyzer}
      * Only call this within the implementing Class.
      * @return the channel that contains the value or else null.
      */
-    default Channel<?> _hasPowerPercent() {
-        return GeneratorModbus.getValueDefinedChannel(this._getPowerPercentLongChannel(), this._getPowerPercentDoubleChannel());
+    default Channel<?> _hasPowerSetPoint() {
+        return GeneratorModbus.getValueDefinedChannel(this._getSetPointPowerLongChannel(), this._getSetPointPowerDoubleChannel());
     }
-
 
 }
