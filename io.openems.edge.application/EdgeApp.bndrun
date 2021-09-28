@@ -120,12 +120,12 @@
 	bnd.identity;id='io.openems.edge.fenecon.dess',\
 	bnd.identity;id='io.openems.edge.fenecon.mini',\
 	bnd.identity;id='io.openems.edge.fenecon.pro',\
-	bnd.identity;id='io.openems.edge.generator',\
 	bnd.identity;id='io.openems.edge.goodwe',\
 	bnd.identity;id='io.openems.edge.heater',\
 	bnd.identity;id='io.openems.edge.heater.api',\
 	bnd.identity;id='io.openems.edge.heater.chp.dachs',\
 	bnd.identity;id='io.openems.edge.heater.chp.wolf',\
+	bnd.identity;id='io.openems.edge.heater.electrolyzer',\
 	bnd.identity;id='io.openems.edge.heater.heatpump.tecalor',\
 	bnd.identity;id='io.openems.edge.heatsystem.components',\
 	bnd.identity;id='io.openems.edge.io.kmtronic',\
@@ -152,7 +152,7 @@
 	bnd.identity;id='io.openems.edge.meter.watermeter',\
 	bnd.identity;id='io.openems.edge.meter.weidmueller',\
 	bnd.identity;id='io.openems.edge.onewire.thermometer',\
-	bnd.identity;id='io.openems.edge.powerplant',\
+	bnd.identity;id='io.openems.edge.heater.powerplant',\
 	bnd.identity;id='io.openems.edge.predictor.persistencemodel',\
 	bnd.identity;id='io.openems.edge.pvinverter.cluster',\
 	bnd.identity;id='io.openems.edge.pvinverter.kaco.blueplanet',\
@@ -276,12 +276,12 @@
 	io.openems.edge.fenecon.dess;version=snapshot,\
 	io.openems.edge.fenecon.mini;version=snapshot,\
 	io.openems.edge.fenecon.pro;version=snapshot,\
-	io.openems.edge.generator;version=snapshot,\
 	io.openems.edge.goodwe;version=snapshot,\
 	io.openems.edge.heater;version=snapshot,\
 	io.openems.edge.heater.api;version=snapshot,\
 	io.openems.edge.heater.chp.dachs;version=snapshot,\
 	io.openems.edge.heater.chp.wolf;version=snapshot,\
+	io.openems.edge.heater.electrolyzer;version=snapshot,\
 	io.openems.edge.heater.heatpump.tecalor;version=snapshot,\
 	io.openems.edge.heatsystem.components;version=snapshot,\
 	io.openems.edge.io.api;version=snapshot,\
@@ -310,7 +310,7 @@
 	io.openems.edge.meter.watermeter;version=snapshot,\
 	io.openems.edge.meter.weidmueller;version=snapshot,\
 	io.openems.edge.onewire.thermometer;version=snapshot,\
-	io.openems.edge.powerplant;version=snapshot,\
+	io.openems.edge.heater.powerplant;version=snapshot,\
 	io.openems.edge.predictor.api;version=snapshot,\
 	io.openems.edge.predictor.persistencemodel;version=snapshot,\
 	io.openems.edge.pvinverter.api;version=snapshot,\

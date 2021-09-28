@@ -1,0 +1,21 @@
+Bundle-Name: OpenEMS Edge Controller Temperature Passing
+Bundle-Vendor: Consolinno Energy GmbH
+Bundle-License: https://opensource.org/licenses/EPL-2.0
+Bundle-Version: 1.0.0.${tstamp}
+Bundle-Description: \
+    Provbides a PowerPlant writing in a 0-10V device depending on their power and having a dynamic number of Errorbits.
+
+-buildpath:  \
+	${buildpath},\
+	io.openems.common,\
+	io.openems.edge.common,\
+	io.openems.edge.io.api,\
+	io.openems.edge.bridge.modbus,\
+	io.openems.edge.heater,\
+	io.openems.edge.timer.api,\
+	io.openems.edge.exceptionalstate.api,\
+	io.openems.edge.consolinno.leaflet,\
+	io.openems.edge.heater.electrolyzer,\
+
+-testpath: \
+	${testpath}

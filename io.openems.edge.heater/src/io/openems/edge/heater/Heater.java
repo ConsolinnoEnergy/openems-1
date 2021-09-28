@@ -8,6 +8,7 @@ import io.openems.edge.common.channel.Channel;
 import io.openems.edge.common.channel.Doc;
 import io.openems.edge.common.channel.DoubleWriteChannel;
 import io.openems.edge.common.channel.IntegerWriteChannel;
+import io.openems.edge.common.channel.LongWriteChannel;
 import io.openems.edge.common.channel.WriteChannel;
 import io.openems.edge.common.component.OpenemsComponent;
 
@@ -33,7 +34,11 @@ public interface Heater extends OpenemsComponent {
                 channel -> ((IntegerWriteChannel) channel).onSetNextWrite(channel::setNextValue)
         )),
         FLOW_TEMPERATURE(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
-        RETURN_TEMPERATURE(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS));
+        RETURN_TEMPERATURE(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
+
+        DEFAULT_RUN_POWER(Doc.of(OpenemsType.LONG).accessMode(AccessMode.READ_WRITE).onInit(
+                channel -> ((LongWriteChannel) channel).onSetNextWrite(channel::setNextValue)
+        ));
 
         private final Doc doc;
 
@@ -260,6 +265,11 @@ public interface Heater extends OpenemsComponent {
 
     default WriteChannel<Boolean> getEmergencyOffChannel() {
         return this.channel(ChannelId.EMERGENCY_OFF);
+    }
+
+
+    default WriteChannel<Long> getDefaultRunPower() {
+        return this.channel(ChannelId.DEFAULT_RUN_POWER);
     }
 
     // ********************************************************************** //
