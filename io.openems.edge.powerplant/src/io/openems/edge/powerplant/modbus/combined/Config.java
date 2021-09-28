@@ -1,4 +1,4 @@
-package io.openems.edge.powerplant.combined;
+package io.openems.edge.powerplant.modbus.combined;
 
 import io.openems.edge.generator.api.ControlMode;
 import io.openems.edge.generator.api.HydrogenMode;

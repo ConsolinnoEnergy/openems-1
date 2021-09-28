@@ -1,4 +1,4 @@
-package io.openems.edge.powerplant.combined;
+package io.openems.edge.powerplant.modbus.combined;
 
 import io.openems.common.exceptions.OpenemsError;
 import io.openems.edge.bridge.modbus.api.BridgeModbus;

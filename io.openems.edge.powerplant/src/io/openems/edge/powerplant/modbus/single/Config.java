@@ -1,4 +1,4 @@
-package io.openems.edge.powerplant.analog;
+package io.openems.edge.powerplant.modbus.single;
 
 import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
