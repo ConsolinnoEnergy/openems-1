@@ -35,5 +35,33 @@ public enum HeaterState implements OptionsEnum {
 	@Override
 	public OptionsEnum getUndefined() {
 		return UNDEFINED;
-	}	
+	}
+
+	/**
+	 * Returns the enum state corresponding to the integer value.
+	 *
+	 * @param value the integer value of the enum
+	 * @return the enum state
+	 */
+	public static HeaterState valueOf(int value) {
+		HeaterState returnEnum = HeaterState.UNDEFINED;
+		switch (value) {
+			case 0:
+				returnEnum = HeaterState.BLOCKED;
+				break;
+			case 1:
+				returnEnum = HeaterState.OFF;
+				break;
+			case 2:
+				returnEnum = HeaterState.STANDBY;
+				break;
+			case 3:
+				returnEnum = HeaterState.STARTING_UP_OR_PREHEAT;
+				break;
+			case 4:
+				returnEnum = HeaterState.HEATING;
+				break;
+		}
+		return returnEnum;
+	}
 }

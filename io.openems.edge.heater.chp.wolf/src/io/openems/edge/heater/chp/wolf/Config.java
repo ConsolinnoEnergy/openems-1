@@ -21,14 +21,6 @@ import org.osgi.service.metatype.annotations.Option;
 	@AttributeDefinition(name = "Modbus Unit-ID", description = "The Unit-ID of the Modbus device.")
 	int modbusUnitId() default 1;
 
-	@AttributeDefinition(name = "Turn on Chp", description = "The Chp will run as long as this module is running. "
-			+ "Checking the \"Use EnableSignal\" box will override this option.")
-	boolean turnOnChp() default false;
-
-	@AttributeDefinition(name = "Use EnableSignal", description = "React to commands from the Heater interface "
-			+ "EnableSignal channel. Will turn off the Chp when there is no signal.")
-	boolean useEnableSignalChannel() default false;
-
 	@AttributeDefinition(name = "Wait time EnableSignal", description = "How long to wait after the EnableSignal is "
 			+ "no longer received before the Chp is switched off. Unit is seconds, unless cycles option is selected.")
 	int waitTimeEnableSignal() default 30;
@@ -61,8 +53,8 @@ import org.osgi.service.metatype.annotations.Option;
 	@AttributeDefinition(name = "Read only", description = "Only read values from Modbus, don't send commands.")
 	boolean readOnly() default false;
 
-	@AttributeDefinition(name = "Debug", description = "Enable debug mode.")
-    boolean debug() default false;
+	@AttributeDefinition(name = "Print info to log", description = "Print status info to the log.")
+	boolean printInfoToLog() default false;
 	
 	@AttributeDefinition(name = "Is enabled?", description = "Is this Component enabled?")
 	boolean enabled() default true;
