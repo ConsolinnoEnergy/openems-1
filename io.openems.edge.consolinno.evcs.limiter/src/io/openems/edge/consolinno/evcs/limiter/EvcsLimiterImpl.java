@@ -2678,27 +2678,24 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
         int freeMiddleResources;
         int freeResourcesPerEvcs = 0;
         int freeResourcesPerMiddleEvcs = 0;
+        int nonThreePhasePriorityAmount = (int) this.priorityList.stream().filter(evcs -> evcs.getPhases().orElse(0) != 3).count();
         int max = this.getMaximumLoad();
         int mid = this.getMiddleLoad();
         int min = this.getMinimumLoad();
         if (this.priorityAmount > 0) {
             if ((this.initialPowerLimit / GRID_VOLTAGE) / this.priorityAmount > this.priorityCurrent) {
                 if (this.symmetry) {
-
-                        freeResources = MAXIMUM_LOAD_DELTA - (max - min);
-
-                    //if max=60 | mid=45 | min=40
-                    //                    (60 - (45  + (45  - 40))) + (45  - 40) == (60 - 50) + 5 = 15 == freeResources for middle
-                    freeMiddleResources = max - (mid + (mid - min)) + (mid - min);
-                    freeResourcesPerEvcs = freeResources / this.priorityAmount;
-                    freeResourcesPerMiddleEvcs = freeMiddleResources / this.priorityAmount;
+                    freeResources = MAXIMUM_LOAD_DELTA - (max - min);
+                    freeMiddleResources = MAXIMUM_LOAD_DELTA - (mid - min);
+                    freeResourcesPerEvcs = freeResources / nonThreePhasePriorityAmount;
+                    freeResourcesPerMiddleEvcs = freeMiddleResources / nonThreePhasePriorityAmount;
                 }
                 int finalFreeResourcesPerEvcs = freeResourcesPerEvcs;
                 int finalFreeResourcesPerMiddleEvcs = freeResourcesPerMiddleEvcs;
                 this.priorityList.forEach(evcs -> {
                     try {
                         if ((this.powerWaitingList.containsKey(evcs.id()) && this.powerWaitingList.get(evcs.id()).getWantToCharge()) || (!this.powerWaitingList.containsKey(evcs.id()) && evcs.getChargePower().orElse(0) > 0)) {
-                            if (!this.symmetry) {
+                            if (!this.symmetry || evcs.getPhases().orElse(0) == 3) {
                                 evcs.setChargePowerLimit(Math.min(evcs.getMaximumHardwarePower().orElse(this.priorityCurrent), evcs.getMaximumPower().orElse(this.priorityCurrent)));
                             } else {
                                 if (this.evcsOnPhase(evcs, this.maxIndex) && finalFreeResourcesPerEvcs > 0) {
