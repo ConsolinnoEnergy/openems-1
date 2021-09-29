@@ -80,9 +80,7 @@ public class ValveOneOutput extends AbstractValve implements OpenemsComponent, H
             super.activate(context, config.id(), config.alias(), config.enabled());
             this.config = config;
             this.activationOrModifiedRoutine(config);
-            if (config.useExceptionalState()) {
-                super.createExcpetionalStateHandler(config.timerId(), config.maxTime(), this.cpm, this);
-            }
+            super.createTimerHandler(config.timerId(), config.maxTime(), this.cpm, this, config.useExceptionalState());
             if (config.shouldCloseOnActivation()) {
                 this.getPowerLevelChannel().setNextValue(0);
                 this.setPointPowerLevelChannel().setNextWriteValueFromObject(0);
@@ -331,13 +329,13 @@ public class ValveOneOutput extends AbstractValve implements OpenemsComponent, H
                     this.configSuccess = true;
                 } catch (ConfigurationException | OpenemsError.OpenemsNamedException e) {
                     this.configSuccess = false;
-                    if (this.configTries.get() >= MAX_CONFIG_TRIES) {
-                        this.log.error("Config is Wrong in : " + super.id() + " Please reconfigure!");
-                    } else {
-                        this.configTries.getAndIncrement();
-                    }
+                    this.log.error("Config is Wrong in : " + super.id() + " Please reconfigure!");
                 }
             } else if (this.powerValueReachedBeforeCheck) {
+                if (this.configurationType.equals(ConfigurationType.DEVICE) && super.timerHandler.checkTimeIsUp(CHECK_COMPONENT_IDENTIFIER)) {
+                    this.checkForMissingComponents();
+                    this.timerHandler.resetTimer(CHECK_COMPONENT_IDENTIFIER);
+                }
                 Channel<?> optionalChannel;
                 try {
                     optionalChannel = this.getOptionalChannel();
@@ -378,6 +376,39 @@ public class ValveOneOutput extends AbstractValve implements OpenemsComponent, H
                     this.powerValueReachedBeforeCheck = true;
                 }
             }
+        }
+    }
+
+    /**
+     * This Method will only be called, when someone configured the Valve with the {@link ConfigurationType#DEVICE}.
+     * It sometimes happens, that devices restart or get deactivated etc. The Vaöve will check for old references and refreshes them
+     * every 30 deltaTime (Depends on the Timer).
+     */
+    private void checkForMissingComponents() {
+        OpenemsComponent component;
+        try {
+            switch (this.deviceType) {
+
+                case PWM:
+                    if (this.valvePwm != null) {
+                        component = this.cpm.getComponent(this.valvePwm.id());
+                        if (component instanceof Pwm && !component.equals(this.valvePwm)) {
+                            this.valvePwm = (Pwm) component;
+                        }
+                    }
+                    break;
+                case AIO:
+                default:
+                    if (this.valveAio != null) {
+                        component = this.cpm.getComponent(this.valveAio.id());
+                        if (component instanceof AnalogInputOutput && !component.equals(this.valveAio)) {
+                            this.valveAio = (AnalogInputOutput) component;
+                        }
+                    }
+                    break;
+            }
+        } catch (OpenemsError.OpenemsNamedException e) {
+            this.log.warn("Couldn't check for missing Components. Reason: " + e.getMessage());
         }
     }
 }

@@ -60,6 +60,8 @@ public class ThermometerVirtualConfigurable extends AbstractOpenemsComponent imp
 
     TimerHandler timerHandler;
 
+    private boolean configurationSuccess;
+
 
     Config config;
 
@@ -72,33 +74,45 @@ public class ThermometerVirtualConfigurable extends AbstractOpenemsComponent imp
     }
 
     @Activate
-    void activate(ComponentContext context, Config config) throws ConfigurationException, OpenemsError.OpenemsNamedException {
+    void activate(ComponentContext context, Config config) {
         super.activate(context, config.id(), config.alias(), config.enabled());
         this.config = config;
         this.activationOrModifiedRoutine();
-        this.createTimer(config.id(), config.timerID(), config.waitTime());
+        try {
+            this.createTimer(config.id(), config.timerID(), config.waitTime());
+        } catch (OpenemsError.OpenemsNamedException | ConfigurationException e) {
+            this.log.warn("Couldn't apply Config. Trying again later.");
+            this.configurationSuccess = false;
+        }
     }
 
     private void createTimer(String id, String timerId, int maxWaitTime) throws OpenemsError.OpenemsNamedException, ConfigurationException {
-        this.timerHandler = new TimerHandlerImpl(this.id(), this.cpm);
+        if (this.timerHandler != null) {
+            this.timerHandler.removeComponent();
+        }
+        this.timerHandler = new TimerHandlerImpl(id, this.cpm);
         this.timerHandler.addOneIdentifier(ENABLE_SIGNAL_IDENTIFIER, timerId, maxWaitTime);
+        this.configurationSuccess = true;
     }
 
     @Modified
-    void modified(ComponentContext context, Config config) throws ConfigurationException, OpenemsError.OpenemsNamedException {
-        if (this.id().equals(config.id()) == false) {
-            this.timerHandler.removeComponent();
-            this.createTimer(config.id(), config.timerID(), config.waitTime());
-        }
+    void modified(ComponentContext context, Config config) {
+        this.configurationSuccess = false;
         super.modified(context, config.id(), config.alias(), config.enabled());
         this.config = config;
         this.activationOrModifiedRoutine();
+        try {
+            this.createTimer(config.id(), config.timerID(), config.waitTime());
+        } catch (OpenemsError.OpenemsNamedException | ConfigurationException e) {
+            this.configurationSuccess = false;
+            this.log.warn("Couldn't apply Config. Trying again later.");
+        }
 
     }
 
     private void activationOrModifiedRoutine() {
-        this._getActiveTemperature().setNextValue(config.activeTemperature());
-        this._getInactiveTemperature().setNextValue(config.inactiveTemperature());
+        this._getActiveTemperature().setNextValue(this.config.activeTemperature());
+        this._getInactiveTemperature().setNextValue(this.config.inactiveTemperature());
         this.autoRun = this.config.autoApply();
         this.useInactiveTemperature = this.config.useInactiveTemperature();
     }
@@ -110,32 +124,41 @@ public class ThermometerVirtualConfigurable extends AbstractOpenemsComponent imp
 
     @Override
     public void handleEvent(Event event) {
-        if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS)) {
+        if (this.configurationSuccess) {
+            if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS)) {
 
-            if (this._getDefaultActiveTemperatureChannel().getNextWriteValue().isPresent()) {
-                this.updateConfig(true);
-            }
-            if (this._getDefaultInactiveTemperatureChannel().getNextWriteValue().isPresent()) {
-                this.updateConfig(false);
-            }
-
-        } else if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE)) {
-
-            if (this.autoRun || this.shouldRun()) {
-                this.isActive = true;
-                if (this._getActiveTemperature().value().isDefined()) {
-                    this.getTemperatureChannel().setNextValue(this._getActiveTemperature().value().get());
+                if (this._getDefaultActiveTemperatureChannel().getNextWriteValue().isPresent()) {
+                    this.updateConfig(true);
+                }
+                if (this._getDefaultInactiveTemperatureChannel().getNextWriteValue().isPresent()) {
+                    this.updateConfig(false);
                 }
 
-            } else {
-                this.isActive = false;
-                if (this.useInactiveTemperature) {
-                    if (this._getInactiveTemperature().value().isDefined()) {
-                        this.getTemperatureChannel().setNextValue(this._getInactiveTemperature().value().get());
+            } else if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE)) {
+
+                if (this.autoRun || this.shouldRun()) {
+                    this.isActive = true;
+                    if (this._getActiveTemperature().value().isDefined()) {
+                        this.getTemperatureChannel().setNextValue(this._getActiveTemperature().value().get());
+                    }
+
+                } else {
+                    this.isActive = false;
+                    if (this.useInactiveTemperature) {
+                        if (this._getInactiveTemperature().value().isDefined()) {
+                            this.getTemperatureChannel().setNextValue(this._getInactiveTemperature().value().get());
+                        }
                     }
                 }
+                this.getEnableSignal().setNextValue(this.isActive);
             }
-            this.getEnableSignal().setNextValue(this.isActive);
+        } else {
+            try {
+                this.createTimer(this.id(), this.config.timerID(), this.config.waitTime());
+            } catch (OpenemsError.OpenemsNamedException | ConfigurationException e) {
+                this.log.warn("Couldn't apply Config. Trying again later.");
+                this.configurationSuccess = false;
+            }
         }
     }
 

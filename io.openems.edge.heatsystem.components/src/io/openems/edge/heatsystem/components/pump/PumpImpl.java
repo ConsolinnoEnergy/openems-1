@@ -488,7 +488,7 @@ public class PumpImpl extends AbstractOpenemsComponent implements OpenemsCompone
                         }
                     }
                     if (this.configurationType.equals(ConfigurationType.DEVICE) && this.timerHandler.checkTimeIsUp(CHECK_COMPONENT_IDENTIFIER)) {
-                        this.checkMissingComponents();
+                        this.checkForMissingComponents();
                         this.timerHandler.resetTimer(CHECK_COMPONENT_IDENTIFIER);
                     }
                 } else {
@@ -524,7 +524,7 @@ public class PumpImpl extends AbstractOpenemsComponent implements OpenemsCompone
      * It sometimes happens, that devices restart or get deactivated etc. The Pump will check for old references and refreshes them
      * every 30 deltaTime (Depends on the Timer).
      */
-    private void checkMissingComponents() {
+    private void checkForMissingComponents() {
         if (this.isRelay) {
             try {
                 OpenemsComponent component = this.cpm.getComponent(this.relay.id());

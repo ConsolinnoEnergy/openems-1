@@ -79,11 +79,11 @@ public class ValveTwoOutput extends AbstractValve implements OpenemsComponent, H
 
 
     @Activate
-    void activate(ComponentContext context, ConfigValveTwoOutput config) throws ConfigurationException {
+    void activate(ComponentContext context, ConfigValveTwoOutput config) {
         super.activate(context, config.id(), config.alias(), config.enabled());
         try {
             this.activateOrModifiedRoutine(config);
-        } catch (OpenemsError.OpenemsNamedException e) {
+        } catch (OpenemsError.OpenemsNamedException | ConfigurationException e) {
             this.configSuccess = false;
             this.log.warn("Couldn't find Components for " + super.id() + " Component Tries again later.");
         } finally {
@@ -97,6 +97,17 @@ public class ValveTwoOutput extends AbstractValve implements OpenemsComponent, H
             }
         }
     }
+
+    @Modified
+    void modified(ComponentContext context, ConfigValveTwoOutput config) {
+        super.modified(context, config.id(), config.alias(), config.enabled());
+        try {
+            this.activateOrModifiedRoutine(config);
+        } catch (OpenemsError.OpenemsNamedException | ConfigurationException e) {
+            this.log.warn("Couldn't find Components for " + super.id() + " Component Tries again later.");
+        }
+    }
+
 
     /**
      * This will be called on either Activation or Modification.
@@ -134,9 +145,8 @@ public class ValveTwoOutput extends AbstractValve implements OpenemsComponent, H
         }
         this.secondsPerPercentage = ((double) config.valve_Time() / 100.d);
         this.timeChannel().setNextValue(0);
-        if (config.useExceptionalState()) {
-            super.createExcpetionalStateHandler(config.timerId(), config.maxTime(), this.cpm, this);
-        }
+        super.createTimerHandler(config.timerId(), config.maxTime(), this.cpm, this, config.useExceptionalState());
+
         super.percentPossiblePerCycle = super.cycle.getCycleTime() / (this.secondsPerPercentage * MILLI_SECONDS_TO_SECONDS);
         this.configSuccess = true;
     }
@@ -180,13 +190,6 @@ public class ValveTwoOutput extends AbstractValve implements OpenemsComponent, H
     }
 
 
-    @Modified
-    void modified(ComponentContext context, ConfigValveTwoOutput config) throws OpenemsError.OpenemsNamedException, ConfigurationException {
-        super.modified(context, config.id(), config.alias(), config.enabled());
-        this.activateOrModifiedRoutine(config);
-    }
-
-
     @Override
     public void handleEvent(Event event) {
         if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE)) {
@@ -208,11 +211,7 @@ public class ValveTwoOutput extends AbstractValve implements OpenemsComponent, H
                     this.configSuccess = true;
                 } catch (ConfigurationException | OpenemsError.OpenemsNamedException e) {
                     this.configSuccess = false;
-                    if (super.configTries.get() >= MAX_CONFIG_TRIES) {
-                        this.log.error("Config is Wrong in : " + super.id());
-                    } else {
-                        this.configTries.getAndIncrement();
-                    }
+                    this.log.error("Config is Wrong in : " + super.id());
                 }
             }
         } else if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS) && this.configSuccess) {

@@ -62,7 +62,7 @@ public abstract class AbstractValve extends AbstractOpenemsComponent implements 
     protected boolean useExceptionalState;
     protected static final String EXCEPTIONAL_STATE_IDENTIFIER = "VALVE_EXCEPTIONAL_STATE_IDENTIFIER";
     protected boolean parentActive;
-    private TimerHandler timerHandler;
+    protected TimerHandler timerHandler;
     protected ExceptionalStateHandler exceptionalStateHandler;
     protected ExceptionalState exceptionalState;
     protected boolean exceptionalStateActive;
@@ -245,17 +245,21 @@ public abstract class AbstractValve extends AbstractOpenemsComponent implements 
         }
     }
 
-    protected void createExcpetionalStateHandler(String timerId, int maxTime,
-                                                 ComponentManager cpm, ExceptionalState exceptionalState) throws OpenemsError.OpenemsNamedException, ConfigurationException {
+    protected void createTimerHandler(String timerId, int maxTime,
+                                      ComponentManager cpm, ExceptionalState exceptionalState, boolean useExceptionalState) throws OpenemsError.OpenemsNamedException, ConfigurationException {
         TimerHandler timerHandler = new TimerHandlerImpl(super.id(), cpm);
         if (this.timerHandler != null) {
             this.timerHandler.removeComponent();
         }
         this.timerHandler = timerHandler;
-        this.timerHandler.addOneIdentifier(EXCEPTIONAL_STATE_IDENTIFIER, timerId, maxTime);
-        this.exceptionalStateHandler = new ExceptionalStateHandlerImpl(timerHandler, EXCEPTIONAL_STATE_IDENTIFIER);
-        this.exceptionalState = exceptionalState;
-        this.useExceptionalState = true;
+        this.timerHandler.addOneIdentifier(CHECK_COMPONENT_IDENTIFIER, timerId, WAIT_TIME_CHECK_COMPONENTS);
+        if (useExceptionalState) {
+            this.timerHandler.addOneIdentifier(EXCEPTIONAL_STATE_IDENTIFIER, timerId, maxTime);
+            this.exceptionalStateHandler = new ExceptionalStateHandlerImpl(timerHandler, EXCEPTIONAL_STATE_IDENTIFIER);
+            this.exceptionalState = exceptionalState;
+        }
+
+        this.useExceptionalState = useExceptionalState;
     }
 
 

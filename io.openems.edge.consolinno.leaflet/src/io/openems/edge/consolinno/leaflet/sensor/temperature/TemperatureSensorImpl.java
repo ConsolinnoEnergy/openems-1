@@ -30,7 +30,7 @@ import org.slf4j.LoggerFactory;
 
 
 @Designate(ocd = Config.class, factory = true)
-@Component(name = "Consolinno.Leaflet.Temperature", immediate = true,
+@Component(name = "Thermometer.Consolinno.Leaflet.Temperature", immediate = true,
         configurationPolicy = ConfigurationPolicy.REQUIRE)
 public class TemperatureSensorImpl extends AbstractOpenemsModbusComponent implements OpenemsComponent, Thermometer {
 

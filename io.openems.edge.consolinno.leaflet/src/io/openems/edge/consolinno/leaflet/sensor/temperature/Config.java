@@ -3,7 +3,7 @@ package io.openems.edge.consolinno.leaflet.sensor.temperature;
 import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
-@ObjectClassDefinition(name = "Consolinno Leaflet Modbus Temperatur Sensor", description = "Temperatur Sensor that communicates over Modbus.")
+@ObjectClassDefinition(name = "Consolinno Leaflet Modbus Temperature Sensor", description = "Temperature Sensor that communicates over Modbus.")
 @interface Config {
     @AttributeDefinition(name = "Id", description = "Unique Id for this Temperature Sensor.")
     String id() default "TemperatureSensor0";
@@ -14,7 +14,7 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     @AttributeDefinition(name = "Module", description = "ModuleNumber where this Sensor is plugged in.")
     int module();
 
-    @AttributeDefinition(name = "Position", description = "Pinposition of this sensor.")
+    @AttributeDefinition(name = "Position", description = "PinPosition of this sensor.")
     int position();
 
     @AttributeDefinition(name = "LeafletId", description = "Unique Id of the LeafletCore, this Module is attached to.")
