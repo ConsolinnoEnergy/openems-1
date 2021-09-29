@@ -49,30 +49,7 @@ public interface GasMeterModbusGeneric extends MeterModbusGeneric {
          * </ul>
          */
 
-        READ_ENERGY_DOUBLE(Doc.of(OpenemsType.DOUBLE)),
-
-        /**
-         * Flow Temperature in Degree Celsius.
-         * <ul>
-         *     <li>Interface: GasMeter
-         *     <li>Type: Integer
-         *     <li>Unit: Degree Celsius
-         * </ul>
-         */
-
-        FLOW_TEMP_LONG(Doc.of(OpenemsType.LONG)),
-
-        /**
-         * Flow Temperature in Degree Celsius.
-         * <ul>
-         *     <li>Interface: GasMeter
-         *     <li>Type: Integer
-         *     <li>Unit: Degree Celsius
-         * </ul>
-         */
-
-        FLOW_TEMP_DOUBLE(Doc.of(OpenemsType.DOUBLE));
-
+        READ_ENERGY_DOUBLE(Doc.of(OpenemsType.DOUBLE));
 
         private final Doc doc;
 
@@ -114,10 +91,6 @@ public interface GasMeterModbusGeneric extends MeterModbusGeneric {
 
     default Channel<?> _hasPercolation() {
         return MeterModbusGeneric.getValueDefinedChannel(this._getReadPercolationDoubleChannel(), this._getReadPercolationLongChannel());
-    }
-
-    default Channel<?> _hasFlowTemp() {
-        return MeterModbusGeneric.getValueDefinedChannel(this._getFlowTempDoubleChannel(), this._getFlowTempLongChannel());
     }
 
 }
