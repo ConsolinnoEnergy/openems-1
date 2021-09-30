@@ -16,10 +16,13 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     @AttributeDefinition(name = "Alias", description = "Human readable Name.")
     String alias() default "";
 
-    @AttributeDefinition(name = "MaxIntervalToWait", description = "To prevent fluctuations in Temperature (jumping from 500dC to 490dC immediately) you can set an intervalcounter")
+    @AttributeDefinition(name = "MaxIntervalToWait", description = "To prevent fluctuations in Temperature (jumping from 500dC to 490dC immediately) you can set an IntervalCounter")
     int maxInterval() default 1;
 
     boolean useAnotherChannelAsTemperature() default true;
+
+    @AttributeDefinition(name = "OffSet Temperature dC", description = "Applies an Offset To the entered Temperature")
+    int offSet() default 0;
 
     @AttributeDefinition(name = "Other Channel", description = "If you want to use another Channel as a Temperature write the ChannelAddress here (Useful if Ref. Temperature is in a Modbus device)")
     String channelAddress() default "AM_1/LastKnownTemperature";

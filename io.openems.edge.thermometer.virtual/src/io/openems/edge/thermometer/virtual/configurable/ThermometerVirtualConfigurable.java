@@ -78,22 +78,8 @@ public class ThermometerVirtualConfigurable extends AbstractOpenemsComponent imp
         super.activate(context, config.id(), config.alias(), config.enabled());
         this.config = config;
         this.activationOrModifiedRoutine();
-        try {
-            this.createTimer(config.id(), config.timerID(), config.waitTime());
-        } catch (OpenemsError.OpenemsNamedException | ConfigurationException e) {
-            this.log.warn("Couldn't apply Config. Trying again later.");
-            this.configurationSuccess = false;
-        }
     }
 
-    private void createTimer(String id, String timerId, int maxWaitTime) throws OpenemsError.OpenemsNamedException, ConfigurationException {
-        if (this.timerHandler != null) {
-            this.timerHandler.removeComponent();
-        }
-        this.timerHandler = new TimerHandlerImpl(id, this.cpm);
-        this.timerHandler.addOneIdentifier(ENABLE_SIGNAL_IDENTIFIER, timerId, maxWaitTime);
-        this.configurationSuccess = true;
-    }
 
     @Modified
     void modified(ComponentContext context, Config config) {
@@ -101,12 +87,6 @@ public class ThermometerVirtualConfigurable extends AbstractOpenemsComponent imp
         super.modified(context, config.id(), config.alias(), config.enabled());
         this.config = config;
         this.activationOrModifiedRoutine();
-        try {
-            this.createTimer(config.id(), config.timerID(), config.waitTime());
-        } catch (OpenemsError.OpenemsNamedException | ConfigurationException e) {
-            this.configurationSuccess = false;
-            this.log.warn("Couldn't apply Config. Trying again later.");
-        }
 
     }
 
@@ -115,7 +95,24 @@ public class ThermometerVirtualConfigurable extends AbstractOpenemsComponent imp
         this._getInactiveTemperature().setNextValue(this.config.inactiveTemperature());
         this.autoRun = this.config.autoApply();
         this.useInactiveTemperature = this.config.useInactiveTemperature();
+        this.createTimer(this.config.id(), this.config.timerID(), this.config.waitTime());
     }
+
+
+    private void createTimer(String id, String timerId, int maxWaitTime) {
+        try {
+            if (this.timerHandler != null) {
+                this.timerHandler.removeComponent();
+            }
+            this.timerHandler = new TimerHandlerImpl(id, this.cpm);
+            this.timerHandler.addOneIdentifier(ENABLE_SIGNAL_IDENTIFIER, timerId, maxWaitTime);
+            this.configurationSuccess = true;
+        } catch (OpenemsError.OpenemsNamedException | ConfigurationException e) {
+            this.configurationSuccess = false;
+            this.log.warn("Couldn't apply Config. Trying again later.");
+        }
+    }
+
 
     @Deactivate
     protected void deactivate() {
@@ -153,12 +150,7 @@ public class ThermometerVirtualConfigurable extends AbstractOpenemsComponent imp
                 this.getEnableSignal().setNextValue(this.isActive);
             }
         } else {
-            try {
-                this.createTimer(this.id(), this.config.timerID(), this.config.waitTime());
-            } catch (OpenemsError.OpenemsNamedException | ConfigurationException e) {
-                this.log.warn("Couldn't apply Config. Trying again later.");
-                this.configurationSuccess = false;
-            }
+            this.createTimer(this.id(), this.config.timerID(), this.config.waitTime());
         }
     }
 
