@@ -129,6 +129,13 @@ public abstract class AbstractGenericModbusComponent extends AbstractOpenemsModb
                                ConfigurationAdmin cm, String modbusId, ComponentManager cpm, List<String> modbusConfiguration) throws OpenemsException, ConfigurationException {
         this.cpm.set(cpm);
         this.cm.set(cm);
+        List<Channel<?>> channels =
+                this.channels().stream().filter(entry ->
+                        !entry.channelId().id().startsWith("_Property")
+                ).collect(Collectors.toList());
+        channels.forEach(entry -> {
+            this.channelMap.put(entry.channelId().id(), entry);
+        });
         this.configureChannelConfiguration(modbusConfiguration);
         return super.activate(context, id, alias, enabled, unitId, cm, "Modbus", modbusId);
     }

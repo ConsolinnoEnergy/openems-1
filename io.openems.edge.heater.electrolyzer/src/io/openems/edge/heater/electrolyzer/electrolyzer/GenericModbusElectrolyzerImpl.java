@@ -131,7 +131,7 @@ public class GenericModbusElectrolyzerImpl extends AbstractGenericModbusComponen
     @Override
     public void handleEvent(Event event) {
         switch (event.getTopic()) {
-            case EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE:
+            case EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE:
                 handleChannelUpdate(this.getWMZEnergyProducedChannel(), this._hasWMZEnergyProduced());
                 handleChannelUpdate(this.getWMZTempSourceChannel(), this._hasWMZTempSource());
                 handleChannelUpdate(this.getWMZTempSinkChannel(), this._hasWMZTempSink());

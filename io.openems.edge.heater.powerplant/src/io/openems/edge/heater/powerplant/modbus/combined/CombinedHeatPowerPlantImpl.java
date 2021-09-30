@@ -132,7 +132,7 @@ public class CombinedHeatPowerPlantImpl extends AbstractGenericModbusComponent i
     @Override
     public void handleEvent(Event event) {
 
-        if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE)) {
+        if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE)) {
             //handleChannelUpdate(Concrete..., _hasValue)
             //note -> Enable Signal stays as enable signal and hydrogen enable stays as hydrogen
             handleChannelUpdate(this.getElectricityPowerChannel(), this._hasElectricityPower());

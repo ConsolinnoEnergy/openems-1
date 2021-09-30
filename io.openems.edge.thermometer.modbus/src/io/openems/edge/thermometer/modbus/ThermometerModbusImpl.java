@@ -42,6 +42,7 @@ public class ThermometerModbusImpl extends AbstractOpenemsModbusComponent implem
 
     private final Logger log = LoggerFactory.getLogger(ThermometerModbusImpl.class);
 
+    @Reference
     protected ConfigurationAdmin cm;
 
 
