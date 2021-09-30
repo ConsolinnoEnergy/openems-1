@@ -56,7 +56,14 @@ public class MqttTelemetryComponent extends MqttOpenemsComponentConnector implem
     void activate(ComponentContext context, TelemetryComponentConfig config) throws OpenemsError.OpenemsNamedException, IOException, ConfigurationException, MqttException {
         this.config = config;
         if (super.activate(context, config.id(), config.alias(), config.enabled(), this.cpm, config.mqttBridgeId())) {
-            this.configureMqtt(config);
+            try {
+                this.configureMqtt(config);
+            } catch (OpenemsError.OpenemsNamedException e) {
+                if (this.mqttBridge.get() != null) {
+                    this.mqttBridge.get().removeMqttComponent(this.id());
+                }
+                throw e;
+            }
         } else {
             throw new ConfigurationException("Something went wrong", "Somethings wrong in Activate method");
         }
@@ -82,11 +89,13 @@ public class MqttTelemetryComponent extends MqttOpenemsComponentConnector implem
      * @throws OpenemsError.OpenemsNamedException if the bridge with given Id couldn't be found.
      */
     private void configureMqtt(TelemetryComponentConfig config) throws MqttException, ConfigurationException, IOException, OpenemsError.OpenemsNamedException {
-        super.setCorrespondingComponent(config.otherComponentId(), this.cpm);
+        if (this.isEnabled()) {
+            super.setCorrespondingComponent(config.otherComponentId(), this.cpm);
 
-        super.setConfiguration(MqttType.TELEMETRY, config.subscriptionList(), config.publishList(),
-                config.payloads(), config.createdByOsgi(), config.mqttId(), this.cm, config.channelIdList().length,
-                config.pathForJson(), config.payloadStyle(), config.configurationDone());
+            super.setConfiguration(MqttType.TELEMETRY, config.subscriptionList(), config.publishList(),
+                    config.payloads(), config.createdByOsgi(), config.mqttId(), this.cm, config.channelIdList().length,
+                    config.pathForJson(), config.payloadStyle(), config.configurationDone());
+        }
     }
 
     @Deactivate
@@ -96,15 +105,19 @@ public class MqttTelemetryComponent extends MqttOpenemsComponentConnector implem
 
     @Override
     public void handleEvent(Event event) {
-        if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE)) {
-            if (this.mqttBridge.get() != null && this.mqttBridge.get().isEnabled() && this.mqttConfigurationComponent == null) {
-                this.mqttBridge.get().removeMqttComponent(this.id());
-                try {
-                    super.setConfiguration(MqttType.TELEMETRY, this.config.subscriptionList(), this.config.publishList(),
-                            this.config.payloads(), this.config.createdByOsgi(), this.config.mqttId(), this.cm, this.config.channelIdList().length,
-                            this.config.pathForJson(), this.config.payloadStyle(), this.config.configurationDone());
-                } catch (IOException | MqttException | ConfigurationException e) {
-                    super.log.warn("Couldn't apply config for this mqttComponent");
+        if (this.isEnabled() && this.config.configurationDone()) {
+            if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE)) {
+                super.renewReferenceAndMqttConfigurationComponent(this.cpm);
+                if (this.mqttBridge.get() != null && this.mqttBridge.get().isEnabled()
+                        && (!this.mqttBridge.get().containsComponent(this.id()) || this.mqttConfigurationComponent == null)) {
+                    this.mqttBridge.get().addMqttComponent(this.id(), this);
+                    try {
+                        super.setConfiguration(MqttType.TELEMETRY, this.config.subscriptionList(), this.config.publishList(),
+                                this.config.payloads(), this.config.createdByOsgi(), this.config.mqttId(), this.cm, this.config.channelIdList().length,
+                                this.config.pathForJson(), this.config.payloadStyle(), this.config.configurationDone());
+                    } catch (IOException | MqttException | ConfigurationException e) {
+                        super.log.warn("Couldn't apply config for this mqttComponent");
+                    }
                 }
             }
         }
