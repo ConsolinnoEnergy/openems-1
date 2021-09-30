@@ -145,7 +145,6 @@ public class ChpWolfImpl extends AbstractOpenemsModbusComponent implements Opene
 	protected ModbusProtocol defineModbusProtocol() throws OpenemsException {
 
 		ModbusProtocol protocol = new ModbusProtocol(this,
-
 				new FC3ReadRegistersTask(2, Priority.HIGH,
 						m(ChpWolfChannel.ChannelId.HR2_STATUS_BITS1, new UnsignedWordElement(0),
 								ElementToChannelConverter.DIRECT_1_TO_1)
@@ -250,14 +249,14 @@ public class ChpWolfImpl extends AbstractOpenemsModbusComponent implements Opene
 			if ((statusBits40003 & 0b010000000000) == 0b010000000000) {
 				warnMessage = warnMessage + "Gas pressure too low (Erdgasdruck an der Gasregelstrecke zu gering), ";
 			}
-			if ((statusBits40003 & 0b0100000000000) == 0) {    // Handbuch sagt hier 0=ein, also vermutlich Störung ist wenn hier 0 ist.
+			if ((statusBits40003 & 0b0100000000000) == 0) {    // Manual says 0=on, so the warning should probably be trigger when this is off.
 				warnMessage = warnMessage + "No flow detected at coolant circuit (Durchflußwaechter Kuehlwasserkreis Gasmotor misst keinen Fluß), ";
 			}
 			if ((statusBits40003 & 0b01000000000000) == 0b01000000000000) {
 				warnMessage = warnMessage + "Engine temperature protection triggered (Sicherheitstempaturbegrenzer Gasmotor geschaltet), ";
 			}
 			if ((statusBits40003 & 0b010000000000000) == 0b010000000000000) {
-				warnMessage = warnMessage + "Collant pump protection triggered (Motorschutz Pumpe Kuehlwasser ausgeloest), ";
+				warnMessage = warnMessage + "Coolant pump protection triggered (Motorschutz Pumpe Kuehlwasser ausgeloest), ";
 			}
 			if ((statusBits40003 & 0b0100000000000000) == 0b0100000000000000) {
 				warnMessage = warnMessage + "Heating circuit pump protection triggered (Motorschutz Pumpe Heizung zum Verteiler ausgeloest), ";
