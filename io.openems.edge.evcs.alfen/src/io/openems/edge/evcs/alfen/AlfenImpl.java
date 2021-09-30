@@ -81,6 +81,7 @@ public class AlfenImpl extends AbstractOpenemsModbusComponent implements Openems
         this._setMaximumHardwarePower(32 * 230);
         this._setMaximumPower(this.maxPower);
         this._setMinimumPower(this.minPower);
+        this._setIsPriority(config.priority());
         this._setPowerPrecision(1 * 230);
         this.readHandler = new AlfenReadHandler(this);
         this.writeHandler = new AlfenWriteHandler(this);

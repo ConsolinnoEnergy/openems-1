@@ -82,6 +82,7 @@ public class SchneiderImpl extends AbstractOpenemsModbusComponent implements Ope
         super.activate(context, config.id(), config.alias(), config.enabled(), config.modbusUnitId(), this.cm,
                 "Modbus", config.modbusBridgeId());
         this._setMinimumHardwarePower(8 * 230);
+        this._setIsPriority(config.priority());
         this._setMaximumPower(this.maxPower);
         this._setMinimumPower(this.minPower);
         this.readHandler = new SchneiderReadHandler(this);

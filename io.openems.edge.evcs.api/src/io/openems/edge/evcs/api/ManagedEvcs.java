@@ -128,6 +128,19 @@ public interface ManagedEvcs extends Evcs {
 				.persistencePriority(PersistencePriority.HIGH)), //
 
 		/**
+		 * Is true if the EVCS has higher priority while charging.
+		 *
+		 * <ul>
+		 * <li>Interface: ManagedEvcs
+		 * <li>Readable
+		 * <li>Type: Boolean
+		 * </ul>
+		 */
+		IS_PRIORITY(Doc.of(OpenemsType.BOOLEAN) //
+				.accessMode(AccessMode.READ_ONLY) //
+				.persistencePriority(PersistencePriority.HIGH)), //
+
+		/**
 		 * Sets a Text that is shown on the display of the EVCS.
 		 * 
 		 * <p>
@@ -352,6 +365,34 @@ public interface ManagedEvcs extends Evcs {
 		this.getIsClusteredChannel().setNextValue(value);
 	}
 
+	/**
+	 * Gets the Channel for {@link ChannelId#IS_PRIORITY}.
+	 *
+	 * @return the Channel
+	 */
+	public default BooleanReadChannel getIsPriorityChannel() {
+		return this.channel(ChannelId.IS_PRIORITY);
+	}
+
+	/**
+	 * Is true if the EVCS has higher priority while charging. See
+	 * {@link ChannelId#IS_PRIORITY}.
+	 *
+	 * @return the Channel {@link Value}
+	 */
+	public default Value<Boolean> getIsPriority() {
+		return this.getIsPriorityChannel().value();
+	}
+
+	/**
+	 * Internal method to set the 'nextValue' on {@link ChannelId#IS_PRIORITY}
+	 * Channel.
+	 *
+	 * @param value the next value
+	 */
+	public default void _setIsPriority(boolean value) {
+		this.getIsPriorityChannel().setNextValue(value);
+	}
 	/**
 	 * Gets the Channel for {@link ChannelId#SET_DISPLAY_TEXT}.
 	 *

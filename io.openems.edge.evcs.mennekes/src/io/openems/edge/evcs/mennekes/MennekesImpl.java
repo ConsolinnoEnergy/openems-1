@@ -82,6 +82,7 @@ public class MennekesImpl extends AbstractOpenemsModbusComponent implements Open
         this._setMaximumHardwarePower(32 * 230);
         this._setMinimumPower(this.minPower);
         this._setPowerPrecision(1 * 230);
+        this._setIsPriority(config.priority());
         this.readHandler = new MennekesReadHandler(this);
         this.writeHandler = new MennekesWriteHandler(this);
         super.activate(context, config.id(), config.alias(), config.enabled(), config.modbusUnitId(), this.cm,

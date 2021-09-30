@@ -185,9 +185,9 @@ public class EvcsGridMeter extends AbstractOpenemsComponent
             Integer simulatedActivePower = this.datasource.getValue(OpenemsType.INTEGER,
                     new ChannelAddress(this.id(), "ActivePower"));
             this.channel(ChannelId.SIMULATED_ACTIVE_POWER).setNextValue(simulatedActivePower);
-            this._setActivePower(sum + (this.limiter.getCurrentPowerChannel().value().orElse(0)) + simulatedActivePower * this.scaleFactor);
+            this._setActivePower(sum + (this.limiter.getCurrentPowerChannel().getNextValue().orElse(this.limiter.getCurrentPowerChannel().value().orElse(0))) + simulatedActivePower * this.scaleFactor);
         } else if (this.limiter != null && sum != null) {
-            this._setActivePower(sum + (this.limiter.getCurrentPowerChannel().value().orElse(0)));
+            this._setActivePower(sum + (this.limiter.getCurrentPowerChannel().getNextValue().orElse(this.limiter.getCurrentPowerChannel().value().orElse(0))));
         } else {
             this._setActivePower(sum);
         }

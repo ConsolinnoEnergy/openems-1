@@ -61,6 +61,11 @@ public class MyConfig extends AbstractComponentConfig implements Config {
 	}
 
 	@Override
+	public boolean priority() {
+		return false;
+	}
+
+	@Override
 	public boolean debugMode() {
 		return false;
 	}
