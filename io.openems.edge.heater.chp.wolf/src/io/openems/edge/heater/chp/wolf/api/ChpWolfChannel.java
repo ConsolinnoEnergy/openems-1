@@ -161,7 +161,7 @@ public interface ChpWolfChannel extends Chp {
     	
         private final Doc doc;
 
-        private ChannelId(Doc doc) {
+        ChannelId(Doc doc) {
             this.doc = doc;
         }
 
@@ -177,7 +177,7 @@ public interface ChpWolfChannel extends Chp {
      *
      * @return the Channel
      */
-    public default IntegerWriteChannel getWriteBits1Channel() {
+    default IntegerWriteChannel getWriteBits1Channel() {
         return this.channel(ChannelId.HR6358_WRITE_BITS1);
     }
     
@@ -187,7 +187,7 @@ public interface ChpWolfChannel extends Chp {
 	 * @param value the next write value
 	 * @throws OpenemsNamedException on error
 	 */
-    public default void setWriteBits1(Integer value) throws OpenemsNamedException {
+    default void setWriteBits1(Integer value) throws OpenemsNamedException {
 		this.getWriteBits1Channel().setNextWriteValue(value);
 	}
 	
@@ -197,7 +197,7 @@ public interface ChpWolfChannel extends Chp {
 	 * @param value the next write value
 	 * @throws OpenemsNamedException on error
 	 */
-	public default void setWriteBits1(int value) throws OpenemsNamedException {
+	default void setWriteBits1(int value) throws OpenemsNamedException {
 		this.getWriteBits1Channel().setNextWriteValue(value);
 	}
 	
@@ -206,7 +206,7 @@ public interface ChpWolfChannel extends Chp {
      *
      * @return the Channel
      */
-	public default IntegerWriteChannel getWriteBits2Channel() {
+	default IntegerWriteChannel getWriteBits2Channel() {
         return this.channel(ChannelId.HR6359_WRITE_BITS2);
     }
     
@@ -216,7 +216,7 @@ public interface ChpWolfChannel extends Chp {
 	 * @param value the next write value
 	 * @throws OpenemsNamedException on error
 	 */
-    public default void setWriteBits2(Integer value) throws OpenemsNamedException {
+    default void setWriteBits2(Integer value) throws OpenemsNamedException {
 		this.getWriteBits2Channel().setNextWriteValue(value);
 	}
 	
@@ -226,7 +226,7 @@ public interface ChpWolfChannel extends Chp {
 	 * @param value the next write value
 	 * @throws OpenemsNamedException on error
 	 */
-	public default void setWriteBits2(int value) throws OpenemsNamedException {
+	default void setWriteBits2(int value) throws OpenemsNamedException {
 		this.getWriteBits2Channel().setNextWriteValue(value);
 	}
 	
@@ -235,7 +235,7 @@ public interface ChpWolfChannel extends Chp {
      *
      * @return the Channel
      */
-	public default IntegerWriteChannel getWriteBits3Channel() {
+	default IntegerWriteChannel getWriteBits3Channel() {
         return this.channel(ChannelId.HR6360_WRITE_BITS3);
     }
     
@@ -245,7 +245,7 @@ public interface ChpWolfChannel extends Chp {
 	 * @param value the next write value
 	 * @throws OpenemsNamedException on error
 	 */
-    public default void setWriteBits3(Integer value) throws OpenemsNamedException {
+    default void setWriteBits3(Integer value) throws OpenemsNamedException {
 		this.getWriteBits3Channel().setNextWriteValue(value);
 	}
 	
@@ -255,7 +255,7 @@ public interface ChpWolfChannel extends Chp {
 	 * @param value the next write value
 	 * @throws OpenemsNamedException on error
 	 */
-	public default void setWriteBits3(int value) throws OpenemsNamedException {
+	default void setWriteBits3(int value) throws OpenemsNamedException {
 		this.getWriteBits3Channel().setNextWriteValue(value);
 	}
 
@@ -264,7 +264,7 @@ public interface ChpWolfChannel extends Chp {
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getStatusBits40003Channel() {
+    default IntegerReadChannel getStatusBits40003Channel() {
         return this.channel(ChannelId.HR2_STATUS_BITS1);
     }
 
@@ -273,7 +273,7 @@ public interface ChpWolfChannel extends Chp {
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getStatusBits40003() {
+    default Value<Integer> getStatusBits40003() {
         return this.getStatusBits40003Channel().value();
     }
 
@@ -282,7 +282,7 @@ public interface ChpWolfChannel extends Chp {
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getStatusBits40012Channel() {
+    default IntegerReadChannel getStatusBits40012Channel() {
         return this.channel(ChannelId.HR11_STATUS_BITS2);
     }
 
@@ -291,7 +291,7 @@ public interface ChpWolfChannel extends Chp {
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getStatusBits40012() {
+    default Value<Integer> getStatusBits40012() {
         return this.getStatusBits40012Channel().value();
     }
 
@@ -300,7 +300,7 @@ public interface ChpWolfChannel extends Chp {
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getBufferTankTempTopChannel() {
+    default IntegerReadChannel getBufferTankTempTopChannel() {
         return this.channel(ChannelId.HR32_BUFFERTANK_TEMP_TOP);
     }
 
@@ -310,7 +310,7 @@ public interface ChpWolfChannel extends Chp {
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getBufferTankTempTop() {
+    default Value<Integer> getBufferTankTempTop() {
         return this.getBufferTankTempTopChannel().value();
     }
 
@@ -319,7 +319,7 @@ public interface ChpWolfChannel extends Chp {
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getBufferTankTempMiddleChannel() {
+    default IntegerReadChannel getBufferTankTempMiddleChannel() {
         return this.channel(ChannelId.HR33_BUFFERTANK_TEMP_MIDDLE);
     }
 
@@ -329,7 +329,7 @@ public interface ChpWolfChannel extends Chp {
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getBufferTankTempMiddle() {
+    default Value<Integer> getBufferTankTempMiddle() {
         return this.getBufferTankTempMiddleChannel().value();
     }
 
@@ -338,7 +338,7 @@ public interface ChpWolfChannel extends Chp {
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getBufferTankTempBottomChannel() {
+    default IntegerReadChannel getBufferTankTempBottomChannel() {
         return this.channel(ChannelId.HR34_BUFFERTANK_TEMP_BOTTOM);
     }
 
@@ -348,7 +348,7 @@ public interface ChpWolfChannel extends Chp {
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getBufferTankTempBottom() {
+    default Value<Integer> getBufferTankTempBottom() {
         return this.getBufferTankTempBottomChannel().value();
     }
 
@@ -357,7 +357,7 @@ public interface ChpWolfChannel extends Chp {
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getRpmChannel() {
+    default IntegerReadChannel getRpmChannel() {
         return this.channel(ChannelId.HR314_RPM);
     }
 
@@ -366,7 +366,7 @@ public interface ChpWolfChannel extends Chp {
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getRpm() {
+    default Value<Integer> getRpm() {
         return this.getRpmChannel().value();
     }
 
@@ -375,7 +375,7 @@ public interface ChpWolfChannel extends Chp {
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getRuntimeChannel() {
+    default IntegerReadChannel getRuntimeChannel() {
         return this.channel(ChannelId.HR3588_RUNTIME);
     }
 
@@ -384,7 +384,7 @@ public interface ChpWolfChannel extends Chp {
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getRuntime() {
+    default Value<Integer> getRuntime() {
         return this.getRuntimeChannel().value();
     }
 
@@ -393,7 +393,7 @@ public interface ChpWolfChannel extends Chp {
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getEngineStartsChannel() {
+    default IntegerReadChannel getEngineStartsChannel() {
         return this.channel(ChannelId.HR3590_ENGINE_STARTS);
     }
 
@@ -402,7 +402,7 @@ public interface ChpWolfChannel extends Chp {
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getEngineStarts() {
+    default Value<Integer> getEngineStarts() {
         return this.getEngineStartsChannel().value();
     }
 
@@ -411,7 +411,7 @@ public interface ChpWolfChannel extends Chp {
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getElectricalWorkChannel() {
+    default IntegerReadChannel getElectricalWorkChannel() {
         return this.channel(ChannelId.HR3596_ELECTRICAL_WORK);
     }
 
@@ -420,7 +420,7 @@ public interface ChpWolfChannel extends Chp {
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getElectricalWork() {
+    default Value<Integer> getElectricalWork() {
         return this.getElectricalWorkChannel().value();
     }
 
@@ -429,7 +429,7 @@ public interface ChpWolfChannel extends Chp {
      *
      * @return the Channel
      */
-    public default IntegerWriteChannel getFeedInSetpointChannel() {
+    default IntegerWriteChannel getFeedInSetpointChannel() {
         return this.channel(ChannelId.FEED_IN_SETPOINT);
     }
     
@@ -438,7 +438,7 @@ public interface ChpWolfChannel extends Chp {
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getFeedInSetpoint() {
+    default Value<Integer> getFeedInSetpoint() {
     	return this.getFeedInSetpointChannel().value();
     }
     
@@ -448,7 +448,7 @@ public interface ChpWolfChannel extends Chp {
 	 * @param value the next write value
 	 * @throws OpenemsNamedException on error
 	 */
-    public default void setFeedInSetpoint(Integer value) throws OpenemsNamedException {
+    default void setFeedInSetpoint(Integer value) throws OpenemsNamedException {
 		this.getFeedInSetpointChannel().setNextWriteValue(value);
 	}
 	
@@ -458,7 +458,7 @@ public interface ChpWolfChannel extends Chp {
 	 * @param value the next write value
 	 * @throws OpenemsNamedException on error
 	 */
-	public default void setFeedInSetpoint(int value) throws OpenemsNamedException {
+	default void setFeedInSetpoint(int value) throws OpenemsNamedException {
 		this.getFeedInSetpointChannel().setNextWriteValue(value);
 	}
 
@@ -467,7 +467,7 @@ public interface ChpWolfChannel extends Chp {
      *
      * @return the Channel
      */
-    public default IntegerWriteChannel getReserveSetpointChannel() {
+    default IntegerWriteChannel getReserveSetpointChannel() {
         return this.channel(ChannelId.RESERVE_SETPOINT);
     }
     
@@ -476,7 +476,7 @@ public interface ChpWolfChannel extends Chp {
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getReserveSetpoint() { 
+    default Value<Integer> getReserveSetpoint() {
     	return this.getReserveSetpointChannel().value(); 
     }
     
@@ -486,7 +486,7 @@ public interface ChpWolfChannel extends Chp {
 	 * @param value the next write value
 	 * @throws OpenemsNamedException on error
 	 */
-    public default void setReserveSetpoint(Integer value) throws OpenemsNamedException {
+    default void setReserveSetpoint(Integer value) throws OpenemsNamedException {
 		this.getReserveSetpointChannel().setNextWriteValue(value);
 	}
 	
@@ -496,7 +496,7 @@ public interface ChpWolfChannel extends Chp {
 	 * @param value the next write value
 	 * @throws OpenemsNamedException on error
 	 */
-	public default void setReserveSetpoint(int value) throws OpenemsNamedException {
+	default void setReserveSetpoint(int value) throws OpenemsNamedException {
 		this.getReserveSetpointChannel().setNextWriteValue(value);
 	}
 }

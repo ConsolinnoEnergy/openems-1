@@ -69,15 +69,16 @@ import java.util.Optional;
 @Component(name = "Heater.Chp.Viessmann",
         configurationPolicy = ConfigurationPolicy.REQUIRE,
         immediate = true,
-        property = EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE)
+        property = { //
+                EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE, //
+                EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS //
+        })
 public class ChpViessmannImpl extends AbstractOpenemsModbusComponent implements OpenemsComponent, EventHandler,
         ExceptionalState, ViessmannInformation {
 
     private final Logger log = LoggerFactory.getLogger(ChpViessmannImpl.class);
 
-    private boolean componentEnabled;
     private ViessmannChpType chpType;
-    private int thermalOutput;
     private int electricOutput;
     private double powerPercentSetpoint;
     private Relay relay;
@@ -92,6 +93,7 @@ public class ChpViessmannImpl extends AbstractOpenemsModbusComponent implements 
     private boolean printInfoToLog;
     private boolean readOnly = false;
     private boolean startupStateChecked = false;
+    private boolean readyForCommands = false;
 
     private EnableSignalHandler enableSignalHandler;
     private static final String ENABLE_SIGNAL_IDENTIFIER = "CHP_VIESSMANN_ENABLE_SIGNAL_IDENTIFIER";
@@ -121,48 +123,55 @@ public class ChpViessmannImpl extends AbstractOpenemsModbusComponent implements 
     @Activate
     void activate(ComponentContext context, Config config) throws OpenemsError.OpenemsNamedException, ConfigurationException {
         super.activate(context, config.id(), config.alias(), config.enabled(), config.modbusUnitId(), this.cm, "Modbus", config.modbusBridgeId());
-        this.componentEnabled = config.enabled();
+
         this.setChpType(config.chpType());
         this.printInfoToLog = config.printInfoToLog();
-        this.thermalOutput = Math.round(this.chpType.getThermalOutput());
         this.electricOutput = Math.round(this.chpType.getElectricOutput());
         this.readOnly = config.readOnly();
+        if (this.isEnabled() == false) {
+            this._setHeaterState(HeaterState.OFF.getValue());
+        }
 
         if (this.readOnly == false) {
-            if (this.cpm.getComponent(config.aioModuleId()) instanceof AioChannel) {
-                this.aioChannel = this.cpm.getComponent(config.aioModuleId());
-            } else {
-                throw new ConfigurationException("activate", "The Component with id: "
-                        + config.aioModuleId() + " is not an AIO module");
-            }
-            this.useRelay = config.useRelay();
-            if (this.useRelay) {
-                if (this.cpm.getComponent(config.relayId()) instanceof Relay) {
-                    this.relay = this.cpm.getComponent(config.relayId());
-                    //this.relay.getRelaysWriteChannel().setNextWriteValue(false); No need to turn chp off here.
-                } else {
-                    throw new ConfigurationException("activate", "The Component with id: "
-                            + config.relayId() + " is not a relay module");
-                }
-            }
-
+            this.allocateComponents(config);
             this.minValue = config.minLimit();
             this.maxValue = config.maxLimit();
             this.percentageRange = config.percentageRange();
             this.startupStateChecked = false;
             this.powerPercentSetpoint = config.defaultSetPointPowerPercent();
-            TimerHandler timer = new TimerHandlerImpl(super.id(), this.cpm);
-            timer.addOneIdentifier(ENABLE_SIGNAL_IDENTIFIER, config.enableSignalTimerId(), config.waitTimeEnableSignal());
-            this.enableSignalHandler = new EnableSignalHandlerImpl(timer, ENABLE_SIGNAL_IDENTIFIER);
-            this.useExceptionalState = config.useExceptionalState();
-            if (this.useExceptionalState) {
-                timer.addOneIdentifier(EXCEPTIONAL_STATE_IDENTIFIER, config.exceptionalStateTimerId(), config.waitTimeExceptionalState());
-                this.exceptionalStateHandler = new ExceptionalStateHandlerImpl(timer, EXCEPTIONAL_STATE_IDENTIFIER);
-            }
+            this.initializeTimers(config);
         }
 
-        if (this.componentEnabled == false) {
-            this._setHeaterState(HeaterState.OFF.getValue());
+
+    }
+
+    private void allocateComponents(Config config) throws OpenemsError.OpenemsNamedException, ConfigurationException {
+        if (this.cpm.getComponent(config.aioModuleId()) instanceof AioChannel) {
+            this.aioChannel = this.cpm.getComponent(config.aioModuleId());
+        } else {
+            throw new ConfigurationException("activate", "The Component with id: "
+                    + config.aioModuleId() + " is not an AIO module");
+        }
+        this.useRelay = config.useRelay();
+        if (this.useRelay) {
+            if (this.cpm.getComponent(config.relayId()) instanceof Relay) {
+                this.relay = this.cpm.getComponent(config.relayId());
+                //this.relay.getRelaysWriteChannel().setNextWriteValue(false); No need to turn chp off here.
+            } else {
+                throw new ConfigurationException("activate", "The Component with id: "
+                        + config.relayId() + " is not a relay module");
+            }
+        }
+    }
+
+    private void initializeTimers(Config config) throws OpenemsError.OpenemsNamedException, ConfigurationException {
+        TimerHandler timer = new TimerHandlerImpl(super.id(), this.cpm);
+        timer.addOneIdentifier(ENABLE_SIGNAL_IDENTIFIER, config.enableSignalTimerId(), config.waitTimeEnableSignal());
+        this.enableSignalHandler = new EnableSignalHandlerImpl(timer, ENABLE_SIGNAL_IDENTIFIER);
+        this.useExceptionalState = config.useExceptionalState();
+        if (this.useExceptionalState) {
+            timer.addOneIdentifier(EXCEPTIONAL_STATE_IDENTIFIER, config.exceptionalStateTimerId(), config.waitTimeExceptionalState());
+            this.exceptionalStateHandler = new ExceptionalStateHandlerImpl(timer, EXCEPTIONAL_STATE_IDENTIFIER);
         }
     }
 
@@ -276,13 +285,13 @@ public class ChpViessmannImpl extends AbstractOpenemsModbusComponent implements 
                         m(ViessmannInformation.ChannelId.NEXT_MAINTENANCE, new UnsignedWordElement(0x4013),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
                         m(ViessmannInformation.ChannelId.EXHAUST_A, new SignedWordElement(0x4014),
-                                ElementToChannelConverter.DIRECT_1_TO_1),
+                                ElementToChannelConverter.SCALE_FACTOR_1),
                         m(ViessmannInformation.ChannelId.EXHAUST_B, new SignedWordElement(0x4015),
-                                ElementToChannelConverter.DIRECT_1_TO_1),
+                                ElementToChannelConverter.SCALE_FACTOR_1),
                         m(ViessmannInformation.ChannelId.EXHAUST_C, new SignedWordElement(0x4016),
-                                ElementToChannelConverter.DIRECT_1_TO_1),
+                                ElementToChannelConverter.SCALE_FACTOR_1),
                         m(ViessmannInformation.ChannelId.EXHAUST_D, new SignedWordElement(0x4017),
-                                ElementToChannelConverter.DIRECT_1_TO_1),
+                                ElementToChannelConverter.SCALE_FACTOR_1),
                         m(ViessmannInformation.ChannelId.PT_100_1, new SignedWordElement(0x4018),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
                         m(Heater.ChannelId.RETURN_TEMPERATURE, new SignedWordElement(0x4019),
@@ -296,7 +305,7 @@ public class ChpViessmannImpl extends AbstractOpenemsModbusComponent implements 
                         m(ViessmannInformation.ChannelId.PT_100_6, new SignedWordElement(0x401D),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
                         m(ViessmannInformation.ChannelId.BATTERY_VOLTAGE, new SignedWordElement(0x401E),
-                                ElementToChannelConverter.DIRECT_1_TO_1),
+                                ElementToChannelConverter.SCALE_FACTOR_2),
                         m(ViessmannInformation.ChannelId.OIL_PRESSURE, new SignedWordElement(0x401F),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
                         m(ViessmannInformation.ChannelId.LAMBDA_PROBE_VOLTAGE, new SignedWordElement(0x4020),
@@ -307,7 +316,7 @@ public class ChpViessmannImpl extends AbstractOpenemsModbusComponent implements 
                         m(ViessmannInformation.ChannelId.TEMPERATURE_CONTROLLER, new SignedWordElement(0x4026),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
                         m(ViessmannInformation.ChannelId.TEMPERATURE_CLEARANCE, new SignedWordElement(0x4027),
-                                ElementToChannelConverter.SCALE_FACTOR_MINUS_1),
+                                ElementToChannelConverter.DIRECT_1_TO_1),
                         m(ViessmannInformation.ChannelId.SUPPLY_VOLTAGE_L1, new SignedWordElement(0x4028),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
                         m(ViessmannInformation.ChannelId.SUPPLY_VOLTAGE_L2, new SignedWordElement(0x4029),
@@ -320,17 +329,17 @@ public class ChpViessmannImpl extends AbstractOpenemsModbusComponent implements 
                                 ElementToChannelConverter.DIRECT_1_TO_1),
                         m(ViessmannInformation.ChannelId.GENERATOR_VOLTAGE_L3, new SignedWordElement(0x402D),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
-                        m(ViessmannInformation.ChannelId.GENERATOR_ELECTRICITY_L1, new SignedWordElement(0x402E),
+                        m(ViessmannInformation.ChannelId.GENERATOR_CURRENT_L1, new SignedWordElement(0x402E),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
-                        m(ViessmannInformation.ChannelId.GENERATOR_ELECTRICITY_L2, new SignedWordElement(0x402F),
+                        m(ViessmannInformation.ChannelId.GENERATOR_CURRENT_L2, new SignedWordElement(0x402F),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
-                        m(ViessmannInformation.ChannelId.GENERATOR_ELECTRICITY_L3, new SignedWordElement(0x4030),
+                        m(ViessmannInformation.ChannelId.GENERATOR_CURRENT_L3, new SignedWordElement(0x4030),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
                         m(ViessmannInformation.ChannelId.SUPPLY_VOLTAGE_TOTAL, new SignedWordElement(0x4031),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
                         m(ViessmannInformation.ChannelId.GENERATOR_VOLTAGE_TOTAL, new SignedWordElement(0x4032),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
-                        m(ViessmannInformation.ChannelId.GENERATOR_ELECTRICITY_TOTAL, new SignedWordElement(0x4033),
+                        m(ViessmannInformation.ChannelId.GENERATOR_CURRENT_TOTAL, new SignedWordElement(0x4033),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
                         m(Chp.ChannelId.EFFECTIVE_ELECTRIC_POWER, new SignedWordElement(0x4034),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
@@ -350,11 +359,179 @@ public class ChpViessmannImpl extends AbstractOpenemsModbusComponent implements 
 
     @Override
     public void handleEvent(Event event) {
-        if (this.componentEnabled && event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE)) {
+        if (this.isEnabled() == false) {
+            return;
+        }
+        if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE)) {
             this.channelmapping();
+            if (this.printInfoToLog) {
+                this.printInfo();
+            }
+        }
+        if (this.readOnly == false && this.readyForCommands && event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS)) {
+            this.writeCommands();
         }
     }
 
+    /**
+     * Put values in channels that are not directly Modbus read values but derivatives.
+     */
+    protected void channelmapping() {
+
+        // Parse errors.
+        List<String> errorSummary = new ArrayList<>();
+        char[] allErrorsAsChar = this.generateErrorAsCharArray();
+        int errorMax = 80;
+        //int errorBitLength = 16;
+        for (int i = 0, errorListPosition = 0; i < errorMax; i++) {
+            if (allErrorsAsChar[i] == '1') {
+                if (this.errorPossibilities[i].toLowerCase().contains("reserve") == false) {
+                    errorSummary.add(errorListPosition, this.errorPossibilities[i]);
+                }
+                errorListPosition++;
+            }
+        }
+
+        // Check for missing components. This is in ’channelmapping()’ because it may produce an error message.
+        if (this.readOnly == false) {
+            this.checkMissingComponents(errorSummary);
+        }
+
+        // Write errors to error channel.
+        if ((errorSummary.size() > 0)) {
+            this._setErrorMessage(errorSummary.toString());
+        } else {
+            this._setErrorMessage("No error");
+        }
+        this.getErrorMessageChannel().nextProcessImage();
+
+        // Calculate values not directly supplied by modbus.
+        if (this.getEffectiveHeatingPowerPercent().isDefined()) {
+            double powerPercent = this.getEffectiveHeatingPowerPercent().get();
+            int heatingPowerEstimate = this.calculateHeatingPower(powerPercent);
+            this._setEffectiveHeatingPower(heatingPowerEstimate);
+            this.getEffectiveHeatingPowerChannel().nextProcessImage();
+        }
+
+        // Set Heater interface STATUS channel
+        if (this.getModuleStatus().isDefined()) {
+            this.readyForCommands = true;
+            ModuleStatus moduleStatus = ModuleStatus.valueOf(this.getModuleStatus().get());
+            switch (moduleStatus) {
+                case OFF:
+                    this._setHeaterState(HeaterState.OFF.getValue());
+                    break;
+                case DISTURBANCE:
+                case READY:
+                    this._setHeaterState(HeaterState.STANDBY.getValue());
+                    break;
+                case START:
+                    this._setHeaterState(HeaterState.STARTING_UP_OR_PREHEAT.getValue());
+                    break;
+                case RUNNING:
+                    this._setHeaterState(HeaterState.HEATING.getValue());
+                    break;
+                case UNDEFINED:
+                default:
+                    this._setHeaterState(HeaterState.UNDEFINED.getValue());
+                    break;
+            }
+        } else {
+            this._setHeaterState(HeaterState.UNDEFINED.getValue());
+        }
+        this.getHeaterStateChannel().nextProcessImage();
+    }
+
+    /**
+     * Checks if components required by this module are still available. If not, tries to allocate them again.
+     *
+     * @param errorSummary List to which error messages are added.
+     */
+    protected void checkMissingComponents(List<String> errorSummary) {
+        try {
+            OpenemsComponent componentFetchedByCpm;
+            if (this.aioChannel.isEnabled() == false) {
+                componentFetchedByCpm = this.cpm.getComponent(this.aioChannel.id());
+                if (componentFetchedByCpm instanceof AioChannel) {
+                    this.aioChannel = (AioChannel) componentFetchedByCpm;
+                }
+            }
+        } catch (OpenemsError.OpenemsNamedException ignored) {
+            errorSummary.add("OpenEMS error: Could not find configured AIO module.");
+            this.log.warn("Could not find configured AIO module!");
+        }
+        if (this.useRelay) {
+            try {
+                if (this.relay.isEnabled() == false) {
+                    OpenemsComponent componentFetchedByCpm;
+                    componentFetchedByCpm = this.cpm.getComponent(this.relay.id());
+                    if (componentFetchedByCpm instanceof Relay) {
+                        this.relay = (Relay) componentFetchedByCpm;
+                    }
+                }
+            } catch (OpenemsError.OpenemsNamedException ignored) {
+                errorSummary.add("OpenEMS error: Could not find configured relay module.");
+                this.log.warn("Could not find configured relay module!");
+            }
+        }
+    }
+
+    /**
+     * Determine commands and send them to the heater.
+     */
+    protected void writeCommands() {
+
+        // Handle EnableSignal.
+        boolean turnOnChp = this.enableSignalHandler.deviceShouldBeHeating(this);
+
+        // Handle ExceptionalState. ExceptionalState overwrites EnableSignal.
+        int exceptionalStateValue = 0;
+        boolean exceptionalStateActive = false;
+        if (this.useExceptionalState) {
+            exceptionalStateActive = this.exceptionalStateHandler.exceptionalStateActive(this);
+            if (exceptionalStateActive) {
+                exceptionalStateValue = this.getExceptionalStateValue();
+                if (exceptionalStateValue <= 0) {
+                    turnOnChp = false;
+                } else {
+                    // When ExceptionalStateValue is between 0 and 100, set Chp to this PowerPercentage.
+                    turnOnChp = true;
+                    exceptionalStateValue = Math.min(exceptionalStateValue, 100);
+                    try {
+                        this.setHeatingPowerPercentSetpoint(exceptionalStateValue);
+                    } catch (OpenemsError.OpenemsNamedException e) {
+                        this.log.warn("Couldn't write in Channel " + e.getMessage());
+                    }
+                }
+            }
+        }
+
+        // At startup, check if chp is already running. If yes, keep it running by sending 'EnableSignal = true' to
+        // yourself once. This gives controllers until the EnableSignal timer runs out to decide the state of the chp.
+        // This avoids a chp restart if the controllers want the chp to stay on. -> Longer chp lifetime.
+        // Without this function, the chp will always switch off at startup because EnableSignal starts as ’false’.
+        if (this.startupStateChecked == false) {
+            this.startupStateChecked = true;
+            turnOnChp = (HeaterState.valueOf(this.getHeaterState().orElse(-1)) == HeaterState.HEATING);
+            if (turnOnChp) {
+                try {
+                    this.getEnableSignalChannel().setNextWriteValue(true);
+                } catch (OpenemsError.OpenemsNamedException e) {
+                    this.log.warn("Couldn't write in Channel " + e.getMessage());
+                }
+            }
+        }
+
+        // Use AiO to send commands to chp.
+        this.setPowerPercentWithAio(turnOnChp);
+    }
+
+    /**
+     * Turns the chp on or off using an AiO module and if needed a relay.
+     * Also maps the requested chp power setting to the AiO output.
+     *
+     * @param turnOnChp if chp should be on or not.
+     */
     protected void setPowerPercentWithAio(boolean turnOnChp) {
         int writeToAioValue = 0;
         if (turnOnChp) {
@@ -403,163 +580,6 @@ public class ChpViessmannImpl extends AbstractOpenemsModbusComponent implements 
         }
     }
 
-    protected void channelmapping() {
-
-        // Parse errors.
-        List<String> errorSummary = new ArrayList<>();
-        char[] allErrorsAsChar = this.generateErrorAsCharArray();
-        int errorMax = 80;
-        //int errorBitLength = 16;
-        for (int i = 0, errorListPosition = 0; i < errorMax; i++) {
-            if (allErrorsAsChar[i] == '1') {
-                if (this.errorPossibilities[i].toLowerCase().contains("reserve") == false) {
-                    errorSummary.add(errorListPosition, this.errorPossibilities[i]);
-                }
-                errorListPosition++;
-            }
-        }
-
-        // Check for missing components.
-        if (this.readOnly == false) {
-            try {
-                OpenemsComponent componentFetchedByCpm;
-                if (this.aioChannel.isEnabled() == false) {
-                    componentFetchedByCpm = this.cpm.getComponent(this.aioChannel.id());
-                    if (componentFetchedByCpm instanceof AioChannel) {
-                        this.aioChannel = (AioChannel) componentFetchedByCpm;
-                    }
-                }
-            } catch (OpenemsError.OpenemsNamedException ignored) {
-                errorSummary.add("OpenEMS error: Could not find configured AIO module.");
-                this.log.warn("Could not find configured AIO module!");
-            }
-                if (this.useRelay) {
-                    try {
-                        if (this.relay.isEnabled() == false) {
-                            OpenemsComponent componentFetchedByCpm;
-                            componentFetchedByCpm = this.cpm.getComponent(this.relay.id());
-                            if (componentFetchedByCpm instanceof Relay) {
-                                this.relay = (Relay) componentFetchedByCpm;
-                            }
-                        }
-                    } catch (OpenemsError.OpenemsNamedException ignored) {
-                        errorSummary.add("OpenEMS error: Could not find configured relay module.");
-                        this.log.warn("Could not find configured relay module!");
-                    }
-                }
-        }
-
-        // Write errors to error channel.
-        if ((errorSummary.size() > 0)) {
-            this._setErrorMessage(errorSummary.toString());
-        } else {
-            this._setErrorMessage("No error");
-        }
-
-        // Calculate values not directly supplied by modbus.
-        if (this.getEffectiveHeatingPowerPercentChannel().value().isDefined()) {
-            double powerPercent = this.getEffectiveHeatingPowerPercent().get();
-            int heatingPowerEstimate = this.calculateHeatingPower(powerPercent);
-            this._setEffectiveHeatingPower(heatingPowerEstimate);
-        }
-
-        // Set Heater interface STATUS channel
-        boolean statusInfoReceived = false;
-        boolean chpEngineRunning = false;
-        if (this.getStatus().value().isDefined()) {
-            statusInfoReceived = true;
-            ModuleStatus moduleStatus = ModuleStatus.valueOf(this.getStatus().value().get());
-            switch (moduleStatus) {
-                case OFF:
-                    this._setHeaterState(HeaterState.OFF.getValue());
-                    break;
-                case DISTURBANCE:
-                case READY:
-                    this._setHeaterState(HeaterState.STANDBY.getValue());
-                    break;
-                case START:
-                    this._setHeaterState(HeaterState.STARTING_UP_OR_PREHEAT.getValue());
-                    break;
-                case RUNNING:
-                    chpEngineRunning = true;
-                    this._setHeaterState(HeaterState.HEATING.getValue());
-                    break;
-                case UNDEFINED:
-                default:
-                    this._setHeaterState(HeaterState.UNDEFINED.getValue());
-                    break;
-            }
-        } else {
-            this._setHeaterState(HeaterState.UNDEFINED.getValue());
-        }
-
-
-        if (this.readOnly == false && statusInfoReceived) {
-
-            // Handle EnableSignal.
-            boolean turnOnChp = this.enableSignalHandler.deviceShouldBeHeating(this);
-
-            // Handle ExceptionalState. ExceptionalState overwrites EnableSignal.
-            int exceptionalStateValue = 0;
-            boolean exceptionalStateActive = false;
-            if (this.useExceptionalState) {
-                exceptionalStateActive = this.exceptionalStateHandler.exceptionalStateActive(this);
-                if (exceptionalStateActive) {
-                    exceptionalStateValue = this.getExceptionalStateValue();
-                    if (exceptionalStateValue <= 0) {
-                        turnOnChp = false;
-                    } else {
-                        // When ExceptionalStateValue is between 0 and 100, set Chp to this PowerPercentage.
-                        turnOnChp = true;
-                        exceptionalStateValue = Math.min(exceptionalStateValue, 100);
-                        try {
-                            this.setHeatingPowerPercentSetpoint(exceptionalStateValue);
-                        } catch (OpenemsError.OpenemsNamedException e) {
-                            this.log.warn("Couldn't write in Channel " + e.getMessage());
-                        }
-                    }
-                }
-            }
-
-            // If the component has just been started, it will most likely take a few cycles before a controller
-            // sends an EnableSignal (assuming the CHP should be running). Since no EnableSignal means ’turn off the
-            // CHP’, the component will always turn off the CHP during the first few cycles. If the CHP is already
-            // on, this would turn the CHP off and on again, which is bad for the lifetime. A scenario where this
-            // would happen is if the component or OpenEMS is restarted while the CHP is running.
-            // To avoid that, check the CHP status at the startup of the component. If it is on, the component sends
-            // the EnableSignal to itself once to keep the CHP on until the timer runs out. This gives any
-            // controllers enough time to send the EnableSignal themselves.
-            if (this.startupStateChecked == false) {
-                this.startupStateChecked = true;
-                turnOnChp = chpEngineRunning;
-                if (turnOnChp) {
-                    try {
-                        this.getEnableSignalChannel().setNextWriteValue(true);
-                    } catch (OpenemsError.OpenemsNamedException e) {
-                        this.log.warn("Couldn't write in Channel " + e.getMessage());
-                    }
-                }
-            }
-
-            this.setPowerPercentWithAio(turnOnChp);
-        }
-
-        if (this.printInfoToLog) {
-            this.logInfo(this.log, "--CHP Viessmann Vitobloc " + this.chpType.getName() + "--");
-            this.logInfo(this.log, "Engine rpm: " + this.getRotationPerMinute().value().get());
-            this.logInfo(this.log, "Power percent set point (write mode only): " + this.getHeatingPowerPercentSetpoint());
-            this.logInfo(this.log, "Effective electrical power: " + this.getEffectiveElectricPower() + " of max "
-                    + this.electricOutput + " kW (" + (1.0 * this.getEffectiveElectricPower().orElse(0.0) / this.electricOutput) + "%)");
-            this.logInfo(this.log, "Flow temperature: " + this.getFlowTemperature());
-            this.logInfo(this.log, "Return temperature: " + this.getReturnTemperature());
-            this.logInfo(this.log, "Operating hours: " + this.getOperatingHours().value());
-            this.logInfo(this.log, "Engine start counter: " + this.getStartCounter().value());
-            this.logInfo(this.log, "Maintenance interval: " + this.getMaintenanceInterval().value());
-            this.logInfo(this.log, "Heater state: " + this.getHeaterState());
-            this.logInfo(this.log, "Error message: " + this.getErrorMessage().get());
-        }
-    }
-
     /**
      * This chp does not provide the current heating power as a readable value. However, an estimate can be calculated
      * from the electric power percent value and the information in the data sheet. For most models, the datasheet lists
@@ -589,47 +609,65 @@ public class ChpViessmannImpl extends AbstractOpenemsModbusComponent implements 
     private char[] generateErrorAsCharArray() {
         String errorBitsAsString = "";
         String dummyString = "0000000000000000";
-        if (getErrorOne().getNextValue().isDefined()) {
-            errorBitsAsString += String.format("%16s", Integer.toBinaryString(getErrorOne().getNextValue().get())).replace(' ', '0');
+        if (getError1Channel().getNextValue().isDefined()) {
+            errorBitsAsString += String.format("%16s", Integer.toBinaryString(getError1Channel().getNextValue().get())).replace(' ', '0');
         } else {
             errorBitsAsString += dummyString;
         }
-        if (getErrorTwo().getNextValue().isDefined()) {
-            errorBitsAsString += String.format("%16s", Integer.toBinaryString(getErrorTwo().getNextValue().get())).replace(' ', '0');
+        if (getError2Channel().getNextValue().isDefined()) {
+            errorBitsAsString += String.format("%16s", Integer.toBinaryString(getError2Channel().getNextValue().get())).replace(' ', '0');
         } else {
             errorBitsAsString += dummyString;
         }
-        if (getErrorThree().getNextValue().isDefined()) {
-            errorBitsAsString += String.format("%16s", Integer.toBinaryString(getErrorThree().getNextValue().get())).replace(' ', '0');
+        if (getError3Channel().getNextValue().isDefined()) {
+            errorBitsAsString += String.format("%16s", Integer.toBinaryString(getError3Channel().getNextValue().get())).replace(' ', '0');
         } else {
             errorBitsAsString += dummyString;
         }
-        if (getErrorFour().getNextValue().isDefined()) {
-            errorBitsAsString += String.format("%16s", Integer.toBinaryString(getErrorFour().getNextValue().get())).replace(' ', '0');
+        if (getError4Channel().getNextValue().isDefined()) {
+            errorBitsAsString += String.format("%16s", Integer.toBinaryString(getError4Channel().getNextValue().get())).replace(' ', '0');
         } else {
             errorBitsAsString += dummyString;
         }
-        if (getErrorFive().getNextValue().isDefined()) {
-            errorBitsAsString += String.format("%16s", Integer.toBinaryString(getErrorFive().getNextValue().get())).replace(' ', '0');
+        if (getError5Channel().getNextValue().isDefined()) {
+            errorBitsAsString += String.format("%16s", Integer.toBinaryString(getError5Channel().getNextValue().get())).replace(' ', '0');
         } else {
             errorBitsAsString += dummyString;
         }
-        if (getErrorSix().getNextValue().isDefined()) {
-            errorBitsAsString += String.format("%16s", Integer.toBinaryString(getErrorSix().getNextValue().get())).replace(' ', '0');
+        if (getError6Channel().getNextValue().isDefined()) {
+            errorBitsAsString += String.format("%16s", Integer.toBinaryString(getError6Channel().getNextValue().get())).replace(' ', '0');
         } else {
             errorBitsAsString += dummyString;
         }
-        if (getErrorSeven().getNextValue().isDefined()) {
-            errorBitsAsString += String.format("%16s", Integer.toBinaryString(getErrorSeven().getNextValue().get())).replace(' ', '0');
+        if (getError7Channel().getNextValue().isDefined()) {
+            errorBitsAsString += String.format("%16s", Integer.toBinaryString(getError7Channel().getNextValue().get())).replace(' ', '0');
         } else {
             errorBitsAsString += dummyString;
         }
-        if (getErrorEight().getNextValue().isDefined()) {
-            errorBitsAsString += String.format("%16s", Integer.toBinaryString(getErrorEight().getNextValue().get())).replace(' ', '0');
+        if (getError8Channel().getNextValue().isDefined()) {
+            errorBitsAsString += String.format("%16s", Integer.toBinaryString(getError8Channel().getNextValue().get())).replace(' ', '0');
         } else {
             errorBitsAsString += dummyString;
         }
 
         return errorBitsAsString.toCharArray();
+    }
+
+    /**
+     * Information that is printed to the log if ’print info to log’ option is enabled.
+     */
+    protected void printInfo() {
+        this.logInfo(this.log, "--CHP Viessmann Vitobloc " + this.chpType.getName() + "--");
+        this.logInfo(this.log, "Engine rpm: " + this.getRotationPerMinute());
+        this.logInfo(this.log, "Power percent set point (write mode only): " + this.getHeatingPowerPercentSetpoint());
+        this.logInfo(this.log, "Effective electrical power: " + this.getEffectiveElectricPower() + " of max "
+                + this.electricOutput + " kW (" + (1.0 * this.getEffectiveElectricPower().orElse(0.0) / this.electricOutput) + "%)");
+        this.logInfo(this.log, "Flow temperature: " + this.getFlowTemperature());
+        this.logInfo(this.log, "Return temperature: " + this.getReturnTemperature());
+        this.logInfo(this.log, "Operating hours: " + this.getOperatingHours());
+        this.logInfo(this.log, "Engine start counter: " + this.getStartCounter());
+        this.logInfo(this.log, "Hours until next maintenance: " + this.getNextMaintenance());
+        this.logInfo(this.log, "Heater state: " + this.getHeaterState());
+        this.logInfo(this.log, "Error message: " + this.getErrorMessage().get());
     }
 }

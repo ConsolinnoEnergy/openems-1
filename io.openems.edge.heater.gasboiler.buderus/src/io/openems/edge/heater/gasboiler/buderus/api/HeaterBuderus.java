@@ -30,7 +30,7 @@ public interface HeaterBuderus extends Heater {
 
         /**
          * Status strategy.
-         * 0 - Unknown (Ubekannt)
+         * 0 - Unknown (Unbekannt)
          * 1 - Warning (Warnung)
          * 2 - Error (Stoerung)
          * 3 - OK
@@ -166,7 +166,7 @@ public interface HeaterBuderus extends Heater {
 
         /**
          * Status boiler 1.
-         * 0 - Unknown (Ubekannt)
+         * 0 - Unknown (Unbekannt)
          * 1 - Warning (Warnung)
          * 2 - Error (Stoerung)
          * 3 - OK
@@ -342,7 +342,7 @@ public interface HeaterBuderus extends Heater {
 
     /**
      * Status strategy.
-     * 0 - Unknown (Ubekannt)
+     * 0 - Unknown (Unbekannt)
      * 1 - Warning (Warnung)
      * 2 - Error (Stoerung)
      * 3 - OK
@@ -603,7 +603,7 @@ public interface HeaterBuderus extends Heater {
 
     /**
      * Status boiler 1.
-     * 0 - Unknown (Ubekannt)
+     * 0 - Unknown (Unbekannt)
      * 1 - Warning (Warnung)
      * 2 - Error (Stoerung)
      * 3 - OK
