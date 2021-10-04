@@ -70,8 +70,13 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
     ControlMode controlMode() default ControlMode.READ;
 
-
     EnergyControlMode energyControlMode() default EnergyControlMode.KW;
+
+    @AttributeDefinition(name = "Active Enable Signal Value", description = "On True EnableSignal what value to write")
+    int defaultEnableSignalValue() default 2;
+
+    @AttributeDefinition(name = "Inactive Enable Signal Value", description = "On False/null EnableSignal what value to write")
+    int defaultDisableSignalValue() default 1;
 
     boolean enabled() default true;
 

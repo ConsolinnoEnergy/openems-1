@@ -40,6 +40,7 @@ public interface GasMeterModbusGeneric extends MeterModbusGeneric {
 
         READ_ENERGY_LONG(Doc.of(OpenemsType.LONG)),
 
+
         /**
          * Total Consumed Energy Cubic Meter.
          * <ul>
@@ -49,7 +50,10 @@ public interface GasMeterModbusGeneric extends MeterModbusGeneric {
          * </ul>
          */
 
-        READ_ENERGY_DOUBLE(Doc.of(OpenemsType.DOUBLE));
+        READ_ENERGY_DOUBLE(Doc.of(OpenemsType.DOUBLE)),
+
+        TOTAL_CONSUMED_ENERGY_CUBIC_METER_LONG(Doc.of(OpenemsType.LONG)),
+        TOTAL_CONSUMED_ENERGY_CUBIC_METER_DOUBLE(Doc.of(OpenemsType.DOUBLE));
 
         private final Doc doc;
 
@@ -92,6 +96,37 @@ public interface GasMeterModbusGeneric extends MeterModbusGeneric {
     default Channel<?> _hasPercolation() {
         return MeterModbusGeneric.getValueDefinedChannel(this._getReadPercolationDoubleChannel(), this._getReadPercolationLongChannel());
     }
+
+
+    /**
+     * Get the ReadEnergyLong Channel.
+     * Only Call by Generic Meter!
+     * The actual Energy will be written into {@link GasMeter#getTotalConsumedEnergyCubicMeterChannel()} ()}.
+     *
+     * @return the Channel.
+     */
+
+    default Channel<Long> _getTotalConsumedEnergyLong() {
+        return this.channel(ChannelId.TOTAL_CONSUMED_ENERGY_CUBIC_METER_LONG);
+    }
+
+    /**
+     * Get the ReadingPercolationLong Channel.
+     * Only Call by Generic Meter!
+     * The actual Reading Power will be written into {@link HeatMeter#getReadingPowerChannel()}.
+     *
+     * @return the Channel.
+     */
+
+    default Channel<Double> _getTotalConsumedEnergyDouble() {
+        return this.channel(ChannelId.TOTAL_CONSUMED_ENERGY_CUBIC_METER_DOUBLE);
+    }
+
+
+    default Channel<?> _hasTotalConsumedEnergy() {
+        return MeterModbusGeneric.getValueDefinedChannel(this._getTotalConsumedEnergyLong(), this._getTotalConsumedEnergyDouble());
+    }
+
 
 }
 

@@ -23,6 +23,9 @@ public interface HeaterModbus extends OpenemsComponent {
         SET_POINT_TEMPERATURE_LONG(Doc.of(OpenemsType.LONG).accessMode(AccessMode.READ_WRITE)),
         SET_POINT_TEMPERATURE_DOUBLE(Doc.of(OpenemsType.DOUBLE).accessMode(AccessMode.READ_WRITE)),
 
+        READ_SET_POINT_LONG(Doc.of(OpenemsType.LONG)),
+        READ_SET_POINT_DOUBLE(Doc.of(OpenemsType.DOUBLE)),
+
         READ_EFFECTIVE_POWER_LEVEL_PERCENT_LONG(Doc.of(OpenemsType.LONG)),
         READ_EFFECTIVE_POWER_LEVEL_PERCENT_DOUBLE(Doc.of(OpenemsType.DOUBLE)),
 
@@ -139,6 +142,17 @@ public interface HeaterModbus extends OpenemsComponent {
     }
     default Channel<?> _hasReturnTemp() {
         return HeaterModbus.getValueDefinedChannel(this._getReturnTempLong(), this._getReturnTempDouble());
+    }
+
+
+    default Channel<Long> _getSetPointLong() {
+        return this.channel(ChannelId.READ_SET_POINT_LONG);
+    }
+    default Channel<Double> _getSetPointDouble() {
+        return this.channel(ChannelId.READ_SET_POINT_DOUBLE);
+    }
+    default Channel<?> _hasReadSetPoint() {
+        return HeaterModbus.getValueDefinedChannel(this._getSetPointLong(), this._getSetPointDouble());
     }
 
     static Channel<?> getValueDefinedChannel(Channel<?> firstChannel, Channel<?> secondChannel) {

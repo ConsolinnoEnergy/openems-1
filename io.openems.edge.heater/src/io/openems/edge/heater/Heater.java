@@ -29,6 +29,9 @@ public interface Heater extends OpenemsComponent {
         )),
         READ_EFFECTIVE_POWER_PERCENT(Doc.of(OpenemsType.DOUBLE).unit(Unit.PERCENT)),
         READ_EFFECTIVE_POWER(Doc.of(OpenemsType.INTEGER).unit(Unit.KILOWATT)),
+
+        READ_SET_POINT_POWER(Doc.of(OpenemsType.LONG)),
+
         HEATER_STATE(Doc.of(OpenemsType.STRING)),
         SET_POINT_TEMPERATURE(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE).onInit(
                 channel -> ((IntegerWriteChannel) channel).onSetNextWrite(channel::setNextValue)
@@ -258,7 +261,13 @@ public interface Heater extends OpenemsComponent {
             return -1;
         }
     }
+
+
     //---------------------------------------------------------//
+
+    default Channel<Long> getReadSetPointChannel(){
+        return this.channel(ChannelId.READ_SET_POINT_POWER);
+    }
 
 
     //--------------------EMERGENCY_OFF-----------------//

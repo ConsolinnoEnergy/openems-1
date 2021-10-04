@@ -31,6 +31,7 @@ public interface CombinedHeatPowerPlant extends PowerPlant {
         SECURITY_OFF_EVU(Doc.of(OpenemsType.FLOAT).accessMode(AccessMode.READ_ONLY)),
         SECURITY_OFF_GRID_FAIL(Doc.of(OpenemsType.FLOAT).accessMode(AccessMode.READ_ONLY)),
         ELECTRICITY_ENERGY_PRODUCED(Doc.of(OpenemsType.FLOAT).accessMode(AccessMode.READ_ONLY)),
+        //Meter Electricity
         ELECTRICITY_POWER(Doc.of(OpenemsType.FLOAT).accessMode(AccessMode.READ_ONLY));
 
         private final Doc doc;

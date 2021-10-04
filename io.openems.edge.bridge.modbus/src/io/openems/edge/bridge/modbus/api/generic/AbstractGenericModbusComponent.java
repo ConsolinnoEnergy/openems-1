@@ -5,6 +5,7 @@ import io.openems.common.exceptions.OpenemsException;
 import io.openems.edge.bridge.modbus.api.AbstractOpenemsModbusComponent;
 import io.openems.edge.bridge.modbus.api.ModbusProtocol;
 import io.openems.edge.bridge.modbus.api.element.AbstractModbusElement;
+import io.openems.edge.bridge.modbus.api.element.AbstractWordElement;
 import io.openems.edge.bridge.modbus.api.element.CoilElement;
 import io.openems.edge.bridge.modbus.api.element.FloatDoublewordElement;
 import io.openems.edge.bridge.modbus.api.element.SignedDoublewordElement;
@@ -19,7 +20,6 @@ import io.openems.edge.bridge.modbus.api.task.FC4ReadInputRegistersTask;
 import io.openems.edge.bridge.modbus.api.task.FC5WriteCoilTask;
 import io.openems.edge.bridge.modbus.api.task.FC6WriteRegisterTask;
 import io.openems.edge.common.channel.Channel;
-import io.openems.edge.common.channel.ChannelId;
 import io.openems.edge.common.channel.WriteChannel;
 import io.openems.edge.common.channel.value.Value;
 import io.openems.edge.common.component.ComponentManager;
@@ -87,6 +87,7 @@ public abstract class AbstractGenericModbusComponent extends AbstractOpenemsModb
 
     private final Map<String, Channel<?>> channelMap = new HashMap<>();
     private final Map<io.openems.edge.common.channel.ChannelId, ModbusConfigWrapper> modbusConfig = new HashMap<>();
+
 
 
     /**
@@ -392,8 +393,9 @@ public abstract class AbstractGenericModbusComponent extends AbstractOpenemsModb
                             );
                             break;
                         case READ_REGISTER:
+                            this.addReadRegister(protocol, entry);
                         case WRITE_REGISTER:
-                            this.addRegister(protocol, entry);
+                            this.addWriteRegister(protocol, entry);
                             break;
                         case WRITE_COIL:
                             protocol.addTask(new FC5WriteCoilTask(entry.getModbusAddress(),
@@ -412,6 +414,31 @@ public abstract class AbstractGenericModbusComponent extends AbstractOpenemsModb
         return protocol;
     }
 
+    private void addWriteRegister(ModbusProtocol protocol, ModbusConfigWrapper entry) throws OpenemsException {
+        AbstractWordElement<?, ?> element = null;
+        int address = entry.getModbusAddress();
+        switch (entry.getWordType()) {
+            case INT_16:
+            case INT_32:
+            case INT_64:
+            case FLOAT_32:
+            case STRING:
+                element = new UnsignedWordElement(address);
+                break;
+
+            case INT_16_SIGNED:
+            case INT_32_SIGNED:
+            case INT_64_SIGNED:
+                element = new SignedWordElement(address);
+                break;
+
+        }
+        if (entry.getTaskType().equals(TaskType.WRITE_REGISTER)) {
+            protocol.addTask(new FC6WriteRegisterTask(entry.getModbusAddress(),
+                    m(entry.getChannelId(), element)));
+        }
+    }
+
     /**
      * Adds a Register (Read or Write) to the ModbusProtocol, distinct what {@link AbstractModbusElement} needs to be
      * used.
@@ -420,7 +447,7 @@ public abstract class AbstractGenericModbusComponent extends AbstractOpenemsModb
      * @param wrapper  the ModbusConfigWrapper, usually from the {@link #modbusConfig}
      * @throws OpenemsException if the addTask fails.
      */
-    private void addRegister(ModbusProtocol protocol, ModbusConfigWrapper wrapper) throws OpenemsException {
+    private void addReadRegister(ModbusProtocol protocol, ModbusConfigWrapper wrapper) throws OpenemsException {
         AbstractModbusElement<?> element = null;
         int address = wrapper.getModbusAddress();
 
@@ -457,9 +484,6 @@ public abstract class AbstractGenericModbusComponent extends AbstractOpenemsModb
         if (wrapper.getTaskType().equals(TaskType.READ_REGISTER)) {
             protocol.addTask(new FC4ReadInputRegistersTask(wrapper.getModbusAddress(), wrapper.getPriority(),
                     m(wrapper.getChannelId(), element)));
-        } else {
-            protocol.addTask(new FC6WriteRegisterTask(wrapper.getModbusAddress(),
-                    m(wrapper.getChannelId(), element)));
         }
     }
 
@@ -495,7 +519,30 @@ public abstract class AbstractGenericModbusComponent extends AbstractOpenemsModb
                         case FLOAT:
                         case DOUBLE:
                             int scaleFactor = this.modbusConfig.get(source.channelId()).getStringLengthOrScaleFactor();
-                            target.setNextValue(((Double) targetValue.get() * Math.pow(10, scaleFactor)));
+                            double targetSetValue = (Double) targetValue.get() * Math.pow(10, scaleFactor);
+                            switch (target.getType()) {
+
+                                case BOOLEAN:
+                                    target.setNextValue(((int) targetSetValue) > 0);
+                                    break;
+                                case SHORT:
+                                    target.setNextValue((short) targetSetValue);
+                                    break;
+                                case INTEGER:
+                                    target.setNextValue((int) targetSetValue);
+                                    break;
+                                case LONG:
+                                    target.setNextValue((long) targetSetValue);
+                                    break;
+                                case FLOAT:
+                                    target.setNextValue((float) targetSetValue);
+                                    break;
+                                case DOUBLE:
+                                case STRING:
+                                    target.setNextValue(targetSetValue);
+                                    break;
+                            }
+
                             break;
                     }
                 }
@@ -513,6 +560,8 @@ public abstract class AbstractGenericModbusComponent extends AbstractOpenemsModb
     protected boolean handleChannelWriteFromOriginalToModbus(WriteChannel<?> target, WriteChannel<?> source) {
 
         if (this.modbusConfig.containsKey(target.channelId())) {
+            int scaleFactor = 1;
+            double targetSetValue;
             Optional<?> targetValue = source.getNextWriteValueAndReset();
             if (targetValue.isPresent()) {
                 try {
@@ -524,11 +573,57 @@ public abstract class AbstractGenericModbusComponent extends AbstractOpenemsModb
                         case SHORT:
                         case INTEGER:
                         case LONG:
+                            scaleFactor = this.modbusConfig.get(target.channelId()).getStringLengthOrScaleFactor();
+                            targetSetValue = ((Long) targetValue.get()).doubleValue() * Math.pow(10, scaleFactor);
+                            switch (target.getType()) {
+
+                                case BOOLEAN:
+                                    target.setNextWriteValueFromObject(((int) targetSetValue) > 0);
+                                    break;
+                                case SHORT:
+                                    target.setNextWriteValueFromObject((short) targetSetValue);
+                                    break;
+                                case INTEGER:
+                                    target.setNextWriteValueFromObject((int) targetSetValue);
+                                    break;
+                                case LONG:
+                                    target.setNextWriteValueFromObject((long) targetSetValue);
+                                    break;
+                                case FLOAT:
+                                    target.setNextWriteValueFromObject((float) targetSetValue);
+                                    break;
+                                case DOUBLE:
+                                case STRING:
+                                    target.setNextWriteValueFromObject(targetSetValue);
+                                    break;
+                            }
+                            break;
                         case FLOAT:
                         case DOUBLE:
-                            int scaleFactor = this.modbusConfig.get(target.channelId()).getStringLengthOrScaleFactor();
-                            target.setNextWriteValueFromObject(((Double) targetValue.get() * Math.pow(10, scaleFactor)));
-                            break;
+                            scaleFactor = this.modbusConfig.get(target.channelId()).getStringLengthOrScaleFactor();
+                            targetSetValue = (Double) targetValue.get() * Math.pow(10, scaleFactor);
+                            switch (target.getType()) {
+
+                                case BOOLEAN:
+                                    target.setNextWriteValueFromObject(((int) targetSetValue) > 0);
+                                    break;
+                                case SHORT:
+                                    target.setNextWriteValueFromObject((short) targetSetValue);
+                                    break;
+                                case INTEGER:
+                                    target.setNextWriteValueFromObject((int) targetSetValue);
+                                    break;
+                                case LONG:
+                                    target.setNextWriteValueFromObject((long) targetSetValue);
+                                    break;
+                                case FLOAT:
+                                    target.setNextWriteValueFromObject((float) targetSetValue);
+                                    break;
+                                case DOUBLE:
+                                case STRING:
+                                    target.setNextWriteValueFromObject(targetSetValue);
+                                    break;
+                            }
                     }
                 } catch (OpenemsError.OpenemsNamedException e) {
                     this.log.warn("Couldn't find target Channel, please check your configuration/Component/Code: " + e.getMessage());

@@ -95,6 +95,7 @@ public class GasMeterModbusGenericImpl extends AbstractGenericModbusComponent im
             handleChannelUpdate(this.getReturnTemp(), this._hasReturnTemp());
             handleChannelUpdate(this.getPercolationChannel(), this._hasPercolation());
             handleChannelUpdate(this.getFlowTempChannel(), this._hasFlowTemp());
+            handleChannelUpdate(this.getTotalConsumedEnergyCubicMeterChannel(), this._hasTotalConsumedEnergy());
         }
     }
 }

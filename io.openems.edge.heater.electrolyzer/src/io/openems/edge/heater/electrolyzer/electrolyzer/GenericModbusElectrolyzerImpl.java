@@ -111,6 +111,7 @@ public class GenericModbusElectrolyzerImpl extends AbstractGenericModbusComponen
         this.isAutoRun = this.config.autoRun();
         this.getDefaultRunPower().setNextValue(this.config.defaultRunPower());
         this.getDefaultRunPower().nextProcessImage();
+        this.getDefaultRunPower().setNextWriteValueFromObject(this.config.defaultRunPower());
     }
 
     @Modified
@@ -130,49 +131,50 @@ public class GenericModbusElectrolyzerImpl extends AbstractGenericModbusComponen
 
     @Override
     public void handleEvent(Event event) {
-        switch (event.getTopic()) {
-            case EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE:
-                handleChannelUpdate(this.getWMZEnergyProducedChannel(), this._hasWMZEnergyProduced());
-                handleChannelUpdate(this.getWMZTempSourceChannel(), this._hasWMZTempSource());
-                handleChannelUpdate(this.getWMZTempSinkChannel(), this._hasWMZTempSink());
-                handleChannelUpdate(this.getWMZPowerChannel(), this._hasWMZPower());
-                handleChannelUpdate(this.getEffectivePowerChannel(), this._hasEffectivePowerKw());
-                handleChannelUpdate(this.getEffectivePowerPercentChannel(), this._hasEffectivePowerPercent());
-                handleChannelUpdate(this.getEffectivePowerChannel(), this._hasEffectivePowerKw());
-                handleChannelUpdate(this.getEffectivePowerPercentChannel(), this._hasEffectivePowerPercent());
-                handleChannelUpdate(this.getFlowTemperatureChannel(), this._hasFlowTemp());
-                handleChannelUpdate(this.getReturnTemperatureChannel(), this._hasReturnTemp());
-                break;
-            case EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS:
-                if (this.controlMode.equals(ControlMode.READ_WRITE)) {
-                    if (this.useExceptionalState) {
-                        boolean exceptionalStateActive = this.exceptionalStateHandler.exceptionalStateActive(this);
-                        if (exceptionalStateActive) {
-                            this.handleExceptionalState();
-                            return;
-                        }
-                    }
-                    if (this.isAutoRun || (this.getEnableSignalChannel().getNextWriteValue().isPresent())
-                            || (this.isRunning && this.timerHandler.checkTimeIsUp(ENABLE_SIGNAL_IDENTIFIER) == false)) {
-                        this.isRunning = true;
-                        if (this.getEnableSignalChannel().getNextWriteValue().isPresent()) {
-                            this.timerHandler.resetTimer(ENABLE_SIGNAL_IDENTIFIER);
-                        } else {
-                            try {
-                                this.getEnableSignalChannel().setNextWriteValueFromObject(false);
-                            } catch (OpenemsError.OpenemsNamedException e) {
-                                this.log.warn("Couldn't apply false value to own enableSignal");
+        if (this.isEnabled()) {
+            switch (event.getTopic()) {
+                case EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE:
+                    handleChannelUpdate(this.getWMZEnergyProducedChannel(), this._hasWMZEnergyProduced());
+                    handleChannelUpdate(this.getWMZTempSourceChannel(), this._hasWMZTempSource());
+                    handleChannelUpdate(this.getWMZTempSinkChannel(), this._hasWMZTempSink());
+                    handleChannelUpdate(this.getWMZPowerChannel(), this._hasWMZPower());
+                    handleChannelUpdate(this.getEffectivePowerPercentChannel(), this._hasEffectivePowerPercent());
+                    handleChannelUpdate(this.getEffectivePowerChannel(), this._hasEffectivePowerKw());
+                    handleChannelUpdate(this.getFlowTemperatureChannel(), this._hasFlowTemp());
+                    handleChannelUpdate(this.getReturnTemperatureChannel(), this._hasReturnTemp());
+                    handleChannelUpdate(this.getReadSetPointChannel(), this._hasReadSetPoint());
+                    break;
+                case EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS:
+                    if (this.controlMode.equals(ControlMode.READ_WRITE)) {
+                        if (this.useExceptionalState) {
+                            boolean exceptionalStateActive = this.exceptionalStateHandler.exceptionalStateActive(this);
+                            if (exceptionalStateActive) {
+                                this.handleExceptionalState();
+                                return;
                             }
                         }
-                        //No Reset -> handled later
-                        this.getEnableSignalChannel().setNextValue(this.getEnableSignalChannel().getNextWriteValue().orElse(false));
-                    } else {
-                        this.isRunning = false;
-                        this.timerHandler.resetTimer(ENABLE_SIGNAL_IDENTIFIER);
+                        if (this.isAutoRun || (this.getEnableSignalChannel().getNextWriteValue().isPresent())
+                                || (this.isRunning && this.timerHandler.checkTimeIsUp(ENABLE_SIGNAL_IDENTIFIER) == false)) {
+                            this.isRunning = true;
+                            if (this.getEnableSignalChannel().getNextWriteValue().isPresent()) {
+                                this.timerHandler.resetTimer(ENABLE_SIGNAL_IDENTIFIER);
+                            } else {
+                                try {
+                                    this.getEnableSignalChannel().setNextWriteValueFromObject(false);
+                                } catch (OpenemsError.OpenemsNamedException e) {
+                                    this.log.warn("Couldn't apply false value to own enableSignal");
+                                }
+                            }
+                            //No Reset -> handled later
+                            this.getEnableSignalChannel().setNextValue(this.getEnableSignalChannel().getNextWriteValue().orElse(false));
+                        } else {
+                            this.isRunning = false;
+                            this.timerHandler.resetTimer(ENABLE_SIGNAL_IDENTIFIER);
+                        }
+                        this.updateWriteValuesToModbus();
+                        break;
                     }
-                    this.updateWriteValuesToModbus();
-                    break;
-                }
+            }
         }
     }
 
@@ -186,10 +188,25 @@ public class GenericModbusElectrolyzerImpl extends AbstractGenericModbusComponen
         if (this.getModbusConfig().containsKey(this._getEnableSignalBoolean().channelId())) {
             this.handleChannelWriteFromOriginalToModbus(this._getEnableSignalBoolean(), this.getEnableSignalChannel());
         } else if (this.getModbusConfig().containsKey(this._getEnableSignalLong().channelId())) {
-            this.handleChannelWriteFromOriginalToModbus(this._getEnableSignalLong(), this.getEnableSignalChannel());
+            boolean enabled = this.getEnableSignalChannel().getNextWriteValueAndReset().orElse(false);
+            try {
+                if (enabled) {
+                    this._getEnableSignalLong().setNextWriteValueFromObject((long) this.config.defaultEnableSignalValue());
+                } else {
+                    this._getEnableSignalLong().setNextWriteValueFromObject((long) this.config.defaultDisableSignalValue());
+                }
+            } catch (OpenemsError.OpenemsNamedException e) {
+                this.log.warn("Couldn't apply EnableSignal");
+            }
         }
 
+
         WriteChannel<?> choosenChannel = this.getDefaultRunPower();
+        try {
+            this.getDefaultRunPower().setNextWriteValueFromObject((long) this.config.defaultRunPower());
+        } catch (OpenemsError.OpenemsNamedException e) {
+            this.log.warn("Couldn't set DefaultRunPower Again");
+        }
         switch (this.energyControlMode) {
             case KW:
                 //TODO IF BOTH CONTROLMODES: HEAT AND ELECTROLYZER -> WHAT TO DO -> PRIORITY ETC
@@ -231,13 +248,13 @@ public class GenericModbusElectrolyzerImpl extends AbstractGenericModbusComponen
             this.getEnableSignalChannel().setNextWriteValueFromObject(signalValue > 0);
             switch (this.energyControlMode) {
                 case KW:
-                    this.getSetPointPowerChannel().setNextValue(signalValue);
+                    this.getSetPointPowerChannel().setNextWriteValueFromObject(signalValue);
                     break;
                 case PERCENT:
-                    this.getSetPointPowerPercentChannel().setNextValue(signalValue);
+                    this.getSetPointPowerPercentChannel().setNextWriteValueFromObject(signalValue);
                     break;
                 case TEMPERATURE:
-                    this.getSetPointTemperatureChannel().setNextValue(signalValue);
+                    this.getSetPointTemperatureChannel().setNextWriteValueFromObject(signalValue);
                     break;
             }
         } catch (OpenemsError.OpenemsNamedException e) {

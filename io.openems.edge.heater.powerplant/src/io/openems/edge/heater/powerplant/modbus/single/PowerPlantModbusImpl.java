@@ -94,7 +94,7 @@ public class PowerPlantModbusImpl extends AbstractGenericModbusComponent impleme
     void activate(ComponentContext context, Config config) throws OpenemsError.OpenemsNamedException, IOException, ConfigurationException {
         this.config = config;
         super.activate(context, config.id(), config.alias(), config.enabled(), config.modbusUnitId(), this.cm,
-                "Modbus", config.modbusBridgeId());
+                config.modbusBridgeId(), this.cpm, Arrays.asList(config.configurationList()));
         if (super.update(this.cm, "channelIds", new ArrayList<>(this.channels()), this.config.channelIds().length)) {
             this.baseConfiguration();
         }
@@ -112,6 +112,8 @@ public class PowerPlantModbusImpl extends AbstractGenericModbusComponent impleme
             this.exceptionalStateHandler = new ExceptionalStateHandlerImpl(this.timerHandler, EXCEPTIONAL_STATE_IDENTIFIER);
         }
         this.isAutoRun = this.config.autoRun();
+        this.getDefaultRunPower().setNextValue(this.config.defaultRunPower());
+        this.getDefaultRunPower().nextProcessImage();
     }
 
     @Modified
@@ -130,44 +132,46 @@ public class PowerPlantModbusImpl extends AbstractGenericModbusComponent impleme
 
     @Override
     public void handleEvent(Event event) {
-        if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE)) {
-            handleChannelUpdate(this.getEffectivePowerChannel(), this._hasEffectivePowerKw());
-            handleChannelUpdate(this.getEffectivePowerPercentChannel(), this._hasEffectivePowerPercent());
-            handleChannelUpdate(this.getFlowTemperatureChannel(), this._hasFlowTemp());
-            handleChannelUpdate(this.getReturnTemperatureChannel(), this._hasReturnTemp());
-            handleChannelUpdate(this.getMaximumKwChannel(), this._hasMaximumKw());
-            handleChannelUpdate(this.getErrorOccurredChannel(), this._hasErrorOccurred());
-        } else if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS)) {
-            if (this.controlMode.equals(ControlMode.READ_WRITE)) {
-                if (this.useExceptionalState) {
-                    boolean exceptionalStateActive = this.exceptionalStateHandler.exceptionalStateActive(this);
-                    if (exceptionalStateActive) {
-                        this.handleExceptionalState();
-                        return;
-                    }
-                }
-                if (this.isAutoRun || (this.getEnableSignalChannel().getNextWriteValue().isPresent())
-                        || (this.isRunning && this.timerHandler.checkTimeIsUp(ENABLE_SIGNAL_IDENTIFIER) == false)) {
-                    this.isRunning = true;
-                    if (this.getEnableSignalChannel().getNextWriteValue().isPresent()) {
-                        this.timerHandler.resetTimer(ENABLE_SIGNAL_IDENTIFIER);
-                    } else {
-                        try {
-                            this.getEnableSignalChannel().setNextWriteValueFromObject(false);
-                        } catch (OpenemsError.OpenemsNamedException e) {
-                            this.log.warn("Couldn't apply false value to own enableSignal");
+        if (this.isEnabled()) {
+            if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE)) {
+                handleChannelUpdate(this.getEffectivePowerChannel(), this._hasEffectivePowerKw());
+                handleChannelUpdate(this.getEffectivePowerPercentChannel(), this._hasEffectivePowerPercent());
+                handleChannelUpdate(this.getFlowTemperatureChannel(), this._hasFlowTemp());
+                handleChannelUpdate(this.getReturnTemperatureChannel(), this._hasReturnTemp());
+                handleChannelUpdate(this.getMaximumKwChannel(), this._hasMaximumKw());
+                handleChannelUpdate(this.getErrorOccurredChannel(), this._hasErrorOccurred());
+                handleChannelUpdate(this.getReadSetPointChannel(), this._hasReadSetPoint());
+            } else if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS)) {
+                if (this.controlMode.equals(ControlMode.READ_WRITE)) {
+                    if (this.useExceptionalState) {
+                        boolean exceptionalStateActive = this.exceptionalStateHandler.exceptionalStateActive(this);
+                        if (exceptionalStateActive) {
+                            this.handleExceptionalState();
+                            return;
                         }
                     }
-                    //No Reset -> handled later
-                    this.getEnableSignalChannel().setNextValue(this.getEnableSignalChannel().getNextWriteValue().orElse(false));
-                } else {
-                    this.isRunning = false;
-                    this.timerHandler.resetTimer(ENABLE_SIGNAL_IDENTIFIER);
+                    if (this.isAutoRun || (this.getEnableSignalChannel().getNextWriteValue().isPresent())
+                            || (this.isRunning && this.timerHandler.checkTimeIsUp(ENABLE_SIGNAL_IDENTIFIER) == false)) {
+                        this.isRunning = true;
+                        if (this.getEnableSignalChannel().getNextWriteValue().isPresent()) {
+                            this.timerHandler.resetTimer(ENABLE_SIGNAL_IDENTIFIER);
+                        } else {
+                            try {
+                                this.getEnableSignalChannel().setNextWriteValueFromObject(false);
+                            } catch (OpenemsError.OpenemsNamedException e) {
+                                this.log.warn("Couldn't apply false value to own enableSignal");
+                            }
+                        }
+                        //No Reset -> handled later
+                        this.getEnableSignalChannel().setNextValue(this.getEnableSignalChannel().getNextWriteValue().orElse(false));
+                    } else {
+                        this.isRunning = false;
+                        this.timerHandler.resetTimer(ENABLE_SIGNAL_IDENTIFIER);
+                    }
+                    this.updateWriteValuesToModbus();
                 }
-                this.updateWriteValuesToModbus();
             }
         }
-
     }
 
     private void handleExceptionalState() {
@@ -200,10 +204,24 @@ public class PowerPlantModbusImpl extends AbstractGenericModbusComponent impleme
         if (this.getModbusConfig().containsKey(this._getEnableSignalBoolean().channelId())) {
             this.handleChannelWriteFromOriginalToModbus(this._getEnableSignalBoolean(), this.getEnableSignalChannel());
         } else if (this.getModbusConfig().containsKey(this._getEnableSignalLong().channelId())) {
-            this.handleChannelWriteFromOriginalToModbus(this._getEnableSignalLong(), this.getEnableSignalChannel());
+            boolean enabled = this.getEnableSignalChannel().getNextWriteValueAndReset().orElse(false);
+            try {
+                if (enabled) {
+                    this._getEnableSignalLong().setNextWriteValueFromObject((long) this.config.defaultEnableSignalValue());
+                } else {
+                    this._getEnableSignalLong().setNextWriteValueFromObject((long) this.config.defaultDisableSignalValue());
+                }
+            } catch (OpenemsError.OpenemsNamedException e) {
+                this.log.warn("Couldn't apply EnableSignal");
+            }
         }
 
         WriteChannel<?> choosenChannel = this.getDefaultRunPower();
+        try {
+            this.getDefaultRunPower().setNextWriteValueFromObject((long) this.config.defaultRunPower());
+        } catch (OpenemsError.OpenemsNamedException e) {
+            this.log.warn("Couldn't set DefaultRunPower Again");
+        }
         switch (this.energyControlMode) {
             case KW:
                 //TODO IF BOTH CONTROLMODES: HEAT AND ELECTROLYZER -> WHAT TO DO -> PRIORITY ETC

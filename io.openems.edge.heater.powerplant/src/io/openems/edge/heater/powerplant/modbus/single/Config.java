@@ -73,6 +73,14 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
     boolean autoRun() default false;
 
+    int defaultRunPower() default 50;
+
+    @AttributeDefinition(name = "Active Enable Signal Value", description = "On True EnableSignal what value to write")
+    int defaultEnableSignalValue() default 2;
+
+    @AttributeDefinition(name = "Inactive Enable Signal Value", description = "On False/null EnableSignal what value to write")
+    int defaultDisableSignalValue() default 1;
+
     boolean enabled() default true;
 
     String webconsole_configurationFactory_nameHint() default "Generic Modbus Component [{id}]";
