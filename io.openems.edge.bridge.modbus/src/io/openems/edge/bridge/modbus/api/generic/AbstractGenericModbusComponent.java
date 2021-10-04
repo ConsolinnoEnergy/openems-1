@@ -15,11 +15,14 @@ import io.openems.edge.bridge.modbus.api.element.StringWordElement;
 import io.openems.edge.bridge.modbus.api.element.UnsignedDoublewordElement;
 import io.openems.edge.bridge.modbus.api.element.UnsignedQuadruplewordElement;
 import io.openems.edge.bridge.modbus.api.element.UnsignedWordElement;
+import io.openems.edge.bridge.modbus.api.element.WordOrder;
+import io.openems.edge.bridge.modbus.api.task.FC16WriteRegistersTask;
 import io.openems.edge.bridge.modbus.api.task.FC1ReadCoilsTask;
 import io.openems.edge.bridge.modbus.api.task.FC4ReadInputRegistersTask;
 import io.openems.edge.bridge.modbus.api.task.FC5WriteCoilTask;
 import io.openems.edge.bridge.modbus.api.task.FC6WriteRegisterTask;
 import io.openems.edge.common.channel.Channel;
+import io.openems.edge.common.channel.ChannelId;
 import io.openems.edge.common.channel.WriteChannel;
 import io.openems.edge.common.channel.value.Value;
 import io.openems.edge.common.component.ComponentManager;
@@ -74,11 +77,12 @@ public abstract class AbstractGenericModbusComponent extends AbstractOpenemsModb
     private static final String TASK_TYPE_CONFIG = "taskType";
     private static final String PRIORITY_CONFIG = "priorities";
     private static final String WORD_TYPE_CONFIG = "wordType";
+    private static final String WORD_ORDER_CONFIG = "wordOrder";
     private static final int CHANNEL_ID_POSITION = 0;
     private static final int ADDRESS_POSITION = 1;
     private static final int TASK_TYPE_POSITION = 2;
     private static final int WORD_TYPE_POSITION = 3;
-    private static final int PRIORITY_POSITION = 4;
+    private static final int PRIORITY_OR_WORD_ORDER_POSITION = 4;
     //Either Length or ScaleFactor!
     private static final int LENGTH_POSITION = 5;
     private static final int EXPECTED_SIZE = 4;
@@ -87,7 +91,6 @@ public abstract class AbstractGenericModbusComponent extends AbstractOpenemsModb
 
     private final Map<String, Channel<?>> channelMap = new HashMap<>();
     private final Map<io.openems.edge.common.channel.ChannelId, ModbusConfigWrapper> modbusConfig = new HashMap<>();
-
 
 
     /**
@@ -178,24 +181,33 @@ public abstract class AbstractGenericModbusComponent extends AbstractOpenemsModb
                             ex[0] = new ConfigurationException("configureChannelConfiguration in " + super.id(), "Wrong WordType: " + split[WORD_TYPE_POSITION]);
                         }
                         Channel<?> channel = this.channelMap.get(channelId);
-
+                        WordOrder wordOrder = null;
                         Priority priority = null;
+
                         int length = 0;
                         if (split.length >= EXPECTED_SIZE_WITH_PRIORITY) {
-                            //only numbers == length
-                            if (split[PRIORITY_POSITION].matches("([+-][0-9]*)")) {
+                            //only numbers == length <- when no Priority is set
+                            if (split[PRIORITY_OR_WORD_ORDER_POSITION].matches("([+-][0-9]*)")) {
                                 try {
                                     length = Integer.parseInt(split[LENGTH_POSITION]);
                                 } catch (NumberFormatException e) {
                                     ex[0] = new ConfigurationException("configureChannelConfiguration in "
-                                            + super.id(), "Wrong length entry: " + split[PRIORITY_POSITION]);
+                                            + super.id(), "Wrong length entry: " + split[PRIORITY_OR_WORD_ORDER_POSITION]);
                                 }
                             } else {
-                                String priorityString = split[PRIORITY_POSITION].trim().toUpperCase();
+                                String priorityOrWordOrderString = split[PRIORITY_OR_WORD_ORDER_POSITION].trim().toUpperCase();
                                 for (Priority prio : Priority.values()) {
-                                    if (prio.name().equals(priorityString)) {
+                                    if (prio.name().equals(priorityOrWordOrderString)) {
                                         priority = prio;
                                         break;
+                                    }
+                                }
+                                if (priority == null) {
+                                    for (WordOrder wordOrder1 : WordOrder.values()) {
+                                        if (wordOrder1.name().equals(priorityOrWordOrderString)) {
+                                            wordOrder = wordOrder1;
+                                            break;
+                                        }
                                     }
                                 }
                             }
@@ -212,10 +224,14 @@ public abstract class AbstractGenericModbusComponent extends AbstractOpenemsModb
                         TaskType type = null;
                         if (TaskType.contains(taskType) && channel != null) {
                             type = TaskType.valueOf(taskType);
-                            if (priority != null) {
-                                this.modbusConfig.put(channel.channelId(), new ModbusConfigWrapper(channel.channelId(), address, type, priority, wordType, length));
+                            if (type.equals(TaskType.WRITE_REGISTER)) {
+                                this.modbusConfig.put(channel.channelId(), new ModbusConfigWrapper(channel.channelId(), address, type, wordOrder, wordType, length));
                             } else {
-                                this.modbusConfig.put(channel.channelId(), new ModbusConfigWrapper(channel.channelId(), address, type, wordType, length));
+                                if (priority != null) {
+                                    this.modbusConfig.put(channel.channelId(), new ModbusConfigWrapper(channel.channelId(), address, type, priority, wordType, length));
+                                } else {
+                                    this.modbusConfig.put(channel.channelId(), new ModbusConfigWrapper(channel.channelId(), address, type, wordType, length));
+                                }
                             }
                         } else {
                             ex[0] = new ConfigurationException("Configure Channel Configuration: " + super.id(), "Either Type is null or Channel not Available: For Entry: "
@@ -282,6 +298,7 @@ public abstract class AbstractGenericModbusComponent extends AbstractOpenemsModb
             properties.put(TASK_TYPE_CONFIG, this.propertyInput(Arrays.toString(TaskType.values())));
             properties.put(PRIORITY_CONFIG, this.propertyInput(Arrays.toString(Priority.values())));
             properties.put(WORD_TYPE_CONFIG, this.propertyInput(Arrays.toString(WordType.values())));
+            properties.put(WORD_ORDER_CONFIG, this.propertyInput(Arrays.toString(WordOrder.values())));
             config.update(properties);
 
         } catch (IOException e) {
@@ -320,7 +337,8 @@ public abstract class AbstractGenericModbusComponent extends AbstractOpenemsModb
         private final io.openems.edge.common.channel.ChannelId channelId;
         private final int modbusAddress;
         private final TaskType taskType;
-        private final Priority priority;
+        private Priority priority;
+        private WordOrder wordOrder;
         private final WordType wordType;
         private final int length;
 
@@ -351,6 +369,15 @@ public abstract class AbstractGenericModbusComponent extends AbstractOpenemsModb
             this(channelId, address, type, Priority.LOW, wordType, length);
         }
 
+        public ModbusConfigWrapper(io.openems.edge.common.channel.ChannelId channelId, int address, TaskType type, WordOrder wordOrder, WordType wordType, int length) {
+            this.channelId = channelId;
+            this.modbusAddress = address;
+            this.taskType = type;
+            this.wordType = wordType;
+            this.length = length;
+            this.wordOrder = wordOrder;
+        }
+
         public io.openems.edge.common.channel.ChannelId getChannelId() {
             return this.channelId;
         }
@@ -369,6 +396,10 @@ public abstract class AbstractGenericModbusComponent extends AbstractOpenemsModb
 
         public WordType getWordType() {
             return this.wordType;
+        }
+
+        public WordOrder getWordOrder() {
+            return this.wordOrder;
         }
 
         public int getStringLengthOrScaleFactor() {
@@ -394,6 +425,7 @@ public abstract class AbstractGenericModbusComponent extends AbstractOpenemsModb
                             break;
                         case READ_REGISTER:
                             this.addReadRegister(protocol, entry);
+                            break;
                         case WRITE_REGISTER:
                             this.addWriteRegister(protocol, entry);
                             break;
@@ -414,28 +446,48 @@ public abstract class AbstractGenericModbusComponent extends AbstractOpenemsModb
         return protocol;
     }
 
-    private void addWriteRegister(ModbusProtocol protocol, ModbusConfigWrapper entry) throws OpenemsException {
+    private void addWriteRegister(ModbusProtocol protocol, ModbusConfigWrapper wrapper) throws OpenemsException {
         AbstractWordElement<?, ?> element = null;
-        int address = entry.getModbusAddress();
-        switch (entry.getWordType()) {
+        AbstractModbusElement<?> element1 = null;
+
+        int address = wrapper.getModbusAddress();
+        switch (wrapper.getWordType()) {
             case INT_16:
-            case INT_32:
-            case INT_64:
-            case FLOAT_32:
-            case STRING:
                 element = new UnsignedWordElement(address);
+                protocol.addTask(new FC6WriteRegisterTask(wrapper.getModbusAddress(),
+                        m(wrapper.getChannelId(), element)));
                 break;
-
             case INT_16_SIGNED:
-            case INT_32_SIGNED:
-            case INT_64_SIGNED:
                 element = new SignedWordElement(address);
+                protocol.addTask(new FC6WriteRegisterTask(wrapper.getModbusAddress(),
+                        m(wrapper.getChannelId(), element)));
+                break;
+            case INT_32:
+                element1 = new UnsignedDoublewordElement(address).wordOrder(wrapper.getWordOrder());
+                protocol.addTask(new FC16WriteRegistersTask(wrapper.getModbusAddress(),
+                        m(wrapper.getChannelId(), element1)));
+                break;
+            case INT_32_SIGNED:
+                element1 = new SignedDoublewordElement(address).wordOrder(wrapper.getWordOrder());
+                protocol.addTask(new FC16WriteRegistersTask(wrapper.getModbusAddress(),
+                        m(wrapper.getChannelId(), element1)));
+                break;
+            case FLOAT_32:
+                element1 = new FloatDoublewordElement(address).wordOrder(wrapper.getWordOrder());
+                protocol.addTask(new FC16WriteRegistersTask(wrapper.getModbusAddress(),
+                        m(wrapper.getChannelId(), element1)));
+                break;
+            case INT_64:
+                element1 = new UnsignedQuadruplewordElement(address).wordOrder(wrapper.getWordOrder());
+                protocol.addTask(new FC16WriteRegistersTask(wrapper.getModbusAddress(),
+                        m(wrapper.getChannelId(), element1)));
+                break;
+            case INT_64_SIGNED:
+                element1 = new SignedQuadruplewordElement(address).wordOrder(wrapper.getWordOrder());
+                protocol.addTask(new FC16WriteRegistersTask(wrapper.getModbusAddress(),
+                        m(wrapper.getChannelId(), element1)));
                 break;
 
-        }
-        if (entry.getTaskType().equals(TaskType.WRITE_REGISTER)) {
-            protocol.addTask(new FC6WriteRegisterTask(entry.getModbusAddress(),
-                    m(entry.getChannelId(), element)));
         }
     }
 
@@ -474,17 +526,15 @@ public abstract class AbstractGenericModbusComponent extends AbstractOpenemsModb
             case FLOAT_32:
                 element = new FloatDoublewordElement(address);
                 break;/* case FLOAT_64:
-                element = new FloatQuadroubleWordElement(address);
+                element = new FloatQuadroupleWordElement(address);
                 break;
                         */
             case STRING:
                 element = new StringWordElement(address, wrapper.getStringLengthOrScaleFactor());
                 break;
         }
-        if (wrapper.getTaskType().equals(TaskType.READ_REGISTER)) {
-            protocol.addTask(new FC4ReadInputRegistersTask(wrapper.getModbusAddress(), wrapper.getPriority(),
-                    m(wrapper.getChannelId(), element)));
-        }
+        protocol.addTask(new FC4ReadInputRegistersTask(wrapper.getModbusAddress(), wrapper.getPriority(),
+                m(wrapper.getChannelId(), element)));
     }
 
     @Override

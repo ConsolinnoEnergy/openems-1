@@ -57,6 +57,9 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     @AttributeDefinition(name = "Priority", description = "This will be filled in automatically and shows the available ")
     String[] priorities();
 
+    @AttributeDefinition(name = "WordOrder", description = "This will be filled in automatically and shows the available ")
+    String[] wordOrder();
+
 
     @AttributeDefinition(name = "Configuration", description = "Configuration for this ModbusMeter, Expected Entry is:"
             + "\"Channel:ModbusAddress:TaskType:wordType:Priority:LengthORScaleFactor\" "
@@ -65,7 +68,7 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
             + "Priorities are by default LOW and are only needed by Read Coils and Inputs"
             + "In any way the last entry should always be the Length of an expected String OR the ScaleFactor. (10^ScaleFactor)"
             + "NOTE: Use only ModbusChannel")
-    String[] configurationList() default {"Power:1:READ_REGISTER:WORD_TYPE:HIGH:2"};
+    String[] configurationList() default {"Power:1:READ_REGISTER:WORD_TYPE:HIGH:2", "SetPointPower:2:WRITE_REGISTER:FLOAT_32:MSWLSW:0"};
 
 
     @AttributeDefinition(name = "alias", description = "Human readable name of the natural gas sensor Module.")

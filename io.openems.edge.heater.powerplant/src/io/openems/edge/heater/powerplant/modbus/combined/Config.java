@@ -57,15 +57,17 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     @AttributeDefinition(name = "Priority", description = "This will be filled in automatically and shows the available ")
     String[] priorities();
 
+    @AttributeDefinition(name = "WordOrder", description = "This will be filled in automatically and shows the available ")
+    String[] wordOrder();
 
     @AttributeDefinition(name = "Configuration", description = "Configuration for this ModbusMeter, Expected Entry is:"
             + "\"Channel:ModbusAddress:TaskType:wordType:Priority:LengthORScaleFactor\" "
             + "\n please note: Priority is Optional. The Configuration Expects a Splitter, the current Splitter is a ':'\n"
             + "Please Type in a ChannelId, listed in ChannelIds first, then Type in the ModbusAddress, followed by the TaskType and the WordType, listed in TaskType and then the Priority, if needed"
-            + "Priorities are by default LOW and are only needed by Read Coils and Inputs"
+            + "Priorities are by default LOW and are only needed by Read Coils and Inputs, WRITE_REGISTER using wordOrder Here"
             + "In any way the last entry should always be the Length of an expected String OR the ScaleFactor. (10^ScaleFactor)"
             + "NOTE: Use only ModbusChannel")
-    String[] configurationList() default {"Power:1:READ_REGISTER:WORD_TYPE:HIGH:2"};
+    String[] configurationList() default {"Power:1:READ_REGISTER:WORD_TYPE:HIGH:2", "SetPointPower:2:WRITE_REGISTER:FLOAT_32:MSWLSW:0"};
 
 
     @AttributeDefinition(name = "alias", description = "Human readable name of the natural gas sensor Module.")
