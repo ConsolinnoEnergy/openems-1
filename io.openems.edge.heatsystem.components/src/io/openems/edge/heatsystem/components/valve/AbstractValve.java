@@ -245,6 +245,17 @@ public abstract class AbstractValve extends AbstractOpenemsComponent implements 
         }
     }
 
+    /**
+     * Creates the Timer for: Missing Components check, and ExceptionalState support
+     *
+     * @param timerId             the timer Id
+     * @param maxTime             the Maximum Time fpr the Missing Components check and ExceptionalState check
+     * @param cpm                 Component Manager
+     * @param exceptionalState    the exceptionalState component (this)
+     * @param useExceptionalState should the ExceptionalState be used
+     * @throws OpenemsError.OpenemsNamedException if component cannot be found
+     * @throws ConfigurationException             if timerId is wrong (component found but wrong instance).
+     */
     protected void createTimerHandler(String timerId, int maxTime,
                                       ComponentManager cpm, ExceptionalState exceptionalState, boolean useExceptionalState) throws OpenemsError.OpenemsNamedException, ConfigurationException {
         TimerHandler timerHandler = new TimerHandlerImpl(super.id(), cpm);
@@ -262,7 +273,11 @@ public abstract class AbstractValve extends AbstractOpenemsComponent implements 
         this.useExceptionalState = useExceptionalState;
     }
 
-
+    /**
+     * Check if ExceptionalState is active.
+     *
+     * @return true if active
+     */
     protected boolean isExceptionalStateActive() {
         if (this.useExceptionalState) {
             return this.exceptionalStateHandler.exceptionalStateActive(this.exceptionalState);
@@ -293,11 +308,20 @@ public abstract class AbstractValve extends AbstractOpenemsComponent implements 
         }
     }
 
-
+    /**
+     * Gets the exceptionalState Value.
+     *
+     * @return the value
+     */
     protected int getExceptionalSateValue() {
         return this.exceptionalState.getExceptionalStateValue();
     }
 
+    /**
+     * Gets the Value of the optional config channel (output/checkoutput).
+     * @param optionalChannel the channel
+     * @return the Wrapped Value either value or nextValue.
+     */
     protected Value<?> getValueOfOptionalChannel(Channel<?> optionalChannel) {
         return optionalChannel.value().isDefined() ? optionalChannel.value()
                 : optionalChannel.getNextValue().isDefined() ? optionalChannel.getNextValue() : null;

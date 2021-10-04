@@ -137,13 +137,15 @@ public class MinMaxToChannel extends AbstractOpenemsComponent implements Openems
      */
     @Override
     public void handleEvent(Event event) {
-        if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS)) {
-            try {
-                List<Integer> values = this.getIntegerValuesFromAddresses();
-                int minMaxToWrite = this.minMax.executeRoutine(values);
-                this.writeValueToResponseChannel(minMaxToWrite);
-            } catch (OpenemsError.OpenemsNamedException e) {
-                this.logger.warn("Couldn't access Channel in " + super.id());
+        if (this.isEnabled()) {
+            if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS)) {
+                try {
+                    List<Integer> values = this.getIntegerValuesFromAddresses();
+                    int minMaxToWrite = this.minMax.executeRoutine(values);
+                    this.writeValueToResponseChannel(minMaxToWrite);
+                } catch (OpenemsError.OpenemsNamedException e) {
+                    this.logger.warn("Couldn't access Channel in " + super.id());
+                }
             }
         }
     }

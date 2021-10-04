@@ -7,7 +7,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * The MaxRoutine compares a List of Integer values and returns the max Value.
  * This helps the {@link MinMaxToChannel}
  */
-class MaxRoutine implements MinMaxRoutine {
+public class MaxRoutine implements MinMaxRoutine {
     /**
      * Executes the Routine (Min/Max Value) of the given List.
      *

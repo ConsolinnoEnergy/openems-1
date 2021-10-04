@@ -114,7 +114,9 @@ public class MultipleBooleanConditionApplierImpl extends AbstractOpenemsComponen
         this.conditionChecker = new ConditionChecker(checkCondition);
 
         this._getDefaultActiveValueChannel().setNextValue(config.activeValue());
+        this._getDefaultActiveValueChannel().nextProcessImage();
         this._getDefaultInactiveValueChannel().setNextValue(config.inactiveValue());
+        this._getDefaultInactiveValueChannel().nextProcessImage();
     }
 
     @Modified
@@ -130,14 +132,16 @@ public class MultipleBooleanConditionApplierImpl extends AbstractOpenemsComponen
 
     @Override
     public void handleEvent(Event event) {
-        if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS)) {
-            boolean conditionMet = this.conditionChecker.checkConditions(this.conditionsToExpectedValue);
-            this.conditionWrapper.applyValueDependingOnConditionMet(conditionMet);
-        } else if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE)) {
-            if (this._getDefaultActiveValueChannel().getNextWriteValue().isPresent()) {
-                this.updateConfig(true);
-            } else if (this._getDefaultInactiveValueChannel().getNextWriteValue().isPresent()) {
-                this.updateConfig(false);
+        if (this.isEnabled()) {
+            if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS)) {
+                boolean conditionMet = this.conditionChecker.checkConditions(this.conditionsToExpectedValue);
+                this.conditionWrapper.applyValueDependingOnConditionMet(conditionMet);
+            } else if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE)) {
+                if (this._getDefaultActiveValueChannel().getNextWriteValue().isPresent()) {
+                    this.updateConfig(true);
+                } else if (this._getDefaultInactiveValueChannel().getNextWriteValue().isPresent()) {
+                    this.updateConfig(false);
+                }
             }
         }
     }

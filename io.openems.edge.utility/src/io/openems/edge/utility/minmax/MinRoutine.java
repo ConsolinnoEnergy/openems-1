@@ -6,7 +6,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * Equivalent to the {@link MaxRoutine} this returns the Min Value of a List of Integer.
  */
-class MinRoutine implements MinMaxRoutine {
+public class MinRoutine implements MinMaxRoutine {
 
     /**
      * Executes the Routine (Min/Max Value) of the given List.

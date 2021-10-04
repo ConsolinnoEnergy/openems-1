@@ -23,24 +23,6 @@ public class ThermometerWrapperForCoolingImpl extends AbstractThermometerWrapper
     }
 
     /**
-     * Refreshes the Thermometer References in case they were changed/disabled/renewed.
-     *
-     * @param thermometerType the ThermometerType, to identify the Map Value.
-     * @param newThermometer  the new Thermometer put into the stored Maps,.
-     */
-
-    @Override
-    public void renewThermometer(ThermometerType thermometerType, Thermometer newThermometer) {
-        Thermometer oldThermometer = this.getThermometerKindThermometerMap().get(thermometerType);
-        this.getThermometerKindThermometerMap().remove(thermometerType);
-        this.getThermometerKindThermometerMap().put(thermometerType, newThermometer);
-        ThermometerValueWrapper value = this.getThermometerAndValue().get(oldThermometer);
-        this.getThermometerAndValue().remove(oldThermometer);
-        this.getThermometerAndValue().put(newThermometer, value);
-    }
-
-
-    /**
      * Method, usually called by Heater Controller.
      * to determine if the enabled Value should be set to true within the heater.
      *
