@@ -7,6 +7,7 @@ import io.openems.common.types.OpenemsType;
 import io.openems.edge.common.channel.BooleanWriteChannel;
 import io.openems.edge.common.channel.Doc;
 import io.openems.edge.common.channel.DoubleWriteChannel;
+import io.openems.edge.common.channel.EnumReadChannel;
 import io.openems.edge.common.channel.IntegerReadChannel;
 import io.openems.edge.common.channel.IntegerWriteChannel;
 import io.openems.edge.common.channel.StringReadChannel;
@@ -636,7 +637,7 @@ public interface Heater extends OpenemsComponent {
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getHeaterStateChannel() {
+    public default EnumReadChannel getHeaterStateChannel() {
         return this.channel(ChannelId.HEATER_STATE);
     }
 

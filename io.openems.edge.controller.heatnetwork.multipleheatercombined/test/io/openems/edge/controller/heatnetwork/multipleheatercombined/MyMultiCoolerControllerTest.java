@@ -12,6 +12,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.lang.reflect.InvocationTargetException;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
@@ -36,7 +37,7 @@ public class MyMultiCoolerControllerTest {
     private static final String[] wrongCoolerIds = {"Cooler0", "Thermometer0", "Cooler1"};
     private static final String[] activationTemperatures = {"400.154", "400", "Thermometer0/Temperature"};
     private static final String[] wrongActivationTemperatures = {"Cooler0/Temperature", "400", "400"};
-    private static final String[] deactivationTemperatures = {"650", "650", "650"};
+    private static final String[] deactivationTemperatures = {"100", "100", "100"};
     private static final String[] activationThermometer = {"Thermometer1", "Thermometer2", "Thermometer3"};
     private static final String[] wrongActivationThermometer = {"Cooler1"};
     private static final String[] deactivationThermometer = {"Thermometer4", "Thermometer5", "Thermometer6"};
@@ -82,7 +83,7 @@ public class MyMultiCoolerControllerTest {
     /**
      * The Configuration is correct and the Controller is running/Cooling as expected.
      */
-    /*
+
     @Test
     public void everythingsFineAndCooling() throws Exception {
             this.cpm.addComponent(this.dummyCoolerMap.get("Cooler2"));
@@ -103,28 +104,29 @@ public class MyMultiCoolerControllerTest {
                             .setTimeDelta(5)
                             .setTimerId("null")
                             .build())
-                    //Everythings heating
                     .next(new TestCase()
                             .timeleap(this.clock, 1, ChronoUnit.SECONDS)
                             .input(this.channelAddresses.get("Thermometer0"), 500)
-                            .input(this.channelAddresses.get("Thermometer1"), 400)
-                            .input(this.channelAddresses.get("Thermometer2"), 400)
-                            .input(this.channelAddresses.get("Thermometer3"), 400)
+                            .input(this.channelAddresses.get("Thermometer1"), 500)
+                            .input(this.channelAddresses.get("Thermometer2"), 500)
+                            .input(this.channelAddresses.get("Thermometer3"), 500)
                             .input(this.channelAddresses.get("Thermometer4"), 300)
                             .input(this.channelAddresses.get("Thermometer5"), 300)
                             .input(this.channelAddresses.get("Thermometer6"), 300)
                     )
+
                     .next(new TestCase()
                             .output(this.channelAddresses.get("Cooler0"), true)
                             .output(this.channelAddresses.get("Cooler1"), true)
-                            .output(this.channelAddresses.get("Cooler2"), null))
-                    //Should still Cool heater2
+                            .output(this.channelAddresses.get("Cooler2"), true))
+
+
+
                     .next(new TestCase()
                             .timeleap(this.clock, 1, ChronoUnit.SECONDS)
                             .input(this.channelAddresses.get("Thermometer0"), 200)
-                            .input(this.channelAddresses.get("Cooler2"), null)
                             .output(this.channelAddresses.get("Cooler2"), true))
-                    //Cooler 2 should deactivate
+
                     .next(new TestCase()
                             .timeleap(this.clock, 1, ChronoUnit.SECONDS)
                             .input(this.channelAddresses.get("Thermometer3"), 1000)
@@ -176,15 +178,15 @@ public class MyMultiCoolerControllerTest {
     /**
      * Check if the Controller responds correctly to wrong Configuration.
      */
-    /*
+
     @Test
-    public void hasErrorAfterWrongConfigurationForTooLong() {
-        try {
+    public void hasErrorAfterWrongConfigurationForTooLong() throws Exception {
+
             OpenemsComponent[] components = new OpenemsComponent[this.cpm.getAllComponents().size()];
             components = this.cpm.getAllComponents().toArray(components);
             new ControllerTest(new MultipleCoolerCombinedControllerImpl(), components)
                     .addReference("cpm", this.cpm)
-                    .activate(MyConfig.create()
+                    .activate(MyMultiCoolerConfig.create()
                             .setId(id)
                             .setCoolerIds(correctCoolerIds)
                             .setActivationTemperatures(activationTemperatures)
@@ -192,6 +194,9 @@ public class MyMultiCoolerControllerTest {
                             .setDeactivationTemperatures(deactivationTemperatures)
                             .setActivationThermometer(activationThermometer)
                             .setDeactivationThermometer(deactivationThermometer)
+                            .setUseTimer(false)
+                            .setTimeDelta(5)
+                            .setTimerId("null")
                             .setServicePid("ConfigurationWrongForTooLong")
                             .build())
                     .next(new TestCase())
@@ -207,15 +212,12 @@ public class MyMultiCoolerControllerTest {
                     .next(new TestCase()
                             .output(ChannelAddress.fromString(id + "/Error"), true)
                     ).getSut().run();
-        } catch (Exception e) {
-            Assert.fail();
-        }
     }
-*/
+
     /**
      * Check if the Controller reacts properly to the wrong Config.
      */
-    /*
+
     @Test
     public void testWrongCooler() {
         try {
@@ -224,7 +226,7 @@ public class MyMultiCoolerControllerTest {
             components =  this.cpm.getAllComponents().toArray(components);
             new ControllerTest(new MultipleCoolerCombinedControllerImpl(), components)
                     .addReference("cpm", this.cpm)
-                    .activate(MyConfig.create()
+                    .activate(MyMultiCoolerConfig.create()
                             .setId(id)
                             .setCoolerIds(wrongCoolerIds)
                             .setActivationTemperatures(activationTemperatures)
@@ -232,6 +234,9 @@ public class MyMultiCoolerControllerTest {
                             .setDeactivationTemperatures(deactivationTemperatures)
                             .setActivationThermometer(activationThermometer)
                             .setDeactivationThermometer(deactivationThermometer)
+                            .setUseTimer(false)
+                            .setTimeDelta(5)
+                            .setTimerId("null")
                             .setServicePid("wrongCoolerForTooLong")
                             .build())
                     .next(new TestCase())
@@ -251,11 +256,11 @@ public class MyMultiCoolerControllerTest {
             Assert.fail();
         }
     }
-*/
+
     /**
      * The Configuration contains a wrong Channel / ChannelAddress -> throws IllegalArgumentException
      */
-    /*
+
     @Test(expected = IllegalArgumentException.class)
     public void wrongTemperaturesAndNotExistingChannel() {
         try {
@@ -264,7 +269,7 @@ public class MyMultiCoolerControllerTest {
             components = this.cpm.getAllComponents().toArray(components);
             new ControllerTest(new MultipleCoolerCombinedControllerImpl(), components)
                     .addReference("cpm", this.cpm)
-                    .activate(MyConfig.create()
+                    .activate(MyMultiCoolerConfig.create()
                             .setId(id)
                             .setCoolerIds(correctCoolerIds)
                             .setActivationTemperatures(wrongActivationTemperatures)
@@ -272,6 +277,9 @@ public class MyMultiCoolerControllerTest {
                             .setDeactivationTemperatures(deactivationTemperatures)
                             .setActivationThermometer(activationThermometer)
                             .setDeactivationThermometer(deactivationThermometer)
+                            .setUseTimer(false)
+                            .setTimeDelta(5)
+                            .setTimerId("null")
                             .setServicePid("IllegalChannel")
                             .build())
                     .getSut().run();
@@ -285,14 +293,13 @@ public class MyMultiCoolerControllerTest {
             Assert.fail();
         }
     }
-*/
+
     /**
      * Check if the Controller reacts correctly, if an activation Thermometer is wrong.
      */
-    /*
+
     @Test
-    public void wrongThermometer() {
-        try {
+    public void wrongThermometer() throws Exception {
             this.cpm.addComponent(this.dummyCoolerMap.get("Cooler2"));
             OpenemsComponent[] components = new OpenemsComponent[this.cpm.getAllComponents().size()];
             components = this.cpm.getAllComponents().toArray(components);
@@ -324,16 +331,12 @@ public class MyMultiCoolerControllerTest {
                     .next(new TestCase()
                             .output(ChannelAddress.fromString(id + "/Error"), true)
                     ).getSut().run();
-        } catch (Exception e) {
-            Assert.fail();
-        }
-
     }
 
     /**
      * Checks if the Controller acts correctly if a Thermometer has no value.
      */
-    /*
+
     @Test
     public void ThermometerWithoutValue() {
         try {
