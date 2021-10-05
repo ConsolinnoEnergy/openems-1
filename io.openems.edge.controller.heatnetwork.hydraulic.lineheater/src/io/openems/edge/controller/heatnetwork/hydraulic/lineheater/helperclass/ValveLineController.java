@@ -2,22 +2,21 @@ package io.openems.edge.controller.heatnetwork.hydraulic.lineheater.helperclass;
 
 import io.openems.common.exceptions.OpenemsError;
 import io.openems.edge.heatsystem.components.HydraulicComponent;
-import org.joda.time.DateTime;
 
-public class ValveLineHeater extends AbstractLineHeater {
+public class ValveLineController extends AbstractLineController {
 
     private final HydraulicComponent valve;
     private Double max;
     private Double min;
 
 
-    public ValveLineHeater(boolean booleanControlled, HydraulicComponent valve, boolean useMinMax) {
+    public ValveLineController(boolean booleanControlled, HydraulicComponent valve, boolean useMinMax) {
         super(booleanControlled, useMinMax);
         this.valve = valve;
     }
 
     @Override
-    public boolean startHeating() throws OpenemsError.OpenemsNamedException {
+    public boolean startProcess() throws OpenemsError.OpenemsNamedException {
 
         if (this.isRunning == false || this.valve.powerLevelReached() == false) {
             if (super.useMinMax) {
@@ -40,12 +39,11 @@ public class ValveLineHeater extends AbstractLineHeater {
     }
 
     @Override
-    public boolean stopHeating(DateTime lifecycle) throws OpenemsError.OpenemsNamedException {
+    public boolean stopProcess() throws OpenemsError.OpenemsNamedException {
 
         if (this.isRunning || this.valve.powerLevelReached() == false) {
             this.isRunning = false;
             this.valve.setPointPowerLevelChannel().setNextWriteValueFromObject(0);
-            this.setLifeCycle(lifecycle);
             return true;
         }
         return false;

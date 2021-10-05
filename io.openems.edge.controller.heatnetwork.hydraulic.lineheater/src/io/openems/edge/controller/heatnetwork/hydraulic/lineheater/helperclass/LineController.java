@@ -7,37 +7,22 @@ import org.joda.time.DateTime;
  * A LineHeater. This is the Interface to help out the HydraulicLineHeaterController. Providing basic methods.
  * Such as starting and stopping the HeatingProgress.
  */
-public interface LineHeater {
+public interface LineController {
     /**
      * Starts the heating progress.
      *
      * @return true on success
      * @throws OpenemsError.OpenemsNamedException thrown if component or channelAddress cannot be found.
      */
-    boolean startHeating() throws OpenemsError.OpenemsNamedException;
+    boolean startProcess() throws OpenemsError.OpenemsNamedException;
 
     /**
      * Stops the heating progress.
      *
-     * @param lifecycle the lifecycle. Tells the controller, when it was the last time the lineHeater was active.
      * @return true on success
      * @throws OpenemsError.OpenemsNamedException thrown if component or channelAddress cannot be found.
      */
-    boolean stopHeating(DateTime lifecycle) throws OpenemsError.OpenemsNamedException;
-
-    /**
-     * Gets the last LifeCycle of the LineHeater.
-     *
-     * @return the LifeCycle.
-     */
-    DateTime getLifeCycle();
-
-    /**
-     * Sets the LifeCycle of the LineHeater.
-     *
-     * @param lifeCycle the current LifeCycle.
-     */
-    void setLifeCycle(DateTime lifeCycle);
+    boolean stopProcess() throws OpenemsError.OpenemsNamedException;
 
     /**
      * Sets the Maximum and Minimum Value for the LinHeater.

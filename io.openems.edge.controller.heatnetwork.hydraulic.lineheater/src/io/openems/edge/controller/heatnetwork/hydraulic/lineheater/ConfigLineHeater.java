@@ -2,13 +2,12 @@ package io.openems.edge.controller.heatnetwork.hydraulic.lineheater;
 
 import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
-import org.osgi.service.metatype.annotations.Option;
 
 @ObjectClassDefinition(
-        name = "Controller Consolinno Hydraulic Line Heater",
+        name = "Controller Hydraulic Line Heater",
         description = "This Controller heats ab a hydraulic line."
 )
-@interface Config {
+@interface ConfigLineHeater {
 
     String service_pid();
 
@@ -22,7 +21,7 @@ import org.osgi.service.metatype.annotations.Option;
     String tempSensorReference() default "TemperatureSensor0";
 
     @AttributeDefinition(name = "Default Temperature", description = "How long should we heat? OFF(in dC --> 1°C == 10°dC).")
-    int temperatureDefault() default 800;
+    String temperatureDefault() default "800";
 
     @AttributeDefinition(name = "Valve, MultiChannel, OneChannel", description = "Do you want to Access Channel, or multiple Channel directly or access Valve")
     LineHeaterType lineHeaterType() default LineHeaterType.ONE_CHANNEL;
@@ -41,14 +40,11 @@ import org.osgi.service.metatype.annotations.Option;
     @AttributeDefinition(name = "Reference Valve", description = "The Valve for the LineHeater.")
     String valveBypass() default "Valve0";
 
-    @AttributeDefinition(name = "TimerId FallbackUse", description = "Timer to check if Time is up for Fallback to use")
-    String timerIdFallback() default "TimerByTime";
+    @AttributeDefinition(name = "TimerId FallbackUse", description = "Timer for Fallback and CycleRestart as well as checking missing/old components.")
+    String timerId() default "TimerByTime";
 
     @AttributeDefinition(name = "Timeout of Remote signal", description = "Seconds after no signal that the fallback starts")
     int timeoutMaxRemote() default 30;
-
-    @AttributeDefinition(name = "TimerId Restart Cycle", description = "Timer Id for a RestartCycle")
-    String timerIdRestartCycle() default "TimerByCycles";
 
     @AttributeDefinition(name = "Restart cycle after time", description = "if the sensor gets cold again and a new cycle should be started")
     int timeoutRestartCycle() default 600;
@@ -73,13 +69,14 @@ import org.osgi.service.metatype.annotations.Option;
     @AttributeDefinition(name = "Only regulate Max Min", description = "The LineHeater  will ONLY set the Max and Min% values for the Valve.")
     boolean maxMinOnly() default false;
 
-    boolean useDecentralHeater() default false;
+    boolean useDecentralizedHeater() default false;
 
-    @AttributeDefinition(name = "optional Decentralheater", description = "If a Decentralheater directly needs a communication")
-    String decentralheaterReference() default "Decentralheater0";
+    @AttributeDefinition(name = "optional DecentralizedHeater", description = "If a DecentralizedHeater directly needs a communication")
+    String decentralizedHeaterReference() default "DecentralizedHeater";
 
-    @AttributeDefinition(name = "ReactionType", description = "Should the LineHeater open, when the DecentralHeater sends a Heat request or MORE Heat request")
-    DecentralizedReactionType reactionType() default DecentralizedReactionType.NEED_HEAT;
+    @AttributeDefinition(name = "ReactionType", description = "Should the LineHeater open, when the DecentralizedHeater "
+            + "sends a Heat request or MORE Heat request")
+    DecentralizedHeaterReactionType reactionType() default DecentralizedHeaterReactionType.NEED_HEAT;
 
     boolean enabled() default true;
 

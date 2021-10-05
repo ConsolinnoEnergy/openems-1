@@ -23,7 +23,7 @@ import io.openems.edge.controller.heatnetwork.communication.responsewrapper.Chan
 import io.openems.edge.controller.heatnetwork.communication.responsewrapper.MethodResponse;
 import io.openems.edge.controller.heatnetwork.communication.responsewrapper.MethodResponseImpl;
 import io.openems.edge.controller.heatnetwork.communication.responsewrapper.ResponseWrapper;
-import io.openems.edge.controller.heatnetwork.hydraulic.lineheater.api.HydraulicLineHeater;
+import io.openems.edge.controller.heatnetwork.hydraulic.lineheater.api.HydraulicLineController;
 import io.openems.edge.exceptionalstate.api.ExceptionalState;
 import io.openems.edge.exceptionalstate.api.ExceptionalStateHandler;
 import io.openems.edge.exceptionalstate.api.ExceptionalStateHandlerImpl;
@@ -84,7 +84,7 @@ public class CommunicationMasterControllerImpl extends AbstractOpenemsComponent 
     //Configured communicationController handling one remoteCommunication
     CommunicationController communicationController;
     //The Optional HydraulicLineHeater
-    private HydraulicLineHeater hydraulicLineHeater;
+    private HydraulicLineController hydraulicLineController;
     //The Optional HeatPump
     private HydraulicComponent heatPump;
     //For Subclasses -> CommunicationController and manager
@@ -185,8 +185,8 @@ public class CommunicationMasterControllerImpl extends AbstractOpenemsComponent 
             }
             if (config.useHydraulicLineHeater()) {
                 optionalComponent = this.cpm.getComponent(config.hydraulicLineHeaterId());
-                if (optionalComponent instanceof HydraulicLineHeater) {
-                    this.hydraulicLineHeater = (HydraulicLineHeater) optionalComponent;
+                if (optionalComponent instanceof HydraulicLineController) {
+                    this.hydraulicLineController = (HydraulicLineController) optionalComponent;
                 } else {
                     throw new ConfigurationException("CommunicationMaster - Activate - HydraulicLineHeater",
                             "HydraulicLineHeaterId Component - Not an Instance of HydraulicLineHeater : " + config.hydraulicLineHeaterId());
@@ -511,12 +511,12 @@ public class CommunicationMasterControllerImpl extends AbstractOpenemsComponent 
                 }
                 break;
             case ACTIVATE_LINE_HEATER:
-                if (this.hydraulicLineHeater != null) {
+                if (this.hydraulicLineController != null) {
                     Boolean lineHeaterActivation = null;
                     if (value != null || value.equals("null") == false) {
                         lineHeaterActivation = Boolean.valueOf(value);
                     }
-                    this.hydraulicLineHeater.enableSignalChannel().setNextWriteValueFromObject(lineHeaterActivation);
+                    this.hydraulicLineController.enableSignalChannel().setNextWriteValueFromObject(lineHeaterActivation);
                 } else {
                     this.log.warn("Wanted to set HydraulicLineHeater to : " + value + " But it is not instantiated! " + super.id());
                 }
@@ -529,7 +529,7 @@ public class CommunicationMasterControllerImpl extends AbstractOpenemsComponent 
      */
     private void clearReferences() {
         this.communicationController = null;
-        this.hydraulicLineHeater = null;
+        this.hydraulicLineController = null;
         this.heatPump = null;
         this.requestTypeAndResponses.clear();
         this.requestTypeIsSet.clear();
@@ -541,9 +541,9 @@ public class CommunicationMasterControllerImpl extends AbstractOpenemsComponent 
     private void checkChangesAndApply() {
         //Check if Components are still enabled
         try {
-            if (this.hydraulicLineHeater != null && this.hydraulicLineHeater.isEnabled() == false) {
-                if (this.cpm.getComponent(this.hydraulicLineHeater.id()) instanceof HydraulicLineHeater) {
-                    this.hydraulicLineHeater = this.cpm.getComponent(this.hydraulicLineHeater.id());
+            if (this.hydraulicLineController != null && this.hydraulicLineController.isEnabled() == false) {
+                if (this.cpm.getComponent(this.hydraulicLineController.id()) instanceof HydraulicLineController) {
+                    this.hydraulicLineController = this.cpm.getComponent(this.hydraulicLineController.id());
                 }
             }
             if (this.heatPump != null && this.heatPump.isEnabled() == false) {

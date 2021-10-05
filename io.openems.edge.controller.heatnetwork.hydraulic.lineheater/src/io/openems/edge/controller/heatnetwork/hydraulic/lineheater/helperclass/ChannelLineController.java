@@ -2,13 +2,11 @@ package io.openems.edge.controller.heatnetwork.hydraulic.lineheater.helperclass;
 
 import io.openems.common.exceptions.OpenemsError;
 import io.openems.common.types.ChannelAddress;
-import io.openems.common.types.OpenemsType;
 import io.openems.edge.common.channel.Channel;
 import io.openems.edge.common.channel.WriteChannel;
 import io.openems.edge.common.component.ComponentManager;
-import org.joda.time.DateTime;
 
-public class ChannelLineHeater extends AbstractLineHeater {
+public class ChannelLineController extends AbstractLineController {
 
     private final ChannelAddress writeAddress;
     private final ChannelAddress readAddress;
@@ -18,8 +16,8 @@ public class ChannelLineHeater extends AbstractLineHeater {
     private Double max;
     private Double min;
 
-    public ChannelLineHeater(boolean booleanControlled, ChannelAddress readAddress, ChannelAddress writeAddress,
-                             ChannelAddress maxAddress, ChannelAddress minAddress, ComponentManager cpm, boolean useMinMax) {
+    public ChannelLineController(boolean booleanControlled, ChannelAddress readAddress, ChannelAddress writeAddress,
+                                 ChannelAddress maxAddress, ChannelAddress minAddress, ComponentManager cpm, boolean useMinMax) {
         super(booleanControlled, useMinMax);
         this.writeAddress = writeAddress;
         this.readAddress = readAddress;
@@ -30,7 +28,7 @@ public class ChannelLineHeater extends AbstractLineHeater {
     }
 
     @Override
-    public boolean startHeating() throws OpenemsError.OpenemsNamedException {
+    public boolean startProcess() throws OpenemsError.OpenemsNamedException {
         double currentPowerDouble = getLastPower();
         if (this.isRunning == false || currentPowerDouble < previouslyCheckedPowerLevel) {
             if (this.writeToChannel(this.isBooleanControlled() ? 1 : FULL_POWER)) {
@@ -79,13 +77,12 @@ public class ChannelLineHeater extends AbstractLineHeater {
     }
 
     @Override
-    public boolean stopHeating(DateTime lifecycle) throws OpenemsError.OpenemsNamedException {
+    public boolean stopProcess() throws OpenemsError.OpenemsNamedException {
 
         double lastPower;
         lastPower = (double) this.readFromChannel();
         if (this.isRunning || lastPower > previouslyCheckedPowerLevel) {
             this.writeToChannel(this.isBooleanControlled() ? -1 : 0);
-            this.setLifeCycle(lifecycle);
             this.isRunning = false;
             this.previouslyCheckedPowerLevel = lastPower;
             return true;

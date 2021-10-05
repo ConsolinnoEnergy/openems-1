@@ -5,14 +5,13 @@ import io.openems.common.types.ChannelAddress;
 import io.openems.edge.common.channel.Channel;
 import io.openems.edge.common.channel.WriteChannel;
 import io.openems.edge.common.component.ComponentManager;
-import org.joda.time.DateTime;
 
-public class OneChannelLineHeater extends AbstractLineHeater {
+public class OneChannelLineController extends AbstractLineController {
     ComponentManager cpm;
     ChannelAddress writeAddress;
 
 
-    public OneChannelLineHeater(boolean booleanControlled, ChannelAddress writeAddress, ComponentManager cpm) {
+    public OneChannelLineController(boolean booleanControlled, ChannelAddress writeAddress, ComponentManager cpm) {
         super(booleanControlled, false);
         this.writeAddress = writeAddress;
         this.cpm = cpm;
@@ -20,7 +19,7 @@ public class OneChannelLineHeater extends AbstractLineHeater {
 
 
     @Override
-    public boolean startHeating() throws OpenemsError.OpenemsNamedException {
+    public boolean startProcess() throws OpenemsError.OpenemsNamedException {
         int value = FULL_POWER;
         if (this.isBooleanControlled()) {
             value = 1;
@@ -41,7 +40,7 @@ public class OneChannelLineHeater extends AbstractLineHeater {
     }
 
     @Override
-    public boolean stopHeating(DateTime lifecycle) throws OpenemsError.OpenemsNamedException {
+    public boolean stopProcess() throws OpenemsError.OpenemsNamedException {
         int value = 0;
         if (this.isBooleanControlled()) {
             value = -1;
@@ -49,7 +48,6 @@ public class OneChannelLineHeater extends AbstractLineHeater {
         boolean applied = this.writeToChannel(value);
         if (applied) {
             this.isRunning = false;
-            this.setLifeCycle(lifecycle);
         }
         return applied;
     }

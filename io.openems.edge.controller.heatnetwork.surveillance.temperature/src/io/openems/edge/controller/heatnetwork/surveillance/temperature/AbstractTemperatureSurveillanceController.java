@@ -93,15 +93,15 @@ abstract class AbstractTemperatureSurveillanceController extends AbstractOpenems
      * Otherwise check if the Configuration might succeed. If not -> Wait until the run method is called.
      * Some Components might be enabled later.
      *
-     * @param thermometerActivateId
-     * @param thermometerDeactivateId
-     * @param referenceThermometerId
-     * @param activationOffset
-     * @param deactivationOffset
-     * @param heaterId
-     * @param hydraulicControllerId
-     * @param timerId
-     * @param deltaTime
+     * @param thermometerActivateId thermometerActivateId the activation Thermometer id.
+     * @param thermometerDeactivateId thermometerDeactivateId the deactivation Thermometer id.
+     * @param referenceThermometerId referenceThermometerId the reference Thermometer id.
+     * @param activationOffset activationOffset offset for Activation e.g. if reference is 750dC but you want to activate on 800 -> offset would be 50
+     * @param deactivationOffset deactivationOffset offset for deactivation e.g. if reference is 750 but you want to deactivate at 650 -> offset would be -100
+     * @param heaterId heaterOrCoolerId the heater or cooler id depending on the {@link SurveillanceHeatingType}
+     * @param hydraulicControllerId hydraulicControllerId the hydraulicController id.
+     * @param timerId timerId the timer to stop the time.
+     * @param deltaTime the delta Time -> wait cycles or Time.
      * @throws ConfigurationException if the Thermometer id's are duplicated.
      */
     protected void activationOrModifiedRoutine(String thermometerActivateId, String thermometerDeactivateId,

@@ -12,7 +12,7 @@ import io.openems.edge.common.component.OpenemsComponent;
  * Nature for a HydraulicLineHeater.
  * Other Components or Controller can set up an EnableSignal, the MinValue and the MaxValue.
  */
-public interface HydraulicLineHeater extends OpenemsComponent {
+public interface HydraulicLineController extends OpenemsComponent {
 
     enum ChannelId implements io.openems.edge.common.channel.ChannelId {
 
@@ -36,18 +36,6 @@ public interface HydraulicLineHeater extends OpenemsComponent {
          * </ul>
          */
         IS_FALLBACK(Doc.of(OpenemsType.BOOLEAN)),
-
-        /**
-         * Signal if LineHeater started with Heating.
-         *
-         * <ul>
-         * <li>Interface: HydraulicLineHeaterApi
-         * <li>Type: Boolean
-         * <li> Unit: none
-         * </ul>
-         */
-
-        IS_RUNNING(Doc.of(OpenemsType.BOOLEAN)),
 
         /**
          * Maximum value in % the Valve is allowed to be open.
@@ -86,15 +74,6 @@ public interface HydraulicLineHeater extends OpenemsComponent {
         public Doc doc() {
             return this.doc;
         }
-    }
-
-    /**
-     * Return the {@link ChannelId#IS_RUNNING} channel.
-     *
-     * @return the channel.
-     */
-    default Channel<Boolean> isRunningChannel() {
-        return this.channel(ChannelId.IS_RUNNING);
     }
 
     /**

@@ -5,7 +5,7 @@ import io.openems.edge.common.component.AbstractOpenemsComponent;
 import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.controller.api.Controller;
-import io.openems.edge.controller.heatnetwork.hydraulic.lineheater.api.HydraulicLineHeater;
+import io.openems.edge.controller.heatnetwork.hydraulic.lineheater.api.HydraulicLineController;
 import io.openems.edge.heater.decentral.api.DecentralizedHeater;
 import org.joda.time.DateTime;
 import org.osgi.service.cm.ConfigurationException;
@@ -47,7 +47,7 @@ public class SimulationCommunicationMasterImpl extends AbstractOpenemsComponent 
     private boolean useHeater;
     private boolean useHydraulicLineHeater;
     private final List<DecentralizedHeater> decentralHeaterList = new ArrayList<>();
-    private HydraulicLineHeater hydraulicLineHeater;
+    private HydraulicLineController hydraulicLineController;
 
     public SimulationCommunicationMasterImpl() {
         super(OpenemsComponent.ChannelId.values(),
@@ -80,8 +80,8 @@ public class SimulationCommunicationMasterImpl extends AbstractOpenemsComponent 
         }
         if (config.useHydraulicLineHeater()) {
             OpenemsComponent lineHeater = cpm.getComponent(config.hydraulicLineHeaterId());
-            if (lineHeater instanceof HydraulicLineHeater) {
-                this.hydraulicLineHeater = (HydraulicLineHeater) lineHeater;
+            if (lineHeater instanceof HydraulicLineController) {
+                this.hydraulicLineController = (HydraulicLineController) lineHeater;
             } else {
                 throw new ConfigurationException("ActivateMethod SimulationCommunicationMaster", "HydraulicLineHeaterId not correct" + lineHeater.id());
             }
@@ -140,7 +140,7 @@ public class SimulationCommunicationMasterImpl extends AbstractOpenemsComponent 
         }
         if (this.useHydraulicLineHeater) {
             boolean enableSignal = atLeastOneRequest.get() && random.nextInt(100) < 90;
-            this.hydraulicLineHeater.enableSignalChannel().setNextWriteValue(enableSignal);
+            this.hydraulicLineController.enableSignalChannel().setNextWriteValue(enableSignal);
         }
     }
 
@@ -160,9 +160,9 @@ public class SimulationCommunicationMasterImpl extends AbstractOpenemsComponent 
     }
 
     private void checkMissingComponent() {
-        if (this.hydraulicLineHeater != null && this.hydraulicLineHeater.isEnabled() == false) {
+        if (this.hydraulicLineController != null && this.hydraulicLineController.isEnabled() == false) {
             try {
-                this.hydraulicLineHeater = cpm.getComponent(this.hydraulicLineHeater.id());
+                this.hydraulicLineController = cpm.getComponent(this.hydraulicLineController.id());
             } catch (OpenemsError.OpenemsNamedException e) {
                 e.printStackTrace();
             }
