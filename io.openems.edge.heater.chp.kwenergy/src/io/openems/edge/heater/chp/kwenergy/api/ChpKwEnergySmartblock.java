@@ -7,6 +7,7 @@ import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
 import io.openems.common.types.OpenemsType;
 import io.openems.edge.common.channel.BooleanReadChannel;
 import io.openems.edge.common.channel.Doc;
+import io.openems.edge.common.channel.DoubleWriteChannel;
 import io.openems.edge.common.channel.EnumWriteChannel;
 import io.openems.edge.common.channel.IntegerReadChannel;
 import io.openems.edge.common.channel.IntegerWriteChannel;
@@ -144,7 +145,7 @@ public interface ChpKwEnergySmartblock extends Chp {
         HR74_MAINTENANCE_INTERVAL3(Doc.of(OpenemsType.INTEGER).unit(Unit.HOUR).accessMode(AccessMode.READ_ONLY)),
 
         /**
-         * Produced heat energy of the CHP (Wärmemenge). Double word value (HR75 high, HR76 low).
+         * Produced heat energy of the CHP (Waermemenge). Double word value (HR75 high, HR76 low).
          * <ul>
          *      <li> Type: Integer
          *      <li> Unit: Kilowatt
@@ -195,11 +196,11 @@ public interface ChpKwEnergySmartblock extends Chp {
         /**
          * Grid power draw (Netzbezugswert). Watch the conversion, the value in the device is kW*10!
          * <ul>
-         *      <li> Type: Integer
+         *      <li> Type: Double
          *      <li> Unit: Kilowatt
          * </ul>
          */
-        HR112_NETZBEZUGSWERT(Doc.of(OpenemsType.INTEGER).unit(Unit.KILOWATT).accessMode(AccessMode.READ_WRITE)),
+        HR112_GRID_POWER_DRAW(Doc.of(OpenemsType.DOUBLE).unit(Unit.KILOWATT).accessMode(AccessMode.READ_WRITE)),
 
         /**
          * Handshake counter in.
@@ -235,6 +236,8 @@ public interface ChpKwEnergySmartblock extends Chp {
                 channel -> ((EnumWriteChannel) channel).onSetNextWrite(channel::setNextValue)
         )),
 
+        // Channels for telemetry
+
         /**
          * Error status of CHP. False = no error.
          * <ul>
@@ -254,7 +257,7 @@ public interface ChpKwEnergySmartblock extends Chp {
 
         /**
          * Engine status of CHP. False = off.
-         * Mapped to HR16, bit 7 ("Motor läuft").
+         * Mapped to HR16, bit 7 ("Motor laeuft").
          * <ul>
          *      <li> Type: Boolean
          * </ul>
@@ -264,7 +267,7 @@ public interface ChpKwEnergySmartblock extends Chp {
 
         private final Doc doc;
 
-        private ChannelId(Doc doc) {
+        ChannelId(Doc doc) {
             this.doc = doc;
         }
 
@@ -280,7 +283,7 @@ public interface ChpKwEnergySmartblock extends Chp {
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getErrorBits1to16Channel() {
+    default IntegerReadChannel getErrorBits1to16Channel() {
         return this.channel(ChannelId.HR0_ERROR_BITS_1_to_16);
     }
 
@@ -289,14 +292,16 @@ public interface ChpKwEnergySmartblock extends Chp {
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getErrorBits1to16() { return this.getErrorBits1to16Channel().value(); }
+    default Value<Integer> getErrorBits1to16() {
+        return this.getErrorBits1to16Channel().value();
+    }
 
     /**
      * Gets the Channel for {@link ChannelId#HR16_STATUS_BITS_1_to_16}.
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getStatusBits1to16Channel() {
+    default IntegerReadChannel getStatusBits1to16Channel() {
         return this.channel(ChannelId.HR16_STATUS_BITS_1_to_16);
     }
 
@@ -305,14 +310,16 @@ public interface ChpKwEnergySmartblock extends Chp {
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getStatusBits1to16() { return this.getStatusBits1to16Channel().value(); }
+    default Value<Integer> getStatusBits1to16() {
+        return this.getStatusBits1to16Channel().value();
+    }
 
     /**
      * Gets the Channel for {@link ChannelId#HR20_STATUS_BITS_65_to_80}.
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getStatusBits65to80Channel() {
+    default IntegerReadChannel getStatusBits65to80Channel() {
         return this.channel(ChannelId.HR20_STATUS_BITS_65_to_80);
     }
 
@@ -321,14 +328,16 @@ public interface ChpKwEnergySmartblock extends Chp {
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getStatusBits65to80() { return this.getStatusBits65to80Channel().value(); }
+    default Value<Integer> getStatusBits65to80() {
+        return this.getStatusBits65to80Channel().value();
+    }
 
     /**
      * Gets the Channel for {@link ChannelId#HR24_ENGINE_TEMPERATURE}.
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getEngineTemperatureChannel() {
+    default IntegerReadChannel getEngineTemperatureChannel() {
         return this.channel(ChannelId.HR24_ENGINE_TEMPERATURE);
     }
 
@@ -337,14 +346,16 @@ public interface ChpKwEnergySmartblock extends Chp {
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getEngineTemperature() { return this.getEngineTemperatureChannel().value(); }
+    default Value<Integer> getEngineTemperature() {
+        return this.getEngineTemperatureChannel().value();
+    }
 
     /**
      * Gets the Channel for {@link ChannelId#HR31_ENGINE_RPM}.
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getEngineRpmChannel() {
+    default IntegerReadChannel getEngineRpmChannel() {
         return this.channel(ChannelId.HR31_ENGINE_RPM);
     }
 
@@ -353,14 +364,16 @@ public interface ChpKwEnergySmartblock extends Chp {
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getEngineRpm() { return this.getEngineRpmChannel().value(); }
+    default Value<Integer> getEngineRpm() {
+        return this.getEngineRpmChannel().value();
+    }
 
     /**
      * Gets the Channel for {@link ChannelId#HR34_EFFECTIVE_ELECTRIC_POWER}.
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getModbusEffectiveElectricPowerChannel() {
+    default IntegerReadChannel getModbusEffectiveElectricPowerChannel() {
         return this.channel(ChannelId.HR34_EFFECTIVE_ELECTRIC_POWER);
     }
 
@@ -369,14 +382,16 @@ public interface ChpKwEnergySmartblock extends Chp {
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getModbusEffectiveElectricPower() { return this.getModbusEffectiveElectricPowerChannel().value(); }
+    default Value<Integer> getModbusEffectiveElectricPower() {
+        return this.getModbusEffectiveElectricPowerChannel().value();
+    }
 
     /**
      * Gets the Channel for {@link ChannelId#HR48_CHP_MODEL}.
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getChpModelChannel() {
+    default IntegerReadChannel getChpModelChannel() {
         return this.channel(ChannelId.HR48_CHP_MODEL);
     }
 
@@ -385,14 +400,16 @@ public interface ChpKwEnergySmartblock extends Chp {
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getChpModel() { return this.getChpModelChannel().value(); }
+    default Value<Integer> getChpModel() {
+        return this.getChpModelChannel().value();
+    }
 
     /**
      * Gets the Channel for {@link ChannelId#HR62_OPERATING_HOURS}.
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getOperatingHoursChannel() {
+    default IntegerReadChannel getOperatingHoursChannel() {
         return this.channel(ChannelId.HR62_OPERATING_HOURS);
     }
 
@@ -401,14 +418,16 @@ public interface ChpKwEnergySmartblock extends Chp {
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getOperatingHours() { return this.getOperatingHoursChannel().value(); }
+    default Value<Integer> getOperatingHours() {
+        return this.getOperatingHoursChannel().value();
+    }
 
     /**
      * Gets the Channel for {@link ChannelId#HR64_ENGINE_START_COUNTER}.
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getEngineStartCounterChannel() {
+    default IntegerReadChannel getEngineStartCounterChannel() {
         return this.channel(ChannelId.HR64_ENGINE_START_COUNTER);
     }
 
@@ -417,14 +436,16 @@ public interface ChpKwEnergySmartblock extends Chp {
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getEngineStartCounter() { return this.getEngineStartCounterChannel().value(); }
+    default Value<Integer> getEngineStartCounter() {
+        return this.getEngineStartCounterChannel().value();
+    }
 
     /**
      * Gets the Channel for {@link ChannelId#HR70_ACTIVE_ENERGY}.
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getActiveEnergyChannel() {
+    default IntegerReadChannel getActiveEnergyChannel() {
         return this.channel(ChannelId.HR70_ACTIVE_ENERGY);
     }
 
@@ -433,14 +454,16 @@ public interface ChpKwEnergySmartblock extends Chp {
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getActiveEnergy() { return this.getActiveEnergyChannel().value(); }
+    default Value<Integer> getActiveEnergy() {
+        return this.getActiveEnergyChannel().value();
+    }
 
     /**
      * Gets the Channel for {@link ChannelId#HR72_MAINTENANCE_INTERVAL1}.
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getMaintenanceInterval1Channel() {
+    default IntegerReadChannel getMaintenanceInterval1Channel() {
         return this.channel(ChannelId.HR72_MAINTENANCE_INTERVAL1);
     }
 
@@ -449,14 +472,16 @@ public interface ChpKwEnergySmartblock extends Chp {
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getMaintenanceInterval1() { return this.getMaintenanceInterval1Channel().value(); }
+    default Value<Integer> getMaintenanceInterval1() {
+        return this.getMaintenanceInterval1Channel().value();
+    }
 
     /**
      * Gets the Channel for {@link ChannelId#HR73_MAINTENANCE_INTERVAL2}.
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getMaintenanceInterval2Channel() {
+    default IntegerReadChannel getMaintenanceInterval2Channel() {
         return this.channel(ChannelId.HR73_MAINTENANCE_INTERVAL2);
     }
 
@@ -465,14 +490,16 @@ public interface ChpKwEnergySmartblock extends Chp {
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getMaintenanceInterval2() { return this.getMaintenanceInterval2Channel().value(); }
+    default Value<Integer> getMaintenanceInterval2() {
+        return this.getMaintenanceInterval2Channel().value();
+    }
 
     /**
      * Gets the Channel for {@link ChannelId#HR74_MAINTENANCE_INTERVAL3}.
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getMaintenanceInterval3Channel() {
+    default IntegerReadChannel getMaintenanceInterval3Channel() {
         return this.channel(ChannelId.HR74_MAINTENANCE_INTERVAL3);
     }
 
@@ -481,30 +508,34 @@ public interface ChpKwEnergySmartblock extends Chp {
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getMaintenanceInterval3() { return this.getMaintenanceInterval3Channel().value(); }
+    default Value<Integer> getMaintenanceInterval3() {
+        return this.getMaintenanceInterval3Channel().value();
+    }
 
     /**
      * Gets the Channel for {@link ChannelId#HR75_PRODUCED_HEAT}.
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getProducedHeatChannel() {
+    default IntegerReadChannel getProducedHeatChannel() {
         return this.channel(ChannelId.HR75_PRODUCED_HEAT);
     }
 
     /**
-     * Gets the produced heat energy of the CHP (Wärmemenge). Unit is kilowatt.
+     * Gets the produced heat energy of the CHP (Waermemenge). Unit is kilowatt.
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getProducedHeat() { return this.getProducedHeatChannel().value(); }
+    default Value<Integer> getProducedHeat() {
+        return this.getProducedHeatChannel().value();
+    }
 
     /**
      * Gets the Channel for {@link ChannelId#HR81_OPERATING_MODE}.
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getOperatingModeChannel() {
+    default IntegerReadChannel getOperatingModeChannel() {
         return this.channel(ChannelId.HR81_OPERATING_MODE);
     }
 
@@ -513,14 +544,16 @@ public interface ChpKwEnergySmartblock extends Chp {
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getOperatingMode() { return this.getOperatingModeChannel().value(); }
+    default Value<Integer> getOperatingMode() {
+        return this.getOperatingModeChannel().value();
+    }
 
     /**
      * Gets the Channel for {@link ChannelId#HR82_POWER_SETPOINT}.
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getPowerSetpointChannel() {
+    default IntegerReadChannel getPowerSetpointChannel() {
         return this.channel(ChannelId.HR82_POWER_SETPOINT);
     }
 
@@ -529,14 +562,16 @@ public interface ChpKwEnergySmartblock extends Chp {
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getPowerSetpoint() { return this.getPowerSetpointChannel().value(); }
+    default Value<Integer> getPowerSetpoint() {
+        return this.getPowerSetpointChannel().value();
+    }
 
     /**
      * Gets the Channel for {@link ChannelId#HR108_HANDSHAKE_OUT}.
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getHandshakeOutChannel() {
+    default IntegerReadChannel getHandshakeOutChannel() {
         return this.channel(ChannelId.HR108_HANDSHAKE_OUT);
     }
 
@@ -545,66 +580,89 @@ public interface ChpKwEnergySmartblock extends Chp {
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getHandshakeOut() { return this.getHandshakeOutChannel().value(); }
+    default Value<Integer> getHandshakeOut() {
+        return this.getHandshakeOutChannel().value();
+    }
 
     /**
      * Gets the Channel for {@link ChannelId#HR109_COMMAND_BITS_1_to_16}.
      *
      * @return the Channel
      */
-    public default IntegerWriteChannel getCommandBits1to16Channel() {
+    default IntegerWriteChannel getCommandBits1to16Channel() {
         return this.channel(ChannelId.HR109_COMMAND_BITS_1_to_16);
     }
 
+//    Makes no sense to read the command bits.
+//    /**
+//     * Gets the command bits 1 - 16.
+//     *
+//     * @return the Channel {@link Value}
+//     */
+//    default Value<Integer> getCommandBits1to16() {
+//        return this.getCommandBits1to16Channel().value();
+//    }
+
     /**
-     * Gets the command bits 1 - 16.
+     * Sets the command bits 1 - 16.
+     * See {@link ChannelId#HR109_COMMAND_BITS_1_to_16}.
      *
-     * @return the Channel {@link Value}
+     * @param value the next write value
+     * @throws OpenemsNamedException on error
      */
-    public default Value<Integer> getCommandBits1to16() { return this.getCommandBits1to16Channel().value(); }
-
-    /**
-     * Sets the command bits 1 - 16.
-     */
-    public default void setCommandBits1to16(Integer value) throws OpenemsError.OpenemsNamedException {
+    default void setCommandBits1to16(Integer value) throws OpenemsError.OpenemsNamedException {
         this.getCommandBits1to16Channel().setNextWriteValue(value);
     }
 
     /**
      * Sets the command bits 1 - 16.
+     * See {@link ChannelId#HR109_COMMAND_BITS_1_to_16}.
+     *
+     * @param value the next write value
+     * @throws OpenemsNamedException on error
      */
-    public default void setCommandBits1to16(int value) throws OpenemsError.OpenemsNamedException {
+    default void setCommandBits1to16(int value) throws OpenemsError.OpenemsNamedException {
         this.getCommandBits1to16Channel().setNextWriteValue(value);
     }
 
     /**
-     * Gets the Channel for {@link ChannelId#HR112_NETZBEZUGSWERT}.
+     * Gets the Channel for {@link ChannelId#HR112_GRID_POWER_DRAW}.
      *
      * @return the Channel
      */
-    public default IntegerWriteChannel getSetPointElectricPowerChannel() {
-        return this.channel(ChannelId.HR112_NETZBEZUGSWERT);
+    default DoubleWriteChannel getGridPowerDrawSetpointChannel() {
+        return this.channel(ChannelId.HR112_GRID_POWER_DRAW);
     }
 
     /**
-     * Gets the electric power set point.
+     * Gets the grid power draw set point.
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getSetPointElectricPower() { return this.getSetPointElectricPowerChannel().value(); }
-
-    /**
-     * Sets electric power set point.
-     */
-    public default void setSetPointElectricPower(Integer value) throws OpenemsError.OpenemsNamedException {
-        this.getSetPointElectricPowerChannel().setNextWriteValue(value);
+    default Value<Double> getGridPowerDrawSetpoint() {
+        return this.getGridPowerDrawSetpointChannel().value();
     }
 
     /**
-     * Sets electric power set point.
+     * Sets grid power draw set point.
+     * See {@link ChannelId#HR112_GRID_POWER_DRAW}.
+     *
+     * @param value the next write value
+     * @throws OpenemsNamedException on error
      */
-    public default void setSetPointElectricPower(int value) throws OpenemsError.OpenemsNamedException {
-        this.getSetPointElectricPowerChannel().setNextWriteValue(value);
+    default void setGridPowerDrawSetpoint(Double value) throws OpenemsError.OpenemsNamedException {
+        this.getGridPowerDrawSetpointChannel().setNextWriteValue(value);
+    }
+
+    /**
+     * Sets grid power draw set point.
+     * See {@link ChannelId#HR112_GRID_POWER_DRAW}.
+     *
+     * @param value the next write value
+     * @throws OpenemsNamedException on error
+     */
+    default void setGridPowerDrawSetpoint(double value) throws OpenemsError.OpenemsNamedException {
+        this.getGridPowerDrawSetpointChannel().setNextWriteValue(value);
     }
 
     /**
@@ -612,7 +670,7 @@ public interface ChpKwEnergySmartblock extends Chp {
      *
      * @return the Channel
      */
-    public default IntegerWriteChannel getHandshakeInChannel() {
+    default IntegerWriteChannel getHandshakeInChannel() {
         return this.channel(ChannelId.HR119_HANDSHAKE_IN);
     }
 
@@ -621,19 +679,29 @@ public interface ChpKwEnergySmartblock extends Chp {
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getHandshakeIn() { return this.getHandshakeInChannel().value(); }
+    default Value<Integer> getHandshakeIn() {
+        return this.getHandshakeInChannel().value();
+    }
 
     /**
      * Sets the handshake counter going to the device.
+     * See {@link ChannelId#HR119_HANDSHAKE_IN}.
+     *
+     * @param value the next write value
+     * @throws OpenemsNamedException on error
      */
-    public default void setHandshakeIn(Integer value) throws OpenemsError.OpenemsNamedException {
+    default void setHandshakeIn(Integer value) throws OpenemsError.OpenemsNamedException {
         this.getHandshakeInChannel().setNextWriteValue(value);
     }
 
     /**
      * Sets the handshake counter going to the device.
+     * See {@link ChannelId#HR119_HANDSHAKE_IN}.
+     *
+     * @param value the next write value
+     * @throws OpenemsNamedException on error
      */
-    public default void setHandshakeIn(int value) throws OpenemsError.OpenemsNamedException {
+    default void setHandshakeIn(int value) throws OpenemsError.OpenemsNamedException {
         this.getHandshakeInChannel().setNextWriteValue(value);
     }
 
@@ -642,7 +710,7 @@ public interface ChpKwEnergySmartblock extends Chp {
      *
      * @return the Channel
      */
-    public default StringReadChannel getStatusMessageChannel() {
+    default StringReadChannel getStatusMessageChannel() {
         return this.channel(ChannelId.STATUS_MESSAGE);
     }
 
@@ -651,19 +719,25 @@ public interface ChpKwEnergySmartblock extends Chp {
      *
      * @return the Channel {@link Value}
      */
-    public default Value<String> getStatusMessage() { return this.getStatusMessageChannel().value(); }
+    default Value<String> getStatusMessage() {
+        return this.getStatusMessageChannel().value();
+    }
 
     /**
-     * Internal method.
+     * Internal method to set the 'nextValue' on {@link ChannelId#STATUS_MESSAGE} Channel.
+     *
+     * @param value the next value
      */
-    public default void _setStatusMessage(String value) { this.getStatusMessageChannel().setNextValue(value); }
+    default void _setStatusMessage(String value) {
+        this.getStatusMessageChannel().setNextValue(value);
+    }
 
     /**
      * Gets the Channel for {@link ChannelId#CONTROL_MODE}.
      *
      * @return the Channel
      */
-    public default EnumWriteChannel getControlModeChannel() {
+    default EnumWriteChannel getControlModeChannel() {
         return this.channel(ChannelId.CONTROL_MODE);
     }
 
@@ -681,7 +755,9 @@ public interface ChpKwEnergySmartblock extends Chp {
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getControlMode() { return this.getControlModeChannel().value(); }
+    default Value<Integer> getControlMode() {
+        return this.getControlModeChannel().value();
+    }
 
     /**
      * Sets the control mode of the CHP.
@@ -698,7 +774,7 @@ public interface ChpKwEnergySmartblock extends Chp {
      * @param value the next write value
      * @throws OpenemsNamedException on error
      */
-    public default void setControlMode(int value) throws OpenemsError.OpenemsNamedException {
+    default void setControlMode(int value) throws OpenemsError.OpenemsNamedException {
         this.getControlModeChannel().setNextWriteValue(value);
     }
 
@@ -717,7 +793,7 @@ public interface ChpKwEnergySmartblock extends Chp {
      * @param value the next write value
      * @throws OpenemsNamedException on error
      */
-    public default void setControlMode(Integer value) throws OpenemsError.OpenemsNamedException {
+    default void setControlMode(Integer value) throws OpenemsError.OpenemsNamedException {
         this.getControlModeChannel().setNextWriteValue(value);
     }
 
@@ -726,7 +802,7 @@ public interface ChpKwEnergySmartblock extends Chp {
      *
      * @return the Channel
      */
-    public default BooleanReadChannel getChpErrorChannel() {
+    default BooleanReadChannel getChpErrorChannel() {
         return this.channel(ChannelId.CHP_ERROR);
     }
 
@@ -735,19 +811,25 @@ public interface ChpKwEnergySmartblock extends Chp {
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Boolean> getChpError() { return this.getChpErrorChannel().value(); }
+    default Value<Boolean> getChpError() {
+        return this.getChpErrorChannel().value();
+    }
 
     /**
-     * Internal method.
+     * Internal method to set the 'nextValue' on {@link ChannelId#CHP_ERROR} Channel.
+     *
+     * @param value the next value
      */
-    public default void _setChpError(Boolean value) { this.getChpErrorChannel().setNextValue(value); }
+    default void _setChpError(Boolean value) {
+        this.getChpErrorChannel().setNextValue(value);
+    }
 
     /**
      * Gets the Channel for {@link ChannelId#CHP_RELEASE}.
      *
      * @return the Channel
      */
-    public default BooleanReadChannel getChpReleaseChannel() {
+    default BooleanReadChannel getChpReleaseChannel() {
         return this.channel(ChannelId.CHP_RELEASE);
     }
 
@@ -757,32 +839,44 @@ public interface ChpKwEnergySmartblock extends Chp {
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Boolean> getChpRelease() { return this.getChpReleaseChannel().value(); }
+    default Value<Boolean> getChpRelease() {
+        return this.getChpReleaseChannel().value();
+    }
 
     /**
-     * Internal method.
+     * Internal method to set the 'nextValue' on {@link ChannelId#CHP_RELEASE} Channel.
+     *
+     * @param value the next value
      */
-    public default void _setChpRelease(Boolean value) { this.getChpReleaseChannel().setNextValue(value); }
+    default void _setChpRelease(Boolean value) {
+        this.getChpReleaseChannel().setNextValue(value);
+    }
 
     /**
      * Gets the Channel for {@link ChannelId#CHP_ENGINE_RUNNING}.
      *
      * @return the Channel
      */
-    public default BooleanReadChannel getChpEngineRunningChannel() {
+    default BooleanReadChannel getChpEngineRunningChannel() {
         return this.channel(ChannelId.CHP_ENGINE_RUNNING);
     }
 
     /**
      * Gets the engine status of the CHP. False = off.
-     * Mapped to HR16, bit 7 ("Motor läuft").
+     * Mapped to HR16, bit 7 ("Motor laeuft").
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Boolean> getChpEngineRunning() { return this.getChpEngineRunningChannel().value(); }
+    default Value<Boolean> getChpEngineRunning() {
+        return this.getChpEngineRunningChannel().value();
+    }
 
     /**
-     * Internal method.
+     * Internal method to set the 'nextValue' on {@link ChannelId#CHP_ENGINE_RUNNING} Channel.
+     *
+     * @param value the next value
      */
-    public default void _setChpEngineRunning(Boolean value) { this.getChpEngineRunningChannel().setNextValue(value); }
+    default void _setChpEngineRunning(Boolean value) {
+        this.getChpEngineRunningChannel().setNextValue(value);
+    }
 }

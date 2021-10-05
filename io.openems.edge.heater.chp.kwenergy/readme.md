@@ -1,8 +1,10 @@
-# io.openems.edge.heater.chp.kwenergy Provider
+= Chp KW Energy Smartblock
 
-${Bundle-Description}
+This module reads the most important variables available via Modbus from a KW Energy Smartblock chp and maps them to OpenEMS channels. The module is written to be used with the Heater interface EnableSignal methods and ExceptionalState. When setEnableSignal() from the Heater interface is set to true with no other parameters like setPointPowerPercent() specified, the chp will turn on with default settings. The default settings are configurable in the config.
 
-## Example
+The chp can be controlled with setHeatingPowerPercentSetpoint(), setElectricPowerSetpoint() or setGridPowerDrawSetpoint(). The chp needs to be set in the corresponding control mode with setControlMode().
 
-## References
+setTemperatureSetpoint() and setHeatingPowerSetpoint() are not supported by this CHP.
+
+If the chp is activated by ExceptionalState, it will switch to control mode power percent and use the setHeatingPowerPercentSetpoint() specified by the ExceptionalStateValue. The chp will NOT automatically switch back to its prior state when ExceptionalState ends.
 

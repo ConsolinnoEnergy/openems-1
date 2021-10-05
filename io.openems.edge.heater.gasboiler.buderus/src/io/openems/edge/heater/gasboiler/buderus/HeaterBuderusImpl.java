@@ -59,6 +59,9 @@ import java.time.temporal.ChronoUnit;
  * setHeatingPowerSetpoint() (set power in kW) and related methods are currently not supported by this heater.
  * When ExceptionalState is used, the heater will automatically switch to control mode ’heating power percent’.
  * With the current code, setTemperatureSetpoint() is then only usable when ExceptionalState is disabled.
+ * If the heater is activated by ExceptionalState, it will switch to control mode power percent and use the
+ * setHeatingPowerPercentSetpoint() specified by the ExceptionalStateValue. The heater will NOT automatically switch
+ * back to its prior state when ExceptionalState ends.
  */
 @Designate(ocd = Config.class, factory = true)
 @Component(name = "Heater.Buderus.GasBoiler",
@@ -539,9 +542,10 @@ public class HeaterBuderusImpl extends AbstractOpenemsModbusComponent implements
 						exceptionalStateValue = 100;
 					}
 					try {
+						this.setHeatingPowerPercentSetpoint(exceptionalStateValue);
 						// Set heater to control mode power percent, as ExceptionalState value uses that.
 						this.setOperatingMode(OperatingMode.SET_POINT_POWER_PERCENT.getValue());
-						this.setHeatingPowerPercentSetpoint(exceptionalStateValue);
+						this.getOperatingModeChannel().nextProcessImage();
 					} catch (OpenemsError.OpenemsNamedException e) {
 						this.log.warn("Couldn't write in Channel " + e.getMessage());
 					}

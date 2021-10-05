@@ -13,6 +13,8 @@ setReserveSetpoint(). The chp changes to the corresponding mode when a set point
 If different types of set point methods are used in the same cycle, the hierarchy is: electric power > feed-in > reserve.
 The lower hierarchy setting will be ignored.
 
+If the chp is activated by ExceptionalState, it will convert the ExceptionalStateValue into a setElectricPowerSetpoint() value. The chp will NOT automatically switch back to its prior state when ExceptionalState ends.
+
 https://github.com/OpenEMS/openems/tree/develop/io.openems.edge.heater.chp.wolf[Source Code icon:github[]]
 
 // ToDo: Granularity of electric power setpoint is very coarse. The Wolf GTK 4 has 4 kW electric

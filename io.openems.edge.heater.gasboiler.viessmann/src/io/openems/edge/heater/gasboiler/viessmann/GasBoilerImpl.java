@@ -57,6 +57,9 @@ import java.util.List;
  * The heater can be controlled with setHeatingPowerPercentSetpoint() (set power in %) or setTemperatureSetpoint().
  * However, currently the code does not yet support setTemperatureSetpoint().
  * setHeatingPowerSetpoint() (set power in kW) and related methods are currently not supported by this heater.
+ * If the heater is activated by ExceptionalState, it will go to the setHeatingPowerPercentSetpoint() value specified
+ * by the ExceptionalStateValue. The heater will NOT automatically switch back to its prior state when ExceptionalState
+ * ends.
  */
 @Designate(ocd = Config.class, factory = true)
 @Component(name = "Heater.Viessmann.GasBoiler",

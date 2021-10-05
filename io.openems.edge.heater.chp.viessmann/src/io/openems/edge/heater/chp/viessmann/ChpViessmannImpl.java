@@ -64,6 +64,8 @@ import java.util.Optional;
  * the same AiO output, so a hierarchy is needed. setHeatingPowerSetpoint() overwrites setElectricPowerSetpoint(), if
  * both are used.
  * setTemperatureSetpoint() and related methods are not supported by this CHP.
+ * If the chp is activated by ExceptionalState, it will go to the setHeatingPowerPercentSetpoint() value specified by
+ * the ExceptionalStateValue. The chp will NOT automatically switch back to its prior state when ExceptionalState ends.
  */
 @Designate(ocd = Config.class, factory = true)
 @Component(name = "Heater.Chp.Viessmann",

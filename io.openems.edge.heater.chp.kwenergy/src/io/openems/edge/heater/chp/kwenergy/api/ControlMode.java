@@ -5,7 +5,6 @@ import io.openems.common.types.OptionsEnum;
 /**
  * The possible control modes of the CHP.
  */
-
 public enum ControlMode implements OptionsEnum {
 	UNDEFINED(-1, "Undefined"), //
 	POWER_PERCENT(0, "Control mode power percent"), //
@@ -15,7 +14,7 @@ public enum ControlMode implements OptionsEnum {
 	private final int value;
 	private final String name;
 
-	private ControlMode(int value, String name) {
+	ControlMode(int value, String name) {
 		this.value = value;
 		this.name = name;
 	}

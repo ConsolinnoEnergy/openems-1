@@ -58,6 +58,9 @@ import java.util.Optional;
  * setReserveSetpoint(). The chp changes to the corresponding mode when a set point method is used.
  * If different types of set point methods are used in the same cycle, the hierarchy is: electric power > feed-in > reserve.
  * The lower hierarchy setting will be ignored.
+ * If the chp is activated by ExceptionalState, it will convert the ExceptionalStateValue into a
+ * setElectricPowerSetpoint() value. The chp will NOT automatically switch back to its prior state when ExceptionalState
+ * ends.
  */
 @Designate(ocd = Config.class, factory = true)
 @Component(name = "Heater.Chp.Wolf",
