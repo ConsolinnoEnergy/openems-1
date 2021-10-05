@@ -83,16 +83,16 @@ public class MyMultiHeaterControllerTest {
     /**
      * The Configuration is correct and the Controller is running/Heating as expected.
      */
-    /*
+
     @Test
-    public void everythingsFineAndHeating() {
-        try {
+    public void everythingsFineAndHeating() throws Exception {
+
             this.cpm.addComponent(this.dummyHeaterMap.get("Heater2"));
             OpenemsComponent[] components = new OpenemsComponent[this.cpm.getAllComponents().size()];
             components = this.cpm.getAllComponents().toArray(components);
             new ControllerTest(new MultipleHeaterCombinedControllerImpl(), components)
                     .addReference("cpm", this.cpm)
-                    .activate(MyConfig.create()
+                    .activate(MyMultiHeaterConfig.create()
                             .setId(id)
                             .setHeaterIds(correctHeaterIds)
                             .setActivationTemperatures(activationTemperatures)
@@ -100,6 +100,9 @@ public class MyMultiHeaterControllerTest {
                             .setDeactivationTemperatures(deactivationTemperatures)
                             .setActivationThermometer(activationThermometer)
                             .setDeactivationThermometer(deactivationThermometer)
+                            .setUseTimer(false)
+                            .setTimeDelta(5)
+                            .setTimerId("null")
                             .setServicePid("EverythingsFine")
                             .build())
                     //Everythings heating
@@ -130,9 +133,7 @@ public class MyMultiHeaterControllerTest {
                             .input(this.channelAddresses.get("Heater2"), null)
                             .output(this.channelAddresses.get("Heater2"), null))
                     .getSut().run();
-        } catch (Exception e) {
-            Assert.fail();
-        }
+
     }
 
     @Test
@@ -142,7 +143,7 @@ public class MyMultiHeaterControllerTest {
             components = this.cpm.getAllComponents().toArray(components);
             new ControllerTest(new MultipleHeaterCombinedControllerImpl(), components)
                     .addReference("cpm", this.cpm)
-                    .activate(MyConfig.create()
+                    .activate(MyMultiHeaterConfig.create()
                             .setId(id)
                             .setHeaterIds(correctHeaterIds)
                             .setActivationTemperatures(activationTemperatures)
@@ -150,6 +151,9 @@ public class MyMultiHeaterControllerTest {
                             .setDeactivationTemperatures(deactivationTemperatures)
                             .setActivationThermometer(activationThermometer)
                             .setDeactivationThermometer(deactivationThermometer)
+                            .setUseTimer(false)
+                            .setTimeDelta(5)
+                            .setTimerId("null")
                             .setServicePid("FineAfterFirstRun")
                             .build())
                     //Everythings heating
@@ -174,19 +178,19 @@ public class MyMultiHeaterControllerTest {
         }
 
     }
-*/
+
     /**
      * Check if the Controller responds correctly to wrong Configuration.
      */
-    /*
+
     @Test
-    public void hasErrorAfterWrongConfigurationForTooLong() {
-        try {
+    public void hasErrorAfterWrongConfigurationForTooLong() throws Exception {
+
             OpenemsComponent[] components = new OpenemsComponent[this.cpm.getAllComponents().size()];
             components = this.cpm.getAllComponents().toArray(components);
             new ControllerTest(new MultipleHeaterCombinedControllerImpl(), components)
                     .addReference("cpm", this.cpm)
-                    .activate(MyConfig.create()
+                    .activate(MyMultiHeaterConfig.create()
                             .setId(id)
                             .setHeaterIds(correctHeaterIds)
                             .setActivationTemperatures(activationTemperatures)
@@ -194,30 +198,22 @@ public class MyMultiHeaterControllerTest {
                             .setDeactivationTemperatures(deactivationTemperatures)
                             .setActivationThermometer(activationThermometer)
                             .setDeactivationThermometer(deactivationThermometer)
+                            .setUseTimer(false)
+                            .setTimeDelta(5)
+                            .setTimerId("null")
                             .setServicePid("ConfigurationWrongForTooLong")
                             .build())
-                    .next(new TestCase())
-                    .next(new TestCase())
-                    .next(new TestCase())
-                    .next(new TestCase())
-                    .next(new TestCase())
-                    .next(new TestCase())
-                    .next(new TestCase())
-                    .next(new TestCase())
-                    .next(new TestCase())
                     .next(new TestCase())
                     .next(new TestCase()
                             .output(ChannelAddress.fromString(id + "/Error"), true)
                     ).getSut().run();
-        } catch (Exception e) {
-            Assert.fail();
-        }
+
     }
-*/
+
     /**
      * Check if the Controller reacts properly to the wrong Config.
      */
-    /*
+
     @Test
     public void testWrongHeater() {
         try {
@@ -226,7 +222,7 @@ public class MyMultiHeaterControllerTest {
             components =  this.cpm.getAllComponents().toArray(components);
             new ControllerTest(new MultipleHeaterCombinedControllerImpl(), components)
                     .addReference("cpm", this.cpm)
-                    .activate(MyConfig.create()
+                    .activate(MyMultiHeaterConfig.create()
                             .setId(id)
                             .setHeaterIds(wrongHeaterIds)
                             .setActivationTemperatures(activationTemperatures)
@@ -234,6 +230,9 @@ public class MyMultiHeaterControllerTest {
                             .setDeactivationTemperatures(deactivationTemperatures)
                             .setActivationThermometer(activationThermometer)
                             .setDeactivationThermometer(deactivationThermometer)
+                            .setUseTimer(false)
+                            .setTimeDelta(5)
+                            .setTimerId("null")
                             .setServicePid("wrongHeaterForTooLong")
                             .build())
                     .next(new TestCase())
@@ -253,11 +252,11 @@ public class MyMultiHeaterControllerTest {
             Assert.fail();
         }
     }
-*/
+
     /**
      * The Configuration contains a wrong Channel / ChannelAddress -> throws IllegalArgumentException
      */
-    /*
+
     @Test(expected = IllegalArgumentException.class)
     public void wrongTemperaturesAndNotExistingChannel() {
         try {
@@ -266,7 +265,7 @@ public class MyMultiHeaterControllerTest {
             components = this.cpm.getAllComponents().toArray(components);
             new ControllerTest(new MultipleHeaterCombinedControllerImpl(), components)
                     .addReference("cpm", this.cpm)
-                    .activate(MyConfig.create()
+                    .activate(MyMultiHeaterConfig.create()
                             .setId(id)
                             .setHeaterIds(correctHeaterIds)
                             .setActivationTemperatures(wrongActivationTemperatures)
@@ -274,6 +273,9 @@ public class MyMultiHeaterControllerTest {
                             .setDeactivationTemperatures(deactivationTemperatures)
                             .setActivationThermometer(activationThermometer)
                             .setDeactivationThermometer(deactivationThermometer)
+                            .setUseTimer(false)
+                            .setTimeDelta(5)
+                            .setTimerId("null")
                             .setServicePid("IllegalChannel")
                             .build())
                     .getSut().run();
@@ -287,11 +289,11 @@ public class MyMultiHeaterControllerTest {
             Assert.fail();
         }
     }
-*/
+
     /**
      * Check if the Controller reacts correctly, if an activation Thermometer is wrong.
      */
-    /*
+
     @Test
     public void wrongThermometer() {
         try {
@@ -300,7 +302,7 @@ public class MyMultiHeaterControllerTest {
             components = this.cpm.getAllComponents().toArray(components);
             new ControllerTest(new MultipleHeaterCombinedControllerImpl(), components)
                     .addReference("cpm", this.cpm)
-                    .activate(MyConfig.create()
+                    .activate(MyMultiHeaterConfig.create()
                             .setId(id)
                             .setHeaterIds(wrongHeaterIds)
                             .setActivationTemperatures(activationTemperatures)
@@ -308,6 +310,9 @@ public class MyMultiHeaterControllerTest {
                             .setDeactivationTemperatures(deactivationTemperatures)
                             .setActivationThermometer(wrongActivationThermometer)
                             .setDeactivationThermometer(deactivationThermometer)
+                            .setUseTimer(false)
+                            .setTimeDelta(5)
+                            .setTimerId("null")
                             .setServicePid("wrongThermometer")
                             .build())
                     .next(new TestCase())
@@ -328,11 +333,11 @@ public class MyMultiHeaterControllerTest {
         }
 
     }
-*/
+
     /**
      * Checks if the Controller acts correctly if a Thermometer has no value.
      */
-    /*
+
     @Test
     public void ThermometerWithoutValue() {
         try {
@@ -341,7 +346,7 @@ public class MyMultiHeaterControllerTest {
             components = this.cpm.getAllComponents().toArray(components);
             new ControllerTest(new MultipleHeaterCombinedControllerImpl(), components)
                     .addReference("cpm", this.cpm)
-                    .activate(MyConfig.create()
+                    .activate(MyMultiHeaterConfig.create()
                             .setId(id)
                             .setHeaterIds(correctHeaterIds)
                             .setActivationTemperatures(activationTemperatures)
@@ -349,6 +354,9 @@ public class MyMultiHeaterControllerTest {
                             .setDeactivationTemperatures(deactivationTemperatures)
                             .setActivationThermometer(activationThermometer)
                             .setDeactivationThermometer(deactivationThermometer)
+                            .setUseTimer(false)
+                            .setTimeDelta(5)
+                            .setTimerId("null")
                             .setServicePid("ThermometerNoValue")
                             .build())
                     .next(new TestCase())
@@ -368,7 +376,7 @@ public class MyMultiHeaterControllerTest {
             Assert.fail();
         }
     }
-*/
+
     /**
      * This is a Helper method, to simulate that a Component is activated/configured later.
      *

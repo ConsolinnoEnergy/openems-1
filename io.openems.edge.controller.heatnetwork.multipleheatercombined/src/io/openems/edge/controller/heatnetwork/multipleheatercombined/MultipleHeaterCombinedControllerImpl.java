@@ -86,9 +86,11 @@ public class MultipleHeaterCombinedControllerImpl extends AbstractMultiCombinedC
                 this.allocateConfig(ControlType.HEATER, this.config.timerId(), this.config.timeDelta(), this.config.heaterIds(), this.config.activationThermometers(), this.config.activationTemperatures(),
                         this.config.deactivationThermometers(), this.config.deactivationTemperatures());
                 this.configurationSuccess = true;
+                this.setHasError(false);
             } catch (ConfigurationException | OpenemsError.OpenemsNamedException e) {
                 this.log.warn("Couldn't set Configuration for Controller : " + super.id() + " Check the Configuration of this Controller!");
                 this.log.info("NOTE: When Restarting OpenEMS some Instances may not be initialized yet.");
+                this.setHasError(true);
             }
         }
     }

@@ -57,6 +57,21 @@ public class MyMultiHeaterConfig extends AbstractComponentConfig implements Conf
             this.deactivationThermometers = deactivationThermometers;
             return this;
         }
+        public Builder setUseTimer(boolean useTimer) {
+            this.useTimer = useTimer;
+            return this;
+        }
+
+        public Builder setTimeDelta(int timeDelta) {
+            this.timeDelta = timeDelta;
+            return this;
+        }
+
+        public Builder setTimerId(String timerId) {
+            this.timerId = timerId;
+            return this;
+        }
+
         public MyMultiHeaterConfig build() {
             return new MyMultiHeaterConfig(this);
         }
