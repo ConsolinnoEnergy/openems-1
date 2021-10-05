@@ -3,8 +3,8 @@ package io.openems.edge.controller.heatnetwork.surveillance.temperature;
 import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
-@ObjectClassDefinition(name = "Controller Temperature Surveillance", description = "Temperature Surveillance Controller: On Certain Temperatures Control Valve/Heater")
-@interface Config {
+@ObjectClassDefinition(name = "Controller Temperature Surveillance Cooling", description = "Temperature Surveillance Controller: On Certain Temperatures Control Valve/Heater")
+@interface ConfigTempSurveillanceCooling {
     String service_pid();
 
     @AttributeDefinition(name = "Id", description = "Unique Id for this Controller.")
@@ -29,22 +29,22 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     int offsetDeactivate() default -100;
 
     @AttributeDefinition(name = "SurveillanceType", description = "Set the Surveillance Type")
-    TemperatureSurveillanceType surveillanceType() default TemperatureSurveillanceType.HEATER_AND_VALVE_CONTROLLER;
+    SurveillanceType surveillanceType() default SurveillanceType.HEATER_AND_HYDRAULIC_CONTROLLER;
 
     @AttributeDefinition(name = "ValveControllerId", description = "Unique Id of the ValveController you want to use")
-    String valveControllerId() default "ValveController0";
+    String hydraulicControllerId() default "ValveController0";
 
 
     @AttributeDefinition(name = "Heater Id")
     String heaterId() default "Heater0";
 
-    @AttributeDefinition(name = "Timer for Valve", description = "Timer Id either TimerByTime or TimerByCycles Id")
+    @AttributeDefinition(name = "Timer for Valve", description = "Timer Id to check For Missing Components and if SurveillanceType is Heater And Valve -> Delay HydraulicController")
     String timerId() default "TimerByCycles";
 
-    @AttributeDefinition(name = "WaitTime or WaitCycles ValveOpen", description = "How long to wait till Valve Opens (after Heat activation) t in seconds")
-    int timeToWaitValveOpen() default 120;
+    @AttributeDefinition(name = "Delta Time Delay HydraulicController Enable", description = "How long to wait unit HydraulicController activates")
+    int deltaTimeDelay() default 120;
 
     boolean enabled() default true;
 
-    String webconsole_configurationFactory_nameHint() default "Controller Temperature Surveillance [{id}]";
+    String webconsole_configurationFactory_nameHint() default "Controller Temperature Surveillance Cooling [{id}]";
 }

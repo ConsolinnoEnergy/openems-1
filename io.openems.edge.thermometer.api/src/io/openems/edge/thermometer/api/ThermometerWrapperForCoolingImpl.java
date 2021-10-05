@@ -22,6 +22,11 @@ public class ThermometerWrapperForCoolingImpl extends AbstractThermometerWrapper
         super(activateThermometer, deactivateThermometer, activateValue, deactivateValue, cpm);
     }
 
+    public ThermometerWrapperForCoolingImpl(Thermometer activateThermometer, Thermometer deactivateThermometer,
+                                            String activateValue, String deactivateValue, ComponentManager cpm, int activationOffset, int deactivationOffset)  throws OpenemsError.OpenemsNamedException, ConfigurationException {
+        super(activateThermometer, deactivateThermometer, activateValue, deactivateValue, cpm, activationOffset, deactivationOffset);
+    }
+
     /**
      * Method, usually called by Heater Controller.
      * to determine if the enabled Value should be set to true within the heater.
@@ -31,7 +36,7 @@ public class ThermometerWrapperForCoolingImpl extends AbstractThermometerWrapper
 
     @Override
     public boolean shouldDeactivate() throws OpenemsError.OpenemsNamedException, ConfigurationException {
-        return this.getDeactivationThermometer().getTemperatureValue() <= this.getDeactivationTemperature();
+        return this.getDeactivationThermometer().getTemperatureValue() <= this.getDeactivationTemperature() + super.deactivationOffset;
     }
 
     /**
@@ -43,7 +48,7 @@ public class ThermometerWrapperForCoolingImpl extends AbstractThermometerWrapper
 
     @Override
     public boolean shouldActivate() throws OpenemsError.OpenemsNamedException, ConfigurationException {
-        return this.getActivationThermometer().getTemperatureValue() >= this.getActivationTemperature();
+        return this.getActivationThermometer().getTemperatureValue() >= this.getActivationTemperature() + super.activationOffset;
     }
 
 }
