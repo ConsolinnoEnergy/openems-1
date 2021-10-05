@@ -99,7 +99,7 @@ public class CombinedHeatPowerPlantImpl extends AbstractGenericModbusComponent i
     @Activate
     void activate(ComponentContext context, Config config) throws OpenemsError.OpenemsNamedException, ConfigurationException, IOException {
         this.config = config;
-        super.activate(context,config.id(),config.alias(),config.enabled(),config.modbusUnitId(),this.cm,
+        super.activate(context, config.id(), config.alias(), config.enabled(), config.modbusUnitId(), this.cm,
                 config.modbusBridgeId(), this.cpm, Arrays.asList(config.configurationList()));
         if (super.update(this.cm, "channelIds", new ArrayList<>(this.channels()), this.config.channelIds().length)) {
             this.baseConfiguration();
@@ -171,40 +171,42 @@ public class CombinedHeatPowerPlantImpl extends AbstractGenericModbusComponent i
                 handleChannelUpdate(this.getReadSetPointChannel(), this._hasReadSetPoint());
 
             } else if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS)) {
-                try {
-                    if (this.useExceptionalState) {
-                        boolean exceptionalStateActive = this.exceptionalStateHandler.exceptionalStateActive(this);
-                        if (exceptionalStateActive) {
-                            this.handleExceptionalState();
-                            return;
-                        }
-                    }
-                    if (this.isAutoRun) {
-                        this.getEnableSignalChannel().setNextWriteValueFromObject(true);
-                    }
-                    if (this.getEnableSignalChannel().getNextWriteValue().isPresent()
-                            || this.isRunning && this.timerHandler.checkTimeIsUp(ENABLE_SIGNAL_IDENTIFIER) == false) {
-                        this.isRunning = true;
-                        if (this.getEnableSignalChannel().getNextWriteValue().isPresent()) {
-                            this.timerHandler.resetTimer(ENABLE_SIGNAL_IDENTIFIER);
-                        } else {
-                            try {
-                                this.getEnableSignalChannel().setNextWriteValueFromObject(false);
-                            } catch (OpenemsError.OpenemsNamedException e) {
-                                this.log.warn("Couldn't apply false value to own enableSignal");
+                if (this.controlMode.equals(ControlMode.READ_WRITE)) {
+                    try {
+                        if (this.useExceptionalState) {
+                            boolean exceptionalStateActive = this.exceptionalStateHandler.exceptionalStateActive(this);
+                            if (exceptionalStateActive) {
+                                this.handleExceptionalState();
+                                return;
                             }
                         }
-                        this.getEnableSignalChannel().setNextValue(this.getEnableSignalChannel().getNextWriteValue().orElse(false));
-                    } else {
-                        this.isRunning = false;
-                        this.timerHandler.resetTimer(ENABLE_SIGNAL_IDENTIFIER);
+                        if (this.isAutoRun) {
+                            this.getEnableSignalChannel().setNextWriteValueFromObject(true);
+                        }
+                        if (this.getEnableSignalChannel().getNextWriteValue().isPresent()
+                                || this.isRunning && this.timerHandler.checkTimeIsUp(ENABLE_SIGNAL_IDENTIFIER) == false) {
+                            this.isRunning = true;
+                            if (this.getEnableSignalChannel().getNextWriteValue().isPresent()) {
+                                this.timerHandler.resetTimer(ENABLE_SIGNAL_IDENTIFIER);
+                            } else {
+                                try {
+                                    this.getEnableSignalChannel().setNextWriteValueFromObject(false);
+                                } catch (OpenemsError.OpenemsNamedException e) {
+                                    this.log.warn("Couldn't apply false value to own enableSignal");
+                                }
+                            }
+                            this.getEnableSignalChannel().setNextValue(this.getEnableSignalChannel().getNextWriteValue().orElse(false));
+                        } else {
+                            this.isRunning = false;
+                            this.timerHandler.resetTimer(ENABLE_SIGNAL_IDENTIFIER);
+                        }
+
+                        //update WriteValueToModbus
+                        this.updateWriteValueToModbus();
+
+                    } catch (OpenemsError.OpenemsNamedException e) {
+                        this.log.warn("Couldn't proceed to write EnableSignal etc in " + super.id() + " Reason: " + e.getMessage());
                     }
-
-                    //update WriteValueToModbus
-                    this.updateWriteValueToModbus();
-
-                } catch (OpenemsError.OpenemsNamedException e) {
-                    this.log.warn("Couldn't proceed to write EnableSignal etc in " + super.id() + " Reason: " + e.getMessage());
                 }
             }
         }
