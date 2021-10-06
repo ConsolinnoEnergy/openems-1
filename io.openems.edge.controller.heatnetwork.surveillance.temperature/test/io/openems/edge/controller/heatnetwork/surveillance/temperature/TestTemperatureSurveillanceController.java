@@ -78,10 +78,10 @@ public class TestTemperatureSurveillanceController {
     /**
      * The Configuration is correct and the Controller is running/Heating as expected.
      */
-    /*
+
     @Test
-    public void heaterRunsAndValveControllerEnabledAfterTimeIsUp() {
-        try {
+    public void heaterRunsAndValveControllerEnabledAfterTimeIsUp() throws Exception {
+
             this.cpm.addComponent(new DummyHeater(heaterId));
             OpenemsComponent[] components = new OpenemsComponent[this.cpm.getAllComponents().size()];
             components = this.cpm.getAllComponents().toArray(components);
@@ -106,7 +106,7 @@ public class TestTemperatureSurveillanceController {
                     .next(new TestCase()
                             .timeleap(this.clock, 1, ChronoUnit.SECONDS)
                             .input(this.channelAddresses.get(referenceThermometerId), 400)
-                            .input(this.channelAddresses.get(thermometerActivateId), 650)
+                            .input(this.channelAddresses.get(thermometerActivateId), 300)
                             .input(this.channelAddresses.get(thermometerDeactivateId), 650)
                     )
                     .next(new TestCase()
@@ -122,22 +122,20 @@ public class TestTemperatureSurveillanceController {
                     //Heater 2 should deactivate
                     .next(new AbstractComponentTest.TestCase()
                             .timeleap(this.clock, 1, ChronoUnit.SECONDS)
-                            .output(this.channelAddresses.get(heaterId), true)
+                            .input(this.channelAddresses.get(thermometerActivateId), 650)
+                            .output(this.channelAddresses.get(heaterId), null)
                     )
                     .next(new AbstractComponentTest.TestCase()
                             .timeleap(this.clock, 1, ChronoUnit.SECONDS)
-                            .output(this.channelAddresses.get(heaterId), true)
+                            .output(this.channelAddresses.get(heaterId), null)
                     )
                     .getSut().run();
-        } catch (Exception e) {
-            Assert.fail();
-        }
     }
-*/
+
     /**
      * The Configuration is correct and the Controller is running/Heating as expected. (Heater Only)
      */
-    /*
+
     @Test
     public void heaterRuns() {
         try {
@@ -165,7 +163,7 @@ public class TestTemperatureSurveillanceController {
                     .next(new TestCase()
                             .timeleap(this.clock, 1, ChronoUnit.SECONDS)
                             .input(this.channelAddresses.get(referenceThermometerId), 400)
-                            .input(this.channelAddresses.get(thermometerActivateId), 650)
+                            .input(this.channelAddresses.get(thermometerActivateId), 300)
                             .input(this.channelAddresses.get(thermometerDeactivateId), 650)
                             .output(this.channelAddresses.get(heaterId), true)
                     )
@@ -174,14 +172,13 @@ public class TestTemperatureSurveillanceController {
             Assert.fail();
         }
     }
-*/
+
     /**
      * The Configuration is correct and the Controller is running/Heating as expected. (ValveOnly)
      */
-    /*
+
     @Test
-    public void valveRuns() {
-        try {
+    public void valveRuns() throws Exception {
             this.cpm.addComponent(new DummyHeater(heaterId));
             OpenemsComponent[] components = new OpenemsComponent[this.cpm.getAllComponents().size()];
             components = this.cpm.getAllComponents().toArray(components);
@@ -208,22 +205,18 @@ public class TestTemperatureSurveillanceController {
                             .input(this.channelAddresses.get(referenceThermometerId), 400)
                             .input(this.channelAddresses.get(thermometerActivateId), 650)
                             .input(this.channelAddresses.get(thermometerDeactivateId), 650)
-                            .output(this.channelAddresses.get(valveControllerId), true)
+                            .output(this.channelAddresses.get(valveControllerId), false)
                     )
                     .getSut().run();
-        } catch (Exception e) {
-            Assert.fail();
-        }
     }
-*/
+
     /**
      * The Configuration is correct and the Controller is running/Heating as expected.
      * (First Activates and then disables Components)
      */
-    /*
+
     @Test
-    public void heaterRunsAndThenDeactivatesAndStaysInactive() {
-        try {
+    public void heaterRunsAndThenDeactivatesAndStaysInactive() throws Exception {
             this.cpm.addComponent(new DummyHeater(heaterId));
             OpenemsComponent[] components = new OpenemsComponent[this.cpm.getAllComponents().size()];
             components = this.cpm.getAllComponents().toArray(components);
@@ -250,26 +243,22 @@ public class TestTemperatureSurveillanceController {
                             .input(this.channelAddresses.get(referenceThermometerId), 400)
                             .input(this.channelAddresses.get(thermometerActivateId), 650)
                             .input(this.channelAddresses.get(thermometerDeactivateId), 650)
-                            .output(this.channelAddresses.get(heaterId), true)
+                            .output(this.channelAddresses.get(heaterId), null)
                     )
                     .next(new TestCase()
                             .input(this.channelAddresses.get(referenceThermometerId), 800)
                             //simulate getNextWriteValueAndReset
                             .input(this.channelAddresses.get(heaterId), null)
-                            .output(this.channelAddresses.get(heaterId), null))
+                            .output(this.channelAddresses.get(heaterId), true))
                     .getSut().run();
-        } catch (Exception e) {
-            Assert.fail();
-        }
     }
-*/
+
     /**
      * The Configuration is incorrect at first. But after a needed Component is enabled -> run as expected.
      */
-    /*
+
     @Test
-    public void heaterRunsAndValveControllerEnabledAfterConfigIsOk() {
-        try {
+    public void heaterRunsAndValveControllerEnabledAfterConfigIsOk() throws Exception {
             OpenemsComponent[] components = new OpenemsComponent[this.cpm.getAllComponents().size() - 1];
             components = this.cpm.getAllComponents().toArray(components);
             new ControllerTest(new TemperatureSurveillanceControllerImpl(), components)
@@ -294,7 +283,7 @@ public class TestTemperatureSurveillanceController {
                     .next(new TestCase()
                             .timeleap(this.clock, 1, ChronoUnit.SECONDS)
                             .input(this.channelAddresses.get(referenceThermometerId), 400)
-                            .input(this.channelAddresses.get(thermometerActivateId), 650)
+                            .input(this.channelAddresses.get(thermometerActivateId), 300)
                             .input(this.channelAddresses.get(thermometerDeactivateId), 650)
                             .output(this.channelAddresses.get(heaterId), null)
                     )
@@ -320,15 +309,13 @@ public class TestTemperatureSurveillanceController {
                     .next(new TestCase()
                             .output(this.channelAddresses.get(heaterId), true))
                     .getSut().run();
-        } catch (Exception e) {
-            Assert.fail();
-        }
+
     }
-*/
+
     /**
      * The Configuration is wrong and the Controller won't work.
      */
-    /*
+
     @Test
     public void wrongConfigured() {
         try {
@@ -394,16 +381,15 @@ public class TestTemperatureSurveillanceController {
             Assert.fail();
         }
     }
-*/
+
     /**
      * A Component of the Configuration is not enabled at first.
      * After the component is enabled, run as expected -> Activate and enable Heater and Valve and deactivate them after
      * reaching deactivationConditions.
      */
-    /*
+
     @Test
-    public void heaterRunsAndValveControllerEnabledAfterConfigIsOkAndDisablesLater() {
-        try {
+    public void heaterRunsAndValveControllerEnabledAfterConfigIsOkAndDisablesLater() throws Exception {
             OpenemsComponent[] components = new OpenemsComponent[this.cpm.getAllComponents().size() - 1];
             components = this.cpm.getAllComponents().toArray(components);
             new ControllerTest(new TemperatureSurveillanceControllerImpl(), components)
@@ -428,7 +414,7 @@ public class TestTemperatureSurveillanceController {
                     .next(new TestCase()
                             .timeleap(this.clock, 1, ChronoUnit.SECONDS)
                             .input(this.channelAddresses.get(referenceThermometerId), 400)
-                            .input(this.channelAddresses.get(thermometerActivateId), 650)
+                            .input(this.channelAddresses.get(thermometerActivateId), 300)
                             .input(this.channelAddresses.get(thermometerDeactivateId), 650)
                     )
                     .next(new TestCase()
@@ -456,16 +442,14 @@ public class TestTemperatureSurveillanceController {
                     .next(new TestCase()
                             .input(this.channelAddresses.get(referenceThermometerId), 800)
                             .input(this.channelAddresses.get(heaterId), null)
-                            .output(this.channelAddresses.get(valveControllerId), false)
-                            .output(this.channelAddresses.get(heaterId), null)
+                            .output(this.channelAddresses.get(valveControllerId), true)
+                            .output(this.channelAddresses.get(heaterId), true)
                     )
 
                     .getSut().run();
-        } catch (Exception e) {
-            Assert.fail();
-        }
+
     }
-*/
+
     /**
      * This is a Helper method, to simulate that a Component is activated/configured later.
      *

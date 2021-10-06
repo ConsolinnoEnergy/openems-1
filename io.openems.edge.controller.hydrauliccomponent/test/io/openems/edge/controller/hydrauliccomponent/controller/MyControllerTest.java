@@ -25,10 +25,10 @@ public class MyControllerTest {
     private static final String valveId = "valve";
     private static final String timerId = "TimerByCycles";
     private static final ChannelAddress input = new ChannelAddress(tempId, "Temperature");
-    private static final ChannelAddress output = new ChannelAddress(relayCloseId, "WriteOnOff");
+    private static final ChannelAddress output = new ChannelAddress(valveId, "SetPointPowerLevel");
 
     @Test
-    public void initialTest() throws Exception {
+    public void initialHeatingTest() throws Exception {
 
         final TimeLeapClock clock = new TimeLeapClock(
                 Instant.ofEpochSecond(1577836800) /* starts at 1. January 2020 00:00:00 */, ZoneOffset.UTC);
@@ -45,7 +45,7 @@ public class MyControllerTest {
                         .setId(id)
                         .setService_pid("")
                         .setComponentToControl(valveId)
-                        .setTemperaturePositionMap(new String[]{"700:20"})
+                        .setTemperaturePositionMap(new String[]{"700:20","800:30"})
                         .setControlType(ControlType.TEMPERATURE)
                         .setThermometerId(tempId)
                         .setAutorun(true)
@@ -61,14 +61,148 @@ public class MyControllerTest {
                         .build())
                 .next(new TestCase()
                         .timeleap(clock, 1, ChronoUnit.SECONDS)
-                        .input(input, 700)
+                        .input(input, 750)
+                        .output(output,30)
+                )
+                .getSut().run();
+    }
+    @Test
+    public void initialCoolingTest() throws Exception {
+
+        final TimeLeapClock clock = new TimeLeapClock(
+                Instant.ofEpochSecond(1577836800) /* starts at 1. January 2020 00:00:00 */, ZoneOffset.UTC);
+        DummyRelay close = new DummyRelay(relayCloseId);
+        DummyRelay open = new DummyRelay(relayOpenId);
+        new ControllerTest(new HydraulicPositionControllerImpl())
+                .addReference("cpm", new DummyComponentManager(clock))
+                .addComponent(new DummyThermometer(tempId))
+                .addComponent(close)
+                .addComponent(open)
+                .addComponent(new DummyValve(open, close, valveId, 10))
+                .addComponent(new DummyTimer(timerId, TimerType.CYCLES))
+                .activate(MyConfig.create()
+                        .setId(id)
+                        .setShouldCool(true)
+                        .setService_pid("")
+                        .setComponentToControl(valveId)
+                        .setTemperaturePositionMap(new String[]{"700:20","800:30"})
+                        .setControlType(ControlType.TEMPERATURE)
+                        .setThermometerId(tempId)
+                        .setAutorun(true)
+                        .setAllowForcing(false)
+                        .setShouldCloseWhenNoSignal(true)
+                        .setDefaultPosition(0)
+                        .setTimerForRunning(timerId)
+                        .setWaitForSignalAfterActivation(10)
+                        .setUseFallback(false)
+                        .setTimerForFallback(timerId)
+                        .setFallbackRunTime(100)
+                        .setEnabled(true)
+                        .build())
+                .next(new TestCase()
+                        .timeleap(clock, 1, ChronoUnit.SECONDS)
+                        .input(input, 750)
+                        .output(output,20)
+                )
+                .getSut().run();
+    }
+
+    @Test
+    public void multipleHeatingTest() throws Exception {
+
+        final TimeLeapClock clock = new TimeLeapClock(
+                Instant.ofEpochSecond(1577836800) /* starts at 1. January 2020 00:00:00 */, ZoneOffset.UTC);
+        DummyRelay close = new DummyRelay(relayCloseId);
+        DummyRelay open = new DummyRelay(relayOpenId);
+        new ControllerTest(new HydraulicPositionControllerImpl())
+                .addReference("cpm", new DummyComponentManager(clock))
+                .addComponent(new DummyThermometer(tempId))
+                .addComponent(close)
+                .addComponent(open)
+                .addComponent(new DummyValve(open, close, valveId, 10))
+                .addComponent(new DummyTimer(timerId, TimerType.CYCLES))
+                .activate(MyConfig.create()
+                        .setId(id)
+                        .setService_pid("")
+                        .setComponentToControl(valveId)
+                        .setTemperaturePositionMap(new String[]{"700:20","800:30"})
+                        .setControlType(ControlType.TEMPERATURE)
+                        .setThermometerId(tempId)
+                        .setAutorun(true)
+                        .setAllowForcing(false)
+                        .setShouldCloseWhenNoSignal(true)
+                        .setDefaultPosition(100)
+                        .setTimerForRunning(timerId)
+                        .setWaitForSignalAfterActivation(10)
+                        .setUseFallback(false)
+                        .setTimerForFallback(timerId)
+                        .setFallbackRunTime(100)
+                        .setEnabled(true)
+                        .build())
+                .next(new TestCase()
+                        .timeleap(clock, 1, ChronoUnit.SECONDS)
+                        .input(input, 750)
+                        .output(output,30)
                 )
                 .next(new TestCase()
                         .timeleap(clock, 1, ChronoUnit.SECONDS)
+                        .input(input, 900)
+                        .output(output,100)
                 )
                 .next(new TestCase()
-                                .timeleap(clock, 1, ChronoUnit.SECONDS)
-                        //             .output(output,true)
+                        .timeleap(clock, 1, ChronoUnit.SECONDS)
+                        .input(input, 600)
+                        .output(output,20)
+                )
+                .getSut().run();
+    }
+
+    @Test
+    public void percentTest() throws Exception {
+
+        final TimeLeapClock clock = new TimeLeapClock(
+                Instant.ofEpochSecond(1577836800) /* starts at 1. January 2020 00:00:00 */, ZoneOffset.UTC);
+        DummyRelay close = new DummyRelay(relayCloseId);
+        DummyRelay open = new DummyRelay(relayOpenId);
+        new ControllerTest(new HydraulicPositionControllerImpl())
+                .addReference("cpm", new DummyComponentManager(clock))
+                //.addComponent(new DummyThermometer(tempId))
+                .addComponent(close)
+                .addComponent(open)
+                .addComponent(new DummyValve(open, close, valveId, 10))
+                .addComponent(new DummyTimer(timerId, TimerType.CYCLES))
+                .activate(MyConfig.create()
+                        .setId(id)
+                        .setService_pid("")
+                        .setComponentToControl(valveId)
+                        .setTemperaturePositionMap(new String[]{"700:20","800:30"})
+                        .setControlType(ControlType.POSITION)
+                        .setThermometerId(tempId)
+                        .setAutorun(true)
+                        .setAllowForcing(false)
+                        .setShouldCloseWhenNoSignal(true)
+                        .setDefaultPosition(100)
+                        .setTimerForRunning(timerId)
+                        .setWaitForSignalAfterActivation(10)
+                        .setUseFallback(false)
+                        .setTimerForFallback(timerId)
+                        .setFallbackRunTime(100)
+                        .setEnabled(true)
+                        .build())
+                .next(new TestCase()
+                        .timeleap(clock, 1, ChronoUnit.SECONDS)
+                        .input(input, 750)
+                        .output(output,30)
+                )
+                .next(new TestCase()
+                        .timeleap(clock, 1, ChronoUnit.SECONDS)
+                        .input(input, 900)
+                        .output(output,100)
+                )
+                .next(new TestCase()
+                        .timeleap(clock, 1, ChronoUnit.SECONDS)
+                        .input(input, 600)
+                        .output(output,20)
                 )
                 .getSut().run();
     }
