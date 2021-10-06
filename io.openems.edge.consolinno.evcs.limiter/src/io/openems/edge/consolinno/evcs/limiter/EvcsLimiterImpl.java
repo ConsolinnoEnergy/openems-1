@@ -67,6 +67,8 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
     private int middle;
     //The phase where the middle Consumption is on
     private int middleIndex;
+    //The Index of middle if middleIndex==maxIndex
+    private int middleIndex2;
     //The Minimum Power Consumption
     private int min;
     //The phases with the minimal Consumption
@@ -309,7 +311,7 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
         int previousPowerToReduce = powerToReduce;
         while (powerToReduce > 0) {
 
-            powerToReduce = this.applyPowerLimit(powerToReduce,activeArray);
+            powerToReduce = this.applyPowerLimit(powerToReduce, activeArray);
             if (powerToReduce != previousPowerToReduce) {
                 previousPowerToReduce = powerToReduce;
             } else {
@@ -323,7 +325,7 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
      * This is a recursive Helper method of the above method. Should only be called from it and not externally!
      *
      * @param powerToReduce The remaining power that has to be reduced
-     * @param activeArray The active Managed Evcs in an array
+     * @param activeArray   The active Managed Evcs in an array
      * @return modified PowerToReduce
      * @throws OpenemsError.OpenemsNamedException This should not happen
      */
@@ -333,16 +335,15 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
         }
         int priorityAmount = this.priorityAmount;
         int powerPerEvcs = 0;
-        if (priorityAmount < this.active.size()){
+        if (priorityAmount < this.active.size()) {
             powerPerEvcs = powerToReduce / (this.active.size() - priorityAmount);
-    }
+        }
         if (powerPerEvcs == 0) {
             powerPerEvcs = 1;
         }
         int newPower;
 
         for (int i = 0; i < activeArray.length; i++) {
-
 
 
             if (activeArray[i].getIsPriority().get() && this.isEvcsActive(activeArray[i]) && this.nonPriorityAmount > 0) {
@@ -781,7 +782,7 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
         int min = this.getMinimumLoad();
         int middle = this.getMiddleLoad();
         int max = this.getMaximumLoad();
-        if (max - min >= MAXIMUM_LOAD_DELTA) {
+        if (max - min > MAXIMUM_LOAD_DELTA) {
             if (this.symmetry) {
                 return this.unbalancedEvcsOnPhase();
             }
@@ -806,20 +807,30 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
         ManagedEvcs[] onePhase2;
         int onePhaseLength2;
         int onePhaseLength = onePhase.length;
-        int amountToReduceOnePhase = amountLeft / onePhaseLength;
+        int amountToReduceOnePhase = 0;
+        if (onePhaseLength != 0) {
+            amountToReduceOnePhase = amountLeft / onePhaseLength;
+        }
         ManagedEvcs[] twoPhase = problem.get(TWO_PHASE_INDEX);
         int twoPhaseLength = twoPhase.length;
         ManagedEvcs[] twoPhase2;
         int twoPhaseLength2 = 0;
-        amountLeft = this.reduceOnePhaseEvcs(onePhase, onePhaseLength, amountToReduceOnePhase, amountLeft);
+        if (amountToReduceOnePhase > 0) {
+            amountLeft = this.reduceOnePhaseEvcs(onePhase, onePhaseLength, amountToReduceOnePhase, amountLeft);
+        }
         if (amountLeft <= 0) {
             this.log.info("Phase " + this.maxIndex + " has been successfully Balanced.");
         } else {
-            int amountToReduceTwoPhase = amountLeft / twoPhaseLength;
+            int amountToReduceTwoPhase = 0;
+            if (twoPhaseLength != 0) {
+                amountToReduceTwoPhase = amountLeft / twoPhaseLength;
+            }
             int[] amountsLeft = new int[2];
             amountsLeft[0] = amountLeft;
             amountsLeft[1] = amountLeft2;
-            amountsLeft = this.reduceTwoPhaseEvcs(twoPhase, twoPhaseLength, amountToReduceTwoPhase, amountsLeft);
+            if (amountToReduceTwoPhase > 0) {
+                amountsLeft = this.reduceTwoPhaseEvcs(twoPhase, twoPhaseLength, amountToReduceTwoPhase, amountsLeft);
+            }
             amountLeft = amountsLeft[0];
             amountLeft2 = amountsLeft[1];
             if (amountLeft <= 0) {
@@ -829,8 +840,11 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
                 //If after reducing the one and two phase EVCS was not enough, this will reduce the one phase EVCS until its impossible to do it anymore
                 int previousAmountLeft = amountLeft;
                 while (amountLeft > 0) {
-                    amountToReduceOnePhase = amountLeft / onePhaseLength;
+                    if (onePhaseLength != 0) {
+                        amountToReduceOnePhase = amountLeft / onePhaseLength;
+
                     amountLeft = this.reduceOnePhaseEvcs(onePhase, onePhaseLength, amountToReduceOnePhase, amountLeft);
+                }
                     if (amountLeft != previousAmountLeft) {
                         previousAmountLeft = amountLeft;
                     } else {
@@ -850,9 +864,11 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
             twoPhase2 = problem.get(TWO_PHASE_INDEX_2);
             twoPhaseLength2 = twoPhase2.length;
             if (amountLeft2 > 0) {
-                int amountToReduce2 = amountLeft2 / onePhaseLength2;
-
-                amountLeft2 = this.reduceOnePhaseEvcs(onePhase2, onePhaseLength2, amountToReduce2, amountLeft2);
+                int amountToReduce2 = 0;
+                if (onePhaseLength2 != 0) {
+                    amountToReduce2 = amountLeft2 / onePhaseLength2;
+                    amountLeft2 = this.reduceOnePhaseEvcs(onePhase2, onePhaseLength2, amountToReduce2, amountLeft2);
+                }
             }
             if (amountLeft2 <= 0) {
                 this.log.info("Phase " + this.middleIndex + " has been successfully Balanced.");
@@ -861,8 +877,11 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
                 //If after reducing the one and two phase EVCS was not enough, this will reduce the one phase EVCS until its impossible to do it anymore
                 int previousAmountLeft2 = amountLeft2;
                 while (amountLeft2 > 0) {
-                    int amountToReduce2 = amountLeft2 / onePhaseLength2;
-                    amountLeft2 = this.reduceOnePhaseEvcs(onePhase2, onePhaseLength2, amountToReduce2, amountLeft2);
+                    int amountToReduce2 = 1;
+                    if (onePhaseLength2 != 0) {
+                        amountToReduce2 = amountLeft2 / onePhaseLength2;
+                        amountLeft2 = this.reduceOnePhaseEvcs(onePhase2, onePhaseLength2, amountToReduce2, amountLeft2);
+                    }
                     if (amountLeft2 != previousAmountLeft2) {
                         previousAmountLeft2 = amountLeft;
                     } else {
@@ -882,10 +901,13 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
             int[] previousAmountsLeft = amountsLeft.clone();
             while (amountLeft > 0 || (amountLeft2 > 0 && problem.size() > 2)) {
                 int amountToReduceTwoPhase = 0;
-                if (amountLeft > 0) {
+                if (amountLeft > 0 && twoPhaseLength != 0) {
                     amountToReduceTwoPhase = amountLeft / twoPhaseLength;
                 } else if (twoPhaseLength2 != 0) {
                     amountToReduceTwoPhase = amountLeft2 / twoPhaseLength2;
+                }
+                if (amountLeft == 1 || amountToReduceTwoPhase == 0) {
+                    amountToReduceTwoPhase = 1;
                 }
                 if (amountToReduceTwoPhase != 0) {
                     amountsLeft = this.reduceTwoPhaseEvcs(twoPhase, twoPhaseLength, amountToReduceTwoPhase, amountsLeft);
@@ -1724,7 +1746,7 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
     private int reduceOnePhaseEvcs(ManagedEvcs[] onePhase, int onePhaseLength, int amountToReduce, int amountLeft) throws
             OpenemsError.OpenemsNamedException {
         for (int i = 0; i < onePhaseLength; i++) {
-            if (onePhase[i].getIsPriority().get() && this.nonPriorityAmount > 0) {
+            if (onePhase[i].getIsPriority().get() && this.nonPriorityAmount > 0 && (!this.symmetry && this.max - this.min < MAXIMUM_LOAD_DELTA)) {
                 continue;
             }
             int newPower;
@@ -1765,7 +1787,7 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
             amountToReduce = 1;
         }
         for (int i = 0; i < twoPhaseLength; i++) {
-            if (twoPhase[i].getIsPriority().get() && this.nonPriorityAmount > 0) {
+            if (twoPhase[i].getIsPriority().get() && this.nonPriorityAmount > 0 && (!this.symmetry && this.max - this.min < MAXIMUM_LOAD_DELTA)) {
                 continue;
             }
             int newPower;
@@ -1798,7 +1820,7 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
     private int[] reduceTwoPhaseEvcs(ManagedEvcs[] twoPhase, int twoPhaseLength, int amountToReduce,
                                      int[] amountsLeft) throws OpenemsError.OpenemsNamedException {
         for (int i = 0; i < twoPhaseLength; i++) {
-            if (twoPhase[i].getIsPriority().get() && this.nonPriorityAmount > 0) {
+            if (twoPhase[i].getIsPriority().get() && this.nonPriorityAmount > 0 && (!this.symmetry && this.max - this.min < MAXIMUM_LOAD_DELTA)) {
                 continue;
             }
             if ((amountsLeft[0] == 1 || amountsLeft[1] == 1) && amountToReduce == 0) {
@@ -1865,7 +1887,7 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
             amountToReduce = 1;
         }
         for (int i = 0; i < threePhaseLength; i++) {
-            if (threePhase[i].getIsPriority().get() && this.nonPriorityAmount > 0) {
+            if (threePhase[i].getIsPriority().get() && this.nonPriorityAmount > 0 && (!this.symmetry && this.max - this.min < MAXIMUM_LOAD_DELTA)) {
                 continue;
             }
             int newPower;
@@ -2154,20 +2176,32 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
                 this.middleIndex = 2;
                 this.middle = this.powerL2;
             } else if (this.powerL3 > this.powerL2) {
+                if (this.powerL1.equals(this.powerL3)) {
+                    this.middleIndex2 = 2;
+                }
                 this.middleIndex = 3;
-                return this.powerL3;
+                this.middle = this.powerL3;
             }
         } else if (this.powerL1 > this.powerL3) {
+            if (this.powerL1.equals(this.powerL2)) {
+                this.middleIndex2 = 2;
+            }
             this.middleIndex = 1;
             this.middle = this.powerL1;
 
         } else if (this.powerL3 > this.powerL1) {
             if (this.powerL3 > this.powerL2) {
+                if (this.powerL1.equals(this.powerL2)) {
+                    this.middleIndex2 = 1;
+                }
                 this.middleIndex = 2;
-                return this.powerL2;
+                this.middle = this.powerL2;
             } else if (this.powerL2 > this.powerL3) {
                 this.middleIndex = 3;
                 this.middle = this.powerL3;
+            } else if (this.powerL2.equals(this.powerL3)) {
+                this.middleIndex = 2;
+                this.middleIndex2 = 3;
             }
         }
         return this.middle;
@@ -2335,8 +2369,8 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
                         && (this.getPower(this.evcss[i]) >= (Math.min(this.evcss[i].getMinimumHardwarePower().get(), this.evcss[i].getMinimumPower().get()) / GRID_VOLTAGE)
                         || this.powerWaitingList.get(this.evcss[i].id()).getPhases() != this.evcss[i].getPhases().orElse(0))) {
                     this.powerWaitingList.remove(this.evcss[i].id());
-                } else if (!this.powerWaitingList.containsKey(this.evcss[i].id()) && this.getPower(this.evcss[i]) <
-                        (Math.min(this.evcss[i].getMinimumHardwarePower().get(), this.evcss[i].getMinimumPower().get()) / GRID_VOLTAGE)
+                } else if (!this.powerWaitingList.containsKey(this.evcss[i].id()) && this.getPower(this.evcss[i])
+                        < (Math.min(this.evcss[i].getMinimumHardwarePower().get(), this.evcss[i].getMinimumPower().get()) / GRID_VOLTAGE)
                 ) {
                     int minHwPower = this.evcss[i].getMinimumHardwarePower().orElse(1150);
                     int minSwPower = this.evcss[i].getMinimumPower().orElse(1150);
@@ -2372,7 +2406,9 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
                         ManagedEvcs temp = this.cpm.getComponent(id);
 
                         if (time.plusMinutes(this.offTime).isBefore(current)
-                                || (temp.getIsPriority().get() && this.nonPriorityAmount > 0)
+                                || (temp.getIsPriority().get()
+                                && (this.powerWaitingList.containsKey(temp.id()) && this.powerWaitingList.get(temp.id()).getWantToCharge()) || (!this.powerWaitingList.containsKey(temp.id()) && temp.getChargePower().orElse(0) > 0)
+                                && this.nonPriorityAmount > 0)
                         ) {
                             for (int i = 0; i < activeLength.get(); i++) {
                                 int waitingPower = evcs.getPower();
@@ -2418,12 +2454,12 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
         int minPower = MINIMUM_POWER;
         try {
             ManagedEvcs temp = this.cpm.getComponent(id);
-
+/*
             if (temp.getIsPriority().get() && this.powerLimit > 0) {
                 return true;
             }
 
-
+ */
             int minHwPower = temp.getMinimumHardwarePower().orElse(1150);
             int minSwPower = temp.getMinimumPower().orElse(1150);
             minPower = Math.max(minHwPower, minSwPower) / GRID_VOLTAGE;
@@ -2550,13 +2586,7 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
                                 this.log.error("Not an EVCS.");
                             }
                         }
-
-
-
-
                     }
-
-
                     //-----------Reallocate to everyone else-------------\\
                     if (freeResources > 0) {
                         ManagedEvcs[] everyone = this.nonPriorityList.toArray(new ManagedEvcs[0]);
@@ -2657,15 +2687,68 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
     }
 
     /**
+     * Returns if an EVCS is charging on the specified Phase.
+     *
+     * @param evcs  Evcs that is examined
+     * @param phase phase number that has to be tested
+     * @return true if on the phase
+     */
+    private boolean evcsOnPhase(ManagedEvcs evcs, int phase) {
+        int[] phaseConfiguration = evcs.getPhaseConfiguration();
+        int phaseCount = evcs.getPhases().orElse(0);
+        for (int n = 0; n < phaseCount; n++) {
+            if (phaseConfiguration[n] == phase) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
      * Reallocates the current resources to the priority EVCS if they don't charge with full power.
      */
     private void reallocateToPriority() {
         List<ManagedEvcs> all = Arrays.asList(this.evcss);
+        int freeResources;
+        int freeMiddleResources;
+        int freeResourcesPerEvcs = 0;
+        int freeResourcesPerMiddleEvcs = 0;
+        int nonThreePhasePriorityAmount = (int) this.priorityList.stream().filter(evcs -> evcs.getPhases().orElse(0) != 3).count();
+        int max = this.getMaximumLoad();
+        int mid = this.getMiddleLoad();
+        if (mid == 0) {
+            mid = max;
+        }
+        int min = this.getMinimumLoad();
         if (this.priorityAmount > 0) {
             if ((this.initialPowerLimit / GRID_VOLTAGE) / this.priorityAmount > this.priorityCurrent) {
+                if (this.symmetry) {
+                    freeResources = MAXIMUM_LOAD_DELTA - (max - min);
+                    freeMiddleResources = MAXIMUM_LOAD_DELTA  - (mid - min);
+                    freeResourcesPerEvcs = (freeResources / nonThreePhasePriorityAmount) - 1;
+                    freeResourcesPerMiddleEvcs = (freeMiddleResources / nonThreePhasePriorityAmount) - 1;
+                }
+                int finalFreeResourcesPerEvcs = freeResourcesPerEvcs;
+                int finalFreeResourcesPerMiddleEvcs = freeResourcesPerMiddleEvcs;
                 this.priorityList.forEach(evcs -> {
                     try {
-                        evcs.setChargePowerLimit(Math.min(evcs.getMaximumHardwarePower().orElse(this.priorityCurrent), evcs.getMaximumPower().orElse(this.priorityCurrent)));
+                        if ((this.powerWaitingList.containsKey(evcs.id()) && this.powerWaitingList.get(evcs.id()).getWantToCharge()) || (!this.powerWaitingList.containsKey(evcs.id()) && evcs.getChargePower().orElse(0) > 0)) {
+                            if (!this.symmetry || evcs.getPhases().orElse(0) == 3) {
+                                evcs.setChargePowerLimit(Math.min(evcs.getMaximumHardwarePower().orElse(this.priorityCurrent), evcs.getMaximumPower().orElse(this.priorityCurrent)));
+                            } else {
+                                int oldPower = evcs.getChargePower().orElse(0);
+                                int minPower = Math.max(evcs.getMinimumHardwarePower().orElse(0), evcs.getMinimumPower().orElse(0)) / GRID_VOLTAGE;
+                                if (this.evcsOnPhase(evcs, this.maxIndex)  && finalFreeResourcesPerEvcs > 0 && oldPower + (finalFreeResourcesPerEvcs * GRID_VOLTAGE) >= minPower) {
+                                    evcs.setChargePowerLimit(oldPower + (finalFreeResourcesPerEvcs * GRID_VOLTAGE));
+                                } else if ((this.evcsOnPhase(evcs, this.middleIndex) || (this.maxIndex == this.middleIndex && this.evcsOnPhase(evcs, this.middleIndex2))) && !this.evcsOnPhase(evcs, this.maxIndex) && finalFreeResourcesPerMiddleEvcs > 0 && oldPower + (finalFreeResourcesPerMiddleEvcs * GRID_VOLTAGE) >= minPower) {
+                                    evcs.setChargePowerLimit(oldPower + (finalFreeResourcesPerMiddleEvcs * GRID_VOLTAGE));
+                                } else if (this.evcsOnPhase(evcs, this.minIndex) && !this.evcsOnPhase(evcs, this.maxIndex)) {
+                                    evcs.setChargePowerLimit(Math.min(evcs.getMaximumHardwarePower().orElse(this.priorityCurrent), evcs.getMaximumPower().orElse(this.priorityCurrent)));
+                                }
+                            }
+                        } else {
+                            this.turnOffEvcs(evcs);
+                        }
                     } catch (OpenemsError.OpenemsNamedException e) {
                         this.log.error("Unable to set ChargeLimit of Priority EVCS!");
                     }

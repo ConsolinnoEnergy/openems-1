@@ -53,6 +53,7 @@ public class SimulatedKebaContact extends AbstractOpenemsComponent implements Ma
     private int phaseCount;
     private int initialPower;
     private int chargeLimit;
+    private int minimumHardwarePower;
 
     public SimulatedKebaContact() {
         super(//
@@ -80,6 +81,7 @@ public class SimulatedKebaContact extends AbstractOpenemsComponent implements Ma
             this._setMinimumHardwarePower(5 * 3 * 230);
         } else {
             this._setMinimumHardwarePower(config.minHwPower() * 3 * 230);
+            this.minimumHardwarePower = config.minHwPower();
         }
         this._setMinimumPower(5 * 3 * 230);
         this._setPhases(0);
@@ -112,6 +114,7 @@ public class SimulatedKebaContact extends AbstractOpenemsComponent implements Ma
             this._setMinimumHardwarePower(5 * 3 * 230);
         } else {
             this._setMinimumHardwarePower(config.minHwPower() * 3 * 230);
+            this.minimumHardwarePower = config.minHwPower();
         }
         this._setMinimumPower(5 * 3 * 230);
         this._setPhases(0);
@@ -153,6 +156,8 @@ public class SimulatedKebaContact extends AbstractOpenemsComponent implements Ma
         }
         this._setChargePower((this.l1Power + this.l2Power + this.l3Power) * 230);
         this._setMaximumPower(this.initialPower * this.phaseCount * 230);
+        this._setMinimumHardwarePower(5 * this.phaseCount * 230);
+        this._setMinimumPower(5 * this.phaseCount * 230);
 
     }
 
