@@ -135,7 +135,7 @@ abstract class AbstractTemperatureSurveillanceController extends AbstractOpenems
     private void initializeTimer(String timerId, int deltaTime) throws OpenemsError.OpenemsNamedException, ConfigurationException {
         this.timer = new TimerHandlerImpl(super.id(), this.cpm);
         this.timer.addOneIdentifier(CHECK_COMPONENTS_IDENTIFIER, timerId, CHECK_MISSING_COMPONENTS_DELTA_TIME);
-        if (this.surveillanceType.equals(SurveillanceType.HEATER_AND_HYDRAULIC_CONTROLLER)) {
+        if (this.surveillanceType.equals(SurveillanceType.HEATER_OR_COOLER_AND_HYDRAULIC_CONTROLLER)) {
             this.timer.addOneIdentifier(HYDRAULIC_CONTROLLER_IDENTIFIER, timerId, deltaTime);
         }
     }
@@ -239,8 +239,8 @@ abstract class AbstractTemperatureSurveillanceController extends AbstractOpenems
         }
 
 
-        if (this.surveillanceType.equals(SurveillanceType.HEATER_AND_HYDRAULIC_CONTROLLER)
-                || this.surveillanceType.equals(SurveillanceType.HEATER_ONLY)) {
+        if (this.surveillanceType.equals(SurveillanceType.HEATER_OR_COOLER_AND_HYDRAULIC_CONTROLLER)
+                || this.surveillanceType.equals(SurveillanceType.HEATER_OR_COOLER_ONLY)) {
             openemsComponentToAllocate = this.cpm.getComponent(heaterOrCoolerId);
             if (openemsComponentToAllocate instanceof Heater) {
                 if ((this.heatingType.equals(SurveillanceHeatingType.HEATING) && !(openemsComponentToAllocate instanceof Cooler))
@@ -254,7 +254,7 @@ abstract class AbstractTemperatureSurveillanceController extends AbstractOpenems
                         + heaterOrCoolerId + " Not an Instance of Heater");
             }
         }
-        if (this.surveillanceType.equals(SurveillanceType.HEATER_AND_HYDRAULIC_CONTROLLER)
+        if (this.surveillanceType.equals(SurveillanceType.HEATER_OR_COOLER_AND_HYDRAULIC_CONTROLLER)
                 || this.surveillanceType.equals(SurveillanceType.HYDRAULIC_CONTROLLER_ONLY)) {
             openemsComponentToAllocate = this.cpm.getComponent(hydraulicControllerId);
             if (openemsComponentToAllocate instanceof HydraulicController) {
@@ -293,14 +293,14 @@ abstract class AbstractTemperatureSurveillanceController extends AbstractOpenems
                 } else if (this.thermometerWrapper.shouldActivate() || this.isRunning) {
                     this.isRunning = true;
                     switch (this.surveillanceType) {
-                        case HEATER_ONLY:
+                        case HEATER_OR_COOLER_ONLY:
                             this.optionalHeater.getEnableSignalChannel().setNextWriteValueFromObject(true);
                             break;
                         case HYDRAULIC_CONTROLLER_ONLY:
                             this.optionalHydraulicController.setEnableSignal(true);
                             this.optionalHydraulicController.setControlType(ControlType.TEMPERATURE);
                             break;
-                        case HEATER_AND_HYDRAULIC_CONTROLLER:
+                        case HEATER_OR_COOLER_AND_HYDRAULIC_CONTROLLER:
                             this.optionalHeater.getEnableSignalChannel().setNextWriteValueFromObject(true);
                             if (this.timer.checkTimeIsUp(HYDRAULIC_CONTROLLER_IDENTIFIER)) {
                                 this.optionalHydraulicController.setEnableSignal(true);
@@ -335,7 +335,7 @@ abstract class AbstractTemperatureSurveillanceController extends AbstractOpenems
     private void disableComponents() throws OpenemsError.OpenemsNamedException {
         switch (this.surveillanceType) {
             case HYDRAULIC_CONTROLLER_ONLY:
-            case HEATER_AND_HYDRAULIC_CONTROLLER:
+            case HEATER_OR_COOLER_AND_HYDRAULIC_CONTROLLER:
                 if (this.optionalHydraulicController != null) {
                     this.optionalHydraulicController.setEnableSignal(false);
                 }
@@ -370,15 +370,15 @@ abstract class AbstractTemperatureSurveillanceController extends AbstractOpenems
                 if (this.surveillanceType.equals(SurveillanceType.NOTHING)) {
                     return;
                 }
-                if (this.surveillanceType.equals(SurveillanceType.HEATER_ONLY)
-                        || this.surveillanceType.equals(SurveillanceType.HEATER_AND_HYDRAULIC_CONTROLLER)) {
+                if (this.surveillanceType.equals(SurveillanceType.HEATER_OR_COOLER_ONLY)
+                        || this.surveillanceType.equals(SurveillanceType.HEATER_OR_COOLER_AND_HYDRAULIC_CONTROLLER)) {
                     allocatedOpenemsComponent = this.cpm.getComponent(this.optionalHeater.id());
                     if (!this.optionalHeater.equals(allocatedOpenemsComponent) && allocatedOpenemsComponent instanceof Heater) {
                         this.optionalHeater = (Heater) allocatedOpenemsComponent;
                     }
                 }
                 if (this.surveillanceType.equals(SurveillanceType.HYDRAULIC_CONTROLLER_ONLY)
-                        || this.surveillanceType.equals(SurveillanceType.HEATER_AND_HYDRAULIC_CONTROLLER)) {
+                        || this.surveillanceType.equals(SurveillanceType.HEATER_OR_COOLER_AND_HYDRAULIC_CONTROLLER)) {
                     if (this.optionalHydraulicController.isEnabled() == false) {
                         allocatedOpenemsComponent = this.cpm.getComponent(this.optionalHydraulicController.id());
                         if (allocatedOpenemsComponent instanceof HydraulicController) {

@@ -29,7 +29,7 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     int offsetDeactivate() default -100;
 
     @AttributeDefinition(name = "SurveillanceType", description = "Set the Surveillance Type")
-    SurveillanceType surveillanceType() default SurveillanceType.HEATER_AND_HYDRAULIC_CONTROLLER;
+    SurveillanceType surveillanceType() default SurveillanceType.HEATER_OR_COOLER_AND_HYDRAULIC_CONTROLLER;
 
     @AttributeDefinition(name = "ValveControllerId", description = "Unique Id of the ValveController you want to use")
     String hydraulicControllerId() default "ValveController0";
