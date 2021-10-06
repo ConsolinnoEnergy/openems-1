@@ -290,9 +290,7 @@ abstract class AbstractTemperatureSurveillanceController extends AbstractOpenems
                 if (this.thermometerWrapper.shouldDeactivate()) {
                     this.isRunning = false;
                     this.disableComponents();
-                }
-
-                if (this.thermometerWrapper.shouldActivate() || this.isRunning) {
+                } else if (this.thermometerWrapper.shouldActivate() || this.isRunning) {
                     this.isRunning = true;
                     switch (this.surveillanceType) {
                         case HEATER_ONLY:
