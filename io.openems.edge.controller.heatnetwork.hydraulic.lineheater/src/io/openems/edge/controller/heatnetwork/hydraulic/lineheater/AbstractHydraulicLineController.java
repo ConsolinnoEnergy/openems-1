@@ -54,11 +54,13 @@ abstract class AbstractHydraulicLineController extends AbstractOpenemsComponent 
     private static final int MIN_ADDRESS_INDEX = 3;
     private static final int FULL_MINUTE = 60;
     private static final int FALLBACK_TEMPERATURE = 500;
+    private static final int CHECK_MISSING_COMPONENTS = 60;
     private TimerHandler timerHandler;
     //
-    private static final String IDENTIFIER_FALLBACK = "HYDRAULIC_LINE_HEATER_FALLBACK_IDENTIFIER";
-    private static final String IDENTIFIER_CYCLE_RESTART = "HYDRAULIC_LINE_HEATER_CYCLE_RESTART_IDENTIFIER";
-    private Thermometer tempSensorReference;
+    private static final String IDENTIFIER_FALLBACK = "HYDRAULIC_HEATER_FALLBACK_IDENTIFIER";
+    private static final String IDENTIFIER_CYCLE_RESTART = "HYDRAULIC_LINE_CYCLE_RESTART_IDENTIFIER";
+    private static final String IDENTIFIER_CHECK_MISSING_COMPONENTS = "HYDRAULIC_LINE_CHECK_MISSING_IDENTIFIER";
+    private Thermometer thermometerLine;
     private boolean useDecentralizedComponent;
     private DecentralizedHeater decentralizedHeaterOptional;
     private DecentralizedCooler decentralizedCoolerOptional;
@@ -152,7 +154,7 @@ abstract class AbstractHydraulicLineController extends AbstractOpenemsComponent 
                                              double maxValveValue, double minValveValue, boolean minMaxOnly, HeaterType heaterType) {
         try {
             this.heaterType = heaterType;
-            this.tempSensorReference = (Thermometer) this.allocateComponent(referenceThermometer, ComponentType.THERMOMETER);
+            this.thermometerLine = (Thermometer) this.allocateComponent(referenceThermometer, ComponentType.THERMOMETER);
             this.useMinMax = useMinMax;
             this.onlyMinMax = minMaxOnly;
             this.createSpecificLineHeater(lineHeaterType, valueIsBoolean, bypassValveId, channelAddress, useMinMax, channels);
@@ -186,6 +188,7 @@ abstract class AbstractHydraulicLineController extends AbstractOpenemsComponent 
             this.timerHandler = new TimerHandlerImpl(super.id(), this.cpm);
             this.timerHandler.addOneIdentifier(IDENTIFIER_FALLBACK, timerId, deltaTimeFallback);
             this.timerHandler.addOneIdentifier(IDENTIFIER_CYCLE_RESTART, timerId, deltaTimeCycleRestart);
+            this.timerHandler.addOneIdentifier(IDENTIFIER_CHECK_MISSING_COMPONENTS, timerId, CHECK_MISSING_COMPONENTS);
             this.configSuccess = true;
         } catch (Exception e) {
             this.log.warn("Couldn't apply config, trying again later!");
@@ -373,7 +376,10 @@ abstract class AbstractHydraulicLineController extends AbstractOpenemsComponent 
      */
     protected void abstractRun() {
         if (this.configSuccess) {
-            int temperatureCurrent = this.tempSensorReference.getTemperature().orElse(DEFAULT_TEMPERATURE);
+            if (this.timerHandler.checkTimeIsUp(IDENTIFIER_CHECK_MISSING_COMPONENTS)) {
+                this.checkIsComponentOld();
+            }
+            int temperatureCurrent = this.thermometerLine.getTemperature().orElse(DEFAULT_TEMPERATURE);
             Value<Boolean> decentralizedRequestValue = this.getDecentralizedRequestIsDefinedAndValue();
             //check if Request present -> need to Fallback or not
             boolean decentralizedRequestPresent = decentralizedRequestValue != null && decentralizedRequestValue.isDefined();
@@ -427,6 +433,42 @@ abstract class AbstractHydraulicLineController extends AbstractOpenemsComponent 
             }
         }
 
+    }
+
+    /**
+     * Check for old References and reset those.
+     * Reset Reference for Thermometer, and decentralizedComponent if configured.
+     */
+    private void checkIsComponentOld() {
+        try {
+            OpenemsComponent component = this.cpm.getComponent(this.thermometerLine.id());
+            if (component instanceof Thermometer && !this.thermometerLine.equals(component)) {
+                this.thermometerLine = (Thermometer) component;
+            }
+            if (this.useDecentralizedComponent) {
+                switch (this.heaterType) {
+                    case COOLER:
+                        if (this.decentralizedCoolerOptional != null) {
+                            component = this.cpm.getComponent(this.decentralizedCoolerOptional.id());
+                            if (component instanceof DecentralizedCooler && !this.decentralizedCoolerOptional.equals(component)) {
+                                this.decentralizedCoolerOptional = (DecentralizedCooler) component;
+                            }
+                        }
+                        break;
+                    case HEATER:
+                        if (this.decentralizedHeaterOptional != null) {
+                            component = this.cpm.getComponent(this.decentralizedHeaterOptional.id());
+                            if (component instanceof DecentralizedCooler && !this.decentralizedHeaterOptional.equals(component)) {
+                                this.decentralizedHeaterOptional = (DecentralizedHeater) component;
+                            }
+                        }
+                        break;
+                }
+            }
+            this.timerHandler.resetTimer(IDENTIFIER_CHECK_MISSING_COMPONENTS);
+        } catch (OpenemsError.OpenemsNamedException e) {
+            this.log.warn("Couldn't allocate missing/deprecated Components. Trying again next Cycle!");
+        }
     }
 
     /**
@@ -557,6 +599,7 @@ abstract class AbstractHydraulicLineController extends AbstractOpenemsComponent 
                 return DecentralizedReactionType.NEED_HEAT;
         }
     }
+
     /**
      * Get the DecentralizedReactionType by DecentralizedCoolerType.
      *
