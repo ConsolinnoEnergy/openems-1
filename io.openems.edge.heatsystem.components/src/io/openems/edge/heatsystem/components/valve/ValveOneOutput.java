@@ -75,24 +75,31 @@ public class ValveOneOutput extends AbstractValve implements OpenemsComponent, H
     }
 
     @Activate
-    void activate(ComponentContext context, ConfigValveOneOutput config) throws ConfigurationException {
+    void activate(ComponentContext context, ConfigValveOneOutput config) {
         try {
             super.activate(context, config.id(), config.alias(), config.enabled());
             this.config = config;
+
             this.activationOrModifiedRoutine(config);
-            super.createTimerHandler(config.timerId(), config.maxTime(), this.cpm, this, config.useExceptionalState());
             if (config.shouldCloseOnActivation()) {
                 this.getPowerLevelChannel().setNextValue(0);
                 this.setPointPowerLevelChannel().setNextWriteValueFromObject(0);
                 this.forceClose();
             }
-        } catch (OpenemsError.OpenemsNamedException e) {
+        } catch (OpenemsError.OpenemsNamedException | ConfigurationException e) {
             this.configSuccess = false;
             this.log.warn("Couldn't apply Config. Components may not be initialized yet This: "
                     + super.id() + " will try again later.");
         }
     }
 
+    /**
+     * Sets the basic Configuration on activation or modification.
+     *
+     * @param config the config of this component.
+     * @throws ConfigurationException             if something is configured in a wrong way (e.g. instanceof is wrong)
+     * @throws OpenemsError.OpenemsNamedException if Components with the given ID or ChannelAddresses cannot be found/are wrong.
+     */
     private void activationOrModifiedRoutine(ConfigValveOneOutput config) throws ConfigurationException, OpenemsError.OpenemsNamedException {
         this.useCheckOutput = config.useCheckChannel();
         this.configurationType = config.configurationType();
@@ -126,6 +133,8 @@ public class ValveOneOutput extends AbstractValve implements OpenemsComponent, H
         }
         this.secondsPerPercentage = ((double) config.timeToOpenValve() / 100.d);
         super.percentPossiblePerCycle = super.cycle.getCycleTime() / (this.secondsPerPercentage * MILLI_SECONDS_TO_SECONDS);
+        super.createTimerHandler(config.timerId(), config.maxTime(), this.cpm, this, config.useExceptionalState());
+        this.configSuccess = true;
     }
 
     @Modified
@@ -140,7 +149,6 @@ public class ValveOneOutput extends AbstractValve implements OpenemsComponent, H
             this.log.warn("Couldn't apply Config. Components may not be initialized yet This: "
                     + super.id() + " will try again later.");
         }
-        this.configSuccess = true;
     }
 
     @Deactivate
@@ -208,6 +216,11 @@ public class ValveOneOutput extends AbstractValve implements OpenemsComponent, H
 
     }
 
+    /**
+     * Writes a percent Value to an output channel.
+     *
+     * @param percent the SetPoint
+     */
     private void writeToOutputChannel(double percent) {
         try {
             Channel<?> channelToWrite;
@@ -293,6 +306,14 @@ public class ValveOneOutput extends AbstractValve implements OpenemsComponent, H
         return true;
     }
 
+    /**
+     * Gets the check output channel.
+     * On Device -> get the ReadChannel of Pwm or AIO. Otherwise return given OutputChannel.
+     *
+     * @return the Channel for inspection
+     * @throws OpenemsError.OpenemsNamedException if channel cannot be found
+     * @throws ConfigurationException             this error shouldn't occur and is a "default" value
+     */
     private Channel<?> getOptionalChannel() throws OpenemsError.OpenemsNamedException, ConfigurationException {
         switch (this.configurationType) {
             case DEVICE:
@@ -311,10 +332,21 @@ public class ValveOneOutput extends AbstractValve implements OpenemsComponent, H
         throw new ConfigurationException("Get Optional Channel", "This Error shouldn't occur, there should always be a configuration Type at this point");
     }
 
+    /**
+     * Gets the ScaleFactor of a Channel. Since the Valve works with Percent and another Channel may use
+     * Thousandth -> a ScaleFactor of 10 (value*10 not value*10^10) is applied.
+     *
+     * @param channel the channel.
+     * @return the Scalefactor for the value.
+     */
     private int getScaleFactor(Channel<?> channel) {
         return channel.channelDoc().getUnit().equals(Unit.THOUSANDTH) ? 10 : 1;
     }
 
+    /**
+     * Resets the Valve -> Force Closes it.
+     * Can be useful if something weird is happening or fi the Valve was deactivated for some reason and got reactivated again.
+     */
     @Override
     public void reset() {
         this.forceClose();

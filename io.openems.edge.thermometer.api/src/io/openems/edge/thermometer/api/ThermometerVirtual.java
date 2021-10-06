@@ -32,7 +32,7 @@ public interface ThermometerVirtual extends Thermometer {
     }
 
     /**
-     * Gets the Virutal Temperature Channel.
+     * Gets the Virtual Temperature Channel.
      *
      * @return the Channel.
      */
@@ -51,7 +51,7 @@ public interface ThermometerVirtual extends Thermometer {
     }
 
     /**
-     * Sets the Virutal Temperature. Can be called by other Components.
+     * Sets the Virtual Temperature. Can be called by other Components.
      *
      * @param virtualTemperature the virtual Temperature that will be applied.
      * @throws OpenemsError.OpenemsNamedException if Channel cannot be found. (Shouldn't occur)

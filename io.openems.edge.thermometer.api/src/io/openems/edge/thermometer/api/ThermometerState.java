@@ -2,6 +2,9 @@ package io.openems.edge.thermometer.api;
 
 import io.openems.common.types.OptionsEnum;
 
+/**
+ * Tells if the Temperature within the {@link ThermometerThreshold} is Rising or Falling.
+ */
 public enum ThermometerState implements OptionsEnum {
     UNDEFINED(-1, "Undefined"), //
     RISING(1, "Rising"),

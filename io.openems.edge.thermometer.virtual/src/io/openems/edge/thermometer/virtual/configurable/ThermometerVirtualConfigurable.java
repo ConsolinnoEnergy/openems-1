@@ -31,9 +31,11 @@ import java.util.Dictionary;
 import java.util.Optional;
 
 /**
- *
+ * The Implementation of the Configurable Thermometer. It allows the User to set up 2 Static Temperature Values.
+ * On Enable -> Write the Active Temperature, otherwise the inactive Temperature.
+ * Those Active and Inactive Temperatures can be set and updated via {@link ThermometerConfigurable.ChannelId#SET_DEFAULT_ACTIVE_TEMPERATURE}
+ * and {@link ThermometerConfigurable.ChannelId#SET_DEFAULT_INACTIVE_TEMPERATURE}.
  */
-
 @Designate(ocd = Config.class, factory = true)
 @Component(name = "Thermometer.Virtual.Configurable", immediate = true,
         configurationPolicy = ConfigurationPolicy.REQUIRE,
@@ -90,15 +92,25 @@ public class ThermometerVirtualConfigurable extends AbstractOpenemsComponent imp
 
     }
 
+    /**
+     * Sets up the basic Configuration on activation or modification.
+     */
     private void activationOrModifiedRoutine() {
-        this._getActiveTemperature().setNextValue(this.config.activeTemperature());
-        this._getInactiveTemperature().setNextValue(this.config.inactiveTemperature());
-        this.autoRun = this.config.autoApply();
+        this._getActiveTemperatureChannel().setNextValue(this.config.activeTemperature());
+        this._getInactiveTemperatureChannel().setNextValue(this.config.inactiveTemperature());
+        this._getActiveTemperatureChannel().nextProcessImage();
+        this._getInactiveTemperatureChannel().nextProcessImage();
+        this.autoRun = this.config.alwaysActive();
         this.useInactiveTemperature = this.config.useInactiveTemperature();
         this.createTimer(this.config.id(), this.config.timerID(), this.config.waitTime());
     }
 
-
+    /**
+     * Creates the TimerHandler, needed to handle EnableSignal Missing signals.
+     * @param id the id of the Component.
+     * @param timerId the TimerId of the Timer that is configured.
+     * @param maxWaitTime the waiting Time.
+     */
     private void createTimer(String id, String timerId, int maxWaitTime) {
         try {
             if (this.timerHandler != null) {
@@ -122,32 +134,34 @@ public class ThermometerVirtualConfigurable extends AbstractOpenemsComponent imp
     @Override
     public void handleEvent(Event event) {
         if (this.configurationSuccess) {
-            if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS)) {
+            if(this.isEnabled()) {
+                if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS)) {
 
-                if (this._getDefaultActiveTemperatureChannel().getNextWriteValue().isPresent()) {
-                    this.updateConfig(true);
-                }
-                if (this._getDefaultInactiveTemperatureChannel().getNextWriteValue().isPresent()) {
-                    this.updateConfig(false);
-                }
-
-            } else if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE)) {
-
-                if (this.autoRun || this.shouldRun()) {
-                    this.isActive = true;
-                    if (this._getActiveTemperature().value().isDefined()) {
-                        this.getTemperatureChannel().setNextValue(this._getActiveTemperature().value().get());
+                    if (this._getDefaultActiveTemperatureChannel().getNextWriteValue().isPresent()) {
+                        this.updateConfig(true);
+                    }
+                    if (this._getDefaultInactiveTemperatureChannel().getNextWriteValue().isPresent()) {
+                        this.updateConfig(false);
                     }
 
-                } else {
-                    this.isActive = false;
-                    if (this.useInactiveTemperature) {
-                        if (this._getInactiveTemperature().value().isDefined()) {
-                            this.getTemperatureChannel().setNextValue(this._getInactiveTemperature().value().get());
+                } else if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE)) {
+
+                    if (this.autoRun || this.shouldRun()) {
+                        this.isActive = true;
+                        if (this._getActiveTemperatureChannel().value().isDefined()) {
+                            this.getTemperatureChannel().setNextValue(this._getActiveTemperatureChannel().value().get());
+                        }
+
+                    } else {
+                        this.isActive = false;
+                        if (this.useInactiveTemperature) {
+                            if (this._getInactiveTemperatureChannel().value().isDefined()) {
+                                this.getTemperatureChannel().setNextValue(this._getInactiveTemperatureChannel().value().get());
+                            }
                         }
                     }
+                    this.getEnableSignalChannel().setNextValue(this.isActive);
                 }
-                this.getEnableSignal().setNextValue(this.isActive);
             }
         } else {
             this.createTimer(this.id(), this.config.timerID(), this.config.waitTime());
@@ -155,9 +169,9 @@ public class ThermometerVirtualConfigurable extends AbstractOpenemsComponent imp
     }
 
     private boolean shouldRun() {
-        if (this.getEnableSignal().getNextWriteValue().isPresent()) {
+        if (this.getEnableSignalChannel().getNextWriteValue().isPresent()) {
             this.timerHandler.resetTimer(ENABLE_SIGNAL_IDENTIFIER);
-            return this.getEnableSignal().getNextWriteValueAndReset().orElse(false);
+            return this.getEnableSignalChannel().getNextWriteValueAndReset().orElse(false);
         }
         return this.isActive && this.timerHandler.checkTimeIsUp(ENABLE_SIGNAL_IDENTIFIER);
     }

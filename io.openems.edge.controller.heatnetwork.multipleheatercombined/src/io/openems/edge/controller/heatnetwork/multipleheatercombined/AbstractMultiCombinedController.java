@@ -137,7 +137,7 @@ public abstract class AbstractMultiCombinedController extends AbstractOpenemsCom
                     OpenemsComponent component = this.cpm.getComponent(entry);
                     int index = heaterIds.indexOf(entry);
                     if (component instanceof Heater
-                            && (this.controlType.equals(ControlType.HEATER)
+                            && ((this.controlType.equals(ControlType.HEATER) && !(component instanceof Cooler))
                             || (this.controlType.equals(ControlType.COOLER) && component instanceof Cooler))) {
                         Heater heater = ((Heater) component);
                         if (this.configuredHeater.stream().anyMatch(existingHeater -> existingHeater.id().equals(heater.id()))) {

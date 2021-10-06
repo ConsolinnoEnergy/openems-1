@@ -22,23 +22,10 @@ public class ThermometerWrapperForCoolingImpl extends AbstractThermometerWrapper
         super(activateThermometer, deactivateThermometer, activateValue, deactivateValue, cpm);
     }
 
-    /**
-     * Refreshes the Thermometer References in case they were changed/disabled/renewed.
-     *
-     * @param thermometerType the ThermometerType, to identify the Map Value.
-     * @param newThermometer  the new Thermometer put into the stored Maps,.
-     */
-
-    @Override
-    public void renewThermometer(ThermometerType thermometerType, Thermometer newThermometer) {
-        Thermometer oldThermometer = this.getThermometerKindThermometerMap().get(thermometerType);
-        this.getThermometerKindThermometerMap().remove(thermometerType);
-        this.getThermometerKindThermometerMap().put(thermometerType, newThermometer);
-        ThermometerValueWrapper value = this.getThermometerAndValue().get(oldThermometer);
-        this.getThermometerAndValue().remove(oldThermometer);
-        this.getThermometerAndValue().put(newThermometer, value);
+    public ThermometerWrapperForCoolingImpl(Thermometer activateThermometer, Thermometer deactivateThermometer,
+                                            String activateValue, String deactivateValue, ComponentManager cpm, int activationOffset, int deactivationOffset)  throws OpenemsError.OpenemsNamedException, ConfigurationException {
+        super(activateThermometer, deactivateThermometer, activateValue, deactivateValue, cpm, activationOffset, deactivationOffset);
     }
-
 
     /**
      * Method, usually called by Heater Controller.
@@ -49,7 +36,7 @@ public class ThermometerWrapperForCoolingImpl extends AbstractThermometerWrapper
 
     @Override
     public boolean shouldDeactivate() throws OpenemsError.OpenemsNamedException, ConfigurationException {
-        return this.getDeactivationThermometer().getTemperatureValue() <= this.getDeactivationTemperature();
+        return this.getDeactivationThermometer().getTemperatureValue() <= this.getDeactivationTemperature() + super.deactivationOffset;
     }
 
     /**
@@ -61,7 +48,7 @@ public class ThermometerWrapperForCoolingImpl extends AbstractThermometerWrapper
 
     @Override
     public boolean shouldActivate() throws OpenemsError.OpenemsNamedException, ConfigurationException {
-        return this.getActivationThermometer().getTemperatureValue() >= this.getActivationTemperature();
+        return this.getActivationThermometer().getTemperatureValue() >= this.getActivationTemperature() + super.activationOffset;
     }
 
 }

@@ -20,9 +20,16 @@ public abstract class AbstractThermometerWrapper implements ThermometerWrapper {
     //thermometerType == Activate/Deactivate on HeatControl. Mapped thermometerType to Thermometer
     private final Map<ThermometerType, Thermometer> thermometerTypeThermometerMap = new HashMap<>();
 
+    protected int deactivationOffset = 0;
+    protected int activationOffset = 0;
+
 
     public AbstractThermometerWrapper(Thermometer activateThermometer, Thermometer deactivateThermometer, String activateValue, String deactivateValue, ComponentManager cpm)
             throws OpenemsError.OpenemsNamedException, ConfigurationException {
+        this(activateThermometer, deactivateThermometer, activateValue, deactivateValue, cpm, 0, 0);
+    }
+
+    public AbstractThermometerWrapper(Thermometer activateThermometer, Thermometer deactivateThermometer, String activateValue, String deactivateValue, ComponentManager cpm, int activationOffset, int deactivationOffset) throws OpenemsError.OpenemsNamedException, ConfigurationException {
         this.cpm = cpm;
         this.thermometerTypeThermometerMap.put(ThermometerType.ACTIVATE_THERMOMETER, activateThermometer);
         this.thermometerAndValue.put(activateThermometer, new ThermometerValueWrapper(activateValue));
@@ -30,6 +37,8 @@ public abstract class AbstractThermometerWrapper implements ThermometerWrapper {
         this.thermometerAndValue.put(deactivateThermometer, new ThermometerValueWrapper(deactivateValue));
         this.thermometerAndValue.get(activateThermometer).validateChannelAndGetValue(this.cpm);
         this.thermometerAndValue.get(deactivateThermometer).validateChannelAndGetValue(this.cpm);
+        this.deactivationOffset = deactivationOffset;
+        this.activationOffset = activationOffset;
     }
 
     /**

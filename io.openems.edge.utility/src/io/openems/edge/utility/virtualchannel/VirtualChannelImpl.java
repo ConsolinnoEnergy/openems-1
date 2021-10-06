@@ -32,7 +32,7 @@ import org.slf4j.LoggerFactory;
  * </p>
  */
 @Designate(ocd = Config.class, factory = true)
-@Component(name = "VirtualChannelImpl", immediate = true,
+@Component(name = "Channel.Virtual", immediate = true,
         configurationPolicy = ConfigurationPolicy.REQUIRE,
         property = EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS)
 
@@ -92,6 +92,7 @@ public class VirtualChannelImpl extends AbstractOpenemsComponent implements Open
             switch (this.type) {
                 case STRING:
                     this.getStringChannel().getNextWriteValue().ifPresent(entry -> this.getStringChannel().setNextValue(entry));
+                    break;
                 case BOOLEAN:
                     this.getBooleanChannel().getNextWriteValue().ifPresent(entry -> this.getBooleanChannel().setNextValue(entry));
                     break;

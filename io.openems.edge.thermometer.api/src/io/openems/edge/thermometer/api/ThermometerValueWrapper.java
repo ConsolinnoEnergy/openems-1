@@ -7,15 +7,16 @@ import io.openems.edge.common.component.ComponentManager;
 import org.osgi.service.cm.ConfigurationException;
 
 /**
- * The inner static Class Thermometer Value, containing  a temperature Value or a ChannelAddress depending what is configured.
+ * The Thermometer Value. It contains  a temperature Value or a ChannelAddress depending what is configured.
  * This is determined, if the channelAddressOrValue String (usually from MultiHeaterConfig) contains only numbers,
  * the TemperatureValue will be set, otherwise the class tries to get a ChannelAddress from the given String.
- * This class helps the Thermometerwrapper to determine, if the Temperature is above/below activation/deactivation SetPoint.
+ * This class helps the {@link ThermometerWrapper} to determine, if the Temperature is above/below activation/deactivation SetPoint.
  * The benefit of having a ChannelAddress as an activation/deactivation SetPoint is, to dynamically change the SetPoints.
  * (E.g. Using a virtualThermometer).
  */
 public class ThermometerValueWrapper {
 
+    private static final String REG_EX_VALID_NUMBER_CHECK = "[-+]?([0-9]*[.][0-9]+|[0-9]+)";
     private int temperatureValue;
     private ChannelAddress temperatureValueAddress;
     private boolean usesChannel;
@@ -37,7 +38,7 @@ public class ThermometerValueWrapper {
      * @return the result oft the match with the regex that describes only numbers.
      */
     private boolean containsOnlyValidNumbers(String value) {
-        return value.matches("[-+]?([0-9]*[.][0-9]+|[0-9]+)");
+        return value.matches(REG_EX_VALID_NUMBER_CHECK);
     }
 
     /**

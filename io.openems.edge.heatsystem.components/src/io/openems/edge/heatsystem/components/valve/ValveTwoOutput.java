@@ -427,6 +427,10 @@ public class ValveTwoOutput extends AbstractValve implements OpenemsComponent, H
     }
 
     //----------PRIVATE VALVE CHECK ----------- //
+
+    /**
+     * Checks if the the Valve reacts properly, by checking on closing/opening the Channel Values.
+     */
     private void checkValveChannelCorrect() {
         if (this.useCheckOutput) {
             try {
@@ -472,6 +476,12 @@ public class ValveTwoOutput extends AbstractValve implements OpenemsComponent, H
         }
     }
 
+    /**
+     * Returns the Channel that are configured for opening or closing.
+     * @param channelToGet the {@link ChannelToGet}
+     * @return the Channel corresponding to {@link ChannelToGet}.
+     * @throws OpenemsError.OpenemsNamedException if Channel not found.
+     */
     private Channel<?> getInputChannel(ChannelToGet channelToGet) throws OpenemsError.OpenemsNamedException {
         switch (this.configurationType) {
             case CHANNEL:
@@ -490,7 +500,12 @@ public class ValveTwoOutput extends AbstractValve implements OpenemsComponent, H
         }
     }
 
-
+    /**
+     * Checks if the Value of the Channel is equivalent to true.
+     * @param channelToCheck the Channel
+     * @return true if Value is true or Value > 0.
+     * @throws ConfigurationException if e.g. String does not contain only numbers.
+     */
     private boolean checkChannelValueIsTrue(Channel<?> channelToCheck) throws ConfigurationException {
         Value<?> value = channelToCheck.value().isDefined() ? channelToCheck.value()
                 : channelToCheck.getNextValue().isDefined() ? channelToCheck.getNextValue() : null;
