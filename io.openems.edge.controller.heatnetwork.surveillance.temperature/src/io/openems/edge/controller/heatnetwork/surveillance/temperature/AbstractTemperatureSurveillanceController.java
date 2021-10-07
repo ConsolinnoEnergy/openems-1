@@ -47,8 +47,6 @@ abstract class AbstractTemperatureSurveillanceController extends AbstractOpenems
     ComponentManager cpm;
 
     protected boolean configSuccess;
-    private final AtomicInteger cycleCount = new AtomicInteger(0);
-    private static final int MAX_CYCLE_FOR_CONFIG = 10;
     //Different ThresholdThermometer
     private Thermometer referenceThermometer;
     private Thermometer activationThermometer;
@@ -93,15 +91,15 @@ abstract class AbstractTemperatureSurveillanceController extends AbstractOpenems
      * Otherwise check if the Configuration might succeed. If not -> Wait until the run method is called.
      * Some Components might be enabled later.
      *
-     * @param thermometerActivateId thermometerActivateId the activation Thermometer id.
+     * @param thermometerActivateId   thermometerActivateId the activation Thermometer id.
      * @param thermometerDeactivateId thermometerDeactivateId the deactivation Thermometer id.
-     * @param referenceThermometerId referenceThermometerId the reference Thermometer id.
-     * @param activationOffset activationOffset offset for Activation e.g. if reference is 750dC but you want to activate on 800 -> offset would be 50
-     * @param deactivationOffset deactivationOffset offset for deactivation e.g. if reference is 750 but you want to deactivate at 650 -> offset would be -100
-     * @param heaterId heaterOrCoolerId the heater or cooler id depending on the {@link SurveillanceHeatingType}
-     * @param hydraulicControllerId hydraulicControllerId the hydraulicController id.
-     * @param timerId timerId the timer to stop the time.
-     * @param deltaTime the delta Time -> wait cycles or Time.
+     * @param referenceThermometerId  referenceThermometerId the reference Thermometer id.
+     * @param activationOffset        activationOffset offset for Activation e.g. if reference is 750dC but you want to activate on 800 -> offset would be 50
+     * @param deactivationOffset      deactivationOffset offset for deactivation e.g. if reference is 750 but you want to deactivate at 650 -> offset would be -100
+     * @param heaterId                heaterOrCoolerId the heater or cooler id depending on the {@link SurveillanceHeatingType}
+     * @param hydraulicControllerId   hydraulicControllerId the hydraulicController id.
+     * @param timerId                 timerId the timer to stop the time.
+     * @param deltaTime               the delta Time -> wait cycles or Time.
      * @throws ConfigurationException if the Thermometer id's are duplicated.
      */
     protected void activationOrModifiedRoutine(String thermometerActivateId, String thermometerDeactivateId,
@@ -182,15 +180,15 @@ abstract class AbstractTemperatureSurveillanceController extends AbstractOpenems
     /**
      * Allocates the Components corresponding to the Config.
      *
-     * @param thermometerActivateId the activation Thermometer id.
+     * @param thermometerActivateId   the activation Thermometer id.
      * @param thermometerDeactivateId the deactivation Thermometer id.
-     * @param referenceThermometerId the reference Thermometer id.
-     * @param activationOffset offset for Activation e.g. if reference is 750dC but you want to activate on 800 -> offset would be 50
-     * @param deactivationOffset offset for deactivation e.g. if reference is 750 but you want to deactivate at 650 -> offset would be -100
-     * @param heaterOrCoolerId the heater or cooler id depending on the {@link SurveillanceHeatingType}
-     * @param hydraulicControllerId the hydraulicController id.
-     * @param timerId the timer to stop the time.
-     * @param deltaTime the delta Time -> wait cycles or Time.
+     * @param referenceThermometerId  the reference Thermometer id.
+     * @param activationOffset        offset for Activation e.g. if reference is 750dC but you want to activate on 800 -> offset would be 50
+     * @param deactivationOffset      offset for deactivation e.g. if reference is 750 but you want to deactivate at 650 -> offset would be -100
+     * @param heaterOrCoolerId        the heater or cooler id depending on the {@link SurveillanceHeatingType}
+     * @param hydraulicControllerId   the hydraulicController id.
+     * @param timerId                 the timer to stop the time.
+     * @param deltaTime               the delta Time -> wait cycles or Time.
      * @throws ConfigurationException             if the componentIds are available in the OpenEMS Edge but not an instance of the correct Class
      * @throws OpenemsError.OpenemsNamedException if the id couldn't be found at all.
      */
@@ -290,6 +288,9 @@ abstract class AbstractTemperatureSurveillanceController extends AbstractOpenems
                 if (this.thermometerWrapper.shouldDeactivate()) {
                     this.isRunning = false;
                     this.disableComponents();
+                    if (this.surveillanceType.equals(SurveillanceType.HEATER_OR_COOLER_AND_HYDRAULIC_CONTROLLER)) {
+                        this.timer.resetTimer(HYDRAULIC_CONTROLLER_IDENTIFIER);
+                    }
                 } else if (this.thermometerWrapper.shouldActivate() || this.isRunning) {
                     this.isRunning = true;
                     switch (this.surveillanceType) {
@@ -313,18 +314,10 @@ abstract class AbstractTemperatureSurveillanceController extends AbstractOpenems
                             break;
                     }
                 }
-            } else {
-                this.configSuccess = true;
             }
         } catch (ConfigurationException | OpenemsError.OpenemsNamedException e) {
-            if (this.cycleCount.get() > MAX_CYCLE_FOR_CONFIG) {
-                this.log.warn("Couldn't allocate Configuration for component: " + super.id());
-            } else {
-                this.cycleCount.getAndIncrement();
-            }
-            this.configSuccess = false;
+            this.log.warn("Couldn't set EnableSignal, Write to Channel, or ReadFromChannel Address: " + e.getMessage());
         }
-
     }
 
     /**

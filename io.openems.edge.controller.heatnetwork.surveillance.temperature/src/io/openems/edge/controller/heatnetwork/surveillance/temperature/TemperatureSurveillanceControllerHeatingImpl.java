@@ -86,7 +86,9 @@ public class TemperatureSurveillanceControllerHeatingImpl extends AbstractTemper
      */
     @Override
     public void run() {
-        if (!super.configSuccess) {
+        if (super.configSuccess) {
+            super.abstractRun();
+        } else {
             try {
                 super.activationOrModifiedRoutine(this.config.thermometerActivateId(), this.config.thermometerDeactivateId(),
                         this.config.referenceThermometerId(), this.config.offsetActivate(), this.config.offsetDeactivate(),
@@ -95,8 +97,6 @@ public class TemperatureSurveillanceControllerHeatingImpl extends AbstractTemper
             } catch (ConfigurationException e) {
                 this.log.warn("Please make sure to have 3 different Thermometer configured!");
             }
-        } else {
-            super.abstractRun();
         }
     }
 

@@ -49,7 +49,7 @@ public class TemperatureSurveillanceControllerCoolingImpl extends AbstractTemper
                 this.config.thermometerActivateId(), this.config.thermometerDeactivateId(),
                 this.config.referenceThermometerId(), SurveillanceHeatingType.COOLING,
                 this.config.surveillanceType(), this.config.offsetActivate(), this.config.offsetDeactivate(),
-                this.config.heaterId(), this.config.hydraulicControllerId(),
+                this.config.coolerId(), this.config.hydraulicControllerId(),
                 this.config.timerId(), this.config.deltaTimeDelay());
     }
 
@@ -61,7 +61,7 @@ public class TemperatureSurveillanceControllerCoolingImpl extends AbstractTemper
                 this.config.referenceThermometerId(),
                 SurveillanceHeatingType.COOLING,
                 this.config.surveillanceType(), this.config.offsetActivate(),
-                this.config.offsetDeactivate(), this.config.heaterId(),
+                this.config.offsetDeactivate(), this.config.coolerId(),
                 this.config.hydraulicControllerId(),
                 this.config.timerId(), this.config.deltaTimeDelay());
     }
@@ -86,17 +86,18 @@ public class TemperatureSurveillanceControllerCoolingImpl extends AbstractTemper
      */
     @Override
     public void run() {
-        if (!super.configSuccess) {
+
+        if (super.configSuccess) {
+            super.abstractRun();
+        } else {
             try {
                 super.activationOrModifiedRoutine(this.config.thermometerActivateId(), this.config.thermometerDeactivateId(),
                         this.config.referenceThermometerId(), this.config.offsetActivate(), this.config.offsetDeactivate(),
-                        this.config.heaterId(), this.config.hydraulicControllerId(),
+                        this.config.coolerId(), this.config.hydraulicControllerId(),
                         this.config.timerId(), this.config.deltaTimeDelay());
             } catch (ConfigurationException e) {
                 this.log.warn("Please make sure to have 3 different Thermometer configured!");
             }
-        } else {
-            super.abstractRun();
         }
     }
 
