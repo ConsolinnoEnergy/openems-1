@@ -25,21 +25,21 @@ public enum ViessmannChpType {
 
 
     //tolerance in Percent
-    private int heatOutputTolerance;
+    private final int heatOutputTolerance;
     //values in kW
-    private float electricOutput;
-    private float thermalOutput;
-    private float fuelUse;
+    private final float electricOutput;
+    private final float thermalOutput;
+    private final float fuelUse;
     //in kW and only high temperature natural gas
-    private float heatOutputAt100Percent;
-    private float heatOutputAt75Percent;
-    private float heatOutputAt50Percent;
+    private final float heatOutputAt100Percent;
+    private final float heatOutputAt75Percent;
+    private final float heatOutputAt50Percent;
 
     //values in °C
-    private int maxFlowTemperature;
-    private int maxReturnTemperature;
+    private final int maxFlowTemperature;
+    private final int maxReturnTemperature;
 
-    private String name;
+    private final String name;
 
     /*For Later Usage at some point in dev.*/
     ViessmannChpType(float electricOutput, float thermalOutput, float fuelUse, int maxFlowTemperature, int maxReturnTemperature, int heatOutputTolerance, float heatOutputAt100Percent, float heatOutputAt75Percent, float heatOutputAt50Percent, String name) {
@@ -57,42 +57,42 @@ public enum ViessmannChpType {
     }
 
     public float getElectricOutput() {
-        return electricOutput;
+        return this.electricOutput;
     }
 
     public float getThermalOutput() {
-        return thermalOutput;
+        return this.thermalOutput;
     }
 
     public float getFuelUse() {
-        return fuelUse;
+        return this.fuelUse;
     }
 
     public int getHeatOutputTolerance() {
-        return heatOutputTolerance;
+        return this.heatOutputTolerance;
     }
 
     public float getHeatOutputAt100Percent() {
-        return heatOutputAt100Percent;
+        return this.heatOutputAt100Percent;
     }
 
     public float getHeatOutputAt75Percent() {
-        return heatOutputAt75Percent;
+        return this.heatOutputAt75Percent;
     }
 
     public float getHeatOutputAt50Percent() {
-        return heatOutputAt50Percent;
+        return this.heatOutputAt50Percent;
     }
 
     public int getMaxFlowTemperature() {
-        return maxFlowTemperature;
+        return this.maxFlowTemperature;
     }
 
     public int getMaxReturnTemperature() {
-        return maxReturnTemperature;
+        return this.maxReturnTemperature;
     }
 
     public String getName() {
-        return name;
+        return this.name;
     }
 }

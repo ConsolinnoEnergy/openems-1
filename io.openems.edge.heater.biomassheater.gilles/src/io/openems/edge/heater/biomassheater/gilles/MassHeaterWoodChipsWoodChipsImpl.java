@@ -289,7 +289,6 @@ public class MassHeaterWoodChipsWoodChipsImpl extends AbstractOpenemsModbusCompo
                 if (powerPercentRead > 0) {
                     this._setHeaterState(HeaterState.HEATING.getValue());
                 } else {
-                    // ToDo: probably the state ’starting up or preheat’ can also be determined.
                     this._setHeaterState(HeaterState.STANDBY.getValue());
                 }
             } else {
@@ -362,6 +361,24 @@ public class MassHeaterWoodChipsWoodChipsImpl extends AbstractOpenemsModbusCompo
             this.logInfo(this.log, "Error message: " + this.getErrorMessage().get());
             this.logInfo(this.log, "");
         }
+    }
+
+    /**
+     * Returns the debug message.
+     *
+     * @return the debug message.
+     */
+    public String debugLog() {
+        String debugMessage = this.getHeaterState().asEnum().asCamelCase() //
+                + "|F:" + this.getFlowTemperature().asString() //
+                + "|R:" + this.getReturnTemperature().asString(); //
+        if (this.getWarningMessage().get().equals("No warning") == false) {
+            debugMessage = debugMessage + "|Warning";
+        }
+        if (this.getErrorMessage().get().equals("No error") == false) {
+            debugMessage = debugMessage + "|Error";
+        }
+        return debugMessage;
     }
 
 }

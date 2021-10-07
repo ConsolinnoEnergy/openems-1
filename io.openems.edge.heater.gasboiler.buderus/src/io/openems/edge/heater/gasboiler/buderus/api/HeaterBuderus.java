@@ -134,7 +134,7 @@ public interface HeaterBuderus extends Heater {
          */
         IR8005_HEATER_AT_LOAD_LIMIT_BOILER1(Doc.of(OpenemsType.INTEGER).unit(Unit.PERCENT).accessMode(AccessMode.READ_ONLY)),
 
-        //IR8006_BETRIEBS_TEMPERATUR -> liefert keinen Wert.
+        //IR8006_OPERATING_TEMPERATURE -> doesn't give a value.
 
         /**
          * Maximum power boiler 1 (Maximale Leistung Kessel 1).

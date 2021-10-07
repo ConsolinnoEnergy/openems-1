@@ -121,9 +121,9 @@ public class GasBoilerImpl extends AbstractOpenemsModbusComponent implements Ope
 
             // Deactivating controllers for heating circuits because we will not need them
             final int hvac_off = 6;
-            this.setHc1OperationMode(hvac_off);
-            this.setHc2OperationMode(hvac_off);
-            this.setHc3OperationMode(hvac_off);
+            this.setHc1OperatingMode(hvac_off);
+            this.setHc2OperatingMode(hvac_off);
+            this.setHc3OperatingMode(hvac_off);
         }
     }
 
@@ -406,18 +406,18 @@ public class GasBoilerImpl extends AbstractOpenemsModbusComponent implements Ope
 
                 // read holding registers
                 new FC3ReadRegistersTask(5, Priority.LOW,
-                        m(GasBoiler.ChannelId.DEVICE_OPERATION_MODE, new UnsignedWordElement(5)),
+                        m(GasBoiler.ChannelId.DEVICE_OPERATING_MODE, new UnsignedWordElement(5)),
                         new DummyRegisterElement(6, 9),
                         m(GasBoiler.ChannelId.DEVICE_POWER_MODE, new UnsignedWordElement(10)),
                         m(Heater.ChannelId.SET_POINT_HEATING_POWER_PERCENT, new UnsignedWordElement(11), ElementToChannelConverter.SCALE_FACTOR_MINUS_1),
                         new DummyRegisterElement(12, 12),
                         m(Heater.ChannelId.SET_POINT_TEMPERATURE, new UnsignedWordElement(13), ElementToChannelConverter.SCALE_FACTOR_MINUS_1),
                         new DummyRegisterElement(14, 16),
-                        m(GasBoiler.ChannelId.HC1_OPERATION_MODE, new UnsignedWordElement(17)),
+                        m(GasBoiler.ChannelId.HC1_OPERATING_MODE, new UnsignedWordElement(17)),
                         new DummyRegisterElement(18, 19),
-                        m(GasBoiler.ChannelId.HC2_OPERATION_MODE, new UnsignedWordElement(20)),
+                        m(GasBoiler.ChannelId.HC2_OPERATING_MODE, new UnsignedWordElement(20)),
                         new DummyRegisterElement(21, 22),
-                        m(GasBoiler.ChannelId.HC3_OPERATION_MODE, new UnsignedWordElement(23))
+                        m(GasBoiler.ChannelId.HC3_OPERATING_MODE, new UnsignedWordElement(23))
                 ),
 
                 // read input registers
@@ -438,7 +438,7 @@ public class GasBoilerImpl extends AbstractOpenemsModbusComponent implements Ope
             protocol.addTasks(
                     // Write to holding registers
                     new FC6WriteRegisterTask(5,
-                            m(GasBoiler.ChannelId.DEVICE_OPERATION_MODE, new UnsignedWordElement(5))),
+                            m(GasBoiler.ChannelId.DEVICE_OPERATING_MODE, new UnsignedWordElement(5))),
                     new FC6WriteRegisterTask(10,
                             m(GasBoiler.ChannelId.DEVICE_POWER_MODE, new UnsignedWordElement(10))),
                     new FC6WriteRegisterTask(11,
@@ -446,31 +446,15 @@ public class GasBoilerImpl extends AbstractOpenemsModbusComponent implements Ope
                     new FC6WriteRegisterTask(13,
                             m(Heater.ChannelId.SET_POINT_TEMPERATURE, new UnsignedWordElement(13), ElementToChannelConverter.SCALE_FACTOR_MINUS_1)),
                     new FC6WriteRegisterTask(17,
-                            m(GasBoiler.ChannelId.HC1_OPERATION_MODE, new UnsignedWordElement(17))),
+                            m(GasBoiler.ChannelId.HC1_OPERATING_MODE, new UnsignedWordElement(17))),
                     new FC6WriteRegisterTask(20,
-                            m(GasBoiler.ChannelId.HC2_OPERATION_MODE, new UnsignedWordElement(20))),
+                            m(GasBoiler.ChannelId.HC2_OPERATING_MODE, new UnsignedWordElement(20))),
                     new FC6WriteRegisterTask(23,
-                            m(GasBoiler.ChannelId.HC3_OPERATION_MODE, new UnsignedWordElement(23)))
+                            m(GasBoiler.ChannelId.HC3_OPERATING_MODE, new UnsignedWordElement(23)))
             );
         }
         return protocol;
     }
-
-
-/*    @Override
-    public String debugLog() {
-        String out = "";
-        System.out.println("--------------" + super.id() + "--------------");
-        List<Channel<?>> all = new ArrayList<>();
-        Arrays.stream(GasBoilerData.ChannelId.values()).forEach(consumer -> {
-            all.add(this.channel(consumer));
-        });
-        all.forEach(consumer -> System.out.println(consumer.channelId().id() + " value: " + (consumer.value().isDefined() ? consumer.value().get() : "UNDEFINED ") + (consumer.channelDoc().getUnit().getSymbol())));
-        //TODO: Error/Warning status etc
-        System.out.println("----------------------------------");
-        return "ok";
-    }
-*/
 
     private List<String> generateErrorList() {
         List<String> errorList = new ArrayList<>();
@@ -494,8 +478,7 @@ public class GasBoilerImpl extends AbstractOpenemsModbusComponent implements Ope
             if (this.printInfoToLog) {
                 this.printInfo();
             }
-        }
-        if (this.readOnly == false && event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS)) {
+        } else if (this.readOnly == false && event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS)) {
             this.writeCommands();
         }
     }
@@ -582,11 +565,26 @@ public class GasBoilerImpl extends AbstractOpenemsModbusComponent implements Ope
         this.logInfo(this.log, "Power percent set point (write mode only): " + this.getHeatingPowerPercentSetpoint());
         this.logInfo(this.log, "Flow temperature: " + this.getFlowTemperature());
         this.logInfo(this.log, "Return temperature: " + this.getReturnTemperature());
-        //this.logInfo(this.log, "Operation mode: " + this.getDeviceOperationMode());
+        //this.logInfo(this.log, "Operating mode: " + this.getDeviceOperatingMode());
         this.logInfo(this.log, "Operating hours tier1: " + this.getOperatingHoursTier1());
         this.logInfo(this.log, "Operating hours tier2: " + this.getOperatingHoursTier2());
         this.logInfo(this.log, "Boiler start counter: " + this.getBoilerStarts());
         this.logInfo(this.log, "Heater state: " + this.getHeaterState());
         this.logInfo(this.log, "Error message: " + this.getErrorMessage().get());
+    }
+
+    /**
+     * Returns the debug message.
+     *
+     * @return the debug message.
+     */
+    public String debugLog() {
+        String debugMessage = this.getHeaterState().asEnum().asCamelCase() //
+                            + "|F:" + this.getFlowTemperature().asString() //
+                            + "|R:" + this.getReturnTemperature().asString(); //
+        if (this.getErrorMessage().get().equals("No error") == false) {
+            debugMessage = debugMessage + "|Error";
+        }
+        return debugMessage;
     }
 }

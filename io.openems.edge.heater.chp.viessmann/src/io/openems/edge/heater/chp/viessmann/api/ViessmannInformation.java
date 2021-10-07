@@ -273,9 +273,6 @@ public interface ViessmannInformation extends Chp {
          */
         GENERATOR_CURRENT_TOTAL(Doc.of(OpenemsType.INTEGER).unit(Unit.AMPERE)),
 
-        // Manual does not say if this is thermal power or electric power. I assume it is electric power.
-        //ENGINE_PERFORMANCE(Doc.of(OpenemsType.INTEGER).unit(Unit.KILOWATT)), -> Chp EFFECTIVE_ELECTRIC_POWER.
-
         /**
          * Supply AC frequency.
          * <ul>

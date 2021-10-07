@@ -215,8 +215,7 @@ public class ChpWolfImpl extends AbstractOpenemsModbusComponent implements Opene
 			if (this.printInfoToLog) {
 				this.printInfo();
 			}
-		}
-		if (this.readOnly == false && this.readyForCommands && event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS)) {
+		} else if (this.readOnly == false && this.readyForCommands && event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS)) {
 			this.writeCommands();
 		}
 	}
@@ -324,10 +323,10 @@ public class ChpWolfImpl extends AbstractOpenemsModbusComponent implements Opene
 		// Handle EnableSignal.
 		boolean turnOnChp = this.enableSignalHandler.deviceShouldBeHeating(this);
 
-		// At startup, check if chp is already running. If yes, keep it running by sending 'EnableSignal = true' to
-		// yourself once. This gives controllers until the EnableSignal timer runs out to decide the state of the chp.
-		// This avoids a chp restart if the controllers want the chp to stay on. -> Longer chp lifetime.
-		// Without this function, the chp will always switch off at startup because EnableSignal starts as ’false’.
+		/* At startup, check if chp is already running. If yes, keep it running by sending 'EnableSignal = true' to
+           yourself once. This gives controllers until the EnableSignal timer runs out to decide the state of the chp.
+           This avoids a chp restart if the controllers want the chp to stay on. -> Longer chp lifetime.
+           Without this function, the chp will always switch off at startup because EnableSignal starts as ’false’. */
 		if (this.startupStateChecked == false) {
 			this.startupStateChecked = true;
 			turnOnChp = (HeaterState.valueOf(this.getHeaterState().orElse(-1)) == HeaterState.HEATING);
@@ -458,5 +457,23 @@ public class ChpWolfImpl extends AbstractOpenemsModbusComponent implements Opene
 		this.logInfo(this.log, "EnableSignal: " + this.getEnableSignal());
 		this.logInfo(this.log, "Set point electric power [kW]: " + this.getElectricPowerSetpoint().get());
 		this.logInfo(this.log, "");
+	}
+
+	/**
+	 * Returns the debug message.
+	 *
+	 * @return the debug message.
+	 */
+	public String debugLog() {
+		String debugMessage = this.getHeaterState().asEnum().asCamelCase() //
+				+ "|F:" + this.getFlowTemperature().asString() //
+				+ "|R:" + this.getReturnTemperature().asString(); //
+		if (this.getWarningMessage().get().equals("No warning") == false) {
+			debugMessage = debugMessage + "|Warning";
+		}
+		if (this.getErrorMessage().get().equals("No error") == false) {
+			debugMessage = debugMessage + "|Error";
+		}
+		return debugMessage;
 	}
 }

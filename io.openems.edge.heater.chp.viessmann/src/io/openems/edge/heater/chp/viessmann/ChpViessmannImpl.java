@@ -126,7 +126,7 @@ public class ChpViessmannImpl extends AbstractOpenemsModbusComponent implements 
     void activate(ComponentContext context, Config config) throws OpenemsError.OpenemsNamedException, ConfigurationException {
         super.activate(context, config.id(), config.alias(), config.enabled(), config.modbusUnitId(), this.cm, "Modbus", config.modbusBridgeId());
 
-        this.setChpType(config.chpType());
+        this.chpType = config.chpType();
         this.printInfoToLog = config.printInfoToLog();
         this.electricOutput = Math.round(this.chpType.getElectricOutput());
         this.readOnly = config.readOnly();
@@ -174,67 +174,6 @@ public class ChpViessmannImpl extends AbstractOpenemsModbusComponent implements 
         if (this.useExceptionalState) {
             timer.addOneIdentifier(EXCEPTIONAL_STATE_IDENTIFIER, config.exceptionalStateTimerId(), config.waitTimeExceptionalState());
             this.exceptionalStateHandler = new ExceptionalStateHandlerImpl(timer, EXCEPTIONAL_STATE_IDENTIFIER);
-        }
-    }
-
-    private void setChpType(String chpType) throws ConfigurationException {
-        switch (chpType) {
-            case "EM_6_15":
-                this.chpType = ViessmannChpType.Vito_EM_6_15;
-                break;
-            case "EM_9_20":
-                this.chpType = ViessmannChpType.Vito_EM_9_20;
-                break;
-            case "EM_20_39":
-                this.chpType = ViessmannChpType.Vito_EM_20_39;
-                break;
-            case "EM_20_39_70":
-                this.chpType = ViessmannChpType.Vito_EM_20_39_RL_70;
-                break;
-            case "EM_50_81":
-                this.chpType = ViessmannChpType.Vito_EM_50_81;
-                break;
-            case "EM_70_115":
-                this.chpType = ViessmannChpType.Vito_EM_70_115;
-                break;
-            case "EM_100_167":
-                this.chpType = ViessmannChpType.Vito_EM_100_167;
-                break;
-            case "EM_140_207":
-                this.chpType = ViessmannChpType.Vito_EM_140_207;
-                break;
-            case "EM_199_263":
-                this.chpType = ViessmannChpType.Vito_EM_199_263;
-                break;
-            case "EM_199_293":
-                this.chpType = ViessmannChpType.Vito_EM_199_293;
-                break;
-            case "EM_238_363":
-                this.chpType = ViessmannChpType.Vito_EM_238_363;
-                break;
-            case "EM_363_498":
-                this.chpType = ViessmannChpType.Vito_EM_363_498;
-                break;
-            case "EM_401_549":
-                this.chpType = ViessmannChpType.Vito_EM_401_549;
-                break;
-            case "EM_530_660":
-                this.chpType = ViessmannChpType.Vito_EM_530_660;
-                break;
-            case "BM_36_66":
-                this.chpType = ViessmannChpType.Vito_BM_36_66;
-                break;
-            case "BM_55_88":
-                this.chpType = ViessmannChpType.Vito_BM_55_88;
-                break;
-            case "BM_190_238":
-                this.chpType = ViessmannChpType.Vito_BM_190_238;
-                break;
-            case "BM_366_437":
-                this.chpType = ViessmannChpType.Vito_BM_366_437;
-                break;
-            default:
-                throw new ConfigurationException("chpType", "No valid chp selected.");
         }
     }
 
@@ -369,8 +308,7 @@ public class ChpViessmannImpl extends AbstractOpenemsModbusComponent implements 
             if (this.printInfoToLog) {
                 this.printInfo();
             }
-        }
-        if (this.readOnly == false && this.readyForCommands && event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS)) {
+        } else if (this.readOnly == false && this.readyForCommands && event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS)) {
             this.writeCommands();
         }
     }
@@ -452,7 +390,7 @@ public class ChpViessmannImpl extends AbstractOpenemsModbusComponent implements 
     protected void checkMissingComponents(List<String> errorSummary) {
         try {
             OpenemsComponent componentFetchedByCpm;
-            if (this.aioChannel.isEnabled() == false) {
+            if (this.aioChannel.equals(this.cpm.getComponent(this.aioChannel.id())) == false) {
                 componentFetchedByCpm = this.cpm.getComponent(this.aioChannel.id());
                 if (componentFetchedByCpm instanceof AioChannel) {
                     this.aioChannel = (AioChannel) componentFetchedByCpm;
@@ -464,7 +402,7 @@ public class ChpViessmannImpl extends AbstractOpenemsModbusComponent implements 
         }
         if (this.useRelay) {
             try {
-                if (this.relay.isEnabled() == false) {
+                if (this.relay.equals(this.cpm.getComponent(this.relay.id())) == false) {
                     OpenemsComponent componentFetchedByCpm;
                     componentFetchedByCpm = this.cpm.getComponent(this.relay.id());
                     if (componentFetchedByCpm instanceof Relay) {
@@ -508,10 +446,10 @@ public class ChpViessmannImpl extends AbstractOpenemsModbusComponent implements 
             }
         }
 
-        // At startup, check if chp is already running. If yes, keep it running by sending 'EnableSignal = true' to
-        // yourself once. This gives controllers until the EnableSignal timer runs out to decide the state of the chp.
-        // This avoids a chp restart if the controllers want the chp to stay on. -> Longer chp lifetime.
-        // Without this function, the chp will always switch off at startup because EnableSignal starts as ’false’.
+        /* At startup, check if chp is already running. If yes, keep it running by sending 'EnableSignal = true' to
+           yourself once. This gives controllers until the EnableSignal timer runs out to decide the state of the chp.
+           This avoids a chp restart if the controllers want the chp to stay on. -> Longer chp lifetime.
+           Without this function, the chp will always switch off at startup because EnableSignal starts as ’false’. */
         if (this.startupStateChecked == false) {
             this.startupStateChecked = true;
             turnOnChp = (HeaterState.valueOf(this.getHeaterState().orElse(-1)) == HeaterState.HEATING);
@@ -671,5 +609,23 @@ public class ChpViessmannImpl extends AbstractOpenemsModbusComponent implements 
         this.logInfo(this.log, "Hours until next maintenance: " + this.getNextMaintenance());
         this.logInfo(this.log, "Heater state: " + this.getHeaterState());
         this.logInfo(this.log, "Error message: " + this.getErrorMessage().get());
+    }
+
+    /**
+     * Returns the debug message.
+     *
+     * @return the debug message.
+     */
+    public String debugLog() {
+        String debugMessage = this.getHeaterState().asEnum().asCamelCase() //
+                + "|F:" + this.getFlowTemperature().asString() //
+                + "|R:" + this.getReturnTemperature().asString(); //
+        if (this.getWarningMessage().get().equals("No warning") == false) {
+            debugMessage = debugMessage + "|Warning";
+        }
+        if (this.getErrorMessage().get().equals("No error") == false) {
+            debugMessage = debugMessage + "|Error";
+        }
+        return debugMessage;
     }
 }

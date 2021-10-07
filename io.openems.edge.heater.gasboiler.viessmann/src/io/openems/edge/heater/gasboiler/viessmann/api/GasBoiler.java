@@ -5,11 +5,9 @@ import io.openems.common.channel.Unit;
 import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
 import io.openems.common.types.OpenemsType;
 import io.openems.edge.common.channel.BooleanReadChannel;
-import io.openems.edge.common.channel.Channel;
 import io.openems.edge.common.channel.Doc;
 import io.openems.edge.common.channel.IntegerReadChannel;
 import io.openems.edge.common.channel.IntegerWriteChannel;
-import io.openems.edge.common.channel.WriteChannel;
 import io.openems.edge.common.channel.value.Value;
 import io.openems.edge.heater.api.Heater;
 
@@ -26,7 +24,7 @@ public interface GasBoiler extends Heater {
          * setHeatingPowerPercentSetpoint() and setTemperatureSetpoint().
          * 0   = OFF
          * 1   = ON:   Goto SET_POINT_HEATING_POWER_PERCENT
-         * 255 = AUTO: Goto DEVICE_OPERATION_MODE
+         * 255 = AUTO: Goto DEVICE_OPERATING_MODE
          */
         DEVICE_POWER_MODE(Doc.of(OpenemsType.INTEGER).accessMode(AccessMode.READ_WRITE)),
 
@@ -46,17 +44,17 @@ public interface GasBoiler extends Heater {
         // -> Heater EFFECTIVE_HEATING_POWER_PERCENT
 
         /**
-         * Device Operation Mode.
-         * 0   = HVAC_AUTO:       Regulate according to internal and external inputs (GoTo DEVICE_FLOW_TEMPERATURE_SETPOINT,HC1-3_OPERATION_MODE)
-         * 1   = HVAC_HEAT:       Regulate according to internal and external inputs (GoTo DEVICE_FLOW_TEMPERATURE_SETPOINT,HC1-3_OPERATION_MODE)
-         * 255 = HVAC_NUL:        Regulate according to internal and external inputs (GoTo DEVICE_FLOW_TEMPERATURE_SETPOINT,HC1-3_OPERATION_MODE)
+         * Device Operating Mode.
+         * 0   = HVAC_AUTO:       Regulate according to internal and external inputs (GoTo DEVICE_FLOW_TEMPERATURE_SETPOINT,HC1-3_OPERATING_MODE)
+         * 1   = HVAC_HEAT:       Regulate according to internal and external inputs (GoTo DEVICE_FLOW_TEMPERATURE_SETPOINT,HC1-3_OPERATING_MODE)
+         * 255 = HVAC_NUL:        Regulate according to internal and external inputs (GoTo DEVICE_FLOW_TEMPERATURE_SETPOINT,HC1-3_OPERATING_MODE)
          * 6   = HVAC_OFF:        Off
          * 7   = HVAC_TEST:       Run on minimal power (respecting boiler min/max temperature)
          * 111 = HVAC_LOW_FIRE:   Run on minimal power (respecting boiler min/max temperature)
          * 8   = HVAC_EMERG_HEAT: Run on full power (respecting boiler max temperature is reached)
          * 112 = HVAC_HIGH_FIRE:  Run on full power (respecting boiler max temperature is reached)
          */
-        DEVICE_OPERATION_MODE(Doc.of(OpenemsType.INTEGER).accessMode(AccessMode.READ_WRITE)),
+        DEVICE_OPERATING_MODE(Doc.of(OpenemsType.INTEGER).accessMode(AccessMode.READ_WRITE)),
 
         /**
          * Boiler State.
@@ -87,23 +85,23 @@ public interface GasBoiler extends Heater {
         // -> Heater RETURN_TEMPERATURE
 
         /**
-         * Operation Mode for Heating Circuit 1. Only off will be use to ensure exclusive use of SET_POINT_TEMPERATURE.
+         * Operating Mode for Heating Circuit 1. Only off will be use to ensure exclusive use of SET_POINT_TEMPERATURE.
          * 6 = HVAC_OFF: Off
          */
-        HC1_OPERATION_MODE(Doc.of(OpenemsType.INTEGER).accessMode(AccessMode.READ_WRITE)),
+        HC1_OPERATING_MODE(Doc.of(OpenemsType.INTEGER).accessMode(AccessMode.READ_WRITE)),
 
         /**
-         * Operation Mode for Heating Circuit 2. Only off will be use to ensure exclusive use of SET_POINT_TEMPERATURE.
+         * Operating Mode for Heating Circuit 2. Only off will be use to ensure exclusive use of SET_POINT_TEMPERATURE.
          * 6 = HVAC_OFF: Off
          */
-        HC2_OPERATION_MODE(Doc.of(OpenemsType.INTEGER).accessMode(AccessMode.READ_WRITE)),
+        HC2_OPERATING_MODE(Doc.of(OpenemsType.INTEGER).accessMode(AccessMode.READ_WRITE)),
 
 
         /**
-         * Operation Mode for Heating Circuit 3. Only off will be use to ensure exclusive use of SET_POINT_TEMPERATURE.
+         * Operating Mode for Heating Circuit 3. Only off will be use to ensure exclusive use of SET_POINT_TEMPERATURE.
          * 6 = HVAC_OFF: Off
          */
-        HC3_OPERATION_MODE(Doc.of(OpenemsType.INTEGER).accessMode(AccessMode.READ_WRITE)),
+        HC3_OPERATING_MODE(Doc.of(OpenemsType.INTEGER).accessMode(AccessMode.READ_WRITE)),
 
         /**
          * Operating hours Burner Tier 1.
@@ -530,7 +528,7 @@ public interface GasBoiler extends Heater {
 //        COMBUSTION_ENGINE_EFFICIENCY_ACTUAL_VALUE_PERCENT(Doc.of(OpenemsType.FLOAT).unit(Unit.PERCENT)),
 //        COMBUSTION_ENGINE_START_COUNTER(Doc.of(OpenemsType.INTEGER)),
 //        /**
-//         * Operation Modes.
+//         * Operating Modes.
 //         * 0: Combustion engine off
 //         * 1: Combustion engine Tier 1 on
 //         * 2: Combustion Engine Tier 2 on
@@ -555,7 +553,7 @@ public interface GasBoiler extends Heater {
 //        OPERATING_HOURS_COMBUSTION_ENGINE_TIER_1_EXPANDED(Doc.of(OpenemsType.INTEGER).unit(Unit.HOUR)
 //                .accessMode(AccessMode.READ_WRITE)),
 //        /**
-//         * Operation modes of the heatingboiler.
+//         * Operating modes of the heatingboiler.
 //         * 0: HVAC_AUTO
 //         * 1: HVAC_HEAT
 //         * 2: HVAC_MRNG_WRMUP
@@ -571,7 +569,7 @@ public interface GasBoiler extends Heater {
 //         * 112: HVAC_HIGH_FIRE
 //         * 255: HVAC_NUL
 //         */
-//        HEAT_BOILER_OPERATION_MODE(Doc.of(OpenemsType.INTEGER)),
+//        HEAT_BOILER_OPERATING_MODE(Doc.of(OpenemsType.INTEGER)),
 //
 //        HEAT_BOILER_TEMPERATURE_SET_POINT_EFFECTIVE(Doc.of(OpenemsType.INTEGER)),
 //        /**
@@ -617,7 +615,7 @@ public interface GasBoiler extends Heater {
 //         */
 //        HEAT_BOILER_MODULATION_VALUE_PERCENT(Doc.of(OpenemsType.FLOAT).unit(Unit.PERCENT)),
 //        /**
-//         * Operation mode of warm water.
+//         * Operating mode of warm water.
 //         * 0: HVAC_AUTO
 //         * 1: HVAC_HEAT
 //         * 3: HVAC_COOL
@@ -626,7 +624,7 @@ public interface GasBoiler extends Heater {
 //         * 6: HVAC_OFF
 //         * 255: HVAC_NUL
 //         */
-//        WARM_WATER_OPERATION_MODE(Doc.of(OpenemsType.INTEGER)
+//        WARM_WATER_OPERATING_MODE(Doc.of(OpenemsType.INTEGER)
 //                .accessMode(AccessMode.READ_WRITE)),
 //        /**
 //         * Reads the effective warm water set point temperature in °C.
@@ -719,7 +717,7 @@ public interface GasBoiler extends Heater {
      * setHeatingPowerPercentSetpoint() and setTemperatureSetpoint().
      * 0   = OFF
      * 1   = ON:   Goto SET_POINT_HEATING_POWER_PERCENT
-     * 255 = AUTO: Goto DEVICE_OPERATION_MODE
+     * 255 = AUTO: Goto DEVICE_OPERATING_MODE
      * See {@link ChannelId#DEVICE_POWER_MODE}.
      *
      * @return the Channel {@link Value}
@@ -733,7 +731,7 @@ public interface GasBoiler extends Heater {
      * setHeatingPowerPercentSetpoint() and setTemperatureSetpoint().
      * 0   = OFF
      * 1   = ON:   Goto SET_POINT_HEATING_POWER_PERCENT
-     * 255 = AUTO: Goto DEVICE_OPERATION_MODE
+     * 255 = AUTO: Goto DEVICE_OPERATING_MODE
      * See {@link ChannelId#DEVICE_POWER_MODE}.
      *
      * @param value the next write value
@@ -748,7 +746,7 @@ public interface GasBoiler extends Heater {
      * setHeatingPowerPercentSetpoint() and setTemperatureSetpoint().
      * 0   = OFF
      * 1   = ON:   Goto SET_POINT_HEATING_POWER_PERCENT
-     * 255 = AUTO: Goto DEVICE_OPERATION_MODE
+     * 255 = AUTO: Goto DEVICE_OPERATING_MODE
      * See {@link ChannelId#DEVICE_POWER_MODE}.
      *
      * @param value the next write value
@@ -759,200 +757,200 @@ public interface GasBoiler extends Heater {
     }
 
     /**
-     * Gets the Channel for {@link ChannelId#DEVICE_OPERATION_MODE}.
+     * Gets the Channel for {@link ChannelId#DEVICE_OPERATING_MODE}.
      *
      * @return the Channel
      */
-    default IntegerWriteChannel getDeviceOperationModeChannel() {
-        return this.channel(ChannelId.DEVICE_OPERATION_MODE);
+    default IntegerWriteChannel getDeviceOperatingModeChannel() {
+        return this.channel(ChannelId.DEVICE_OPERATING_MODE);
     }
 
     /**
-     * Get the device operation mode.
-     * 0   = HVAC_AUTO:       Regulate according to internal and external inputs (GoTo DEVICE_FLOW_TEMPERATURE_SETPOINT,HC1-3_OPERATION_MODE)
-     * 1   = HVAC_HEAT:       Regulate according to internal and external inputs (GoTo DEVICE_FLOW_TEMPERATURE_SETPOINT,HC1-3_OPERATION_MODE)
-     * 255 = HVAC_NUL:        Regulate according to internal and external inputs (GoTo DEVICE_FLOW_TEMPERATURE_SETPOINT,HC1-3_OPERATION_MODE)
+     * Get the device operating mode.
+     * 0   = HVAC_AUTO:       Regulate according to internal and external inputs (GoTo DEVICE_FLOW_TEMPERATURE_SETPOINT,HC1-3_OPERATING_MODE)
+     * 1   = HVAC_HEAT:       Regulate according to internal and external inputs (GoTo DEVICE_FLOW_TEMPERATURE_SETPOINT,HC1-3_OPERATING_MODE)
+     * 255 = HVAC_NUL:        Regulate according to internal and external inputs (GoTo DEVICE_FLOW_TEMPERATURE_SETPOINT,HC1-3_OPERATING_MODE)
      * 6   = HVAC_OFF:        Off
      * 7   = HVAC_TEST:       Run on minimal power (respecting boiler min/max temperature)
      * 111 = HVAC_LOW_FIRE:   Run on minimal power (respecting boiler min/max temperature)
      * 8   = HVAC_EMERG_HEAT: Run on full power (respecting boiler max temperature is reached)
      * 112 = HVAC_HIGH_FIRE:  Run on full power (respecting boiler max temperature is reached)
-     * See {@link ChannelId#DEVICE_OPERATION_MODE}.
+     * See {@link ChannelId#DEVICE_OPERATING_MODE}.
      *
      * @return the Channel {@link Value}
      */
-    default Value<Integer> getDeviceOperationMode() {
-        return this.getDeviceOperationModeChannel().value();
+    default Value<Integer> getDeviceOperatingMode() {
+        return this.getDeviceOperatingModeChannel().value();
     }
 
     /**
-     * Set the device operation mode.
-     * 0   = HVAC_AUTO:       Regulate according to internal and external inputs (GoTo DEVICE_FLOW_TEMPERATURE_SETPOINT,HC1-3_OPERATION_MODE)
-     * 1   = HVAC_HEAT:       Regulate according to internal and external inputs (GoTo DEVICE_FLOW_TEMPERATURE_SETPOINT,HC1-3_OPERATION_MODE)
-     * 255 = HVAC_NUL:        Regulate according to internal and external inputs (GoTo DEVICE_FLOW_TEMPERATURE_SETPOINT,HC1-3_OPERATION_MODE)
+     * Set the device operating mode.
+     * 0   = HVAC_AUTO:       Regulate according to internal and external inputs (GoTo DEVICE_FLOW_TEMPERATURE_SETPOINT,HC1-3_OPERATING_MODE)
+     * 1   = HVAC_HEAT:       Regulate according to internal and external inputs (GoTo DEVICE_FLOW_TEMPERATURE_SETPOINT,HC1-3_OPERATING_MODE)
+     * 255 = HVAC_NUL:        Regulate according to internal and external inputs (GoTo DEVICE_FLOW_TEMPERATURE_SETPOINT,HC1-3_OPERATING_MODE)
      * 6   = HVAC_OFF:        Off
      * 7   = HVAC_TEST:       Run on minimal power (respecting boiler min/max temperature)
      * 111 = HVAC_LOW_FIRE:   Run on minimal power (respecting boiler min/max temperature)
      * 8   = HVAC_EMERG_HEAT: Run on full power (respecting boiler max temperature is reached)
      * 112 = HVAC_HIGH_FIRE:  Run on full power (respecting boiler max temperature is reached)
-     * See {@link ChannelId#DEVICE_OPERATION_MODE}.
+     * See {@link ChannelId#DEVICE_OPERATING_MODE}.
      *
      * @param value the next write value
      * @throws OpenemsNamedException on error
      */
-    default void setDeviceOperationMode(int value) throws OpenemsNamedException {
-        this.getDeviceOperationModeChannel().setNextWriteValue(value);
+    default void setDeviceOperatingMode(int value) throws OpenemsNamedException {
+        this.getDeviceOperatingModeChannel().setNextWriteValue(value);
     }
 
     /**
-     * Set the device operation mode.
-     * 0   = HVAC_AUTO:       Regulate according to internal and external inputs (GoTo DEVICE_FLOW_TEMPERATURE_SETPOINT,HC1-3_OPERATION_MODE)
-     * 1   = HVAC_HEAT:       Regulate according to internal and external inputs (GoTo DEVICE_FLOW_TEMPERATURE_SETPOINT,HC1-3_OPERATION_MODE)
-     * 255 = HVAC_NUL:        Regulate according to internal and external inputs (GoTo DEVICE_FLOW_TEMPERATURE_SETPOINT,HC1-3_OPERATION_MODE)
+     * Set the device operating mode.
+     * 0   = HVAC_AUTO:       Regulate according to internal and external inputs (GoTo DEVICE_FLOW_TEMPERATURE_SETPOINT,HC1-3_OPERATING_MODE)
+     * 1   = HVAC_HEAT:       Regulate according to internal and external inputs (GoTo DEVICE_FLOW_TEMPERATURE_SETPOINT,HC1-3_OPERATING_MODE)
+     * 255 = HVAC_NUL:        Regulate according to internal and external inputs (GoTo DEVICE_FLOW_TEMPERATURE_SETPOINT,HC1-3_OPERATING_MODE)
      * 6   = HVAC_OFF:        Off
      * 7   = HVAC_TEST:       Run on minimal power (respecting boiler min/max temperature)
      * 111 = HVAC_LOW_FIRE:   Run on minimal power (respecting boiler min/max temperature)
      * 8   = HVAC_EMERG_HEAT: Run on full power (respecting boiler max temperature is reached)
      * 112 = HVAC_HIGH_FIRE:  Run on full power (respecting boiler max temperature is reached)
-     * See {@link ChannelId#DEVICE_OPERATION_MODE}.
+     * See {@link ChannelId#DEVICE_OPERATING_MODE}.
      *
      * @param value the next write value
      * @throws OpenemsNamedException on error
      */
-    default void setDeviceOperationMode(Integer value) throws OpenemsNamedException {
-        this.getDeviceOperationModeChannel().setNextWriteValue(value);
+    default void setDeviceOperatingMode(Integer value) throws OpenemsNamedException {
+        this.getDeviceOperatingModeChannel().setNextWriteValue(value);
     }
 
     /**
-     * Gets the Channel for {@link ChannelId#HC1_OPERATION_MODE}.
+     * Gets the Channel for {@link ChannelId#HC1_OPERATING_MODE}.
      *
      * @return the Channel
      */
-    default IntegerWriteChannel getHc1OperationModeChannel() {
-        return this.channel(ChannelId.HC1_OPERATION_MODE);
+    default IntegerWriteChannel getHc1OperatingModeChannel() {
+        return this.channel(ChannelId.HC1_OPERATING_MODE);
     }
 
     /**
-     * Get operation mode for heating circuit 1. Only off will be use to ensure exclusive use of SET_POINT_TEMPERATURE.
+     * Get operating mode for heating circuit 1. Only off will be use to ensure exclusive use of SET_POINT_TEMPERATURE.
      * 6 = HVAC_OFF: Off
-     * See {@link ChannelId#HC1_OPERATION_MODE}.
+     * See {@link ChannelId#HC1_OPERATING_MODE}.
      *
      * @return the Channel {@link Value}
      */
-    default Value<Integer> getHc1OperationMode() {
-        return this.getHc1OperationModeChannel().value();
+    default Value<Integer> getHc1OperatingMode() {
+        return this.getHc1OperatingModeChannel().value();
     }
 
     /**
-     * Set operation mode for heating circuit 1. Only off will be use to ensure exclusive use of SET_POINT_TEMPERATURE.
+     * Set operating mode for heating circuit 1. Only off will be use to ensure exclusive use of SET_POINT_TEMPERATURE.
      * 6 = HVAC_OFF: Off
-     * See {@link ChannelId#HC1_OPERATION_MODE}.
+     * See {@link ChannelId#HC1_OPERATING_MODE}.
      *
      * @param value the next write value
      * @throws OpenemsNamedException on error
      */
-    default void setHc1OperationMode(int value) throws OpenemsNamedException {
-        this.getHc1OperationModeChannel().setNextWriteValue(value);
+    default void setHc1OperatingMode(int value) throws OpenemsNamedException {
+        this.getHc1OperatingModeChannel().setNextWriteValue(value);
     }
 
     /**
-     * Set operation mode for heating circuit 1. Only off will be use to ensure exclusive use of SET_POINT_TEMPERATURE.
+     * Set operating mode for heating circuit 1. Only off will be use to ensure exclusive use of SET_POINT_TEMPERATURE.
      * 6 = HVAC_OFF: Off
-     * See {@link ChannelId#HC1_OPERATION_MODE}.
+     * See {@link ChannelId#HC1_OPERATING_MODE}.
      *
      * @param value the next write value
      * @throws OpenemsNamedException on error
      */
-    default void setHc1OperationMode(Integer value) throws OpenemsNamedException {
-        this.getHc1OperationModeChannel().setNextWriteValue(value);
+    default void setHc1OperatingMode(Integer value) throws OpenemsNamedException {
+        this.getHc1OperatingModeChannel().setNextWriteValue(value);
     }
 
     /**
-     * Gets the Channel for {@link ChannelId#HC2_OPERATION_MODE}.
+     * Gets the Channel for {@link ChannelId#HC2_OPERATING_MODE}.
      *
      * @return the Channel
      */
-    default IntegerWriteChannel getHc2OperationModeChannel() {
-        return this.channel(ChannelId.HC2_OPERATION_MODE);
+    default IntegerWriteChannel getHc2OperatingModeChannel() {
+        return this.channel(ChannelId.HC2_OPERATING_MODE);
     }
 
     /**
-     * Get operation mode for heating circuit 2. Only off will be use to ensure exclusive use of SET_POINT_TEMPERATURE.
+     * Get operating mode for heating circuit 2. Only off will be use to ensure exclusive use of SET_POINT_TEMPERATURE.
      * 6 = HVAC_OFF: Off
-     * See {@link ChannelId#HC2_OPERATION_MODE}.
+     * See {@link ChannelId#HC2_OPERATING_MODE}.
      *
      * @return the Channel {@link Value}
      */
-    default Value<Integer> getHc2OperationMode() {
-        return this.getHc2OperationModeChannel().value();
+    default Value<Integer> getHc2OperatingMode() {
+        return this.getHc2OperatingModeChannel().value();
     }
 
     /**
-     * Set operation mode for heating circuit 2. Only off will be use to ensure exclusive use of SET_POINT_TEMPERATURE.
+     * Set operating mode for heating circuit 2. Only off will be use to ensure exclusive use of SET_POINT_TEMPERATURE.
      * 6 = HVAC_OFF: Off
-     * See {@link ChannelId#HC2_OPERATION_MODE}.
+     * See {@link ChannelId#HC2_OPERATING_MODE}.
      *
      * @param value the next write value
      * @throws OpenemsNamedException on error
      */
-    default void setHc2OperationMode(int value) throws OpenemsNamedException {
-        this.getHc2OperationModeChannel().setNextWriteValue(value);
+    default void setHc2OperatingMode(int value) throws OpenemsNamedException {
+        this.getHc2OperatingModeChannel().setNextWriteValue(value);
     }
 
     /**
-     * Set operation mode for heating circuit 2. Only off will be use to ensure exclusive use of SET_POINT_TEMPERATURE.
+     * Set operating mode for heating circuit 2. Only off will be use to ensure exclusive use of SET_POINT_TEMPERATURE.
      * 6 = HVAC_OFF: Off
-     * See {@link ChannelId#HC2_OPERATION_MODE}.
+     * See {@link ChannelId#HC2_OPERATING_MODE}.
      *
      * @param value the next write value
      * @throws OpenemsNamedException on error
      */
-    default void setHc2OperationMode(Integer value) throws OpenemsNamedException {
-        this.getHc2OperationModeChannel().setNextWriteValue(value);
+    default void setHc2OperatingMode(Integer value) throws OpenemsNamedException {
+        this.getHc2OperatingModeChannel().setNextWriteValue(value);
     }
 
     /**
-     * Gets the Channel for {@link ChannelId#HC3_OPERATION_MODE}.
+     * Gets the Channel for {@link ChannelId#HC3_OPERATING_MODE}.
      *
      * @return the Channel
      */
-    default IntegerWriteChannel getHc3OperationModeChannel() {
-        return this.channel(ChannelId.HC3_OPERATION_MODE);
+    default IntegerWriteChannel getHc3OperatingModeChannel() {
+        return this.channel(ChannelId.HC3_OPERATING_MODE);
     }
 
     /**
-     * Get operation mode for heating circuit 3. Only off will be use to ensure exclusive use of SET_POINT_TEMPERATURE.
+     * Get operating mode for heating circuit 3. Only off will be use to ensure exclusive use of SET_POINT_TEMPERATURE.
      * 6 = HVAC_OFF: Off
-     * See {@link ChannelId#HC3_OPERATION_MODE}.
+     * See {@link ChannelId#HC3_OPERATING_MODE}.
      *
      * @return the Channel {@link Value}
      */
-    default Value<Integer> getHc3OperationMode() {
-        return this.getHc3OperationModeChannel().value();
+    default Value<Integer> getHc3OperatingMode() {
+        return this.getHc3OperatingModeChannel().value();
     }
 
     /**
-     * Set operation mode for heating circuit 3. Only off will be use to ensure exclusive use of SET_POINT_TEMPERATURE.
+     * Set operating mode for heating circuit 3. Only off will be use to ensure exclusive use of SET_POINT_TEMPERATURE.
      * 6 = HVAC_OFF: Off
-     * See {@link ChannelId#HC3_OPERATION_MODE}.
+     * See {@link ChannelId#HC3_OPERATING_MODE}.
      *
      * @param value the next write value
      * @throws OpenemsNamedException on error
      */
-    default void setHc3OperationMode(int value) throws OpenemsNamedException {
-        this.getHc3OperationModeChannel().setNextWriteValue(value);
+    default void setHc3OperatingMode(int value) throws OpenemsNamedException {
+        this.getHc3OperatingModeChannel().setNextWriteValue(value);
     }
 
     /**
-     * Set operation mode for heating circuit 3. Only off will be use to ensure exclusive use of SET_POINT_TEMPERATURE.
+     * Set operating mode for heating circuit 3. Only off will be use to ensure exclusive use of SET_POINT_TEMPERATURE.
      * 6 = HVAC_OFF: Off
-     * See {@link ChannelId#HC3_OPERATION_MODE}.
+     * See {@link ChannelId#HC3_OPERATING_MODE}.
      *
      * @param value the next write value
      * @throws OpenemsNamedException on error
      */
-    default void setHc3OperationMode(Integer value) throws OpenemsNamedException {
-        this.getHc3OperationModeChannel().setNextWriteValue(value);
+    default void setHc3OperatingMode(Integer value) throws OpenemsNamedException {
+        this.getHc3OperatingModeChannel().setNextWriteValue(value);
     }
 
     /**

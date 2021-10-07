@@ -1043,8 +1043,8 @@ public class DachsGltInterfaceImpl extends AbstractOpenemsComponent implements O
     		this.logInfo(this.log, "Return temp: " + getReturnTemperature());
     		this.logInfo(this.log, "Effective electric power: " + getEffectiveElectricPower());
     		this.logInfo(this.log, "Heater state: " + getHeaterState());
+			this.logInfo(this.log, "Warning message: " + getWarningMessage());
     		this.logInfo(this.log, "Error message: " + getErrorMessage());
-    		this.logInfo(this.log, "Warning message: " + getWarningMessage());
     	}
     	if (this.debug) {
     		this.logInfo(this.log, "Serial number: " + getSerialNumber());
@@ -1061,8 +1061,25 @@ public class DachsGltInterfaceImpl extends AbstractOpenemsComponent implements O
     		this.logInfo(this.log, "Thermal work done: " + getThermalWork());
     		this.logInfo(this.log, "Thermal work condenser done: " + getThermalWorkCond());
     	}
-    	
     }
+
+	/**
+	 * Returns the debug message.
+	 *
+	 * @return the debug message.
+	 */
+	public String debugLog() {
+		String debugMessage = this.getHeaterState().asEnum().asCamelCase() //
+				+ "|F:" + this.getFlowTemperature().asString() //
+				+ "|R:" + this.getReturnTemperature().asString(); //
+		if (this.getWarningMessage().get().equals("No warning") == false) {
+			debugMessage = debugMessage + "|Warning";
+		}
+		if (this.getErrorMessage().get().equals("No error") == false) {
+			debugMessage = debugMessage + "|Error";
+		}
+		return debugMessage;
+	}
 
 	/**
 	 * Send read request to server.

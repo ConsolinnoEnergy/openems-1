@@ -1,0 +1,9 @@
+= Heat Pump Heliotherm
+
+This module reads the most important variables available via Modbus from a Heliotherm heatpump and maps them to OpenEMS
+channels. The module is written to be used with the Heater interface methods.
+When setEnableSignal() from the Heater interface is set to true with no other parameters like temperature specified,
+the heatpump will turn on with default settings. The default settings are configurable in the config.
+The heatpump can be controlled with setSetPointTemperature() and/or setSetPointPowerPercent().
+A certain configuration of the pump is required for setSetPointPowerPercent() to work.
+setSetPointPower() and related methods are not supported by this heater.

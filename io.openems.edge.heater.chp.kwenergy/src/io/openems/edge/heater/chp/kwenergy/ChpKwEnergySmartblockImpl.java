@@ -7,13 +7,10 @@ import io.openems.edge.bridge.modbus.api.BridgeModbus;
 import io.openems.edge.bridge.modbus.api.ElementToChannelConverter;
 import io.openems.edge.bridge.modbus.api.ModbusProtocol;
 import io.openems.edge.bridge.modbus.api.element.DummyRegisterElement;
-import io.openems.edge.bridge.modbus.api.element.FloatDoublewordElement;
 import io.openems.edge.bridge.modbus.api.element.UnsignedDoublewordElement;
 import io.openems.edge.bridge.modbus.api.element.UnsignedWordElement;
 import io.openems.edge.bridge.modbus.api.task.FC16WriteRegistersTask;
 import io.openems.edge.bridge.modbus.api.task.FC3ReadRegistersTask;
-import io.openems.edge.heater.chp.kwenergy.api.ChpKwEnergySmartblock;
-import io.openems.edge.heater.chp.kwenergy.api.ControlMode;
 import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.common.event.EdgeEventConstants;
@@ -26,6 +23,8 @@ import io.openems.edge.heater.api.EnableSignalHandler;
 import io.openems.edge.heater.api.EnableSignalHandlerImpl;
 import io.openems.edge.heater.api.Heater;
 import io.openems.edge.heater.api.HeaterState;
+import io.openems.edge.heater.chp.kwenergy.api.ChpKwEnergySmartblock;
+import io.openems.edge.heater.chp.kwenergy.api.ControlMode;
 import io.openems.edge.timer.api.TimerHandler;
 import io.openems.edge.timer.api.TimerHandlerImpl;
 import org.osgi.service.cm.ConfigurationAdmin;
@@ -87,6 +86,9 @@ public class ChpKwEnergySmartblockImpl extends AbstractOpenemsModbusComponent im
 	private int maxChpPower;
 	private int lastReceivedHandshake = 0;
 
+	// No successful handshake for this amount of seconds results in: heater state changing to ’off’, stop sending commands.
+	private final int handshakeTimeoutSeconds = 30;
+
 	private EnableSignalHandler enableSignalHandler;
 	private static final String ENABLE_SIGNAL_IDENTIFIER = "KW_ENERGY_SMARTBLOCK_ENABLE_SIGNAL_IDENTIFIER";
 	private boolean useExceptionalState;
@@ -113,7 +115,7 @@ public class ChpKwEnergySmartblockImpl extends AbstractOpenemsModbusComponent im
 				"Modbus", config.modbusBridgeId());
 
 		this.printInfoToLog = config.printInfoToLog();
-		this.connectionTimestamp = LocalDateTime.now().minusMinutes(5);	// Initialize with past time value so connection test is negative at start.
+		this.connectionTimestamp = LocalDateTime.now().minusSeconds(this.handshakeTimeoutSeconds + 1);	// Initialize with past time value so connection test is negative at start.
 		this.maxChpPower = config.maxChpPower();
 		this.readOnly = config.readOnly();
 		this.startupStateChecked = false;
@@ -273,13 +275,14 @@ public class ChpKwEnergySmartblockImpl extends AbstractOpenemsModbusComponent im
 			if (this.printInfoToLog) {
 				this.printInfo();
 			}
-		}
-		if (this.readOnly == false && event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS)) {
+		} else if (this.readOnly == false && event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS)) {
 			this.writeCommands();
 		}
 	}
 
-	// Put values in channels that are not directly Modbus read values but derivatives.
+	/**
+	 * Put values in channels that are not directly Modbus read values but derivatives.
+	 */
 	protected void channelmapping() {
 
 		// Pass effective electric power to Chp interface channel.
@@ -452,7 +455,8 @@ public class ChpKwEnergySmartblockImpl extends AbstractOpenemsModbusComponent im
 				this.log.warn("Couldn't write in Channel " + e.getMessage());
 			}
 		}
-		if (ChronoUnit.SECONDS.between(this.connectionTimestamp, LocalDateTime.now()) >= 30) {    // No heart beat match for 30 seconds means connection is dead.
+		if (ChronoUnit.SECONDS.between(this.connectionTimestamp, LocalDateTime.now()) >= this.handshakeTimeoutSeconds) {
+			// No heart beat match for this long means connection is dead.
 			this.connectionAlive = false;
 		}
 
@@ -479,10 +483,10 @@ public class ChpKwEnergySmartblockImpl extends AbstractOpenemsModbusComponent im
 				}
 			}
 
-			// At startup, check if chp is already running. If yes, keep it running by sending 'EnableSignal = true' to
-			// yourself once. This gives controllers until the EnableSignal timer runs out to decide the state of the chp.
-			// This avoids a chp restart if the controllers want the chp to stay on. -> Longer chp lifetime.
-			// Without this function, the chp will always switch off at startup because EnableSignal starts as ’false’.
+			/* At startup, check if chp is already running. If yes, keep it running by sending 'EnableSignal = true' to
+			   yourself once. This gives controllers until the EnableSignal timer runs out to decide the state of the chp.
+			   This avoids a chp restart if the controllers want the chp to stay on. -> Longer chp lifetime.
+			   Without this function, the chp will always switch off at startup because EnableSignal starts as ’false’. */
 			if (this.startupStateChecked == false) {
 				this.startupStateChecked = true;
 				turnOnChp = (HeaterState.valueOf(this.getHeaterState().orElse(-1)) == HeaterState.HEATING);
@@ -524,17 +528,18 @@ public class ChpKwEnergySmartblockImpl extends AbstractOpenemsModbusComponent im
 					}
 				}
 
-				// Command bits:
-				// 0 - Control over bus, always needs to be 1 to send commands. (Steuerung über Bussystem (muss für Steuerung immer 1 sein))
-				// 1 - Clear errors, only turn on for a short time. (Fehler-Quittierung (darf nur kurzzeitig angelegt werden))
-				// 2 - Start chp, stop if 0. (Startanforderung (Stop bei 0))
-				// 3 - Operation mode: grid power draw (Betriebsart - Startanfoderung durch Netzbezug)
-				// 4 - Operation mode: buffer tank (Betriebsart - Startanfoderung durch Puffer)
-				// 5 - Operation mode: grid power draw set point (Betriebsart - Regelung durch Netzbezugssollwert)
-				// 6 - Operation mode: set point (Betriebsart - Regelung durch Gleitwert)
-				// 7 - Set point transmitted by bus. (Gleitwert kommt über Bus)
-				// 8 - Grid power draw transmitted by bus. (Netzleistungswert kommt über Bus)
-				// 9 - Automatic mode. (Automatikbetrieb BHKW (Flanke))
+
+				/* Command bits:
+				   0 - Control over bus, always needs to be 1 to send commands. (Steuerung ueber Bussystem (muss fuer Steuerung immer 1 sein))
+				   1 - Clear errors, only turn on for a short time. (Fehler-Quittierung (darf nur kurzzeitig angelegt werden))
+				   2 - Start chp, stop if 0. (Startanforderung (Stop bei 0))
+				   3 - Operation mode: grid power draw (Betriebsart - Startanfoderung durch Netzbezug)
+				   4 - Operation mode: buffer tank (Betriebsart - Startanfoderung durch Puffer)
+				   5 - Operation mode: grid power draw set point (Betriebsart - Regelung durch Netzbezugssollwert)
+				   6 - Operation mode: set point (Betriebsart - Regelung durch Gleitwert)
+				   7 - Set point transmitted by bus. (Gleitwert kommt ueber Bus)
+				   8 - Grid power draw transmitted by bus. (Netzleistungswert kommt ueber Bus)
+				   9 - Automatic mode. (Automatikbetrieb BHKW (Flanke)) */
 
 				switch (controlMode) {
 					case CONSUMPTION:
@@ -587,5 +592,23 @@ public class ChpKwEnergySmartblockImpl extends AbstractOpenemsModbusComponent im
 		this.logInfo(this.log, "Warning message: " + this.getWarningMessage().get());
 		this.logInfo(this.log, "Error message: " + this.getErrorMessage().get());
 		this.logInfo(this.log, "");
+	}
+
+	/**
+	 * Returns the debug message.
+	 *
+	 * @return the debug message.
+	 */
+	public String debugLog() {
+		String debugMessage = this.getHeaterState().asEnum().asCamelCase() //
+				+ "|F:" + this.getFlowTemperature().asString() //
+				+ "|R:" + this.getReturnTemperature().asString(); //
+		if (this.getWarningMessage().get().equals("No warning") == false) {
+			debugMessage = debugMessage + "|Warning";
+		}
+		if (this.getErrorMessage().get().equals("No error") == false) {
+			debugMessage = debugMessage + "|Error";
+		}
+		return debugMessage;
 	}
 }

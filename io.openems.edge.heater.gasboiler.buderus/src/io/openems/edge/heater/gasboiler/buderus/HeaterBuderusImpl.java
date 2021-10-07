@@ -87,6 +87,9 @@ public class HeaterBuderusImpl extends AbstractOpenemsModbusComponent implements
 	private LocalDateTime connectionTimestamp;
 	private boolean readOnly;
 
+	// No successful handshake for this amount of seconds results in: heater state changing to ’off’, stop sending commands.
+	private final int handshakeTimeoutSeconds = 30;
+
 	private EnableSignalHandler enableSignalHandler;
 	private static final String ENABLE_SIGNAL_IDENTIFIER = "BUDERUS_HEATER_ENABLE_SIGNAL_IDENTIFIER";
 	private boolean useExceptionalState;
@@ -118,7 +121,7 @@ public class HeaterBuderusImpl extends AbstractOpenemsModbusComponent implements
 		}
 
 		if (this.readOnly == false) {
-			this.connectionTimestamp = LocalDateTime.now().minusMinutes(5);	// Initialize with past time value so connection test is negative at start.
+			this.connectionTimestamp = LocalDateTime.now().minusSeconds(this.handshakeTimeoutSeconds + 1);	// Initialize with past time value so connection test is negative at start.
 			this.setOperatingMode(config.operatingMode().getValue());
 			this.setTemperatureSetpoint(config.defaultSetPointTemperature() * 10);	// Convert to d°C.
 			this.setHeatingPowerPercentSetpoint(config.defaultSetPointPowerPercent());
@@ -262,8 +265,7 @@ public class HeaterBuderusImpl extends AbstractOpenemsModbusComponent implements
 			if (this.printInfoToLog) {
 				this.printInfo();
 			}
-		}
-		if (this.readOnly == false && event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS)) {
+		} else if (this.readOnly == false && event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS)) {
 			this.writeCommands();
 		}
 	}
@@ -515,7 +517,8 @@ public class HeaterBuderusImpl extends AbstractOpenemsModbusComponent implements
 				this.heartbeatCounter++;
 			}
 		}
-		if (ChronoUnit.SECONDS.between(this.connectionTimestamp, LocalDateTime.now()) >= 30) {	// No heart beat match for 30 seconds means connection is dead.
+		if (ChronoUnit.SECONDS.between(this.connectionTimestamp, LocalDateTime.now()) >= this.handshakeTimeoutSeconds) {
+			// No heart beat match for this long means connection is dead.
 			this.connectionAlive = false;
 		} else {
 			this.connectionAlive = true;
@@ -605,5 +608,23 @@ public class HeaterBuderusImpl extends AbstractOpenemsModbusComponent implements
 		this.logInfo(this.log, "Heater warning message: " + this.getWarningMessage().get());
 		this.logInfo(this.log, "Heater error message: " + this.getErrorMessage().get());
 		this.logInfo(this.log, "");
+	}
+
+	/**
+	 * Returns the debug message.
+	 *
+	 * @return the debug message.
+	 */
+	public String debugLog() {
+		String debugMessage = this.getHeaterState().asEnum().asCamelCase() //
+				+ "|F:" + this.getFlowTemperature().asString() //
+				+ "|R:" + this.getReturnTemperature().asString(); //
+		if (this.getWarningMessage().get().equals("No warning") == false) {
+			debugMessage = debugMessage + "|Warning";
+		}
+		if (this.getErrorMessage().get().equals("No error") == false) {
+			debugMessage = debugMessage + "|Error";
+		}
+		return debugMessage;
 	}
 }
