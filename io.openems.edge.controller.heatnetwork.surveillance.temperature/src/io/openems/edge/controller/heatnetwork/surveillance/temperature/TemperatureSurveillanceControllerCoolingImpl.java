@@ -19,9 +19,9 @@ import org.slf4j.LoggerFactory;
  * Components, depending on the Configuration.
  * There are 3 "valid" SurveillanceTypes.
  * HEATER_ONLY, VALVE_CONTROLLER_ONLY, HEATER_AND_VALVE_CONTROLLER
- * HeaterOnly enables the Heater if the activationConditions apply.
+ * CoolerOnly enables the Cooler if the activationConditions apply.
  * Equivalent thing happen for the valveControllerOnly setting, enabling a ValveController.
- * If HeaterAndValveController setting is enabled, the Heater will be enabled at first, and after a configured WaitTime
+ * If CoolerAndValveController setting is enabled, the Cooler will be enabled at first, and after a configured WaitTime
  * The ValveController will be additionally enabled.
  */
 @Designate(ocd = ConfigTempSurveillanceCooling.class, factory = true)
@@ -76,11 +76,11 @@ public class TemperatureSurveillanceControllerCoolingImpl extends AbstractTemper
      * Depending on SurveillanceType Different "Controlling" applies
      * If ActivationConditions apply (Same for every SurveillanceType).
      * <p>
-     * Either: Enable HEATER (on Heater ONLY mode)
+     * Either: Enable HEATER (on Cooler ONLY mode)
      * OR
      * Enable ValveController (on ValveController ONLY Mode
      * OR
-     * First Enable Heater and then after certain WaitTime Enable ValveController (HEATER_AND_VALVE_CONTROLLER).
+     * First Enable Cooler and then after certain WaitTime Enable ValveController (HEATER_AND_VALVE_CONTROLLER).
      * on deactivation: Disable corresponding Components
      * </p>
      */
