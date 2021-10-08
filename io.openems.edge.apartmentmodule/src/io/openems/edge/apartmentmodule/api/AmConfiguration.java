@@ -3,17 +3,18 @@ package io.openems.edge.apartmentmodule.api;
 import io.openems.common.types.OptionsEnum;
 
 /**
- * Tells the ApartmentModule if the AM Connection is still up.
+ * Check if the ApartmentModule is a Top or Bottom ApartmentModule.
+ * Depends on the configuration.
  */
-public enum CommunicationCheck implements OptionsEnum {
+public enum AmConfiguration implements OptionsEnum {
     UNDEFINED(-1, "Undefined"), //
-    WAITING(0, "Waiting for signal"), //
-    RECEIVED(1, "Signal received"); //
+    BOTTOM(0, "Bottom"), //
+    TOP(1, "Top"); //
 
     private final int value;
     private final String name;
 
-    private CommunicationCheck(int value, String name) {
+    AmConfiguration(int value, String name) {
         this.value = value;
         this.name = name;
     }

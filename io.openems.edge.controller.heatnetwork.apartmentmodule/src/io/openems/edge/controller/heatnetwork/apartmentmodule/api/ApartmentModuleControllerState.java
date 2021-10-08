@@ -2,7 +2,10 @@ package io.openems.edge.controller.heatnetwork.apartmentmodule.api;
 
 import io.openems.common.types.OptionsEnum;
 
-public enum State implements OptionsEnum {
+/**
+ * The State of the ApartmentModuleController.
+ */
+public enum ApartmentModuleControllerState implements OptionsEnum {
     UNDEFINED(-1, "Undefined"),
     IDLE(0, "Idle"),
     HEAT_PUMP_ACTIVE(1, "HeatPumpActive"),
@@ -14,7 +17,7 @@ public enum State implements OptionsEnum {
     private String name;
 
 
-    State(int value, String name) {
+    ApartmentModuleControllerState(int value, String name) {
         this.value = value;
         this.name = name;
     }

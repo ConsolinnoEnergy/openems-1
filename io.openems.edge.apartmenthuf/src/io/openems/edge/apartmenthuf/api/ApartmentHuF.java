@@ -3,15 +3,25 @@ package io.openems.edge.apartmenthuf.api;
 import io.openems.common.channel.AccessMode;
 import io.openems.common.channel.Unit;
 import io.openems.common.types.OpenemsType;
-import io.openems.edge.common.channel.*;
+import io.openems.edge.common.channel.Channel;
+import io.openems.edge.common.channel.Doc;
+import io.openems.edge.common.channel.FloatReadChannel;
+import io.openems.edge.common.channel.IntegerReadChannel;
+import io.openems.edge.common.channel.IntegerWriteChannel;
+import io.openems.edge.common.channel.WriteChannel;
 import io.openems.edge.common.channel.value.Value;
 import io.openems.edge.common.component.OpenemsComponent;
 
-public interface ApartmentHuFChannel extends OpenemsComponent {
+/**
+ * This is the Nature of the ApartmentHuf. It is used to read ApartmentTemperatures and humidity as well as Air pressure.
+ * The Channel given with IR (InputRegister) and HR (HoldingRegister) are for the communication via modbus.
+ * Since the communication fails sometimes, only "valid" Values are set to the "real" Channel.
+ * e.g. IR_6_WALL_TEMPERATURE_HUF maps valid channels to WALL_TEMPERATURE in the implementation of the ApartmentHuF.
+ */
+public interface ApartmentHuF extends OpenemsComponent {
+    int TEMP_CALIBRATION_ALTERNATE_VALUE = -404;
+    enum ChannelId implements io.openems.edge.common.channel.ChannelId {
 
-    public enum ChannelId implements io.openems.edge.common.channel.ChannelId {
-
-        // Input Registers
 
         /**
          * Version number.
@@ -20,7 +30,7 @@ public interface ApartmentHuFChannel extends OpenemsComponent {
          * </ul>
          */
 
-        IR_0_VERSION(Doc.of(OpenemsType.INTEGER).accessMode(AccessMode.READ_ONLY)),
+        IR_0_VERSION(Doc.of(OpenemsType.INTEGER)),
 
         /**
          * Error code. Three error bits transmitted as an integer. 0 means no error.
@@ -30,7 +40,7 @@ public interface ApartmentHuFChannel extends OpenemsComponent {
          * </ul>
          */
 
-        IR_2_ERROR(Doc.of(Error.values()).accessMode(AccessMode.READ_ONLY)),
+        IR_2_ERROR(Doc.of(Error.values())),
 
         /**
          * Loop time. How long it takes the Apartment Module to execute the main software loop. This is the rate at
@@ -41,51 +51,45 @@ public interface ApartmentHuFChannel extends OpenemsComponent {
          * </ul>
          */
 
-        IR_3_LOOP_TIME(Doc.of(OpenemsType.INTEGER).unit(Unit.MILLISECONDS).accessMode(AccessMode.READ_ONLY)),
+        IR_3_LOOP_TIME(Doc.of(OpenemsType.INTEGER).unit(Unit.MILLISECONDS)),
 
         /**
          * Wall temperature. HUF for Huf communication --> if valid value --> IR_6_Wall_Temperature
          * <li>
          * <li> Type: Integer
-         * <li> Unit: dezidegree celsius
-         * </ul>
+         * <li> Unit: deciDegree celsius
          */
 
         IR_6_WALL_TEMPERATURE_HUF(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
-        IR_6_WALL_TEMPERATURE(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_ONLY)),
+        WALL_TEMPERATURE(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
 
         /**
          * Air temperature.
          * <li>
          * <li> Type: Integer
-         * <li> Unit: dezidegree celsius
-         * </ul>
+         * <li> Unit: deciDegree celsius
          */
         IR_7_AIR_TEMPERATURE_HUF(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
-        IR_7_AIR_TEMPERATURE(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_ONLY)),
+        AIR_TEMPERATURE(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
 
         /**
          * Air humidity. Channel unit is percent, so a channel value of 50 then means 50%.
          * <li>
          * <li> Type: Float
          * <li> Unit: percent
-         * </ul>
          */
         IR_8_AIR_HUMIDITY_HUF(Doc.of(OpenemsType.FLOAT).unit(Unit.PERCENT)),
-        IR_8_AIR_HUMIDITY(Doc.of(OpenemsType.FLOAT).unit(Unit.PERCENT).accessMode(AccessMode.READ_ONLY)),
+        AIR_HUMIDITY(Doc.of(OpenemsType.FLOAT).unit(Unit.PERCENT)),
 
         /**
          * Air pressure.
          * <li>
          * <li> Type: Float
          * <li> Unit: hectopascal
-         * </ul>
          */
         IR_9_AIR_PRESSURE_HUF(Doc.of(OpenemsType.FLOAT).unit(Unit.HECTO_PASCAL)),
-        IR_9_AIR_PRESSURE(Doc.of(OpenemsType.FLOAT).unit(Unit.HECTO_PASCAL).accessMode(AccessMode.READ_ONLY)),
+        AIR_PRESSURE(Doc.of(OpenemsType.FLOAT).unit(Unit.HECTO_PASCAL)),
 
-
-        // Holding Registers
 
         /**
          * Modbus communication check. The master should continuously write 1 in this register. If this does not happen
@@ -104,7 +108,6 @@ public interface ApartmentHuFChannel extends OpenemsComponent {
          * Temperature calibration. Value to calibrate the PT1000 sensor.
          * <li>
          * <li> Type: Integer
-         * </ul>
          */
 
         HR_2_TEMPERATURE_CALIBRATION(Doc.of(OpenemsType.INTEGER).accessMode(AccessMode.READ_WRITE));
@@ -112,7 +115,7 @@ public interface ApartmentHuFChannel extends OpenemsComponent {
 
         private final Doc doc;
 
-        private ChannelId(Doc doc) {
+        ChannelId(Doc doc) {
             this.doc = doc;
         }
 
@@ -128,7 +131,7 @@ public interface ApartmentHuFChannel extends OpenemsComponent {
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getVersionChannel() {
+    default IntegerReadChannel getVersionChannel() {
         return this.channel(ChannelId.IR_0_VERSION);
     }
 
@@ -137,7 +140,7 @@ public interface ApartmentHuFChannel extends OpenemsComponent {
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getVersionNumber() {
+    default Value<Integer> getVersionNumber() {
         return this.getVersionChannel().value();
     }
 
@@ -146,7 +149,7 @@ public interface ApartmentHuFChannel extends OpenemsComponent {
      *
      * @return the Channel
      */
-    public default Channel<Error> getErrorChannel() {
+    default Channel<Error> getErrorChannel() {
         return this.channel(ChannelId.IR_2_ERROR);
     }
 
@@ -155,7 +158,7 @@ public interface ApartmentHuFChannel extends OpenemsComponent {
      *
      * @return the Channel {@link Value}
      */
-    public default Error getError() {
+    default Error getError() {
         return this.getErrorChannel().value().asEnum();
     }
 
@@ -164,7 +167,7 @@ public interface ApartmentHuFChannel extends OpenemsComponent {
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getLoopTimeChannel() {
+    default IntegerReadChannel getLoopTimeChannel() {
         return this.channel(ChannelId.IR_3_LOOP_TIME);
     }
 
@@ -174,20 +177,25 @@ public interface ApartmentHuFChannel extends OpenemsComponent {
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getLoopTime() {
+    default Value<Integer> getLoopTime() {
         return this.getLoopTimeChannel().value();
     }
 
     /**
-     * Gets the Channel for {@link ChannelId#IR_6_WALL_TEMPERATURE}.
+     * Gets the Channel for {@link ChannelId#WALL_TEMPERATURE}.
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getWallTemperatureChannel() {
-        return this.channel(ChannelId.IR_6_WALL_TEMPERATURE);
+    default IntegerReadChannel getWallTemperatureChannel() {
+        return this.channel(ChannelId.WALL_TEMPERATURE);
     }
 
-    default Channel<Integer> getWallTemperatureToHufChannel() {
+    /**
+     * Gets the Channel for {@link ChannelId#IR_6_WALL_TEMPERATURE_HUF}.
+     * Only called by HuF implementation!
+     * @return the Channel
+     */
+    default Channel<Integer> _getWallTemperatureToHufChannel() {
         return this.channel(ChannelId.IR_6_WALL_TEMPERATURE_HUF);
     }
 
@@ -196,42 +204,52 @@ public interface ApartmentHuFChannel extends OpenemsComponent {
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getWallTemperature() {
+    default Value<Integer> getWallTemperature() {
         return this.getWallTemperatureChannel().value();
     }
 
     /**
-     * Gets the Channel for {@link ChannelId#IR_7_AIR_TEMPERATURE}.
+     * Gets the Channel for {@link ChannelId#AIR_TEMPERATURE}.
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getAirTemperatureChannel() {
-        return this.channel(ChannelId.IR_7_AIR_TEMPERATURE);
+    default IntegerReadChannel getAirTemperatureChannel() {
+        return this.channel(ChannelId.AIR_TEMPERATURE);
     }
+    /**
+     * Gets the Channel for {@link ChannelId#IR_7_AIR_TEMPERATURE_HUF}.
+     * Only called by HuF implementation!
+     * @return the Channel
+     */
 
-    default Channel<Integer> getAirTemperatureToHufChannel() {
+    default Channel<Integer> _getAirTemperatureToHufChannel() {
         return this.channel(ChannelId.IR_7_AIR_TEMPERATURE_HUF);
     }
 
     /**
-     * Gets the value of the air temperature sensor in dezidegree Celsius. (1/10 °C)
+     * Gets the value of the air temperature sensor in deciDegree Celsius. (1/10 °C)
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getAirTemperature() {
+    default Value<Integer> getAirTemperature() {
         return this.getAirTemperatureChannel().value();
     }
 
     /**
-     * Gets the Channel for {@link ChannelId#IR_8_AIR_HUMIDITY}.
+     * Gets the Channel for {@link ChannelId#AIR_HUMIDITY}.
      *
      * @return the Channel
      */
-    public default FloatReadChannel getAirHumidityChannel() {
-        return this.channel(ChannelId.IR_8_AIR_HUMIDITY);
+    default FloatReadChannel getAirHumidityChannel() {
+        return this.channel(ChannelId.AIR_HUMIDITY);
     }
 
-    default Channel<Float> getAirHumidityToHufChannel() {
+    /**
+     * Gets the Channel for {@link ChannelId#IR_8_AIR_HUMIDITY_HUF}.
+     * Only called by HuF implementation!
+     * @return the Channel
+     */
+    default Channel<Float> _getAirHumidityToHufChannel() {
         return this.channel(ChannelId.IR_8_AIR_HUMIDITY_HUF);
     }
 
@@ -240,20 +258,25 @@ public interface ApartmentHuFChannel extends OpenemsComponent {
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Float> getAirHumidity() {
+    default Value<Float> getAirHumidity() {
         return this.getAirHumidityChannel().value();
     }
 
     /**
-     * Gets the Channel for {@link ChannelId#IR_9_AIR_PRESSURE}.
+     * Gets the Channel for {@link ChannelId#AIR_PRESSURE}.
      *
      * @return the Channel
      */
-    public default FloatReadChannel getAirPressureChannel() {
-        return this.channel(ChannelId.IR_9_AIR_PRESSURE);
+    default FloatReadChannel getAirPressureChannel() {
+        return this.channel(ChannelId.AIR_PRESSURE);
     }
 
-    default Channel<Float> getAirPressureToHufChannel() {
+    /**
+     * Gets the Channel for {@link ChannelId#IR_9_AIR_PRESSURE_HUF}.
+     * Only called by HuF implementation!
+     * @return the Channel
+     */
+    default Channel<Float> _getAirPressureToHufChannel() {
         return this.channel(ChannelId.IR_9_AIR_PRESSURE_HUF);
     }
 
@@ -262,7 +285,7 @@ public interface ApartmentHuFChannel extends OpenemsComponent {
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Float> getAirPressure() {
+    default Value<Float> getAirPressure() {
         return this.getAirPressureChannel().value();
     }
 
@@ -272,7 +295,7 @@ public interface ApartmentHuFChannel extends OpenemsComponent {
      *
      * @return the Channel
      */
-    public default WriteChannel<CommunicationCheck> getSetCommunicationCheckChannel() {
+    default WriteChannel<CommunicationCheck> getSetCommunicationCheckChannel() {
         return this.channel(ChannelId.HR_0_COMMUNICATION_CHECK);
     }
 
@@ -282,7 +305,7 @@ public interface ApartmentHuFChannel extends OpenemsComponent {
      *
      * @return the Channel
      */
-    public default IntegerWriteChannel setTemperatureCalibrationChannel() {
+    default IntegerWriteChannel setTemperatureCalibrationChannel() {
         return this.channel(ChannelId.HR_2_TEMPERATURE_CALIBRATION);
     }
 

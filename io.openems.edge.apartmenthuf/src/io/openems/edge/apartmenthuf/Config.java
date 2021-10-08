@@ -4,8 +4,8 @@ import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
 @ObjectClassDefinition(
-        name = "Consolinno Apartment HuF",
-        description = "A module to map Modbus calls to OpenEMS channels for a Consolinno Apartment HuF."
+        name = "Miscellaneous Apartment HuF",
+        description = "A module to map Modbus calls to OpenEMS channels for an Apartment HuF."
 )
 @interface Config {
 
@@ -27,12 +27,12 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     int tempCal() default 70;
 
     // Debug options.
-    @AttributeDefinition(name = "Debug", description = "Debug.")
-    boolean debug() default false;
+    @AttributeDefinition(name = "Detailed Debug", description = "Enable Detailed Debug, when Controller Debug Log is activated.")
+    boolean detailedDebug() default false;
 
     boolean enabled() default true;
 
 
-    String webconsole_configurationFactory_nameHint() default "Consolinno Apartment HuF Device [{id}]";
+    String webconsole_configurationFactory_nameHint() default "Miscellaneous Apartment HuF Device [{id}]";
 
 }
