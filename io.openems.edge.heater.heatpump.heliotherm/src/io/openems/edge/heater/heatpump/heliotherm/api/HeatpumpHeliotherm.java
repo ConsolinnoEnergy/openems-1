@@ -117,7 +117,7 @@ public interface HeatpumpHeliotherm extends Heater {
          * </ul>
          */
         //IR74_75_CURRENT_THERMAL_POWER(Doc.of(OpenemsType.INTEGER).unit(Unit.KILOWATT).accessMode(AccessMode.READ_ONLY)),
-        // Heater, -> READ_EFFECTIVE_POWER
+        // Heater, -> EFFECTIVE_HEATING_POWER
 
         // Holding Registers, read/write. The register address is in the channel name, so HR0 means holding register 0.
         // Signed 16 bit, unless stated otherwise.

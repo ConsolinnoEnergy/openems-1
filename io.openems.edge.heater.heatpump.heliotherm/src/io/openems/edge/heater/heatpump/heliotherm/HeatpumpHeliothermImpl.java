@@ -1,6 +1,7 @@
 package io.openems.edge.heater.heatpump.heliotherm;
 
 import io.openems.common.exceptions.OpenemsError;
+import io.openems.common.exceptions.OpenemsException;
 import io.openems.edge.bridge.modbus.api.AbstractOpenemsModbusComponent;
 import io.openems.edge.bridge.modbus.api.BridgeModbus;
 import io.openems.edge.bridge.modbus.api.ElementToChannelConverter;
@@ -62,8 +63,10 @@ import java.time.temporal.ChronoUnit;
 @Component(name = "Heater.HeatPump.Heliotherm",
         immediate = true,
         configurationPolicy = ConfigurationPolicy.REQUIRE,
-        property = EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE)
-
+        property = { //
+                EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE, //
+                EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS //
+        })
 public class HeatpumpHeliothermImpl extends AbstractOpenemsModbusComponent implements OpenemsComponent, EventHandler,
         ExceptionalState, HeatpumpHeliotherm {
 
@@ -74,17 +77,14 @@ public class HeatpumpHeliothermImpl extends AbstractOpenemsModbusComponent imple
     protected ComponentManager cpm;
 
     private final Logger log = LoggerFactory.getLogger(HeatpumpHeliothermImpl.class);
-    private boolean debug;
-    private boolean componentEnabled;
+    private boolean printInfoToLog;
     private LocalDateTime fiveSecondTimestamp;
-    private boolean turnOnHeatpump;
     private int defaultSetPointPowerPercent;
     private int defaultSetPointTemperature;
     private int maxElectricPower;
     private int coefficientOfPerformance = 2;    // Fallback value.
     private boolean heatpumpError = false;
     private boolean readOnly;
-    private boolean activeBefore;
 
     private TimerHandler timer;
     private static final String ENABLE_SIGNAL_IDENTIFIER = "HEAT_PUMP_HELIOTHERM_ENABLE_SIGNAL_IDENTIFIER";
@@ -106,18 +106,18 @@ public class HeatpumpHeliothermImpl extends AbstractOpenemsModbusComponent imple
     public void activate(ComponentContext context, Config config) throws OpenemsError.OpenemsNamedException, ConfigurationException {
         super.activate(context, config.id(), config.alias(), config.enabled(), config.modbusUnitId(), this.cm,
                 "Modbus", config.modbusBridgeId());
-        componentEnabled = config.enabled();
-        debug = config.debug();
-        fiveSecondTimestamp = LocalDateTime.now().minusMinutes(5);    // Initialize with past time value so code executes immediately on first run.
-        defaultSetPointPowerPercent = config.defaultSetPointPowerPercent();
-        defaultSetPointTemperature = config.defaultSetPointTemperature() * 10; // Convert to d°C.
-        maxElectricPower = config.maxElectricPower();
-        readOnly = config.readOnly();
+
+        this.printInfoToLog = config.debug();
+        this.fiveSecondTimestamp = LocalDateTime.now().minusMinutes(5);    // Initialize with past time value so code executes immediately on first run.
+        this.defaultSetPointPowerPercent = config.defaultSetPointPowerPercent();
+        this.defaultSetPointTemperature = config.defaultSetPointTemperature() * 10; // Convert to d°C.
+        this.maxElectricPower = config.maxElectricPower();
+        this.readOnly = config.readOnly();
         this.timer = new TimerHandlerImpl(super.id(), this.cpm);
         this.timer.addOneIdentifier(ENABLE_SIGNAL_IDENTIFIER, config.timerIdEnableSignal(), config.waitTimeEnableSignal());
         this.enableSignalHandler = new EnableSignalHandlerImpl(this.timer, ENABLE_SIGNAL_IDENTIFIER);
-        if (componentEnabled == false) {
-            setState(HeaterState.OFFLINE.name());
+        if (this.isEnabled() == false) {
+            this._setHeaterState(HeaterState.OFF.getValue());
         }
         this.getOperatingModeChannel().setNextWriteValue(config.defaultOperatingMode().getValue());
 
@@ -129,7 +129,7 @@ public class HeatpumpHeliothermImpl extends AbstractOpenemsModbusComponent imple
     }
 
     @Override
-    protected ModbusProtocol defineModbusProtocol() {
+    protected ModbusProtocol defineModbusProtocol() throws OpenemsException {
         return createModbusProtocol();/*
         if (readOnly == false) {
             return new ModbusProtocol(this,
@@ -349,7 +349,7 @@ public class HeatpumpHeliothermImpl extends AbstractOpenemsModbusComponent imple
         }*/
     }
 
-    private ModbusProtocol createModbusProtocol() {
+    private ModbusProtocol createModbusProtocol() throws OpenemsException {
         ModbusProtocol protocol = new ModbusProtocol(this,
                 // Input register read.
                 new FC4ReadInputRegistersTask(12, Priority.HIGH,
@@ -390,7 +390,7 @@ public class HeatpumpHeliothermImpl extends AbstractOpenemsModbusComponent imple
                                 ElementToChannelConverter.DIRECT_1_TO_1)
                 ),
                 new FC4ReadInputRegistersTask(74, Priority.HIGH,
-                        m(Heater.ChannelId.READ_EFFECTIVE_POWER, new UnsignedDoublewordElement(74),
+                        m(Heater.ChannelId.EFFECTIVE_HEATING_POWER, new UnsignedDoublewordElement(74),
                                 ElementToChannelConverter.SCALE_FACTOR_MINUS_1)
                 ),
 
@@ -441,7 +441,8 @@ public class HeatpumpHeliothermImpl extends AbstractOpenemsModbusComponent imple
                     ),
                     new FC6WriteRegisterTask(102,
                             m(HeatpumpHeliotherm.ChannelId.HR102_SET_POINT_TEMPERATUR, new SignedWordElement(102))),
-                    new FC6WriteRegisterTask(103, m(ChannelId.HR103_USE_SET_POINT_TEMPERATURE, new UnsignedWordElement(103))),
+                    new FC6WriteRegisterTask(103,
+                            m(HeatpumpHeliotherm.ChannelId.HR103_USE_SET_POINT_TEMPERATURE, new UnsignedWordElement(103))),
 
                     new FC16WriteRegistersTask(117,
                             m(HeatpumpHeliotherm.ChannelId.HR117_USE_POWER_CONTROL, new UnsignedWordElement(117),
@@ -477,12 +478,16 @@ public class HeatpumpHeliothermImpl extends AbstractOpenemsModbusComponent imple
 
     @Override
     public void handleEvent(Event event) {
-        if (componentEnabled) {
-            switch (event.getTopic()) {
-                case EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE:
-                    channelmapping();
-                    break;
+        if (this.isEnabled() == false) {
+            return;
+        }
+        if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE)) {
+            this.channelmapping();
+            if (this.printInfoToLog) {
+                this.printInfo();
             }
+        } else if (this.readOnly == false && event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS)) {
+            this.writeCommands();
         }
     }
 
@@ -491,16 +496,16 @@ public class HeatpumpHeliothermImpl extends AbstractOpenemsModbusComponent imple
 
         if (readOnly == false) {
 
-			turnOnHeatpump = this.enableSignalHandler.deviceShouldBeHeating(this);
+            boolean turnOnHeatpump = this.enableSignalHandler.deviceShouldBeHeating(this);
 
             // Map the set points. Set default set point (defined in config) if there is no set point in the channels
             int setPointTemperature = defaultSetPointTemperature;
             double setPointPowerPercent = defaultSetPointPowerPercent;
-            if (getSetPointTemperature() >= 0) {    // getSetPointTemperature() returns -1 if there is no value in the channel.
-                setPointTemperature = getSetPointTemperature();
+            if (this.getTemperatureSetpoint().isDefined()) {
+                setPointTemperature = this.getTemperatureSetpoint().get();
             }
-            if (getSetPointPowerPercent() >= 0) {    // getSetPointPowerPercent() returns -1 if there is no value in the channel.
-                setPointPowerPercent = getSetPointPowerPercent();
+            if (this.getHeatingPowerPercentSetpoint().isDefined()) {
+                setPointPowerPercent = this.getHeatingPowerPercentSetpoint().get();
             }
             if (setPointPowerPercent > 100) {
                 setPointPowerPercent = 100;
@@ -560,7 +565,7 @@ public class HeatpumpHeliothermImpl extends AbstractOpenemsModbusComponent imple
             // heating power of the heatpump scales linearly with the electric power draw. Then calculate heating power
             // in percent with currentElectricPower / maxElectricPower.
             double effectivePowerPercent = (getCurrentElectricPower().get() * 1.0 / maxElectricPower) * 100;    // Convert to %.
-            setEffectivePowerPercentRead(effectivePowerPercent);
+            this._setEffectiveHeatingPowerPercent(effectivePowerPercent);
         }
         if (getCop().isDefined()) {
             coefficientOfPerformance = getCop().get();
@@ -586,20 +591,14 @@ public class HeatpumpHeliothermImpl extends AbstractOpenemsModbusComponent imple
 
         // Set Heater interface STATUS channel
         if (connectionAlive == false || heatpumpEvuIndicator == false) {
-            setState(HeaterState.OFFLINE.name());
-        } else if (heatpumpError) {
-            setState(HeaterState.ERROR.name());
-            //} else if (chpWarning){	// No warning indicator for this device.
-            //	setState(HeaterState.WARNING.name());
+            this._setHeaterState(HeaterState.OFF.getValue());
         } else if (heatpumpRunning) {
-            setState(HeaterState.RUNNING.name());
-            //} else if (chpStartingUp){	// No preheat on this device
-            //	setState(HeaterState.PREHEAT.name());
+            this._setHeaterState(HeaterState.RUNNING.getValue());
         } else if (heatpumpReady) {
-            setState(HeaterState.AWAIT.name());
+            this._setHeaterState(HeaterState.STANDBY.getValue());
         } else {
             // If the code gets to here, the state is undefined.
-            setState(HeaterState.UNDEFINED.name());
+            this._setHeaterState(HeaterState.UNDEFINED.getValue());
         }
 
         // Parse status, fill status channel.
@@ -658,7 +657,7 @@ public class HeatpumpHeliothermImpl extends AbstractOpenemsModbusComponent imple
         }
 
 
-        if (debug) {
+        if (printInfoToLog) {
             this.logInfo(this.log, "--Heatpump Heliotherm--");
             this.logInfo(this.log, "Flow temperature: " + getFlowTemperature() + " [d°C]");
             this.logInfo(this.log, "Buffer temperature: " + getBufferTemperature().get() + " [d°C]");
@@ -683,60 +682,32 @@ public class HeatpumpHeliothermImpl extends AbstractOpenemsModbusComponent imple
 
     }
 
-    @Override
-    public boolean setPointPowerPercentAvailable() {
-        return true;
+    /**
+     * Determine commands and send them to the heater.
+     */
+    protected void writeCommands() {
+
     }
 
-    @Override
-    public boolean setPointPowerAvailable() {
-        return false;
+    /**
+     * Information that is printed to the log if ’print info to log’ option is enabled.
+     */
+    protected void printInfo() {
+
     }
 
-    @Override
-    public boolean setPointTemperatureAvailable() {
-        return true;
-    }
-
-    @Override
-    public int calculateProvidedPower(int demand, float bufferValue) throws OpenemsError.OpenemsNamedException {
-        return getEffectivePower();
-    }
-
-    @Override
-    public int getMaximumThermalOutput() {
-        return (coefficientOfPerformance * maxElectricPower);
-    }
-
-    @Override
-    public void setOffline() throws OpenemsError.OpenemsNamedException {
-        setEnableSignal(false);
-    }
-
-    @Override
-    public boolean hasError() {
-        return heatpumpError;
-    }
-
-    @Override
-    public void requestMaximumPower() {
-        // Set heater to run at 100%, but don't set enableSignal.
-        try {
-            setOperatingMode(OperatingMode.SET_POINT_POWER_PERCENT.getValue());
-            setSetPointPowerPercent(100);
-        } catch (OpenemsError.OpenemsNamedException e) {
-            log.warn("Couldn't write in Channel " + e.getMessage());
+    /**
+     * Returns the debug message.
+     *
+     * @return the debug message.
+     */
+    public String debugLog() {
+        String debugMessage = this.getHeaterState().asEnum().asCamelCase() //
+                + "|F:" + this.getFlowTemperature().asString() //
+                + "|R:" + this.getReturnTemperature().asString(); //
+        if (this.getErrorMessage().get().equals("No error") == false) {
+            debugMessage = debugMessage + "|Error";
         }
-    }
-
-    @Override
-    public void setIdle() {
-        // Set heater to run at 0%, but don't switch it off.
-        try {
-            setOperatingMode(OperatingMode.SET_POINT_POWER_PERCENT.getValue());
-            setSetPointPowerPercent(0);
-        } catch (OpenemsError.OpenemsNamedException e) {
-            log.warn("Couldn't write in Channel " + e.getMessage());
-        }
+        return debugMessage;
     }
 }

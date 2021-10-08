@@ -141,7 +141,6 @@ public class HeatPumpTecalorImpl extends AbstractOpenemsModbusComponent implemen
 
 	@Override
 	protected ModbusProtocol defineModbusProtocol() throws OpenemsException {
-
 		ModbusProtocol protocol = new ModbusProtocol(this,
 				new FC4ReadInputRegistersTask(506, Priority.HIGH,
 						/* The pump sends 0x8000H (= signed -32768) when a value is not available. The

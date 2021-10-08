@@ -35,7 +35,7 @@ public interface ThermometerConfigurable extends Thermometer {
          * <li>Unit: DeciDegreeCelsius
          * </ul>
          */
-        ACTIVE_TEMPERATURE(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
+        ACTIVE_TEMPERATURE(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS)),
         /**
          * Inactive Temperature Value.
          * The Value the Thermometer will write into it's {@link Thermometer.ChannelId#TEMPERATURE} if not Enabled.
@@ -46,7 +46,7 @@ public interface ThermometerConfigurable extends Thermometer {
          * <li>Unit: DeciDegreeCelsius
          * </ul>
          */
-        INACTIVE_TEMPERATURE(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
+        INACTIVE_TEMPERATURE(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS)),
         /**
          * Set Active Temperature.
          * Set up a new Default active Temperature. This will be updated in the Config.
@@ -56,7 +56,7 @@ public interface ThermometerConfigurable extends Thermometer {
          * <li>Unit: DeciDegreeCelsius
          * </ul>
          */
-        SET_DEFAULT_ACTIVE_TEMPERATURE(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
+        SET_DEFAULT_ACTIVE_TEMPERATURE(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
         /**
          * Set Inactive Temperature.
          * Set up a new Default active Temperature. This will be updated in the Config.
@@ -66,7 +66,7 @@ public interface ThermometerConfigurable extends Thermometer {
          * <li>Unit: DeciDegreeCelsius
          * </ul>
          */
-        SET_DEFAULT_INACTIVE_TEMPERATURE(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE));
+        SET_DEFAULT_INACTIVE_TEMPERATURE(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE));
 
 
         private final Doc doc;
