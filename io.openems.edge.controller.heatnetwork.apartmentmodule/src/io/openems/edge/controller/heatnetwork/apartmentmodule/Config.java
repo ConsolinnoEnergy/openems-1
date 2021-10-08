@@ -50,14 +50,8 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     @AttributeDefinition(name = "HeatBooster Id", description = "The HeatBooster Id")
     String heatBoosterId() default "HeatBooster0";
 
-    boolean useExceptionalState();
-
-    @AttributeDefinition(name = "TimerId", description = "TimerByCycles or TimerById")
+    @AttributeDefinition(name = "TimerId", description = "Timer to use for checking Missing Components")
     String timerId();
-
-    @AttributeDefinition(name = "ExceptionalState Absence Time", description = "After one enable of Exceptional state, "
-            + "how long should the value apply after absence of the enable Signal")
-    int waitTime() default 30;
 
     boolean enabled() default true;
 
