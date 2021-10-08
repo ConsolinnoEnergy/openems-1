@@ -13,7 +13,7 @@ import io.openems.edge.heater.api.Chp;
 /**
  * Channels for the Wolf chp.
  */
-public interface ChpWolfChannel extends Chp {
+public interface ChpWolf extends Chp {
 
     public enum ChannelId implements io.openems.edge.common.channel.ChannelId {
 

@@ -14,7 +14,7 @@ import io.openems.edge.heater.api.Heater;
 /**
  * Channels for the Viessmann gas boiler.
  */
-public interface GasBoiler extends Heater {
+public interface GasBoilerViessmann extends Heater {
 
     public enum ChannelId implements io.openems.edge.common.channel.ChannelId {
 

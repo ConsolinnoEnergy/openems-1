@@ -11,7 +11,7 @@ import io.openems.edge.heater.api.Chp;
 /**
  * Channels for the Viessmann chp.
  */
-public interface ViessmannInformation extends Chp {
+public interface ChpViessmann extends Chp {
     public enum ChannelId implements io.openems.edge.common.channel.ChannelId {
 
         /**

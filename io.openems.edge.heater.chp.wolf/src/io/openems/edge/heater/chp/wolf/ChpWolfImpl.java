@@ -23,7 +23,7 @@ import io.openems.edge.heater.api.EnableSignalHandler;
 import io.openems.edge.heater.api.EnableSignalHandlerImpl;
 import io.openems.edge.heater.api.Heater;
 import io.openems.edge.heater.api.HeaterState;
-import io.openems.edge.heater.chp.wolf.api.ChpWolfChannel;
+import io.openems.edge.heater.chp.wolf.api.ChpWolf;
 import io.openems.edge.timer.api.TimerHandler;
 import io.openems.edge.timer.api.TimerHandlerImpl;
 import org.osgi.service.cm.ConfigurationAdmin;
@@ -71,7 +71,7 @@ import java.util.Optional;
 				EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS //
 		})
 public class ChpWolfImpl extends AbstractOpenemsModbusComponent implements OpenemsComponent, EventHandler,
-		ExceptionalState, ChpWolfChannel {
+		ExceptionalState, ChpWolf {
 
 	@Reference
 	protected ConfigurationAdmin cm;
@@ -103,7 +103,7 @@ public class ChpWolfImpl extends AbstractOpenemsModbusComponent implements Opene
 
 	public ChpWolfImpl() {
 		super(OpenemsComponent.ChannelId.values(),
-				ChpWolfChannel.ChannelId.values(),
+				ChpWolf.ChannelId.values(),
 				Chp.ChannelId.values(),
 				Heater.ChannelId.values(),
 				ExceptionalState.ChannelId.values());
@@ -149,25 +149,25 @@ public class ChpWolfImpl extends AbstractOpenemsModbusComponent implements Opene
 
 		ModbusProtocol protocol = new ModbusProtocol(this,
 				new FC3ReadRegistersTask(2, Priority.HIGH,
-						m(ChpWolfChannel.ChannelId.HR2_STATUS_BITS1, new UnsignedWordElement(0),
+						m(ChpWolf.ChannelId.HR2_STATUS_BITS1, new UnsignedWordElement(0),
 								ElementToChannelConverter.DIRECT_1_TO_1)
 				),
 				new FC3ReadRegistersTask(11, Priority.HIGH,
-						m(ChpWolfChannel.ChannelId.HR11_STATUS_BITS2, new UnsignedWordElement(0),
+						m(ChpWolf.ChannelId.HR11_STATUS_BITS2, new UnsignedWordElement(0),
 								ElementToChannelConverter.DIRECT_1_TO_1)
 				),
-				new FC3ReadRegistersTask(27, Priority.LOW,
+				new FC3ReadRegistersTask(27, Priority.HIGH,
 						m(Heater.ChannelId.FLOW_TEMPERATURE, new UnsignedWordElement(0),
 								ElementToChannelConverter.DIRECT_1_TO_1),
 						m(Heater.ChannelId.RETURN_TEMPERATURE, new UnsignedWordElement(0),
 								ElementToChannelConverter.DIRECT_1_TO_1)
 				),
-				new FC3ReadRegistersTask(32, Priority.LOW,
-						m(ChpWolfChannel.ChannelId.HR32_BUFFERTANK_TEMP_TOP, new UnsignedWordElement(0),
+				new FC3ReadRegistersTask(32, Priority.HIGH,
+						m(ChpWolf.ChannelId.HR32_BUFFERTANK_TEMP_TOP, new UnsignedWordElement(0),
 								ElementToChannelConverter.DIRECT_1_TO_1),
-						m(ChpWolfChannel.ChannelId.HR33_BUFFERTANK_TEMP_MIDDLE, new UnsignedWordElement(1),
+						m(ChpWolf.ChannelId.HR33_BUFFERTANK_TEMP_MIDDLE, new UnsignedWordElement(1),
 								ElementToChannelConverter.DIRECT_1_TO_1),
-						m(ChpWolfChannel.ChannelId.HR34_BUFFERTANK_TEMP_BOTTOM, new UnsignedWordElement(2),
+						m(ChpWolf.ChannelId.HR34_BUFFERTANK_TEMP_BOTTOM, new UnsignedWordElement(2),
 								ElementToChannelConverter.DIRECT_1_TO_1)
 				),
 				new FC3ReadRegistersTask(263, Priority.HIGH,
@@ -175,28 +175,28 @@ public class ChpWolfImpl extends AbstractOpenemsModbusComponent implements Opene
 								ElementToChannelConverter.DIRECT_1_TO_1)
 				),
 				new FC3ReadRegistersTask(314, Priority.HIGH,
-						m(ChpWolfChannel.ChannelId.HR314_RPM, new UnsignedWordElement(0),
+						m(ChpWolf.ChannelId.HR314_RPM, new UnsignedWordElement(0),
 								ElementToChannelConverter.DIRECT_1_TO_1)
 				),
-				new FC3ReadRegistersTask(3588, Priority.HIGH,
-						m(ChpWolfChannel.ChannelId.HR3588_RUNTIME, new UnsignedDoublewordElement(0),
+				new FC3ReadRegistersTask(3588, Priority.LOW,
+						m(ChpWolf.ChannelId.HR3588_RUNTIME, new UnsignedDoublewordElement(0),
 								ElementToChannelConverter.DIRECT_1_TO_1),
-						m(ChpWolfChannel.ChannelId.HR3590_ENGINE_STARTS, new UnsignedWordElement(2),
+						m(ChpWolf.ChannelId.HR3590_ENGINE_STARTS, new UnsignedWordElement(2),
 								ElementToChannelConverter.DIRECT_1_TO_1)
 				),
 				new FC3ReadRegistersTask(3596, Priority.LOW,
-						m(ChpWolfChannel.ChannelId.HR3596_ELECTRICAL_WORK, new UnsignedDoublewordElement(0),
+						m(ChpWolf.ChannelId.HR3596_ELECTRICAL_WORK, new UnsignedDoublewordElement(0),
 								ElementToChannelConverter.DIRECT_1_TO_1)
 				)
 		);
 		if (this.readOnly == false) {
 			protocol.addTasks(
 					new FC16WriteRegistersTask(6358,
-							m(ChpWolfChannel.ChannelId.HR6358_WRITE_BITS1, new UnsignedWordElement(0),
+							m(ChpWolf.ChannelId.HR6358_WRITE_BITS1, new UnsignedWordElement(0),
 									ElementToChannelConverter.DIRECT_1_TO_1),
-							m(ChpWolfChannel.ChannelId.HR6359_WRITE_BITS2, new UnsignedWordElement(1),
+							m(ChpWolf.ChannelId.HR6359_WRITE_BITS2, new UnsignedWordElement(1),
 									ElementToChannelConverter.DIRECT_1_TO_1),
-							m(ChpWolfChannel.ChannelId.HR6360_WRITE_BITS3, new UnsignedWordElement(2),
+							m(ChpWolf.ChannelId.HR6360_WRITE_BITS3, new UnsignedWordElement(2),
 									ElementToChannelConverter.DIRECT_1_TO_1)
 					)
 			);
@@ -329,7 +329,7 @@ public class ChpWolfImpl extends AbstractOpenemsModbusComponent implements Opene
            Without this function, the chp will always switch off at startup because EnableSignal starts as ’false’. */
 		if (this.startupStateChecked == false) {
 			this.startupStateChecked = true;
-			turnOnChp = (HeaterState.valueOf(this.getHeaterState().orElse(-1)) == HeaterState.HEATING);
+			turnOnChp = (HeaterState.valueOf(this.getHeaterState().orElse(-1)) == HeaterState.RUNNING);
 			if (turnOnChp) {
 				try {
 					this.getEnableSignalChannel().setNextWriteValue(true);
@@ -344,12 +344,12 @@ public class ChpWolfImpl extends AbstractOpenemsModbusComponent implements Opene
 			boolean exceptionalStateActive = this.exceptionalStateHandler.exceptionalStateActive(this);
 			if (exceptionalStateActive) {
 				int exceptionalStateValue = this.getExceptionalStateValue();
-				if (exceptionalStateValue <= 0) {
+				if (exceptionalStateValue <= this.DEFAULT_MIN_EXCEPTIONAL_VALUE) {
 					turnOnChp = false;
 				} else {
 					// When ExceptionalStateValue is between 0 and 100, set Chp to this PowerPercentage.
 					turnOnChp = true;
-					exceptionalStateValue = Math.min(exceptionalStateValue, 100);
+					exceptionalStateValue = Math.min(exceptionalStateValue, this.DEFAULT_MAX_EXCEPTIONAL_VALUE);
 					int electricPowerSetpoint = (int)Math.round(this.chpMaxElectricPower * exceptionalStateValue / 100.0);
 					try {
 						this.setElectricPowerSetpoint(electricPowerSetpoint);

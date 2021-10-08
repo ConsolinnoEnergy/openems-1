@@ -27,7 +27,7 @@ import io.openems.edge.timer.api.TimerHandler;
 import io.openems.edge.timer.api.TimerHandlerImpl;
 import io.openems.edge.common.taskmanager.Priority;
 import io.openems.edge.heater.gasboiler.buderus.api.OperatingMode;
-import io.openems.edge.heater.gasboiler.buderus.api.HeaterBuderus;
+import io.openems.edge.heater.gasboiler.buderus.api.GasBoilerBuderus;
 import org.osgi.service.cm.ConfigurationAdmin;
 import org.osgi.service.cm.ConfigurationException;
 import org.osgi.service.component.ComponentContext;
@@ -64,15 +64,15 @@ import java.time.temporal.ChronoUnit;
  * back to its prior state when ExceptionalState ends.
  */
 @Designate(ocd = Config.class, factory = true)
-@Component(name = "Heater.Buderus.GasBoiler",
+@Component(name = "Heater.GasBoiler.Buderus",
 		immediate = true,
 		configurationPolicy = ConfigurationPolicy.REQUIRE,
 		property = { //
 				EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE, //
 				EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS //
 		})
-public class HeaterBuderusImpl extends AbstractOpenemsModbusComponent implements OpenemsComponent, EventHandler,
-		ExceptionalState, HeaterBuderus {
+public class GasBoilerBuderusImpl extends AbstractOpenemsModbusComponent implements OpenemsComponent, EventHandler,
+		ExceptionalState, GasBoilerBuderus {
 
 	@Reference
 	protected ConfigurationAdmin cm;
@@ -80,7 +80,7 @@ public class HeaterBuderusImpl extends AbstractOpenemsModbusComponent implements
 	@Reference
 	protected ComponentManager cpm;
 
-	private final Logger log = LoggerFactory.getLogger(HeaterBuderusImpl.class);
+	private final Logger log = LoggerFactory.getLogger(GasBoilerBuderusImpl.class);
 	private boolean printInfoToLog;
 	private int heartbeatCounter = 0;
 	private boolean connectionAlive = false;
@@ -102,9 +102,9 @@ public class HeaterBuderusImpl extends AbstractOpenemsModbusComponent implements
 		super.setModbus(modbus);
 	}
 
-	public HeaterBuderusImpl() {
+	public GasBoilerBuderusImpl() {
 		super(OpenemsComponent.ChannelId.values(),
-				HeaterBuderus.ChannelId.values(),
+				GasBoilerBuderus.ChannelId.values(),
 				Heater.ChannelId.values(),
 				ExceptionalState.ChannelId.values());
 	}
@@ -151,91 +151,91 @@ public class HeaterBuderusImpl extends AbstractOpenemsModbusComponent implements
 		ModbusProtocol protocol = new ModbusProtocol(this,
 				// Input register read.
 				new FC4ReadInputRegistersTask(386, Priority.HIGH,
-						m(HeaterBuderus.ChannelId.IR386_STATUS_STRATEGY, new UnsignedWordElement(386),
+						m(GasBoilerBuderus.ChannelId.IR386_STATUS_STRATEGY, new UnsignedWordElement(386),
 								ElementToChannelConverter.DIRECT_1_TO_1)
 				),
 				new FC4ReadInputRegistersTask(390, Priority.HIGH,
-						m(HeaterBuderus.ChannelId.IR390_RUNREQUEST_INITIATOR, new UnsignedWordElement(390),
+						m(GasBoilerBuderus.ChannelId.IR390_RUNREQUEST_INITIATOR, new UnsignedWordElement(390),
 								ElementToChannelConverter.DIRECT_1_TO_1)
 				),
 				new FC4ReadInputRegistersTask(394, Priority.HIGH,
-						m(HeaterBuderus.ChannelId.IR394_STRATEGY_BITBLOCK, new UnsignedWordElement(394),
+						m(GasBoilerBuderus.ChannelId.IR394_STRATEGY_BITBLOCK, new UnsignedWordElement(394),
 								ElementToChannelConverter.DIRECT_1_TO_1),
-						m(HeaterBuderus.ChannelId.IR395_MAX_FLOW_TEMP_REQUESTED, new SignedWordElement(395),
+						m(GasBoilerBuderus.ChannelId.IR395_MAX_FLOW_TEMP_REQUESTED, new SignedWordElement(395),
 								ElementToChannelConverter.SCALE_FACTOR_1)
 				),
 				new FC4ReadInputRegistersTask(476, Priority.HIGH,
-						m(HeaterBuderus.ChannelId.IR476_ERROR_REGISTER1, new UnsignedDoublewordElement(476),
+						m(GasBoilerBuderus.ChannelId.IR476_ERROR_REGISTER1, new UnsignedDoublewordElement(476),
 								ElementToChannelConverter.DIRECT_1_TO_1),
-						m(HeaterBuderus.ChannelId.IR478_ERROR_REGISTER2, new UnsignedDoublewordElement(478),
+						m(GasBoilerBuderus.ChannelId.IR478_ERROR_REGISTER2, new UnsignedDoublewordElement(478),
 								ElementToChannelConverter.DIRECT_1_TO_1),
-						m(HeaterBuderus.ChannelId.IR480_ERROR_REGISTER3, new UnsignedDoublewordElement(480),
+						m(GasBoilerBuderus.ChannelId.IR480_ERROR_REGISTER3, new UnsignedDoublewordElement(480),
 								ElementToChannelConverter.DIRECT_1_TO_1),
-						m(HeaterBuderus.ChannelId.IR482_ERROR_REGISTER4, new UnsignedDoublewordElement(482),
+						m(GasBoilerBuderus.ChannelId.IR482_ERROR_REGISTER4, new UnsignedDoublewordElement(482),
 								ElementToChannelConverter.DIRECT_1_TO_1)
 				),
 				new FC4ReadInputRegistersTask(8001, Priority.HIGH,
 						m(Heater.ChannelId.FLOW_TEMPERATURE, new SignedWordElement(8001),
 								ElementToChannelConverter.DIRECT_1_TO_1),
-						m(HeaterBuderus.ChannelId.IR8002_FLOW_TEMP_RATE_OF_CHANGE_BOILER1, new SignedWordElement(8002),
+						m(GasBoilerBuderus.ChannelId.IR8002_FLOW_TEMP_RATE_OF_CHANGE_BOILER1, new SignedWordElement(8002),
 								ElementToChannelConverter.DIRECT_1_TO_1),
 						m(Heater.ChannelId.RETURN_TEMPERATURE, new SignedWordElement(8003),
 								ElementToChannelConverter.DIRECT_1_TO_1),
 						m(Heater.ChannelId.EFFECTIVE_HEATING_POWER_PERCENT, new UnsignedWordElement(8004),
 								ElementToChannelConverter.DIRECT_1_TO_1),
-						m(HeaterBuderus.ChannelId.IR8005_HEATER_AT_LOAD_LIMIT_BOILER1, new UnsignedWordElement(8002),
+						m(GasBoilerBuderus.ChannelId.IR8005_HEATER_AT_LOAD_LIMIT_BOILER1, new UnsignedWordElement(8002),
 								ElementToChannelConverter.DIRECT_1_TO_1),
 						new DummyRegisterElement(8006),
-						m(HeaterBuderus.ChannelId.IR8007_MAXIMUM_POWER_BOILER1, new UnsignedWordElement(8007),
+						m(GasBoilerBuderus.ChannelId.IR8007_MAXIMUM_POWER_BOILER1, new UnsignedWordElement(8007),
 								ElementToChannelConverter.DIRECT_1_TO_1),
-						m(HeaterBuderus.ChannelId.IR8008_MINIMUM_POWER_PERCENT_BOILER1, new UnsignedWordElement(8008),
+						m(GasBoilerBuderus.ChannelId.IR8008_MINIMUM_POWER_PERCENT_BOILER1, new UnsignedWordElement(8008),
 								ElementToChannelConverter.DIRECT_1_TO_1),
 						new DummyRegisterElement(8009),
 						new DummyRegisterElement(8010),
-						m(HeaterBuderus.ChannelId.IR8011_MAXIMUM_FLOW_TEMP_BOILER1, new UnsignedWordElement(8011),
+						m(GasBoilerBuderus.ChannelId.IR8011_MAXIMUM_FLOW_TEMP_BOILER1, new UnsignedWordElement(8011),
 								ElementToChannelConverter.SCALE_FACTOR_1),
-						m(HeaterBuderus.ChannelId.IR8012_STATUS_BOILER1, new UnsignedWordElement(8012),
+						m(GasBoilerBuderus.ChannelId.IR8012_STATUS_BOILER1, new UnsignedWordElement(8012),
 								ElementToChannelConverter.DIRECT_1_TO_1),
-						m(HeaterBuderus.ChannelId.IR8013_BITBLOCK_BOILER1, new UnsignedWordElement(8013),
+						m(GasBoilerBuderus.ChannelId.IR8013_BITBLOCK_BOILER1, new UnsignedWordElement(8013),
 								ElementToChannelConverter.DIRECT_1_TO_1),
 						new DummyRegisterElement(8014),
-						m(HeaterBuderus.ChannelId.IR8015_REQUESTED_TEMPERATURE_SETPOINT_BOILER1, new UnsignedWordElement(8015),
+						m(GasBoilerBuderus.ChannelId.IR8015_REQUESTED_TEMPERATURE_SETPOINT_BOILER1, new UnsignedWordElement(8015),
 								ElementToChannelConverter.SCALE_FACTOR_1),
-						m(HeaterBuderus.ChannelId.IR8016_SETPOINT_POWER_PERCENT_BOILER1, new UnsignedWordElement(8016),
+						m(GasBoilerBuderus.ChannelId.IR8016_SETPOINT_POWER_PERCENT_BOILER1, new UnsignedWordElement(8016),
 								ElementToChannelConverter.DIRECT_1_TO_1),
-						m(HeaterBuderus.ChannelId.IR8017_PRESSURE_BOILER1, new SignedWordElement(8017),
+						m(GasBoilerBuderus.ChannelId.IR8017_PRESSURE_BOILER1, new SignedWordElement(8017),
 								ElementToChannelConverter.DIRECT_1_TO_1),
-						m(HeaterBuderus.ChannelId.IR8018_ERROR_CODE_BOILER1, new UnsignedWordElement(8018),
+						m(GasBoilerBuderus.ChannelId.IR8018_ERROR_CODE_BOILER1, new UnsignedWordElement(8018),
 								ElementToChannelConverter.DIRECT_1_TO_1),
-						m(HeaterBuderus.ChannelId.IR8019_DISPLAY_ERROR_CODE_BOILER1, new UnsignedWordElement(8019),
+						m(GasBoilerBuderus.ChannelId.IR8019_DISPLAY_ERROR_CODE_BOILER1, new UnsignedWordElement(8019),
 								ElementToChannelConverter.DIRECT_1_TO_1),
 						new DummyRegisterElement(8020),
-						m(HeaterBuderus.ChannelId.IR8021_NUMBER_OF_STARTS_BOILER1, new UnsignedDoublewordElement(8021),
+						m(GasBoilerBuderus.ChannelId.IR8021_NUMBER_OF_STARTS_BOILER1, new UnsignedDoublewordElement(8021),
 								ElementToChannelConverter.DIRECT_1_TO_1),
-						m(HeaterBuderus.ChannelId.IR8023_RUNNING_TIME_BOILER1, new UnsignedDoublewordElement(8023),
+						m(GasBoilerBuderus.ChannelId.IR8023_RUNNING_TIME_BOILER1, new UnsignedDoublewordElement(8023),
 								ElementToChannelConverter.DIRECT_1_TO_1)
 				),
 
 				// Holding register read.
 				new FC3ReadRegistersTask(0, Priority.HIGH,
-						m(HeaterBuderus.ChannelId.HR0_HEARTBEAT_IN, new UnsignedWordElement(0),
+						m(GasBoilerBuderus.ChannelId.HR0_HEARTBEAT_IN, new UnsignedWordElement(0),
 								ElementToChannelConverter.DIRECT_1_TO_1),
-						m(HeaterBuderus.ChannelId.HR1_HEARTBEAT_OUT, new UnsignedWordElement(1),
+						m(GasBoilerBuderus.ChannelId.HR1_HEARTBEAT_OUT, new UnsignedWordElement(1),
 								ElementToChannelConverter.DIRECT_1_TO_1)
 				),
 				new FC3ReadRegistersTask(402, Priority.HIGH,
-						m(HeaterBuderus.ChannelId.HR402_RUN_PERMISSION, new UnsignedWordElement(402),
+						m(GasBoilerBuderus.ChannelId.HR402_RUN_PERMISSION, new UnsignedWordElement(402),
 								ElementToChannelConverter.DIRECT_1_TO_1)
 				),
 				new FC3ReadRegistersTask(405, Priority.HIGH,
-						m(HeaterBuderus.ChannelId.HR405_COMMAND_BITS, new UnsignedWordElement(405),
+						m(GasBoilerBuderus.ChannelId.HR405_COMMAND_BITS, new UnsignedWordElement(405),
 								ElementToChannelConverter.DIRECT_1_TO_1)
 				)
 		);
 		if (this.readOnly == false) {
 			protocol.addTasks(
 					new FC16WriteRegistersTask(0,
-							m(HeaterBuderus.ChannelId.HR0_HEARTBEAT_IN, new UnsignedWordElement(0),
+							m(GasBoilerBuderus.ChannelId.HR0_HEARTBEAT_IN, new UnsignedWordElement(0),
 									ElementToChannelConverter.DIRECT_1_TO_1)
 					),
 					new FC16WriteRegistersTask(400,
@@ -243,11 +243,11 @@ public class HeaterBuderusImpl extends AbstractOpenemsModbusComponent implements
 									ElementToChannelConverter.SCALE_FACTOR_1),
 							m(Heater.ChannelId.SET_POINT_HEATING_POWER_PERCENT, new UnsignedWordElement(401),
 									ElementToChannelConverter.DIRECT_1_TO_1),
-							m(HeaterBuderus.ChannelId.HR402_RUN_PERMISSION, new UnsignedWordElement(402),
+							m(GasBoilerBuderus.ChannelId.HR402_RUN_PERMISSION, new UnsignedWordElement(402),
 									ElementToChannelConverter.DIRECT_1_TO_1)
 					),
 					new FC16WriteRegistersTask(405,
-							m(HeaterBuderus.ChannelId.HR405_COMMAND_BITS, new UnsignedWordElement(405),
+							m(GasBoilerBuderus.ChannelId.HR405_COMMAND_BITS, new UnsignedWordElement(405),
 									ElementToChannelConverter.DIRECT_1_TO_1)
 					)
 			);
@@ -536,14 +536,12 @@ public class HeaterBuderusImpl extends AbstractOpenemsModbusComponent implements
 			exceptionalStateActive = this.exceptionalStateHandler.exceptionalStateActive(this);
 			if (exceptionalStateActive) {
 				exceptionalStateValue = this.getExceptionalStateValue();
-				if (exceptionalStateValue <= 0) {
+				if (exceptionalStateValue <= this.DEFAULT_MIN_EXCEPTIONAL_VALUE) {
 					turnOnHeater = false;
 				} else {
 					// When ExceptionalStateValue is between 0 and 100, set heater to this PowerPercentage.
 					turnOnHeater = true;
-					if (exceptionalStateValue > 100) {
-						exceptionalStateValue = 100;
-					}
+					exceptionalStateValue = Math.min(exceptionalStateValue, this.DEFAULT_MAX_EXCEPTIONAL_VALUE);
 					try {
 						this.setHeatingPowerPercentSetpoint(exceptionalStateValue);
 						// Set heater to control mode power percent, as ExceptionalState value uses that.

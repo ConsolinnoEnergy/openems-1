@@ -2,7 +2,6 @@ package io.openems.edge.heater.gasboiler.buderus.api;
 
 import io.openems.common.channel.AccessMode;
 import io.openems.common.channel.Unit;
-import io.openems.common.exceptions.OpenemsError;
 import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
 import io.openems.common.types.OpenemsType;
 import io.openems.edge.common.channel.BooleanWriteChannel;
@@ -17,7 +16,7 @@ import io.openems.edge.heater.api.Heater;
 /**
  * Channels for the Buderus gas boiler.
  */
-public interface HeaterBuderus extends Heater {
+public interface GasBoilerBuderus extends Heater {
 
     enum ChannelId implements io.openems.edge.common.channel.ChannelId {
 

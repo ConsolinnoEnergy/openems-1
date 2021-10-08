@@ -2,7 +2,7 @@ package io.openems.edge.heater.chp.viessmann;
 
 import io.openems.common.exceptions.OpenemsError;
 import io.openems.common.exceptions.OpenemsException;
-import io.openems.edge.consolinno.aio.api.AioChannel;
+import io.openems.edge.io.api.AnalogInputOutput;
 import io.openems.edge.bridge.modbus.api.AbstractOpenemsModbusComponent;
 import io.openems.edge.bridge.modbus.api.BridgeModbus;
 import io.openems.edge.bridge.modbus.api.ElementToChannelConverter;
@@ -28,7 +28,7 @@ import io.openems.edge.heater.api.HeaterState;
 import io.openems.edge.heater.chp.viessmann.api.ModuleStatus;
 import io.openems.edge.timer.api.TimerHandler;
 import io.openems.edge.timer.api.TimerHandlerImpl;
-import io.openems.edge.heater.chp.viessmann.api.ViessmannInformation;
+import io.openems.edge.heater.chp.viessmann.api.ChpViessmann;
 import io.openems.edge.relay.api.Relay;
 import org.osgi.service.cm.ConfigurationAdmin;
 import org.osgi.service.cm.ConfigurationException;
@@ -76,7 +76,7 @@ import java.util.Optional;
                 EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS //
         })
 public class ChpViessmannImpl extends AbstractOpenemsModbusComponent implements OpenemsComponent, EventHandler,
-        ExceptionalState, ViessmannInformation {
+        ExceptionalState, ChpViessmann {
 
     private final Logger log = LoggerFactory.getLogger(ChpViessmannImpl.class);
 
@@ -85,7 +85,7 @@ public class ChpViessmannImpl extends AbstractOpenemsModbusComponent implements 
     private double powerPercentSetpoint;
     private Relay relay;
     private boolean useRelay;
-    private AioChannel aioChannel;
+    private AnalogInputOutput aioChannel;
     private int minValue;
     private int maxValue;
     private int percentageRange;
@@ -116,7 +116,7 @@ public class ChpViessmannImpl extends AbstractOpenemsModbusComponent implements 
 
     public ChpViessmannImpl() {
         super(OpenemsComponent.ChannelId.values(),
-                ViessmannInformation.ChannelId.values(),
+                ChpViessmann.ChannelId.values(),
                 Chp.ChannelId.values(),
                 Heater.ChannelId.values(),
                 ExceptionalState.ChannelId.values());
@@ -148,7 +148,7 @@ public class ChpViessmannImpl extends AbstractOpenemsModbusComponent implements 
     }
 
     private void allocateComponents(Config config) throws OpenemsError.OpenemsNamedException, ConfigurationException {
-        if (this.cpm.getComponent(config.aioModuleId()) instanceof AioChannel) {
+        if (this.cpm.getComponent(config.aioModuleId()) instanceof AnalogInputOutput) {
             this.aioChannel = this.cpm.getComponent(config.aioModuleId());
         } else {
             throw new ConfigurationException("activate", "The Component with id: "
@@ -185,114 +185,114 @@ public class ChpViessmannImpl extends AbstractOpenemsModbusComponent implements 
     @Override
     protected ModbusProtocol defineModbusProtocol() throws OpenemsException {
         return new ModbusProtocol(this,
-                new FC3ReadRegistersTask(0x4000, Priority.LOW,
+                new FC3ReadRegistersTask(0x4000, Priority.HIGH,
                         new DummyRegisterElement(0x4000, 0x4000),
-                        m(ViessmannInformation.ChannelId.MODE, new UnsignedWordElement(0x4001),
+                        m(ChpViessmann.ChannelId.MODE, new UnsignedWordElement(0x4001),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
-                        m(ViessmannInformation.ChannelId.STATUS, new UnsignedWordElement(0x4002),
+                        m(ChpViessmann.ChannelId.STATUS, new UnsignedWordElement(0x4002),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
-                        m(ViessmannInformation.ChannelId.OPERATING_MODE, new UnsignedWordElement(0x4003),
+                        m(ChpViessmann.ChannelId.OPERATING_MODE, new UnsignedWordElement(0x4003),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
                         m(Heater.ChannelId.EFFECTIVE_HEATING_POWER_PERCENT, new SignedWordElement(0x4004),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
-                        m(ViessmannInformation.ChannelId.ERROR_BITS_1, new UnsignedWordElement(0x4005),
+                        m(ChpViessmann.ChannelId.ERROR_BITS_1, new UnsignedWordElement(0x4005),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
-                        m(ViessmannInformation.ChannelId.ERROR_BITS_2, new UnsignedWordElement(0x4006),
+                        m(ChpViessmann.ChannelId.ERROR_BITS_2, new UnsignedWordElement(0x4006),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
-                        m(ViessmannInformation.ChannelId.ERROR_BITS_3, new UnsignedWordElement(0x4007),
+                        m(ChpViessmann.ChannelId.ERROR_BITS_3, new UnsignedWordElement(0x4007),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
-                        m(ViessmannInformation.ChannelId.ERROR_BITS_4, new UnsignedWordElement(0x4008),
+                        m(ChpViessmann.ChannelId.ERROR_BITS_4, new UnsignedWordElement(0x4008),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
-                        m(ViessmannInformation.ChannelId.ERROR_BITS_5, new UnsignedWordElement(0x4009),
+                        m(ChpViessmann.ChannelId.ERROR_BITS_5, new UnsignedWordElement(0x4009),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
-                        m(ViessmannInformation.ChannelId.ERROR_BITS_6, new UnsignedWordElement(0x400A),
+                        m(ChpViessmann.ChannelId.ERROR_BITS_6, new UnsignedWordElement(0x400A),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
-                        m(ViessmannInformation.ChannelId.ERROR_BITS_7, new UnsignedWordElement(0x400B),
+                        m(ChpViessmann.ChannelId.ERROR_BITS_7, new UnsignedWordElement(0x400B),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
-                        m(ViessmannInformation.ChannelId.ERROR_BITS_8, new UnsignedWordElement(0x400C),
+                        m(ChpViessmann.ChannelId.ERROR_BITS_8, new UnsignedWordElement(0x400C),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
-                        m(ViessmannInformation.ChannelId.OPERATING_HOURS, new UnsignedWordElement(0x400D),
+                        m(ChpViessmann.ChannelId.OPERATING_HOURS, new UnsignedWordElement(0x400D),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
-                        m(ViessmannInformation.ChannelId.OPERATING_MINUTES, new UnsignedWordElement(0x400E),
+                        m(ChpViessmann.ChannelId.OPERATING_MINUTES, new UnsignedWordElement(0x400E),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
-                        m(ViessmannInformation.ChannelId.START_COUNTER, new UnsignedWordElement(0x400F),
+                        m(ChpViessmann.ChannelId.START_COUNTER, new UnsignedWordElement(0x400F),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
-                        m(ViessmannInformation.ChannelId.MAINTENANCE_INTERVAL, new SignedWordElement(0x4010),
+                        m(ChpViessmann.ChannelId.MAINTENANCE_INTERVAL, new SignedWordElement(0x4010),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
-                        m(ViessmannInformation.ChannelId.MODULE_LOCK, new SignedWordElement(0x4011),
+                        m(ChpViessmann.ChannelId.MODULE_LOCK, new SignedWordElement(0x4011),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
-                        m(ViessmannInformation.ChannelId.WARNING_TIME, new SignedWordElement(0x4012),
+                        m(ChpViessmann.ChannelId.WARNING_TIME, new SignedWordElement(0x4012),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
-                        m(ViessmannInformation.ChannelId.NEXT_MAINTENANCE, new UnsignedWordElement(0x4013),
+                        m(ChpViessmann.ChannelId.NEXT_MAINTENANCE, new UnsignedWordElement(0x4013),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
-                        m(ViessmannInformation.ChannelId.EXHAUST_A, new SignedWordElement(0x4014),
+                        m(ChpViessmann.ChannelId.EXHAUST_A, new SignedWordElement(0x4014),
                                 ElementToChannelConverter.SCALE_FACTOR_1),
-                        m(ViessmannInformation.ChannelId.EXHAUST_B, new SignedWordElement(0x4015),
+                        m(ChpViessmann.ChannelId.EXHAUST_B, new SignedWordElement(0x4015),
                                 ElementToChannelConverter.SCALE_FACTOR_1),
-                        m(ViessmannInformation.ChannelId.EXHAUST_C, new SignedWordElement(0x4016),
+                        m(ChpViessmann.ChannelId.EXHAUST_C, new SignedWordElement(0x4016),
                                 ElementToChannelConverter.SCALE_FACTOR_1),
-                        m(ViessmannInformation.ChannelId.EXHAUST_D, new SignedWordElement(0x4017),
+                        m(ChpViessmann.ChannelId.EXHAUST_D, new SignedWordElement(0x4017),
                                 ElementToChannelConverter.SCALE_FACTOR_1),
-                        m(ViessmannInformation.ChannelId.PT_100_1, new SignedWordElement(0x4018),
+                        m(ChpViessmann.ChannelId.PT_100_1, new SignedWordElement(0x4018),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
                         m(Heater.ChannelId.RETURN_TEMPERATURE, new SignedWordElement(0x4019),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
                         m(Heater.ChannelId.FLOW_TEMPERATURE, new SignedWordElement(0x401A),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
-                        m(ViessmannInformation.ChannelId.PT_100_4, new SignedWordElement(0x401B),
+                        m(ChpViessmann.ChannelId.PT_100_4, new SignedWordElement(0x401B),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
-                        m(ViessmannInformation.ChannelId.PT_100_5, new SignedWordElement(0x401C),
+                        m(ChpViessmann.ChannelId.PT_100_5, new SignedWordElement(0x401C),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
-                        m(ViessmannInformation.ChannelId.PT_100_6, new SignedWordElement(0x401D),
+                        m(ChpViessmann.ChannelId.PT_100_6, new SignedWordElement(0x401D),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
-                        m(ViessmannInformation.ChannelId.BATTERY_VOLTAGE, new SignedWordElement(0x401E),
+                        m(ChpViessmann.ChannelId.BATTERY_VOLTAGE, new SignedWordElement(0x401E),
                                 ElementToChannelConverter.SCALE_FACTOR_2),
-                        m(ViessmannInformation.ChannelId.OIL_PRESSURE, new SignedWordElement(0x401F),
+                        m(ChpViessmann.ChannelId.OIL_PRESSURE, new SignedWordElement(0x401F),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
-                        m(ViessmannInformation.ChannelId.LAMBDA_PROBE_VOLTAGE, new SignedWordElement(0x4020),
+                        m(ChpViessmann.ChannelId.LAMBDA_PROBE_VOLTAGE, new SignedWordElement(0x4020),
                                 ElementToChannelConverter.DIRECT_1_TO_1)),
-                new FC3ReadRegistersTask(0x4025, Priority.LOW,
-                        m(ViessmannInformation.ChannelId.ROTATION_PER_MIN, new UnsignedWordElement(0x4025),
+                new FC3ReadRegistersTask(0x4025, Priority.HIGH,
+                        m(ChpViessmann.ChannelId.ROTATION_PER_MIN, new UnsignedWordElement(0x4025),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
-                        m(ViessmannInformation.ChannelId.TEMPERATURE_CONTROLLER, new SignedWordElement(0x4026),
+                        m(ChpViessmann.ChannelId.TEMPERATURE_CONTROLLER, new SignedWordElement(0x4026),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
-                        m(ViessmannInformation.ChannelId.TEMPERATURE_CLEARANCE, new SignedWordElement(0x4027),
+                        m(ChpViessmann.ChannelId.TEMPERATURE_CLEARANCE, new SignedWordElement(0x4027),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
-                        m(ViessmannInformation.ChannelId.SUPPLY_VOLTAGE_L1, new SignedWordElement(0x4028),
+                        m(ChpViessmann.ChannelId.SUPPLY_VOLTAGE_L1, new SignedWordElement(0x4028),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
-                        m(ViessmannInformation.ChannelId.SUPPLY_VOLTAGE_L2, new SignedWordElement(0x4029),
+                        m(ChpViessmann.ChannelId.SUPPLY_VOLTAGE_L2, new SignedWordElement(0x4029),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
-                        m(ViessmannInformation.ChannelId.SUPPLY_VOLTAGE_L3, new SignedWordElement(0x402A),
+                        m(ChpViessmann.ChannelId.SUPPLY_VOLTAGE_L3, new SignedWordElement(0x402A),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
-                        m(ViessmannInformation.ChannelId.GENERATOR_VOLTAGE_L1, new SignedWordElement(0x402B),
+                        m(ChpViessmann.ChannelId.GENERATOR_VOLTAGE_L1, new SignedWordElement(0x402B),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
-                        m(ViessmannInformation.ChannelId.GENERATOR_VOLTAGE_L2, new SignedWordElement(0x402C),
+                        m(ChpViessmann.ChannelId.GENERATOR_VOLTAGE_L2, new SignedWordElement(0x402C),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
-                        m(ViessmannInformation.ChannelId.GENERATOR_VOLTAGE_L3, new SignedWordElement(0x402D),
+                        m(ChpViessmann.ChannelId.GENERATOR_VOLTAGE_L3, new SignedWordElement(0x402D),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
-                        m(ViessmannInformation.ChannelId.GENERATOR_CURRENT_L1, new SignedWordElement(0x402E),
+                        m(ChpViessmann.ChannelId.GENERATOR_CURRENT_L1, new SignedWordElement(0x402E),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
-                        m(ViessmannInformation.ChannelId.GENERATOR_CURRENT_L2, new SignedWordElement(0x402F),
+                        m(ChpViessmann.ChannelId.GENERATOR_CURRENT_L2, new SignedWordElement(0x402F),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
-                        m(ViessmannInformation.ChannelId.GENERATOR_CURRENT_L3, new SignedWordElement(0x4030),
+                        m(ChpViessmann.ChannelId.GENERATOR_CURRENT_L3, new SignedWordElement(0x4030),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
-                        m(ViessmannInformation.ChannelId.SUPPLY_VOLTAGE_TOTAL, new SignedWordElement(0x4031),
+                        m(ChpViessmann.ChannelId.SUPPLY_VOLTAGE_TOTAL, new SignedWordElement(0x4031),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
-                        m(ViessmannInformation.ChannelId.GENERATOR_VOLTAGE_TOTAL, new SignedWordElement(0x4032),
+                        m(ChpViessmann.ChannelId.GENERATOR_VOLTAGE_TOTAL, new SignedWordElement(0x4032),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
-                        m(ViessmannInformation.ChannelId.GENERATOR_CURRENT_TOTAL, new SignedWordElement(0x4033),
+                        m(ChpViessmann.ChannelId.GENERATOR_CURRENT_TOTAL, new SignedWordElement(0x4033),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
                         m(Chp.ChannelId.EFFECTIVE_ELECTRIC_POWER, new SignedWordElement(0x4034),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
-                        m(ViessmannInformation.ChannelId.SUPPLY_FREQUENCY, new FloatDoublewordElement(0x4035),
+                        m(ChpViessmann.ChannelId.SUPPLY_FREQUENCY, new FloatDoublewordElement(0x4035),
                                 ElementToChannelConverter.DIRECT_1_TO_1)),
                 new FC3ReadRegistersTask(0x4037, Priority.LOW,
-                        m(ViessmannInformation.ChannelId.GENERATOR_FREQUENCY, new FloatDoublewordElement(0x4037),
+                        m(ChpViessmann.ChannelId.GENERATOR_FREQUENCY, new FloatDoublewordElement(0x4037),
                                 ElementToChannelConverter.DIRECT_1_TO_1)),
                 new FC3ReadRegistersTask(0x403B, Priority.LOW,
-                        m(ViessmannInformation.ChannelId.ACTIVE_POWER_FACTOR, new SignedWordElement(0x403B),
+                        m(ChpViessmann.ChannelId.ACTIVE_POWER_FACTOR, new SignedWordElement(0x403B),
                                 ElementToChannelConverter.SCALE_FACTOR_MINUS_3),
-                        m(ViessmannInformation.ChannelId.RESERVE, new UnsignedDoublewordElement(0x403C),
+                        m(ChpViessmann.ChannelId.RESERVE, new UnsignedDoublewordElement(0x403C),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
                         new DummyRegisterElement(0x403E, 0x403E)));
 
@@ -392,8 +392,8 @@ public class ChpViessmannImpl extends AbstractOpenemsModbusComponent implements 
             OpenemsComponent componentFetchedByCpm;
             if (this.aioChannel.equals(this.cpm.getComponent(this.aioChannel.id())) == false) {
                 componentFetchedByCpm = this.cpm.getComponent(this.aioChannel.id());
-                if (componentFetchedByCpm instanceof AioChannel) {
-                    this.aioChannel = (AioChannel) componentFetchedByCpm;
+                if (componentFetchedByCpm instanceof AnalogInputOutput) {
+                    this.aioChannel = (AnalogInputOutput) componentFetchedByCpm;
                 }
             }
         } catch (OpenemsError.OpenemsNamedException ignored) {
@@ -431,12 +431,12 @@ public class ChpViessmannImpl extends AbstractOpenemsModbusComponent implements 
             exceptionalStateActive = this.exceptionalStateHandler.exceptionalStateActive(this);
             if (exceptionalStateActive) {
                 exceptionalStateValue = this.getExceptionalStateValue();
-                if (exceptionalStateValue <= 0) {
+                if (exceptionalStateValue <= this.DEFAULT_MIN_EXCEPTIONAL_VALUE) {
                     turnOnChp = false;
                 } else {
                     // When ExceptionalStateValue is between 0 and 100, set Chp to this PowerPercentage.
                     turnOnChp = true;
-                    exceptionalStateValue = Math.min(exceptionalStateValue, 100);
+                    exceptionalStateValue = Math.min(exceptionalStateValue, this.DEFAULT_MAX_EXCEPTIONAL_VALUE);
                     try {
                         this.setHeatingPowerPercentSetpoint(exceptionalStateValue);
                     } catch (OpenemsError.OpenemsNamedException e) {
@@ -452,7 +452,7 @@ public class ChpViessmannImpl extends AbstractOpenemsModbusComponent implements 
            Without this function, the chp will always switch off at startup because EnableSignal starts as ’false’. */
         if (this.startupStateChecked == false) {
             this.startupStateChecked = true;
-            turnOnChp = (HeaterState.valueOf(this.getHeaterState().orElse(-1)) == HeaterState.HEATING);
+            turnOnChp = (HeaterState.valueOf(this.getHeaterState().orElse(-1)) == HeaterState.RUNNING);
             if (turnOnChp) {
                 try {
                     this.getEnableSignalChannel().setNextWriteValue(true);

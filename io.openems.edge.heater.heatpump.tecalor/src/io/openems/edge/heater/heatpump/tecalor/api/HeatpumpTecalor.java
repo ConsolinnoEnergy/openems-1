@@ -31,7 +31,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
          *     <li> Unit: Decimal degree Celsius
          * </ul>
          */
-        IR507_OUTSIDE_TEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
+        IR507_OUTSIDE_TEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS)),
 
         /**
          * Heating circuit 1 temperature.
@@ -40,7 +40,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
          *      <li> Unit: Decimal degree Celsius
          * </ul>
          */
-        IR508_TEMP_HC1(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
+        IR508_TEMP_HC1(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS)),
 
         /**
          * Heating circuit 1 setpoint temperature, if software version is WPM 3i.
@@ -49,7 +49,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
          *      <li> Unit: Decimal degree Celsius
          * </ul>
          */
-        IR509_TEMP_HC1_SETPOINT(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
+        IR509_TEMP_HC1_SETPOINT(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS)),
 
         /**
          * Heating circuit 1 setpoint temperature, if software version is WPMsystem and WPM 3.
@@ -58,7 +58,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
          *      <li> Unit: Decimal degree Celsius
          * </ul>
          */
-        IR510_TEMP_HC1_SETPOINT(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
+        IR510_TEMP_HC1_SETPOINT(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS)),
 
         /**
          * Heating circuit 1 setpoint temperature, independent of software version.
@@ -68,7 +68,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
          *      <li> Unit: Decimal degree Celsius
          * </ul>
          */
-        TEMP_HC1_SETPOINT(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
+        TEMP_HC1_SETPOINT(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS)),
 
         /**
          * Heating circuit 2 temperature.
@@ -77,7 +77,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
          *      <li> Unit: Decimal degree Celsius
          * </ul>
          */
-        IR511_TEMP_HC2(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
+        IR511_TEMP_HC2(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS)),
 
         /**
          * Heating circuit 2 setpoint temperature.
@@ -86,7 +86,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
          *      <li> Unit: Decimal degree Celsius
          * </ul>
          */
-        IR512_TEMP_HC2_SETPOINT(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
+        IR512_TEMP_HC2_SETPOINT(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS)),
 
         /**
          * Flow temperature heat pump.
@@ -95,7 +95,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
          *      <li> Unit: Decimal degree Celsius
          * </ul>
          */
-        IR513_FLOW_TEMP_HEAT_PUMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
+        IR513_FLOW_TEMP_HEAT_PUMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS)),
 
         /**
          * Flow temperature auxiliary heater.
@@ -104,7 +104,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
          *      <li> Unit: Decimal degree Celsius
          * </ul>
          */
-        IR514_FLOW_TEMP_AUX(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
+        IR514_FLOW_TEMP_AUX(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS)),
 
         //IR515_FLOW_TEMPERATURE -> Heater FLOW_TEMPERATURE
 
@@ -117,7 +117,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
          *      <li> Unit: Decimal degree Celsius
          * </ul>
          */
-        IR517_CONST_TEMP_SETPOINT(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
+        IR517_CONST_TEMP_SETPOINT(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS)),
 
         /**
          * Storage tank temperature.
@@ -126,7 +126,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
          *      <li> Unit: Decimal degree Celsius
          * </ul>
          */
-        IR518_STORAGE_TANK_TEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
+        IR518_STORAGE_TANK_TEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS)),
 
         /**
          * Storage tank temperature, setpoint.
@@ -135,7 +135,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
          *      <li> Unit: Decimal degree Celsius
          * </ul>
          */
-        IR519_STORAGE_TANK_TEMP_SETPOINT(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
+        IR519_STORAGE_TANK_TEMP_SETPOINT(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS)),
 
         /**
          * Heating circuit pressure.
@@ -162,7 +162,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
          *      <li> Unit: Decimal degree Celsius
          * </ul>
          */
-        IR522_WATER_TEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
+        IR522_WATER_TEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS)),
 
         /**
          * Domestic hot water temperature, setpoint.
@@ -171,7 +171,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
          *      <li> Unit: Decimal degree Celsius
          * </ul>
          */
-        IR523_WATER_TEMP_SETPOINT(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
+        IR523_WATER_TEMP_SETPOINT(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS)),
 
         /**
          * Ventilation cooling temperature.
@@ -180,7 +180,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
          *      <li> Unit: Decimal degree Kelvin
          * </ul>
          */
-        IR524_VENT_COOLING_TEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZI_KELVIN)),
+        IR524_VENT_COOLING_TEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DECI_KELVIN)),
 
         /**
          * Ventilation cooling temperature, setpoint.
@@ -189,7 +189,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
          *      <li> Unit: Decimal degree Kelvin
          * </ul>
          */
-        IR525_VENT_COOLING_TEMP_SETPOINT(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZI_KELVIN)),
+        IR525_VENT_COOLING_TEMP_SETPOINT(Doc.of(OpenemsType.INTEGER).unit(Unit.DECI_KELVIN)),
 
         /**
          * Surface cooling temperature.
@@ -198,7 +198,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
          *      <li> Unit: Decimal degree Kelvin
          * </ul>
          */
-        IR526_SURFACE_COOLING_TEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZI_KELVIN)),
+        IR526_SURFACE_COOLING_TEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DECI_KELVIN)),
 
         /**
          * Surface cooling temperature, setpoint.
@@ -207,7 +207,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
          *      <li> Unit: Decimal degree Kelvin
          * </ul>
          */
-        IR527_SURFACE_COOLING_TEMP_SETPOINT(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZI_KELVIN)),
+        IR527_SURFACE_COOLING_TEMP_SETPOINT(Doc.of(OpenemsType.INTEGER).unit(Unit.DECI_KELVIN)),
 
         /**
          * Status bits.
@@ -484,10 +484,10 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
          * <ul>
          *      <li> Type: Integer
          *      <li> Possible values: 1 ... 4
-         *      <li> State 1: Die Anlage darf nicht starten. Nur der Frostschutz wird gewährleistet.
-         *      <li> State 2: Normaler Betrieb der Anlage. Automatik/Programmbetrieb gemäß BI der angeschlossenen Wärmepumpe.
-         *      <li> State 3: Forcierter Betrieb der Anlage mit erhöhten Werten für Heiz- und/oder Warmwassertemperatur.
-         *      <li> State 4: Sofortige Ansteuerung der Maximalwerte für Heiz- und Warmwassertemperatur.
+         *      <li> State 1: Die Anlage darf nicht starten. Nur der Frostschutz wird gewaehrleistet.
+         *      <li> State 2: Normaler Betrieb der Anlage. Automatik/Programmbetrieb gemaess BI der angeschlossenen Waermepumpe.
+         *      <li> State 3: Forcierter Betrieb der Anlage mit erhoehten Werten fuer Heiz- und/oder Warmwassertemperatur.
+         *      <li> State 4: Sofortige Ansteuerung der Maximalwerte fuer Heiz- und Warmwassertemperatur.
          * </ul>
          */
         IR5001_SGREADY_OPERATINGMODE(Doc.of(OpenemsType.INTEGER)),
@@ -531,7 +531,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
          *      <li> Unit: Decimal degree Celsius
          * </ul>
          */
-        HR1502_COMFORT_TEMP_HC1(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
+        HR1502_COMFORT_TEMP_HC1(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
 
         /**
          * ECO temperature setting, heating circuit 1.
@@ -540,7 +540,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
          *      <li> Unit: Decimal degree Celsius
          * </ul>
          */
-        HR1503_ECO_TEMP_HC1(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
+        HR1503_ECO_TEMP_HC1(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
 
         /**
          * Heating curve slope setting, heating circuit 1.
@@ -557,7 +557,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
          *      <li> Unit: Decimal degree Celsius
          * </ul>
          */
-        HR1505_COMFORT_TEMP_HC2(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
+        HR1505_COMFORT_TEMP_HC2(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
 
         /**
          * ECO temperature setting, heating circuit 2.
@@ -566,7 +566,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
          *      <li> Unit: Decimal degree Celsius
          * </ul>
          */
-        HR1506_ECO_TEMP_HC2(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
+        HR1506_ECO_TEMP_HC2(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
 
         /**
          * Heating curve slope setting, heating circuit 2.
@@ -584,7 +584,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
          *      <li> Unit: Decimal degree Celsius
          * </ul>
          */
-        HR1508_CONST_TEMP_MODE(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
+        HR1508_CONST_TEMP_MODE(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
 
         /**
          * Auxiliary heater activation temperature, heating circuit (Bivalenztemperatur). Below this temperature the
@@ -594,7 +594,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
          *      <li> Unit: Decimal degree Celsius
          * </ul>
          */
-        HR1509_CIRCUIT_AUX_ACT_TEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
+        HR1509_CIRCUIT_AUX_ACT_TEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
 
         /**
          * Comfort temperature setting, domestic hot water.
@@ -603,7 +603,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
          *      <li> Unit: Decimal degree Celsius
          * </ul>
          */
-        HR1510_COMFORT_TEMP_WATER(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
+        HR1510_COMFORT_TEMP_WATER(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
 
         /**
          * ECO temperature setting, domestic hot water.
@@ -612,7 +612,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
          *      <li> Unit: Decimal degree Celsius
          * </ul>
          */
-        HR1511_ECO_TEMP_WATER(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
+        HR1511_ECO_TEMP_WATER(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
 
         /**
          * Number of stages, domestic hot water.
@@ -630,7 +630,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
          *      <li> Unit: Decimal degree Celsius
          * </ul>
          */
-        HR1513_WATER_AUX_ACT_TEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
+        HR1513_WATER_AUX_ACT_TEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
 
         /**
          * Cooling: Flow temperature setpoint, surface cooling.
@@ -639,7 +639,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
          *      <li> Unit: Decimal degree Celsius
          * </ul>
          */
-        HR1514_SURFACE_COOLING_FLOW_TEMP_SETPOINT(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
+        HR1514_SURFACE_COOLING_FLOW_TEMP_SETPOINT(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
 
         /**
          * Cooling: Flow temperature hysteresis, surface cooling.
@@ -648,7 +648,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
          *      <li> Unit: Decimal degree Kelvin
          * </ul>
          */
-        HR1515_SURFACE_COOLING_FLOW_TEMP_HYST(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZI_KELVIN).accessMode(AccessMode.READ_WRITE)),
+        HR1515_SURFACE_COOLING_FLOW_TEMP_HYST(Doc.of(OpenemsType.INTEGER).unit(Unit.DECI_KELVIN).accessMode(AccessMode.READ_WRITE)),
 
         /**
          * Cooling: Room temperature setpoint, surface cooling.
@@ -657,7 +657,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
          *      <li> Unit: Decimal degree Celsius
          * </ul>
          */
-        HR1516_SURFACE_COOLING_ROOM_TEMP_SETPOINT(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
+        HR1516_SURFACE_COOLING_ROOM_TEMP_SETPOINT(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
 
         /**
          * Cooling: Flow temperature setpoint, ventilation cooling.
@@ -666,7 +666,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
          *      <li> Unit: Decimal degree Celsius
          * </ul>
          */
-        HR1517_VENT_COOLING_FLOW_TEMP_SETPOINT(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
+        HR1517_VENT_COOLING_FLOW_TEMP_SETPOINT(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
 
         /**
          * Cooling: Flow temperature hysteresis, ventilation cooling.
@@ -675,7 +675,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
          *      <li> Unit: Decimal degree Kelvin
          * </ul>
          */
-        HR1518_VENT_COOLING_FLOW_TEMP_HYST(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZI_KELVIN).accessMode(AccessMode.READ_WRITE)),
+        HR1518_VENT_COOLING_FLOW_TEMP_HYST(Doc.of(OpenemsType.INTEGER).unit(Unit.DECI_KELVIN).accessMode(AccessMode.READ_WRITE)),
 
         /**
          * Cooling: Room temperature setpoint, ventilation cooling.
@@ -684,7 +684,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
          *      <li> Unit: Decimal degree Celsius
          * </ul>
          */
-        HR1519_VENT_COOLING_ROOM_TEMP_SETPOINT(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
+        HR1519_VENT_COOLING_ROOM_TEMP_SETPOINT(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
 
         /**
          * Turn on/off SG-Ready mode.
@@ -1351,10 +1351,10 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
      * <ul>
      *      <li> Type: Integer
      *      <li> Possible values: 1 ... 4
-     *      <li> State 1: Die Anlage darf nicht starten. Nur der Frostschutz wird gewährleistet.
-     *      <li> State 2: Normaler Betrieb der Anlage. Automatik/Programmbetrieb gemäß BI der angeschlossenen Wärmepumpe.
-     *      <li> State 3: Forcierter Betrieb der Anlage mit erhöhten Werten für Heiz- und/oder Warmwassertemperatur.
-     *      <li> State 4: Sofortige Ansteuerung der Maximalwerte für Heiz- und Warmwassertemperatur.
+     *      <li> State 1: Die Anlage darf nicht starten. Nur der Frostschutz wird gewaehrleistet.
+     *      <li> State 2: Normaler Betrieb der Anlage. Automatik/Programmbetrieb gemaess BI der angeschlossenen Waermepumpe.
+     *      <li> State 3: Forcierter Betrieb der Anlage mit erhoehten Werten fuer Heiz- und/oder Warmwassertemperatur.
+     *      <li> State 4: Sofortige Ansteuerung der Maximalwerte fuer Heiz- und Warmwassertemperatur.
      * </ul>
      *
      * @return the Channel {@link Value}
@@ -1474,7 +1474,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
     }
     
     /**
-     * Get the comfort temperature setting, heating circuit 1. Unit is dezidegree Celsius.
+     * Get the comfort temperature setting, heating circuit 1. Unit is decidegree Celsius.
 	 * See {@link ChannelId#HR1502_COMFORT_TEMP_HC1}.
 	 *
 	 * @return the Channel {@link Value}
@@ -1484,7 +1484,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
 	}
 	
 	/**
-     * Set the comfort temperature setting, heating circuit 1. Unit is dezidegree Celsius.
+     * Set the comfort temperature setting, heating circuit 1. Unit is decidegree Celsius.
 	 * See {@link ChannelId#HR1502_COMFORT_TEMP_HC1}.
 	 * 
 	 * @param value the next write value
@@ -1495,7 +1495,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
 	}
 
     /**
-     * Set the comfort temperature setting, heating circuit 1. Unit is dezidegree Celsius.
+     * Set the comfort temperature setting, heating circuit 1. Unit is decidegree Celsius.
      * See {@link ChannelId#HR1502_COMFORT_TEMP_HC1}.
      *
      * @param value the next write value
@@ -1515,7 +1515,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
     }
 
     /**
-     * Get the ECO temperature setting, heating circuit 1. Unit is dezidegree Celsius.
+     * Get the ECO temperature setting, heating circuit 1. Unit is decidegree Celsius.
 	 * See {@link ChannelId#HR1503_ECO_TEMP_HC1}.
 	 *
 	 * @return the Channel {@link Value}
@@ -1525,7 +1525,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
 	}
 	
 	/**
-     * Set the ECO temperature setting, heating circuit 1. Unit is dezidegree Celsius.
+     * Set the ECO temperature setting, heating circuit 1. Unit is decidegree Celsius.
 	 * See {@link ChannelId#HR1503_ECO_TEMP_HC1}.
 	 * 
 	 * @param value the next write value
@@ -1536,7 +1536,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
 	}
 
     /**
-     * Set the ECO temperature setting, heating circuit 1. Unit is dezidegree Celsius.
+     * Set the ECO temperature setting, heating circuit 1. Unit is decidegree Celsius.
      * See {@link ChannelId#HR1503_ECO_TEMP_HC1}.
      *
      * @param value the next write value
@@ -1597,7 +1597,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
     }
 
     /**
-     * Get the comfort temperature setting, heating circuit 2. Unit is dezidegree Celsius.
+     * Get the comfort temperature setting, heating circuit 2. Unit is decidegree Celsius.
 	 * See {@link ChannelId#HR1505_COMFORT_TEMP_HC2}.
 	 *
 	 * @return the Channel {@link Value}
@@ -1607,7 +1607,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
 	}
 	
 	/**
-     * Set the comfort temperature setting, heating circuit 2. Unit is dezidegree Celsius.
+     * Set the comfort temperature setting, heating circuit 2. Unit is decidegree Celsius.
 	 * See {@link ChannelId#HR1505_COMFORT_TEMP_HC2}.
 	 * 
 	 * @param value the next write value
@@ -1618,7 +1618,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
 	}
 
     /**
-     * Set the comfort temperature setting, heating circuit 2. Unit is dezidegree Celsius.
+     * Set the comfort temperature setting, heating circuit 2. Unit is decidegree Celsius.
      * See {@link ChannelId#HR1505_COMFORT_TEMP_HC2}.
      *
      * @param value the next write value
@@ -1638,7 +1638,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
     }
 
     /**
-     * Get the ECO temperature setting, heating circuit 2. Unit is dezidegree Celsius.
+     * Get the ECO temperature setting, heating circuit 2. Unit is decidegree Celsius.
 	 * See {@link ChannelId#HR1506_ECO_TEMP_HC2}.
 	 *
 	 * @return the Channel {@link Value}
@@ -1648,7 +1648,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
 	}
 	
 	/**
-     * Set the ECO temperature setting, heating circuit 2. Unit is dezidegree Celsius.
+     * Set the ECO temperature setting, heating circuit 2. Unit is decidegree Celsius.
 	 * See {@link ChannelId#HR1506_ECO_TEMP_HC2}.
 	 * 
 	 * @param value the next write value
@@ -1659,7 +1659,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
 	}
 
     /**
-     * Set the ECO temperature setting, heating circuit 2. Unit is dezidegree Celsius.
+     * Set the ECO temperature setting, heating circuit 2. Unit is decidegree Celsius.
      * See {@link ChannelId#HR1506_ECO_TEMP_HC2}.
      *
      * @param value the next write value
@@ -1721,7 +1721,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
 
     /**
      * Get the constant temperature mode setting. A value of 0x9000 means disabled. When enabled, the value will be
-     * a temperature value between 200 and 700. Unit is dezidegree Celsius.
+     * a temperature value between 200 and 700. Unit is decidegree Celsius.
 	 * See {@link ChannelId#HR1508_CONST_TEMP_MODE}.
 	 *
 	 * @return the Channel {@link Value}
@@ -1732,7 +1732,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
 	
 	/**
      * Set the constant temperature mode setting. 0x9000 disables this mode, a temperature value between 200 and 700
-     * enables this mode. Unit is dezidegree Celsius.
+     * enables this mode. Unit is decidegree Celsius.
 	 * See {@link ChannelId#HR1508_CONST_TEMP_MODE}.
 	 * 
 	 * @param value the next write value
@@ -1744,7 +1744,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
 
     /**
      * Set the constant temperature mode setting. 0x9000 disables this mode, a temperature value between 200 and 700
-     * enables this mode. Unit is dezidegree Celsius.
+     * enables this mode. Unit is decidegree Celsius.
      * See {@link ChannelId#HR1508_CONST_TEMP_MODE}.
      *
      * @param value the next write value
@@ -1765,7 +1765,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
 
     /**
      * Get the auxiliary heater activation temperature of the heating circuit. Below this temperature the auxiliary
-     * heater will activate, depending on heat demand. Unit is dezidegree Celsius.
+     * heater will activate, depending on heat demand. Unit is decidegree Celsius.
 	 * See {@link ChannelId#HR1509_CIRCUIT_AUX_ACT_TEMP}.
 	 *
 	 * @return the Channel {@link Value}
@@ -1776,7 +1776,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
 	
 	/**
      * Set the auxiliary heater activation temperature of the heating circuit. Below this temperature the auxiliary
-     * heater will activate, depending on heat demand. Unit is dezidegree Celsius.
+     * heater will activate, depending on heat demand. Unit is decidegree Celsius.
 	 * See {@link ChannelId#HR1509_CIRCUIT_AUX_ACT_TEMP}.
 	 * 
 	 * @param value the next write value
@@ -1788,7 +1788,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
 
     /**
      * Set the auxiliary heater activation temperature of the heating circuit. Below this temperature the auxiliary
-     * heater will activate, depending on heat demand. Unit is dezidegree Celsius.
+     * heater will activate, depending on heat demand. Unit is decidegree Celsius.
      * See {@link ChannelId#HR1509_CIRCUIT_AUX_ACT_TEMP}.
      *
      * @param value the next write value
@@ -1808,7 +1808,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
     }
 
     /**
-     * Get the comfort temperature setting for domestic hot water. Unit is dezidegree Celsius.
+     * Get the comfort temperature setting for domestic hot water. Unit is decidegree Celsius.
 	 * See {@link ChannelId#HR1510_COMFORT_TEMP_WATER}.
 	 *
 	 * @return the Channel {@link Value}
@@ -1818,7 +1818,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
 	}
 	
 	/**
-     * Set the comfort temperature setting for domestic hot water. Unit is dezidegree Celsius.
+     * Set the comfort temperature setting for domestic hot water. Unit is decidegree Celsius.
 	 * See {@link ChannelId#HR1510_COMFORT_TEMP_WATER}.
 	 * 
 	 * @param value the next write value
@@ -1829,7 +1829,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
 	}
 
     /**
-     * Set the comfort temperature setting for domestic hot water. Unit is dezidegree Celsius.
+     * Set the comfort temperature setting for domestic hot water. Unit is decidegree Celsius.
      * See {@link ChannelId#HR1510_COMFORT_TEMP_WATER}.
      *
      * @param value the next write value
@@ -1849,7 +1849,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
     }
 
     /**
-     * Get the ECO temperature setting for domestic hot water. Unit is dezidegree Celsius.
+     * Get the ECO temperature setting for domestic hot water. Unit is decidegree Celsius.
 	 * See {@link ChannelId#HR1511_ECO_TEMP_WATER}.
 	 *
 	 * @return the Channel {@link Value}
@@ -1859,7 +1859,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
 	}
 	
 	/**
-     * Set the ECO temperature setting for domestic hot water. Unit is dezidegree Celsius.
+     * Set the ECO temperature setting for domestic hot water. Unit is decidegree Celsius.
 	 * See {@link ChannelId#HR1511_ECO_TEMP_WATER}.
 	 * 
 	 * @param value the next write value
@@ -1870,7 +1870,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
 	}
 
     /**
-     * Set the ECO temperature setting for domestic hot water. Unit is dezidegree Celsius.
+     * Set the ECO temperature setting for domestic hot water. Unit is decidegree Celsius.
      * See {@link ChannelId#HR1511_ECO_TEMP_WATER}.
      *
      * @param value the next write value
@@ -1932,7 +1932,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
     
     /**
      * Get the auxiliary heater activation temperature of the domestic hot water. Below this temperature the auxiliary
-     * heater will activate, depending on heat demand. Unit is dezidegree Celsius.
+     * heater will activate, depending on heat demand. Unit is decidegree Celsius.
 	 * See {@link ChannelId#HR1513_WATER_AUX_ACT_TEMP}.
 	 *
 	 * @return the Channel {@link Value}
@@ -1943,7 +1943,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
 	
 	/**
      * Set the auxiliary heater activation temperature of the domestic hot water. Below this temperature the auxiliary
-     * heater will activate, depending on heat demand. Unit is dezidegree Celsius.
+     * heater will activate, depending on heat demand. Unit is decidegree Celsius.
 	 * See {@link ChannelId#HR1513_WATER_AUX_ACT_TEMP}.
 	 * 
 	 * @param value the next write value
@@ -1955,7 +1955,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
 
     /**
      * Set the auxiliary heater activation temperature of the domestic hot water. Below this temperature the auxiliary
-     * heater will activate, depending on heat demand. Unit is dezidegree Celsius.
+     * heater will activate, depending on heat demand. Unit is decidegree Celsius.
      * See {@link ChannelId#HR1513_WATER_AUX_ACT_TEMP}.
      *
      * @param value the next write value
@@ -1975,7 +1975,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
     }
     
     /**
-     * Get the flow temperature setpoint, surface cooling. Unit is dezidegree Celsius.
+     * Get the flow temperature setpoint, surface cooling. Unit is decidegree Celsius.
 	 * See {@link ChannelId#HR1514_SURFACE_COOLING_FLOW_TEMP_SETPOINT}.
 	 *
 	 * @return the Channel {@link Value}
@@ -1985,7 +1985,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
 	}
 	
 	/**
-     * Set the flow temperature setpoint, surface cooling. Unit is dezidegree Celsius.
+     * Set the flow temperature setpoint, surface cooling. Unit is decidegree Celsius.
 	 * See {@link ChannelId#HR1514_SURFACE_COOLING_FLOW_TEMP_SETPOINT}.
 	 * 
 	 * @param value the next write value
@@ -1996,7 +1996,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
 	}
 
     /**
-     * Set the flow temperature setpoint, surface cooling. Unit is dezidegree Celsius.
+     * Set the flow temperature setpoint, surface cooling. Unit is decidegree Celsius.
      * See {@link ChannelId#HR1514_SURFACE_COOLING_FLOW_TEMP_SETPOINT}.
      *
      * @param value the next write value
@@ -2016,7 +2016,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
     }
     
     /**
-     * Get the flow temperature hysteresis, surface cooling. Unit is dezidegree Kelvin.
+     * Get the flow temperature hysteresis, surface cooling. Unit is decidegree Kelvin.
 	 * See {@link ChannelId#HR1515_SURFACE_COOLING_FLOW_TEMP_HYST}.
 	 *
 	 * @return the Channel {@link Value}
@@ -2026,7 +2026,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
 	}
 	
 	/**
-     * Set the flow temperature hysteresis, surface cooling. Unit is dezidegree Kelvin.
+     * Set the flow temperature hysteresis, surface cooling. Unit is decidegree Kelvin.
 	 * See {@link ChannelId#HR1515_SURFACE_COOLING_FLOW_TEMP_HYST}.
 	 * 
 	 * @param value the next write value
@@ -2037,7 +2037,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
 	}
 
     /**
-     * Set the flow temperature hysteresis, surface cooling. Unit is dezidegree Kelvin.
+     * Set the flow temperature hysteresis, surface cooling. Unit is decidegree Kelvin.
      * See {@link ChannelId#HR1515_SURFACE_COOLING_FLOW_TEMP_HYST}.
      *
      * @param value the next write value
@@ -2057,7 +2057,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
     }
     
     /**
-     * Get the room temperature setpoint, surface cooling. Unit is dezidegree Celsius.
+     * Get the room temperature setpoint, surface cooling. Unit is decidegree Celsius.
 	 * See {@link ChannelId#HR1516_SURFACE_COOLING_ROOM_TEMP_SETPOINT}.
 	 *
 	 * @return the Channel {@link Value}
@@ -2067,7 +2067,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
 	}
 	
 	/**
-     * Set the room temperature setpoint, surface cooling. Unit is dezidegree Celsius.
+     * Set the room temperature setpoint, surface cooling. Unit is decidegree Celsius.
 	 * See {@link ChannelId#HR1516_SURFACE_COOLING_ROOM_TEMP_SETPOINT}.
 	 * 
 	 * @param value the next write value
@@ -2078,7 +2078,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
 	}
 
     /**
-     * Set the room temperature setpoint, surface cooling. Unit is dezidegree Celsius.
+     * Set the room temperature setpoint, surface cooling. Unit is decidegree Celsius.
      * See {@link ChannelId#HR1516_SURFACE_COOLING_ROOM_TEMP_SETPOINT}.
      *
      * @param value the next write value
@@ -2098,7 +2098,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
     }
     
     /**
-     * Get the flow temperature setpoint, ventilation cooling. Unit is dezidegree Celsius.
+     * Get the flow temperature setpoint, ventilation cooling. Unit is decidegree Celsius.
 	 * See {@link ChannelId#HR1517_VENT_COOLING_FLOW_TEMP_SETPOINT}.
 	 *
 	 * @return the Channel {@link Value}
@@ -2108,7 +2108,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
 	}
 	
 	/**
-     * Set the flow temperature setpoint, ventilation cooling. Unit is dezidegree Celsius.
+     * Set the flow temperature setpoint, ventilation cooling. Unit is decidegree Celsius.
 	 * See {@link ChannelId#HR1517_VENT_COOLING_FLOW_TEMP_SETPOINT}.
 	 * 
 	 * @param value the next write value
@@ -2119,7 +2119,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
 	}
 
     /**
-     * Set the flow temperature setpoint, ventilation cooling. Unit is dezidegree Celsius.
+     * Set the flow temperature setpoint, ventilation cooling. Unit is decidegree Celsius.
      * See {@link ChannelId#HR1517_VENT_COOLING_FLOW_TEMP_SETPOINT}.
      *
      * @param value the next write value
@@ -2139,7 +2139,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
     }
 
     /**
-     * Get the flow temperature hysteresis, ventilation cooling. Unit is dezidegree Kelvin.
+     * Get the flow temperature hysteresis, ventilation cooling. Unit is decidegree Kelvin.
 	 * See {@link ChannelId#HR1518_VENT_COOLING_FLOW_TEMP_HYST}.
 	 *
 	 * @return the Channel {@link Value}
@@ -2149,7 +2149,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
 	}
 	
 	/**
-     * Set the flow temperature hysteresis, ventilation cooling. Unit is dezidegree Kelvin.
+     * Set the flow temperature hysteresis, ventilation cooling. Unit is decidegree Kelvin.
 	 * See {@link ChannelId#HR1518_VENT_COOLING_FLOW_TEMP_HYST}.
 	 * 
 	 * @param value the next write value
@@ -2160,7 +2160,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
 	}
 
     /**
-     * Set the flow temperature hysteresis, ventilation cooling. Unit is dezidegree Kelvin.
+     * Set the flow temperature hysteresis, ventilation cooling. Unit is decidegree Kelvin.
      * See {@link ChannelId#HR1518_VENT_COOLING_FLOW_TEMP_HYST}.
      *
      * @param value the next write value
@@ -2180,7 +2180,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
     }
 
     /**
-     * Get the room temperature setpoint, ventilation cooling. Unit is dezidegree Celsius.
+     * Get the room temperature setpoint, ventilation cooling. Unit is decidegree Celsius.
 	 * See {@link ChannelId#HR1519_VENT_COOLING_ROOM_TEMP_SETPOINT}.
 	 *
 	 * @return the Channel {@link Value}
@@ -2190,7 +2190,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
 	}
 	
 	/**
-     * Set the room temperature setpoint, ventilation cooling. Unit is dezidegree Celsius.
+     * Set the room temperature setpoint, ventilation cooling. Unit is decidegree Celsius.
 	 * See {@link ChannelId#HR1519_VENT_COOLING_ROOM_TEMP_SETPOINT}.
 	 * 
 	 * @param value the next write value
@@ -2201,7 +2201,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
 	}
 
     /**
-     * Set the room temperature setpoint, ventilation cooling. Unit is dezidegree Celsius.
+     * Set the room temperature setpoint, ventilation cooling. Unit is decidegree Celsius.
      * See {@link ChannelId#HR1519_VENT_COOLING_ROOM_TEMP_SETPOINT}.
      *
      * @param value the next write value

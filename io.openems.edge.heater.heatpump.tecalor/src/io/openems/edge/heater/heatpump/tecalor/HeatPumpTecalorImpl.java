@@ -56,13 +56,14 @@ import org.slf4j.LoggerFactory;
  * channels. WriteChannels can be used to send commands to the heat pump via setter methods in
  * HeatpumpAlphaInnotecChannel, HeatpumpSmartGrid and Heater.
  */
-
 @Designate(ocd = Config.class, factory = true)
 @Component(name = "Heater.HeatPump.Tecalor",
 		immediate = true,
 		configurationPolicy = ConfigurationPolicy.REQUIRE,
-		property = EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE)
-
+		property = { //
+				EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE, //
+				EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS //
+		})
 public class HeatPumpTecalorImpl extends AbstractOpenemsModbusComponent implements OpenemsComponent, EventHandler,
 		ExceptionalState, HeatpumpTecalor {
 
@@ -73,8 +74,7 @@ public class HeatPumpTecalorImpl extends AbstractOpenemsModbusComponent implemen
 	protected ComponentManager cpm;
 
 	private final Logger log = LoggerFactory.getLogger(HeatPumpTecalorImpl.class);
-	private boolean debug;
-	private boolean componentEnabled;
+	private boolean printInfoToLog;
 	private boolean readOnly;
 	private boolean sgReadyActive;
 
@@ -97,39 +97,39 @@ public class HeatPumpTecalorImpl extends AbstractOpenemsModbusComponent implemen
 		super(OpenemsComponent.ChannelId.values(),
 				HeatpumpTecalor.ChannelId.values(),
 				HeatpumpSmartGrid.ChannelId.values(),
-				Heater.ChannelId.values());
+				Heater.ChannelId.values(),
+				ExceptionalState.ChannelId.values());
 	}
 
 	@Activate
 	void activate(ComponentContext context, Config config) throws OpenemsError.OpenemsNamedException, ConfigurationException {
 		super.activate(context, config.id(), config.alias(), config.enabled(), config.modbusUnitId(), this.cm,
 				"Modbus", config.modbus_id());
-		this.debug = config.debug();
-		this.componentEnabled = config.enabled();
+
+		this.printInfoToLog = config.printInfoToLog();
 		this.readOnly = config.readOnly();
-		this.sgReadyActive = config.sgReady();
+		if (this.isEnabled() == false) {
+			this._setHeaterState(HeaterState.OFF.getValue());
+		}
+
+		// Settings needed when not in ’read only’ mode.
+		if (this.readOnly == false) {
+			this.sgReadyActive = config.sgReady();
+			this.defaultModeOfOperation = config.defaultModeOfOperation();
+			this.initializeTimers(config);
+		}
+	}
+
+	private void initializeTimers(Config config) throws OpenemsError.OpenemsNamedException, ConfigurationException {
 		TimerHandler timer = new TimerHandlerImpl(super.id(), this.cpm);
 		this.useEnableSignal = config.useEnableSignalChannel();
-		this.defaultModeOfOperation = config.defaultModeOfOperation();
 		if (this.useEnableSignal) {
-			String timerIdEnableSignal;
-			if (config.enableSignalTimerIsCyclesNotSeconds()) {
-				timerIdEnableSignal = "TimerByCycles";
-			} else {
-				timerIdEnableSignal = "TimerByTime";
-			}
-			timer.addOneIdentifier(ENABLE_SIGNAL_IDENTIFIER, timerIdEnableSignal, config.waitTimeEnableSignal());
+			timer.addOneIdentifier(ENABLE_SIGNAL_IDENTIFIER, config.enableSignalTimerId(), config.waitTimeEnableSignal());
 			this.enableSignalHandler = new EnableSignalHandlerImpl(timer, ENABLE_SIGNAL_IDENTIFIER);
 		}
 		this.useExceptionalState = config.useExceptionalState();
 		if (this.useExceptionalState) {
-			String timerIdEnableSignal;
-			if (config.exceptionalStateTimerIsCyclesNotSeconds()) {
-				timerIdEnableSignal = "TimerByCycles";
-			} else {
-				timerIdEnableSignal = "TimerByTime";
-			}
-			timer.addOneIdentifier(EXCEPTIONAL_STATE_IDENTIFIER, timerIdEnableSignal, config.waitTimeExceptionalState());
+			timer.addOneIdentifier(EXCEPTIONAL_STATE_IDENTIFIER, config.exceptionalStateTimerId(), config.waitTimeExceptionalState());
 			this.exceptionalStateHandler = new ExceptionalStateHandlerImpl(timer, EXCEPTIONAL_STATE_IDENTIFIER);
 		}
 	}
@@ -143,7 +143,7 @@ public class HeatPumpTecalorImpl extends AbstractOpenemsModbusComponent implemen
 	protected ModbusProtocol defineModbusProtocol() throws OpenemsException {
 
 		ModbusProtocol protocol = new ModbusProtocol(this,
-				new FC4ReadInputRegistersTask(506, Priority.LOW,
+				new FC4ReadInputRegistersTask(506, Priority.HIGH,
 						/* The pump sends 0x8000H (= signed -32768) when a value is not available. The
 						   ElementToChannelConverter function is used to replace that value with "null", as this is
 						   better for the visualization. */
@@ -352,13 +352,22 @@ public class HeatPumpTecalorImpl extends AbstractOpenemsModbusComponent implemen
 
 	@Override
 	public void handleEvent(Event event) {
-		if (this.componentEnabled && EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE.equals(event.getTopic())) {
-			//channeltest();	// Just for testing
+		if (this.isEnabled() == false) {
+			return;
+		}
+		if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE)) {
 			this.channelmapping();
+			if (this.printInfoToLog) {
+				this.printInfo();
+			}
+		} else if (this.readOnly == false && event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS)) {
+			this.writeCommands();
 		}
 	}
 
-	// Put values in channels that are not directly Modbus read values but derivatives.
+	/**
+	 * Put values in channels that are not directly Modbus read values but derivatives.
+	 */
 	protected void channelmapping() {
 
 		// Map error to Heater interface ErrorMessage.
@@ -476,17 +485,11 @@ public class HeatPumpTecalorImpl extends AbstractOpenemsModbusComponent implemen
 					exceptionalStateActive = this.exceptionalStateHandler.exceptionalStateActive(this);
 					if (exceptionalStateActive) {
 						exceptionalStateValue = this.getExceptionalStateValue();
-						if (exceptionalStateValue <= 0) {
-							// Turn off heat pump when ExceptionalStateValue = 0.
+						if (exceptionalStateValue <= this.DEFAULT_MIN_EXCEPTIONAL_VALUE) {
 							turnOnHeatpump = false;
 						} else {
 							// When ExceptionalStateValue is > 0, turn heat pump on.
 							turnOnHeatpump = true;
-							/*
-							if (exceptionalStateValue > 100) {
-								exceptionalStateValue = 100;
-							}
-							*/
 						}
 					}
 				}
@@ -551,7 +554,7 @@ public class HeatPumpTecalorImpl extends AbstractOpenemsModbusComponent implemen
 				this.channel(HeatpumpTecalor.ChannelId.IR3516_CONSUMEDPOWER_WATER_SUMMWH),
 				this.getConsumedPowerWaterTotalChannel());
 
-		if (this.debug) {
+		if (this.printInfoToLog) {
 			this.logInfo(this.log, "--Heat pump Tecalor--");
 			this.logInfo(this.log, "Status Bits 2501:");
 			this.logInfo(this.log, "0 - Pump circuit 1 (HK1 Pumpe) = " + (((statusBits & 0b01) == 0b01) ? 1 : 0));
@@ -608,6 +611,35 @@ public class HeatPumpTecalorImpl extends AbstractOpenemsModbusComponent implemen
 			int sum = kwhChannel.value().get() + (mwhChannel.value().get() * 1000);
 			sumChannel.setNextValue(sum);
 		}
+	}
+
+	/**
+	 * Determine commands and send them to the heater.
+	 */
+	protected void writeCommands() {
+
+	}
+
+	/**
+	 * Information that is printed to the log if ’print info to log’ option is enabled.
+	 */
+	protected void printInfo() {
+
+	}
+
+	/**
+	 * Returns the debug message.
+	 *
+	 * @return the debug message.
+	 */
+	public String debugLog() {
+		String debugMessage = this.getHeaterState().asEnum().asCamelCase() //
+				+ "|F:" + this.getFlowTemperature().asString() //
+				+ "|R:" + this.getReturnTemperature().asString(); //
+		if (this.getErrorMessage().get().equals("No error") == false) {
+			debugMessage = debugMessage + "|Error";
+		}
+		return debugMessage;
 	}
 
 }

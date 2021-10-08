@@ -15,8 +15,8 @@ public enum OperatingMode implements OptionsEnum {
 	ECO_MODE(4, "ECO mode (ECO-Betrieb)"), //
 	DOMESTIC_HOT_WATER(5, "Domestic hot water (Warmwasserbetrieb)"); //
 
-	private int value;
-	private String name;
+	private final int value;
+	private final String name;
 
 	private OperatingMode(int value, String name) {
 		this.value = value;

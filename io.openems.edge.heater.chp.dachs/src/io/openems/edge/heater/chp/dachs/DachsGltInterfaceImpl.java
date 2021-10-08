@@ -1057,7 +1057,7 @@ public class DachsGltInterfaceImpl extends AbstractOpenemsComponent implements O
     		this.logInfo(this.log, "Electricity guided operation clearance: " + getElectricModeClearanceMessage());
     		this.logInfo(this.log, "Electricity guided operation settings: " + getElectricModeSettingsMessage());
     		this.logInfo(this.log, "Electricity guided operation run flag: " + getElectricModeRunFlag());
-    		this.logInfo(this.log, "Electical work done: " + getElectricalWork());
+    		this.logInfo(this.log, "Electrical work done: " + getElectricalWork());
     		this.logInfo(this.log, "Thermal work done: " + getThermalWork());
     		this.logInfo(this.log, "Thermal work condenser done: " + getThermalWorkCond());
     	}

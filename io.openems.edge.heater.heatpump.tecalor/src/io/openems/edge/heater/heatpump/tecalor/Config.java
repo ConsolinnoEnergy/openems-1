@@ -33,9 +33,8 @@ import org.osgi.service.metatype.annotations.Option;
 			+ "no longer received before the heat pump is switched off. Unit is seconds, unless cycles option is selected.")
 	int waitTimeEnableSignal() default 30;
 
-	@AttributeDefinition(name = "EnableSignal timer unit is cycles not seconds", description = "Use OpenEMS cycles "
-			+ "instead of seconds as the unit for the timer.")
-	boolean enableSignalTimerIsCyclesNotSeconds() default false;
+	@AttributeDefinition(name = "EnableSignal timer Id", description = "Name of the timer used for the EnableSignal.")
+	String enableSignalTimerId() default "TimerByTime";
 
 	@AttributeDefinition(name = "Use ExceptionalState", description = "React to commands from the Exceptional State "
 			+ "interface. When the Exceptional State is active, this will override any other commands.")
@@ -46,9 +45,8 @@ import org.osgi.service.metatype.annotations.Option;
 			+ "seconds, unless cycles option is selected.")
 	int waitTimeExceptionalState() default 30;
 
-	@AttributeDefinition(name = "ExceptionalState timer unit is cycles not seconds", description = "Use OpenEMS cycles "
-			+ "instead of seconds as the unit for the timer.")
-	boolean exceptionalStateTimerIsCyclesNotSeconds() default false;
+	@AttributeDefinition(name = "ExceptionalState timer Id", description = "Name of the timer used for the ExceptionalState.")
+	String exceptionalStateTimerId() default "TimerByTime";
 
 	@AttributeDefinition(name = "Default mode of operation", description = "When EnableSignal or ExceptionalState turns "
 			+ "on the heat pump, switch these modes to \"automatic\".")
@@ -56,9 +54,9 @@ import org.osgi.service.metatype.annotations.Option;
 
 	@AttributeDefinition(name = "Read only", description = "Only read values from Modbus, don't send commands.")
 	boolean readOnly() default false;
-	
-    @AttributeDefinition(name = "Debug", description = "Enable debug mode. Print status parameters to the log.")
-    boolean debug() default false;
+
+	@AttributeDefinition(name = "Print info to log", description = "Print status info to the log.")
+    boolean printInfoToLog() default false;
     
 	@AttributeDefinition(name = "Is enabled?", description = "Is this Component enabled?")
 	boolean enabled() default true;

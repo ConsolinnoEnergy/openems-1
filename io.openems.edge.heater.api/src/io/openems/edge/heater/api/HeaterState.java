@@ -77,7 +77,7 @@ public enum HeaterState implements OptionsEnum {
 		HeaterState returnEnum = HeaterState.UNDEFINED;
 		switch (value) {
 			case 0:
-				returnEnum = HeaterState.BLOCKED;
+				returnEnum = HeaterState.BLOCKED_OR_ERROR;
 				break;
 			case 1:
 				returnEnum = HeaterState.OFF;
@@ -89,7 +89,7 @@ public enum HeaterState implements OptionsEnum {
 				returnEnum = HeaterState.STARTING_UP_OR_PREHEAT;
 				break;
 			case 4:
-				returnEnum = HeaterState.HEATING;
+				returnEnum = HeaterState.RUNNING;
 				break;
 		}
 		return returnEnum;

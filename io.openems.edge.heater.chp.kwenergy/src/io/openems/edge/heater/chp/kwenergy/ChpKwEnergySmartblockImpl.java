@@ -194,7 +194,7 @@ public class ChpKwEnergySmartblockImpl extends AbstractOpenemsModbusComponent im
 						m(ChpKwEnergySmartblock.ChannelId.HR34_EFFECTIVE_ELECTRIC_POWER, new UnsignedWordElement(34),
 								ElementToChannelConverter.DIRECT_1_TO_1)
 				),
-				new FC3ReadRegistersTask(48, Priority.HIGH,
+				new FC3ReadRegistersTask(48, Priority.LOW,
 						m(ChpKwEnergySmartblock.ChannelId.HR48_CHP_MODEL, new UnsignedWordElement(48),
 								ElementToChannelConverter.DIRECT_1_TO_1)
 				),
@@ -204,7 +204,7 @@ public class ChpKwEnergySmartblockImpl extends AbstractOpenemsModbusComponent im
 						m(ChpKwEnergySmartblock.ChannelId.HR64_ENGINE_START_COUNTER, new UnsignedDoublewordElement(64),
 								ElementToChannelConverter.DIRECT_1_TO_1)
 				),
-				new FC3ReadRegistersTask(70, Priority.HIGH,
+				new FC3ReadRegistersTask(70, Priority.LOW,
 						m(ChpKwEnergySmartblock.ChannelId.HR70_ACTIVE_ENERGY, new UnsignedDoublewordElement(70),
 								ElementToChannelConverter.DIRECT_1_TO_1),
 						m(ChpKwEnergySmartblock.ChannelId.HR72_MAINTENANCE_INTERVAL1, new UnsignedWordElement(72),
@@ -474,11 +474,11 @@ public class ChpKwEnergySmartblockImpl extends AbstractOpenemsModbusComponent im
 				exceptionalStateActive = this.exceptionalStateHandler.exceptionalStateActive(this);
 				if (exceptionalStateActive) {
 					exceptionalStateValue = this.getExceptionalStateValue();
-					if (exceptionalStateValue <= 0) {
+					if (exceptionalStateValue <= this.DEFAULT_MIN_EXCEPTIONAL_VALUE) {
 						turnOnChp = false;
 					} else {
 						turnOnChp = true;
-						exceptionalStateValue = Math.min(exceptionalStateValue, 100);
+						exceptionalStateValue = Math.min(exceptionalStateValue, this.DEFAULT_MAX_EXCEPTIONAL_VALUE);
 					}
 				}
 			}
@@ -489,7 +489,7 @@ public class ChpKwEnergySmartblockImpl extends AbstractOpenemsModbusComponent im
 			   Without this function, the chp will always switch off at startup because EnableSignal starts as ’false’. */
 			if (this.startupStateChecked == false) {
 				this.startupStateChecked = true;
-				turnOnChp = (HeaterState.valueOf(this.getHeaterState().orElse(-1)) == HeaterState.HEATING);
+				turnOnChp = (HeaterState.valueOf(this.getHeaterState().orElse(-1)) == HeaterState.RUNNING);
 				if (turnOnChp) {
 					try {
 						this.getEnableSignalChannel().setNextWriteValue(true);
