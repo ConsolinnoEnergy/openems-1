@@ -1,5 +1,6 @@
 package io.openems.edge.evcs.hardybarth;
 
+import org.osgi.service.cm.ConfigurationException;
 import org.osgi.service.component.ComponentContext;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
@@ -21,109 +22,130 @@ import io.openems.edge.evcs.api.Evcs;
 import io.openems.edge.evcs.api.EvcsPower;
 import io.openems.edge.evcs.api.ManagedEvcs;
 
+import java.util.Arrays;
+
 @Designate(ocd = Config.class, factory = true)
 @Component(//
-		name = "Evcs.HardyBarth", //
-		immediate = true, //
-		configurationPolicy = ConfigurationPolicy.REQUIRE, //
-		property = { //
-				EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE //
-		} //
+        name = "Evcs.HardyBarth", //
+        immediate = true, //
+        configurationPolicy = ConfigurationPolicy.REQUIRE, //
+        property = { //
+                EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE //
+        } //
 )
 public class HardyBarthImpl extends AbstractOpenemsComponent
-		implements OpenemsComponent, EventHandler, HardyBarth, Evcs, ManagedEvcs {
+        implements OpenemsComponent, EventHandler, HardyBarth, Evcs, ManagedEvcs {
 
-	protected final Logger log = LoggerFactory.getLogger(HardyBarthImpl.class);
-	protected Config config;
+    protected final Logger log = LoggerFactory.getLogger(HardyBarthImpl.class);
+    protected Config config;
 
-	// API for main REST API functions
-	protected HardyBarthApi api;
+    // API for main REST API functions
+    protected HardyBarthApi api;
 
-	// ReadWorker and WriteHandler: Reading and sending data to the EVCS
-	private final HardyBarthReadWorker readWorker = new HardyBarthReadWorker(this);
-	private final HardyBarthWriteHandler writeHandler = new HardyBarthWriteHandler(this);
+    // ReadWorker and WriteHandler: Reading and sending data to the EVCS
+    private final HardyBarthReadWorker readWorker = new HardyBarthReadWorker(this);
+    private final HardyBarthWriteHandler writeHandler = new HardyBarthWriteHandler(this);
 
-	// Master EVCS is responsible for RFID authentication (Not implemented for now)
-	protected boolean masterEvcs = true;
+    // Master EVCS is responsible for RFID authentication (Not implemented for now)
+    protected boolean masterEvcs = true;
+    //Order in which the Phases are physically connected
+    private int[] phaseOrder;
 
-	@Reference
-	private EvcsPower evcsPower;
 
-	public HardyBarthImpl() {
-		super(//
-				OpenemsComponent.ChannelId.values(), //
-				Evcs.ChannelId.values(), //
-				ManagedEvcs.ChannelId.values(), //
-				HardyBarth.ChannelId.values() //
-		);
-	}
+    @Reference
+    private EvcsPower evcsPower;
 
-	@Activate
-	void activate(ComponentContext context, Config config) {
-		super.activate(context, config.id(), config.alias(), config.enabled());
-		this.config = config;
-		this._setChargingType(ChargingType.AC);
-		this._setMinimumHardwarePower(config.minHwCurrent() * 3 * 230);
-		this._setMaximumHardwarePower(config.maxHwCurrent() * 3 * 230);
-		this._setPowerPrecision(230);
 
-		if (config.enabled()) {
-			this.api = new HardyBarthApi(config.ip(), this);
-			
-			// Reading the given values
-			this.readWorker.activate(config.id());
-			this.readWorker.triggerNextRun();
-		}
-	}
+    public HardyBarthImpl() {
+        super(//
+                OpenemsComponent.ChannelId.values(), //
+                Evcs.ChannelId.values(), //
+                ManagedEvcs.ChannelId.values(), //
+                HardyBarth.ChannelId.values() //
+        );
+    }
 
-	@Deactivate
-	protected void deactivate() {
-		super.deactivate();
+    @Activate
+    void activate(ComponentContext context, Config config) throws ConfigurationException {
+        super.activate(context, config.id(), config.alias(), config.enabled());
+        this.config = config;
+        this._setChargingType(ChargingType.AC);
+        this._setMinimumHardwarePower(config.minHwCurrent() * 3 * 230);
+        this._setMaximumHardwarePower(config.maxHwCurrent() * 3 * 230);
+        this._setPowerPrecision(230);
+        this._setIsPriority(config.priority());
+        this.phaseOrder = config.phases();
+        if (!this.checkPhases()) {
+            throw new ConfigurationException("Phase Configuration is not valid!", "Configuration must only contain 1,2 and 3.");
+        }
+        if (config.enabled()) {
+            this.api = new HardyBarthApi(config.ip(), this);
 
-		if (this.readWorker != null) {
-			this.readWorker.deactivate();
-		}
-	}
+            // Reading the given values
+            this.readWorker.activate(config.id());
+            this.readWorker.triggerNextRun();
+        }
+    }
 
-	@Override
-	public void handleEvent(Event event) {
-		if (!this.isEnabled()) {
-			return;
-		}
-		switch (event.getTopic()) {
-		case EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE:
+    private boolean checkPhases() {
+        String phases = Arrays.toString(this.phaseOrder);
+        return phases.contains("1") && phases.contains("2") && phases.contains("3") && this.phaseOrder.length == 3;
+    }
 
-			this.readWorker.triggerNextRun();
 
-			// Handle writes
-			this.writeHandler.run();
+    @Deactivate
+    protected void deactivate() {
+        super.deactivate();
 
-			// TODO: intelligent firmware update
-			break;
-		}
-	}
+        if (this.readWorker != null) {
+            this.readWorker.deactivate();
+        }
+    }
 
-	/**
-	 * Debug Log.
-	 * 
-	 * <p>
-	 * Logging only if the debug mode is enabled
-	 * 
-	 * @param message text that should be logged
-	 */
-	public void debugLog(String message) {
-		if (this.config.debugMode()) {
-			this.logInfo(this.log, message);
-		}
-	}
+    @Override
+    public void handleEvent(Event event) {
+        if (!this.isEnabled()) {
+            return;
+        }
+        switch (event.getTopic()) {
+            case EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE:
 
-	@Override
-	protected void logError(Logger log, String message) {
-		super.logError(log, message);
-	}
+                this.readWorker.triggerNextRun();
 
-	@Override
-	public EvcsPower getEvcsPower() {
-		return this.evcsPower;
-	}
+                // Handle writes
+                this.writeHandler.run();
+
+                // TODO: intelligent firmware update
+                break;
+        }
+    }
+
+    /**
+     * Debug Log.
+     *
+     * <p>
+     * Logging only if the debug mode is enabled
+     *
+     * @param message text that should be logged
+     */
+    public void debugLog(String message) {
+        if (this.config.debugMode()) {
+            this.logInfo(this.log, message);
+        }
+    }
+
+    @Override
+    protected void logError(Logger log, String message) {
+        super.logError(log, message);
+    }
+
+    @Override
+    public EvcsPower getEvcsPower() {
+        return this.evcsPower;
+    }
+
+    @Override
+    public int[] getPhaseConfiguration() {
+        return this.phaseOrder;
+    }
 }

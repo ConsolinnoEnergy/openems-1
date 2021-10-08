@@ -402,7 +402,7 @@ public class ChpKwEnergySmartblockImpl extends AbstractOpenemsModbusComponent im
 		if (this.connectionAlive == false) {
 			this._setHeaterState(HeaterState.OFF.getValue());
 		} else if (chpEngineRunning) {
-			this._setHeaterState(HeaterState.HEATING.getValue());
+			this._setHeaterState(HeaterState.RUNNING.getValue());
 		} else if (chpStartingUp) {
 			this._setHeaterState(HeaterState.STARTING_UP_OR_PREHEAT.getValue());
 		} else if (chpReadySignal) {

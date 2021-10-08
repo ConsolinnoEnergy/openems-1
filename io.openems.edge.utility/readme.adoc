@@ -1,0 +1,13 @@
+= Utility
+
+This Bundle provides Utility classes.
+
+
+== Natures
+- ConditionApplier
+
+== Classes
+- MinMaxToChannel
+- ConditionApplier
+
+

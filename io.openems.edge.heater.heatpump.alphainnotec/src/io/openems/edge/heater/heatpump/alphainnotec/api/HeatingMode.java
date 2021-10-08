@@ -9,7 +9,7 @@ import io.openems.common.types.OptionsEnum;
 public enum HeatingMode implements OptionsEnum {
 	UNDEFINED(-1, "Undefined"), //
 	AUTOMATIC(0, "Automatic"), //
-	AUXILIARY_HEATER(1, "Second heat generator (Zusätzlicher Wärmeerzeuger)"), //
+	AUXILIARY_HEATER(1, "Second heat generator (Zusaetzlicher Waermeerzeuger)"), //
 	PARTY(2, "No late night throttling (Party)"), //
 	VACATION(3, "Holidays, full time throttling (Ferien)"), //
 	OFF(4, "Off"); //

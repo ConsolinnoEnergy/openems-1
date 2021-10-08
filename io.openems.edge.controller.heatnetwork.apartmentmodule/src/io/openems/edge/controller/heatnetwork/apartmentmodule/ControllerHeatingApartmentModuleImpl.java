@@ -12,7 +12,7 @@ import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.controller.api.Controller;
 import io.openems.edge.controller.heatnetwork.apartmentmodule.api.ControllerHeatingApartmentModule;
 import io.openems.edge.controller.heatnetwork.apartmentmodule.api.State;
-import io.openems.edge.heatsystem.components.Pump;
+import io.openems.edge.heatsystem.components.HydraulicComponent;
 import io.openems.edge.thermometer.api.ThermometerThreshold;
 import org.osgi.service.cm.ConfigurationException;
 import org.osgi.service.component.ComponentContext;
@@ -25,6 +25,7 @@ import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.HttpURLConnection;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -55,7 +56,7 @@ public class ControllerHeatingApartmentModuleImpl extends AbstractOpenemsCompone
     private final Map<Integer, List<ChannelAddress>> responseToCords = new HashMap<>();
     private Map<Integer, ThermometerThreshold> thresholdThermometerMap = new HashMap<>();
     private final List<Integer> cordsToHeatUp = new ArrayList<>();
-    private Pump heatResponsePump;
+    private HydraulicComponent heatResponsePump;
 
     public ControllerHeatingApartmentModuleImpl() {
         super(OpenemsComponent.ChannelId.values(),
@@ -96,8 +97,8 @@ public class ControllerHeatingApartmentModuleImpl extends AbstractOpenemsCompone
                 String deviceToGet;
                 deviceToGet = config.heatPumpId();
                 component = this.cpm.getComponent(deviceToGet);
-                if (component instanceof Pump) {
-                    this.heatResponsePump = (Pump) component;
+                if (component instanceof HydraulicComponent) {
+                    this.heatResponsePump = (HydraulicComponent) component;
                 } else {
                     throw new ConfigurationException("Allocate Componenten in Controller Heating Apartment Module",
                             "Component with id: " + component.id() + " is not from an expected Type");
@@ -399,8 +400,8 @@ public class ControllerHeatingApartmentModuleImpl extends AbstractOpenemsCompone
             if (this.heatResponsePump.isEnabled() == false) {
                 id = this.heatResponsePump.id();
                 component = this.cpm.getComponent(id);
-                if (component.isEnabled() && component instanceof Pump) {
-                    this.heatResponsePump = (Pump) component;
+                if (component.isEnabled() && component instanceof HydraulicComponent) {
+                    this.heatResponsePump = (HydraulicComponent) component;
                 } else {
                     return false;
                 }

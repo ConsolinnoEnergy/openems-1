@@ -1,5 +1,5 @@
 package io.openems.edge.controller.heatnetwork.hydraulic.lineheater;
 
 public enum ComponentType {
-    VALVE, DECENTRAL_HEATER, THERMOMETER
+    HYDRAULIC_COMPONENT, DECENTRALIZED_HEATER, DECENTRALIZED_COOLER, THERMOMETER
 }

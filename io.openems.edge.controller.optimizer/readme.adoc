@@ -1,0 +1,9 @@
+= io.openems.edge.controller.optimizer Provider
+
+This Optimizer receives a Json with WriteChannel write instructions.
+These will be executed one by one.
+
+== Example
+
+== References
+

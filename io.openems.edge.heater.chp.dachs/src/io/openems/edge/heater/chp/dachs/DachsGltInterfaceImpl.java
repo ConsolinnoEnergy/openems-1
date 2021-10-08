@@ -995,7 +995,7 @@ public class DachsGltInterfaceImpl extends AbstractOpenemsComponent implements O
 				this._setHeaterState(HeaterState.UNDEFINED.getValue());
 			} else if (rpmReadout > NORMAL_OPERATION_RPM_THRESHOLD) {
 				this.chpEngineRunning = true;
-				this._setHeaterState(HeaterState.HEATING.getValue());
+				this._setHeaterState(HeaterState.RUNNING.getValue());
 			} else if (stateStartingUp) {
 				this.chpEngineRunning = true;
 				this._setHeaterState(HeaterState.STARTING_UP_OR_PREHEAT.getValue());
@@ -1004,7 +1004,7 @@ public class DachsGltInterfaceImpl extends AbstractOpenemsComponent implements O
 				this._setHeaterState(HeaterState.STANDBY.getValue());
 			} else {
 				this.chpEngineRunning = false;
-				this._setHeaterState(HeaterState.BLOCKED.getValue());
+				this._setHeaterState(HeaterState.BLOCKED_OR_ERROR.getValue());
 			}
 
 		} else {

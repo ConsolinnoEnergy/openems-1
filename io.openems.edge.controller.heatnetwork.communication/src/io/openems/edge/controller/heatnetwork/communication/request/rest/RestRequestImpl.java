@@ -1,9 +1,9 @@
 package io.openems.edge.controller.heatnetwork.communication.request.rest;
 
 
+import io.openems.edge.bridge.rest.api.RestRemoteDevice;
 import io.openems.edge.controller.heatnetwork.communication.api.RestRequest;
-import io.openems.edge.controller.heatnetwork.communication.api.RequestType;
-import io.openems.edge.remote.rest.device.api.RestRemoteDevice;
+import io.openems.edge.controller.heatnetwork.communication.request.api.RequestType;
 import org.osgi.service.cm.ConfigurationException;
 
 /**
@@ -11,11 +11,11 @@ import org.osgi.service.cm.ConfigurationException;
  */
 public class RestRequestImpl implements RestRequest {
     //Request input
-    private RestRemoteDevice request;
+    private final RestRemoteDevice request;
     //Write to/Signal/Callback/Allow
-    private RestRemoteDevice callback;
+    private final RestRemoteDevice callback;
 
-    private RequestType requestType;
+    private final RequestType requestType;
 
 
     public RestRequestImpl(RestRemoteDevice request, RestRemoteDevice callback, RequestType type) throws ConfigurationException {
@@ -32,22 +32,46 @@ public class RestRequestImpl implements RestRequest {
         }
     }
 
-
+    /**
+     * This Method called by the CommunicationMaster, is needed to check if a Request is available.
+     * E.g. if this Contains a "1" a Request is available and awaits a CallbackValue.
+     *
+     * @return the {@link RestRemoteDevice} responsible for the Request.
+     */
     @Override
     public RestRemoteDevice getRequest() {
         return this.request;
     }
 
+    /**
+     * This method is called by the CommunicationMaster/Manager, to respond to a Request.
+     * In this case, the Response is set via Rest.
+     *
+     * @return the {@link RestRemoteDevice} responsible for the Request.
+     */
     @Override
     public RestRemoteDevice getCallbackRequest() {
         return this.callback;
     }
+
+    /**
+     * Get the RequestType, called by the CommunicationMaster, to know how to react after a RestRequest is set to "1".
+     *
+     * @return the {@link RequestType}.
+     */
 
     @Override
     public RequestType getRequestType() {
         return this.requestType;
     }
 
+    /**
+     * The overwritten Equals method.
+     * Equals becomes true, if all RestRemoteDevices and the requestType are identical
+     *
+     * @param o the object compared to this one.
+     * @return true if all RestRemoteDevices and the requestType are identical.
+     */
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -59,7 +83,5 @@ public class RestRequestImpl implements RestRequest {
                     && otherObject.getRequestType().equals(this.requestType);
         }
         return false;
-
-
     }
 }

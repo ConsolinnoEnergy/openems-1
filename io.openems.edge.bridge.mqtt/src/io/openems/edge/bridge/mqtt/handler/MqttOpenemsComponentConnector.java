@@ -3,6 +3,8 @@ package io.openems.edge.bridge.mqtt.handler;
 import io.openems.common.exceptions.OpenemsError;
 import io.openems.edge.bridge.mqtt.api.MqttBridge;
 import io.openems.edge.bridge.mqtt.api.MqttComponent;
+import io.openems.edge.bridge.mqtt.api.MqttPublishTask;
+import io.openems.edge.bridge.mqtt.api.MqttSubscribeTask;
 import io.openems.edge.bridge.mqtt.api.MqttType;
 import io.openems.edge.bridge.mqtt.component.MqttConfigurationComponent;
 import io.openems.edge.bridge.mqtt.component.MqttConfigurationComponentImpl;
@@ -11,6 +13,7 @@ import io.openems.edge.common.component.AbstractOpenemsComponent;
 import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
 import org.eclipse.paho.client.mqttv3.MqttException;
+import org.joda.time.DateTime;
 import org.osgi.service.cm.ConfigurationAdmin;
 import org.osgi.service.cm.ConfigurationException;
 import org.osgi.service.component.ComponentContext;
@@ -20,6 +23,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -32,6 +36,10 @@ public abstract class MqttOpenemsComponentConnector extends AbstractOpenemsCompo
 
     AtomicReference<MqttBridge> mqttBridge = new AtomicReference<>();
     OpenemsComponent otherComponent;
+    String mqttBridgeId;
+    DateTime initTime;
+    private static final int WAIT_SECONDS = 10;
+    private boolean initialized = false;
 
     MqttConfigurationComponent mqttConfigurationComponent;
 
@@ -40,18 +48,42 @@ public abstract class MqttOpenemsComponentConnector extends AbstractOpenemsCompo
         super(firstInitialChannelIds, furtherInitialChannelIds);
     }
 
-    protected boolean activate(ComponentContext context, String id, String alias, boolean enabled, ComponentManager cpm, String mqttId)
+    protected boolean activate(ComponentContext context, String id, String alias, boolean enabled, ComponentManager cpm, String mqttBridgeId)
             throws OpenemsError.OpenemsNamedException {
         super.activate(context, id, alias, enabled);
-        if (cpm.getComponent(mqttId) instanceof MqttBridge) {
-            this.mqttBridge.set(cpm.getComponent(mqttId));
+        this.mqttBridgeId = mqttBridgeId;
+        if (cpm.getComponent(this.mqttBridgeId) instanceof MqttBridge) {
+            this.mqttBridge.set(cpm.getComponent(this.mqttBridgeId));
             MqttBridge mqtt = this.mqttBridge.get();
             if (this.isEnabled() && mqtt != null && mqtt.isEnabled()) {
                 this.mqttBridge.get().addMqttComponent(super.id(), this);
+            } else {
+                this.log.info("MqttBridge is not enabled or null! Component won't be added");
             }
             return true;
         }
+        this.log.warn("The Configured MqttBridge Id is not an instance of the MqttBridge, please check your config!");
         return false;
+    }
+
+    protected boolean modified(ComponentContext context, String id, String alias,
+                               boolean enabled, ComponentManager cpm, String mqttBridgeId) throws OpenemsError.OpenemsNamedException {
+        super.modified(context, id, alias, enabled);
+        if (cpm.getComponent(mqttBridgeId) instanceof MqttBridge) {
+            this.mqttBridgeId = mqttBridgeId;
+            this.mqttBridge.set(cpm.getComponent(mqttBridgeId));
+            MqttBridge mqtt = this.mqttBridge.get();
+            if (this.isEnabled() && mqtt != null && mqtt.isEnabled()) {
+                this.mqttBridge.get().addMqttComponent(super.id(), this);
+
+            } else {
+                this.log.info("MqttBridge is not enabled or null! Component won't be added");
+            }
+            return true;
+        }
+        this.log.warn("The Configured MqttBridge Id is not an instance of the MqttBridge, please check your config!");
+        return false;
+
     }
 
     /**
@@ -146,10 +178,8 @@ public abstract class MqttOpenemsComponentConnector extends AbstractOpenemsCompo
      */
     void connectorDeactivate() {
         super.deactivate();
-        if (this.mqttConfigurationComponent != null) {
             if (this.mqttBridge.get() != null) {
                 this.mqttBridge.get().removeMqttComponent(super.id());
-            }
         }
     }
 
@@ -162,5 +192,77 @@ public abstract class MqttOpenemsComponentConnector extends AbstractOpenemsCompo
      */
     void setCorrespondingComponent(String otherComponentId, ComponentManager cpm) throws OpenemsError.OpenemsNamedException {
         this.otherComponent = cpm.getComponent(otherComponentId);
+    }
+
+    protected MqttConfigurationComponent getMqttConfigurationComponent() {
+        return this.mqttConfigurationComponent;
+    }
+
+    @Override
+    public boolean checkForMissingTasks() {
+        Map<String, MqttPublishTask> pubTasks = this.getMqttConfigurationComponent().getAbstractComponent().getPublishTasks();
+        Map<String, MqttSubscribeTask> subTasks = this.getMqttConfigurationComponent().getAbstractComponent().getSubscribeTasks();
+        boolean pubSizeEquals = this.mqttBridge.get().getPublishTasks(super.id()).size() == pubTasks.size();
+        boolean subSizeEquals = this.mqttBridge.get().getSubscribeTasks(super.id()).size() == subTasks.size();
+
+        if (!pubSizeEquals || !subSizeEquals) {
+            this.mqttBridge.get().removeMqttTasks(super.id());
+            pubTasks.forEach((topic, task) -> {
+                try {
+                    this.mqttBridge.get().addMqttTask(super.id(), task);
+                } catch (MqttException e) {
+                    this.log.warn("Couldn't add MqttTask due to an error in : " + super.id() + e.getMessage());
+                }
+            });
+            subTasks.forEach((topic, task) -> {
+                try {
+                    this.mqttBridge.get().addMqttTask(super.id(), task);
+                } catch (MqttException e) {
+                    this.log.warn("Couldn't add MqttTask due to an error in : " + super.id() + e.getMessage());
+                }
+            });
+            return true;
+        }
+        return false;
+    }
+
+    protected OpenemsComponent getOtherComponent() {
+        return this.otherComponent;
+    }
+
+    /**
+     * Checks if the mapped Component isEnabled or not.
+     * If it is not enabled, it has probably an old reference -> renew Reference.
+     *
+     * @param cpm the ComponentManager.
+     */
+    protected void renewReferenceAndMqttConfigurationComponent(ComponentManager cpm) {
+        if (this.initialized) {
+            if (this.initTime != null && new DateTime().isAfter(this.initTime.plusSeconds(WAIT_SECONDS))) {
+                this.initialized = false;
+                try {
+                    if (this.otherComponent != null && (this.otherComponent.isEnabled() == false || this.componentIsSame(cpm, this.otherComponent) == false)) {
+                        this.otherComponent = cpm.getComponent(this.getOtherComponent().id());
+                        this.mqttConfigurationComponent = null;
+                    }
+                    if (this.mqttBridge.get() == null || (this.mqttBridge.get().isEnabled() == false || this.componentIsSame(cpm, this.mqttBridge.get()) == false)) {
+                        OpenemsComponent refreshedMqttBridge = cpm.getComponent(this.mqttBridgeId);
+                        if (refreshedMqttBridge instanceof MqttBridge) {
+                            this.mqttBridge.set((MqttBridge) refreshedMqttBridge);
+                        }
+                    }
+                } catch (OpenemsError.OpenemsNamedException e) {
+                    this.log.warn("OpenEMS component with id: " + this.getOtherComponent().id() + " Cannot be found!");
+                }
+            }
+        } else {
+            this.initialized = true;
+            this.initTime = new DateTime();
+        }
+    }
+
+    protected boolean componentIsSame(ComponentManager cpm, OpenemsComponent compareComponent) throws OpenemsError.OpenemsNamedException {
+        OpenemsComponent registeredComponent = cpm.getComponent(compareComponent.id());
+        return compareComponent.equals(registeredComponent);
     }
 }

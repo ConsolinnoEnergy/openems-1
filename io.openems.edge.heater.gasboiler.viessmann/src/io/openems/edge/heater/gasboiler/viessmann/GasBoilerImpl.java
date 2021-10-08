@@ -501,7 +501,7 @@ public class GasBoilerImpl extends AbstractOpenemsModbusComponent implements Ope
         if (getBoilerState().isDefined()) {
             int boilerState = getBoilerState().get();
             if (boilerState > 0) {
-                this._setHeaterState(HeaterState.HEATING.getValue());
+                this._setHeaterState(HeaterState.RUNNING.getValue());
             } else {
                 this._setHeaterState(HeaterState.STANDBY.getValue());
             }

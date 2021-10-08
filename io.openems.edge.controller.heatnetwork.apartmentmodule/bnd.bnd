@@ -8,9 +8,9 @@ Bundle-Version: 1.0.0.${tstamp}
 	io.openems.edge.common,\
 	io.openems.common,\
 	io.openems.edge.controller.api,\
-	io.openems.edge.apartmentmodule,\
-	io.openems.edge.thermometer.api,\
-	io.openems.edge.heatsystem.components,\
+	io.openems.edge.apartmentmodule;version=latest,\
+	io.openems.edge.thermometer.api;version=latest,\
+	io.openems.edge.heatsystem.components;version=latest,\
 
 -testpath: \
 	${testpath}

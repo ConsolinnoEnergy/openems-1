@@ -2,24 +2,28 @@ package io.openems.edge.heatsystem.components.test;
 
 import io.openems.edge.common.component.AbstractOpenemsComponent;
 import io.openems.edge.common.component.OpenemsComponent;
-import io.openems.edge.heatsystem.components.Pump;
-import io.openems.edge.heatsystem.components.HeatsystemComponent;
-import io.openems.edge.pwm.api.Pwm;
+import io.openems.edge.heatsystem.components.HydraulicComponent;
+import io.openems.edge.heatsystem.components.PumpType;
+import io.openems.edge.io.api.Pwm;
+import io.openems.edge.consolinno.leaflet.pwm.test.DummyPwm;
 import io.openems.edge.relay.api.Relay;
+import io.openems.edge.relay.api.test.DummyRelay;
+
+import java.util.Random;
 
 /**
  * This Device acts as a Dummy for Unittests.
  */
-public class DummyPump extends AbstractOpenemsComponent implements OpenemsComponent, Pump {
+public class DummyPump extends AbstractOpenemsComponent implements OpenemsComponent, HydraulicComponent {
 
-    private Relay relays;
+    private final Relay relays;
     //private PwmPowerLevelChannel pwm;
     private boolean isRelays = false;
     private boolean isPwm = false;
-    private Pwm pwm;
+    private final Pwm pwm;
 
-    public DummyPump(String id, Relay relays, Pwm pwm, String type) {
-        super(OpenemsComponent.ChannelId.values(), HeatsystemComponent.ChannelId.values());
+    public DummyPump(String id, Relay relays, Pwm pwm, PumpType type) {
+        super(OpenemsComponent.ChannelId.values(), HydraulicComponent.ChannelId.values());
 
         super.activate(null, id, "", true);
 
@@ -27,23 +31,28 @@ public class DummyPump extends AbstractOpenemsComponent implements OpenemsCompon
         this.pwm = pwm;
 
         switch (type) {
-            case "Relays":
-                isRelays = true;
+            case RELAY:
+                this.isRelays = true;
                 break;
 
-            case "Pwm":
-                isPwm = true;
+            case PWM_OR_AIO:
+                this.isPwm = true;
                 break;
 
+            case RELAY_AND_PWM_OR_AIO:
             default:
-                isRelays = true;
-                isPwm = true;
+                this.isRelays = true;
+                this.isPwm = true;
         }
 
         this.getIsBusyChannel().setNextValue(false);
         this.getPowerLevelChannel().setNextValue(0);
         this.getLastPowerLevelChannel().setNextValue(0);
 
+    }
+
+    public DummyPump(String id, PumpType type) {
+        this(id, new DummyRelay(String.valueOf(new Random().nextInt())), new DummyPwm(String.valueOf(new Random().nextInt())), type);
     }
 
     @Override
@@ -54,23 +63,21 @@ public class DummyPump extends AbstractOpenemsComponent implements OpenemsCompon
 
     /**
      * Like the original changeByPercentage just a bit adjusted.
-     * @param percentage change the PowerLevel by this value.
      *
-     * */
+     * @param percentage change the PowerLevel by this value.
+     */
     @Override
     public boolean changeByPercentage(double percentage) {
         if (this.isRelays) {
             if (this.isPwm) {
                 if (this.getPowerLevelChannel().getNextValue().get() + percentage < 0) {
-                    controlRelays(false);
+                    this.controlRelays(false);
                     System.out.println("Set Next WriteValue to 0.f");
                     this.getPowerLevelChannel().setNextValue(0);
                     return true;
                 }
-            } else if (percentage <= 0) {
-                controlRelays(false);
             } else {
-                controlRelays(true);
+                this.controlRelays((percentage > 0));
             }
         }
         if (this.isPwm) {
@@ -80,7 +87,7 @@ public class DummyPump extends AbstractOpenemsComponent implements OpenemsCompon
             currentPowerLevel += percentage;
             currentPowerLevel = currentPowerLevel > 100 ? 100 : currentPowerLevel;
             currentPowerLevel = currentPowerLevel < 0 ? 0 : currentPowerLevel;
-            System.out.println("Set Next Write Value to " + currentPowerLevel + "in " + pwm.id());
+            System.out.println("Set Next Write Value to " + currentPowerLevel + "in " + this.pwm.id());
             this.getPowerLevelChannel().setNextValue(currentPowerLevel);
         }
         return true;
@@ -93,6 +100,31 @@ public class DummyPump extends AbstractOpenemsComponent implements OpenemsCompon
         } else {
             System.out.println("Relays is " + !activate);
         }
+    }
+
+    @Override
+    public void forceClose() {
+
+    }
+
+    @Override
+    public void forceOpen() {
+
+    }
+
+    @Override
+    public boolean powerLevelReached() {
+        return false;
+    }
+
+    @Override
+    public boolean isChanging() {
+        return false;
+    }
+
+    @Override
+    public void reset() {
+
     }
 
     @Override

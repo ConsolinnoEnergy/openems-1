@@ -59,7 +59,9 @@ public class TypeUtils {
 
 			} else if (value instanceof String) {
 				String stringValue = (String) value;
-				if (stringValue.equalsIgnoreCase("false")) {
+				if (stringValue.isEmpty()) {
+					return null;
+				} else if (stringValue.equalsIgnoreCase("false")) {
 					return (T) Boolean.FALSE;
 				} else if (stringValue.equalsIgnoreCase("true")) {
 					return (T) Boolean.TRUE;
@@ -119,6 +121,9 @@ public class TypeUtils {
 
 			} else if (value instanceof String) {
 				String stringValue = (String) value;
+				if (stringValue.isEmpty()) {
+					return null;
+				}
 				return (T) Short.valueOf(Short.parseShort(stringValue));
 			}
 			break;
@@ -162,8 +167,18 @@ public class TypeUtils {
 
 			} else if (value instanceof String) {
 				String stringValue = (String) value;
+				if (stringValue.isEmpty()) {
+					return null;
+				}
 				return (T) Integer.valueOf(Integer.parseInt(stringValue));
+
+		} else if (value instanceof int[]) {
+				int sum = 0;
+			for (int n =0; n<((int[]) value).length;n++){
+				sum += ((int[])value)[n];
 			}
+			return (T) Integer.valueOf(sum);
+		}
 			break;
 
 		case LONG:
@@ -191,6 +206,9 @@ public class TypeUtils {
 
 			} else if (value instanceof String) {
 				String stringValue = (String) value;
+				if (stringValue.isEmpty()) {
+					return null;
+				}
 				return (T) Long.valueOf(Long.parseLong(stringValue));
 			}
 			break;
@@ -232,6 +250,9 @@ public class TypeUtils {
 
 			} else if (value instanceof String) {
 				String stringValue = (String) value;
+				if (stringValue.isEmpty()) {
+					return null;
+				}
 				return (T) Float.valueOf(Float.parseFloat(stringValue));
 			}
 			break;
@@ -261,6 +282,9 @@ public class TypeUtils {
 
 			} else if (value instanceof String) {
 				String stringValue = (String) value;
+				if (stringValue.isEmpty()) {
+					return null;
+				}
 				return (T) Double.valueOf(Double.parseDouble(stringValue));
 			}
 			break;
@@ -659,4 +683,30 @@ public class TypeUtils {
 		}
 	}
 
+	/**
+	 * Fits a value within a lower and upper boundary.
+	 * 
+	 * @param lowLimit  the lower boundary
+	 * @param highLimit the upper boundary
+	 * @param value     the actual value
+	 * @return the adjusted value
+	 */
+	public static Integer fitWithin(Integer lowLimit, Integer highLimit, Integer value) {
+		return TypeUtils.max(lowLimit, //
+				TypeUtils.min(highLimit, value));
+	}
+
+	/**
+	 * Safely returns the absolute value of an Integer value.
+	 *
+	 * @param value the Integer value, possibly null
+	 * @return the absolute value, possibly null
+	 */
+	public static Integer abs(Integer value) {
+		if (value == null) {
+			return null;
+		} else {
+			return Math.abs(value);
+		}
+	}
 }

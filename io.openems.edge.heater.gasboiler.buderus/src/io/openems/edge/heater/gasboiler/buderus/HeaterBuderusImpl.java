@@ -393,7 +393,7 @@ public class HeaterBuderusImpl extends AbstractOpenemsModbusComponent implements
 		if (this.connectionAlive == false) {
 			this._setHeaterState(HeaterState.OFF.getValue());
 		} else if (heaterRunning) {
-			this._setHeaterState(HeaterState.HEATING.getValue());
+			this._setHeaterState(HeaterState.RUNNING.getValue());
 		} else if (heaterReadySignal) {
 			this._setHeaterState(HeaterState.STANDBY.getValue());
 		} else {

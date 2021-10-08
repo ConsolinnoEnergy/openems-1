@@ -14,9 +14,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * Get Requests as Input, Determined by Position and List<Request>  (Map <Integer, List<Request>)
- * getManagedRequests (After Request handling these will be the current Requests)
- * setMaximumAllowedRequests
+ * This Class implements the {@link RestRequestManager} that provides the ability to manage a given amount of RestRequests or
+ * return the manage requests.
+ * It provides the ability to manage by different {@link ManageType}s etc.
  */
 public class RestRequestManagerImpl implements RestRequestManager {
 
@@ -44,7 +44,7 @@ public class RestRequestManagerImpl implements RestRequestManager {
     /**
      * Usually Called By CommunicationMaster.
      * Give all of the Requests and handle them by ManageType (e.g. FIFO) and Maximum Requests.
-     * Includes a Waitlist
+     * Includes a WaitList
      *
      * @param allRequests All Requests mapped by Integer (Usually a Position/Number)
      */
@@ -54,7 +54,7 @@ public class RestRequestManagerImpl implements RestRequestManager {
         if (this.timerType.equals(TimerType.CYCLES)) {
             this.workCycles.forEach((key, value) -> value.getAndIncrement());
         }
-        manageByManageType();
+        this.manageByManageType();
 
     }
 
@@ -64,7 +64,7 @@ public class RestRequestManagerImpl implements RestRequestManager {
      */
     private void manageByManageType() {
         if (this.manageType.equals(ManageType.FIFO)) {
-            manageByFiFo();
+            this.manageByFiFo();
         }
     }
 
@@ -75,9 +75,9 @@ public class RestRequestManagerImpl implements RestRequestManager {
      * If Request is available --> Put into Managed Requests if Size ok. else put into waitList.
      */
     private void manageByFiFo() {
-        clearExecutedRequests();
-        manageWaitList();
-        swapKeyIfWaitTimeIsUp();
+        this.clearExecutedRequests();
+        this.manageWaitList();
+        this.swapKeyIfWaitTimeIsUp();
         //only check Requests that are neither in managedRequests already nor in Waitlist <-- REMAINING REQUESTS!
         this.allRequests.keySet().stream()
                 .filter(containingKey ->
@@ -96,7 +96,7 @@ public class RestRequestManagerImpl implements RestRequestManager {
                         }
                     } else {
                         //Set EnableSignal of Components who have no HeatRequest to 0
-                        this.allRequests.get(key).forEach(request->{
+                        this.allRequests.get(key).forEach(request -> {
                             request.getCallbackRequest().setValue("0");
                         });
                     }
@@ -104,29 +104,35 @@ public class RestRequestManagerImpl implements RestRequestManager {
         this.waitList.forEach(this::unsetEnable);
     }
 
+    /**
+     * Adds a new Time to the {@link #waitTime} or {@link #workTime}.
+     *
+     * @param waitWork the {@link WaitWork} enum to indicate which Map gets a new entry
+     * @param key      the {@link #allRequests} key.
+     */
     private void addNewTime(WaitWork waitWork, Integer key) {
         switch (waitWork) {
             case WAIT:
                 if (this.timerType.equals(TimerType.TIME)) {
                     this.waitTime.put(key, new DateTime());
                 } else {
-                    this.waitCycles.put(key, new AtomicInteger(0));
+                    this.waitCycles.put(key, new AtomicInteger(1));
                 }
                 break;
             case WORK:
                 if (this.timerType.equals(TimerType.TIME)) {
                     this.workTime.put(key, new DateTime());
                 } else {
-                    this.workCycles.put(key, new AtomicInteger(0));
+                    this.workCycles.put(key, new AtomicInteger(1));
                 }
                 break;
         }
     }
 
     /**
-     * Checks if a member of the Waitinglist is waiting for longer then the time specified in the config.
+     * Checks if a member of the WaitingList is waiting for longer then the time specified in the config.
      * If applicable the member will call the swapWaitingMember method to swap this member with the longest operating member of the
-     * worklist.
+     * WorkList.
      */
     private void swapKeyIfWaitTimeIsUp() {
         ArrayList<Integer> keysToSwap = new ArrayList<>();
@@ -139,6 +145,12 @@ public class RestRequestManagerImpl implements RestRequestManager {
 
     }
 
+    /**
+     * Checks if the WaitTime is up. Nearly the same as the {@link io.openems.edge.timer.api.Timer#checkIsTimeUp(String, String)}
+     *
+     * @param key the Integer of this WaitList
+     * @return if the time is up or not.
+     */
     private boolean checkWaitTime(Integer key) {
         boolean isTimeUp = false;
         switch (this.timerType) {
@@ -165,11 +177,11 @@ public class RestRequestManagerImpl implements RestRequestManager {
      * @param waitKey Map-key of the waiting Member
      */
     private void swapWaitingMember(int waitKey) {
-
+        //won't work with object removal for unknown reasons.
         this.waitList.remove(this.waitList.indexOf(waitKey));
-        int workKey = getMaxWorkTimeMember();
+        int workKey = this.getMaxWorkTimeMember();
         this.managedRequests.remove(workKey);
-        managedRequests.put(waitKey, allRequests.get(waitKey));
+        this.managedRequests.put(waitKey, this.allRequests.get(waitKey));
         switch (this.timerType) {
             case CYCLES:
                 this.workCycles.remove(workKey);
@@ -182,15 +194,14 @@ public class RestRequestManagerImpl implements RestRequestManager {
 
             case TIME:
             default:
-
                 //---------------------------Remove old timestamps---------------------------\\
-                workTime.remove(workKey);
-                waitTime.remove(waitKey);
+                this.workTime.remove(workKey);
+                this.waitTime.remove(waitKey);
                 //-------------------Put old workingMember in the waitList-------------------\\
-                waitList.add(workKey);
-                waitTime.put(workKey, new DateTime());
+                this.waitList.add(workKey);
+                this.waitTime.put(workKey, new DateTime());
                 //-------------------Put old waitingMember in the workList-------------------\\
-                workTime.put(waitKey, new DateTime());
+                this.workTime.put(waitKey, new DateTime());
                 break;
         }
     }
@@ -207,8 +218,8 @@ public class RestRequestManagerImpl implements RestRequestManager {
 
             case CYCLES:
                 AtomicInteger maxCounter = new AtomicInteger(Integer.MIN_VALUE);
-                workCycles.forEach((key,value)->{
-                    if(value.get() > maxCounter.get()){
+                this.workCycles.forEach((key, value) -> {
+                    if (value.get() > maxCounter.get()) {
                         maxCounter.set(value.get());
                         maxWorkTimeKey.set(key);
                     }
@@ -218,7 +229,7 @@ public class RestRequestManagerImpl implements RestRequestManager {
             default:
                 AtomicReference<DateTime> maxTime = new AtomicReference<>();
 
-                workTime.forEach((entry, value) -> {
+                this.workTime.forEach((entry, value) -> {
                     if (maxTime.get() != null && value.isBefore(maxTime.get())) {
                         maxTime.set(value);
                         maxWorkTimeKey.set(entry);
@@ -234,7 +245,7 @@ public class RestRequestManagerImpl implements RestRequestManager {
 
     /**
      * If more than maxRequestSize Components had Heat Requests then they will be added to wait-list.
-     * Therefor the Waitlist is handled first and then the rest of the tasks.
+     * Therefore the WaitList is handled first and then the rest of the tasks.
      * After adding to requests, they will be removed from wait-list.
      */
     private void manageWaitList() {
@@ -269,17 +280,18 @@ public class RestRequestManagerImpl implements RestRequestManager {
     }
 
     /**
-     * returns the managed Request either all of them (e.g. if isForcing in Communicationmaster is set) or
+     * Returns the managed Request either all of them (e.g. if isForcing in
+     * {@link io.openems.edge.controller.heatnetwork.communication.api.CommunicationMasterController} is set) or
      * returns managed requests (Maximum Requests size determined by Keys of the Map).
      *
      * @return the ManagedRequests.
      */
     @Override
     public Map<Integer, List<RestRequest>> getManagedRequests() {
-        if (manageAllAtOnce) {
-            return allRequests;
+        if (this.manageAllAtOnce) {
+            return this.allRequests;
         } else {
-            return managedRequests;
+            return this.managedRequests;
         }
     }
 
@@ -306,21 +318,42 @@ public class RestRequestManagerImpl implements RestRequestManager {
         }
     }
 
+    /**
+     * Get the maximum Requests that are currently allowed.
+     * Might be set before by the {@link #setMaxManagedRequests(int)} method
+     *
+     * @return the maximum Managed Requests at once.
+     */
     @Override
     public int getMaxRequestsAtOnce() {
         return this.maxRequestsAtOnce;
     }
 
+    /**
+     * Sets if all Requests can be managed at once.
+     *
+     * @param manageAllAtOnce true or false
+     */
     @Override
     public void setManageAllAtOnce(boolean manageAllAtOnce) {
         this.manageAllAtOnce = manageAllAtOnce;
     }
 
+    /**
+     * Sets the ManageType, the Manager should manage the requests.
+     *
+     * @param type the {@link ManageType}
+     */
     @Override
     public void setManageType(ManageType type) {
         this.manageType = type;
     }
 
+    /**
+     * Gets the current ManageType of the Manager.
+     *
+     * @return the {@link ManageType}
+     */
     @Override
     public ManageType getManageType() {
         return this.manageType;
@@ -339,16 +372,35 @@ public class RestRequestManagerImpl implements RestRequestManager {
         });
     }
 
+    /**
+     * Sets the maximum waitTime for the Requests in the WaitList until the Request that's in the workingQueue for the longest time
+     * is swapped.
+     *
+     * @param maxWaitTime the maxWaitTime for the Requests in the WaitList
+     */
     @Override
     public void setMaxWaitTime(int maxWaitTime) {
         this.maxWaitTime = maxWaitTime;
     }
 
+    /**
+     * Sets the TimerType for the Manager.
+     * Note: Currently the Manager won't use the {@link io.openems.edge.timer.api.Timer} but it's on implementation, due to special cases.
+     * It would be too TimeConsuming at the moment to make the Manager compatible with the Timer.
+     *
+     * @param type sets the {@link TimerType}
+     */
     @Override
-    public void setTimerType(TimerType type){
+    public void setTimerType(TimerType type) {
         this.timerType = type;
     }
 
+    /**
+     * Unsets the CallbackRequest for the given Key.
+     * Usually Called for either WaitList members or if the given Key has no Request at the moment.
+     *
+     * @param key the Key of the {@link #allRequests} map.
+     */
     private void unsetEnable(int key) {
         this.allRequests.get(key).forEach(restRequest -> restRequest.getCallbackRequest().setValue("0"));
     }

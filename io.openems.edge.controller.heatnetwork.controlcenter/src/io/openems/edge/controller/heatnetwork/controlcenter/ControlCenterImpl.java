@@ -7,8 +7,8 @@ import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.controller.api.Controller;
 import io.openems.edge.controller.heatnetwork.controlcenter.api.ControlCenter;
 import io.openems.edge.controller.heatnetwork.heatingcurveregulator.api.HeatingCurveRegulatorChannel;
-import io.openems.edge.controller.heatnetwork.pid.heatsystem.api.PidHeatsystemController;
 import io.openems.edge.controller.heatnetwork.warmup.api.ControllerWarmup;
+import io.openems.edge.controller.hydrauliccomponent.api.PidHydraulicController;
 import io.openems.edge.relay.api.Relay;
 import org.osgi.service.cm.ConfigurationException;
 import org.osgi.service.component.ComponentContext;
@@ -39,7 +39,7 @@ public class ControlCenterImpl extends AbstractOpenemsComponent implements Opene
     @Reference
     protected ComponentManager cpm;
 
-    private PidHeatsystemController pidControllerChannel;
+    private PidHydraulicController pidControllerChannel;
     private ControllerWarmup warmupControllerChannel;
     private HeatingCurveRegulatorChannel heatingCurveRegulatorChannel;
     private Relay pump;
@@ -175,7 +175,7 @@ public class ControlCenterImpl extends AbstractOpenemsComponent implements Opene
     private void turnOnHeater(int temperatureInDezidegree) throws OpenemsError.OpenemsNamedException {
         this.activateHeater().setNextValue(true);
         this.temperatureHeating().setNextValue(temperatureInDezidegree);
-        pidControllerChannel.turnOn().setNextWriteValue(true);
+        pidControllerChannel.setEnableSignal(true);
         pidControllerChannel.setMinTemperature().setNextWriteValue(temperatureInDezidegree);
         pump.getRelaysWriteChannel().setNextWriteValue(true);
     }
@@ -183,12 +183,12 @@ public class ControlCenterImpl extends AbstractOpenemsComponent implements Opene
     private void turnOffHeater() throws OpenemsError.OpenemsNamedException {
         this.activateHeater().setNextValue(false);
         this.temperatureHeating().setNextValue(0);
-        pidControllerChannel.turnOn().setNextWriteValue(false);
+        pidControllerChannel.setEnableSignal(false);
         pump.getRelaysWriteChannel().setNextWriteValue(false);
     }
 
     void allocateComponents() throws OpenemsError.OpenemsNamedException, ConfigurationException {
-        if (cpm.getComponent(config.allocated_Pid_Controller()) instanceof PidHeatsystemController) {
+        if (cpm.getComponent(config.allocated_Pid_Controller()) instanceof PidHydraulicController) {
             pidControllerChannel = cpm.getComponent(config.allocated_Pid_Controller());
         } else {
             throw new ConfigurationException(config.allocated_Pid_Controller(),

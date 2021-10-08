@@ -24,6 +24,15 @@ public interface MqttBridge extends OpenemsComponent {
      */
     DateTimeZone getTimeZone();
 
+    /**
+     * Check if the Given Component is in the MqttBridge.
+     *
+     * @param id the Id of the Component that should be checked
+     * @return true if the corresponding Component is allocated
+     */
+
+    boolean containsComponent(String id);
+
     enum ChannelId implements io.openems.edge.common.channel.ChannelId {
         /**
          * The Mqtt Types Available, those will be written in the Config.
@@ -98,6 +107,15 @@ public interface MqttBridge extends OpenemsComponent {
      * @return true if the connection is established
      */
     boolean isConnected();
+
+    /**
+     * Gets the Publish tasks mapped to a MqttComponent.
+     *
+     * @param id the componentId
+     * @return the List of MqttTasks
+     */
+    List<MqttTask> getPublishTasks(String id);
+
 
 }
 

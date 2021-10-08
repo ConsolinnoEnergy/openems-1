@@ -1,6 +1,0 @@
-= Condition Applier
-
-== WIP
-
-Will be used to apply a result after certain configured input
-You will be able to do apply channels, basic operations etc etc, and write them into a channel or apply it within a defined method.

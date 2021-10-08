@@ -3,11 +3,13 @@ package io.openems.edge.core.componentmanager;
 import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Dictionary;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
@@ -62,526 +64,703 @@ import io.openems.edge.common.event.EdgeEventConstants;
  */
 public class EdgeConfigWorker extends ComponentManagerWorker {
 
-	private static final int CYCLE_TIME = 300_000; // in ms
+    private static final int CYCLE_TIME = 300_000; // in ms
 
-	private final Logger log = LoggerFactory.getLogger(EdgeConfigWorker.class);
-	private final Queue<ConfigurationEvent> events = new ArrayDeque<ConfigurationEvent>();
+    private final Logger log = LoggerFactory.getLogger(EdgeConfigWorker.class);
+    private final Queue<ConfigurationEvent> events = new ArrayDeque<ConfigurationEvent>();
 
-	private EdgeConfig cache = null;
+    private EdgeConfig cache = null;
 
-	public EdgeConfigWorker(ComponentManagerImpl parent) {
-		super(parent);
-	}
+    public EdgeConfigWorker(ComponentManagerImpl parent) {
+        super(parent);
+    }
 
-	@Override
-	protected synchronized void forever() {
-		this.getEdgeConfig();
-	}
+    @Override
+    protected synchronized void forever() {
+        this.getEdgeConfig();
+    }
 
-	/**
-	 * Gets the EdgeConfig object; updates the cache if necessary and publishes a
-	 * CONFIG_UPDATE event on update.
-	 * 
-	 * @return the {@link EdgeConfig}
-	 */
-	public synchronized EdgeConfig getEdgeConfig() {
-		boolean wasConfigUpdated = false;
+    /**
+     * Gets the EdgeConfig object; updates the cache if necessary and publishes a
+     * CONFIG_UPDATE event on update.
+     *
+     * @return the {@link EdgeConfig}
+     */
+    public synchronized EdgeConfig getEdgeConfig() {
+        boolean wasConfigUpdated = false;
 
-		if (this.cache != null) {
-			// Use Cache
+        if (this.cache != null) {
+            // Use Cache
 
-			// Apply ConfigurationEvents from queue
-			ConfigurationEvent event;
-			while ((event = this.events.poll()) != null) {
-				wasConfigUpdated |= this.updateCacheFromEvent(event);
-			}
-			// Update Cache Channels
-			this.updateChannels(this.cache);
+            // Apply ConfigurationEvents from queue
+            ConfigurationEvent event;
+            while ((event = this.events.poll()) != null) {
+                wasConfigUpdated |= this.updateCacheFromEvent(event);
+            }
+            // Update Cache Channels
+            this.updateChannels(this.cache);
 
-		} else {
+        } else {
 
-			// No cache
-			this.cache = this.buildNewEdgeConfig();
-			wasConfigUpdated = true;
-		}
+            // No cache
+            this.cache = this.buildNewEdgeConfig();
+            wasConfigUpdated = true;
+        }
 
-		if (wasConfigUpdated) {
-			Map<String, Object> attachment = new HashMap<>();
-			attachment.put(EdgeEventConstants.TOPIC_CONFIG_UPDATE_KEY, this.cache);
-			this.parent.eventAdmin.sendEvent(new Event(EdgeEventConstants.TOPIC_CONFIG_UPDATE, attachment));
-		}
+        if (wasConfigUpdated) {
+            Map<String, Object> attachment = new HashMap<>();
+            attachment.put(EdgeEventConstants.TOPIC_CONFIG_UPDATE_KEY, this.cache);
+            this.parent.eventAdmin.sendEvent(new Event(EdgeEventConstants.TOPIC_CONFIG_UPDATE, attachment));
+        }
 
-		return this.cache;
-	}
+        return this.cache;
+    }
 
-	@Override
-	protected int getCycleTime() {
-		return CYCLE_TIME;
-	}
+    /**
+     * Gets the EdgeConfig object.
+     *
+     * @param component true if only the active components and their configuration should be in the output.
+     * @return the {@link EdgeConfig}
+     */
+    public synchronized EdgeConfig getEdgeConfig(boolean component) {
+        boolean wasConfigUpdated = false;
+        // No cache
+        this.cache = this.buildNewEdgeConfig(component);
+        wasConfigUpdated = true;
 
-	@Override
-	public synchronized void configurationEvent(ConfigurationEvent event) {
-		this.events.offer(event);
-		this.triggerNextRun();
-	}
+        if (wasConfigUpdated) {
+            Map<String, Object> attachment = new HashMap<>();
+            attachment.put(EdgeEventConstants.TOPIC_CONFIG_UPDATE_KEY, this.cache);
+            this.parent.eventAdmin.sendEvent(new Event(EdgeEventConstants.TOPIC_CONFIG_UPDATE, attachment));
+        }
 
-	/**
-	 * Update the local EdgeConfig cache from event.
-	 * 
-	 * @param event the {@link ConfigurationEvent}
-	 * @return true if this operation changed the {@link EdgeConfig}
-	 */
-	private boolean updateCacheFromEvent(ConfigurationEvent event) {
-		if (event.getType() == ConfigurationEvent.CM_UPDATED) {
-			// Update/Create: apply only changes
-			String pid = event.getPid();
-			return this.readConfigurations(this.cache, "(service.pid=" + pid + ")");
-		} else {
-			// Something else - e.g. delete - create full EdgeConfig
-			this.cache = this.buildNewEdgeConfig();
-			return true;
-		}
-	}
+        return this.cache;
+    }
 
-	/**
-	 * Build a new EdgeConfig without using Cache.
-	 * 
-	 * @return the {@link EdgeConfig}
-	 */
-	private EdgeConfig buildNewEdgeConfig() {
-		EdgeConfig result = new EdgeConfig();
-		try {
-			this.readFactories(result);
-			this.readConfigurations(result, null /* no filter: read all */);
-			this.readComponents(result);
-		} catch (Throwable e) {
-			e.printStackTrace();
-		}
-		return result;
-	}
+    @Override
+    protected int getCycleTime() {
+        return CYCLE_TIME;
+    }
 
-	/**
-	 * Update EdgeConfig Channels.
-	 * 
-	 * @param config the {@link EdgeConfig}
-	 * @return true if this operation changed the {@link EdgeConfig}
-	 */
-	private boolean updateChannels(EdgeConfig config) {
-		boolean wasConfigUpdated = false;
-		for (OpenemsComponent component : this.parent.getAllComponents()) {
-			EdgeConfig.Component comp = config.getComponents().get(component.id());
-			if (comp == null) {
-				this.log.warn("Component [" + component.id() + "] was missing!");
-				continue;
-			}
-			if (comp.getChannels().size() != component.channels().size()) {
-				comp.setChannels(this.getChannels(component));
-				wasConfigUpdated = true;
-			}
-		}
-		return wasConfigUpdated;
-	}
+    @Override
+    public synchronized void configurationEvent(ConfigurationEvent event) {
+        this.events.offer(event);
+        this.triggerNextRun();
+    }
 
-	/**
-	 * Get the Channels for a Component.
-	 *
-	 * @param componentId the Component-ID
-	 * @return a map of Channels; or empty map if the Component is not active
-	 */
-	private TreeMap<String, EdgeConfig.Component.Channel> getChannels(String componentId) {
-		for (OpenemsComponent component : this.parent.getAllComponents()) {
-			if (componentId.equals(component.id())) {
-				return this.getChannels(component);
-			}
-		}
-		return new TreeMap<>();
-	}
+    /**
+     * Update the local EdgeConfig cache from event.
+     *
+     * @param event the {@link ConfigurationEvent}
+     * @return true if this operation changed the {@link EdgeConfig}
+     */
+    private boolean updateCacheFromEvent(ConfigurationEvent event) {
+        if (event.getType() == ConfigurationEvent.CM_UPDATED) {
+            // Update/Create: apply only changes
+            String pid = event.getPid();
+            return this.readConfigurations(this.cache, "(service.pid=" + pid + ")");
+        } else {
+            // Something else - e.g. delete - create full EdgeConfig
+            this.cache = this.buildNewEdgeConfig();
+            return true;
+        }
+    }
 
-	/**
-	 * Get the Channels for a Component.
-	 *
-	 * @param component the {@link OpenemsComponent}
-	 * @return a map of Channels; or empty map if the Component is not active
-	 */
-	private TreeMap<String, EdgeConfig.Component.Channel> getChannels(OpenemsComponent component) {
-		TreeMap<String, EdgeConfig.Component.Channel> result = new TreeMap<>();
-		if (component != null) {
-			for (Iterator<Channel<?>> iter = component.channels().iterator(); iter.hasNext();) {
-				Channel<?> channel = iter.next();
-				io.openems.edge.common.channel.ChannelId channelId = channel.channelId();
-				Doc doc = channelId.doc();
-				ChannelDetail detail = null;
-				switch (doc.getChannelCategory()) {
-				case ENUM: {
-					Map<String, JsonElement> values = new HashMap<>();
-					EnumDoc d = (EnumDoc) doc;
-					for (OptionsEnum option : d.getOptions()) {
-						values.put(option.getName(), new JsonPrimitive(option.getValue()));
-					}
-					detail = new EdgeConfig.Component.Channel.ChannelDetailEnum(values);
-					break;
-				}
-				case OPENEMS_TYPE:
-					detail = new ChannelDetailOpenemsType();
-					break;
-				case STATE:
-					StateChannelDoc d = (StateChannelDoc) doc;
-					Level level = d.getLevel();
-					detail = new ChannelDetailState(level);
-					break;
-				}
-				result.put(channelId.id(), new EdgeConfig.Component.Channel(//
-						channelId.id(), //
-						doc.getType(), //
-						doc.getAccessMode(), //
-						doc.getText(), //
-						doc.getUnit(), //
-						detail //
-				));
-			}
-		}
-		return result;
-	}
+    /**
+     * Build a new EdgeConfig without using Cache.
+     *
+     * @return the {@link EdgeConfig}
+     */
+    private EdgeConfig buildNewEdgeConfig() {
+        EdgeConfig result = new EdgeConfig();
+        try {
+            this.readFactories(result);
+            this.readConfigurations(result, null /* no filter: read all */);
+            this.readComponents(result);
+        } catch (Throwable e) {
+            e.printStackTrace();
+        }
+        return result;
+    }
 
-	/**
-	 * Read all existing configurations, even those that are not properly
-	 * initialized.
-	 * 
-	 * @param result the {@link EdgeConfig}
-	 * @param filter the filter string for
-	 *               {@link ConfigurationAdmin#listConfigurations(String)}, null for
-	 *               no filter
-	 * @return true if this operation changed the {@link EdgeConfig}
-	 */
-	private boolean readConfigurations(EdgeConfig result, String filter) {
-		Configuration[] configs = null;
-		try {
-			configs = this.parent.cm.listConfigurations(filter);
-		} catch (IOException | InvalidSyntaxException e) {
-			return false;
-		}
+    /**
+     * Build a new EdgeConfig without using Cache.
+     *
+     * @param components true if only the components with it configuration should be in the output
+     * @return the {@link EdgeConfig}
+     */
+    private EdgeConfig buildNewEdgeConfig(boolean components) {
+        EdgeConfig result = new EdgeConfig();
+        try {
+            if (!components) {
+                this.readFactories(result);
+                this.readConfigurations(result, null /* no filter: read all */);
+            }
+            this.readComponents(result, components);
+        } catch (Throwable e) {
+            e.printStackTrace();
+        }
+        return result;
+    }
 
-		Set<String> missingComponentIds = new HashSet<>(result.getComponents().keySet());
-		if (configs != null) {
-			for (Configuration config : configs) {
-				Dictionary<String, Object> properties = config.getProperties();
-				if (properties == null) {
-					this.log.warn(config.getPid() + ": Properties is 'null'");
-					continue;
-				}
-				// Read Component-ID
-				String componentId = null;
-				Object componentIdObj = properties.get("id");
-				if (componentIdObj != null && (componentIdObj instanceof String)) {
-					componentId = (String) componentIdObj;
-				} else {
-					// Singleton?
-					for (OpenemsComponent component : this.parent.getAllComponents()) {
-						if (config.getPid().equals(component.serviceFactoryPid())) {
-							componentId = component.id();
-							break;
-						}
-					}
-				}
-				if (componentId == null) {
-					continue;
-				}
+    /**
+     * Update EdgeConfig Channels.
+     *
+     * @param config the {@link EdgeConfig}
+     * @return true if this operation changed the {@link EdgeConfig}
+     */
+    private boolean updateChannels(EdgeConfig config) {
+        boolean wasConfigUpdated = false;
+        for (OpenemsComponent component : this.parent.getAllComponents()) {
+            EdgeConfig.Component comp = config.getComponents().get(component.id());
+            if (comp == null) {
+                this.log.warn("Component [" + component.id() + "] was missing!");
+                continue;
+            }
+            if (comp.getChannels().size() != component.channels().size()) {
+                comp.setChannels(this.getChannels(component));
+                wasConfigUpdated = true;
+            }
+        }
+        return wasConfigUpdated;
+    }
 
-				// Remove from missingComponentIds
-				missingComponentIds.remove(componentId);
+    /**
+     * Get the Channels for a Component.
+     *
+     * @param componentId the Component-ID
+     * @return a map of Channels; or empty map if the Component is not active
+     */
+    private TreeMap<String, EdgeConfig.Component.Channel> getChannels(String componentId) {
+        for (OpenemsComponent component : this.parent.getAllComponents()) {
+            if (componentId.equals(component.id())) {
+                return this.getChannels(component);
+            }
+        }
+        return new TreeMap<>();
+    }
 
-				// Read Alias
-				String componentAlias = componentId;
-				{
-					Object componentAliasObj = properties.get("alias");
-					if (componentAliasObj != null && componentAliasObj instanceof String
-							&& !((String) componentAliasObj).trim().isEmpty()) {
-						componentAlias = (String) componentAliasObj;
-					}
-				}
+    /**
+     * Get the Channels for a Component.
+     *
+     * @param component the {@link OpenemsComponent}
+     * @return a map of Channels; or empty map if the Component is not active
+     */
+    private TreeMap<String, EdgeConfig.Component.Channel> getChannels(OpenemsComponent component) {
+        TreeMap<String, EdgeConfig.Component.Channel> result = new TreeMap<>();
+        if (component != null) {
+            for (Iterator<Channel<?>> iter = component.channels().iterator(); iter.hasNext(); ) {
+                Channel<?> channel = iter.next();
+                io.openems.edge.common.channel.ChannelId channelId = channel.channelId();
+                Doc doc = channelId.doc();
+                ChannelDetail detail = null;
+                switch (doc.getChannelCategory()) {
+                    case ENUM: {
+                        Map<String, JsonElement> values = new HashMap<>();
+                        EnumDoc d = (EnumDoc) doc;
+                        for (OptionsEnum option : d.getOptions()) {
+                            values.put(option.getName(), new JsonPrimitive(option.getValue()));
+                        }
+                        detail = new EdgeConfig.Component.Channel.ChannelDetailEnum(values);
+                        break;
+                    }
+                    case OPENEMS_TYPE:
+                        detail = new ChannelDetailOpenemsType();
+                        break;
+                    case STATE:
+                        StateChannelDoc d = (StateChannelDoc) doc;
+                        Level level = d.getLevel();
+                        detail = new ChannelDetailState(level);
+                        break;
+                }
+                result.put(channelId.id(), new EdgeConfig.Component.Channel(//
+                        channelId.id(), //
+                        doc.getType(), //
+                        doc.getAccessMode(), //
+                        doc.getText(), //
+                        doc.getUnit(), //
+                        detail //
+                ));
+            }
+        }
+        return result;
+    }
 
-				String factoryPid;
-				if (config.getFactoryPid() != null) {
-					// Get Factory
-					factoryPid = config.getFactoryPid();
-				} else {
-					// Singleton Component
-					factoryPid = config.getPid();
-				}
+    /**
+     * Read all existing configurations, even those that are not properly
+     * initialized.
+     *
+     * @param result the {@link EdgeConfig}
+     * @param filter the filter string for
+     *               {@link ConfigurationAdmin#listConfigurations(String)}, null for
+     *               no filter
+     * @return true if this operation changed the {@link EdgeConfig}
+     */
+    private boolean readConfigurations(EdgeConfig result, String filter) {
+        Configuration[] configs = null;
+        try {
+            configs = this.parent.cm.listConfigurations(filter);
+        } catch (IOException | InvalidSyntaxException e) {
+            return false;
+        }
 
-				// Read Factory
-				EdgeConfig.Factory factory = result.getFactories().get(factoryPid);
+        Set<String> missingComponentIds = new HashSet<>(result.getComponents().keySet());
+        if (configs != null) {
+            for (Configuration config : configs) {
+                Dictionary<String, Object> properties = config.getProperties();
+                if (properties == null) {
+                    this.log.warn(config.getPid() + ": Properties is 'null'");
+                    continue;
+                }
+                // Read Component-ID
+                String componentId = null;
+                Object componentIdObj = properties.get("id");
+                if (componentIdObj != null && (componentIdObj instanceof String)) {
+                    componentId = (String) componentIdObj;
+                } else {
+                    // Singleton?
+                    for (OpenemsComponent component : this.parent.getAllComponents()) {
+                        if (config.getPid().equals(component.serviceFactoryPid())) {
+                            componentId = component.id();
+                            break;
+                        }
+                    }
+                }
+                if (componentId == null) {
+                    continue;
+                }
 
-				// Read all Properties
-				TreeMap<String, JsonElement> propertyMap = convertProperties(properties, factory);
+                // Remove from missingComponentIds
+                missingComponentIds.remove(componentId);
 
-				// Read all Channels
-				TreeMap<String, EdgeConfig.Component.Channel> channels = this.getChannels(componentId);
+                // Read Alias
+                String componentAlias = componentId;
+                {
+                    Object componentAliasObj = properties.get("alias");
+                    if (componentAliasObj != null && componentAliasObj instanceof String
+                            && !((String) componentAliasObj).trim().isEmpty()) {
+                        componentAlias = (String) componentAliasObj;
+                    }
+                }
 
-				// Create EdgeConfig.Component and add it to Result
-				result.addComponent(componentId, new EdgeConfig.Component(config.getPid(), componentId, componentAlias,
-						factoryPid, propertyMap, channels));
-			}
-		}
+                String factoryPid;
+                if (config.getFactoryPid() != null) {
+                    // Get Factory
+                    factoryPid = config.getFactoryPid();
+                } else {
+                    // Singleton Component
+                    factoryPid = config.getPid();
+                }
 
-		/*
-		 * Remove Components that are not anymore configured
-		 */
-		if (filter == null) {
-			for (String missingComponentId : missingComponentIds) {
-				result.removeComponent(missingComponentId);
-			}
-		}
-		return true;
-	}
+                // Read Factory
+                EdgeConfig.Factory factory = result.getFactories().get(factoryPid);
 
-	/**
-	 * Read active, properly initialized Components.
-	 * 
-	 * @param result the {@link EdgeConfig}
-	 * @return true if this operation changed the {@link EdgeConfig}
-	 */
-	private boolean readComponents(EdgeConfig result) {
-		boolean wasConfigUpdated = false;
-		for (OpenemsComponent component : this.parent.getAllComponents()) {
-			this.readComponent(result, component);
-			wasConfigUpdated = true;
-		}
-		return wasConfigUpdated;
-	}
+                // Read all Properties
+                TreeMap<String, JsonElement> propertyMap = convertProperties(properties, factory);
 
-	/**
-	 * Read this Component.
-	 * 
-	 * @param result    the {@link EdgeConfig}
-	 * @param component the Component
-	 */
-	private void readComponent(EdgeConfig result, OpenemsComponent component) {
-		String factoryPid = component.serviceFactoryPid();
-		String componentId = component.id();
+                // Read all Channels
+                TreeMap<String, EdgeConfig.Component.Channel> channels = this.getChannels(componentId);
 
-		// get configuration properties
-		TreeMap<String, JsonElement> properties = convertProperties(//
-				component.getComponentContext().getProperties(), //
-				result.getFactories().get(factoryPid));
+                // Create EdgeConfig.Component and add it to Result
+                result.addComponent(componentId, new EdgeConfig.Component(config.getPid(), componentId, componentAlias,
+                        factoryPid, propertyMap, channels));
+            }
+        }
 
-		// get Channels
-		TreeMap<String, io.openems.common.types.EdgeConfig.Component.Channel> channels = this.getChannels(component);
+        /*
+         * Remove Components that are not anymore configured
+         */
+        if (filter == null) {
+            for (String missingComponentId : missingComponentIds) {
+                result.removeComponent(missingComponentId);
+            }
+        }
+        return true;
+    }
 
-		Optional<Component> resultComponent = result.getComponent(componentId);
-		if (resultComponent.isPresent()) {
-			// Update existing properties
-			Map<String, JsonElement> resultProperties = resultComponent.get().getProperties();
-			for (Entry<String, JsonElement> property : properties.entrySet()) {
-				switch (property.getKey()) {
-				case "org.ops4j.pax.logging.appender.name":
-					// ignore
-					continue;
-				}
-				if (!resultProperties.containsKey(property.getKey())) {
-					resultProperties.put(property.getKey(), property.getValue());
-				}
-			}
+    /**
+     * Read active, properly initialized Components.
+     *
+     * @param result the {@link EdgeConfig}
+     * @return true if this operation changed the {@link EdgeConfig}
+     */
+    private boolean readComponents(EdgeConfig result) {
+        boolean wasConfigUpdated = false;
+        for (OpenemsComponent component : this.parent.getAllComponents()) {
+            this.readComponent(result, component);
+            wasConfigUpdated = true;
+        }
+        return wasConfigUpdated;
+    }
 
-			// Update existing Channels
-			Map<String, io.openems.common.types.EdgeConfig.Component.Channel> resultChannels = resultComponent.get()
-					.getChannels();
-			for (Entry<String, io.openems.common.types.EdgeConfig.Component.Channel> channel : channels.entrySet()) {
-				if (!resultChannels.containsKey(channel.getKey())) {
-					resultChannels.put(channel.getKey(), channel.getValue());
-				}
-			}
+    /**
+     * Read active, properly initialized Components.
+     *
+     * @param result        the {@link EdgeConfig}
+     * @param componentOnly true if the channels should be filtered out
+     * @return true if this operation changed the {@link EdgeConfig}
+     */
+    private boolean readComponents(EdgeConfig result, boolean componentOnly) {
+        boolean wasConfigUpdated = false;
+        for (OpenemsComponent component : this.parent.getAllComponents()) {
+            this.readComponent(result, component, componentOnly);
+            wasConfigUpdated = true;
+        }
+        return wasConfigUpdated;
+    }
 
-		} else {
-			// Create new EdgeConfig.Component and add it to Result
-			result.addComponent(componentId, new EdgeConfig.Component(component.servicePid(), componentId,
-					component.alias(), factoryPid, properties, channels));
-		}
-	}
+    /**
+     * Read this Component.
+     *
+     * @param result    the {@link EdgeConfig}
+     * @param component the Component
+     */
+    private void readComponent(EdgeConfig result, OpenemsComponent component) {
+        String factoryPid = component.serviceFactoryPid();
+        String componentId = component.id();
 
-	/**
-	 * Read Factories.
-	 * 
-	 * @param result the {@link EdgeConfig}
-	 */
-	private void readFactories(EdgeConfig result) {
-		final Bundle[] bundles = this.parent.bundleContext.getBundles();
-		for (Bundle bundle : bundles) {
-			final MetaTypeInformation mti = this.parent.metaTypeService.getMetaTypeInformation(bundle);
-			if (mti == null) {
-				continue;
-			}
+        // get configuration properties
+        TreeMap<String, JsonElement> properties = convertProperties(//
+                component.getComponentContext().getProperties(), //
+                result.getFactories().get(factoryPid));
 
-			// read Bundle Manifest
-			URL manifestUrl = bundle.getResource("META-INF/MANIFEST.MF");
-			Manifest manifest;
-			try {
-				manifest = new Manifest(manifestUrl.openStream());
-			} catch (IOException e) {
-				// unable to read manifest
-				continue;
-			}
+        // get Channels
+        TreeMap<String, io.openems.common.types.EdgeConfig.Component.Channel> channels = this.getChannels(component);
 
-			// get Factory-PIDs in this Bundle
-			String[] factoryPids = mti.getFactoryPids();
-			for (String factoryPid : factoryPids) {
-				switch (factoryPid) {
-				case "osgi.executor.provider":
-					// ignore these Factory-PIDs
-					break;
-				default:
-					// Get ObjectClassDefinition (i.e. the main annotation on the Config class)
-					ObjectClassDefinition objectClassDefinition = mti.getObjectClassDefinition(factoryPid, null);
-					// Get Natures implemented by this Factory-PID
-					String[] natures = this.getNatures(bundle, manifest, factoryPid);
-					// Add Factory to config
-					result.addFactory(factoryPid,
-							EdgeConfig.Factory.create(factoryPid, objectClassDefinition, natures));
-				}
-			}
+        Optional<Component> resultComponent = result.getComponent(componentId);
+        if (resultComponent.isPresent()) {
+            // Update existing properties
+            Map<String, JsonElement> resultProperties = resultComponent.get().getProperties();
+            for (Entry<String, JsonElement> property : properties.entrySet()) {
+                switch (property.getKey()) {
+                    case "org.ops4j.pax.logging.appender.name":
+                        // ignore
+                        continue;
+                }
+                if (!resultProperties.containsKey(property.getKey())) {
+                    resultProperties.put(property.getKey(), property.getValue());
+                }
+            }
 
-			// get Singleton PIDs in this Bundle
-			for (String pid : mti.getPids()) {
-				switch (pid) {
-				default:
-					// Get ObjectClassDefinition (i.e. the main annotation on the Config class)
-					ObjectClassDefinition objectClassDefinition = mti.getObjectClassDefinition(pid, null);
-					// Get Natures implemented by this Factory-PID
-					String[] natures = this.getNatures(bundle, manifest, pid);
-					// Add Factory to config
-					result.addFactory(pid, EdgeConfig.Factory.create(pid, objectClassDefinition, natures));
-				}
-			}
-		}
-	}
+            // Update existing Channels
+            Map<String, io.openems.common.types.EdgeConfig.Component.Channel> resultChannels = resultComponent.get()
+                    .getChannels();
+            for (Entry<String, io.openems.common.types.EdgeConfig.Component.Channel> channel : channels.entrySet()) {
+                if (!resultChannels.containsKey(channel.getKey())) {
+                    resultChannels.put(channel.getKey(), channel.getValue());
+                }
+            }
 
-	/**
-	 * Reads Natures from an XML.
-	 * 
-	 * <pre>
-	 * &lt;scr:component&gt;
-	 *   &lt;service&gt;
-	 *     &lt;provide interface="..."&gt;
-	 *   &lt;/service&gt;
-	 * &lt;/scr:component&gt;
-	 * </pre>
-	 * 
-	 * @param bundle     the {@link Bundle}
-	 * @param manifest   the {@link Manifest}
-	 * @param factoryPid the Factory-PID
-	 * @return Natures as array of Strings
-	 */
-	private String[] getNatures(Bundle bundle, Manifest manifest, String factoryPid) {
-		try {
-			// get "Service-Component"-Entry of Manifest
-			String serviceComponentsString = manifest.getMainAttributes()
-					.getValue(ComponentConstants.SERVICE_COMPONENT);
-			if (serviceComponentsString == null) {
-				return new String[0];
-			}
-			String[] serviceComponents = serviceComponentsString.split(",");
+        } else {
+            // Create new EdgeConfig.Component and add it to Result
+            result.addComponent(componentId, new EdgeConfig.Component(component.servicePid(), componentId,
+                    component.alias(), factoryPid, properties, channels));
+        }
+    }
 
-			// read Service-Component XML files from OSGI-INF folder
-			for (String serviceComponent : serviceComponents) {
-				if (!serviceComponent.contains(factoryPid)) {
-					// search for correct XML file
-					continue;
-				}
+    /**
+     * Read this Component.
+     *
+     * @param result        the {@link EdgeConfig}
+     * @param component     the Component
+     * @param componentOnly true if only the component should be in the output without the channels
+     */
+    private void readComponent(EdgeConfig result, OpenemsComponent component, boolean componentOnly) {
+        String factoryPid = component.serviceFactoryPid();
+        String componentId = component.id();
 
-				URL componentUrl = bundle.getResource(serviceComponent);
-				DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
-				DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
-				Document doc = dBuilder.parse(componentUrl.openStream());
-				doc.getDocumentElement().normalize();
+        // get configuration properties
+        TreeMap<String, JsonElement> properties = convertProperties(//
+                component.getComponentContext().getProperties(), //
+                result.getFactories().get(factoryPid));
+        TreeMap<String, io.openems.common.types.EdgeConfig.Component.Channel> channels = new TreeMap<>();
+        if (!componentOnly) {
+            // get Channels
+            channels = this.getChannels(component);
+        }
+        Optional<Component> resultComponent = result.getComponent(componentId);
+        if (resultComponent.isPresent()) {
+            // Update existing properties
+            Map<String, JsonElement> resultProperties = resultComponent.get().getProperties();
+            for (Entry<String, JsonElement> property : properties.entrySet()) {
+                switch (property.getKey()) {
+                    case "org.ops4j.pax.logging.appender.name":
+                        // ignore
+                        continue;
+                }
+                if (!resultProperties.containsKey(property.getKey())) {
+                    resultProperties.put(property.getKey(), property.getValue());
+                }
+            }
 
-				NodeList serviceNodes = doc.getElementsByTagName("service");
-				for (int i = 0; i < serviceNodes.getLength(); i++) {
-					Node serviceNode = serviceNodes.item(i);
-					if (serviceNode.getNodeType() == Node.ELEMENT_NODE) {
-						NodeList provideNodes = serviceNode.getChildNodes();
+            // Update existing Channels
+            Map<String, io.openems.common.types.EdgeConfig.Component.Channel> resultChannels = resultComponent.get()
+                    .getChannels();
+            if (!componentOnly) {
+                for (Entry<String, io.openems.common.types.EdgeConfig.Component.Channel> channel : channels.entrySet()) {
+                    if (!resultChannels.containsKey(channel.getKey())) {
+                        resultChannels.put(channel.getKey(), channel.getValue());
+                    }
+                }
+            }
+        } else {
+            // Create new EdgeConfig.Component and add it to Result
+            result.addComponent(componentId, new EdgeConfig.Component(component.servicePid(), componentId,
+                    component.alias(), factoryPid, properties, channels));
+        }
+    }
 
-						// Read "interface" attributes and return them
-						Set<String> result = new HashSet<>();
-						for (int j = 0; j < provideNodes.getLength(); j++) {
-							Node provideNode = provideNodes.item(j);
-							NamedNodeMap attributes = provideNode.getAttributes();
-							if (attributes != null) {
-								Node interfaceNode = attributes.getNamedItem("interface");
-								String nature = interfaceNode.getNodeValue();
-								switch (nature) {
-								case "org.osgi.service.event.EventHandler":
-								case "org.ops4j.pax.logging.spi.PaxAppender":
-									// ignore these natures;
-									break;
-								default:
-									result.add(nature);
-								}
-							}
-						}
-						return result.toArray(new String[result.size()]);
-					}
-				}
-			}
+    /**
+     * Read Factories.
+     *
+     * @param result the {@link EdgeConfig}
+     */
+    private void readFactories(EdgeConfig result) {
+        final Bundle[] bundles = this.parent.bundleContext.getBundles();
+        for (Bundle bundle : bundles) {
+            final MetaTypeInformation mti = this.parent.metaTypeService.getMetaTypeInformation(bundle);
+            if (mti == null) {
+                continue;
+            }
 
-		} catch (ParserConfigurationException | SAXException | IOException e) {
-			this.log.warn("Unable to get Natures. " + e.getClass().getSimpleName() + ": " + e.getMessage());
-		}
-		return new String[0];
-	}
+            // read Bundle Manifest
+            URL manifestUrl = bundle.getResource("META-INF/MANIFEST.MF");
+            Manifest manifest;
+            try {
+                manifest = new Manifest(manifestUrl.openStream());
+            } catch (IOException e) {
+                // unable to read manifest
+                continue;
+            }
 
-	/**
-	 * Gets a component Property as JsonElement. Uses some more techniques to find
-	 * the proper type than {@link JsonUtils#getAsJsonElement(Object)}.
-	 * 
-	 * @param properties the properties
-	 * @param key        the property key
-	 * @return the value as JsonElement
-	 */
-	private static JsonElement getPropertyAsJsonElement(Dictionary<String, Object> properties, String key) {
-		Object valueObj = properties.get(key);
-		if (valueObj != null && valueObj instanceof String) {
-			String value = (String) valueObj;
-			// find boolean
-			if (value.equalsIgnoreCase("true")) {
-				return new JsonPrimitive(true);
-			} else if (value.equalsIgnoreCase("false")) {
-				return new JsonPrimitive(false);
-			}
-		}
-		// fallback to JsonUtils
-		return JsonUtils.getAsJsonElement(valueObj);
-	}
+            // get Factory-PIDs in this Bundle
+            String[] factoryPids = mti.getFactoryPids();
+            for (String factoryPid : factoryPids) {
+                switch (factoryPid) {
+                    case "osgi.executor.provider":
+                        // ignore these Factory-PIDs
+                        break;
+                    default:
+                        // Get ObjectClassDefinition (i.e. the main annotation on the Config class)
+                        ObjectClassDefinition objectClassDefinition = mti.getObjectClassDefinition(factoryPid, null);
+                        // Get Natures implemented by this Factory-PID
+                        String[] natures = this.getNatures(bundle, manifest, factoryPid);
+                        // Add Factory to config
+                        result.addFactory(factoryPid,
+                                EdgeConfig.Factory.create(factoryPid, objectClassDefinition, natures));
+                }
+            }
 
-	/**
-	 * Convert properties to a String/JsonElement Map.
-	 * 
-	 * @param properties the component properties
-	 * @param factory    the {@link EdgeConfig.Factory}
-	 * @return converted properties
-	 */
-	private static TreeMap<String, JsonElement> convertProperties(Dictionary<String, Object> properties,
-			EdgeConfig.Factory factory) {
-		TreeMap<String, JsonElement> result = new TreeMap<>();
-		Enumeration<String> keys = properties.keys();
-		while (keys.hasMoreElements()) {
-			String key = keys.nextElement();
-			if (!EdgeConfig.ignorePropertyKey(key)) {
+            // get Singleton PIDs in this Bundle
+            for (String pid : mti.getPids()) {
+                switch (pid) {
+                    default:
+                        // Get ObjectClassDefinition (i.e. the main annotation on the Config class)
+                        ObjectClassDefinition objectClassDefinition = mti.getObjectClassDefinition(pid, null);
+                        // Get Natures implemented by this Factory-PID
+                        String[] natures = this.getNatures(bundle, manifest, pid);
+                        // Add Factory to config
+                        result.addFactory(pid, EdgeConfig.Factory.create(pid, objectClassDefinition, natures));
+                }
+            }
+        }
+    }
 
-				JsonElement value = getPropertyAsJsonElement(properties, key);
-				if (factory != null) {
-					Optional<EdgeConfig.Factory.Property> propertyOpt = factory.getProperty(key);
-					if (propertyOpt.isPresent()) {
-						EdgeConfig.Factory.Property property = propertyOpt.get();
-						// hide Password fields
-						if (property.isPassword()) {
-							value = new JsonPrimitive("xxx");
-						}
-					}
-				}
+    /**
+     * Reads Natures from an XML.
+     *
+     * <pre>
+     * &lt;scr:component&gt;
+     *   &lt;service&gt;
+     *     &lt;provide interface="..."&gt;
+     *   &lt;/service&gt;
+     * &lt;/scr:component&gt;
+     * </pre>
+     *
+     * @param bundle     the {@link Bundle}
+     * @param manifest   the {@link Manifest}
+     * @param factoryPid the Factory-PID
+     * @return Natures as array of Strings
+     */
+    private String[] getNatures(Bundle bundle, Manifest manifest, String factoryPid) {
+        try {
+            // get "Service-Component"-Entry of Manifest
+            String serviceComponentsString = manifest.getMainAttributes()
+                    .getValue(ComponentConstants.SERVICE_COMPONENT);
+            if (serviceComponentsString == null) {
+                return new String[0];
+            }
+            String[] serviceComponents = serviceComponentsString.split(",");
 
-				result.put(key, value);
-			}
-		}
-		return result;
-	}
+            // read Service-Component XML files from OSGI-INF folder
+            for (String serviceComponent : serviceComponents) {
+                if (!serviceComponent.contains(factoryPid)) {
+                    // search for correct XML file
+                    continue;
+                }
+
+                URL componentUrl = bundle.getResource(serviceComponent);
+                DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+                DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
+                Document doc = dBuilder.parse(componentUrl.openStream());
+                doc.getDocumentElement().normalize();
+
+                NodeList serviceNodes = doc.getElementsByTagName("service");
+                for (int i = 0; i < serviceNodes.getLength(); i++) {
+                    Node serviceNode = serviceNodes.item(i);
+                    if (serviceNode.getNodeType() == Node.ELEMENT_NODE) {
+                        NodeList provideNodes = serviceNode.getChildNodes();
+
+                        // Read "interface" attributes and return them
+                        Set<String> result = new HashSet<>();
+                        for (int j = 0; j < provideNodes.getLength(); j++) {
+                            Node provideNode = provideNodes.item(j);
+                            NamedNodeMap attributes = provideNode.getAttributes();
+                            if (attributes != null) {
+                                Node interfaceNode = attributes.getNamedItem("interface");
+                                String nature = interfaceNode.getNodeValue();
+                                switch (nature) {
+                                    case "org.osgi.service.event.EventHandler":
+                                    case "org.ops4j.pax.logging.spi.PaxAppender":
+                                        // ignore these natures;
+                                        break;
+                                    default:
+                                        result.add(nature);
+                                }
+                            }
+                        }
+                        return result.toArray(new String[result.size()]);
+                    }
+                }
+            }
+
+        } catch (ParserConfigurationException | SAXException | IOException e) {
+            this.log.warn("Unable to get Natures. " + e.getClass().getSimpleName() + ": " + e.getMessage());
+        }
+        return new String[0];
+    }
+
+    /**
+     * Reads Import-Packages from the Manifest.
+     *
+     * <pre>
+     * &lt;scr:component&gt;
+     *   &lt;service&gt;
+     *     &lt;provide interface="..."&gt;
+     *   &lt;/service&gt;
+     * &lt;/scr:component&gt;
+     * </pre>
+     *
+     * @return Import-Packages as array of Strings
+     */
+    public String[] getImportPackages(String factoryPid) {
+        final Bundle[] bundles = this.parent.bundleContext.getBundles();
+        List<String> result = new ArrayList<>();
+        for (Bundle bundle : bundles) {
+            final MetaTypeInformation mti = this.parent.metaTypeService.getMetaTypeInformation(bundle);
+            if (mti == null) {
+                continue;
+            }
+
+            // read Bundle Manifest
+            URL manifestUrl = bundle.getResource("META-INF/MANIFEST.MF");
+            Manifest manifest;
+            try {
+                manifest = new Manifest(manifestUrl.openStream());
+            } catch (IOException e) {
+                // unable to read manifest
+                continue;
+            }
+            String serviceComponentsString = manifest.getMainAttributes()
+                    .getValue(ComponentConstants.SERVICE_COMPONENT);
+            if (serviceComponentsString == null) {
+                continue;
+            }
+            String[] serviceComponents = serviceComponentsString.split(",");
+
+            // read Service-Component XML files from OSGI-INF folder
+            for (String serviceComponent : serviceComponents) {
+                if (!serviceComponent.contains(factoryPid)) {
+                    // search for correct XML file
+                    continue;
+                }
+
+                // get "Service-Component"-Entry of Manifest
+                String importPackagesString = manifest.getMainAttributes()
+                        .getValue("Import-Package");
+                if (importPackagesString == null) {
+                    continue;
+                }
+                String[] packages = importPackagesString.split("\\" + "\"" + ",");
+                for (String importPackage : packages) {
+                    if (!importPackage.contains("io.openems.edge") || importPackage.contains("io.openems.edge.common")) {
+                        //do nothing
+                    } else {
+                        String currentPackage = importPackage.split(";",2)[0].replace("io.openems.edge.", "").split(".api",2)[0];
+                        if (!result.toString().contains(currentPackage)) {
+                            result.add(currentPackage);
+                        }
+                    }
+                }
+                return result.toArray(new String[result.size()]);
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Gets a component Property as JsonElement. Uses some more techniques to find
+     * the proper type than {@link JsonUtils#getAsJsonElement(Object)}.
+     *
+     * @param properties the properties
+     * @param key        the property key
+     * @return the value as JsonElement
+     */
+    private static JsonElement getPropertyAsJsonElement(Dictionary<String, Object> properties, String key) {
+        Object valueObj = properties.get(key);
+        if (valueObj != null && valueObj instanceof String) {
+            String value = (String) valueObj;
+            // find boolean
+            if (value.equalsIgnoreCase("true")) {
+                return new JsonPrimitive(true);
+            } else if (value.equalsIgnoreCase("false")) {
+                return new JsonPrimitive(false);
+            }
+        }
+        // fallback to JsonUtils
+        return JsonUtils.getAsJsonElement(valueObj);
+    }
+
+    /**
+     * Convert properties to a String/JsonElement Map.
+     *
+     * @param properties the component properties
+     * @param factory    the {@link EdgeConfig.Factory}
+     * @return converted properties
+     */
+    private static TreeMap<String, JsonElement> convertProperties(Dictionary<String, Object> properties,
+                                                                  EdgeConfig.Factory factory) {
+        TreeMap<String, JsonElement> result = new TreeMap<>();
+        Enumeration<String> keys = properties.keys();
+        while (keys.hasMoreElements()) {
+            String key = keys.nextElement();
+            if (!EdgeConfig.ignorePropertyKey(key)) {
+
+                JsonElement value = getPropertyAsJsonElement(properties, key);
+                if (factory != null) {
+                    Optional<EdgeConfig.Factory.Property> propertyOpt = factory.getProperty(key);
+                    if (propertyOpt.isPresent()) {
+                        EdgeConfig.Factory.Property property = propertyOpt.get();
+                        // hide Password fields
+                        if (property.isPassword()) {
+                            value = new JsonPrimitive("xxx");
+                        }
+                    }
+                }
+
+                result.put(key, value);
+            }
+        }
+        return result;
+    }
 }

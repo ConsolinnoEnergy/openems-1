@@ -1,9 +1,13 @@
 plugins {
     id "com.github.node-gradle.node" version "2.2.3"
+    id "nebula.ospackage" version "8.5.0"
+    id 'com.palantir.git-version' version '0.12.3'
 }
 
-tasks.named('wrapper') {
-  jarFile = rootProject.file('.gradle-wrapper/gradle-wrapper.jar')
+apply plugin: 'nebula.deb'
+
+wrapper {
+    jarFile = rootProject.file('.gradle-wrapper/gradle-wrapper.jar')
 }
 
 /*
@@ -25,11 +29,54 @@ task buildEdge() {
     doLast {
         file("${buildDir}/openems-edge.jar").delete()
         copy {
-            from file("${project(":io.openems.edge.application").distsDir}/executable/EdgeApp.jar")
+            from file("io.openems.edge.application/generated/distributions/executable/EdgeApp.jar")
             into file("${buildDir}")
             rename ("EdgeApp.jar", "openems-edge.jar")
         }
+
     }
+}
+
+/*
+ * Build OpenEMS Edge fat-jar into deb
+ */
+task buildEdgeDeb(dependsOn: buildEdge, type: Deb) {
+
+    def details = versionDetails()
+    def gitTag = details.lastTag
+    println(gitTag.contains("release"))
+    if (gitTag.contains("release") && gitTag.contains("/") && gitTag.split("/").length >= 3) {
+
+        gitTag = gitTag.split("/")
+
+        println("Releasing Oems Package ${gitTag[2]}")
+
+        /* UPDATE VERSIONS HERE: */
+        version = gitTag[2].split("-")[0]
+        release = gitTag[2].split("-")[1]
+
+        packageName = "openems-${gitTag[0]}"
+        packageDescription = "Open EMS for Consolinno Leaflet"
+
+
+    } else {
+        println("No release tag found!")
+        packageName = 'openems-dev'
+        packageDescription = "DEV VERSION: Open EMS for Consolinno Leaflet"
+    }
+    requires('openjdk-8-jre')
+
+    from("${buildDir}/openems-edge.jar") {
+        into "/usr/lib/openems"
+        /*rename ("openems-edge.jar", "openems.jar") */
+    }
+
+    from("openems.service") {
+        into "/etc/systemd/system"
+    }
+
+    postInstall file('debian/postinst')
+
 }
 
 /*
@@ -40,7 +87,7 @@ task buildBackend() {
     doLast {
         file("${buildDir}/openems-backend.jar").delete()
         copy {
-            from file("${project(":io.openems.backend.application").distsDir}/executable/BackendApp.jar")
+            from file("io.openems.backend.application/generated/distributions/executable/BackendApp.jar")
             into file("${buildDir}")
             rename ("BackendApp.jar", "openems-backend.jar")
         }
@@ -65,7 +112,7 @@ task buildUiForEdge() {
  * Javadoc
  */
 task buildAggregatedJavadocs(type: Javadoc, description: 'Generate javadocs from all child projects as if it was a single project', group: 'Documentation') {
-        destinationDir = file("$buildDir/www/javadoc")
+    destinationDir = file("$buildDir/www/javadoc")
     title = "OpenEMS Javadoc"
     subprojects.each { proj ->
         proj.tasks.withType(Javadoc).each { javadocTask ->
@@ -93,7 +140,7 @@ task copyBundleReadmes() {
 
         // initialize target files and directories
         [targetController, targetScheduler, targetNature, targetBridge, targetDeviceService].each { target ->
-            delete fileTree(dir: target, include: '**/*.adoc') 
+            delete fileTree(dir: target, include: '**/*.adoc')
             new File(target + "/_include.adoc").write('')
         }
 
@@ -134,7 +181,7 @@ task copyBundleReadmes() {
                         from (sourceFile.toPath())
                         into (target)
                         rename { fileName ->
-                           return bundle + ".adoc"
+                            return bundle + ".adoc"
                         }
                     }
 

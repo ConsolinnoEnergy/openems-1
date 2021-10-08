@@ -9,15 +9,24 @@ Bundle-Version: 1.0.0.${tstamp}
 	io.openems.edge.common,\
 	io.openems.edge.controller.api,\
 	io.openems.edge.controller.heatnetwork.hydraulic.lineheater,\
-	io.openems.edge.controller.heatnetwork.pid.heatsystem,\
+	io.openems.edge.controller.hydrauliccomponent,\
 	io.openems.edge.heatsystem.components,\
-	io.openems.edge.remote.rest.device,\
+	io.openems.edge.bridge.rest,\
 	io.openems.edge.thermometer.api,\
 	io.openems.edge.timer.api,\
 	io.openems.edge.exceptionalstate.api,\
-	joda-time,\
+	joda-time;version=latest,\
 
 
 -testpath: \
 	${testpath},\
+	io.openems.edge.controller.heatnetwork.hydraulic.lineheater,\
+    io.openems.edge.controller.hydrauliccomponent,\
+	io.openems.edge.heatsystem.components,\
+	io.openems.edge.thermometer.api,\
+	io.openems.edge.exceptionalstate.api,\
+	io.openems.edge.timer.api,\
+	io.openems.edge.io.api,\
+	io.openems.edge.relay.api,\
+	io.openems.edge.consolinno.leaflet,\
 

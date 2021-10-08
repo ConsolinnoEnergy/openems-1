@@ -8,7 +8,12 @@ package io.openems.edge.controller.heatnetwork.communication.request.api;
 public enum RequestType {
     HEAT, MORE_HEAT, GENERIC;
 
-
+    /**
+     * The Contains Method, to check if the Given String is a Name of a possible RequestType.
+     *
+     * @param type the possible name of the RequestType
+     * @return true if the Type is a valid name.
+     */
     public static boolean contains(String type) {
         for (RequestType requestType : RequestType.values()) {
             if (requestType.name().equals(type)) {

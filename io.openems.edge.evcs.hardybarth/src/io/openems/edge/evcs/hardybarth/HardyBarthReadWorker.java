@@ -14,255 +14,278 @@ import io.openems.edge.evcs.api.Status;
 
 public class HardyBarthReadWorker extends AbstractCycleWorker {
 
-	private final HardyBarthImpl parent;
+    private final HardyBarthImpl parent;
 
-	public HardyBarthReadWorker(HardyBarthImpl parent) {
-		this.parent = parent;
-	}
+    public HardyBarthReadWorker(HardyBarthImpl parent) {
+        this.parent = parent;
+    }
 
-	@Override
-	protected void forever() throws OpenemsNamedException {
+    @Override
+    protected void forever() throws OpenemsNamedException {
 
-		// TODO: Read separate JSON files
-		// - separate configuration -> this.api.sendGetRequest("/saliaconf.json");
-		// e.g. min & max hardware power
-		// - customeredit values -> this.api.sendGetRequest("/customer.json");
-		// - rfidtags -> this.api.sendGetRequest("/rfidtags.json");
-		// - chargelogs -> this.api.sendGetRequest("/chargelogs.json");
+        // TODO: Read separate JSON files
+        // - separate configuration -> this.api.sendGetRequest("/saliaconf.json");
+        // e.g. min & max hardware power
+        // - customeredit values -> this.api.sendGetRequest("/customer.json");
+        // - rfidtags -> this.api.sendGetRequest("/rfidtags.json");
+        // - chargelogs -> this.api.sendGetRequest("/chargelogs.json");
 
-		JsonElement json = this.parent.api.sendGetRequest("/api");
-		if (json == null) {
-			return;
-		}
+        JsonElement json = this.parent.api.sendGetRequest("/api");
+        if (json == null) {
+            return;
+        }
 
-		// Set value for every HardyBarth.ChannelId
-		for (HardyBarth.ChannelId channelId : HardyBarth.ChannelId.values()) {
-			String[] jsonPaths = channelId.getJsonPaths();
-			Object value = this.getValueFromJson(channelId, json, channelId.converter, jsonPaths);
+        // Set value for every HardyBarth.ChannelId
+        for (HardyBarth.ChannelId channelId : HardyBarth.ChannelId.values()) {
+            String[] jsonPaths = channelId.getJsonPaths();
+            Object value = this.getValueFromJson(channelId, json, channelId.converter, jsonPaths);
 
-			// Set the channel-value
-			this.parent.channel(channelId).setNextValue(value);
+            // Set the channel-value
+            this.parent.channel(channelId).setNextValue(value);
 
-			if (channelId.equals(HardyBarth.ChannelId.RAW_SALIA_PUBLISH)) {
-				this.parent.masterEvcs = false;
-			}
-		}
+            if (channelId.equals(HardyBarth.ChannelId.RAW_SALIA_PUBLISH)) {
+                this.parent.masterEvcs = false;
+            }
+        }
 
-		// Set value for every Evcs.ChannelId
-		this.setEvcsChannelIds(json);
-	}
+        // Set value for every Evcs.ChannelId
+        this.setEvcsChannelIds(json);
+    }
 
-	/**
-	 * Set the value for every Evcs.ChannelId.
-	 * 
-	 * @param json Given raw data in JSON
-	 */
-	private void setEvcsChannelIds(JsonElement json) {
+    /**
+     * Set the value for every Evcs.ChannelId.
+     *
+     * @param json Given raw data in JSON
+     */
+    private void setEvcsChannelIds(JsonElement json) {
 
-		// CHARGE_POWER
-		Long chargePower = (Long) this.getValueFromJson(Evcs.ChannelId.CHARGE_POWER, json, (value) -> {
-			if (value == null) {
-				return null;
-			}
-			return Math.round((Integer) value * 0.1);
-		}, "secc", "port0", "metering", "power", "active_total", "actual");
-		this.parent._setChargePower(chargePower == null ? null : chargePower.intValue());
 
-		// ENERGY_SESSION
-		Double energy = (Double) this.getValueFromJson(Evcs.ChannelId.ENERGY_SESSION, OpenemsType.STRING, json,
-				(value) -> {
-					if (value == null) {
-						return null;
-					}
-					Double rawEnergy = null;
-					String[] chargedata = value.toString().split("\\|");
-					if (chargedata.length == 3) {
-						rawEnergy = Double.parseDouble(chargedata[2]) * 1000;
-					}
-					return rawEnergy;
+        // CHARGE_POWER
+        Long chargePower = (Long) this.getValueFromJson(Evcs.ChannelId.CHARGE_POWER, json, (value) -> {
+            if (value == null) {
+                return null;
+            }
+            return Math.round((Integer) value * 0.1);
+        }, "secc", "port0", "metering", "power", "active_total", "actual");
+        this.parent._setChargePower(chargePower == null ? null : chargePower.intValue());
 
-				}, "secc", "port0", "salia", "chargedata");
-		this.parent._setEnergySession(energy == null ? null : (int) Math.round(energy));
+        // ENERGY_SESSION
+        Double energy = (Double) this.getValueFromJson(Evcs.ChannelId.ENERGY_SESSION, OpenemsType.STRING, json,
+                (value) -> {
+                    if (value == null) {
+                        return null;
+                    }
+                    Double rawEnergy = null;
+                    String[] chargedata = value.toString().split("\\|");
+                    if (chargedata.length == 3) {
+                        rawEnergy = Double.parseDouble(chargedata[2]) * 1000;
+                    }
+                    return rawEnergy;
 
-		// ACTIVE_CONSUMPTION_ENERGY
-		Long activeConsumptionEnergy = (Long) this.getValueFromJson(Evcs.ChannelId.ACTIVE_CONSUMPTION_ENERGY, json,
-				(value) -> (long) (Double.parseDouble(value.toString()) * 0.1), "secc", "port0", "metering", "energy",
-				"active_import", "actual"); //
-		this.parent._setActiveConsumptionEnergy(activeConsumptionEnergy);
+                }, "secc", "port0", "salia", "chargedata");
+        this.parent._setEnergySession(energy == null ? null : (int) Math.round(energy));
 
-		// PHASES
-		Double powerL1 = (Double) this.getValueFromJson(HardyBarth.ChannelId.RAW_ACTIVE_POWER_L1, json,
-				(value) -> Double.parseDouble(value.toString()) * 0.1, "secc", "port0", "metering", "power", "active",
-				"ac", "l1", "actual");
-		Double powerL2 = (Double) this.getValueFromJson(HardyBarth.ChannelId.RAW_ACTIVE_POWER_L2, json,
-				(value) -> Double.parseDouble(value.toString()) * 0.1, "secc", "port0", "metering", "power", "active",
-				"ac", "l2", "actual");
-		Double powerL3 = (Double) this.getValueFromJson(HardyBarth.ChannelId.RAW_ACTIVE_POWER_L3, json,
-				(value) -> Double.parseDouble(value.toString()) * 0.1, "secc", "port0", "metering", "power", "active",
-				"ac", "l3", "actual");
-		Integer phases = null;
-		if (powerL1 != null && powerL2 != null && powerL3 != null) {
+        // ACTIVE_CONSUMPTION_ENERGY
+        Long activeConsumptionEnergy = (Long) this.getValueFromJson(Evcs.ChannelId.ACTIVE_CONSUMPTION_ENERGY, json,
+                (value) -> (long) (Double.parseDouble(value.toString()) * 0.1), "secc", "port0", "metering", "energy",
+                "active_import", "actual"); //
+        this.parent._setActiveConsumptionEnergy(activeConsumptionEnergy);
 
-			Double sum = powerL1 + powerL2 + powerL3;
+        // PHASES
+        Double powerL1 = this.assignPhase(1, json);
 
-			if (sum > 300) {
-				phases = 0;
+        Double powerL2 = this.assignPhase(2, json);
+        Double powerL3 = this.assignPhase(3, json);
+        Integer phases = null;
+        if (powerL1 != null && powerL2 != null && powerL3 != null) {
 
-				if (powerL1 >= 100) {
-					phases += 1;
-				}
-				if (powerL2 >= 100) {
-					phases += 1;
-				}
-				if (powerL3 >= 100) {
-					phases += 1;
-				}
-			}
-		}
-		this.parent._setPhases(phases);
-		if (phases != null) {
-			this.parent.debugLog("Used phases: " + phases);
-		}
+            Double sum = powerL1 + powerL2 + powerL3;
 
-		// STATUS
-		Status status = (Status) this.getValueFromJson(HardyBarth.ChannelId.RAW_CHARGE_STATUS_CHARGEPOINT, json,
-				(value) -> {
-					Status rawStatus = Status.UNDEFINED;
-					switch (value.toString()) {
-					case "A":
-						rawStatus = Status.NOT_READY_FOR_CHARGING;
-						break;
-					case "B":
-						rawStatus = Status.CHARGING_REJECTED;
-						if (this.parent.getSetChargePowerLimit().orElse(0) > this.parent.getMinimumHardwarePower()
-								.orElse(0)) {
-							rawStatus = Status.CHARGING_FINISHED;
-						}
-						break;
-					case "C":
-						rawStatus = Status.CHARGING;
-						break;
-					case "D":
-						rawStatus = Status.CHARGING;
-						break;
-					case "E":
-					case "F":
-						rawStatus = Status.ERROR;
-						break;
-					default:
-						rawStatus = Status.UNDEFINED;
-						break;
-					}
-					return rawStatus;
-				}, "secc", "port0", "ci", "charge", "cp", "status");
+            if (sum > 300) {
+                phases = 0;
 
-		this.parent._setStatus(status);
-	}
+                if (powerL1 >= 100) {
+                    phases += 1;
+                }
+                if (powerL2 >= 100) {
+                    phases += 1;
+                }
+                if (powerL3 >= 100) {
+                    phases += 1;
+                }
+            }
+        }
+        this.parent._setPhases(phases);
+        if (phases != null) {
+            this.parent.debugLog("Used phases: " + phases);
+        }
 
-	/**
-	 * Call the getValueFromJson without a divergent type in the raw json.
-	 * 
-	 * @param channelId Channel that value will be detect.
-	 * @param json      Raw JsonElement.
-	 * @param converter Converter, to convert the raw JSON value into a proper
-	 *                  Channel.
-	 * @param jsonPaths Whole JSON path, where the JsonElement for the given channel
-	 *                  is located.
-	 * @return Value of the last JsonElement by running through the specified JSON
-	 *         path.
-	 */
-	private Object getValueFromJson(ChannelId channelId, JsonElement json, Function<Object, Object> converter,
-			String... jsonPaths) {
-		return this.getValueFromJson(channelId, null, json, converter, jsonPaths);
-	}
+        // STATUS
+        Status status = (Status) this.getValueFromJson(HardyBarth.ChannelId.RAW_CHARGE_STATUS_CHARGEPOINT, json,
+                (value) -> {
+                    Status rawStatus = Status.UNDEFINED;
+                    switch (value.toString()) {
+                        case "A":
+                            rawStatus = Status.NOT_READY_FOR_CHARGING;
+                            break;
+                        case "B":
+                            rawStatus = Status.CHARGING_REJECTED;
+                            if (this.parent.getSetChargePowerLimit().orElse(0) > this.parent.getMinimumHardwarePower()
+                                    .orElse(0)) {
+                                rawStatus = Status.CHARGING_FINISHED;
+                            }
+                            break;
+                        case "C":
+                            rawStatus = Status.CHARGING;
+                            break;
+                        case "D":
+                            rawStatus = Status.CHARGING;
+                            break;
+                        case "E":
+                        case "F":
+                            rawStatus = Status.ERROR;
+                            break;
+                        default:
+                            rawStatus = Status.UNDEFINED;
+                            break;
+                    }
+                    return rawStatus;
+                }, "secc", "port0", "ci", "charge", "cp", "status");
 
-	/**
-	 * Get the last JSON element and it's value, by running through the given
-	 * jsonPath.
-	 * 
-	 * @param channelId              Channel that value will be detect.
-	 * @param divergentTypeInRawJson Divergent type of the value in the depending
-	 *                               JsonElement.
-	 * @param json                   Raw JsonElement.
-	 * @param converter              Converter, to convert the raw JSON value into a
-	 *                               proper Channel.
-	 * @param jsonPaths              Whole JSON path, where the JsonElement for the
-	 *                               given channel is located.
-	 * @return Value of the last JsonElement by running through the specified JSON
-	 *         path.
-	 */
-	private Object getValueFromJson(ChannelId channelId, OpenemsType divergentTypeInRawJson, JsonElement json,
-			Function<Object, Object> converter, String... jsonPaths) {
+        this.parent._setStatus(status);
+    }
 
-		JsonElement currentJsonElement = json;
-		// Go through the whole jsonPath of the current channelId
-		for (int i = 0; i < jsonPaths.length; i++) {
-			String currentPathMember = jsonPaths[i];
-			// System.out.println(currentPathMember);
-			try {
-				if (i != jsonPaths.length - 1) {
-					// Not last path element
-					currentJsonElement = JsonUtils.getAsJsonObject(currentJsonElement, currentPathMember);
-				} else {
-					//
-					OpenemsType openemsType = divergentTypeInRawJson == null ? channelId.doc().getType()
-							: divergentTypeInRawJson;
+    /**
+     * Assigns phases based on the Config.
+     *
+     * @param phaseNumber Phase that has to be assigned
+     * @param json JsonConfig
+     * @return Assigned Phase
+     */
+    private Double assignPhase(int phaseNumber, JsonElement json) {
+        int[] phases = this.parent.getPhaseConfiguration();
+        switch (phases[phaseNumber - 1]) {
+            case 1:
+                return (Double) this.getValueFromJson(HardyBarth.ChannelId.RAW_ACTIVE_POWER_L1, json,
+                        (value) -> Double.parseDouble(value.toString()) * 0.1, "secc", "port0", "metering", "power", "active",
+                        "ac", "l1", "actual");
+            case 2:
+                return (Double) this.getValueFromJson(HardyBarth.ChannelId.RAW_ACTIVE_POWER_L2, json,
+                        (value) -> Double.parseDouble(value.toString()) * 0.1, "secc", "port0", "metering", "power", "active",
+                        "ac", "l2", "actual");
+            case 3:
+                return (Double) this.getValueFromJson(HardyBarth.ChannelId.RAW_ACTIVE_POWER_L3, json,
+                        (value) -> Double.parseDouble(value.toString()) * 0.1, "secc", "port0", "metering", "power", "active",
+                        "ac", "l3", "actual");
+        }
 
-					// Last path element
-					Object value = this.getJsonElementValue(currentJsonElement, openemsType, jsonPaths[i]);
+        return 0.d;
+    }
 
-					// Apply value converter
-					value = converter.apply(value);
+    /**
+     * Call the getValueFromJson without a divergent type in the raw json.
+     *
+     * @param channelId Channel that value will be detect.
+     * @param json      Raw JsonElement.
+     * @param converter Converter, to convert the raw JSON value into a proper
+     *                  Channel.
+     * @param jsonPaths Whole JSON path, where the JsonElement for the given channel
+     *                  is located.
+     * @return Value of the last JsonElement by running through the specified JSON
+     * path.
+     */
+    private Object getValueFromJson(ChannelId channelId, JsonElement json, Function<Object, Object> converter,
+                                    String... jsonPaths) {
+        return this.getValueFromJson(channelId, null, json, converter, jsonPaths);
+    }
 
-					// Return the converted value
-					return value;
-				}
-			} catch (OpenemsNamedException e) {
-				return null;
-			}
-		}
-		return null;
-	}
+    /**
+     * Get the last JSON element and it's value, by running through the given
+     * jsonPath.
+     *
+     * @param channelId              Channel that value will be detect.
+     * @param divergentTypeInRawJson Divergent type of the value in the depending
+     *                               JsonElement.
+     * @param json                   Raw JsonElement.
+     * @param converter              Converter, to convert the raw JSON value into a
+     *                               proper Channel.
+     * @param jsonPaths              Whole JSON path, where the JsonElement for the
+     *                               given channel is located.
+     * @return Value of the last JsonElement by running through the specified JSON
+     * path.
+     */
+    private Object getValueFromJson(ChannelId channelId, OpenemsType divergentTypeInRawJson, JsonElement json,
+                                    Function<Object, Object> converter, String... jsonPaths) {
 
-	/**
-	 * Get Value of the given JsonElement in the required type.
-	 * 
-	 * @param jsonElement Element as JSON.
-	 * @param openemsType Required type.
-	 * @param memberName  Member name of the JSON Element.
-	 * @return Value in the required type.
-	 * @throws OpenemsNamedException Failed to get the value.
-	 */
-	private Object getJsonElementValue(JsonElement jsonElement, OpenemsType openemsType, String memberName)
-			throws OpenemsNamedException {
-		final Object value;
+        JsonElement currentJsonElement = json;
+        // Go through the whole jsonPath of the current channelId
+        for (int i = 0; i < jsonPaths.length; i++) {
+            String currentPathMember = jsonPaths[i];
+            // System.out.println(currentPathMember);
+            try {
+                if (i != jsonPaths.length - 1) {
+                    // Not last path element
+                    currentJsonElement = JsonUtils.getAsJsonObject(currentJsonElement, currentPathMember);
+                } else {
+                    //
+                    OpenemsType openemsType = divergentTypeInRawJson == null ? channelId.doc().getType()
+                            : divergentTypeInRawJson;
 
-		switch (openemsType) {
-		case BOOLEAN:
-			value = JsonUtils.getAsInt(jsonElement, memberName) == 1;
-			break;
-		case DOUBLE:
-			value = JsonUtils.getAsDouble(jsonElement, memberName);
-			break;
-		case FLOAT:
-			value = JsonUtils.getAsFloat(jsonElement, memberName);
-			break;
-		case INTEGER:
-			value = JsonUtils.getAsInt(jsonElement, memberName);
-			break;
-		case LONG:
-			value = JsonUtils.getAsLong(jsonElement, memberName);
-			break;
-		case SHORT:
-			value = JsonUtils.getAsShort(jsonElement, memberName);
-			break;
-		case STRING:
-			value = JsonUtils.getAsString(jsonElement, memberName);
-			break;
-		default:
-			value = JsonUtils.getAsString(jsonElement, memberName);
-			break;
-		}
-		return value;
-	}
+                    // Last path element
+                    Object value = this.getJsonElementValue(currentJsonElement, openemsType, jsonPaths[i]);
+
+                    // Apply value converter
+                    value = converter.apply(value);
+
+                    // Return the converted value
+                    return value;
+                }
+            } catch (OpenemsNamedException e) {
+                return null;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Get Value of the given JsonElement in the required type.
+     *
+     * @param jsonElement Element as JSON.
+     * @param openemsType Required type.
+     * @param memberName  Member name of the JSON Element.
+     * @return Value in the required type.
+     * @throws OpenemsNamedException Failed to get the value.
+     */
+    private Object getJsonElementValue(JsonElement jsonElement, OpenemsType openemsType, String memberName)
+            throws OpenemsNamedException {
+        final Object value;
+
+        switch (openemsType) {
+            case BOOLEAN:
+                value = JsonUtils.getAsInt(jsonElement, memberName) == 1;
+                break;
+            case DOUBLE:
+                value = JsonUtils.getAsDouble(jsonElement, memberName);
+                break;
+            case FLOAT:
+                value = JsonUtils.getAsFloat(jsonElement, memberName);
+                break;
+            case INTEGER:
+                value = JsonUtils.getAsInt(jsonElement, memberName);
+                break;
+            case LONG:
+                value = JsonUtils.getAsLong(jsonElement, memberName);
+                break;
+            case SHORT:
+                value = JsonUtils.getAsShort(jsonElement, memberName);
+                break;
+            case STRING:
+                value = JsonUtils.getAsString(jsonElement, memberName);
+                break;
+            default:
+                value = JsonUtils.getAsString(jsonElement, memberName);
+                break;
+        }
+        return value;
+    }
 }

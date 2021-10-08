@@ -369,7 +369,7 @@ public class ChpViessmannImpl extends AbstractOpenemsModbusComponent implements 
                     this._setHeaterState(HeaterState.STARTING_UP_OR_PREHEAT.getValue());
                     break;
                 case RUNNING:
-                    this._setHeaterState(HeaterState.HEATING.getValue());
+                    this._setHeaterState(HeaterState.RUNNING.getValue());
                     break;
                 case UNDEFINED:
                 default:

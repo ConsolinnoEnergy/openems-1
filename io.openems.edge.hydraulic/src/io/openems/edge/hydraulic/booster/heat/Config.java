@@ -21,6 +21,9 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     @AttributeDefinition(name = "Enable Value", description = "Value to write into Channel when Enable Signal is present")
     int value() default 1;
 
+    @AttributeDefinition(name = "Disable Value", description = "The Value that will be written into the Channel if the EnableSignal is missing")
+    int passiveValue() default 0;
+
     @AttributeDefinition(name = "Time or Cycles Enable Signal Expiration", description =
             "Amount of Time in seconds or number of cycles, after the Enable Signal for this HeatBooster expires.")
     int expiration() default 60;
