@@ -70,14 +70,14 @@ public class DummyPump extends AbstractOpenemsComponent implements OpenemsCompon
     public boolean changeByPercentage(double percentage) {
         if (this.isRelays) {
             if (this.isPwm) {
-                if (this.getPowerLevelChannel().getNextValue().get() + percentage < 0) {
+                if (this.getPowerLevelChannel().getNextValue().get() + percentage < HydraulicComponent.DEFAULT_MIN_POWER_VALUE) {
                     this.controlRelays(false);
                     System.out.println("Set Next WriteValue to 0.f");
-                    this.getPowerLevelChannel().setNextValue(0);
+                    this.getPowerLevelChannel().setNextValue(HydraulicComponent.DEFAULT_MIN_POWER_VALUE);
                     return true;
                 }
             } else {
-                this.controlRelays((percentage > 0));
+                this.controlRelays((percentage > HydraulicComponent.DEFAULT_MIN_POWER_VALUE));
             }
         }
         if (this.isPwm) {
@@ -85,8 +85,8 @@ public class DummyPump extends AbstractOpenemsComponent implements OpenemsCompon
             this.getLastPowerLevelChannel().setNextValue(this.getPowerLevelChannel().getNextValue().get());
             currentPowerLevel = this.getPowerLevelChannel().getNextValue().get();
             currentPowerLevel += percentage;
-            currentPowerLevel = currentPowerLevel > 100 ? 100 : currentPowerLevel;
-            currentPowerLevel = currentPowerLevel < 0 ? 0 : currentPowerLevel;
+            currentPowerLevel = Math.min(currentPowerLevel, HydraulicComponent.DEFAULT_MAX_POWER_VALUE);
+            currentPowerLevel = Math.max(currentPowerLevel, HydraulicComponent.DEFAULT_MIN_POWER_VALUE);
             System.out.println("Set Next Write Value to " + currentPowerLevel + "in " + this.pwm.id());
             this.getPowerLevelChannel().setNextValue(currentPowerLevel);
         }
@@ -95,11 +95,7 @@ public class DummyPump extends AbstractOpenemsComponent implements OpenemsCompon
 
 
     private void controlRelays(boolean activate) {
-        if (this.relays.isCloser().getNextValue().get()) {
             System.out.println("Relays is " + activate);
-        } else {
-            System.out.println("Relays is " + !activate);
-        }
     }
 
     @Override

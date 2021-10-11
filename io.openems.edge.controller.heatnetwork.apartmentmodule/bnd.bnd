@@ -17,5 +17,16 @@ Bundle-Version: 1.0.0.${tstamp}
 	io.openems.edge.utility;version=latest,\
 
 -testpath: \
-	${testpath}
+	${testpath},\
+    io.openems.edge.apartmentmodule;version=latest,\
+	io.openems.edge.thermometer.api;version=latest,\
+	io.openems.edge.hydraulic;version=latest,\
+	io.openems.edge.heatsystem.components;version=latest,\
+	io.openems.edge.timer.api;version=latest,\
+	io.openems.edge.exceptionalstate.api;version=latest,\
+	io.openems.edge.utility;version=latest,\
+	io.openems.edge.controller.heatnetwork.hydraulic.lineheater;version=latest,\
+
+
+
 

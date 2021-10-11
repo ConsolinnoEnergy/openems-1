@@ -30,7 +30,7 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     String[] apartmentResponse() default {"HydraulicLineHeater0/EnableSignal", "HydraulicLineHeater1/EnableSignal"};
 
     @AttributeDefinition(name = "SetPoint Temperature", description = "The Temperature that needs to be reached by a Thermometer, otherwise apartment Response starts boosting the Temperature")
-    int setPointTemperature() default 50;
+    int setPointTemperature() default 500;
 
     @AttributeDefinition(name = "Threshold Thermometer", description = "The Threshold Thermometer you want to use to check your Temperature.")
     String[] thresholdId() default {"ThresholdThermometer0", "ThresholdThermometer0"};

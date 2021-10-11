@@ -18,6 +18,23 @@ public enum ThermometerState implements OptionsEnum {
         this.name = name;
     }
 
+    /**
+     * Returns ThermometerState depending on given Value. Usually an Internal Method.
+     *
+     * @param value the value of the ThermometerState
+     * @return the ThermometerState of the Value.
+     */
+    public static ThermometerState getThermometerStateFromInteger(Integer value) {
+        ThermometerState stateToReturn = UNDEFINED;
+        for (ThermometerState state : ThermometerState.values()) {
+            if (state.getValue() == value) {
+                stateToReturn = state;
+                break;
+            }
+        }
+        return stateToReturn;
+    }
+
     @Override
     public int getValue() {
         return this.value;

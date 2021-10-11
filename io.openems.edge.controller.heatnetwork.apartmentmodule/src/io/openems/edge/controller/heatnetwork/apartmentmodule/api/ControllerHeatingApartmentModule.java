@@ -12,16 +12,19 @@ import io.openems.edge.common.component.OpenemsComponent;
 
 /**
  * The Nature of the ApartmentModuleController.
-
- *   This Apartment Module Controller is a slightly Complex Controller, that allows to Monitor ApartmentCords combined with a Pump and
- *   e.g. HydraulicLineHeater.
- *   The Logic of the Controller will be explained within the Implementation.
- *   This Nature stores SetPoint values as well as  ApartmentModuleController States and Emergency Values.
- *   The implementation will react accordingly to the Emergencies that have occurred.
+ * <p>
+ * This Apartment Module Controller is a slightly Complex Controller, that allows to Monitor ApartmentCords combined with a Pump and
+ * e.g. HydraulicLineHeater.
+ * The Logic of the Controller will be explained within the Implementation.
+ * This Nature stores SetPoint values as well as  ApartmentModuleController States and Emergency Values.
+ * The implementation will react accordingly to the Emergencies that have occurred.
  */
 public interface ControllerHeatingApartmentModule extends OpenemsComponent {
 
-    public enum ChannelId implements io.openems.edge.common.channel.ChannelId {
+    int CHECK_MISSING_COMPONENTS_TIME = 60;
+    String CHECK_MISSING_COMPONENT_IDENTIFIER = "CONTROLLER_HEATING_APARTMENT_MODULE_CHECK_MISSING";
+
+    enum ChannelId implements io.openems.edge.common.channel.ChannelId {
         /**
          * Set the Temperature to look out for.
          * E.g. check your threshold thermometer if this temperature is above/below reference temperature.
@@ -167,12 +170,9 @@ public interface ControllerHeatingApartmentModule extends OpenemsComponent {
      * @return the state
      */
     default ApartmentModuleControllerState getControllerState() {
-        ApartmentModuleControllerState currentState = (ApartmentModuleControllerState) this.getValueOfChannel(this.getControllerStateChannel());
-        if (currentState == null || currentState.isUndefined()) {
-            currentState = (ApartmentModuleControllerState) this.getNextValueOfChannel(this.getControllerStateChannel());
-        }
-        if (currentState == null) {
-            currentState = ApartmentModuleControllerState.UNDEFINED;
+        ApartmentModuleControllerState currentState = ApartmentModuleControllerState.getStateFromIntValue((Integer) this.getValueOfChannel(this.getControllerStateChannel()));
+        if (currentState.isUndefined()) {
+            currentState = ApartmentModuleControllerState.getStateFromIntValue((Integer) this.getNextValueOfChannel(this.getControllerStateChannel()));
         }
         return currentState;
     }

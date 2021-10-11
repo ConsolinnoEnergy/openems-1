@@ -5,24 +5,25 @@ import io.openems.edge.common.test.AbstractComponentConfig;
 public class MyConfig extends AbstractComponentConfig implements Config {
 
 
-    protected static class Builder{
+    protected static class Builder {
         public String servicePid;
         public String id;
-       public String alias;
-       public String[] apartmentCords;
-       public String[] apartmentToThermometer;
-       public String[] apartmentResponse;
-       public int setPointTemperature;
-       public String[] thresholdId;
-       public String heatPumpId;
-       public double powerLevelPump;
-       public boolean useHeatBooster;
-       public int heatBoostTemperature;
-       public String heatBoosterId;
-       public String timerId;
-       public boolean enabled;
-       
-       private Builder(){}
+        public String alias;
+        public String[] apartmentCords;
+        public String[] apartmentToThermometer;
+        public String[] apartmentResponse;
+        public String[] thresholdId;
+        public int setPointTemperature;
+        public String heatPumpId;
+        public double powerLevelPump;
+        public boolean useHeatBooster;
+        public int heatBoostTemperature;
+        public String heatBoosterId;
+        public String timerId;
+        public boolean enabled;
+
+        private Builder() {
+        }
 
         public Builder setServicePid(String servicePid) {
             this.servicePid = servicePid;
@@ -99,7 +100,11 @@ public class MyConfig extends AbstractComponentConfig implements Config {
             return this;
         }
 
+        public MyConfig build() {
+            return new MyConfig(this);
+        }
     }
+
     /**
      * Create a Config builder.
      *
@@ -111,11 +116,10 @@ public class MyConfig extends AbstractComponentConfig implements Config {
 
     private final Builder builder;
 
-    private MyConfig(Builder builder){
+    private MyConfig(Builder builder) {
         super(MyConfig.class, builder.id);
         this.builder = builder;
     }
-
 
 
     @Override
