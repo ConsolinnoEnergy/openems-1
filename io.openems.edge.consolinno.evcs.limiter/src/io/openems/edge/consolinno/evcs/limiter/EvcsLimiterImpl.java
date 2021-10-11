@@ -2367,7 +2367,9 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
             if (this.evcss[i] != null) {
                 if (this.powerWaitingList.containsKey(this.evcss[i].id())
                         && (this.getPower(this.evcss[i]) >= (Math.min(this.evcss[i].getMinimumHardwarePower().get(), this.evcss[i].getMinimumPower().get()) / GRID_VOLTAGE)
-                        || this.powerWaitingList.get(this.evcss[i].id()).getPhases() != this.evcss[i].getPhases().orElse(0))) {
+                        //|| this.powerWaitingList.get(this.evcss[i].id()).getPhases() != this.evcss[i].getPhases().orElse(0)
+                        )
+                ) {
                     this.powerWaitingList.remove(this.evcss[i].id());
                 } else if (!this.powerWaitingList.containsKey(this.evcss[i].id()) && this.getPower(this.evcss[i])
                         < (Math.min(this.evcss[i].getMinimumHardwarePower().get(), this.evcss[i].getMinimumPower().get()) / GRID_VOLTAGE)
@@ -2516,7 +2518,11 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
                                     waitingPhases.set(evcs.getPhases());
                                     waitingId.set(id);
                                     waitingPower.set(evcs.getPower());
-                                    waitingWantToCharge.set(evcs.getWantToCharge());
+                                    try {
+                                        waitingWantToCharge.set(evcs.getWantToCharge() || (this.cpm.getComponent(id).channel("setChargePowerRequest").getNextValue().isDefined()));
+                                    } catch (OpenemsError.OpenemsNamedException e) {
+                                        waitingWantToCharge.set(evcs.getWantToCharge());
+                                    }
                                 }
                             });
                             try {
@@ -2524,13 +2530,13 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
                                     break;
                                 }
                                 ManagedEvcs evcs = this.cpm.getComponent(waitingId.get());
-                                if (evcs.getChargePower().get() > 0 || waitingPower.get() > 0) {
+                                if (evcs.getChargePower().get() > 1 || waitingPower.get() > 1) {
 
                                     if (freeResources >= waitingPower.get() && (waitingWantToCharge.get() && waitingPower.get() >= (Math.min(evcs.getMinimumHardwarePower().get(), evcs.getMinimumPower().get()) / GRID_VOLTAGE))) {
                                         evcs.setChargePowerLimit(waitingPower.get() * GRID_VOLTAGE);
                                         freeResources -= waitingPower.get();
                                         this.powerWaitingList.remove(waitingId.get());
-                                    } else if (freeResources >= MINIMUM_POWER * evcs.getPhases().orElse(3)) {
+                                    } else if (freeResources >= MINIMUM_POWER * evcs.getPhases().orElse(3) && waitingWantToCharge.get()) {
                                         evcs.setChargePowerLimit(MINIMUM_POWER * evcs.getPhases().orElse(3) * GRID_VOLTAGE);
                                         freeResources -= MINIMUM_POWER * evcs.getPhases().orElse(3);
                                         this.powerWaitingList.remove(waitingId.get());
@@ -2574,7 +2580,7 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
 
                                 int resourceReduction = Math.floorDiv(freeResources, waitingPhases.get());
                                 if (resourceReduction > 0 && resourceReduction >= Math.min(evcs.getMinimumHardwarePower().orElse(99), evcs.getMinimumPower().orElse(99))
-                                        && evcs.getChargePower().get() > 0) {
+                                        && evcs.getChargePower().get() > 1) {
                                     this.powerWaitingList.remove(waitingId.get());
                                     evcs.setChargePowerLimit(resourceReduction * GRID_VOLTAGE);
                                     freeResources -= resourceReduction;
