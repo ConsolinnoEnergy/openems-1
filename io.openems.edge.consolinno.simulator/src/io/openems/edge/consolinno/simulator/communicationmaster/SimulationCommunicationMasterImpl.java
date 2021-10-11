@@ -46,7 +46,7 @@ public class SimulationCommunicationMasterImpl extends AbstractOpenemsComponent 
 
     private boolean useHeater;
     private boolean useHydraulicLineHeater;
-    private final List<DecentralizedHeater> decentralHeaterList = new ArrayList<>();
+    private final List<DecentralizedHeater> decentralizedHeaterList = new ArrayList<>();
     private HydraulicLineController hydraulicLineController;
 
     public SimulationCommunicationMasterImpl() {
@@ -67,7 +67,7 @@ public class SimulationCommunicationMasterImpl extends AbstractOpenemsComponent 
                     try {
                         component = cpm.getComponent(entry);
                         if (component instanceof DecentralizedHeater) {
-                            this.decentralHeaterList.add((DecentralizedHeater) component);
+                            this.decentralizedHeaterList.add((DecentralizedHeater) component);
                         } else {
                             exConfig[0] = new ConfigurationException("Activate: SimulationCommunicationMasterImpl", component.id() + " not a DecentralHeater!");
                         }
@@ -103,18 +103,18 @@ public class SimulationCommunicationMasterImpl extends AbstractOpenemsComponent 
         checkMissingComponent();
         AtomicBoolean atLeastOneRequest = new AtomicBoolean(false);
         if (this.useHeater) {
-            this.decentralHeaterList.forEach(decentralHeater -> {
-                if (decentralHeater.getRequestHeatNetworkActivation().orElse(false)) {
+            this.decentralizedHeaterList.forEach(decentralizedHeater -> {
+                if (decentralizedHeater.getNeedHeat()) {
                     atLeastOneRequest.set(true);
                     currentRequests.getAndIncrement();
                     if (this.managedHeaterList.size() < this.maxRequests) {
                         //say with 99% probability it's ok to write true --> else false --> some randomness in tests
-                        enableOrDisableHeater(decentralHeater, random.nextInt(100) < 99);
+                        enableOrDisableHeater(decentralizedHeater, random.nextInt(100) < 99);
                     } else {
-                        enableOrDisableHeater(decentralHeater, false);
+                        enableOrDisableHeater(decentralizedHeater, false);
                     }
                 } else {
-                    enableOrDisableHeater(decentralHeater, false);
+                    enableOrDisableHeater(decentralizedHeater, false);
                 }
 
             });
@@ -130,7 +130,7 @@ public class SimulationCommunicationMasterImpl extends AbstractOpenemsComponent 
                     if (value == false) {
                         this.managedHeaterList.remove(key);
                         try {
-                            key.setHeatNetworkReadySignal(false);
+                            key.getNeedHeatEnableSignalChannel().setNextWriteValue(false);
                         } catch (OpenemsError.OpenemsNamedException e) {
                             e.printStackTrace();
                         }
@@ -147,7 +147,7 @@ public class SimulationCommunicationMasterImpl extends AbstractOpenemsComponent 
     private void enableOrDisableHeater(DecentralizedHeater decentralHeater, boolean enable) {
         try {
             this.isManaged.put(decentralHeater, enable);
-            decentralHeater.setHeatNetworkReadySignal(enable);
+            decentralHeater.getNeedHeatEnableSignalChannel().setNextWriteValue(enable);
             if (enable) {
                 this.managedHeaterList.add(decentralHeater);
                 this.workMap.put(decentralHeater, new DateTime());
@@ -166,10 +166,10 @@ public class SimulationCommunicationMasterImpl extends AbstractOpenemsComponent 
             } catch (OpenemsError.OpenemsNamedException e) {
                 e.printStackTrace();
             }
-            List<DecentralizedHeater> missingHeater = this.decentralHeaterList.stream().filter(heater -> heater.isEnabled() == false).collect(Collectors.toList());
+            List<DecentralizedHeater> missingHeater = this.decentralizedHeaterList.stream().filter(heater -> heater.isEnabled() == false).collect(Collectors.toList());
             missingHeater.forEach(missing -> {
                 try {
-                    this.decentralHeaterList.set(this.decentralHeaterList.indexOf(missing), cpm.getComponent(missing.id()));
+                    this.decentralizedHeaterList.set(this.decentralizedHeaterList.indexOf(missing), cpm.getComponent(missing.id()));
                 } catch (OpenemsError.OpenemsNamedException e) {
                     e.printStackTrace();
                 }

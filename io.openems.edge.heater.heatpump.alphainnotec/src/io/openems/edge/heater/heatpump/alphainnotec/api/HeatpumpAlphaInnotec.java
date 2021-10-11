@@ -63,7 +63,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
         DI_4_COMPRESSOR2(Doc.of(OpenemsType.BOOLEAN).unit(Unit.ON_OFF)),
 
         /**
-         * 2nd heat generator 1 (ZWE1, zusätzlicher Wärmeerzeuger 1).
+         * 2nd heat generator 1 (ZWE1, zusaetzlicher Waermeerzeuger 1).
          * <ul>
          *      <li> Type: Boolean
          * </ul>
@@ -71,7 +71,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
         DI_5_AUX1(Doc.of(OpenemsType.BOOLEAN).unit(Unit.ON_OFF)),
 
         /**
-         * 2nd heat generator 2 (ZWE2, zusätzlicher Wärmeerzeuger 2).
+         * 2nd heat generator 2 (ZWE2, zusaetzlicher Waermeerzeuger 2).
          * <ul>
          *      <li> Type: Boolean
          * </ul>
@@ -79,7 +79,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
         DI_6_AUX2(Doc.of(OpenemsType.BOOLEAN).unit(Unit.ON_OFF)),
 
         /**
-         * 2nd heat generator 3 (ZWE3, zusätzlicher Wärmeerzeuger 3). Optional, depends on heat pump model if available.
+         * 2nd heat generator 3 (ZWE3, zusaetzlicher Waermeerzeuger 3). Optional, depends on heat pump model if available.
          * <ul>
          *      <li> Type: Boolean
          * </ul>
@@ -96,7 +96,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
          *     <li> Unit: decimal degree Celsius
          * </ul>
          */
-        IR_0_AVERAGE_TEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
+        IR_0_AVERAGE_TEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS)),
 
         /**
          * Flow temperature (Vorlauftemperatur).
@@ -108,7 +108,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
         // IR_1_FLOW_TEMP - use FLOW_TEMPERATURE from heater interface
 
         /**
-         * Return temperature (Rücklauftemperatur).
+         * Return temperature (Ruecklauftemperatur).
          * <ul>
          *     <li> Type: Integer
          *     <li> Unit: decimal degree Celsius
@@ -117,13 +117,13 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
         // IR_2_RETURN_TEMP - use RETURN_TEMPERATURE from heater interface
 
         /**
-         * External return temperature (Rücklauf extern).
+         * External return temperature (Ruecklauf extern).
          * <ul>
          *     <li> Type: Integer
          *     <li> Unit: decimal degree Celsius
          * </ul>
          */
-        IR_3_RETURN_TEMP_EXT(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
+        IR_3_RETURN_TEMP_EXT(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS)),
 
         /**
          * Domestic hot water temperature (Trinkwarmwassertemperatur).
@@ -132,7 +132,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
          *     <li> Unit: decimal degree Celsius
          * </ul>
          */
-        IR_4_WATER_TEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
+        IR_4_WATER_TEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS)),
 
         /**
          * Mixing circuit 1 flow temperature (Mischkreis 1 Vorlauf).
@@ -141,7 +141,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
          *     <li> Unit: decimal degree Celsius
          * </ul>
          */
-        IR_5_FLOW_TEMP_MC1(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
+        IR_5_FLOW_TEMP_MC1(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS)),
 
         /**
          * Mixing circuit 2 flow temperature (Mischkreis 2 Vorlauf).
@@ -151,7 +151,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
          *     <li> Unit: decimal degree Celsius
          * </ul>
          */
-        IR_6_FLOW_TEMP_MC2(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
+        IR_6_FLOW_TEMP_MC2(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS)),
 
         /**
          * Mixing circuit 3 flow temperature (Mischkreis 3 Vorlauf).
@@ -161,7 +161,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
          *     <li> Unit: decimal degree Celsius
          * </ul>
          */
-        IR_7_FLOW_TEMP_MC3(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
+        IR_7_FLOW_TEMP_MC3(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS)),
 
         /**
          * Hot gas temperature (Heissgastemperatur).
@@ -170,25 +170,25 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
          *     <li> Unit: decimal degree Celsius
          * </ul>
          */
-        IR_8_HOT_GAS_TEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
+        IR_8_HOT_GAS_TEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS)),
 
         /**
-         * Heat source inlet (Wärmequelle Eintritt).
+         * Heat source inlet (Waermequelle Eintritt).
          * <ul>
          *     <li> Type: Integer
          *     <li> Unit: decimal degree Celsius
          * </ul>
          */
-        IR_9_HEAT_SOURCE_INLET_TEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
+        IR_9_HEAT_SOURCE_INLET_TEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS)),
 
         /**
-         * Heat source outlet (Wärmequelle Austritt).
+         * Heat source outlet (Waermequelle Austritt).
          * <ul>
          *     <li> Type: Integer
          *     <li> Unit: decimal degree Celsius
          * </ul>
          */
-        IR_10_HEAT_SOURCE_OUTLET_TEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
+        IR_10_HEAT_SOURCE_OUTLET_TEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS)),
 
         /**
          * Room remote adjuster 1 (Raumfernversteller 1).
@@ -197,7 +197,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
          *     <li> Unit: decimal degree Celsius
          * </ul>
          */
-        IR_11_ROOM_REMOTE_ADJ1_TEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
+        IR_11_ROOM_REMOTE_ADJ1_TEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS)),
 
         /**
          * Room remote adjuster 2 (Raumfernversteller 2). Optional, depends on heat pump model if
@@ -207,7 +207,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
          *     <li> Unit: decimal degree Celsius
          * </ul>
          */
-        IR_12_ROOM_REMOTE_ADJ2_TEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
+        IR_12_ROOM_REMOTE_ADJ2_TEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS)),
 
         /**
          * Room remote adjuster 3 (Raumfernversteller 3). Optional, depends on heat pump model if
@@ -217,7 +217,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
          *     <li> Unit: decimal degree Celsius
          * </ul>
          */
-        IR_13_ROOM_REMOTE_ADJ3_TEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
+        IR_13_ROOM_REMOTE_ADJ3_TEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS)),
 
         /**
          * Solar collector (Solarkollektor). Optional, depends on heat pump model if available.
@@ -226,7 +226,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
          *     <li> Unit: decimal degree Celsius
          * </ul>
          */
-        IR_14_SOLAR_COLLECTOR_TEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
+        IR_14_SOLAR_COLLECTOR_TEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS)),
 
         /**
          * Solar collector storage tank (Solarspeicher). Optional, depends on heat pump model if available.
@@ -235,7 +235,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
          *     <li> Unit: decimal degree Celsius
          * </ul>
          */
-        IR_15_SOLAR_STORAGE_TANK_TEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
+        IR_15_SOLAR_STORAGE_TANK_TEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS)),
 
         /**
          * External energy source (Externe Energiequelle). Optional, depends on heat pump model if available.
@@ -244,7 +244,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
          *     <li> Unit: decimal degree Celsius
          * </ul>
          */
-        IR_16_EXT_ENERGY_SOURCE_TEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
+        IR_16_EXT_ENERGY_SOURCE_TEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS)),
 
         /**
          * Supply air temperature (Zulufttemperatur). Optional, depends on heat pump model if available.
@@ -253,7 +253,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
          *     <li> Unit: decimal degree Celsius
          * </ul>
          */
-        IR_17_SUPPLY_AIR_TEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
+        IR_17_SUPPLY_AIR_TEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS)),
 
         /**
          * Extract air temperature (Ablufttemperatur).
@@ -262,7 +262,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
          *     <li> Unit: decimal degree Celsius
          * </ul>
          */
-        IR_18_EXTRACT_AIR_TEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
+        IR_18_EXTRACT_AIR_TEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS)),
 
         /**
          * Compressor intake temperature (Ansaugtemperatur Verdichter).
@@ -271,7 +271,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
          *     <li> Unit: decimal degree Celsius
          * </ul>
          */
-        IR_19_COMPRESSOR_INTAKE_TEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
+        IR_19_COMPRESSOR_INTAKE_TEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS)),
 
         /**
          * Evaporator intake temperature (Ansaugtemperatur Verdampfer).
@@ -280,7 +280,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
          *     <li> Unit: decimal degree Celsius
          * </ul>
          */
-        IR_20_EVAPORATOR_INTAKE_TEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
+        IR_20_EVAPORATOR_INTAKE_TEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS)),
 
         /**
          * Compressor heater temperature (Temperatur Verdichterheizung).
@@ -289,25 +289,25 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
          *     <li> Unit: decimal degree Celsius
          * </ul>
          */
-        IR_21_COMPRESSOR_HEATER_TEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
+        IR_21_COMPRESSOR_HEATER_TEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS)),
 
         /**
-         * Overheating (Überhitzung).
+         * Overheating (Ueberhitzung).
          * <ul>
          *     <li> Type: Integer
          *     <li> Unit: decimal degree Kelvin
          * </ul>
          */
-        IR_22_OVERHEAT(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZI_KELVIN)),
+        IR_22_OVERHEAT(Doc.of(OpenemsType.INTEGER).unit(Unit.DECI_KELVIN)),
 
         /**
-         * Overheating setpoint (Überhitzung Soll).
+         * Overheating setpoint (Ueberhitzung Soll).
          * <ul>
          *     <li> Type: Integer
          *     <li> Unit: decimal degree Kelvin
          * </ul>
          */
-        IR_23_OVERHEAT_SETPOINT(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZI_KELVIN)),
+        IR_23_OVERHEAT_SETPOINT(Doc.of(OpenemsType.INTEGER).unit(Unit.DECI_KELVIN)),
 
         /**
          * RBE room temperature actual (RBE, Raumbedieneinheit Raumtemperatur Ist).
@@ -316,7 +316,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
          *     <li> Unit: decimal degree Celsius
          * </ul>
          */
-        IR_24_RBE_ROOM_TEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
+        IR_24_RBE_ROOM_TEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS)),
 
         /**
          * RBE room temperature setpoint (RBE, Raumbedieneinheit Raumtemperatur Soll).
@@ -325,7 +325,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
          *     <li> Unit: decimal degree Celsius
          * </ul>
          */
-        IR_25_RBE_ROOM_TEMP_SETPOINT(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
+        IR_25_RBE_ROOM_TEMP_SETPOINT(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS)),
 
         /**
          * High pressure (Druck HD, Hochdruck).
@@ -364,7 +364,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
         IR_29_HOURS_COMP2(Doc.of(OpenemsType.INTEGER).unit(Unit.HOUR)),
 
         /**
-         * Operating hours 2nd heat generator 1 (Betriebsstunden ZWE1, Zusätzlicher Wärmeerzeuger).
+         * Operating hours 2nd heat generator 1 (Betriebsstunden ZWE1, Zusaetzlicher Waermeerzeuger).
          * <ul>
          *     <li> Type: Integer
          *     <li> Unit: hours
@@ -373,7 +373,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
         IR_30_HOURS_AUX1(Doc.of(OpenemsType.INTEGER).unit(Unit.HOUR)),
 
         /**
-         * Operating hours 2nd heat generator 2 (Betriebsstunden ZWE2, Zusätzlicher Wärmeerzeuger).
+         * Operating hours 2nd heat generator 2 (Betriebsstunden ZWE2, Zusaetzlicher Waermeerzeuger).
          * <ul>
          *     <li> Type: Integer
          *     <li> Unit: hours
@@ -382,7 +382,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
         IR_31_HOURS_AUX2(Doc.of(OpenemsType.INTEGER).unit(Unit.HOUR)),
 
         /**
-         * Operating hours 2nd heat generator 3 (Betriebsstunden ZWE3, Zusätzlicher Wärmeerzeuger).
+         * Operating hours 2nd heat generator 3 (Betriebsstunden ZWE3, Zusaetzlicher Waermeerzeuger).
          * Optional, depends on heat pump model if available.
          * <ul>
          *     <li> Type: Integer
@@ -392,7 +392,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
         IR_32_HOURS_AUX3(Doc.of(OpenemsType.INTEGER).unit(Unit.HOUR)),
 
         /**
-         * Operating hours heat pump (Betriebsstunden Wärmepumpe).
+         * Operating hours heat pump (Betriebsstunden Waermepumpe).
          * <ul>
          *     <li> Type: Integer
          *     <li> Unit: hours
@@ -441,13 +441,13 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
          *      <li> State 4: Defrost (Abtauen)
          *      <li> State 5: Off
          *      <li> State 6: External energy source (Externe Energiequelle)
-         *      <li> State 7: Cooling (Kühlung)
+         *      <li> State 7: Cooling (Kuehlung)
          * </ul>
          */
         IR_37_STATUS(Doc.of(SystemStatus.values())),
 
         /**
-         * Heat quantity room heating (Wärmemenge Heizung). 32 bit unsigned doubleword. IR 38 is high, IR 39 is low.
+         * Heat quantity room heating (Waermemenge Heizung). 32 bit unsigned doubleword. IR 38 is high, IR 39 is low.
          * <ul>
          *     <li> Type: Integer
          *     <li> Unit: kWh * 10E-1
@@ -456,7 +456,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
         IR_38_ENERGY_CIRCUIT_HEATING(Doc.of(OpenemsType.INTEGER).unit(Unit.HECTOWATT_HOURS)),
 
         /**
-         * Heat quantity domestic hot water heating (Wärmemenge Trinkwarmwasser). 32 bit unsigned doubleword.
+         * Heat quantity domestic hot water heating (Waermemenge Trinkwarmwasser). 32 bit unsigned doubleword.
          * IR 40 is high, IR 41 is low.
          * <ul>
          *     <li> Type: Integer
@@ -466,7 +466,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
         IR_40_ENERGY_WATER(Doc.of(OpenemsType.INTEGER).unit(Unit.HECTOWATT_HOURS)),
 
         /**
-         * Heat quantity swimming pool heating (Wärmemenge Schwimmbad). 32 bit unsigned doubleword. IR 42 is high,
+         * Heat quantity swimming pool heating (Waermemenge Schwimmbad). 32 bit unsigned doubleword. IR 42 is high,
          * IR 43 is low.
          * Optional, depends on heat pump model if available.
          * <ul>
@@ -477,7 +477,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
         IR_42_ENERGY_POOL(Doc.of(OpenemsType.INTEGER).unit(Unit.HECTOWATT_HOURS)),
 
         /**
-         * Heat quantity total (Wärmemenge gesamt). 32 bit unsigned doubleword. IR 44 is high, IR 45 is low.
+         * Heat quantity total (Waermemenge gesamt). 32 bit unsigned doubleword. IR 44 is high, IR 45 is low.
          * <ul>
          *     <li> Type: Integer
          *     <li> Unit: kWh * 10E-1
@@ -508,7 +508,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
         // Coil 1 not used
 
         /**
-         * Heat. sys. pump (HUP, Heizung + Brauchwasser Umwälzpumpe), force on.
+         * Heat. sys. pump (HUP, Heizung + Brauchwasser Umwaelzpumpe), force on.
          * <ul>
          *      <li> Type: Boolean
          * </ul>
@@ -524,7 +524,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
         COIL_3_VEN(Doc.of(OpenemsType.BOOLEAN).accessMode(AccessMode.READ_WRITE)),
 
         /**
-         * CP (ZUP, Zusatz-Umwälzpumpe), force on.
+         * CP (ZUP, Zusatz-Umwaelzpumpe), force on.
          * <ul>
          *      <li> Type: Boolean
          * </ul>
@@ -532,7 +532,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
         COIL_4_ZUP(Doc.of(OpenemsType.BOOLEAN).accessMode(AccessMode.READ_WRITE)),
 
         /**
-         * DHW pump (BUP, Trinkwarmwasser-Umwälzpumpe), force on.
+         * DHW pump (BUP, Trinkwarmwasser-Umwaelzpumpe), force on.
          * <ul>
          *      <li> Type: Boolean
          * </ul>
@@ -540,7 +540,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
         COIL_5_BUP(Doc.of(OpenemsType.BOOLEAN).accessMode(AccessMode.READ_WRITE)),
 
         /**
-         * Heats.-pump (BOSUP, Brunnen oder Sole-Umwälzpumpe), force on.
+         * Heats.-pump (BOSUP, Brunnen oder Sole-Umwaelzpumpe), force on.
          * <ul>
          *      <li> Type: Boolean
          * </ul>
@@ -556,7 +556,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
         COIL_7_ZIP(Doc.of(OpenemsType.BOOLEAN).accessMode(AccessMode.READ_WRITE)),
 
         /**
-         * CP2 (FUP2, Fußbodenheizungs-Umwälzpumpe), force on. Optional, depends on heat pump model if available.
+         * CP2 (FUP2, Fussbodenheizungs-Umwaelzpumpe), force on. Optional, depends on heat pump model if available.
          * <ul>
          *      <li> Type: Boolean
          * </ul>
@@ -564,7 +564,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
         COIL_8_FUP2(Doc.of(OpenemsType.BOOLEAN).accessMode(AccessMode.READ_WRITE)),
 
         /**
-         * CP3 (FUP3, Fußbodenheizungs-Umwälzpumpe), force on. Optional, depends on heat pump model if available.
+         * CP3 (FUP3, Fussbodenheizungs-Umwaelzpumpe), force on. Optional, depends on heat pump model if available.
          * <ul>
          *      <li> Type: Boolean
          * </ul>
@@ -580,7 +580,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
         COIL_10_SLP(Doc.of(OpenemsType.BOOLEAN).accessMode(AccessMode.READ_WRITE)),
 
         /**
-         * Pool pump (SUP, Schwimmbad-Umwälzpumpe), force on. Optional, depends on heat pump model if available.
+         * Pool pump (SUP, Schwimmbad-Umwaelzpumpe), force on. Optional, depends on heat pump model if available.
          * <ul>
          *      <li> Type: Boolean
          * </ul>
@@ -596,7 +596,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
         COIL_12_VSK(Doc.of(OpenemsType.BOOLEAN).accessMode(AccessMode.READ_WRITE)),
 
         /**
-         * FRH (Schütz Defrostheizung), force on. Optional, depends on heat pump model if available.
+         * FRH (Schuetz Defrostheizung), force on. Optional, depends on heat pump model if available.
          * <ul>
          *      <li> Type: Boolean
          * </ul>
@@ -623,7 +623,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
          *     <li> Unit: decimal degree Celsius
          * </ul>
          */
-        HR_1_RETURN_TEMP_SETPOINT(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
+        HR_1_RETURN_TEMP_SETPOINT(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
 
         /**
          * Mixing circuit 1 (Mischkreis 1) flow temperature setpoint. Minimum 150, maximum 800.
@@ -632,7 +632,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
          *     <li> Unit: decimal degree Celsius
          * </ul>
          */
-        HR_2_FLOW_TEMP_SETPOINT_MC1(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
+        HR_2_FLOW_TEMP_SETPOINT_MC1(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
 
         /**
          * Mixing circuit 2 (Mischkreis 2) flow temperature setpoint. Minimum 150, maximum 800.
@@ -642,7 +642,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
          *     <li> Unit: decimal degree Celsius
          * </ul>
          */
-        HR_3_FLOW_TEMP_SETPOINT_MC2(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
+        HR_3_FLOW_TEMP_SETPOINT_MC2(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
 
         /**
          * Mixing circuit 3 (Mischkreis 3) flow temperature setpoint. Minimum 150, maximum 800.
@@ -652,7 +652,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
          *     <li> Unit: decimal degree Celsius
          * </ul>
          */
-        HR_4_FLOW_TEMP_SETPOINT_MC3(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
+        HR_4_FLOW_TEMP_SETPOINT_MC3(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
 
         /**
          * Domestic hot water (Trinkwarmwasser) temperature desired value. Minimum 150, maximum 800.
@@ -661,10 +661,10 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
          *     <li> Unit: decimal degree Celsius
          * </ul>
          */
-        HR_5_WATER_TEMP_SETPOINT(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
+        HR_5_WATER_TEMP_SETPOINT(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
 
         /**
-         * Block / release heat pump (Sperre / Freigabe Wärmepumpe).
+         * Block / release heat pump (Sperre / Freigabe Waermepumpe).
          * <ul>
          *      <li> Type: Integer
          *      <li> Possible values: -1, 0 ... 2
@@ -683,7 +683,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
          *      <li> Possible values: -1, 0 ... 4
          *      <li> State -1: Undefined
          *      <li> State 0: Automatic
-         *      <li> State 1: Second heat generator (Zusätzlicher Wärmeerzeuger)
+         *      <li> State 1: Second heat generator (Zusaetzlicher Waermeerzeuger)
          *      <li> State 2: No late night throttling (Party)
          *      <li> State 3: Holidays, full time throttling (Ferien)
          *      <li> State 4: Off
@@ -698,7 +698,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
          *      <li> Possible values: -1, 0 ... 4
          *      <li> State -1: Undefined
          *      <li> State 0: Automatic
-         *      <li> State 1: Second heat generator (Zusätzlicher Wärmeerzeuger)
+         *      <li> State 1: Second heat generator (Zusaetzlicher Waermeerzeuger)
          *      <li> State 2: No late night throttling (Party)
          *      <li> State 3: Holidays, full time throttling (Ferien)
          *      <li> State 4: Off
@@ -714,7 +714,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
          *      <li> Possible values: -1, 0 ... 4
          *      <li> State -1: Undefined
          *      <li> State 0: Automatic
-         *      <li> State 1: Second heat generator (Zusätzlicher Wärmeerzeuger)
+         *      <li> State 1: Second heat generator (Zusaetzlicher Waermeerzeuger)
          *      <li> State 2: No late night throttling (Party)
          *      <li> State 3: Holidays, full time throttling (Ferien)
          *      <li> State 4: Off
@@ -730,7 +730,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
          *      <li> Possible values: -1, 0 ... 4
          *      <li> State -1: Undefined
          *      <li> State 0: Automatic
-         *      <li> State 1: Second heat generator (Zusätzlicher Wärmeerzeuger)
+         *      <li> State 1: Second heat generator (Zusaetzlicher Waermeerzeuger)
          *      <li> State 2: No late night throttling (Party)
          *      <li> State 3: Holidays, full time throttling (Ferien)
          *      <li> State 4: Off
@@ -739,7 +739,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
         HR_10_MC3_OPERATION_MODE(Doc.of(HeatingMode.values()).accessMode(AccessMode.READ_WRITE)),
 
         /**
-         * Mode of operation cooling (Betriebsart Kühlung).
+         * Mode of operation cooling (Betriebsart Kuehlung).
          * <ul>
          *      <li> Type: Integer
          *      <li> Possible values: -1, 0 ... 1
@@ -751,7 +751,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
         HR_11_COOLING_OPERATION_MODE(Doc.of(CoolingMode.values()).accessMode(AccessMode.READ_WRITE)),
 
         /**
-         * Mode of operation ventilation (Betriebsart Lüftung).
+         * Mode of operation ventilation (Betriebsart Lueftung).
          * Optional, depends on heat pump model if available.
          * <ul>
          *      <li> Type: Integer
@@ -801,7 +801,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
          *     <li> Unit: decimal degree Celsius
          * </ul>
          */
-        HR_15_CURVE_CIRCUIT_HEATING_END_POINT(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
+        HR_15_CURVE_CIRCUIT_HEATING_END_POINT(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
 
         /**
          * Heating curve room heating parallel shift (Heizkurve Heizung Parallelverschiebung). Minimum 50, maximum 350.
@@ -810,7 +810,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
          *     <li> Unit: decimal degree Celsius
          * </ul>
          */
-        HR_16_CURVE_CIRCUIT_HEATING_SHIFT(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
+        HR_16_CURVE_CIRCUIT_HEATING_SHIFT(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
 
         /**
          * Heating curve mixing circuit 1 end point (Heizkurve Mischkreis 1 Endpunkt). Minimum 200, maximum 700.
@@ -819,7 +819,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
          *     <li> Unit: decimal degree Celsius
          * </ul>
          */
-        HR_17_CURVE_MC1_END_POINT(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
+        HR_17_CURVE_MC1_END_POINT(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
 
         /**
          * Heating curve mixing circuit 1 parallel shift (Heizkurve Mischkreis 1 Parallelverschiebung).
@@ -829,7 +829,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
          *     <li> Unit: decimal degree Celsius
          * </ul>
          */
-        HR_18_CURVE_MC1_SHIFT(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
+        HR_18_CURVE_MC1_SHIFT(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
 
         /**
          * Heating curve mixing circuit 2 end point (Heizkurve Mischkreis 2 Endpunkt). Minimum 200, maximum 700.
@@ -839,7 +839,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
          *     <li> Unit: decimal degree Celsius
          * </ul>
          */
-        HR_19_CURVE_MC2_END_POINT(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
+        HR_19_CURVE_MC2_END_POINT(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
 
         /**
          * Heating curve mixing circuit 2 parallel shift (Heizkurve Mischkreis 2 Parallelverschiebung).
@@ -850,7 +850,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
          *     <li> Unit: decimal degree Celsius
          * </ul>
          */
-        HR_20_CURVE_MC2_SHIFT(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
+        HR_20_CURVE_MC2_SHIFT(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
 
         /**
          * Heating curve mixing circuit 3 end point (Heizkurve Mischkreis 3 Endpunkt). Minimum 200, maximum 700.
@@ -860,7 +860,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
          *     <li> Unit: decimal degree Celsius
          * </ul>
          */
-        HR_21_CURVE_MC3_END_POINT(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
+        HR_21_CURVE_MC3_END_POINT(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
 
         /**
          * Heating curve mixing circuit 3 parallel shift (Heizkurve Mischkreis 3 Parallelverschiebung).
@@ -871,7 +871,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
          *     <li> Unit: decimal degree Celsius
          * </ul>
          */
-        HR_22_CURVE_MC3_SHIFT(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
+        HR_22_CURVE_MC3_SHIFT(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
 
         /**
          * Temperature +-. Minimum -50, maximum 50. Signed 16 bit number.
@@ -880,7 +880,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
          *     <li> Unit: decimal degree Celsius
          * </ul>
          */
-        HR_23_TEMP_PM(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE));
+        HR_23_TEMP_PM(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE));
 
 
         private final Doc doc;
@@ -997,7 +997,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
     }
     
     /**
-     * 2nd heat generator 1 (ZWE1, zusätzlicher Wärmeerzeuger 1).
+     * 2nd heat generator 1 (ZWE1, zusaetzlicher Waermeerzeuger 1).
      *
      * @return the Channel {@link Value}
      */
@@ -1015,7 +1015,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
     }
     
     /**
-     * 2nd heat generator 2 (ZWE2, zusätzlicher Wärmeerzeuger 2).
+     * 2nd heat generator 2 (ZWE2, zusaetzlicher Waermeerzeuger 2).
      *
      * @return the Channel {@link Value}
      */
@@ -1033,7 +1033,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
     }
     
     /**
-     * 2nd heat generator 3 (ZWE3, zusätzlicher Wärmeerzeuger 3). Optional, depends on heat pump model if available.
+     * 2nd heat generator 3 (ZWE3, zusaetzlicher Waermeerzeuger 3). Optional, depends on heat pump model if available.
      *
      * @return the Channel {@link Value}
      */
@@ -1072,7 +1072,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
     }
     
     /**
-     * Gets the external return temperature (Rücklauf extern), unit is decimal degree Celsius.
+     * Gets the external return temperature (Ruecklauf extern), unit is decimal degree Celsius.
      *
      * @return the Channel {@link Value}
      */
@@ -1181,7 +1181,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
     }
     
     /**
-     * Gets the heat source inlet temperature (Wärmequelle Eintritt), unit is decimal degree Celsius.
+     * Gets the heat source inlet temperature (Waermequelle Eintritt), unit is decimal degree Celsius.
      *
      * @return the Channel {@link Value}
      */
@@ -1199,7 +1199,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
     }
     
     /**
-     * Gets the heat source outlet temperature (Wärmequelle Austritt), unit is decimal degree Celsius.
+     * Gets the heat source outlet temperature (Waermequelle Austritt), unit is decimal degree Celsius.
      *
      * @return the Channel {@link Value}
      */
@@ -1421,7 +1421,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
     }
     
     /**
-     * Gets the overheating (Überhitzung), unit is decimal degree Kelvin.
+     * Gets the overheating (Ueberhitzung), unit is decimal degree Kelvin.
      *
      * @return the Channel {@link Value}
      */
@@ -1439,7 +1439,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
     }
     
     /**
-     * Gets the overheating set point (Überhitzung Soll), unit is decimal degree Kelvin.
+     * Gets the overheating set point (Ueberhitzung Soll), unit is decimal degree Kelvin.
      *
      * @return the Channel {@link Value}
      */
@@ -1567,7 +1567,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
     }
     
     /**
-     * Gets the operating hours of 2nd heat generator 1 (Betriebsstunden ZWE1, Zusätzlicher Wärmeerzeuger).
+     * Gets the operating hours of 2nd heat generator 1 (Betriebsstunden ZWE1, Zusaetzlicher Waermeerzeuger).
      *
      * @return the Channel {@link Value}
      */
@@ -1585,7 +1585,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
     }
     
     /**
-     * Gets the operating hours of 2nd heat generator 2 (Betriebsstunden ZWE2, Zusätzlicher Wärmeerzeuger).
+     * Gets the operating hours of 2nd heat generator 2 (Betriebsstunden ZWE2, Zusaetzlicher Waermeerzeuger).
      *
      * @return the Channel {@link Value}
      */
@@ -1603,7 +1603,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
     }
     
     /**
-     * Gets the operating hours of 2nd heat generator 3 (Betriebsstunden ZWE3, Zusätzlicher Wärmeerzeuger).
+     * Gets the operating hours of 2nd heat generator 3 (Betriebsstunden ZWE3, Zusaetzlicher Waermeerzeuger).
      * Optional, depends on heat pump model if available.
      *
      * @return the Channel {@link Value}
@@ -1622,7 +1622,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
     }
     
     /**
-     * Gets the operating hours of the heat pump (Betriebsstunden Wärmepumpe).
+     * Gets the operating hours of the heat pump (Betriebsstunden Waermepumpe).
      *
      * @return the Channel {@link Value}
      */
@@ -1707,7 +1707,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
      *      <li> State 4: Defrost (Abtauen)
      *      <li> State 5: Off
      *      <li> State 6: External energy source (Externe Energiequelle)
-     *      <li> State 7: Cooling (Kühlung)
+     *      <li> State 7: Cooling (Kuehlung)
      * </ul>
      *
      * @return the Channel {@link Value}
@@ -1726,7 +1726,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
     }
     
     /**
-     * Gets the heat quantity supplied to room heating (Wärmemenge Heizung), unit is hectowatt hours (kWh * 10E-1).
+     * Gets the heat quantity supplied to room heating (Waermemenge Heizung), unit is hectowatt hours (kWh * 10E-1).
      *
      * @return the Channel {@link Value}
      */
@@ -1745,7 +1745,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
     }
     
     /**
-     * Gets the heat quantity supplied to domestic hot water heating (Wärmemenge Trinkwarmwasser),
+     * Gets the heat quantity supplied to domestic hot water heating (Waermemenge Trinkwarmwasser),
      * unit is hectowatt hours (kWh * 10E-1).
      *
      * @return the Channel {@link Value}
@@ -1764,7 +1764,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
     }
     
     /**
-     * Gets the heat quantity supplied to swimming pool heating (Wärmemenge Schwimmbad), unit is hectowatt hours
+     * Gets the heat quantity supplied to swimming pool heating (Waermemenge Schwimmbad), unit is hectowatt hours
      * (kWh * 10E-1).
      * Optional, depends on heat pump model if available.
      *
@@ -1784,7 +1784,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
     }
     
     /**
-     * Gets the total heat quantity supplied (Wärmemenge gesamt), unit is hectowatt hours (kWh * 10E-1).
+     * Gets the total heat quantity supplied (Waermemenge gesamt), unit is hectowatt hours (kWh * 10E-1).
      *
      * @return the Channel {@link Value}
      */
@@ -1853,7 +1853,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
     }
 
     /**
-     * Get heat. sys. pump (HUP, Heizung + Brauchwasser Umwälzpumpe) force on status.
+     * Get heat. sys. pump (HUP, Heizung + Brauchwasser Umwaelzpumpe) force on status.
 	 * See {@link ChannelId#COIL_2_HUP}.
 	 *
 	 * @return the Channel {@link Value}
@@ -1863,7 +1863,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
 	}
 	
 	/**
-     * Heat. sys. pump (HUP, Heizung + Brauchwasser Umwälzpumpe), force on.
+     * Heat. sys. pump (HUP, Heizung + Brauchwasser Umwaelzpumpe), force on.
 	 * See {@link ChannelId#COIL_2_HUP}.
 	 * 
 	 * @param value the next write value
@@ -1913,7 +1913,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
     }
 
     /**
-     * Get CP (ZUP, Zusatz-Umwälzpumpe) force on status.
+     * Get CP (ZUP, Zusatz-Umwaelzpumpe) force on status.
 	 * See {@link ChannelId#COIL_4_ZUP}.
 	 *
 	 * @return the Channel {@link Value}
@@ -1923,7 +1923,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
 	}
 	
 	/**
-     * CP (ZUP, Zusatz-Umwälzpumpe), force on.
+     * CP (ZUP, Zusatz-Umwaelzpumpe), force on.
 	 * See {@link ChannelId#COIL_4_ZUP}.
 	 * 
 	 * @param value the next write value
@@ -1943,7 +1943,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
     }
 
     /**
-     * Get DHW pump (BUP, Trinkwarmwasser-Umwälzpumpe) force on status.
+     * Get DHW pump (BUP, Trinkwarmwasser-Umwaelzpumpe) force on status.
 	 * See {@link ChannelId#COIL_5_BUP}.
 	 *
 	 * @return the Channel {@link Value}
@@ -1953,7 +1953,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
 	}
 	
 	/**
-     * DHW pump (BUP, Trinkwarmwasser-Umwälzpumpe), force on.
+     * DHW pump (BUP, Trinkwarmwasser-Umwaelzpumpe), force on.
 	 * See {@link ChannelId#COIL_5_BUP}.
 	 * 
 	 * @param value the next write value
@@ -1973,7 +1973,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
     }
 
     /**
-     * Get heats.-pump (BOSUP, Brunnen oder Sole-Umwälzpumpe) force on status.
+     * Get heats.-pump (BOSUP, Brunnen oder Sole-Umwaelzpumpe) force on status.
 	 * See {@link ChannelId#COIL_6_BOSUP}.
 	 *
 	 * @return the Channel {@link Value}
@@ -1983,7 +1983,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
 	}
 	
 	/**
-     * Heats.-pump (BOSUP, Brunnen oder Sole-Umwälzpumpe), force on.
+     * Heats.-pump (BOSUP, Brunnen oder Sole-Umwaelzpumpe), force on.
 	 * See {@link ChannelId#COIL_7_ZIP}.
 	 * 
 	 * @param value the next write value
@@ -2033,7 +2033,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
     }
 
     /**
-     * Get CP2 (FUP2, Fußbodenheizungs-Umwälzpumpe) force on status. Optional, depends on heat pump model if available.
+     * Get CP2 (FUP2, Fussbodenheizungs-Umwaelzpumpe) force on status. Optional, depends on heat pump model if available.
 	 * See {@link ChannelId#COIL_8_FUP2}.
 	 *
 	 * @return the Channel {@link Value}
@@ -2043,7 +2043,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
 	}
 	
 	/**
-     * CP2 (FUP2, Fußbodenheizungs-Umwälzpumpe), force on. Optional, depends on heat pump model if available.
+     * CP2 (FUP2, Fussbodenheizungs-Umwaelzpumpe), force on. Optional, depends on heat pump model if available.
 	 * See {@link ChannelId#COIL_8_FUP2}.
 	 * 
 	 * @param value the next write value
@@ -2063,7 +2063,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
     }
 
     /**
-     * Get CP3 (FUP3, Fußbodenheizungs-Umwälzpumpe) force on status. Optional, depends on heat pump model if available.
+     * Get CP3 (FUP3, Fussbodenheizungs-Umwaelzpumpe) force on status. Optional, depends on heat pump model if available.
 	 * See {@link ChannelId#COIL_9_FUP3}.
 	 *
 	 * @return the Channel {@link Value}
@@ -2073,7 +2073,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
 	}
 	
 	/**
-     * CP3 (FUP3, Fußbodenheizungs-Umwälzpumpe), force on. Optional, depends on heat pump model if available.
+     * CP3 (FUP3, Fussbodenheizungs-Umwaelzpumpe), force on. Optional, depends on heat pump model if available.
 	 * See {@link ChannelId#COIL_9_FUP3}.
 	 * 
 	 * @param value the next write value
@@ -2123,7 +2123,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
     }
 
     /**
-     * Get pool pump (SUP, Schwimmbad-Umwälzpumpe) force on status. Optional, depends on heat pump model if available.
+     * Get pool pump (SUP, Schwimmbad-Umwaelzpumpe) force on status. Optional, depends on heat pump model if available.
 	 * See {@link ChannelId#COIL_11_SUP}.
 	 *
 	 * @return the Channel {@link Value}
@@ -2133,7 +2133,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
 	}
 	
 	/**
-     * Pool pump (SUP, Schwimmbad-Umwälzpumpe), force on. Optional, depends on heat pump model if available.
+     * Pool pump (SUP, Schwimmbad-Umwaelzpumpe), force on. Optional, depends on heat pump model if available.
 	 * See {@link ChannelId#COIL_11_SUP}.
 	 * 
 	 * @param value the next write value
@@ -2183,7 +2183,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
     }
 
     /**
-     * Get FRH (Schütz Defrostheizung) force on status. Optional, depends on heat pump model if available.
+     * Get FRH (Schuetz Defrostheizung) force on status. Optional, depends on heat pump model if available.
 	 * See {@link ChannelId#COIL_13_FRH}.
 	 *
 	 * @return the Channel {@link Value}
@@ -2193,7 +2193,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
 	}
 	
 	/**
-     * FRH (Schütz Defrostheizung), force on. Optional, depends on heat pump model if available.
+     * FRH (Schuetz Defrostheizung), force on. Optional, depends on heat pump model if available.
 	 * See {@link ChannelId#COIL_13_FRH}.
 	 * 
 	 * @param value the next write value
@@ -2476,7 +2476,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
 	}
 
 	/**
-     * Get block / release heat pump (Sperre / Freigabe Wärmepumpe).
+     * Get block / release heat pump (Sperre / Freigabe Waermepumpe).
      * <ul>
      *      <li> Type: Integer
      *      <li> Possible values: -1, 0 ... 2
@@ -2494,7 +2494,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
 	}
 	
 	/**
-     * Set block / release heat pump (Sperre / Freigabe Wärmepumpe).
+     * Set block / release heat pump (Sperre / Freigabe Waermepumpe).
      * <ul>
      *      <li> Type: Integer
      *      <li> Possible values: -1, 0 ... 2
@@ -2513,7 +2513,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
 	}
 	
 	/**
-     * Set block / release heat pump (Sperre / Freigabe Wärmepumpe).
+     * Set block / release heat pump (Sperre / Freigabe Waermepumpe).
      * <ul>
      *      <li> Type: Integer
      *      <li> Possible values: -1, 0 ... 2
@@ -2547,7 +2547,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
      *      <li> Possible values: -1, 0 ... 4
      *      <li> State -1: Undefined
      *      <li> State 0: Automatic
-     *      <li> State 1: Second heat generator (Zusätzlicher Wärmeerzeuger)
+     *      <li> State 1: Second heat generator (Zusaetzlicher Waermeerzeuger)
      *      <li> State 2: No late night throttling (Party)
      *      <li> State 3: Holidays, full time throttling (Ferien)
      *      <li> State 4: Off
@@ -2567,7 +2567,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
      *      <li> Possible values: -1, 0 ... 4
      *      <li> State -1: Undefined
      *      <li> State 0: Automatic
-     *      <li> State 1: Second heat generator (Zusätzlicher Wärmeerzeuger)
+     *      <li> State 1: Second heat generator (Zusaetzlicher Waermeerzeuger)
      *      <li> State 2: No late night throttling (Party)
      *      <li> State 3: Holidays, full time throttling (Ferien)
      *      <li> State 4: Off
@@ -2588,7 +2588,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
      *      <li> Possible values: -1, 0 ... 4
      *      <li> State -1: Undefined
      *      <li> State 0: Automatic
-     *      <li> State 1: Second heat generator (Zusätzlicher Wärmeerzeuger)
+     *      <li> State 1: Second heat generator (Zusaetzlicher Waermeerzeuger)
      *      <li> State 2: No late night throttling (Party)
      *      <li> State 3: Holidays, full time throttling (Ferien)
      *      <li> State 4: Off
@@ -2618,7 +2618,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
      *      <li> Possible values: -1, 0 ... 4
      *      <li> State -1: Undefined
      *      <li> State 0: Automatic
-     *      <li> State 1: Second heat generator (Zusätzlicher Wärmeerzeuger)
+     *      <li> State 1: Second heat generator (Zusaetzlicher Waermeerzeuger)
      *      <li> State 2: No late night throttling (Party)
      *      <li> State 3: Holidays, full time throttling (Ferien)
      *      <li> State 4: Off
@@ -2638,7 +2638,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
      *      <li> Possible values: -1, 0 ... 4
      *      <li> State -1: Undefined
      *      <li> State 0: Automatic
-     *      <li> State 1: Second heat generator (Zusätzlicher Wärmeerzeuger)
+     *      <li> State 1: Second heat generator (Zusaetzlicher Waermeerzeuger)
      *      <li> State 2: No late night throttling (Party)
      *      <li> State 3: Holidays, full time throttling (Ferien)
      *      <li> State 4: Off
@@ -2659,7 +2659,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
      *      <li> Possible values: -1, 0 ... 4
      *      <li> State -1: Undefined
      *      <li> State 0: Automatic
-     *      <li> State 1: Second heat generator (Zusätzlicher Wärmeerzeuger)
+     *      <li> State 1: Second heat generator (Zusaetzlicher Waermeerzeuger)
      *      <li> State 2: No late night throttling (Party)
      *      <li> State 3: Holidays, full time throttling (Ferien)
      *      <li> State 4: Off
@@ -2690,7 +2690,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
      *      <li> Possible values: -1, 0 ... 4
      *      <li> State -1: Undefined
      *      <li> State 0: Automatic
-     *      <li> State 1: Second heat generator (Zusätzlicher Wärmeerzeuger)
+     *      <li> State 1: Second heat generator (Zusaetzlicher Waermeerzeuger)
      *      <li> State 2: No late night throttling (Party)
      *      <li> State 3: Holidays, full time throttling (Ferien)
      *      <li> State 4: Off
@@ -2711,7 +2711,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
      *      <li> Possible values: -1, 0 ... 4
      *      <li> State -1: Undefined
      *      <li> State 0: Automatic
-     *      <li> State 1: Second heat generator (Zusätzlicher Wärmeerzeuger)
+     *      <li> State 1: Second heat generator (Zusaetzlicher Waermeerzeuger)
      *      <li> State 2: No late night throttling (Party)
      *      <li> State 3: Holidays, full time throttling (Ferien)
      *      <li> State 4: Off
@@ -2733,7 +2733,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
      *      <li> Possible values: -1, 0 ... 4
      *      <li> State -1: Undefined
      *      <li> State 0: Automatic
-     *      <li> State 1: Second heat generator (Zusätzlicher Wärmeerzeuger)
+     *      <li> State 1: Second heat generator (Zusaetzlicher Waermeerzeuger)
      *      <li> State 2: No late night throttling (Party)
      *      <li> State 3: Holidays, full time throttling (Ferien)
      *      <li> State 4: Off
@@ -2764,7 +2764,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
      *      <li> Possible values: -1, 0 ... 4
      *      <li> State -1: Undefined
      *      <li> State 0: Automatic
-     *      <li> State 1: Second heat generator (Zusätzlicher Wärmeerzeuger)
+     *      <li> State 1: Second heat generator (Zusaetzlicher Waermeerzeuger)
      *      <li> State 2: No late night throttling (Party)
      *      <li> State 3: Holidays, full time throttling (Ferien)
      *      <li> State 4: Off
@@ -2785,7 +2785,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
      *      <li> Possible values: -1, 0 ... 4
      *      <li> State -1: Undefined
      *      <li> State 0: Automatic
-     *      <li> State 1: Second heat generator (Zusätzlicher Wärmeerzeuger)
+     *      <li> State 1: Second heat generator (Zusaetzlicher Waermeerzeuger)
      *      <li> State 2: No late night throttling (Party)
      *      <li> State 3: Holidays, full time throttling (Ferien)
      *      <li> State 4: Off
@@ -2807,7 +2807,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
      *      <li> Possible values: -1, 0 ... 4
      *      <li> State -1: Undefined
      *      <li> State 0: Automatic
-     *      <li> State 1: Second heat generator (Zusätzlicher Wärmeerzeuger)
+     *      <li> State 1: Second heat generator (Zusaetzlicher Waermeerzeuger)
      *      <li> State 2: No late night throttling (Party)
      *      <li> State 3: Holidays, full time throttling (Ferien)
      *      <li> State 4: Off
@@ -2831,7 +2831,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
 	}
 
 	/**
-     * Get mode of operation cooling (Betriebsart Kühlung).
+     * Get mode of operation cooling (Betriebsart Kuehlung).
      * <ul>
      *      <li> Type: Integer
      *      <li> Possible values: -1, 0 ... 1
@@ -2848,7 +2848,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
 	}
 	
 	/**
-     * Set mode of operation cooling (Betriebsart Kühlung).
+     * Set mode of operation cooling (Betriebsart Kuehlung).
      * <ul>
      *      <li> Type: Integer
      *      <li> Possible values: -1, 0 ... 1
@@ -2866,7 +2866,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
 	}
 	
 	/**
-     * Set mode of operation cooling (Betriebsart Kühlung).
+     * Set mode of operation cooling (Betriebsart Kuehlung).
      * <ul>
      *      <li> Type: Integer
      *      <li> Possible values: -1, 0 ... 1
@@ -2893,7 +2893,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
 	}
 
 	/**
-     * Get mode of operation ventilation (Betriebsart Lüftung).
+     * Get mode of operation ventilation (Betriebsart Lueftung).
      * Optional, depends on heat pump model if available.
      * <ul>
      *      <li> Type: Integer
@@ -2913,7 +2913,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
 	}
 	
 	/**
-     * Set mode of operation ventilation (Betriebsart Lüftung).
+     * Set mode of operation ventilation (Betriebsart Lueftung).
      * Optional, depends on heat pump model if available.
      * <ul>
      *      <li> Type: Integer
@@ -2934,7 +2934,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
 	}
 	
 	/**
-     * Set mode of operation ventilation (Betriebsart Lüftung).
+     * Set mode of operation ventilation (Betriebsart Lueftung).
      * Optional, depends on heat pump model if available.
      * <ul>
      *      <li> Type: Integer

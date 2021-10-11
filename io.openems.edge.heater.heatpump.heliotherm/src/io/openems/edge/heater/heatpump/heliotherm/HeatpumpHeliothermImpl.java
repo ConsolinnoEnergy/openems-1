@@ -82,7 +82,6 @@ public class HeatpumpHeliothermImpl extends AbstractOpenemsModbusComponent imple
     private int defaultSetPointPowerPercent;
     private int defaultSetPointTemperature;
     private int maxElectricPower;
-    private int coefficientOfPerformance = 2;    // Fallback value.
     private boolean heatpumpError = false;
     private boolean readOnly;
 
@@ -130,226 +129,6 @@ public class HeatpumpHeliothermImpl extends AbstractOpenemsModbusComponent imple
 
     @Override
     protected ModbusProtocol defineModbusProtocol() throws OpenemsException {
-        return createModbusProtocol();/*
-        if (readOnly == false) {
-            return new ModbusProtocol(this,
-                    // Input register read.
-                    new FC4ReadInputRegistersTask(12, Priority.HIGH,
-                            // Use SignedWordElement when the number can be negative. Signed 16bit maps every number >32767
-                            // to negative. That means if the value you read is positive and <32767, there is no difference
-                            // between signed and unsigned.
-                            m(Heater.ChannelId.FLOW_TEMPERATURE, new SignedWordElement(12),
-                                    ElementToChannelConverter.DIRECT_1_TO_1),
-                            m(Heater.ChannelId.RETURN_TEMPERATURE, new SignedWordElement(13),
-                                    ElementToChannelConverter.DIRECT_1_TO_1),
-                            m(HeatpumpHeliothermChannel.ChannelId.IR14_BUFFER_TEMPERATURE, new SignedWordElement(14),
-                                    ElementToChannelConverter.DIRECT_1_TO_1)
-                    ),
-                    new FC4ReadInputRegistersTask(25, Priority.HIGH,
-                            m(HeatpumpHeliothermChannel.ChannelId.IR25_HEATPUMP_RUNNING, new SignedWordElement(25),
-                                    ElementToChannelConverter.DIRECT_1_TO_1),
-                            m(HeatpumpHeliothermChannel.ChannelId.IR26_ERROR, new SignedWordElement(26),
-                                    ElementToChannelConverter.DIRECT_1_TO_1),
-                            new DummyRegisterElement(27),
-                            new DummyRegisterElement(28),
-                            m(HeatpumpHeliothermChannel.ChannelId.IR29_READ_VERDICHTER_DREHZAHL, new SignedWordElement(29),
-                                    ElementToChannelConverter.SCALE_FACTOR_MINUS_1),
-                            m(HeatpumpHeliothermChannel.ChannelId.IR30_COP, new SignedWordElement(30),
-                                    ElementToChannelConverter.SCALE_FACTOR_1),
-                            new DummyRegisterElement(31),
-                            m(HeatpumpHeliothermChannel.ChannelId.IR32_EVU_FREIGABE, new SignedWordElement(32),
-                                    ElementToChannelConverter.DIRECT_1_TO_1),
-                            new DummyRegisterElement(33),
-                            m(HeatpumpHeliothermChannel.ChannelId.IR34_READ_TEMP_SET_POINT, new SignedWordElement(32),
-                                    ElementToChannelConverter.DIRECT_1_TO_1)
-                    ),
-                    new FC4ReadInputRegistersTask(41, Priority.HIGH,
-                            m(HeatpumpHeliothermChannel.ChannelId.IR41_RUN_REQUEST_TYPE, new SignedWordElement(41),
-                                    ElementToChannelConverter.DIRECT_1_TO_1)
-                    ),
-                    new FC4ReadInputRegistersTask(70, Priority.HIGH,
-                            m(HeatpumpHeliothermChannel.ChannelId.IR70_71_CURRENT_ELECTRIC_POWER, new UnsignedDoublewordElement(70),
-                                    ElementToChannelConverter.DIRECT_1_TO_1)
-                    ),
-                    new FC4ReadInputRegistersTask(74, Priority.HIGH,
-                            m(Heater.ChannelId.READ_EFFECTIVE_POWER, new UnsignedDoublewordElement(74),
-                                    ElementToChannelConverter.SCALE_FACTOR_MINUS_1)
-                    ),
-
-                    // Holding register read.
-                    new FC3ReadRegistersTask(100, Priority.HIGH,
-                            m(HeatpumpHeliothermChannel.ChannelId.HR100_OPERATING_MODE, new UnsignedWordElement(100),
-                                    ElementToChannelConverter.DIRECT_1_TO_1),
-                            new DummyRegisterElement(101),
-                            m(HeatpumpHeliothermChannel.ChannelId.HR102_SET_POINT_TEMPERATUR, new SignedWordElement(102),
-                                    ElementToChannelConverter.DIRECT_1_TO_1),
-                            m(HeatpumpHeliothermChannel.ChannelId.HR103_USE_SET_POINT_TEMPERATURE, new UnsignedWordElement(103),
-                                    ElementToChannelConverter.DIRECT_1_TO_1)
-                    ),
-                    new FC3ReadRegistersTask(117, Priority.HIGH,
-                            m(HeatpumpHeliothermChannel.ChannelId.HR117_USE_POWER_CONTROL, new UnsignedWordElement(117),
-                                    ElementToChannelConverter.DIRECT_1_TO_1)
-                    ),
-                    new FC3ReadRegistersTask(125, Priority.HIGH,
-                            m(HeatpumpHeliothermChannel.ChannelId.HR125_SET_POINT_ELECTRIC_POWER_CONSUMPTION, new UnsignedWordElement(125),
-                                    ElementToChannelConverter.DIRECT_1_TO_1),
-                            m(HeatpumpHeliothermChannel.ChannelId.HR126_SET_POINT_VERDICHTERDREHZAHL_PERCENT, new SignedWordElement(126),
-                                    ElementToChannelConverter.SCALE_FACTOR_MINUS_1),
-                            new DummyRegisterElement(127),
-                            m(HeatpumpHeliothermChannel.ChannelId.HR128_RESET_ERROR, new UnsignedWordElement(128),
-                                    ElementToChannelConverter.DIRECT_1_TO_1),
-                            m(HeatpumpHeliothermChannel.ChannelId.HR129_OUTSIDE_TEMPERATURE, new SignedWordElement(129),
-                                    ElementToChannelConverter.DIRECT_1_TO_1),
-                            m(HeatpumpHeliothermChannel.ChannelId.HR130_USE_MODBUS_OUTSIDE_TEMPERATURE, new UnsignedWordElement(130),
-                                    ElementToChannelConverter.DIRECT_1_TO_1),
-                            m(HeatpumpHeliothermChannel.ChannelId.HR131_BUFFER_TEMPERATURE, new SignedWordElement(131),
-                                    ElementToChannelConverter.DIRECT_1_TO_1),
-                            m(HeatpumpHeliothermChannel.ChannelId.HR132_USE_MODBUS_BUFFER_TEMPERATURE, new UnsignedWordElement(132),
-                                    ElementToChannelConverter.DIRECT_1_TO_1)
-                    ),
-                    new FC3ReadRegistersTask(149, Priority.HIGH,
-                            m(HeatpumpHeliothermChannel.ChannelId.HR149_EVU_FREIGABE, new SignedWordElement(149),
-                                    ElementToChannelConverter.DIRECT_1_TO_1),
-                            m(HeatpumpHeliothermChannel.ChannelId.HR150_USE_MODBUS_EVU_FREIGABE, new SignedWordElement(150),
-                                    ElementToChannelConverter.DIRECT_1_TO_1)
-                    ),
-
-                    // Holding register write.
-                    // Modbus write tasks take the "setNextWriteValue" value of a channel and send them to the device.
-                    // Modbus read tasks put values in the "setNextValue" field, which get automatically transferred to the
-                    // "value" field of the channel. By default, the "setNextWriteValue" field is NOT copied to the
-                    // "setNextValue" and "value" field. In essence, this makes "setNextWriteValue" and "setNextValue"/"value"
-                    // two separate channels.
-                    // That means: Modbus read tasks will not overwrite any "setNextWriteValue" values. You do not have to
-                    // watch the order in which you call read and write tasks.
-                    // Also: if you do not add a Modbus read task for a write channel, any "setNextWriteValue" values will
-                    // not be transferred to the "value" field of the channel, unless you add code that does that.
-                    new FC16WriteRegistersTask(100,
-                            m(HeatpumpHeliothermChannel.ChannelId.HR100_OPERATING_MODE, new UnsignedWordElement(100),
-                                    ElementToChannelConverter.DIRECT_1_TO_1),
-                            new DummyRegisterElement(101),
-                            m(HeatpumpHeliothermChannel.ChannelId.HR102_SET_POINT_TEMPERATUR, new SignedWordElement(102),
-                                    ElementToChannelConverter.DIRECT_1_TO_1),
-                            m(HeatpumpHeliothermChannel.ChannelId.HR103_USE_SET_POINT_TEMPERATURE, new UnsignedWordElement(103),
-                                    ElementToChannelConverter.DIRECT_1_TO_1)
-                    ),
-                    new FC16WriteRegistersTask(117,
-                            m(HeatpumpHeliothermChannel.ChannelId.HR117_USE_POWER_CONTROL, new UnsignedWordElement(117),
-                                    ElementToChannelConverter.DIRECT_1_TO_1)
-                    ),
-                    new FC16WriteRegistersTask(125,
-                            m(HeatpumpHeliothermChannel.ChannelId.HR125_SET_POINT_ELECTRIC_POWER_CONSUMPTION, new UnsignedWordElement(125),
-                                    ElementToChannelConverter.DIRECT_1_TO_1),
-                            m(HeatpumpHeliothermChannel.ChannelId.HR126_SET_POINT_VERDICHTERDREHZAHL_PERCENT, new SignedWordElement(126),
-                                    ElementToChannelConverter.SCALE_FACTOR_MINUS_1),
-                            new DummyRegisterElement(127),
-                            m(HeatpumpHeliothermChannel.ChannelId.HR128_RESET_ERROR, new UnsignedWordElement(128),
-                                    ElementToChannelConverter.DIRECT_1_TO_1),
-                            m(HeatpumpHeliothermChannel.ChannelId.HR129_OUTSIDE_TEMPERATURE, new SignedWordElement(129),
-                                    ElementToChannelConverter.DIRECT_1_TO_1),
-                            m(HeatpumpHeliothermChannel.ChannelId.HR130_USE_MODBUS_OUTSIDE_TEMPERATURE, new UnsignedWordElement(130),
-                                    ElementToChannelConverter.DIRECT_1_TO_1),
-                            m(HeatpumpHeliothermChannel.ChannelId.HR131_BUFFER_TEMPERATURE, new SignedWordElement(131),
-                                    ElementToChannelConverter.DIRECT_1_TO_1),
-                            m(HeatpumpHeliothermChannel.ChannelId.HR132_USE_MODBUS_BUFFER_TEMPERATURE, new UnsignedWordElement(132),
-                                    ElementToChannelConverter.DIRECT_1_TO_1)
-                    ),
-                    new FC16WriteRegistersTask(149,
-                            m(HeatpumpHeliothermChannel.ChannelId.HR149_EVU_FREIGABE, new SignedWordElement(149),
-                                    ElementToChannelConverter.DIRECT_1_TO_1),
-                            m(HeatpumpHeliothermChannel.ChannelId.HR150_USE_MODBUS_EVU_FREIGABE, new SignedWordElement(150),
-                                    ElementToChannelConverter.DIRECT_1_TO_1)
-                    )
-            );
-        } else {
-
-            // read only
-            return new ModbusProtocol(this,
-                    // Input register read.
-                    new FC4ReadInputRegistersTask(12, Priority.HIGH,
-                            // Use SignedWordElement when the number can be negative. Signed 16bit maps every number >32767
-                            // to negative. That means if the value you read is positive and <32767, there is no difference
-                            // between signed and unsigned.
-                            m(Heater.ChannelId.FLOW_TEMPERATURE, new SignedWordElement(12),
-                                    ElementToChannelConverter.DIRECT_1_TO_1),
-                            m(Heater.ChannelId.RETURN_TEMPERATURE, new SignedWordElement(13),
-                                    ElementToChannelConverter.DIRECT_1_TO_1),
-                            m(HeatpumpHeliothermChannel.ChannelId.IR14_BUFFER_TEMPERATURE, new SignedWordElement(14),
-                                    ElementToChannelConverter.DIRECT_1_TO_1)
-                    ),
-                    new FC4ReadInputRegistersTask(25, Priority.HIGH,
-                            m(HeatpumpHeliothermChannel.ChannelId.IR25_HEATPUMP_RUNNING, new SignedWordElement(25),
-                                    ElementToChannelConverter.DIRECT_1_TO_1),
-                            m(HeatpumpHeliothermChannel.ChannelId.IR26_ERROR, new SignedWordElement(26),
-                                    ElementToChannelConverter.DIRECT_1_TO_1),
-                            new DummyRegisterElement(27),
-                            new DummyRegisterElement(28),
-                            m(HeatpumpHeliothermChannel.ChannelId.IR29_READ_VERDICHTER_DREHZAHL, new SignedWordElement(29),
-                                    ElementToChannelConverter.SCALE_FACTOR_MINUS_1),
-                            m(HeatpumpHeliothermChannel.ChannelId.IR30_COP, new SignedWordElement(30),
-                                    ElementToChannelConverter.SCALE_FACTOR_1),
-                            new DummyRegisterElement(31),
-                            m(HeatpumpHeliothermChannel.ChannelId.IR32_EVU_FREIGABE, new SignedWordElement(32),
-                                    ElementToChannelConverter.DIRECT_1_TO_1),
-                            new DummyRegisterElement(33),
-                            m(HeatpumpHeliothermChannel.ChannelId.IR34_READ_TEMP_SET_POINT, new SignedWordElement(32),
-                                    ElementToChannelConverter.DIRECT_1_TO_1)
-                    ),
-                    new FC4ReadInputRegistersTask(41, Priority.HIGH,
-                            m(HeatpumpHeliothermChannel.ChannelId.IR41_RUN_REQUEST_TYPE, new SignedWordElement(41),
-                                    ElementToChannelConverter.DIRECT_1_TO_1)
-                    ),
-                    new FC4ReadInputRegistersTask(70, Priority.HIGH,
-                            m(HeatpumpHeliothermChannel.ChannelId.IR70_71_CURRENT_ELECTRIC_POWER, new UnsignedDoublewordElement(70),
-                                    ElementToChannelConverter.DIRECT_1_TO_1)
-                    ),
-                    new FC4ReadInputRegistersTask(74, Priority.HIGH,
-                            m(Heater.ChannelId.READ_EFFECTIVE_POWER, new UnsignedDoublewordElement(74),
-                                    ElementToChannelConverter.SCALE_FACTOR_MINUS_1)
-                    ),
-
-                    // Holding register read.
-                    new FC3ReadRegistersTask(100, Priority.HIGH,
-                            m(HeatpumpHeliothermChannel.ChannelId.HR100_OPERATING_MODE, new UnsignedWordElement(100),
-                                    ElementToChannelConverter.DIRECT_1_TO_1),
-                            new DummyRegisterElement(101),
-                            m(HeatpumpHeliothermChannel.ChannelId.HR102_SET_POINT_TEMPERATUR, new SignedWordElement(102),
-                                    ElementToChannelConverter.DIRECT_1_TO_1),
-                            m(HeatpumpHeliothermChannel.ChannelId.HR103_USE_SET_POINT_TEMPERATURE, new UnsignedWordElement(103),
-                                    ElementToChannelConverter.DIRECT_1_TO_1)
-                    ),
-                    new FC3ReadRegistersTask(117, Priority.HIGH,
-                            m(HeatpumpHeliothermChannel.ChannelId.HR117_USE_POWER_CONTROL, new UnsignedWordElement(117),
-                                    ElementToChannelConverter.DIRECT_1_TO_1)
-                    ),
-                    new FC3ReadRegistersTask(125, Priority.HIGH,
-                            m(HeatpumpHeliothermChannel.ChannelId.HR125_SET_POINT_ELECTRIC_POWER_CONSUMPTION, new UnsignedWordElement(125),
-                                    ElementToChannelConverter.DIRECT_1_TO_1),
-                            m(HeatpumpHeliothermChannel.ChannelId.HR126_SET_POINT_VERDICHTERDREHZAHL_PERCENT, new SignedWordElement(126),
-                                    ElementToChannelConverter.SCALE_FACTOR_MINUS_1),
-                            new DummyRegisterElement(127),
-                            m(HeatpumpHeliothermChannel.ChannelId.HR128_RESET_ERROR, new UnsignedWordElement(128),
-                                    ElementToChannelConverter.DIRECT_1_TO_1),
-                            m(HeatpumpHeliothermChannel.ChannelId.HR129_OUTSIDE_TEMPERATURE, new SignedWordElement(129),
-                                    ElementToChannelConverter.DIRECT_1_TO_1),
-                            m(HeatpumpHeliothermChannel.ChannelId.HR130_USE_MODBUS_OUTSIDE_TEMPERATURE, new UnsignedWordElement(130),
-                                    ElementToChannelConverter.DIRECT_1_TO_1),
-                            m(HeatpumpHeliothermChannel.ChannelId.HR131_BUFFER_TEMPERATURE, new SignedWordElement(131),
-                                    ElementToChannelConverter.DIRECT_1_TO_1),
-                            m(HeatpumpHeliothermChannel.ChannelId.HR132_USE_MODBUS_BUFFER_TEMPERATURE, new UnsignedWordElement(132),
-                                    ElementToChannelConverter.DIRECT_1_TO_1)
-                    ),
-                    new FC3ReadRegistersTask(149, Priority.HIGH,
-                            m(HeatpumpHeliothermChannel.ChannelId.HR149_EVU_FREIGABE, new SignedWordElement(149),
-                                    ElementToChannelConverter.DIRECT_1_TO_1),
-                            m(HeatpumpHeliothermChannel.ChannelId.HR150_USE_MODBUS_EVU_FREIGABE, new SignedWordElement(150),
-                                    ElementToChannelConverter.DIRECT_1_TO_1)
-                    )
-            );
-        }*/
-    }
-
-    private ModbusProtocol createModbusProtocol() throws OpenemsException {
         ModbusProtocol protocol = new ModbusProtocol(this,
                 // Input register read.
                 new FC4ReadInputRegistersTask(12, Priority.HIGH,
@@ -430,8 +209,8 @@ public class HeatpumpHeliothermImpl extends AbstractOpenemsModbusComponent imple
                                 ElementToChannelConverter.DIRECT_1_TO_1),
                         m(HeatpumpHeliotherm.ChannelId.HR150_USE_MODBUS_EVU_FREIGABE, new SignedWordElement(150),
                                 ElementToChannelConverter.DIRECT_1_TO_1)
-                ));
-
+                )
+        );
 
         if (this.readOnly == false) {
             protocol.addTasks(
@@ -470,10 +249,10 @@ public class HeatpumpHeliothermImpl extends AbstractOpenemsModbusComponent imple
                                     ElementToChannelConverter.DIRECT_1_TO_1),
                             m(HeatpumpHeliotherm.ChannelId.HR150_USE_MODBUS_EVU_FREIGABE, new SignedWordElement(150),
                                     ElementToChannelConverter.DIRECT_1_TO_1)
-                    ));
+                    )
+            );
         }
         return protocol;
-
     }
 
     @Override
@@ -547,32 +326,29 @@ public class HeatpumpHeliothermImpl extends AbstractOpenemsModbusComponent imple
                             // Set point power mappen
                         }
                     } catch (OpenemsError.OpenemsNamedException e) {
-                        log.warn("Couldn't write in Channel " + e.getMessage());
+                        this.log.warn("Couldn't write in Channel " + e.getMessage());
                     }
                 } else {
                     try {
                         _setHr100OperatingMode(0);    // Aus
                     } catch (OpenemsError.OpenemsNamedException e) {
-                        log.warn("Couldn't write in Channel " + e.getMessage());
+                        this.log.warn("Couldn't write in Channel " + e.getMessage());
                     }
                 }
             }
         }
 
         // Status and other.
-        if (getCurrentElectricPower().isDefined()) {
+        if (this.getCurrentElectricPower().isDefined()) {
             // The channel READ_EFFECTIVE_POWER_PERCENT in the Heater interface tracks the heating power. Assume the
             // heating power of the heatpump scales linearly with the electric power draw. Then calculate heating power
             // in percent with currentElectricPower / maxElectricPower.
-            double effectivePowerPercent = (getCurrentElectricPower().get() * 1.0 / maxElectricPower) * 100;    // Convert to %.
+            double effectivePowerPercent = (this.getCurrentElectricPower().get() * 1.0 / this.maxElectricPower) * 100;    // Convert to %.
             this._setEffectiveHeatingPowerPercent(effectivePowerPercent);
         }
-        if (getCop().isDefined()) {
-            coefficientOfPerformance = getCop().get();
-        }
         boolean connectionAlive = false;
-        if (getErrorIndicator().isDefined()) {
-            heatpumpError = getErrorIndicator().get();
+        if (this.getErrorIndicator().isDefined()) {
+            this.heatpumpError = getErrorIndicator().get();
             connectionAlive = true;        // ToDo: testen ob getErrorIndicator() auf not defined geht wenn die Verbindung weg ist.
         } else {
             connectionAlive = false;
@@ -644,8 +420,8 @@ public class HeatpumpHeliothermImpl extends AbstractOpenemsModbusComponent imple
             }
             if (heatpumpRunning) {
                 statusMessage = statusMessage + " Pumpe läuft, ";
-                if (getEffectivePower() > 0) {
-                    statusMessage = statusMessage + " Heizleistung " + getEffectivePower() + " kW, ";
+                if (getEffectiveHeatingPower().isDefined() && getEffectiveHeatingPower().get() > 0) {
+                    statusMessage = statusMessage + " Heizleistung " + getEffectiveHeatingPower().get() + " kW, ";
                 }
             } else {
                 statusMessage = statusMessage + " Pumpe steht, ";
@@ -664,18 +440,19 @@ public class HeatpumpHeliothermImpl extends AbstractOpenemsModbusComponent imple
             this.logInfo(this.log, "Return temperature: " + getReturnTemperature() + " [d°C]");
             this.logInfo(this.log, "OutsideTemperature: " + getHr129OutsideTemperature() + " [d°C]");
             this.logInfo(this.log, "SetPoint Temperature " + getSetPointTemperatureIndicator() + "[d°C]");
-            this.logInfo(this.log, "Current heating power: " + getEffectivePower() + " [kW]");
+            this.logInfo(this.log, "Current heating power: " + this.getEffectiveHeatingPower() + " [kW]");
             this.logInfo(this.log, "Current electric power consumption: " + getCurrentElectricPower().get() + " [W]");
             this.logInfo(this.log, "Current coefficient of performance: " + getCop().get());
 
-            int heatingPowerFromCop = 0;
+            double heatingPowerFromCop = 0;
             if (getCop().isDefined() && getCurrentElectricPower().isDefined()) {
-                heatingPowerFromCop = getCurrentElectricPower().get() * getCop().get() / 1000; // Convert to kilowatt
+                // ToDo: check if cop has the right dimension.
+                heatingPowerFromCop = getCurrentElectricPower().get() * (getCop().get() / 10.0) / 1000; // Convert to kilowatt
             }
 
             this.logInfo(this.log, "Heating power calculated from cop & electric power: " + heatingPowerFromCop + " [kW]");
             this.logInfo(this.log, "Verdichterdrehzahl: " + getVerdichterDrehzahl() + " [%]");
-            this.logInfo(this.log, "State enum: " + getCurrentState());
+            this.logInfo(this.log, "State enum: " + this.getHeaterState());
             this.logInfo(this.log, "Status message: " + getStatusMessage().get());
             this.logInfo(this.log, "");
         }

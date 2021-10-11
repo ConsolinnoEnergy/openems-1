@@ -53,7 +53,8 @@ public interface HeatpumpHeliotherm extends Heater {
         IR26_ERROR(Doc.of(OpenemsType.BOOLEAN).accessMode(AccessMode.READ_ONLY)),
 
         /**
-         * Verdichter Drehzahl ist vom Webinterface begrenzt, kann dort eingestellt werden. Default ist 15 - 60%.
+         * Compressor speed.
+         * Is limited by the webinterface setting. Default is 15 - 60%.
          * Unit from heatpump is %*10e-1, so watch the conversion!
          * <ul>
          *      <li> Type: Integer
@@ -62,7 +63,7 @@ public interface HeatpumpHeliotherm extends Heater {
         IR29_READ_VERDICHTER_DREHZAHL(Doc.of(OpenemsType.INTEGER).unit(Unit.PERCENT).accessMode(AccessMode.READ_ONLY)),
 
         /**
-         * COP, coefficient of performance. Handbuch sagt "Faktor 0,1".
+         * COP, coefficient of performance. Manual says "Factor 0,1".
          * <ul>
          *      <li> Type: Integer
          * </ul>
@@ -108,7 +109,7 @@ public interface HeatpumpHeliotherm extends Heater {
          */
         IR70_71_CURRENT_ELECTRIC_POWER(Doc.of(OpenemsType.INTEGER).unit(Unit.WATT).accessMode(AccessMode.READ_ONLY)),
 
-        /**
+        /*
          * Current thermal power. Unsigned double word. Integer in Java is 32bit, so still fits in an int. Unit from
          * heatpump is kW * 10e-1, watch the conversion!
          * <ul>

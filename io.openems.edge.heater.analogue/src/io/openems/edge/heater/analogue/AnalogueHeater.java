@@ -54,6 +54,7 @@ public class AnalogueHeater extends AbstractAnalogueHeaterOrCooler implements Op
 
     @Activate
     void activate(ComponentContext context, ConfigHeaterAnalogue config) {
+        this.config = config;
         super.activate(context, config.id(), config.alias(), config.enabled(), config.analogueId(), config.analogueType(),
                 config.controlType(), config.defaultMinPower(), config.timerId(), config.maxTimeEnableSignal(),
                 config.maxTimePowerSignal(), config.defaultRunPower(), config.autoRun(), config.maxPower());
@@ -61,6 +62,7 @@ public class AnalogueHeater extends AbstractAnalogueHeaterOrCooler implements Op
 
     @Modified
     void modified(ComponentContext context, ConfigHeaterAnalogue config) {
+        this.config = config;
         super.modified(context, config.id(), config.alias(), config.enabled(), config.analogueId(), config.analogueType(),
                 config.controlType(), config.defaultMinPower(), config.timerId(), config.maxTimeEnableSignal(),
                 config.maxTimePowerSignal(), config.defaultRunPower(), config.autoRun(), config.maxPower());

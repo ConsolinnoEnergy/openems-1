@@ -14,7 +14,6 @@ import io.openems.edge.common.channel.StringReadChannel;
 import io.openems.edge.common.channel.WriteChannel;
 import io.openems.edge.common.channel.value.Value;
 import io.openems.edge.common.component.OpenemsComponent;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * A generalized interface for a heater.
@@ -656,8 +655,10 @@ public interface Heater extends OpenemsComponent {
      *
      * @param state the next value
      */
-    default void _setHeaterState(@NotNull HeaterState state) {
-        this.getHeaterStateChannel().setNextValue(state.getValue());
+    default void _setHeaterState(HeaterState state) {
+        if (state != null) {
+            this.getHeaterStateChannel().setNextValue(state.getValue());
+        }
     }
 
     /**

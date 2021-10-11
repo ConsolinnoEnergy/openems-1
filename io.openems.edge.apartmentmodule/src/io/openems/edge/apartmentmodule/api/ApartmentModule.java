@@ -97,7 +97,7 @@ public interface ApartmentModule extends OpenemsComponent {
          * <li> Unit: dezidegree celsius
          */
 
-        IR_6_TEMPERATURE(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_ONLY)),
+        IR_6_TEMPERATURE(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS).accessMode(AccessMode.READ_ONLY)),
 
         /**
          * State of relay 1.
@@ -236,7 +236,7 @@ public interface ApartmentModule extends OpenemsComponent {
         /**
          * Last Known Temperature e.g. when ModbusCommunication Fails -> Value will be null in IR_6_TEMPERATURE.
          */
-        LAST_KNOWN_TEMPERATURE(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
+        LAST_KNOWN_TEMPERATURE(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS)),
         /**
          * Was a Request Set.
          */
