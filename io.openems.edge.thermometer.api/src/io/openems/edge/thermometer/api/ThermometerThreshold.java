@@ -141,15 +141,11 @@ public interface ThermometerThreshold extends Thermometer {
      */
 
     default ThermometerState getThermometerState() {
-        ThermometerState thermometerState = (ThermometerState) this.getValueOfChannel(this.getThermometerStateChannel());
-        if (thermometerState == null) {
-            thermometerState = (ThermometerState) this.getNextValueOfChannel(this.getThermometerStateChannel());
+        ThermometerState thermometerState = ThermometerState.getThermometerStateFromInteger((Integer) this.getValueOfChannel(this.getThermometerStateChannel()));
+        if (thermometerState.equals(ThermometerState.UNDEFINED)) {
+            thermometerState = ThermometerState.getThermometerStateFromInteger((Integer) this.getNextValueOfChannel(this.getThermometerStateChannel()));
         }
-        if (thermometerState != null) {
-            return thermometerState;
-        } else {
-            return ThermometerState.UNDEFINED;
-        }
+        return thermometerState;
     }
 
     /**

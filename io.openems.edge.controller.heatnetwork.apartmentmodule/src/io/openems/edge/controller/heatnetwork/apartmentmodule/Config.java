@@ -30,7 +30,7 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     String[] apartmentResponse() default {"HydraulicLineHeater0/EnableSignal", "HydraulicLineHeater1/EnableSignal"};
 
     @AttributeDefinition(name = "SetPoint Temperature", description = "The Temperature that needs to be reached by a Thermometer, otherwise apartment Response starts boosting the Temperature")
-    int setPointTemperature() default 50;
+    int setPointTemperature() default 500;
 
     @AttributeDefinition(name = "Threshold Thermometer", description = "The Threshold Thermometer you want to use to check your Temperature.")
     String[] thresholdId() default {"ThresholdThermometer0", "ThresholdThermometer0"};
@@ -50,14 +50,8 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     @AttributeDefinition(name = "HeatBooster Id", description = "The HeatBooster Id")
     String heatBoosterId() default "HeatBooster0";
 
-    boolean useExceptionalState();
-
-    @AttributeDefinition(name = "TimerId", description = "TimerByCycles or TimerById")
+    @AttributeDefinition(name = "TimerId", description = "Timer to use for checking Missing Components")
     String timerId();
-
-    @AttributeDefinition(name = "ExceptionalState Absence Time", description = "After one enable of Exceptional state, "
-            + "how long should the value apply after absence of the enable Signal")
-    int waitTime() default 30;
 
     boolean enabled() default true;
 

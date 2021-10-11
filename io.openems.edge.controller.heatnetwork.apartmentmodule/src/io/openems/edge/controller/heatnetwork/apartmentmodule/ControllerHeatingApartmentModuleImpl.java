@@ -87,9 +87,6 @@ public class ControllerHeatingApartmentModuleImpl extends AbstractOpenemsCompone
     private boolean useHeatBooster;
     private HeatBooster optionalHeatBooster;
     private int heatBoosterThermometerActivationValue;
-
-    private static final String CHECK_MISSING_COMPONENT_IDENTIFIER = "CONTROLLER_HEATING_APARTMENT_MODULE_CHECK_MISSING";
-    private static final int CHECK_MISSING_COMPONENTS_TIME = 60;
     private TimerHandler timer;
 
     private Config config;
@@ -404,9 +401,9 @@ public class ControllerHeatingApartmentModuleImpl extends AbstractOpenemsCompone
                 try {
                     Channel<?> channel = this.cpm.getChannel(channelAddress);
                     if (channel instanceof WriteChannel<?>) {
-                        ((WriteChannel<?>) channel).setNextWriteValueFromObject(true);
+                        ((WriteChannel<?>) channel).setNextWriteValueFromObject(null);
                     } else {
-                        channel.setNextValue(false);
+                        channel.setNextValue(null);
                     }
                 } catch (OpenemsError.OpenemsNamedException e) {
                     this.log.warn("Couldn't write in Channel! " + super.id());
@@ -418,7 +415,7 @@ public class ControllerHeatingApartmentModuleImpl extends AbstractOpenemsCompone
     private void disableAllComponents() throws OpenemsError.OpenemsNamedException {
         this.responseHydraulicComponent.setPowerLevel(HydraulicComponent.DEFAULT_MIN_POWER_VALUE);
         if (this.useHeatBooster) {
-            this.optionalHeatBooster.setHeatBoosterEnableSignal(false);
+            this.optionalHeatBooster.getHeatBoosterEnableSignalChannel().setNextWriteValueFromObject(null);
         }
         this.disableAllCords();
     }
@@ -444,7 +441,7 @@ public class ControllerHeatingApartmentModuleImpl extends AbstractOpenemsCompone
         this.applyReferenceTemperatureToAmOfCords(cordToThermometerMap);
         this.addKeysToCordsToHeatUp(keysThatHadResponse);
         //Activate pump on requests or on Emergency
-        this.activatePumpOnRequestsOrEmergency(keysThatHadResponse, emergencyEnablePump);
+        this.activatePumpOnRequestsOrEmergency(keysThatHadResponse, emergencyEnablePump || emergencyResponse);
         List<OpenemsError.OpenemsNamedException> errors = new ArrayList<>();
         //check if Temperature < setpoint or if emergency Response needs to react
         this.checkResponseRequirementAndRespond(emergencyResponse || emergencyEnablePump, emergencyResponse, errors);
@@ -497,7 +494,7 @@ public class ControllerHeatingApartmentModuleImpl extends AbstractOpenemsCompone
     /**
      * Checks if the ResponseRequirements are met and then respond to the Channel of this.respondsToChords. Keys determined by keysThatHadRepsonse.
      *
-     * @param emergencyOccurred checks if any Emergency occured --> If not--> Set State to extra Heat if required
+     * @param emergencyOccurred checks if any Emergency occurred --> If not--> Set State to extra Heat if required
      * @param emergencyResponse Contains the emergencyResponse Boolean. Usually from own channel.
      * @param errors            the List of Errors that will be filled in case of any error --> thrown later.
      */
@@ -529,7 +526,7 @@ public class ControllerHeatingApartmentModuleImpl extends AbstractOpenemsCompone
                 }
             }
         });
-        if (emergencyOccurred == false) {
+        if (emergencyOccurred == false && this.cordsToHeatUp.size() > 0) {
             this.setState(ApartmentModuleControllerState.EXTRA_HEAT);
         }
 
