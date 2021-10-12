@@ -76,6 +76,7 @@ abstract class AbstractHydraulicLineController extends AbstractOpenemsComponent 
     private boolean wasActiveBefore;
     private DecentralizedReactionType reactionTypeHeaterOrCooler;
     protected boolean configSuccess;
+    private boolean initialHeatUpWasSet;
     //NOTE: If more Variation comes --> create extra "LineHeater"Classes in this controller etc
 
     private HeaterType heaterType = HeaterType.HEATER;
@@ -414,10 +415,13 @@ abstract class AbstractHydraulicLineController extends AbstractOpenemsComponent 
                         temperatureReference = FALLBACK_TEMPERATURE;
                     }
                     if (this.startConditionApplies(temperatureCurrent, temperatureReference)) {
-                        if ((this.timerHandler.checkTimeIsUp(IDENTIFIER_CYCLE_RESTART))
+                        if ((this.timerHandler.checkTimeIsUp(IDENTIFIER_CYCLE_RESTART) || !this.initialHeatUpWasSet)
                                 || this.wasActiveBefore) {
                             this.startProcess();
                             this.timerHandler.resetTimer(IDENTIFIER_CYCLE_RESTART);
+                        } else {
+                            //temperature not Reached but time is not up yet
+                            this.stopProcess();
                         }
                     } else {
                         //temperatureReference Reached
@@ -538,6 +542,7 @@ abstract class AbstractHydraulicLineController extends AbstractOpenemsComponent 
                 this.lineController.startProcess();
             }
             this.wasActiveBefore = true;
+            this.initialHeatUpWasSet = true;
         } catch (OpenemsError.OpenemsNamedException e) {
             this.log.error("Error while trying to heat!");
         }

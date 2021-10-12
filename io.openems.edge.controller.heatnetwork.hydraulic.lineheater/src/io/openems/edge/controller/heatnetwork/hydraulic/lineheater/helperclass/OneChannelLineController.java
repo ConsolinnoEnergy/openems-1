@@ -5,6 +5,7 @@ import io.openems.common.types.ChannelAddress;
 import io.openems.edge.common.channel.Channel;
 import io.openems.edge.common.channel.WriteChannel;
 import io.openems.edge.common.component.ComponentManager;
+import io.openems.edge.heatsystem.components.HydraulicComponent;
 
 public class OneChannelLineController extends AbstractLineController {
     ComponentManager cpm;
@@ -20,11 +21,7 @@ public class OneChannelLineController extends AbstractLineController {
 
     @Override
     public boolean startProcess() throws OpenemsError.OpenemsNamedException {
-        int value = FULL_POWER;
-        if (this.isBooleanControlled()) {
-            value = 1;
-        }
-        this.isRunning = this.writeToChannel(value);
+        this.isRunning = this.writeToChannel(HydraulicComponent.DEFAULT_MAX_POWER_VALUE);
         return this.isRunning;
     }
 
@@ -41,11 +38,7 @@ public class OneChannelLineController extends AbstractLineController {
 
     @Override
     public boolean stopProcess() throws OpenemsError.OpenemsNamedException {
-        int value = 0;
-        if (this.isBooleanControlled()) {
-            value = -1;
-        }
-        boolean applied = this.writeToChannel(value);
+        boolean applied = this.writeToChannel(this.isBooleanControlled() ? 0 : HydraulicComponent.DEFAULT_MIN_POWER_VALUE);
         if (applied) {
             this.isRunning = false;
         }
@@ -54,11 +47,11 @@ public class OneChannelLineController extends AbstractLineController {
 
     @Override
     public void setMaxAndMin(Double max, Double min) {
-    //not needed
+        //not needed
     }
 
     @Override
     public void onlySetMaxMin() {
-    //not needed
+        //not needed
     }
 }

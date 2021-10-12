@@ -30,7 +30,6 @@ import java.util.Map;
 
 public class MyControllerTest {
     private static final String id = "test";
-    private static final String exampleConfigStringValue = "exampleConfigStringValue";
     // -------------- SETUP COMPONENT IDs ------------------ //
     private static final String[] apartmentModules = {"AM_1", "AM_2", "AM_3", "AM_4", "AM_5"};
     private static final String[] thermometerThresholds = {"Thermometer1",

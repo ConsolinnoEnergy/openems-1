@@ -10,8 +10,7 @@ public abstract class AbstractLineController implements LineController {
     protected boolean useMinMax;
     private final boolean booleanControlled;
     protected double previouslyCheckedPowerLevel = 0;
-    protected static final int FULL_POWER = 100;
-    protected static final int DEFAULT_LAST_POWER_VALUE = 0;
+    protected static final int DEFAULT_LAST_POWER_VALUE = -1;
     protected boolean isRunning;
 
     protected AbstractLineController(boolean booleanControlled, boolean useMinMax) {
