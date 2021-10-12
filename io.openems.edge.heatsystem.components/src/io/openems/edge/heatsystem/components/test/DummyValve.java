@@ -4,6 +4,7 @@ import io.openems.edge.common.component.AbstractOpenemsComponent;
 import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.heatsystem.components.HydraulicComponent;
 import io.openems.edge.relay.api.Relay;
+import io.openems.edge.relay.api.test.DummyRelay;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,6 +36,9 @@ public class DummyValve extends AbstractOpenemsComponent implements HydraulicCom
         this.getIsBusyChannel().setNextValue(false);
     }
 
+    public DummyValve(String id) {
+        this(new DummyRelay(id + "OpenRelay"), new DummyRelay(id + "closingRelay"), id, 10);
+    }
 
     private void valveClose() {
         if (!this.getIsBusyChannel().getNextValue().get()) {

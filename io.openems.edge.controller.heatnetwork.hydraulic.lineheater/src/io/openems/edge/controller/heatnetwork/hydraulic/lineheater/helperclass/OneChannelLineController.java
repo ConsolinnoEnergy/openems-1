@@ -42,9 +42,6 @@ public class OneChannelLineController extends AbstractLineController {
     @Override
     public boolean stopProcess() throws OpenemsError.OpenemsNamedException {
         int value = 0;
-        if (this.isBooleanControlled()) {
-            value = -1;
-        }
         boolean applied = this.writeToChannel(value);
         if (applied) {
             this.isRunning = false;
