@@ -1,25 +1,22 @@
 package io.openems.edge.controller.heatnetwork.hydraulic.lineheater;
 
-import io.openems.common.exceptions.OpenemsError;
-import io.openems.common.exceptions.OpenemsException;
 import io.openems.common.types.ChannelAddress;
 import io.openems.edge.apartmentmodule.api.test.DummyApartmentModule;
 import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.common.test.DummyComponentManager;
 import io.openems.edge.common.test.TimeLeapClock;
-import io.openems.edge.controller.debuglog.MyConfig;
+import io.openems.edge.controller.heatnetwork.hydraulic.lineheater.test.DummyHydraulicLineController;
 import io.openems.edge.controller.test.ControllerTest;
 import io.openems.edge.common.test.AbstractComponentTest.TestCase;
 import io.openems.edge.heater.decentral.test.DummyDecentralizedHeater;
+import io.openems.edge.heatsystem.components.HydraulicComponent;
 import io.openems.edge.heatsystem.components.test.DummyValve;
 import io.openems.edge.thermometer.api.test.DummyThermometer;
 import io.openems.edge.timer.api.DummyTimer;
 import io.openems.edge.timer.api.TimerType;
 import org.junit.Before;
 import org.junit.Test;
-import org.osgi.service.cm.ConfigurationException;
 
-import java.lang.reflect.InvocationTargetException;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
@@ -27,6 +24,7 @@ import java.time.temporal.ChronoUnit;
 public class MyHydraulicLineHeaterControllerTest {
     private static final String id = "test";
     private static final ChannelAddress controllerEnableSignal = new ChannelAddress(id, "EnableSignal");
+    private static final ChannelAddress controllerFallbackSignal = new ChannelAddress(id, "IsFallback");
     // Thermometer
     private static final String correctThermometerId = "Thermometer0";
     private static final DummyThermometer dummyThermometer = new DummyThermometer(correctThermometerId);
@@ -41,17 +39,18 @@ public class MyHydraulicLineHeaterControllerTest {
     //HydraulicComponent -> Valve
     private static final String correctValveId = "Valve0";
     private static final DummyValve correctDummyValve = new DummyValve(correctValveId);
-    private static final ChannelAddress valveAddress = new ChannelAddress(correctValveId, "CurrentPowerLevel");
-
+    private static final ChannelAddress valveSetPointPowerAddress = new ChannelAddress(correctValveId, "SetPointPowerLevel");
+    private static final ChannelAddress valveMaxAddress = new ChannelAddress(correctValveId, "MaxAllowedValue");
+    private static final ChannelAddress valveMinAddress = new ChannelAddress(correctValveId, "MinAllowedValue");
     //TimeOuts
     private static final String timerId = "TimerByCycles";
     private static final int defaultTimeOutTimeRemote = 10;
     private static final int defaultTimeOutRestartCycle = 5;
     //Should Fallback
-    private static final int defaultFallbackStart = 0;
+    private static final int defaultFallbackStart = HydraulicComponent.DEFAULT_MIN_POWER_VALUE;
     private static final int defaultFallbackStop = 15;
-    private static final int defaultMaxValue = 95;
-    private static final int defaultMinValue = 10;
+    private static final double defaultMaxValue = 95.0d;
+    private static final double defaultMinValue = 10.0d;
     //decentralizedHeater
     private static final String decentralizedHeaterId = "Heater0";
     private static final DummyDecentralizedHeater dummyDecentralizedHeater
@@ -117,7 +116,6 @@ public class MyHydraulicLineHeaterControllerTest {
                         .setMinuteFallbackStart(defaultFallbackStart)
                         .setMinuteFallbackStop(defaultFallbackStop)
                         .setUseMinMax(false)
-                        .setMaxMinOnly(false)
                         .setMaxValveValue(defaultMaxValue)
                         .setMinValveValue(defaultMinValue)
                         .setUseDecentralizedHeater(false)
@@ -129,7 +127,7 @@ public class MyHydraulicLineHeaterControllerTest {
                         .timeleap(clock, 1, ChronoUnit.SECONDS)//not strictly necessary but some things just won't work sometimes otherwise
                         .input(thermometerAddress, 400)
                         .input(controllerEnableSignal, true)
-                        .output(apartmentModuleAddress, 100)
+                        .output(apartmentModuleAddress, true)
                 )
                 .next(new TestCase()
                         .input(controllerEnableSignal, true)
@@ -204,7 +202,7 @@ public class MyHydraulicLineHeaterControllerTest {
                         .setTempSensorReference(correctThermometerId)
                         .setTemperatureDefault(correctReferenceTemperature)
                         .setLineHeaterType(LineHeaterType.VALVE)
-                        .setValueToWriteIsBoolean(true)
+                        .setValueToWriteIsBoolean(false)
                         .setChannelAddress(apartmentModuleAddress.toString())
                         .setChannels(new String[]{"foo", "bar"})
                         .setValveBypass(correctValveId)
@@ -226,61 +224,352 @@ public class MyHydraulicLineHeaterControllerTest {
                         .timeleap(clock, 1, ChronoUnit.SECONDS)//not strictly necessary but some things just won't work sometimes otherwise
                         .input(thermometerAddress, 400)
                         .input(controllerEnableSignal, true)
-                        .output(valv, true)
                 )
                 .next(new TestCase()
                         .input(controllerEnableSignal, true)
                         .input(thermometerAddress, 450)
-                        .output(apartmentModuleAddress, true)
+                        .output(valveSetPointPowerAddress, HydraulicComponent.DEFAULT_MAX_POWER_VALUE)
 
                 )
                 .next(new TestCase()
                         .input(controllerEnableSignal, true)
                         .input(thermometerAddress, 500)
-                        .output(apartmentModuleAddress, true)
+                        .output(valveSetPointPowerAddress, HydraulicComponent.DEFAULT_MAX_POWER_VALUE)
 
                 )
                 .next(new TestCase()
                         .input(controllerEnableSignal, true)
                         .input(thermometerAddress, 550)
-                        .output(apartmentModuleAddress, true)
+                        .output(valveSetPointPowerAddress, HydraulicComponent.DEFAULT_MAX_POWER_VALUE)
 
                 )
                 .next(new TestCase()
                         .input(controllerEnableSignal, true)
                         .input(thermometerAddress, 600)
-                        .output(apartmentModuleAddress, false)
 
                 )
                 //5 Restart Cycles until
                 .next(new TestCase()
                         .input(controllerEnableSignal, true)
                         .input(thermometerAddress, 450)
-                        .output(apartmentModuleAddress, false)
+                        .output(valveSetPointPowerAddress, HydraulicComponent.DEFAULT_MIN_POWER_VALUE)
 
                 )
                 .next(new TestCase()
                         .input(controllerEnableSignal, true)
-                        .output(apartmentModuleAddress, false)
+                        .output(valveSetPointPowerAddress, HydraulicComponent.DEFAULT_MIN_POWER_VALUE)
 
                 )
                 .next(new TestCase()
                         .input(controllerEnableSignal, true)
-                        .output(apartmentModuleAddress, false)
+                        .output(valveSetPointPowerAddress, HydraulicComponent.DEFAULT_MIN_POWER_VALUE)
 
                 )
                 .next(new TestCase()
                         .input(controllerEnableSignal, true)
-                        .output(apartmentModuleAddress, false)
+                        .output(valveSetPointPowerAddress, HydraulicComponent.DEFAULT_MIN_POWER_VALUE)
 
                 )
                 .next(new TestCase()
                         .input(controllerEnableSignal, true)
-                        .output(apartmentModuleAddress, false)
+                        .output(valveSetPointPowerAddress, HydraulicComponent.DEFAULT_MIN_POWER_VALUE)
 
                 )
                 .next(new TestCase()
                         .input(controllerEnableSignal, true)
+                        .output(valveSetPointPowerAddress, HydraulicComponent.DEFAULT_MAX_POWER_VALUE)
+
+                )
+                .getSut().run(); // execute Run method of controller
+    }
+
+    @Test
+    public void multiChannelLineHeaterNoMinMax() throws Exception {
+        HydraulicLineHeaterController controller = new HydraulicLineHeaterController();
+        OpenemsComponent[] components = new OpenemsComponent[this.cpm.getAllComponents().size()];
+        components = this.cpm.getAllComponents().toArray(components);
+        new ControllerTest(controller, components)
+                .addReference("cpm", new DummyComponentManager(clock)) // "cpm" in this case is the name of the componentmanager of the controller. Note: has to be the same name as the reference in the controller
+                .activate(MyHydraulicLineHeaterConfig.create()
+                        .setId(id)
+                        .setService_pid("ThisIsFine")
+                        .setTempSensorReference(correctThermometerId)
+                        .setTemperatureDefault(correctReferenceTemperature)
+                        .setLineHeaterType(LineHeaterType.MULTIPLE_CHANNEL)
+                        .setValueToWriteIsBoolean(false)
+                        .setChannelAddress(apartmentModuleAddress.toString())
+                        .setChannels(new String[]{correctValveId + "/CurrentPowerLevel", correctValveId + "/SetPointPowerLevel"})
+                        .setValveBypass(correctValveId)
+                        .setTimerId(timerId)
+                        .setTimeoutMaxRemote(defaultTimeOutTimeRemote)
+                        .setTimeoutRestartCycle(defaultTimeOutRestartCycle)
+                        .setShouldFallback(false)
+                        .setMinuteFallbackStart(defaultFallbackStart)
+                        .setMinuteFallbackStop(defaultFallbackStop)
+                        .setUseMinMax(false)
+                        .setMaxValveValue(defaultMaxValue)
+                        .setMinValveValue(defaultMinValue)
+                        .setUseDecentralizedHeater(false)
+                        .setDecentralizedHeaterReference(decentralizedHeaterId)
+                        .setReactionType(DecentralizedHeaterReactionType.NEED_HEAT)
+                        .setEnabled(true)
+                        .build())
+                .next(new TestCase()
+                        .timeleap(clock, 1, ChronoUnit.SECONDS)//not strictly necessary but some things just won't work sometimes otherwise
+                        .input(thermometerAddress, 400)
+                        .input(controllerEnableSignal, true)
+                )
+                .next(new TestCase()
+                        .input(controllerEnableSignal, true)
+                        .input(thermometerAddress, 450)
+                        .output(valveSetPointPowerAddress, HydraulicComponent.DEFAULT_MAX_POWER_VALUE)
+
+                )
+                .next(new TestCase()
+                        .input(controllerEnableSignal, true)
+                        .input(thermometerAddress, 500)
+                        .output(valveSetPointPowerAddress, HydraulicComponent.DEFAULT_MAX_POWER_VALUE)
+
+                )
+                .next(new TestCase()
+                        .input(controllerEnableSignal, true)
+                        .input(thermometerAddress, 550)
+                        .output(valveSetPointPowerAddress, HydraulicComponent.DEFAULT_MAX_POWER_VALUE)
+
+                )
+                .next(new TestCase()
+                        .input(controllerEnableSignal, true)
+                        .input(thermometerAddress, 600)
+
+                )
+                //5 Restart Cycles until
+                .next(new TestCase()
+                        .input(controllerEnableSignal, true)
+                        .input(thermometerAddress, 450)
+                        .output(valveSetPointPowerAddress, HydraulicComponent.DEFAULT_MIN_POWER_VALUE)
+
+                )
+                .next(new TestCase()
+                        .input(controllerEnableSignal, true)
+                        .output(valveSetPointPowerAddress, HydraulicComponent.DEFAULT_MIN_POWER_VALUE)
+
+                )
+                .next(new TestCase()
+                        .input(controllerEnableSignal, true)
+                        .output(valveSetPointPowerAddress, HydraulicComponent.DEFAULT_MIN_POWER_VALUE)
+
+                )
+                .next(new TestCase()
+                        .input(controllerEnableSignal, true)
+                        .output(valveSetPointPowerAddress, HydraulicComponent.DEFAULT_MIN_POWER_VALUE)
+
+                )
+                .next(new TestCase()
+                        .input(controllerEnableSignal, true)
+                        .output(valveSetPointPowerAddress, HydraulicComponent.DEFAULT_MIN_POWER_VALUE)
+
+                )
+                .next(new TestCase()
+                        .input(controllerEnableSignal, true)
+                        .output(valveSetPointPowerAddress, HydraulicComponent.DEFAULT_MAX_POWER_VALUE)
+
+                )
+                .getSut().run(); // execute Run method of controller
+    }
+
+    @Test
+    public void multiChannelLineHeaterWithMinMax() throws Exception {
+        HydraulicLineHeaterController controller = new HydraulicLineHeaterController();
+        OpenemsComponent[] components = new OpenemsComponent[this.cpm.getAllComponents().size()];
+        components = this.cpm.getAllComponents().toArray(components);
+        new ControllerTest(controller, components)
+                .addReference("cpm", new DummyComponentManager(clock)) // "cpm" in this case is the name of the componentmanager of the controller. Note: has to be the same name as the reference in the controller
+                .activate(MyHydraulicLineHeaterConfig.create()
+                        .setId(id)
+                        .setService_pid("ThisIsFine")
+                        .setTempSensorReference(correctThermometerId)
+                        .setTemperatureDefault(correctReferenceTemperature)
+                        .setLineHeaterType(LineHeaterType.MULTIPLE_CHANNEL)
+                        .setValueToWriteIsBoolean(false)
+                        .setChannelAddress(apartmentModuleAddress.toString())
+                        .setChannels(new String[]{correctValveId + "/CurrentPowerLevel", correctValveId + "/SetPointPowerLevel",
+                                correctValveId + "/MaxAllowedValue", correctValveId + "/MinAllowedValue"})
+                        .setValveBypass(correctValveId)
+                        .setTimerId(timerId)
+                        .setTimeoutMaxRemote(defaultTimeOutTimeRemote)
+                        .setTimeoutRestartCycle(defaultTimeOutRestartCycle)
+                        .setShouldFallback(false)
+                        .setMinuteFallbackStart(defaultFallbackStart)
+                        .setMinuteFallbackStop(defaultFallbackStop)
+                        .setUseMinMax(true)
+                        .setMaxValveValue(defaultMaxValue)
+                        .setMinValveValue(defaultMinValue)
+                        .setUseDecentralizedHeater(false)
+                        .setDecentralizedHeaterReference(decentralizedHeaterId)
+                        .setReactionType(DecentralizedHeaterReactionType.NEED_HEAT)
+                        .setEnabled(true)
+                        .build())
+                .next(new TestCase()
+                        .timeleap(clock, 1, ChronoUnit.SECONDS)//not strictly necessary but some things just won't work sometimes otherwise
+                        .input(thermometerAddress, 400)
+                        .input(controllerEnableSignal, true)
+                )
+                .next(new TestCase()
+                        .input(controllerEnableSignal, true)
+                        .input(thermometerAddress, 450)
+                        .output(valveSetPointPowerAddress, HydraulicComponent.DEFAULT_MAX_POWER_VALUE)
+                        .output(valveMaxAddress, defaultMaxValue)
+                        .output(valveMinAddress, defaultMinValue)
+
+                )
+                .next(new TestCase()
+                        .input(controllerEnableSignal, true)
+                        .input(thermometerAddress, 500)
+                        .output(valveSetPointPowerAddress, HydraulicComponent.DEFAULT_MAX_POWER_VALUE)
+                        .output(valveMaxAddress, defaultMaxValue)
+                        .output(valveMinAddress, defaultMinValue)
+
+                )
+                .next(new TestCase()
+                        .input(controllerEnableSignal, true)
+                        .input(thermometerAddress, 550)
+                        .output(valveSetPointPowerAddress, HydraulicComponent.DEFAULT_MAX_POWER_VALUE)
+                        .output(valveMaxAddress, defaultMaxValue)
+                        .output(valveMinAddress, defaultMinValue)
+
+                )
+                .next(new TestCase()
+                        .input(controllerEnableSignal, true)
+                        .input(thermometerAddress, 600)
+
+                )
+                //5 Restart Cycles until
+                .next(new TestCase()
+                        .input(controllerEnableSignal, true)
+                        .input(thermometerAddress, 450)
+                        .output(valveSetPointPowerAddress, HydraulicComponent.DEFAULT_MIN_POWER_VALUE)
+
+                )
+                .next(new TestCase()
+                        .input(controllerEnableSignal, true)
+                        .output(valveSetPointPowerAddress, HydraulicComponent.DEFAULT_MIN_POWER_VALUE)
+
+                )
+                .next(new TestCase()
+                        .input(controllerEnableSignal, true)
+                        .output(valveSetPointPowerAddress, HydraulicComponent.DEFAULT_MIN_POWER_VALUE)
+
+                )
+                .next(new TestCase()
+                        .input(controllerEnableSignal, true)
+                        .output(valveSetPointPowerAddress, HydraulicComponent.DEFAULT_MIN_POWER_VALUE)
+
+                )
+                .next(new TestCase()
+                        .input(controllerEnableSignal, true)
+                        .output(valveSetPointPowerAddress, HydraulicComponent.DEFAULT_MIN_POWER_VALUE)
+
+                )
+                .next(new TestCase()
+                        .input(controllerEnableSignal, true)
+                        .output(valveSetPointPowerAddress, HydraulicComponent.DEFAULT_MAX_POWER_VALUE)
+                        .output(valveMaxAddress, defaultMaxValue)
+                        .output(valveMinAddress, defaultMinValue)
+
+                )
+                .getSut().run(); // execute Run method of controller
+    }
+
+    @Test
+    public void decentralizedOneChannel() throws Exception {
+        HydraulicLineHeaterController controller = new HydraulicLineHeaterController();
+        OpenemsComponent[] components = new OpenemsComponent[this.cpm.getAllComponents().size()];
+        components = this.cpm.getAllComponents().toArray(components);
+        new ControllerTest(controller, components)
+                .addReference("cpm", new DummyComponentManager(clock))
+                .activate(MyHydraulicLineHeaterConfig.create()
+                        .setId(id)
+                        .setService_pid("ThisIsFine")
+                        .setTempSensorReference(correctThermometerId)
+                        .setTemperatureDefault(correctReferenceTemperature)
+                        .setLineHeaterType(LineHeaterType.ONE_CHANNEL)
+                        .setValueToWriteIsBoolean(true)
+                        .setChannelAddress(apartmentModuleAddress.toString())
+                        .setChannels(new String[]{"foo", "bar"})
+                        .setValveBypass(correctValveId)
+                        .setTimerId(timerId)
+                        .setTimeoutMaxRemote(defaultTimeOutTimeRemote)
+                        .setTimeoutRestartCycle(defaultTimeOutRestartCycle)
+                        .setShouldFallback(false)
+                        .setMinuteFallbackStart(defaultFallbackStart)
+                        .setMinuteFallbackStop(defaultFallbackStop)
+                        .setUseMinMax(false)
+                        .setMaxValveValue(defaultMaxValue)
+                        .setMinValveValue(defaultMinValue)
+                        .setUseDecentralizedHeater(true)
+                        .setDecentralizedHeaterReference(decentralizedHeaterId)
+                        .setReactionType(reactionType)
+                        .setEnabled(true)
+                        .build())
+                .next(new TestCase()
+                        .timeleap(clock, 1, ChronoUnit.SECONDS)//not strictly necessary but some things just won't work sometimes otherwise
+                        .input(thermometerAddress, 400)
+                        .input(decentralizedHeaterAddress, true)
+                        .output(apartmentModuleAddress, true)
+                )
+                .next(new TestCase()
+                        .input(decentralizedHeaterAddress, true)
+                        .input(thermometerAddress, 450)
+                        .output(apartmentModuleAddress, true)
+
+                )
+                .next(new TestCase()
+                        .input(decentralizedHeaterAddress, true)
+                        .input(thermometerAddress, 500)
+                        .output(apartmentModuleAddress, true)
+
+                )
+                .next(new TestCase()
+                        .input(decentralizedHeaterAddress, true)
+                        .input(thermometerAddress, 550)
+                        .output(apartmentModuleAddress, true)
+
+                )
+                .next(new TestCase()
+                        .input(decentralizedHeaterAddress, true)
+                        .input(thermometerAddress, 600)
+                        .output(apartmentModuleAddress, false)
+
+                )
+                //5 Restart Cycles until
+                .next(new TestCase()
+                        .input(decentralizedHeaterAddress, true)
+                        .input(thermometerAddress, 450)
+                        .output(apartmentModuleAddress, false)
+
+                )
+                .next(new TestCase()
+                        .input(decentralizedHeaterAddress, true)
+                        .output(apartmentModuleAddress, false)
+
+                )
+                .next(new TestCase()
+                        .input(decentralizedHeaterAddress, true)
+                        .output(apartmentModuleAddress, false)
+
+                )
+                .next(new TestCase()
+                        .input(decentralizedHeaterAddress, true)
+                        .output(apartmentModuleAddress, false)
+
+                )
+                .next(new TestCase()
+                        .input(decentralizedHeaterAddress, true)
+                        .output(apartmentModuleAddress, false)
+
+                )
+                .next(new TestCase()
+                        .input(decentralizedHeaterAddress, true)
                         .output(apartmentModuleAddress, true)
 
                 )
@@ -288,23 +577,310 @@ public class MyHydraulicLineHeaterControllerTest {
     }
 
     @Test
-    public void multiChannelLineHeater() throws Exception {
+    public void hydraulicUseMinMax() throws Exception {
+        HydraulicLineHeaterController controller = new HydraulicLineHeaterController();
+        OpenemsComponent[] components = new OpenemsComponent[this.cpm.getAllComponents().size()];
+        components = this.cpm.getAllComponents().toArray(components);
+        new ControllerTest(controller, components)
+                .addReference("cpm", new DummyComponentManager(clock)) // "cpm" in this case is the name of the componentmanager of the controller. Note: has to be the same name as the reference in the controller
+                .activate(MyHydraulicLineHeaterConfig.create()
+                        .setId(id)
+                        .setService_pid("ThisIsFine")
+                        .setTempSensorReference(correctThermometerId)
+                        .setTemperatureDefault(correctReferenceTemperature)
+                        .setLineHeaterType(LineHeaterType.VALVE)
+                        .setValueToWriteIsBoolean(false)
+                        .setChannelAddress(apartmentModuleAddress.toString())
+                        .setChannels(new String[]{"foo", "bar"})
+                        .setValveBypass(correctValveId)
+                        .setTimerId(timerId)
+                        .setTimeoutMaxRemote(defaultTimeOutTimeRemote)
+                        .setTimeoutRestartCycle(defaultTimeOutRestartCycle)
+                        .setShouldFallback(false)
+                        .setMinuteFallbackStart(defaultFallbackStart)
+                        .setMinuteFallbackStop(defaultFallbackStop)
+                        .setUseMinMax(true)
+                        .setMaxValveValue(defaultMaxValue)
+                        .setMinValveValue(defaultMinValue)
+                        .setUseDecentralizedHeater(false)
+                        .setDecentralizedHeaterReference(decentralizedHeaterId)
+                        .setReactionType(DecentralizedHeaterReactionType.NEED_HEAT)
+                        .setEnabled(true)
+                        .build())
+                .next(new TestCase()
+                        .timeleap(clock, 1, ChronoUnit.SECONDS)//not strictly necessary but some things just won't work sometimes otherwise
+                        .input(thermometerAddress, 400)
+                        .input(controllerEnableSignal, true)
+                )
+                .next(new TestCase()
+                        .input(controllerEnableSignal, true)
+                        .input(thermometerAddress, 450)
+                        .output(valveSetPointPowerAddress, HydraulicComponent.DEFAULT_MAX_POWER_VALUE)
+                        .output(valveMaxAddress, defaultMaxValue)
+                        .output(valveMinAddress, defaultMinValue)
 
+                )
+                .next(new TestCase()
+                        .input(controllerEnableSignal, true)
+                        .input(thermometerAddress, 500)
+                        .output(valveSetPointPowerAddress, HydraulicComponent.DEFAULT_MAX_POWER_VALUE)
+                        .output(valveMaxAddress, defaultMaxValue)
+                        .output(valveMinAddress, defaultMinValue)
+
+                )
+                .next(new TestCase()
+                        .input(controllerEnableSignal, true)
+                        .input(thermometerAddress, 550)
+                        .output(valveSetPointPowerAddress, HydraulicComponent.DEFAULT_MAX_POWER_VALUE)
+                        .output(valveMaxAddress, defaultMaxValue)
+                        .output(valveMinAddress, defaultMinValue)
+
+                )
+                .next(new TestCase()
+                        .input(controllerEnableSignal, true)
+                        .input(thermometerAddress, 600)
+
+                )
+                //5 Restart Cycles until
+                .next(new TestCase()
+                        .input(controllerEnableSignal, true)
+                        .input(thermometerAddress, 450)
+                        .output(valveSetPointPowerAddress, HydraulicComponent.DEFAULT_MIN_POWER_VALUE)
+
+                )
+                .next(new TestCase()
+                        .input(controllerEnableSignal, true)
+                        .output(valveSetPointPowerAddress, HydraulicComponent.DEFAULT_MIN_POWER_VALUE)
+
+                )
+                .next(new TestCase()
+                        .input(controllerEnableSignal, true)
+                        .output(valveSetPointPowerAddress, HydraulicComponent.DEFAULT_MIN_POWER_VALUE)
+
+                )
+                .next(new TestCase()
+                        .input(controllerEnableSignal, true)
+                        .output(valveSetPointPowerAddress, HydraulicComponent.DEFAULT_MIN_POWER_VALUE)
+
+                )
+                .next(new TestCase()
+                        .input(controllerEnableSignal, true)
+                        .output(valveSetPointPowerAddress, HydraulicComponent.DEFAULT_MIN_POWER_VALUE)
+
+                )
+                .next(new TestCase()
+                        .input(controllerEnableSignal, true)
+                        .output(valveSetPointPowerAddress, HydraulicComponent.DEFAULT_MAX_POWER_VALUE)
+                        .output(valveMaxAddress, defaultMaxValue)
+                        .output(valveMinAddress, defaultMinValue)
+
+                )
+                .getSut().run(); // execute Run method of controller
     }
 
     @Test
-    public void decentralizedOneChannel() throws Exception {
+    public void hydraulicMinMaxOnly() throws Exception {
+        HydraulicLineHeaterController controller = new HydraulicLineHeaterController();
+        OpenemsComponent[] components = new OpenemsComponent[this.cpm.getAllComponents().size()];
+        components = this.cpm.getAllComponents().toArray(components);
+        new ControllerTest(controller, components)
+                .addReference("cpm", new DummyComponentManager(clock)) // "cpm" in this case is the name of the componentmanager of the controller. Note: has to be the same name as the reference in the controller
+                .activate(MyHydraulicLineHeaterConfig.create()
+                        .setId(id)
+                        .setService_pid("ThisIsFine")
+                        .setTempSensorReference(correctThermometerId)
+                        .setTemperatureDefault(correctReferenceTemperature)
+                        .setLineHeaterType(LineHeaterType.VALVE)
+                        .setValueToWriteIsBoolean(false)
+                        .setChannelAddress(apartmentModuleAddress.toString())
+                        .setChannels(new String[]{"foo", "bar"})
+                        .setValveBypass(correctValveId)
+                        .setTimerId(timerId)
+                        .setTimeoutMaxRemote(defaultTimeOutTimeRemote)
+                        .setTimeoutRestartCycle(defaultTimeOutRestartCycle)
+                        .setShouldFallback(false)
+                        .setMinuteFallbackStart(defaultFallbackStart)
+                        .setMinuteFallbackStop(defaultFallbackStop)
+                        .setUseMinMax(true)
+                        .setMaxMinOnly(true)
+                        .setMaxValveValue(defaultMaxValue)
+                        .setMinValveValue(defaultMinValue)
+                        .setUseDecentralizedHeater(false)
+                        .setDecentralizedHeaterReference(decentralizedHeaterId)
+                        .setReactionType(DecentralizedHeaterReactionType.NEED_HEAT)
+                        .setEnabled(true)
+                        .build())
+                .next(new TestCase()
+                        .timeleap(clock, 1, ChronoUnit.SECONDS)//not strictly necessary but some things just won't work sometimes otherwise
+                        .input(thermometerAddress, 400)
+                        .input(controllerEnableSignal, true)
+                )
+                .next(new TestCase()
+                        .input(controllerEnableSignal, true)
+                        .input(thermometerAddress, 450)
+                        .output(valveSetPointPowerAddress, null)
+                        .output(valveMaxAddress, defaultMaxValue)
+                        .output(valveMinAddress, defaultMinValue)
 
-    }
+                )
+                .next(new TestCase()
+                        .input(controllerEnableSignal, true)
+                        .input(thermometerAddress, 500)
+                        .output(valveSetPointPowerAddress, null)
+                        .output(valveMaxAddress, defaultMaxValue)
+                        .output(valveMinAddress, defaultMinValue)
 
-    @Test
-    public void hydraulicMinMax() throws Exception {
+                )
+                .next(new TestCase()
+                        .input(controllerEnableSignal, true)
+                        .input(thermometerAddress, 550)
+                        .output(valveSetPointPowerAddress, null)
+                        .output(valveMaxAddress, defaultMaxValue)
+                        .output(valveMinAddress, defaultMinValue)
 
+                )
+                .next(new TestCase()
+                        .input(controllerEnableSignal, true)
+                        .input(thermometerAddress, 600)
+
+                )
+                //5 Restart Cycles until
+                .next(new TestCase()
+                        .input(controllerEnableSignal, true)
+                        .input(thermometerAddress, 450)
+                        .output(valveSetPointPowerAddress, null)
+
+                )
+                .next(new TestCase()
+                        .input(controllerEnableSignal, true)
+                        .output(valveSetPointPowerAddress, null)
+
+                )
+                .next(new TestCase()
+                        .input(controllerEnableSignal, true)
+                        .output(valveSetPointPowerAddress, null)
+
+                )
+                .next(new TestCase()
+                        .input(controllerEnableSignal, true)
+                        .output(valveSetPointPowerAddress, null)
+
+                )
+                .next(new TestCase()
+                        .input(controllerEnableSignal, true)
+                        .output(valveSetPointPowerAddress, null)
+
+                )
+                .next(new TestCase()
+                        .input(controllerEnableSignal, true)
+                        .output(valveSetPointPowerAddress, null)
+                        .output(valveMaxAddress, defaultMaxValue)
+                        .output(valveMinAddress, defaultMinValue)
+
+                )
+                .getSut().run(); // execute Run method of controller
     }
 
     @Test
     public void fallbackOneChannel() throws Exception {
+        HydraulicLineHeaterController controller = new HydraulicLineHeaterController();
+        OpenemsComponent[] components = new OpenemsComponent[this.cpm.getAllComponents().size()];
+        components = this.cpm.getAllComponents().toArray(components);
+        new ControllerTest(controller, components)
+                .addReference("cpm", new DummyComponentManager(clock)) // "cpm" in this case is the name of the componentmanager of the controller. Note: has to be the same name as the reference in the controller
+                .activate(MyHydraulicLineHeaterConfig.create()
+                        .setId(id)
+                        .setService_pid("ThisIsFine")
+                        .setTempSensorReference(correctThermometerId)
+                        .setTemperatureDefault(correctReferenceTemperature)
+                        .setLineHeaterType(LineHeaterType.VALVE)
+                        .setValueToWriteIsBoolean(false)
+                        .setChannelAddress(apartmentModuleAddress.toString())
+                        .setChannels(new String[]{"foo", "bar"})
+                        .setValveBypass(correctValveId)
+                        .setTimerId(timerId)
+                        .setTimeoutMaxRemote(10)
+                        .setTimeoutRestartCycle(defaultTimeOutRestartCycle)
+                        .setShouldFallback(true)
+                        .setMinuteFallbackStart(defaultFallbackStart)
+                        .setMinuteFallbackStop(defaultFallbackStop)
+                        .setUseMinMax(true)
+                        .setMaxMinOnly(false)
+                        .setMaxValveValue(defaultMaxValue)
+                        .setMinValveValue(defaultMinValue)
+                        .setUseDecentralizedHeater(false)
+                        .setDecentralizedHeaterReference(decentralizedHeaterId)
+                        .setReactionType(DecentralizedHeaterReactionType.NEED_HEAT)
+                        .setEnabled(true)
+                        .build())
+                //NOTE: Fallback needs to be set to 10
+                .next(new TestCase()
+                        .timeleap(clock, 1, ChronoUnit.SECONDS)//not strictly necessary but some things just won't work sometimes otherwise
+                        .input(thermometerAddress, 400)
+                        .input(controllerEnableSignal, true)
+                )
+                .next(new TestCase()
+                        .timeleap(clock, 1, ChronoUnit.SECONDS)//not strictly necessary but some things just won't work sometimes otherwise
+                        .input(thermometerAddress, 400)
+                        .output(controllerFallbackSignal, false)
+                )
+                .next(new TestCase()
+                        .timeleap(clock, 1, ChronoUnit.SECONDS)//not strictly necessary but some things just won't work sometimes otherwise
+                        .input(thermometerAddress, 400)
+                        .output(controllerFallbackSignal, false)
+                )
+                .next(new TestCase()
+                        .timeleap(clock, 1, ChronoUnit.SECONDS)//not strictly necessary but some things just won't work sometimes otherwise
+                        .input(thermometerAddress, 400)
+                        .output(controllerFallbackSignal, false)
+                )
+                .next(new TestCase()
+                        .timeleap(clock, 1, ChronoUnit.SECONDS)//not strictly necessary but some things just won't work sometimes otherwise
+                        .input(thermometerAddress, 400)
+                        .output(controllerFallbackSignal, false)
+                )
+                .next(new TestCase()
+                        .timeleap(clock, 1, ChronoUnit.SECONDS)//not strictly necessary but some things just won't work sometimes otherwise
+                        .input(thermometerAddress, 400)
+                        .output(controllerFallbackSignal, false)
+                )
+                .next(new TestCase()
+                        .timeleap(clock, 1, ChronoUnit.SECONDS)//not strictly necessary but some things just won't work sometimes otherwise
+                        .input(thermometerAddress, 400)
+                        .output(controllerFallbackSignal, false)
+                )
+                .next(new TestCase()
+                        .timeleap(clock, 1, ChronoUnit.SECONDS)//not strictly necessary but some things just won't work sometimes otherwise
+                        .input(thermometerAddress, 400)
+                        .output(controllerFallbackSignal, false)
+                )
+                .next(new TestCase()
+                        .timeleap(clock, 1, ChronoUnit.SECONDS)//not strictly necessary but some things just won't work sometimes otherwise
+                        .input(thermometerAddress, 400)
+                        .output(controllerFallbackSignal, false)
 
+                )
+                .next(new TestCase()
+                        .timeleap(clock, 1, ChronoUnit.SECONDS)//not strictly necessary but some things just won't work sometimes otherwise
+                        .input(thermometerAddress, 400)
+                        .output(controllerFallbackSignal, false)
+                )
+                .next(new TestCase()
+                        .timeleap(clock, 1, ChronoUnit.SECONDS)//not strictly necessary but some things just won't work sometimes otherwise
+                        .input(thermometerAddress, 400)
+                        .output(controllerFallbackSignal, false)
+                )
+                .next(new TestCase()
+                        .timeleap(clock, 1, ChronoUnit.SECONDS)//not strictly necessary but some things just won't work sometimes otherwise
+                        .input(thermometerAddress, 400)
+                        .output(controllerFallbackSignal, true)
+                )
+                .getSut().run();
+    }
+
+    @Test
+    public void createDummy() {
+        DummyHydraulicLineController hydraulicLineController = new DummyHydraulicLineController(id);
     }
 
 }
