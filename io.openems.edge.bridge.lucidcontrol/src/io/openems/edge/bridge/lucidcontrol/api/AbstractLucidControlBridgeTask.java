@@ -6,7 +6,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * The AbstractLucidControlBridgeTask. It holds the Logger, module ID and the cpm. Used by the concrete Implementations.
+ * The AbstractLucidControlBridgeTask. It holds the Logger, module ID and the cpm. Used by
+ * {@link io.openems.edge.bridge.lucidcontrol.device.LucidControlInputDeviceImpl} and
+ * {@link io.openems.edge.bridge.lucidcontrol.device.LucidControlOutputDeviceImpl}
  */
 public abstract class AbstractLucidControlBridgeTask implements LucidControlBridgeTask {
 
@@ -32,6 +34,15 @@ public abstract class AbstractLucidControlBridgeTask implements LucidControlBrid
 
     public String getModuleId() {
         return this.moduleId;
+    }
+
+    /**
+     * Calculate the Pressure using the given param and setNextValue in the PressureChannel.
+     *
+     * @param voltageRead voltage Value measured in LucidControlBridge at concrete Device.
+     */
+    public void setResponse(double voltageRead){
+        //Nothing to do on default
     }
 
 }

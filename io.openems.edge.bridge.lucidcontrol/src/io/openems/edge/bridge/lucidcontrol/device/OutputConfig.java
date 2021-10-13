@@ -1,4 +1,4 @@
-package io.openems.edge.lucidcontrol.device;
+package io.openems.edge.bridge.lucidcontrol.device;
 
 import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
@@ -25,7 +25,7 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     @AttributeDefinition(name = "VoltageThreshold", description = "VoltageThreshold List: Given Value indicates extra Offset. Inputs as %")
     double[] voltageThreshold() default {50};
 
-    @AttributeDefinition(name = "VoltageThreshold Value", description = "VoltageThreshold Offset Value added/substracted from % Value")
+    @AttributeDefinition(name = "VoltageThreshold Value", description = "VoltageThreshold Offset Value added/subtracted from % Value")
     double[] voltageThresholdValue() default {0.5};
 
     boolean enabled() default true;

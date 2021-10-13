@@ -1,4 +1,4 @@
-package io.openems.edge.lucidcontrol.module;
+package io.openems.edge.bridge.lucidcontrol.module;
 
 import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
@@ -19,15 +19,8 @@ import org.osgi.service.metatype.annotations.Option;
     String alias() default "";
 
 
-    @AttributeDefinition(name = "Voltage", description = "Voltage provided by LucidControl (Written on Module itself).",
-    options = {
-            @Option(label = "5V", value = "5V"),
-            @Option(label = "10V", value = "10V"),
-            @Option(label = "24V", value = "24V"),
-            @Option(label = "+-5V", value = "+-5V"),
-            @Option(label = "+-10V", value = "+-10V")
-    })
-            String voltage() default "5V";
+    @AttributeDefinition(name = "Voltage", description = "Voltage provided by LucidControl (Written on Module itself).")
+    ModuleTypes moduleTypes() default ModuleTypes.VOLTAGE_10;
 
     @AttributeDefinition(name = "Address via USB", description = "Address of USB Path")
             String path() default "/dev/ttyACM0";

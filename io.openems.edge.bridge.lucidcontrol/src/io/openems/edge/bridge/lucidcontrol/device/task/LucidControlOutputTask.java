@@ -1,4 +1,4 @@
-package io.openems.edge.lucidcontrol.device.task;
+package io.openems.edge.bridge.lucidcontrol.device.task;
 
 import io.openems.common.exceptions.OpenemsError;
 import io.openems.common.types.ChannelAddress;
@@ -20,13 +20,13 @@ public class LucidControlOutputTask extends AbstractLucidControlBridgeTask imple
 
     private final ChannelAddress percentAddress;
     private final String path;
-    private final String voltage;
+    private final Integer voltage;
     private final int pinPos;
     private int maxVoltage;
     private final Map<Double, Double> voltageThresholdMap;
     private final List<Double> keyList;
 
-    public LucidControlOutputTask(String moduleId, String deviceId, String path, String voltage, int pinPos,
+    public LucidControlOutputTask(String moduleId, String deviceId, String path, Integer voltage, int pinPos,
                                   ChannelAddress percentAddress, List<Double> keyList, Map<Double, Double> voltageThresholdMap, ComponentManager cpm) {
         super(moduleId, cpm);
 
@@ -40,17 +40,12 @@ public class LucidControlOutputTask extends AbstractLucidControlBridgeTask imple
     }
 
     private void allocateMaxVoltage() {
-        this.maxVoltage = Integer.parseInt(this.voltage.replaceAll("\\D+", ""));
+        this.maxVoltage = this.voltage;
 
-    }
-
-    @Override
-    public void setResponse(double voltageRead) {
-        //Nothing to do here
     }
 
     /**
-     * Path of the LucidControModule.
+     * Path of the LucidControlModule.
      *
      * @return the path.
      */
@@ -69,28 +64,23 @@ public class LucidControlOutputTask extends AbstractLucidControlBridgeTask imple
         }
     }
 
-
-    /**
-     * Pin Position of the Device.
-     *
-     * @return pinPosition.
-     */
-    public int getPinPos() {
-        return this.pinPos;
-    }
-
     /**
      * Returns the Request String to write to a device.
      */
     @Override
     public String getRequest() {
-        return " -w" + calculateVoltage() + " -c" + this.pinPos + " -tV";
+        return " -w" + this.calculateVoltage() + " -c" + this.pinPos + " -tV";
     }
 
+    /**
+     * Calculates the Voltage to write to the Request.
+     *
+     * @return the output Voltage.
+     */
     private double calculateVoltage() {
         double adaptedVoltage;
         try {
-            adaptedVoltage = calculateAdaptedVoltage();
+            adaptedVoltage = this.calculateAdaptedVoltage();
         } catch (OpenemsError.OpenemsNamedException e) {
             super.log.warn("Couldn't read percent Channel " + this.percentAddress);
             adaptedVoltage = 0.d;
@@ -98,17 +88,24 @@ public class LucidControlOutputTask extends AbstractLucidControlBridgeTask imple
         return adaptedVoltage * this.maxVoltage / 100;
     }
 
+    /**
+     * Calculates an Adapted Voltage by reading the Percent Channel / SetPoint and convert it to a Voltage value.
+     * And adding/Subtracting the ThresholdValue defined by the Configuration of the LucidControlOutputDevice.
+     *
+     * @return the adapted Voltage value
+     * @throws OpenemsError.OpenemsNamedException if the Channel cannot be found.
+     */
     private double calculateAdaptedVoltage() throws OpenemsError.OpenemsNamedException {
         Channel<?> percentChannel = this.cpm.getChannel(this.percentAddress);
-        double percentChannelValue = percentChannel.value().isDefined() ?  (Double) percentChannel.value().get() : 0;
-        double percent = percentChannelValue >= 0 ? percentChannelValue : 0;
+        double percentChannelValue = percentChannel.value().isDefined() ? (Double) percentChannel.value().get() : 0;
+        double percentToVoltage = percentChannelValue >= 0 ? percentChannelValue : 0;
         if (this.keyList.size() > 0) {
             AtomicBoolean wasSet = new AtomicBoolean();
             wasSet.set(false);
             AtomicInteger keyInList = new AtomicInteger();
             keyInList.set(-1);
             this.keyList.forEach(key -> {
-                if (key <= percent) {
+                if (key <= percentToVoltage) {
                     if (wasSet.get()) {
                         if (key > this.keyList.get(keyInList.get())) {
                             keyInList.set(this.keyList.indexOf(key));
@@ -120,12 +117,18 @@ public class LucidControlOutputTask extends AbstractLucidControlBridgeTask imple
                 }
             });
             if (wasSet.get()) {
-                return percent + this.voltageThresholdMap.get(this.keyList.get(keyInList.get()));
+                return percentToVoltage + this.voltageThresholdMap.get(this.keyList.get(keyInList.get()));
             }
         }
 
-        return percent;
+        return percentToVoltage;
     }
+
+    /**
+     * Tells the Bridge if this Task is a Read Task.
+     *
+     * @return true if readTask.
+     */
 
     @Override
     public boolean isRead() {

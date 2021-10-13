@@ -1,4 +1,4 @@
-package io.openems.edge.lucidcontrol.module;
+package io.openems.edge.bridge.lucidcontrol.module;
 
 import io.openems.edge.bridge.lucidcontrol.api.LucidControlBridge;
 import io.openems.edge.common.component.AbstractOpenemsComponent;
@@ -26,7 +26,7 @@ public class LucidControlModuleImpl extends AbstractOpenemsComponent implements 
     LucidControlBridge lucidControlBridge;
 
     public LucidControlModuleImpl() {
-        super(OpenemsComponent.ChannelId.values());
+        super(ChannelId.values());
     }
 
     @Activate
@@ -60,6 +60,6 @@ public class LucidControlModuleImpl extends AbstractOpenemsComponent implements 
      */
     private void activationOrModifiedRoutine(Config config) {
         this.lucidControlBridge.addPath(config.id(), config.path());
-        this.lucidControlBridge.addVoltage(config.id(), config.voltage());
+        this.lucidControlBridge.addVoltage(config.id(), config.moduleTypes().getVoltage());
     }
 }

@@ -1,4 +1,4 @@
-package io.openems.edge.lucidcontrol.device.task;
+package io.openems.edge.bridge.lucidcontrol.device.task;
 
 import io.openems.common.exceptions.OpenemsError;
 import io.openems.common.types.ChannelAddress;
@@ -16,14 +16,13 @@ public class LucidControlInputTask extends AbstractLucidControlBridgeTask implem
     private final ChannelAddress voltageAddress;
 
     private final String path;
-    private final String voltage;
+    private final Integer voltage;
     private final int pinPos;
-    //will be changed, just a placeholder atm
     private final double maxPressure;
     private int maxVoltage;
 
 
-    public LucidControlInputTask(String moduleId, String deviceId, String path, String voltage, int pinPos,
+    public LucidControlInputTask(String moduleId, String deviceId, String path, Integer voltage, int pinPos,
                                  double maxPressure, ChannelAddress barAddress, ChannelAddress voltageAddress, ComponentManager cpm) throws OpenemsError.OpenemsNamedException {
         super(moduleId, cpm);
 
@@ -40,7 +39,7 @@ public class LucidControlInputTask extends AbstractLucidControlBridgeTask implem
      * Allocates the maxVoltage, depending on the Config of the LucidControlInputDevice.
      */
     private void allocateMaxVoltage() {
-        this.maxVoltage = Integer.parseInt(this.voltage.replaceAll("\\D+", ""));
+        this.maxVoltage = this.voltage;
     }
 
     /**
@@ -68,19 +67,14 @@ public class LucidControlInputTask extends AbstractLucidControlBridgeTask implem
         return this.path;
     }
 
+    /**
+     * Tells the LucidControlBridge if the Task is a OutputTask and a PercentValue is defined.
+     *
+     * @return true if OutputTask.
+     */
     @Override
     public boolean isWriteDefined() {
         return false;
-    }
-
-
-    /**
-     * Pin Position of the Device.
-     *
-     * @return pinPosition.
-     */
-    public int getPinPos() {
-        return this.pinPos;
     }
 
     /**
@@ -90,6 +84,12 @@ public class LucidControlInputTask extends AbstractLucidControlBridgeTask implem
     public String getRequest() {
         return " -tV -c" + this.pinPos + " -r";
     }
+
+    /**
+     * Tells the Bridge if this Task is a Read Task.
+     *
+     * @return true if readTask.
+     */
 
     @Override
     public boolean isRead() {

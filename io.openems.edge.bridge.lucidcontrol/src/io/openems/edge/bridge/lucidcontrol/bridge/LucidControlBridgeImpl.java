@@ -1,4 +1,4 @@
-package io.openems.edge.bridge.lucidcontrol;
+package io.openems.edge.bridge.lucidcontrol.bridge;
 
 import io.openems.common.worker.AbstractCycleWorker;
 import io.openems.edge.bridge.lucidcontrol.api.LucidControlBridge;
@@ -16,6 +16,8 @@ import org.osgi.service.event.Event;
 import org.osgi.service.event.EventConstants;
 import org.osgi.service.event.EventHandler;
 import org.osgi.service.metatype.annotations.Designate;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -41,11 +43,13 @@ import java.util.concurrent.ConcurrentHashMap;
         property = EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE)
 public class LucidControlBridgeImpl extends AbstractOpenemsComponent implements OpenemsComponent, EventHandler, LucidControlBridge {
 
+    private static final Logger log = LoggerFactory.getLogger(LucidControlBridgeImpl.class);
 
+    private static final int MAXIMUM_READ_LINES = 5;
     //String Key : Module Id, String Value  = Address
     private final Map<String, String> pathMap = new ConcurrentHashMap<>();
     //String Key: Module Id; Integer Value : Voltage of Module
-    private final Map<String, String> voltageMap = new ConcurrentHashMap<>();
+    private final Map<String, Integer> voltageMap = new ConcurrentHashMap<>();
 
     Map<String, LucidControlBridgeTask> tasks = new ConcurrentHashMap<>();
 
@@ -80,6 +84,7 @@ public class LucidControlBridgeImpl extends AbstractOpenemsComponent implements 
     void modified(ComponentContext context, Config config) {
         super.modified(context, config.id(), config.alias(), config.enabled());
         this.lucidIoPath = config.lucidIoPath();
+
         if (config.enabled()) {
             this.worker.activate(super.id());
         }
@@ -105,7 +110,7 @@ public class LucidControlBridgeImpl extends AbstractOpenemsComponent implements 
      */
 
     @Override
-    public void addVoltage(String id, String voltage) {
+    public void addVoltage(String id, Integer voltage) {
         this.voltageMap.put(id, voltage);
     }
 
@@ -142,16 +147,33 @@ public class LucidControlBridgeImpl extends AbstractOpenemsComponent implements 
         this.tasks.put(id, lucid);
     }
 
+    /**
+     * Gets the Path of the LucidControl Module.
+     *
+     * @param moduleId usually from LucidControl Device config.moduleId()
+     * @return the Path of the Module
+     */
+
     @Override
     public String getPath(String moduleId) {
         return this.pathMap.get(moduleId);
     }
 
+    /**
+     * Gets the maxVoltage as a String identified via given key.
+     *
+     * @param moduleId is the key to get the max Voltage, usually from Device config.moduleId()
+     * @return the maximum Voltage configured.
+     */
     @Override
-    public String getVoltage(String moduleId) {
+    public Integer getVoltage(String moduleId) {
         return this.voltageMap.get(moduleId);
     }
 
+    /**
+     * The LucidControlWorker. Provides the ability to read from and write into the commandLine /
+     * Calls the LucidControlSoftware.
+     */
     private class LucidControlWorker extends AbstractCycleWorker {
         @Override
         public void activate(String id) {
@@ -165,7 +187,6 @@ public class LucidControlBridgeImpl extends AbstractOpenemsComponent implements 
 
         /**
          * Provides the command for using the linux shell.
-         * ATTENTION! No Windows support yet!
          * Output of shell provides a Voltage.
          * Always "Chip"+Number of Chip + ":" followed by Number e.g.
          * Chip0: -0.2548
@@ -220,7 +241,7 @@ public class LucidControlBridgeImpl extends AbstractOpenemsComponent implements 
 
                 String line;
                 int counter = 0;
-                while (counter < 5) {
+                while (counter < MAXIMUM_READ_LINES) {
                     line = reader.readLine();
                     if (line != null) {
                         output.append(line).append("\n");
@@ -231,7 +252,7 @@ public class LucidControlBridgeImpl extends AbstractOpenemsComponent implements 
                 return output.toString();
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            log.warn("Couldn't execute Command! " + e.getMessage());
             return "Didn't Work";
 
         }

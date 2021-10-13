@@ -1,23 +1,22 @@
-package io.openems.edge.lucidcontrol.device;
+package io.openems.edge.bridge.lucidcontrol.device;
 
 import io.openems.common.exceptions.OpenemsError;
 import io.openems.common.types.ChannelAddress;
 import io.openems.edge.bridge.lucidcontrol.api.LucidControlBridge;
+import io.openems.edge.bridge.lucidcontrol.api.LucidControlDeviceInput;
+import io.openems.edge.bridge.lucidcontrol.device.task.LucidControlInputTask;
 import io.openems.edge.common.component.AbstractOpenemsComponent;
 import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
-import io.openems.edge.bridge.lucidcontrol.api.LucidControlDeviceInput;
-import io.openems.edge.lucidcontrol.device.task.LucidControlInputTask;
-
 import org.osgi.service.component.ComponentContext;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Modified;
 import org.osgi.service.component.annotations.Reference;
+import org.osgi.service.component.annotations.ReferenceCardinality;
 import org.osgi.service.component.annotations.ReferencePolicy;
 import org.osgi.service.component.annotations.ReferencePolicyOption;
-import org.osgi.service.component.annotations.ReferenceCardinality;
 import org.osgi.service.metatype.annotations.Designate;
 
 /**

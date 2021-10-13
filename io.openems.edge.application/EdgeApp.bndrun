@@ -157,8 +157,6 @@
 	bnd.identity;id='io.openems.edge.io.revpi',\
 	bnd.identity;id='io.openems.edge.io.shelly',\
 	bnd.identity;id='io.openems.edge.io.wago',\
-	bnd.identity;id='io.openems.edge.lucidcontrol.module',\
-	bnd.identity;id='io.openems.edge.lucidcontrol.device',\
 	bnd.identity;id='io.openems.edge.kbr4f96',\
 	bnd.identity;id='io.openems.edge.kostal.piko',\
 	bnd.identity;id='io.openems.edge.meter.abb',\
@@ -339,8 +337,6 @@
 	io.openems.edge.io.wago;version=snapshot,\
 	io.openems.edge.kbr4f96;version=snapshot,\
 	io.openems.edge.kostal.piko;version=snapshot,\
-	io.openems.edge.lucidcontrol.device;version=snapshot,\
-	io.openems.edge.lucidcontrol.module;version=snapshot,\
 	io.openems.edge.meter.abb;version=snapshot,\
 	io.openems.edge.meter.api;version=snapshot,\
 	io.openems.edge.meter.artemes.am2;version=snapshot,\

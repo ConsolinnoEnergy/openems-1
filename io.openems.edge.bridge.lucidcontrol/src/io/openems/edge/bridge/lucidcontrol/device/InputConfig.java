@@ -1,4 +1,4 @@
-package io.openems.edge.lucidcontrol.device;
+package io.openems.edge.bridge.lucidcontrol.device;
 
 import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;

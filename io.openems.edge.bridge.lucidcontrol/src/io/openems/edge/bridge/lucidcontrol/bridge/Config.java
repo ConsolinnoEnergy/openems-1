@@ -1,4 +1,4 @@
-package io.openems.edge.bridge.lucidcontrol;
+package io.openems.edge.bridge.lucidcontrol.bridge;
 
 import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
@@ -14,7 +14,7 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     @AttributeDefinition(name = "LucidControlBridge-ID", description = "ID of Lucid bridge.")
     String id() default "LucidBridge";
 
-    @AttributeDefinition(name = "Path to LucidIoControl", description = "Complete Path to LucidIoControl")
+    @AttributeDefinition(name = "Path to LucidIoControl Software", description = "Complete Path to LucidIoControl Software")
     String lucidIoPath() default "/home/name/bin/64Bit/LucidIoCtrl";
 
     @AttributeDefinition(name = "Alias", description = "Human readable Name.")
