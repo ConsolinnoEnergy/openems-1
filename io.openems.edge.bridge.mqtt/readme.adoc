@@ -1,8 +1,8 @@
 = io.openems.edge.bridge.mqtt Provider
 
-This Bundle Provides the MQTT Bridge communicating with MQTT V3.1.1, and Telemetry/CommandComponents It Communicates with a Broker.
+This Bundle Provides the MQTT Bridge communicating with MQTT V3.1.1, and Telemetry/CommandComponents.
+It Communicates with a Broker.
 It handles subscribe and Publish - Tasks.
-
 persistent/clean Session will be configured automatically.
 
 AutoReconnect is per default set to true.
@@ -52,28 +52,37 @@ And the Last entry tells the "TimeToWait" e.g. how regularly the Paylodas should
 PayloadEntries:
 tp-1:Temperature:tp-2:FlowTemperature tp-1:ReturnTemperature meter-1:ConsumedPower
 
-PublishConfig:
+=== PublishConfig:
 LOW!telemetry/Temperature!0!true!true!0!10 (<- Every 10 seconds the Payload0 (tp-1:Temperature:tp-2:FlowTemperature) will be published at topic telemetry/Temperature) URGENT!telemetry/Temperature2!0!true!true!1!5(<- Every 5 seconds the Payload1 (tp-1:ReturnTemperature) will be published at topic telemetry/Temperature2) SubscribeConfig:
-SubscribeConfig:
+
+=== SubscribeConfig:
 LOW!telemetry/MeterPower!0!true!true!2!10 (<- Every 10 seconds the Value subscribed from the Broker under Topic MeterPower will be written into the ConsumedPower Channel from the key : meter-1)
 
 "Priority!Topic!QoS!RetainFlag!TimestampUseBoolean!PayloadNo!TimeToWait"
 
 The main purpose for the MqttBridge is done here.
-Additionally, there is the support for the CommandComponent, where you can setup Commands, that will be handled by the commandComponent. This will subscribe to topics and write Value to the MqttCommands Nature.
-If you want to add Commands, just put in another entry in the MqttCommandType, and the MqttCommands. Additionally, go to the MqttCommandComponent and put in a Handling for the MqttCommandType.
+
+=== CommandComponent
+
+Additionally, there is the support for the CommandComponent, where you can setup Commands, that will be handled by the commandComponent.
+This will subscribe to topics and write Value to the MqttCommands Nature.
+If you want to add Commands, just put in another entry in the MqttCommandType, and the MqttCommands.
+Additionally, go to the MqttCommandComponent and put in a Handling for the MqttCommandType.
 
 However, the Configuration is almost the same, the only thing important here is the Topic.
 Every method within the topic will be read and evaluated.
 
-The Bridge tells the CommandComponent to react to the Commands, stored within the SubscribeTask. If the Value is Valid and not expired, the Value stored within the SusbscribeTask will be written into the Corresponding channel.
+The Bridge tells the CommandComponent to react to the Commands, stored within the SubscribeTask.
+If the Value is Valid and not expired, the Value stored within the SusbscribeTask will be written into the Corresponding channel.
 
 e.g. The SETPOWER Method is corresponding to the SetPower Channel of the MqttCommandComponent.
 If the Value is valid, the CommandComponent will write the Value of the SETPOWER method to the SetPowerChannel.
 Let's say a Heater implements the MqttCommandComponent and listens to the SetPowerChannel ->
 Set the EnableSignal to true / Set the SetPointPowerLevel etc etc -> it starts to heat.
-The CommandComponent will subscribe to a topic and await the SetPower Method (Note: The MethodName must match the MqttCommandType). When the method has a value and expiration (in seconds) -> the value will be stored within the SubscribeTask and later called by the MqttBridge/CommandComponent.
-The CommandComponent will check for the Value and if the time has not expired -> write the Value to the SetPowerChannel. If expired -> reset the value (write null).
+The CommandComponent will subscribe to a topic and await the SetPower Method (Note: The MethodName must match the MqttCommandType).
+When the method has a value and expiration (in seconds) -> the value will be stored within the SubscribeTask and later called by the MqttBridge/CommandComponent.
+The CommandComponent will check for the Value and if the time has not expired -> write the Value to the SetPowerChannel.
+If expired -> reset the value (write null).
 
 
 == External Resource: http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html ::

@@ -1,11 +1,12 @@
 package io.openems.edge.bridge.rest.device;
 
+import com.sun.corba.se.spi.orb.Operation;
 import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 import org.osgi.service.metatype.annotations.Option;
 
 @ObjectClassDefinition(
-        name = "Rest Remote Device ",
+        name = "Rest Remote Device",
         description = "The Devices you wish to Communicate with.")
 @interface Config {
 
@@ -28,17 +29,10 @@ import org.osgi.service.metatype.annotations.Option;
             + "Uppercase is: First Letter and the one after a _ e.g. Channel ON_OFF will be OnOff")
     String deviceChannel() default "Temperature";
 
-    @AttributeDefinition(name = "OperationType", description = "Do you want to Read or Write",
-            options = {
-                    @Option(label = "Read", value = "Read"),
-                    @Option(label = "Write", value = "Write")
-            }
-    )
-    String deviceMode() default "Read";
+    @AttributeDefinition(name = "OperationType", description = "Do you want to Read or Write")
+    OperationType operationMode() default OperationType.READ;
 
-    @AttributeDefinition(name = "Unit", description = "The Unit of the Device")
-            String deviceUnit() default "dC";
-    @AttributeDefinition(name = "TimerId",description = "Which Timer do you want to use")
+    @AttributeDefinition(name = "TimerId", description = "Which Timer do you want to use")
     String timerId() default "TimerByTime";
 
     @AttributeDefinition(name = "Wait Time", description = "If no HTTP Connection available -> try again later after this time")

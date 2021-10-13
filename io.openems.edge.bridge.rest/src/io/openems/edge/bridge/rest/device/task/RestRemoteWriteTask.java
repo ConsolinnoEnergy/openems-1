@@ -37,7 +37,7 @@ public class RestRemoteWriteTask extends AbstractRestRemoteDeviceTask implements
         if (this.allowedToWrite()) {
             Channel<String> valueChannel;
             try {
-                valueChannel = this.getCpm().getChannel(this.valueAddress);
+                valueChannel = this.cpm.getChannel(this.valueAddress);
             } catch (OpenemsError.OpenemsNamedException e) {
                 return "ChannelNotAvailable";
             }
@@ -60,9 +60,9 @@ public class RestRemoteWriteTask extends AbstractRestRemoteDeviceTask implements
     @Override
     public void wasSuccess(boolean success, String response) {
         if (success) {
-            super.getLogger().info("The Device corresponding to this device: " + super.getDeviceId() + "Was successfully set " + response);
+            this.logger.info("The Device corresponding to this device: " + super.getDeviceId() + "Was successfully set " + response);
         } else {
-            super.getLogger().warn("Error while Posting Value, please try again! " + response);
+            this.logger.warn("Error while Posting Value, please try again! " + response);
         }
 
     }
@@ -76,7 +76,7 @@ public class RestRemoteWriteTask extends AbstractRestRemoteDeviceTask implements
     public boolean allowedToWrite() {
         Channel<Boolean> allowedRequest;
         try {
-            allowedRequest = this.getCpm().getChannel(this.allowRequestAddress);
+            allowedRequest = this.cpm.getChannel(this.allowRequestAddress);
         } catch (OpenemsError.OpenemsNamedException e) {
             return false;
         }
