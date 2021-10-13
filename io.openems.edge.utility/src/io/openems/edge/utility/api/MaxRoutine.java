@@ -1,4 +1,6 @@
-package io.openems.edge.utility.minmax;
+package io.openems.edge.utility.api;
+
+import io.openems.edge.utility.minmax.MinMaxToChannel;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
