@@ -843,8 +843,8 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
                     if (onePhaseLength != 0) {
                         amountToReduceOnePhase = amountLeft / onePhaseLength;
 
-                    amountLeft = this.reduceOnePhaseEvcs(onePhase, onePhaseLength, amountToReduceOnePhase, amountLeft);
-                }
+                        amountLeft = this.reduceOnePhaseEvcs(onePhase, onePhaseLength, amountToReduceOnePhase, amountLeft);
+                    }
                     if (amountLeft != previousAmountLeft) {
                         previousAmountLeft = amountLeft;
                     } else {
@@ -1725,7 +1725,7 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
         } else {
             oldPower = (evcs.getChargePower().get() / GRID_VOLTAGE);
         }
-        evcs.setChargePowerLimit(0);
+        evcs.setChargePowerLimit(Math.max(evcs.getMinimumHardwarePower().orElse(1150), evcs.getMinimumPower().orElse(1150)) / GRID_VOLTAGE);
         this.removeEvcsFromActive(evcs);
         return oldPower;
     }
@@ -2366,15 +2366,22 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
         for (int i = 0; i < this.evcss.length; i++) {
             if (this.evcss[i] != null) {
                 if (this.powerWaitingList.containsKey(this.evcss[i].id())
-                        && (this.getPower(this.evcss[i]) >= 1
+                        && (this.getPower(this.evcss[i]) >= 1 || this.evcss[i].getSetChargePowerRequest().isDefined() || this.evcss[i].getSetChargePowerRequestChannel().getNextWriteValue().isPresent()
                         //(Math.min(this.evcss[i].getMinimumHardwarePower().get(), this.evcss[i].getMinimumPower().get()) / GRID_VOLTAGE)
                         //|| this.powerWaitingList.get(this.evcss[i].id()).getPhases() != this.evcss[i].getPhases().orElse(0)
-                        )
+                )
                 ) {
                     this.powerWaitingList.remove(this.evcss[i].id());
+                    try {
+                        if (this.getCurrentPowerChannel().getNextValue().orElse(0) + this.evcss[i].getMinimumPower().orElse(6 * GRID_VOLTAGE) <= this.powerLimit) {
+
+                            this.evcss[i].setChargePowerLimit(this.evcss[i].getMinimumPower().orElse(6 * GRID_VOLTAGE));
+                        }
+                    } catch (OpenemsError.OpenemsNamedException e) {
+                    }
                 } else if (!this.powerWaitingList.containsKey(this.evcss[i].id()) && this.getPower(this.evcss[i])
                         < 1
-                      //  (Math.min(this.evcss[i].getMinimumHardwarePower().get(), this.evcss[i].getMinimumPower().get()) / GRID_VOLTAGE)
+                    //  (Math.min(this.evcss[i].getMinimumHardwarePower().get(), this.evcss[i].getMinimumPower().get()) / GRID_VOLTAGE)
                 ) {
                     int minHwPower = this.evcss[i].getMinimumHardwarePower().orElse(1150);
                     int minSwPower = this.evcss[i].getMinimumPower().orElse(1150);
@@ -2732,7 +2739,7 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
             if ((this.initialPowerLimit / GRID_VOLTAGE) / this.priorityAmount > this.priorityCurrent) {
                 if (this.symmetry) {
                     freeResources = MAXIMUM_LOAD_DELTA - (max - min);
-                    freeMiddleResources = MAXIMUM_LOAD_DELTA  - (mid - min);
+                    freeMiddleResources = MAXIMUM_LOAD_DELTA - (mid - min);
                     freeResourcesPerEvcs = (freeResources / nonThreePhasePriorityAmount) - 1;
                     freeResourcesPerMiddleEvcs = (freeMiddleResources / nonThreePhasePriorityAmount) - 1;
                 }
@@ -2746,7 +2753,7 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
                             } else {
                                 int oldPower = evcs.getChargePower().orElse(0);
                                 int minPower = Math.max(evcs.getMinimumHardwarePower().orElse(0), evcs.getMinimumPower().orElse(0)) / GRID_VOLTAGE;
-                                if (this.evcsOnPhase(evcs, this.maxIndex)  && finalFreeResourcesPerEvcs > 0 && oldPower + (finalFreeResourcesPerEvcs * GRID_VOLTAGE) >= minPower) {
+                                if (this.evcsOnPhase(evcs, this.maxIndex) && finalFreeResourcesPerEvcs > 0 && oldPower + (finalFreeResourcesPerEvcs * GRID_VOLTAGE) >= minPower) {
                                     evcs.setChargePowerLimit(oldPower + (finalFreeResourcesPerEvcs * GRID_VOLTAGE));
                                 } else if ((this.evcsOnPhase(evcs, this.middleIndex) || (this.maxIndex == this.middleIndex && this.evcsOnPhase(evcs, this.middleIndex2))) && !this.evcsOnPhase(evcs, this.maxIndex) && finalFreeResourcesPerMiddleEvcs > 0 && oldPower + (finalFreeResourcesPerMiddleEvcs * GRID_VOLTAGE) >= minPower) {
                                     evcs.setChargePowerLimit(oldPower + (finalFreeResourcesPerMiddleEvcs * GRID_VOLTAGE));

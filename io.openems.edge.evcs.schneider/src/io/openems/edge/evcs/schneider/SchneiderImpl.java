@@ -84,8 +84,8 @@ public class SchneiderImpl extends AbstractOpenemsModbusComponent implements Ope
         this._setMinimumHardwarePower(5 * 230);
         this._setIsPriority(config.priority());
         this._setSetChargePowerLimit(6 * 230);
-        this._setMaximumPower(this.maxPower);
-        this._setMinimumPower(this.minPower);
+        this._setMaximumPower(this.maxPower * 230);
+        this._setMinimumPower(this.minPower * 230);
         this.readHandler = new SchneiderReadHandler(this);
         this.writeHandler = new SchneiderWriteHandler(this);
     }
@@ -245,6 +245,13 @@ public class SchneiderImpl extends AbstractOpenemsModbusComponent implements Ope
             this._setChargingstationCommunicationFailed(true);
         }
         this.writeHandler.run();
+        /*
+        try {
+            this.setChargePowerLimit(8*230);
+        } catch (OpenemsError.OpenemsNamedException e) {
+        }
+
+         */
         try {
             this.readHandler.run();
         } catch (Throwable throwable) {
