@@ -6,14 +6,14 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
 @ObjectClassDefinition(
         name = "Cooler Decentralize",
-        description = "A Cooler that enables an Hydraulic Controller and awaits and EnableSignal."
+        description = "A Cooler that enables an Hydraulic Controller and awaits and EnableSignal. Symbolizes e.g. a cooling Storage"
 )
 @interface ConfigDecentralizedCooler {
 
     String service_pid();
 
     @AttributeDefinition(name = "Cooler Name", description = "Unique Id of the Cooler.")
-    String id() default "DecentralCooler0";
+    String id() default "DecentralizedCooler0";
 
     @AttributeDefinition(name = "Alias", description = "Human readable name for this Component.")
     String alias() default "";

@@ -6,7 +6,7 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
 @ObjectClassDefinition(
         name = "Heater Decentralized",
-        description = "A Heater that is controlled, via a HydraulicComponent or a HydraulicComponentController."
+        description = "A Heater that is controlled, via a HydraulicComponent or a HydraulicComponentController. Symbolizes e.g. a HeatStorage"
 )
 @interface ConfigDecentralizedHeater {
 

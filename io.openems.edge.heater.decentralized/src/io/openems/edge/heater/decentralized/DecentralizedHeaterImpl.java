@@ -121,9 +121,11 @@ public class DecentralizedHeaterImpl extends AbstractDecentralizedComponent impl
                     && super.isEnabled() && super.configurationSuccess) {
                 if (super.currentRunEnabled()) {
                     if (super.checkAllowedToExecuteLogic()) {
-                        int setPointTemperature = this.getTemperatureSetpoint().orElse(DEFAULT_SETPOINT_TEMPERATURE);
+                        int setPointTemperature = this.getTemperatureSetpoint().orElse(DEFAULT_SET_POINT_TEMPERATURE);
                         boolean temperatureOk = this.thresholdThermometer.thermometerAboveGivenTemperature(setPointTemperature);
                         this.getNeedMoreHeatChannel().setNextValue(!temperatureOk);
+                        this.getNeedMoreHeatEnableSignalChannel().setNextValue(this.getNeedMoreHeatEnableSignalChannel()
+                                .getNextWriteValueAndReset().orElse(false));
                         super.setThresholdAndControlValve(temperatureOk, setPointTemperature);
                     }
                 } else {

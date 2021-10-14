@@ -6,6 +6,9 @@ import io.openems.edge.exceptionalstate.api.ExceptionalState;
 import io.openems.edge.heater.api.Heater;
 import io.openems.edge.heater.decentralized.api.DecentralizedCooler;
 
+/**
+ * The Dummy Decentralized Cooler, for Controller Unittests.
+ */
 public class DummyDecentralizedCooler extends AbstractOpenemsComponent implements OpenemsComponent, DecentralizedCooler, ExceptionalState, Heater {
 
 
