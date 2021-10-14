@@ -36,7 +36,7 @@ This can be a Powerful tool. Since a centralized Edge Device can Monitor "Demand
 
 
 
-link:https://github.com/OpenEMS/openems/tree/develop/io.openems.edge.communication.remote.rest[Source Code icon:github[]]
+
 
 
 
