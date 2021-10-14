@@ -245,13 +245,15 @@ public class SchneiderImpl extends AbstractOpenemsModbusComponent implements Ope
             this._setChargingstationCommunicationFailed(true);
         }
         this.writeHandler.run();
-        /*
+
         try {
-            this.setChargePowerLimit(8*230);
+            if (this.getSetChargePowerLimit().isDefined() && this.getSetChargePowerLimit().get() <= 6 * 230) {
+                this.setChargePowerLimit(6 * 230);
+            }
         } catch (OpenemsError.OpenemsNamedException e) {
         }
 
-         */
+
         try {
             this.readHandler.run();
         } catch (Throwable throwable) {
