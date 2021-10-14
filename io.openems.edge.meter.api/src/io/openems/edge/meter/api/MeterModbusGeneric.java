@@ -5,8 +5,7 @@ import io.openems.common.channel.Unit;
 import io.openems.common.types.OpenemsType;
 import io.openems.edge.common.channel.Channel;
 import io.openems.edge.common.channel.Doc;
-import io.openems.edge.common.channel.StringReadChannel;
-import io.openems.edge.common.component.OpenemsComponent;
+import io.openems.edge.common.component.GenericModbusComponent;
 
 /**
  * This Natures is an "Expansion" of the existing {@link Meter}.
@@ -15,7 +14,7 @@ import io.openems.edge.common.component.OpenemsComponent;
  * The Values from the ModbusCommunication can be stored in this/inheriting Natures converted and then be written in the
  * actual {@link Meter} Nature etc.
  */
-public interface MeterModbusGeneric extends OpenemsComponent {
+public interface MeterModbusGeneric extends GenericModbusComponent {
 
     public enum ChannelId implements io.openems.edge.common.channel.ChannelId {
 
@@ -287,53 +286,51 @@ public interface MeterModbusGeneric extends OpenemsComponent {
     /**
      * Checks if the Meter has a TimeStamp set. After that the stored value will be written to the actual {@link Meter}
      * Only call this within the implementing Class.
+     *
      * @return the channel that contains the value or else null.
      */
     default Channel<?> _hasTimeStamp() {
-        return MeterModbusGeneric.getValueDefinedChannel(this._getTimeStampDoubleChannel(), this._getTimeStampLongChannel());
+        return GenericModbusComponent.getValueDefinedChannel(this._getTimeStampDoubleChannel(), this._getTimeStampLongChannel());
     }
+
     /**
      * Checks if the Meter has a Reading Power set. After that the stored value will be written to the actual {@link Meter}
      * Only call this within the implementing Class.
+     *
      * @return the channel that contains the value or else null.
      */
     default Channel<?> _hasReadingPower() {
-        return MeterModbusGeneric.getValueDefinedChannel(this._getReadingPowerDoubleChannel(), this._getReadingPowerLongChannel());
+        return GenericModbusComponent.getValueDefinedChannel(this._getReadingPowerDoubleChannel(), this._getReadingPowerLongChannel());
     }
+
     /**
      * Checks if the Meter has a Return Temp set. After that the stored value will be written to the actual {@link Meter}
      * Only call this within the implementing Class.
+     *
      * @return the channel that contains the value or else null.
      */
     default Channel<?> _hasReturnTemp() {
-        return MeterModbusGeneric.getValueDefinedChannel(this._getReturnTempDoubleChannel(), this._getReturnTempLongChannel());
+        return GenericModbusComponent.getValueDefinedChannel(this._getReturnTempDoubleChannel(), this._getReturnTempLongChannel());
     }
 
     /**
      * Checks if the Meter has a Flow Temp set. After that the stored value will be written to the actual {@link Meter}
      * Only call this within the implementing Class.
+     *
      * @return the channel that contains the value or else null.
      */
     default Channel<?> _hasFlowTemp() {
-        return MeterModbusGeneric.getValueDefinedChannel(this._getFlowTempDoubleChannel(), this._getFlowTempLongChannel());
+        return GenericModbusComponent.getValueDefinedChannel(this._getFlowTempDoubleChannel(), this._getFlowTempLongChannel());
     }
+
     /**
      * Checks if the Meter has a Reading Energy set. After that the stored value will be written to the actual {@link Meter}
      * Only call this within the implementing Class.
+     *
      * @return the channel that contains the value or else null.
      */
     default Channel<?> _hasReadEnergy() {
-        return MeterModbusGeneric.getValueDefinedChannel(this._getReadingEnergyDouble(), this._getReadingEnergyLong());
-    }
-
-    static Channel<?> getValueDefinedChannel(Channel<?> firstChannel, Channel<?> secondChannel) {
-        if (firstChannel.getNextValue().isDefined()) {
-            return firstChannel;
-        } else if (secondChannel.getNextValue().isDefined()) {
-            return secondChannel;
-        } else {
-            return null;
-        }
+        return GenericModbusComponent.getValueDefinedChannel(this._getReadingEnergyDouble(), this._getReadingEnergyLong());
     }
 
     /**

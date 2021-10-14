@@ -3,6 +3,7 @@ package io.openems.edge.meter.api;
 import io.openems.common.types.OpenemsType;
 import io.openems.edge.common.channel.Channel;
 import io.openems.edge.common.channel.Doc;
+import io.openems.edge.common.component.GenericModbusComponent;
 
 public interface GasMeterModbusGeneric extends MeterModbusGeneric {
 
@@ -94,7 +95,7 @@ public interface GasMeterModbusGeneric extends MeterModbusGeneric {
 
 
     default Channel<?> _hasPercolation() {
-        return MeterModbusGeneric.getValueDefinedChannel(this._getReadPercolationDoubleChannel(), this._getReadPercolationLongChannel());
+        return GenericModbusComponent.getValueDefinedChannel(this._getReadPercolationDoubleChannel(), this._getReadPercolationLongChannel());
     }
 
 
@@ -124,7 +125,7 @@ public interface GasMeterModbusGeneric extends MeterModbusGeneric {
 
 
     default Channel<?> _hasTotalConsumedEnergy() {
-        return MeterModbusGeneric.getValueDefinedChannel(this._getTotalConsumedEnergyLong(), this._getTotalConsumedEnergyDouble());
+        return GenericModbusComponent.getValueDefinedChannel(this._getTotalConsumedEnergyLong(), this._getTotalConsumedEnergyDouble());
     }
 
 

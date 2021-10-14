@@ -88,7 +88,7 @@ public class GasMeterModbusGenericImpl extends AbstractGenericModbusComponent im
 
     @Override
     public void handleEvent(Event event) {
-        if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE)) {
+        if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE) && this.isEnabled()) {
             handleChannelUpdate(this.getTimestampChannel(), this._hasTimeStamp());
             handleChannelUpdate(this.getPowerChannel(), this._hasReadingPower());
             handleChannelUpdate(this.getTotalConsumedEnergyCubicMeterChannel(), this._hasReadEnergy());

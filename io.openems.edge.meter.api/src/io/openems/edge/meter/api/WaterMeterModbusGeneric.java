@@ -4,6 +4,7 @@ import io.openems.common.channel.AccessMode;
 import io.openems.common.types.OpenemsType;
 import io.openems.edge.common.channel.Channel;
 import io.openems.edge.common.channel.Doc;
+import io.openems.edge.common.component.GenericModbusComponent;
 
 /**
  * Generic WaterMeter Modbus Nature extension of Meter Modbus Generic.
@@ -75,7 +76,7 @@ public interface WaterMeterModbusGeneric extends MeterModbusGeneric {
      * @return the channel or else null.
      */
     default Channel<?> _hasReadWater() {
-        return MeterModbusGeneric.getValueDefinedChannel(this._getReadWaterDoubleChannel(), this._getReadWaterLongChannel());
+        return GenericModbusComponent.getValueDefinedChannel(this._getReadWaterDoubleChannel(), this._getReadWaterLongChannel());
     }
 }
 
