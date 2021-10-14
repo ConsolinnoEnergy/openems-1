@@ -2305,7 +2305,7 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
                 ManagedEvcs target = this.evcss[i];
                 target._setIsClustered(true);
                 int[] phases = target.getPhaseConfiguration();
-                int phaseCount = target.getPhases().orElse(0);
+                int phaseCount = target.getPhases().orElse(1);
                 for (int n = 0; n < phaseCount; n++) {
                     switch (phases[n]) {
                         case 1:
@@ -2325,7 +2325,7 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
                 ManagedEvcs target = this.evcss[i];
                 target._setIsClustered(true);
                 int[] phases = target.getPhaseConfiguration();
-                int phaseCount = target.getPhases().orElse(0);
+                int phaseCount = target.getPhases().orElse(1);
                 for (int n = 0; n < phaseCount; n++) {
                     if (target.getSetChargePowerLimitChannel().getNextWriteValue().orElse(target.getSetChargePowerLimitChannel().value().orElse(-1)) != -1
                             && target.getSetChargePowerLimitChannel().getNextWriteValue().orElse(target.getSetChargePowerLimitChannel().value().orElse(0)) <= target.getChargePower().orElse(target.getChargePowerChannel().getNextValue().orElse(0))) {
@@ -2366,13 +2366,15 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
         for (int i = 0; i < this.evcss.length; i++) {
             if (this.evcss[i] != null) {
                 if (this.powerWaitingList.containsKey(this.evcss[i].id())
-                        && (this.getPower(this.evcss[i]) >= (Math.min(this.evcss[i].getMinimumHardwarePower().get(), this.evcss[i].getMinimumPower().get()) / GRID_VOLTAGE)
+                        && (this.getPower(this.evcss[i]) >= 1
+                        //(Math.min(this.evcss[i].getMinimumHardwarePower().get(), this.evcss[i].getMinimumPower().get()) / GRID_VOLTAGE)
                         //|| this.powerWaitingList.get(this.evcss[i].id()).getPhases() != this.evcss[i].getPhases().orElse(0)
                         )
                 ) {
                     this.powerWaitingList.remove(this.evcss[i].id());
                 } else if (!this.powerWaitingList.containsKey(this.evcss[i].id()) && this.getPower(this.evcss[i])
-                        < (Math.min(this.evcss[i].getMinimumHardwarePower().get(), this.evcss[i].getMinimumPower().get()) / GRID_VOLTAGE)
+                        < 1
+                      //  (Math.min(this.evcss[i].getMinimumHardwarePower().get(), this.evcss[i].getMinimumPower().get()) / GRID_VOLTAGE)
                 ) {
                     int minHwPower = this.evcss[i].getMinimumHardwarePower().orElse(1150);
                     int minSwPower = this.evcss[i].getMinimumPower().orElse(1150);

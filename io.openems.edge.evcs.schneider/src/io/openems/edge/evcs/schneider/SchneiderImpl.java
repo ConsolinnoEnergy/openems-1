@@ -83,6 +83,7 @@ public class SchneiderImpl extends AbstractOpenemsModbusComponent implements Ope
                 "Modbus", config.modbusBridgeId());
         this._setMinimumHardwarePower(5 * 230);
         this._setIsPriority(config.priority());
+        this._setSetChargePowerLimit(6 * 230);
         this._setMaximumPower(this.maxPower);
         this._setMinimumPower(this.minPower);
         this.readHandler = new SchneiderReadHandler(this);
@@ -219,7 +220,7 @@ public class SchneiderImpl extends AbstractOpenemsModbusComponent implements Ope
 
     @Override
     public String debugLog() {
-        return "Total: " + this.getStationPowerTotal() + " W | L1 " + this.getStationIntensityPhaseX() + " A | L2 " + this.getStationIntensityPhase2() + " A | L3 " + this.getStationIntensityPhase3() + " A";
+        return "Total: " + this.getStationPowerTotal() + " kW | L1 " + this.getStationIntensityPhaseX() + " A | L2 " + this.getStationIntensityPhase2() + " A | L3 " + this.getStationIntensityPhase3() + " A";
     }
 
 
