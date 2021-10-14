@@ -1,11 +1,11 @@
-package io.openems.edge.heater.decentral;
+package io.openems.edge.heater.decentralized;
 
 import io.openems.common.exceptions.OpenemsError;
 import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.common.event.EdgeEventConstants;
 import io.openems.edge.exceptionalstate.api.ExceptionalState;
 import io.openems.edge.heater.api.Heater;
-import io.openems.edge.heater.decentral.api.DecentralizedCooler;
+import io.openems.edge.heater.decentralized.api.DecentralizedCooler;
 import org.osgi.service.cm.ConfigurationException;
 import org.osgi.service.component.ComponentContext;
 import org.osgi.service.component.annotations.Activate;

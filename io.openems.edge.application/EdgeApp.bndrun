@@ -147,7 +147,7 @@
 	bnd.identity;id='io.openems.edge.heater.chp.kwenergy',\
 	bnd.identity;id='io.openems.edge.heater.chp.viessmann',\
 	bnd.identity;id='io.openems.edge.heater.chp.wolf',\
-	bnd.identity;id='io.openems.edge.heater.decentral',\
+	bnd.identity;id='io.openems.edge.heater.decentralized',\
 	bnd.identity;id='io.openems.edge.heater.gasboiler.buderus',\
 	bnd.identity;id='io.openems.edge.heater.gasboiler.viessmann',\
 	bnd.identity;id='io.openems.edge.heater.heatpump.alphainnotec',\
@@ -327,7 +327,7 @@
 	io.openems.edge.heater.chp.wolf;version=snapshot,\
 	io.openems.edge.heater.gasboiler.buderus;version=snapshot,\
 	io.openems.edge.heater.gasboiler.viessmann;version=snapshot,\
-	io.openems.edge.heater.decentral;version=snapshot,\
+	io.openems.edge.heater.decentralized;version=snapshot,\
 	io.openems.edge.heater.heatpump.alphainnotec;version=snapshot,\
 	io.openems.edge.heater.heatpump.tecalor;version=snapshot,\
 	io.openems.edge.heatsystem.components;version=snapshot,\

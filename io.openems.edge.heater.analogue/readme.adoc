@@ -8,7 +8,7 @@ However, an AnalogueHeaterComponent will be created and handles Enable/Disable S
 
 == Example
 
-An AnalogueHeater0 is configured. It has the ControlType Percent and the AnalogueType LucidControl
+An AnalogueHeater0 is configured. It has the ControlType Percent, and the AnalogueType LucidControl
 The Active Value is 80, while the inactive value is 0.
 The configured LucidControlDeviceOutput0 is the corresponding OpenEmsComponent
 Therefore an AnalogueHeaterLucidControl is instantiated by the AnalogueHeater0 with a default active and inactive Value.

@@ -1,10 +1,10 @@
-package io.openems.edge.heater.decentral.test;
+package io.openems.edge.heater.decentralized.test;
 
 import io.openems.edge.common.component.AbstractOpenemsComponent;
 import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.exceptionalstate.api.ExceptionalState;
 import io.openems.edge.heater.api.Heater;
-import io.openems.edge.heater.decentral.api.DecentralizedCooler;
+import io.openems.edge.heater.decentralized.api.DecentralizedCooler;
 
 public class DummyDecentralizedCooler extends AbstractOpenemsComponent implements OpenemsComponent, DecentralizedCooler, ExceptionalState, Heater {
 

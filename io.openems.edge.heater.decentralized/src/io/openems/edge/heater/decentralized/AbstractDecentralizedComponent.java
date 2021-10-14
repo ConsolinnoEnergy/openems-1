@@ -1,4 +1,4 @@
-package io.openems.edge.heater.decentral;
+package io.openems.edge.heater.decentralized;
 
 import io.openems.common.exceptions.OpenemsError;
 import io.openems.edge.common.channel.WriteChannel;

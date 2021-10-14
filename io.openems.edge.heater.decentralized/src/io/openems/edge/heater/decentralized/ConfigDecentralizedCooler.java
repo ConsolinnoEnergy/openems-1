@@ -1,4 +1,4 @@
-package io.openems.edge.heater.decentral;
+package io.openems.edge.heater.decentralized;
 
 import io.openems.edge.heater.api.ComponentType;
 import org.osgi.service.metatype.annotations.AttributeDefinition;

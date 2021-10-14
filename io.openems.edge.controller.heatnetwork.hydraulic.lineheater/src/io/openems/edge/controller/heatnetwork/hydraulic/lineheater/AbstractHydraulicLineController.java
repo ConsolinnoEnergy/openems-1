@@ -12,8 +12,8 @@ import io.openems.edge.controller.heatnetwork.hydraulic.lineheater.helperclass.C
 import io.openems.edge.controller.heatnetwork.hydraulic.lineheater.helperclass.LineController;
 import io.openems.edge.controller.heatnetwork.hydraulic.lineheater.helperclass.OneChannelLineController;
 import io.openems.edge.controller.heatnetwork.hydraulic.lineheater.helperclass.ValveLineController;
-import io.openems.edge.heater.decentral.api.DecentralizedCooler;
-import io.openems.edge.heater.decentral.api.DecentralizedHeater;
+import io.openems.edge.heater.decentralized.api.DecentralizedCooler;
+import io.openems.edge.heater.decentralized.api.DecentralizedHeater;
 import io.openems.edge.heatsystem.components.HydraulicComponent;
 import io.openems.edge.thermometer.api.Thermometer;
 import io.openems.edge.thermometer.api.ThermometerValueWrapper;

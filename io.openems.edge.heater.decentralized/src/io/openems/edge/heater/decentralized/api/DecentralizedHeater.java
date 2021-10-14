@@ -1,4 +1,4 @@
-package io.openems.edge.heater.decentral.api;
+package io.openems.edge.heater.decentralized.api;
 
 import io.openems.common.channel.AccessMode;
 import io.openems.common.types.OpenemsType;

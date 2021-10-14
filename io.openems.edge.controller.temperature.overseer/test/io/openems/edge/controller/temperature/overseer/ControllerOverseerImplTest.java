@@ -5,7 +5,7 @@ import io.openems.edge.common.test.AbstractComponentConfig;
 import io.openems.edge.common.test.AbstractComponentTest;
 import io.openems.edge.common.test.DummyComponentManager;
 import io.openems.edge.controller.test.ControllerTest;
-import io.openems.edge.heater.decentral.test.DummyDecentralizedHeater;
+import io.openems.edge.heater.decentralized.test.DummyDecentralizedHeater;
 import io.openems.edge.thermometer.api.Thermometer;
 import io.openems.edge.thermometer.api.test.DummyThermometer;
 import io.openems.edge.timer.api.DummyTimer;

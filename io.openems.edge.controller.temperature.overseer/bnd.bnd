@@ -15,5 +15,5 @@ Bundle-Version: 1.0.0.${tstamp}
 
 -testpath: \
 	${testpath},\
-    io.openems.edge.heater.decentral,\
+    io.openems.edge.heater.decentralized,\
     io.openems.edge.heater.api,\
