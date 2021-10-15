@@ -22,5 +22,5 @@ Bundle-Version: 1.0.0.${tstamp}
 	${testpath},\
 	io.openems.edge.apartmentmodule,\
 	io.openems.edge.heater.decentralized,\
-	io.openems.edge.relay.api,\
+	io.openems.edge.io.api,\
 

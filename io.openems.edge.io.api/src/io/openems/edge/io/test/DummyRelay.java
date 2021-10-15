@@ -1,8 +1,9 @@
-package io.openems.edge.relay.api.test;
+package io.openems.edge.io.test;
 
 import io.openems.edge.common.component.AbstractOpenemsComponent;
 import io.openems.edge.common.component.OpenemsComponent;
-import io.openems.edge.relay.api.Relay;
+import io.openems.edge.io.api.Relay;
+
 
 public class DummyRelay extends AbstractOpenemsComponent implements Relay, OpenemsComponent {
 

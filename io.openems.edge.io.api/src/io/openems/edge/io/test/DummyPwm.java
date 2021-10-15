@@ -1,4 +1,4 @@
-package io.openems.edge.consolinno.leaflet.pwm.test;
+package io.openems.edge.io.test;
 
 import io.openems.edge.common.component.AbstractOpenemsComponent;
 import io.openems.edge.common.component.OpenemsComponent;

@@ -11,7 +11,6 @@ Bundle-Version: 1.0.0.${tstamp}
 	io.openems.edge.heatsystem.components,\
     io.openems.edge.io.api,\
 	io.openems.edge.bridge.lucidcontrol,\
-	io.openems.edge.relay.api,\
     io.openems.edge.timer.api,\
 
 
