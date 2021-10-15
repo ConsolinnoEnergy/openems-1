@@ -37,7 +37,7 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     @AttributeDefinition(name = "useTimer", description = "Offset the activation of the Relay by time.")
     boolean useTimer() default false;
 
-    @AttributeDefinition(name = "timeDelta", description = "Time (in s or Cycles) between the activation of the Relay/s and reaching of the activationTemperature.")
+    @AttributeDefinition(name = "timeDelta", description = "After Completely Cooling down/Heating up the system, wait for this amount of time, until executing the Logic again.")
     int timeDelta() default 900;
 
     @AttributeDefinition(name = "timerId", description = "Unique Id of the timer")
