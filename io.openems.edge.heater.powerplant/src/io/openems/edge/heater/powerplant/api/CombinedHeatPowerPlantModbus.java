@@ -5,7 +5,7 @@ import io.openems.common.channel.Unit;
 import io.openems.common.types.OpenemsType;
 import io.openems.edge.common.channel.Channel;
 import io.openems.edge.common.channel.Doc;
-import io.openems.edge.heater.HeaterModbus;
+import io.openems.edge.common.component.GenericModbusComponent;
 
 public interface CombinedHeatPowerPlantModbus extends PowerPlantModbus {
     enum ChannelId implements io.openems.edge.common.channel.ChannelId {
@@ -87,7 +87,7 @@ public interface CombinedHeatPowerPlantModbus extends PowerPlantModbus {
      * @return the channel that contains the value or else null.
      */
     default Channel<?> _hasWMZEnergyAmount() {
-        return HeaterModbus.getValueDefinedChannel(this._getWMZEnergyAmountLongChannel(), this._getWMZEnergyAmountDoubleChannel());
+        return GenericModbusComponent.getValueDefinedChannel(this._getWMZEnergyAmountLongChannel(), this._getWMZEnergyAmountDoubleChannel());
     }
 
     /**
@@ -116,7 +116,7 @@ public interface CombinedHeatPowerPlantModbus extends PowerPlantModbus {
      * @return the channel that contains the value or else null.
      */
     default Channel<?> _hasWMZTempSource() {
-        return HeaterModbus.getValueDefinedChannel(this._getWMZTempSourceLongChannel(), this._getWMZTempSourceDoubleChannel());
+        return GenericModbusComponent.getValueDefinedChannel(this._getWMZTempSourceLongChannel(), this._getWMZTempSourceDoubleChannel());
     }
 
     /**
@@ -145,7 +145,7 @@ public interface CombinedHeatPowerPlantModbus extends PowerPlantModbus {
      * @return the channel that contains the value or else null.
      */
     default Channel<?> _hasWMZTempSink() {
-        return HeaterModbus.getValueDefinedChannel(this._getWMZTempSinkLongChannel(), this._getWMZTempSinkDoubleChannel());
+        return GenericModbusComponent.getValueDefinedChannel(this._getWMZTempSinkLongChannel(), this._getWMZTempSinkDoubleChannel());
     }
 
     /**
@@ -175,7 +175,7 @@ public interface CombinedHeatPowerPlantModbus extends PowerPlantModbus {
      * @return the channel that contains the value or else null.
      */
     default Channel<?> _hasWMZPower() {
-        return HeaterModbus.getValueDefinedChannel(this._getWMZPowerLongChannel(), this._getWMZPowerDoubleChannel());
+        return GenericModbusComponent.getValueDefinedChannel(this._getWMZPowerLongChannel(), this._getWMZPowerDoubleChannel());
     }
 
 
@@ -206,7 +206,7 @@ public interface CombinedHeatPowerPlantModbus extends PowerPlantModbus {
      * @return the channel that contains the value or else null.
      */
     default Channel<?> _hasWMZGasMeterPower() {
-        return HeaterModbus.getValueDefinedChannel(this._getWMZGasMeterPowerLongChannel(), this._getWMZGasMeterPowerDoubleChannel());
+        return GenericModbusComponent.getValueDefinedChannel(this._getWMZGasMeterPowerLongChannel(), this._getWMZGasMeterPowerDoubleChannel());
     }
 
     /**
@@ -236,7 +236,7 @@ public interface CombinedHeatPowerPlantModbus extends PowerPlantModbus {
      * @return the channel that contains the value or else null.
      */
     default Channel<?> _hasHoursAfterService() {
-        return HeaterModbus.getValueDefinedChannel(this._getHoursAfterServiceLongChannel(), this._getHoursAfterServiceDoubleChannel());
+        return GenericModbusComponent.getValueDefinedChannel(this._getHoursAfterServiceLongChannel(), this._getHoursAfterServiceDoubleChannel());
     }
 
 
@@ -267,7 +267,7 @@ public interface CombinedHeatPowerPlantModbus extends PowerPlantModbus {
      * @return the channel that contains the value or else null.
      */
     default Channel<?> _hasSecurityOffExtern() {
-        return HeaterModbus.getValueDefinedChannel(this._getSecurityOffExternLongChannel(), this._getSecurityOffExternDoubleChannel());
+        return GenericModbusComponent.getValueDefinedChannel(this._getSecurityOffExternLongChannel(), this._getSecurityOffExternDoubleChannel());
     }
 
 
@@ -298,7 +298,7 @@ public interface CombinedHeatPowerPlantModbus extends PowerPlantModbus {
      * @return the channel that contains the value or else null.
      */
     default Channel<?> _hasRequiredOnEVU() {
-        return HeaterModbus.getValueDefinedChannel(this._getRequiredOnEVULongChannel(), this._getRequiredOnEVUDoubleChannel());
+        return GenericModbusComponent.getValueDefinedChannel(this._getRequiredOnEVULongChannel(), this._getRequiredOnEVUDoubleChannel());
     }
 
 
@@ -329,7 +329,7 @@ public interface CombinedHeatPowerPlantModbus extends PowerPlantModbus {
      * @return the channel that contains the value or else null.
      */
     default Channel<?> _hasRequiredOnExtern() {
-        return HeaterModbus.getValueDefinedChannel(this._getRequiredOnExternLongChannel(), this._getRequiredOnExternDoubleChannel());
+        return GenericModbusComponent.getValueDefinedChannel(this._getRequiredOnExternLongChannel(), this._getRequiredOnExternDoubleChannel());
     }
 
 
@@ -360,7 +360,7 @@ public interface CombinedHeatPowerPlantModbus extends PowerPlantModbus {
      * @return the channel that contains the value or else null.
      */
     default Channel<?> _hasSecurityOffEVU() {
-        return HeaterModbus.getValueDefinedChannel(this._getSecurityOffEVULongChannel(), this._getSecurityOffEVUDoubleChannel());
+        return GenericModbusComponent.getValueDefinedChannel(this._getSecurityOffEVULongChannel(), this._getSecurityOffEVUDoubleChannel());
     }
 
 
@@ -392,7 +392,7 @@ public interface CombinedHeatPowerPlantModbus extends PowerPlantModbus {
      * @return the channel that contains the value or else null.
      */
     default Channel<?> _hasSecurityOffGridFail() {
-        return HeaterModbus.getValueDefinedChannel(this._getSecurityOffGridFailLongChannel(), this._getSecurityOffGridFailDoubleChannel());
+        return GenericModbusComponent.getValueDefinedChannel(this._getSecurityOffGridFailLongChannel(), this._getSecurityOffGridFailDoubleChannel());
     }
 
     /**
@@ -422,7 +422,7 @@ public interface CombinedHeatPowerPlantModbus extends PowerPlantModbus {
      * @return the channel that contains the value or else null.
      */
     default Channel<?> _hasElectricityEnergyProduced() {
-        return HeaterModbus.getValueDefinedChannel(this._getElectricityEnergyProducedLongChannel(), this._getElectricityEnergyProducedDoubleChannel());
+        return GenericModbusComponent.getValueDefinedChannel(this._getElectricityEnergyProducedLongChannel(), this._getElectricityEnergyProducedDoubleChannel());
     }
 
 
@@ -454,7 +454,7 @@ public interface CombinedHeatPowerPlantModbus extends PowerPlantModbus {
      * @return the channel that contains the value or else null.
      */
     default Channel<?> _hasElectricityPower() {
-        return HeaterModbus.getValueDefinedChannel(this._getElectricityPowerLongChannel(), this._getElectricityPowerDoubleChannel());
+        return GenericModbusComponent.getValueDefinedChannel(this._getElectricityPowerLongChannel(), this._getElectricityPowerDoubleChannel());
     }
 
 

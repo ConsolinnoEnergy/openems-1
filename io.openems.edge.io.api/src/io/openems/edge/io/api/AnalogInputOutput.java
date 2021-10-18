@@ -22,7 +22,7 @@ import io.openems.edge.common.component.OpenemsComponent;
  */
 
 public interface AnalogInputOutput extends OpenemsComponent {
-    public enum ChannelId implements io.openems.edge.common.channel.ChannelId {
+    enum ChannelId implements io.openems.edge.common.channel.ChannelId {
 
         /**
          * Status of Aio, depends on Configuration.
@@ -34,7 +34,7 @@ public interface AnalogInputOutput extends OpenemsComponent {
          */
         AIO_READ(Doc.of(OpenemsType.INTEGER)),
         /**
-         * Status of Aio in percent.
+         * Set Status of Aio in percent.
          *
          * <ul>
          * <li>Interface: AioChannel
@@ -44,7 +44,26 @@ public interface AnalogInputOutput extends OpenemsComponent {
          * </ul>
          */
         AIO_PERCENT_WRITE(Doc.of(OpenemsType.INTEGER).unit(Unit.THOUSANDTH)),
+        /**
+         * Status of Aio in percent.
+         *
+         * <ul>
+         * <li>Interface: AioChannel
+         * <li>Type: Integer
+         * <li>Unit: %
+         * <li>Range: 0..100
+         * </ul>
+         */
         AIO_CHECK_PERCENT(Doc.of(OpenemsType.INTEGER).unit(Unit.THOUSANDTH)),
+        /**
+         * Set Value that is being written to Aio.
+         *
+         * <ul>
+         * <li>Interface: AioChannel
+         * <li>Type: Integer
+         * </ul>
+         */
+        AIO_WRITE(Doc.of(OpenemsType.INTEGER).accessMode(AccessMode.READ_WRITE)),
         /**
          * Value that is being written to Aio.
          *
@@ -53,11 +72,10 @@ public interface AnalogInputOutput extends OpenemsComponent {
          * <li>Type: Integer
          * </ul>
          */
-        AIO_WRITE(Doc.of(OpenemsType.INTEGER).accessMode(AccessMode.READ_WRITE)),
         AIO_CHECK_WRITE(Doc.of(OpenemsType.INTEGER));
         private final Doc doc;
 
-        private ChannelId(Doc doc) {
+        ChannelId(Doc doc) {
             this.doc = doc;
         }
 
@@ -68,10 +86,20 @@ public interface AnalogInputOutput extends OpenemsComponent {
 
     }
 
+    /**
+     * Get the Channel for {@link ChannelId#AIO_READ}.
+     *
+     * @return the channel.
+     */
     default Channel<Integer> getReadChannel() {
         return this.channel(ChannelId.AIO_READ);
     }
 
+    /**
+     * Get the Value of the {@link ChannelId#AIO_READ} or else -1.
+     *
+     * @return the Value.
+     */
     default int getReadValue() {
         if (this.getReadChannel().value().isDefined()) {
             return this.getReadChannel().value().get();
@@ -81,14 +109,20 @@ public interface AnalogInputOutput extends OpenemsComponent {
         return -1;
     }
 
-    default WriteChannel<Integer> setPercentChannel() {
-        return this.channel(ChannelId.AIO_PERCENT_WRITE);
-    }
-
+    /**
+     * Get the Channel for {@link ChannelId#AIO_CHECK_PERCENT}.
+     *
+     * @return the channel.
+     */
     default Channel<Integer> getPercentChannel() {
         return this.channel(ChannelId.AIO_CHECK_PERCENT);
     }
 
+    /**
+     * Get the Value of the {@link ChannelId#AIO_CHECK_PERCENT} in Percent or else -1.
+     *
+     * @return the Value in Percent.
+     */
     default float getPercentValue() {
         if (this.getPercentChannel().value().isDefined()) {
             return this.getPercentChannel().value().get().floatValue() / 10;
@@ -98,14 +132,29 @@ public interface AnalogInputOutput extends OpenemsComponent {
         return -1;
     }
 
+    /**
+     * Get the Channel for {@link ChannelId#AIO_WRITE}.
+     *
+     * @return the channel.
+     */
     default WriteChannel<Integer> getWriteChannel() {
         return this.channel(ChannelId.AIO_WRITE);
     }
 
+    /**
+     * Get the Channel for {@link ChannelId#AIO_CHECK_WRITE}.
+     *
+     * @return the channel.
+     */
     default Channel<Integer> getCheckWriteChannel() {
         return this.channel(ChannelId.AIO_CHECK_WRITE);
     }
 
+    /**
+     * Get the Value of the {@link ChannelId#AIO_CHECK_WRITE} or else -1.
+     *
+     * @return the Value in Percent.
+     */
     default int getWriteValue() {
         if (this.getCheckWriteChannel().value().isDefined()) {
             return this.getCheckWriteChannel().value().get();
@@ -114,6 +163,7 @@ public interface AnalogInputOutput extends OpenemsComponent {
         }
         return -1;
     }
+
     /**
      * Sets the Value of the Write Channel.
      *
@@ -154,7 +204,6 @@ public interface AnalogInputOutput extends OpenemsComponent {
     default void setPercent(int percent) throws OpenemsError.OpenemsNamedException {
         this.setPercentChannel().setNextWriteValue(percent);
     }
-
 
 
 }

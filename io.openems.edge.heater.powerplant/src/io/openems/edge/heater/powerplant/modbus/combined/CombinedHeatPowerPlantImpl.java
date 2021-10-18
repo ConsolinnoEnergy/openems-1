@@ -11,11 +11,13 @@ import io.openems.edge.common.event.EdgeEventConstants;
 import io.openems.edge.exceptionalstate.api.ExceptionalState;
 import io.openems.edge.exceptionalstate.api.ExceptionalStateHandler;
 import io.openems.edge.exceptionalstate.api.ExceptionalStateHandlerImpl;
-import io.openems.edge.heater.EnergyControlMode;
-import io.openems.edge.heater.HeaterModbus;
+
+import io.openems.edge.heater.api.EnergyControlMode;
+import io.openems.edge.heater.api.Heater;
+import io.openems.edge.heater.api.HeaterModbus;
 import io.openems.edge.heater.electrolyzer.api.ControlMode;
 import io.openems.edge.heater.electrolyzer.api.HydrogenMode;
-import io.openems.edge.heater.Heater;
+
 import io.openems.edge.heater.powerplant.api.PowerPlant;
 import io.openems.edge.heater.powerplant.api.CombinedHeatPowerPlant;
 import io.openems.edge.heater.powerplant.api.CombinedHeatPowerPlantModbus;
@@ -128,9 +130,9 @@ public class CombinedHeatPowerPlantImpl extends AbstractGenericModbusComponent i
         }
         this.hydrogenMode = this.config.hydrogenMode();
         this.isAutoRun = this.config.autoRun();
-        this.getDefaultRunPower().setNextValue(this.config.defaultRunPower());
-        this.getDefaultRunPower().nextProcessImage();
-        this.getDefaultRunPower().setNextWriteValueFromObject(this.config.defaultRunPower());
+        this.getDefaultActivePowerChannel().setNextValue(this.config.defaultRunPower());
+        this.getDefaultActivePowerChannel().nextProcessImage();
+        this.getDefaultActivePowerChannel().setNextWriteValueFromObject(this.config.defaultRunPower());
     }
 
 
@@ -162,14 +164,15 @@ public class CombinedHeatPowerPlantImpl extends AbstractGenericModbusComponent i
                 handleChannelUpdate(this.getWmzTempSourceChannel(), this._hasWMZTempSource());
                 handleChannelUpdate(this.getWmzEnergyAmountChannel(), this._hasWMZEnergyAmount());
 
-                handleChannelUpdate(this.getEffectivePowerChannel(), this._hasEffectivePowerKw());
-                handleChannelUpdate(this.getEffectivePowerPercentChannel(), this._hasEffectivePowerPercent());
+                handleChannelUpdate(this.getEffectiveHeatingPowerChannel(), this._hasEffectivePowerKw());
+                handleChannelUpdate(this.getEffectiveHeatingPowerPercentChannel(), this._hasEffectivePowerPercent());
                 handleChannelUpdate(this.getFlowTemperatureChannel(), this._hasFlowTemp());
                 handleChannelUpdate(this.getReturnTemperatureChannel(), this._hasReturnTemp());
                 handleChannelUpdate(this.getMaximumKwChannel(), this._hasMaximumKw());
                 handleChannelUpdate(this.getErrorOccurredChannel(), this._hasErrorOccurred());
-                handleChannelUpdate(this.getReadSetPointChannel(), this._hasReadSetPoint());
-
+                handleChannelUpdate(this.getHeatingPowerSetpointChannel(), this._hasReadSetPoint());
+                handleChannelUpdate(this.getHeatingPowerPercentSetpointChannel(), this._hasReadSetPointPercent());
+                handleChannelUpdate(this.getTemperatureSetpointChannel(), this._hasReadSetPointTemperature());
             } else if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS)) {
                 if (this.controlMode.equals(ControlMode.READ_WRITE)) {
                     try {
@@ -228,17 +231,17 @@ public class CombinedHeatPowerPlantImpl extends AbstractGenericModbusComponent i
                 this.log.warn("Couldn't apply EnableSignal");
             }
         }
-        WriteChannel<?> choosenChannel = this.getDefaultRunPower();
+        WriteChannel<?> choosenChannel = this.getDefaultActivePowerChannel();
         try {
-            this.getDefaultRunPower().setNextWriteValueFromObject((long) this.config.defaultRunPower());
+            this.getDefaultActivePowerChannel().setNextWriteValueFromObject((long) this.config.defaultRunPower());
         } catch (OpenemsError.OpenemsNamedException e) {
             this.log.warn("Couldn't set DefaultRunPower Again");
         }
         switch (this.energyControlMode) {
             case KW:
                 //TODO IF BOTH CONTROLMODES: HEAT AND ELECTROLYZER -> WHAT TO DO -> PRIORITY ETC
-                if (this.getSetPointPowerChannel().getNextWriteValue().isPresent()) {
-                    choosenChannel = this.getSetPointPowerChannel();
+                if (this.getHeatingPowerSetpointChannel().getNextWriteValue().isPresent()) {
+                    choosenChannel = this.getHeatingPowerSetpointChannel();
                 }
                 if (this.getModbusConfig().containsKey(this._getSetPointPowerLevelKwLong().channelId())) {
                     this.handleChannelWriteFromOriginalToModbus(this._getSetPointPowerLevelKwLong(), choosenChannel);
@@ -247,8 +250,8 @@ public class CombinedHeatPowerPlantImpl extends AbstractGenericModbusComponent i
                 }
                 break;
             case PERCENT:
-                if (this.getSetPointPowerPercentChannel().getNextWriteValue().isPresent()) {
-                    choosenChannel = this.getSetPointPowerPercentChannel();
+                if (this.getHeatingPowerPercentSetpointChannel().getNextWriteValue().isPresent()) {
+                    choosenChannel = this.getHeatingPowerPercentSetpointChannel();
                 }
                 if (this.getModbusConfig().containsKey(this._getSetPointPowerLevelPercentLong().channelId())) {
                     this.handleChannelWriteFromOriginalToModbus(this._getSetPointPowerLevelPercentLong(), choosenChannel);
@@ -257,8 +260,8 @@ public class CombinedHeatPowerPlantImpl extends AbstractGenericModbusComponent i
                 }
                 break;
             case TEMPERATURE:
-                if (this.getSetPointTemperatureChannel().getNextWriteValue().isPresent()) {
-                    choosenChannel = this.getSetPointTemperatureChannel();
+                if (this.getTemperatureSetpointChannel().getNextWriteValue().isPresent()) {
+                    choosenChannel = this.getTemperatureSetpointChannel();
                 }
                 if (this.getModbusConfig().containsKey(this._getSetPointTemperatureLong().channelId())) {
                     this.handleChannelWriteFromOriginalToModbus(this._getSetPointTemperatureLong(), choosenChannel);
@@ -279,50 +282,4 @@ public class CombinedHeatPowerPlantImpl extends AbstractGenericModbusComponent i
         boolean enableSignal = exceptionalStateValue > 0;
         this.writeIntoComponents(enableSignal, (double) exceptionalStateValue, enableSignal);
     }
-
-    @Override
-    public boolean setPointPowerPercentAvailable() {
-        return false;
-    }
-
-    @Override
-    public boolean setPointPowerAvailable() {
-        return false;
-    }
-
-    @Override
-    public boolean setPointTemperatureAvailable() {
-        return false;
-    }
-
-    @Override
-    public int calculateProvidedPower(int demand, float bufferValue) throws OpenemsError.OpenemsNamedException {
-        return 0;
-    }
-
-    @Override
-    public int getMaximumThermalOutput() {
-        return 0;
-    }
-
-    @Override
-    public void setOffline() throws OpenemsError.OpenemsNamedException {
-
-    }
-
-    @Override
-    public boolean hasError() {
-        return false;
-    }
-
-    @Override
-    public void requestMaximumPower() {
-
-    }
-
-    @Override
-    public void setIdle() {
-
-    }
-
 }

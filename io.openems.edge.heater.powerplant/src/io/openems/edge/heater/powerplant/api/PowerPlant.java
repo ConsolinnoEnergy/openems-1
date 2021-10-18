@@ -5,7 +5,8 @@ import io.openems.common.channel.Unit;
 import io.openems.common.types.OpenemsType;
 import io.openems.edge.common.channel.Channel;
 import io.openems.edge.common.channel.Doc;
-import io.openems.edge.heater.Heater;
+import io.openems.edge.heater.api.Heater;
+
 
 public interface PowerPlant extends Heater {
 

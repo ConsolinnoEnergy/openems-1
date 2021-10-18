@@ -4,7 +4,9 @@ import io.openems.common.channel.AccessMode;
 import io.openems.common.types.OpenemsType;
 import io.openems.edge.common.channel.Channel;
 import io.openems.edge.common.channel.Doc;
-import io.openems.edge.heater.HeaterModbus;
+import io.openems.edge.common.component.GenericModbusComponent;
+import io.openems.edge.heater.api.HeaterModbus;
+
 
 public interface ElectrolyzerModbusGeneric extends HeaterModbus {
     enum ChannelId implements io.openems.edge.common.channel.ChannelId {
@@ -62,7 +64,7 @@ public interface ElectrolyzerModbusGeneric extends HeaterModbus {
      * @return the channel that contains the value or else null.
      */
     default Channel<?> _hasWMZPower() {
-        return HeaterModbus.getValueDefinedChannel(this._getWMZPowerDoubleChannel(), this._getWMZPowerLongChannel());
+        return GenericModbusComponent.getValueDefinedChannel(this._getWMZPowerDoubleChannel(), this._getWMZPowerLongChannel());
     }
 
     /**
@@ -91,7 +93,7 @@ public interface ElectrolyzerModbusGeneric extends HeaterModbus {
      * @return the channel that contains the value or else null.
      */
     default Channel<?> _hasWMZTempSink() {
-        return HeaterModbus.getValueDefinedChannel(this._getWMZTempSinkLongChannel(), this._getWMZTempSinkDoubleChannel());
+        return GenericModbusComponent.getValueDefinedChannel(this._getWMZTempSinkLongChannel(), this._getWMZTempSinkDoubleChannel());
     }
 
 
@@ -120,7 +122,7 @@ public interface ElectrolyzerModbusGeneric extends HeaterModbus {
      * @return the channel that contains the value or else null.
      */
     default Channel<?> _hasWMZTempSource() {
-        return HeaterModbus.getValueDefinedChannel(this._getWMZTempSourceLongChannel(), this._getWMZTempSourceDoubleChannel());
+        return GenericModbusComponent.getValueDefinedChannel(this._getWMZTempSourceLongChannel(), this._getWMZTempSourceDoubleChannel());
     }
 
 
@@ -148,7 +150,7 @@ public interface ElectrolyzerModbusGeneric extends HeaterModbus {
      * @return the channel that contains the value or else null.
      */
     default Channel<?> _hasWMZEnergyProduced() {
-        return HeaterModbus.getValueDefinedChannel(this._getWMZEnergyProducedLongChannel(), this._getWMZEnergyProducedDoubleChannel());
+        return GenericModbusComponent.getValueDefinedChannel(this._getWMZEnergyProducedLongChannel(), this._getWMZEnergyProducedDoubleChannel());
     }
 
 }

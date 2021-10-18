@@ -1,6 +1,6 @@
 package io.openems.edge.heater.electrolyzer.electrolyzer;
 
-import io.openems.edge.heater.EnergyControlMode;
+import io.openems.edge.heater.api.EnergyControlMode;
 import io.openems.edge.heater.electrolyzer.api.ControlMode;
 import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;

@@ -4,7 +4,9 @@ import io.openems.common.channel.AccessMode;
 import io.openems.common.types.OpenemsType;
 import io.openems.edge.common.channel.Channel;
 import io.openems.edge.common.channel.Doc;
-import io.openems.edge.heater.HeaterModbus;
+import io.openems.edge.common.component.GenericModbusComponent;
+import io.openems.edge.heater.api.HeaterModbus;
+
 
 public interface PowerPlantModbus extends HeaterModbus {
 
@@ -58,7 +60,7 @@ public interface PowerPlantModbus extends HeaterModbus {
      * @return the channel that contains the value or else null.
      */
     default Channel<?> _hasMaximumKw() {
-        return HeaterModbus.getValueDefinedChannel(this._getMaximumKwLongChannel(), this._getMaximumKwDoubleChannel());
+        return GenericModbusComponent.getValueDefinedChannel(this._getMaximumKwLongChannel(), this._getMaximumKwDoubleChannel());
     }
 
     default Channel<Boolean> _getErrorOccurredBooleanChannel() {
@@ -70,6 +72,6 @@ public interface PowerPlantModbus extends HeaterModbus {
     }
 
     default Channel<?> _hasErrorOccurred() {
-        return HeaterModbus.getValueDefinedChannel(this._getErrorOccurredBooleanChannel(), this._getErrorOccurredLongChannel());
+        return GenericModbusComponent.getValueDefinedChannel(this._getErrorOccurredBooleanChannel(), this._getErrorOccurredLongChannel());
     }
 }

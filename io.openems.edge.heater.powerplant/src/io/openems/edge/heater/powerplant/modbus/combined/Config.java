@@ -1,6 +1,7 @@
 package io.openems.edge.heater.powerplant.modbus.combined;
 
-import io.openems.edge.heater.EnergyControlMode;
+
+import io.openems.edge.heater.api.EnergyControlMode;
 import io.openems.edge.heater.electrolyzer.api.ControlMode;
 import io.openems.edge.heater.electrolyzer.api.HydrogenMode;
 import org.osgi.service.metatype.annotations.AttributeDefinition;

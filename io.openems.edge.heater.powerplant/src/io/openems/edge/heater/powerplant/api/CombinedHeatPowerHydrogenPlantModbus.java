@@ -5,7 +5,7 @@ import io.openems.common.channel.Unit;
 import io.openems.common.types.OpenemsType;
 import io.openems.edge.common.channel.Doc;
 
-public interface CombinedHeatPoerHydrogenPlantModbus extends CombinedHeatPowerPlantModbus {
+public interface CombinedHeatPowerHydrogenPlantModbus extends CombinedHeatPowerPlantModbus {
     enum ChannelId implements io.openems.edge.common.channel.ChannelId {
 
         ENABLE_HYDROGEN_MODE(Doc.of(OpenemsType.BOOLEAN).accessMode(AccessMode.READ_WRITE)),
