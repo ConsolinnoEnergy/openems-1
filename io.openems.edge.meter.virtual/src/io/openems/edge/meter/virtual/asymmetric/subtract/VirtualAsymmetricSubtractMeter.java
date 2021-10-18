@@ -44,11 +44,11 @@ public class VirtualAsymmetricSubtractMeter extends AbstractOpenemsComponent
     protected ComponentManager cpm;
     private Config config;
 
-    @Reference(policy = ReferencePolicy.STATIC, policyOption = ReferencePolicyOption.GREEDY, cardinality = ReferenceCardinality.MANDATORY)
+   // @Reference(policy = ReferencePolicy.STATIC, policyOption = ReferencePolicyOption.GREEDY, cardinality = ReferenceCardinality.MANDATORY)
     private OpenemsComponent minuend;
 
-    @Reference(policy = ReferencePolicy.STATIC, policyOption = ReferencePolicyOption.GREEDY, cardinality = ReferenceCardinality.MULTIPLE)
-    private List<OpenemsComponent> subtrahends;
+    //@Reference(policy = ReferencePolicy.STATIC, policyOption = ReferencePolicyOption.GREEDY, cardinality = ReferenceCardinality.MULTIPLE)
+    private List<OpenemsComponent> subtrahends = new ArrayList<>();
 
     private final AsymmetricChannelManager channelManager = new AsymmetricChannelManager(this);
 
