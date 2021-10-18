@@ -72,18 +72,17 @@ public class SchneiderReadHandler {
             int minHwPower = this.parent.getMinimumHardwarePower().get() / GRID_VOLTAGE;
             int minSwPower = this.parent.getMinimumPower().get() / GRID_VOLTAGE;
             int minPower = Math.min(minHwPower, minSwPower);
-            /*
-            if (current < minPower) {
-                current = 0;
-            }
-             */
+
+
             if (!current.equals(this.lastCurrent) || !current.equals((this.parent.getChargePower().get() / GRID_VOLTAGE))) {
                 this.lastCurrent = current;
-                this.parent.setMaxIntensitySocket(current);
+                if (current > 0) {
+                    this.parent.setMaxIntensitySocket(current);
+                }
                 this.parent._setSetChargePowerLimit(current * GRID_VOLTAGE);
                 //TODO:this may be redundant
-                /*
-                if (current == 0) {
+
+                if (current < minPower) {
                     this.acknowledgeFlag = true;
                     this.command = RemoteCommand.SUSPEND_CHARGING;
                     this.parent.setRemoteCommand(this.command);
@@ -93,7 +92,7 @@ public class SchneiderReadHandler {
                     this.parent.setRemoteCommand(this.command);
                 }
 
-                 */
+
             }
             if (this.acknowledgeFlag) {
                 int remoteStatus = this.parent.getRemoteCommandStatus();
