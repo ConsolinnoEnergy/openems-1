@@ -43,25 +43,38 @@ public interface ThermometerModbus extends Thermometer {
 
     }
 
+    /**
+     * Gets the Channel for {@link ChannelId#TEMPERATURE_MODBUS_FLOAT}.
+     *
+     * @return the Channel
+     */
     default Channel<Float> getTemperatureModbusFloat() {
         return this.channel(ChannelId.TEMPERATURE_MODBUS_FLOAT);
     }
 
+    /**
+     * Gets the Channel for {@link ChannelId#TEMPERATURE_MODBUS_INTEGER}.
+     *
+     * @return the Channel
+     */
     default Channel<Integer> getTemperatureModbusInteger() {
         return this.channel(ChannelId.TEMPERATURE_MODBUS_INTEGER);
     }
 
-
+    /**
+     * Gets the Value for {@link ChannelId#TEMPERATURE_MODBUS_FLOAT}.
+     *
+     * @return the value
+     */
     default float getTemperatureModbusFloatValue() {
-        if (this.getTemperatureModbusFloat().value().isDefined()) {
-            return this.getTemperatureModbusFloat().value().get();
-        } else if (this.getTemperatureModbusFloat().getNextValue().isDefined()) {
-            return this.getTemperatureModbusFloat().getNextValue().get();
-        } else {
-            return -9001;
-        }
+        return this.getTemperatureModbusFloat().value().orElse(this.getTemperatureModbusFloat().getNextValue().orElse(-9001.f));
     }
 
+    /**
+     * Gets the Value for {@link ChannelId#TEMPERATURE_MODBUS_INTEGER}.
+     *
+     * @return the value
+     */
     default int getTemperatureModbusIntValue() {
         return this.getTemperatureModbusInteger().value().orElse(this.getTemperatureModbusInteger().getNextValue().orElse(-9001));
     }

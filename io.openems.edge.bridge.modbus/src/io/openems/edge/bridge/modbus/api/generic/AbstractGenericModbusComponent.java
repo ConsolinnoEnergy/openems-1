@@ -8,6 +8,7 @@ import io.openems.edge.bridge.modbus.api.element.AbstractModbusElement;
 import io.openems.edge.bridge.modbus.api.element.AbstractWordElement;
 import io.openems.edge.bridge.modbus.api.element.CoilElement;
 import io.openems.edge.bridge.modbus.api.element.FloatDoublewordElement;
+import io.openems.edge.bridge.modbus.api.element.FloatQuadrupleWordElement;
 import io.openems.edge.bridge.modbus.api.element.SignedDoublewordElement;
 import io.openems.edge.bridge.modbus.api.element.SignedQuadruplewordElement;
 import io.openems.edge.bridge.modbus.api.element.SignedWordElement;
@@ -121,8 +122,7 @@ public abstract class AbstractGenericModbusComponent extends AbstractOpenemsModb
      */
     private enum WordType {
         INT_16, INT_16_SIGNED, INT_32, INT_32_SIGNED, INT_64, INT_64_SIGNED,
-        FLOAT_32, STRING, BOOLEAN;
-        //FLOAT_64
+        FLOAT_32, STRING, BOOLEAN, FLOAT_64
     }
 
     protected AbstractGenericModbusComponent(io.openems.edge.common.channel.ChannelId[] firstInitialChannelIds, io.openems.edge.common.channel.ChannelId[]... furtherInitialChannelIds) {
@@ -332,7 +332,7 @@ public abstract class AbstractGenericModbusComponent extends AbstractOpenemsModb
      * <li>Length for String or ScaleFactor</li>
      * </ul>
      */
-    private class ModbusConfigWrapper {
+    private static class ModbusConfigWrapper {
 
         private final io.openems.edge.common.channel.ChannelId channelId;
         private final int modbusAddress;
@@ -446,6 +446,12 @@ public abstract class AbstractGenericModbusComponent extends AbstractOpenemsModb
         return protocol;
     }
 
+    /**
+     * Adds WriteRegister to a ModbusProtocol.
+     * @param protocol the protocol, where Tasks should be added.
+     * @param wrapper a ModbusConfig Wrapper, usually from AbstractGenericModbusComponent
+     * @throws OpenemsException if adding a task fails.
+     */
     private void addWriteRegister(ModbusProtocol protocol, ModbusConfigWrapper wrapper) throws OpenemsException {
         AbstractWordElement<?, ?> element = null;
         AbstractModbusElement<?> element1 = null;
@@ -525,10 +531,10 @@ public abstract class AbstractGenericModbusComponent extends AbstractOpenemsModb
                 break;
             case FLOAT_32:
                 element = new FloatDoublewordElement(address);
-                break;/* case FLOAT_64:
-                element = new FloatQuadroupleWordElement(address);
+               break;
+               case FLOAT_64:
+                element = new FloatQuadrupleWordElement(address);
                 break;
-                        */
             case STRING:
                 element = new StringWordElement(address, wrapper.getStringLengthOrScaleFactor());
                 break;
@@ -610,7 +616,7 @@ public abstract class AbstractGenericModbusComponent extends AbstractOpenemsModb
     protected boolean handleChannelWriteFromOriginalToModbus(WriteChannel<?> target, WriteChannel<?> source) {
 
         if (this.modbusConfig.containsKey(target.channelId())) {
-            int scaleFactor = 1;
+            int scaleFactor;
             double targetSetValue;
             Optional<?> targetValue = source.getNextWriteValueAndReset();
             if (targetValue.isPresent()) {
@@ -688,6 +694,10 @@ public abstract class AbstractGenericModbusComponent extends AbstractOpenemsModb
         }
     }
 
+    /**
+     * Return this ModbusConfig
+     * @return the modbus Config.
+     */
     protected Map<io.openems.edge.common.channel.ChannelId, ModbusConfigWrapper> getModbusConfig() {
         return this.modbusConfig;
     }

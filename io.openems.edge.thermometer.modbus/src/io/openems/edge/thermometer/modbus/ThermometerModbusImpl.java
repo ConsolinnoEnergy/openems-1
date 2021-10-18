@@ -31,7 +31,9 @@ import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
+/**
+ * A Generalized ModbusThermometer Implementation. Map any Modbussaddress to a Temperature.
+ */
 @Designate(ocd = Config.class, factory = true)
 @Component(name = "Thermometer.Modbus",
         immediate = true,
@@ -46,7 +48,6 @@ public class ThermometerModbusImpl extends AbstractOpenemsModbusComponent implem
     protected ConfigurationAdmin cm;
 
 
-    // This is essential for Modbus to work, but the compiler does not warn you when it is missing!
     @Reference(policy = ReferencePolicy.STATIC, policyOption = ReferencePolicyOption.GREEDY, cardinality = ReferenceCardinality.MANDATORY)
     protected void setModbus(BridgeModbus modbus) {
         super.setModbus(modbus);
@@ -82,6 +83,11 @@ public class ThermometerModbusImpl extends AbstractOpenemsModbusComponent implem
         return protocol;
     }
 
+    /**
+     * Creates the ModbusTasks specified by the Config.
+     *
+     * @return the Task.
+     */
     private Task createModbusTask() {
         switch (this.config.word()) {
 

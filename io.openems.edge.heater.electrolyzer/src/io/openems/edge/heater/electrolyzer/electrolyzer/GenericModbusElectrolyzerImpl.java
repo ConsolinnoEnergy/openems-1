@@ -45,7 +45,11 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-
+/**
+ * A Generic Modbus Electrolyzer.
+ * This is the Implementation of an ModbusElectrolyzer, with no specification, on Configuration you can Map Channel to
+ * ModbusAddresses to evaluate ChannelValues etc.
+ */
 @Designate(ocd = Config.class, factory = true)
 @Component(name = "Generator.Modbus.HydrogenGenerator.Electrolyzer.Generic",
         immediate = true,
@@ -100,6 +104,11 @@ public class GenericModbusElectrolyzerImpl extends AbstractGenericModbusComponen
         }
     }
 
+    /**
+     * Base configuration for a Heater extending from {@link AbstractGenericModbusComponent}.
+     * @throws OpenemsError.OpenemsNamedException if a component cannot be found.
+     * @throws ConfigurationException if existing component is of a wrong instance
+     */
     private void baseConfiguration() throws OpenemsError.OpenemsNamedException, ConfigurationException {
         this.controlMode = this.config.controlMode();
         this.energyControlMode = this.config.energyControlMode();
@@ -246,10 +255,13 @@ public class GenericModbusElectrolyzerImpl extends AbstractGenericModbusComponen
         }
     }
 
+    /**
+     * Handles the ExceptionalState.
+     */
     private void handleExceptionalState() {
         try {
             int signalValue = this.getExceptionalStateValue();
-            this.getEnableSignalChannel().setNextWriteValueFromObject(signalValue > 0);
+            this.getEnableSignalChannel().setNextWriteValueFromObject(signalValue > ExceptionalState.DEFAULT_MIN_EXCEPTIONAL_VALUE);
             switch (this.energyControlMode) {
                 case KW:
                     this.getHeatingPowerSetpointChannel().setNextWriteValueFromObject(signalValue);

@@ -48,7 +48,11 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-
+/**
+ * A Generic Chp Modbus Implementation.
+ * On Configuration, you can Map Channel to
+ * ModbusAddresses to evaluate ChannelValues etc.
+ */
 @Designate(ocd = Config.class, factory = true)
 @Component(name = "Heater.PowerPlant.CombinedHeatPower",
         immediate = true,
@@ -118,6 +122,12 @@ public class CombinedHeatPowerPlantImpl extends AbstractGenericModbusComponent i
         this.baseConfiguration();
     }
 
+    /**
+     * Base configuration for a Heater extending from {@link AbstractGenericModbusComponent}.
+     *
+     * @throws OpenemsError.OpenemsNamedException if a component cannot be found.
+     * @throws ConfigurationException             if existing component is of a wrong instance
+     */
     private void baseConfiguration() throws OpenemsError.OpenemsNamedException, ConfigurationException {
         this.controlMode = this.config.controlMode();
         this.energyControlMode = this.config.energyControlMode();
@@ -216,6 +226,11 @@ public class CombinedHeatPowerPlantImpl extends AbstractGenericModbusComponent i
 
     }
 
+    /**
+     * Updates the PowerPercentValue to the ModbusChannel, that will be written and handled by the FC task.
+     * Remember to configure the Channel. In that case external Components can write into an CHP interface / EnableSignal
+     * And the CHP will map the PercentValue and EnableSignal to the ModbusChannel.
+     */
     private void updateWriteValueToModbus() {
         if (this.getModbusConfig().containsKey(this._getEnableSignalBoolean().channelId())) {
             this.handleChannelWriteFromOriginalToModbus(this._getEnableSignalBoolean(), this.getEnableSignalChannel());
@@ -272,14 +287,26 @@ public class CombinedHeatPowerPlantImpl extends AbstractGenericModbusComponent i
         }
     }
 
-    private void writeIntoComponents(Boolean enableSignal, Double powerPercent, boolean hydrogenUse) throws
-            OpenemsError.OpenemsNamedException {
-        this.getEnableSignalChannel().setNextWriteValueFromObject(enableSignal);
-    }
-
+    /**
+     * Handles the ExceptionalState.
+     */
     private void handleExceptionalState() throws OpenemsError.OpenemsNamedException {
-        int exceptionalStateValue = this.getExceptionalStateValue();
-        boolean enableSignal = exceptionalStateValue > 0;
-        this.writeIntoComponents(enableSignal, (double) exceptionalStateValue, enableSignal);
+        try {
+            int signalValue = this.getExceptionalStateValue();
+            this.getEnableSignalChannel().setNextWriteValueFromObject(signalValue > ExceptionalState.DEFAULT_MIN_EXCEPTIONAL_VALUE);
+            switch (this.energyControlMode) {
+                case KW:
+                    this.getHeatingPowerSetpointChannel().setNextWriteValueFromObject(signalValue);
+                    break;
+                case PERCENT:
+                    this.getHeatingPowerPercentSetpointChannel().setNextWriteValueFromObject(signalValue);
+                    break;
+                case TEMPERATURE:
+                    this.getTemperatureSetpointChannel().setNextWriteValueFromObject(signalValue);
+                    break;
+            }
+        } catch (OpenemsError.OpenemsNamedException e) {
+            this.log.warn("Couldn't apply Exceptional State in : " + super.id() + " Reason: " + e.getMessage());
+        }
     }
 }

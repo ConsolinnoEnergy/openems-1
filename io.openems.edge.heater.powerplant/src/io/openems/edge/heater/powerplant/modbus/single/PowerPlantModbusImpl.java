@@ -46,7 +46,11 @@ import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
+/**
+ * A Generic PowerPlant Modbus Implementation.
+ * On Configuration, you can Map Channel to
+ * ModbusAddresses to evaluate ChannelValues etc.
+ */
 @Designate(ocd = Config.class, factory = true)
 @Component(name = "Heater.PowerPlant.Analog",
         configurationPolicy = ConfigurationPolicy.REQUIRE,
@@ -101,6 +105,12 @@ public class PowerPlantModbusImpl extends AbstractGenericModbusComponent impleme
         }
     }
 
+    /**
+     * Base configuration for a Heater extending from {@link AbstractGenericModbusComponent}.
+     *
+     * @throws OpenemsError.OpenemsNamedException if a component cannot be found.
+     * @throws ConfigurationException             if existing component is of a wrong instance
+     */
     private void baseConfiguration() throws OpenemsError.OpenemsNamedException, ConfigurationException {
         this.controlMode = this.config.controlMode();
         this.energyControlMode = this.config.energyControlMode();
@@ -177,19 +187,22 @@ public class PowerPlantModbusImpl extends AbstractGenericModbusComponent impleme
         }
     }
 
+    /**
+     * Handles the ExceptionalState.
+     */
     private void handleExceptionalState() {
         try {
             int signalValue = this.getExceptionalStateValue();
-            this.getEnableSignalChannel().setNextWriteValueFromObject(signalValue > 0);
+            this.getEnableSignalChannel().setNextWriteValueFromObject(signalValue > ExceptionalState.DEFAULT_MIN_EXCEPTIONAL_VALUE);
             switch (this.energyControlMode) {
                 case KW:
-                    this.getHeatingPowerSetpointChannel().setNextValue(signalValue);
+                    this.getHeatingPowerSetpointChannel().setNextWriteValueFromObject(signalValue);
                     break;
                 case PERCENT:
-                    this.getHeatingPowerPercentSetpointChannel().setNextValue(signalValue);
+                    this.getHeatingPowerPercentSetpointChannel().setNextWriteValueFromObject(signalValue);
                     break;
                 case TEMPERATURE:
-                    this.getTemperatureSetpointChannel().setNextValue(signalValue);
+                    this.getTemperatureSetpointChannel().setNextWriteValueFromObject(signalValue);
                     break;
             }
         } catch (OpenemsError.OpenemsNamedException e) {
