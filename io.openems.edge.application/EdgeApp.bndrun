@@ -95,6 +95,7 @@
 	bnd.identity;id='io.openems.edge.controller.heatnetwork.pump.grundfos',\
 	bnd.identity;id='io.openems.edge.controller.heatnetwork.surveillance.temperature',\
 	bnd.identity;id='io.openems.edge.controller.heatnetwork.warmup',\
+	bnd.identity;id='io.openems.edge.controller.heatnetwork.watchdog',\
 	bnd.identity;id='io.openems.edge.controller.highloadtimeslot',\
 	bnd.identity;id='io.openems.edge.controller.hydrauliccomponent',\
 	bnd.identity;id='io.openems.edge.controller.io.alarm',\
@@ -270,6 +271,7 @@
     io.openems.edge.controller.heatnetwork.pump.grundfos;version=snapshot,\
     io.openems.edge.controller.heatnetwork.surveillance.temperature;version=snapshot,\
     io.openems.edge.controller.heatnetwork.warmup;version=snapshot,\
+    io.openems.edge.controller.heatnetwork.watchdog;version=snapshot,\
 	io.openems.edge.controller.highloadtimeslot;version=snapshot,\
 	io.openems.edge.controller.hydrauliccomponent;version=snapshot,\
 	io.openems.edge.controller.io.alarm;version=snapshot,\

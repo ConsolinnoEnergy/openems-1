@@ -6,7 +6,7 @@ import org.osgi.service.metatype.annotations.Option;
 
 
 
-@ObjectClassDefinition(name = "Consolinno Optimizer Broker", description = "Optimizer that writes Channels based on a json.")
+@ObjectClassDefinition(name = "Optimizer Broker", description = "Optimizer that writes Channels based on a json.")
 @interface Config {
     @AttributeDefinition(name = "Id", description = "Unique Id for this Optimizer.")
     String id() default "Optimizer0";

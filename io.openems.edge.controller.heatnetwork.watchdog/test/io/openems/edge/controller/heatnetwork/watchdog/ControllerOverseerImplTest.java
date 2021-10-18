@@ -1,4 +1,4 @@
-package io.openems.edge.controller.temperature.overseer;
+package io.openems.edge.controller.heatnetwork.watchdog;
 
 import io.openems.common.types.ChannelAddress;
 import io.openems.edge.common.test.AbstractComponentConfig;
