@@ -6,6 +6,7 @@ import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
 import io.openems.common.types.OpenemsType;
 import io.openems.edge.common.channel.BooleanWriteChannel;
 import io.openems.edge.common.channel.Doc;
+import io.openems.edge.common.channel.DoubleReadChannel;
 import io.openems.edge.common.channel.DoubleWriteChannel;
 import io.openems.edge.common.channel.EnumReadChannel;
 import io.openems.edge.common.channel.IntegerReadChannel;
@@ -540,7 +541,7 @@ public interface Heater extends OpenemsComponent {
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getEffectiveHeatingPowerPercentChannel() {
+    public default DoubleReadChannel getEffectiveHeatingPowerPercentChannel() {
         return this.channel(ChannelId.EFFECTIVE_HEATING_POWER_PERCENT);
     }
 
@@ -550,7 +551,7 @@ public interface Heater extends OpenemsComponent {
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getEffectiveHeatingPowerPercent() {
+    public default Value<Double> getEffectiveHeatingPowerPercent() {
         return this.getEffectiveHeatingPowerPercentChannel().value();
     }
 
