@@ -36,8 +36,8 @@ So in short:
 - Configure Component you want to optimize
 - Configure the MQTTBridge
 - Configure the Optimizer
-- Configure the TranslatorComponent holding the Component you want to optimize, and the optimizer itself
-- Configure the MqttTelemetryComponent, with the Translator ID and Map "params" to Schedule and put in the subscribeConfig the topic where the schedule is received.
+- Configure the TranslatorComponent holding the Component (Channel) you want to optimize, and the optimizer itself as well as a default Value if no Schedule is transmitted/available
+- Configure the MqttTelemetryComponent, with the Translator ID and Map "params" to the Channel "Schedule" and configure the subscribeConfig holding the Topic where the Schedule is put into.
 
 
 
