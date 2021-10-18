@@ -46,7 +46,7 @@ public class RestRemoteReadTask extends AbstractRestRemoteDeviceTask implements 
      * @param answer REST response
      *               <p>Get only Number Value and set that value to the Value of the Remote Device.
      *               Splits after "value" and get the substring of 0 and "\"" ---> only the Value number Part will be
-     *               considered. ---> Get Only Numbers (with optional floatingpoint) .
+     *               considered. -> Get Only Numbers (with optional FloatingPoint) .
      *               Example: {"value": 1023.42345, "Unit":WATT}
      *               split at "value" till first " is found
      *               temp result=  :1023.42345, "
@@ -74,9 +74,9 @@ public class RestRemoteReadTask extends AbstractRestRemoteDeviceTask implements 
         }
         if (!answerNumeric.toString().equals("")) {
             try {
-                this.getCpm().getChannel(this.value).setNextValue(answerNumeric);
+                this.cpm.getChannel(this.value).setNextValue(answerNumeric);
             } catch (OpenemsError.OpenemsNamedException e) {
-                this.getLogger().warn("This error shouldn't occur, this is it's own Channel: " + this.getDeviceId());
+                this.logger.warn("This error shouldn't occur, this is it's own Channel: " + this.getDeviceId());
             }
         }
     }

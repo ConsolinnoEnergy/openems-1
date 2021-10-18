@@ -10,7 +10,7 @@ Bundle-Version: 1.0.0.${tstamp}
 	io.openems.edge.controller.api,\
 	io.openems.edge.controller.debug.log,\
 	io.openems.edge.heater.api,\
-	io.openems.edge.heater.decentral,\
+	io.openems.edge.heater.decentralized,\
 	io.openems.edge.heatsystem.components,\
 	io.openems.edge.thermometer.api,\
 	joda-time;version=latest,\
@@ -21,6 +21,6 @@ Bundle-Version: 1.0.0.${tstamp}
 -testpath: \
 	${testpath},\
 	io.openems.edge.apartmentmodule,\
-	io.openems.edge.heater.decentral,\
-	io.openems.edge.relay.api,\
+	io.openems.edge.heater.decentralized,\
+	io.openems.edge.io.api,\
 

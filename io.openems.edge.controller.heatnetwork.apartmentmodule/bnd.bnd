@@ -28,7 +28,6 @@ Bundle-Version: 1.0.0.${tstamp}
 	io.openems.edge.utility;version=latest,\
 	io.openems.edge.controller.heatnetwork.hydraulic.lineheater;version=latest,\
 	io.openems.edge.io.api;version=latest,\
-	io.openems.edge.relay.api;version=latest,\
     io.openems.edge.consolinno.leaflet;version=latest,\
     joda-time,\
 

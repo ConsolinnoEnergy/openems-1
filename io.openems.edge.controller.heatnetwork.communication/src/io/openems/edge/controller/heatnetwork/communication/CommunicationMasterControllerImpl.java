@@ -165,7 +165,7 @@ public class CommunicationMasterControllerImpl extends AbstractOpenemsComponent 
         this.configurationDone = config.configurationDone();
         if (this.configurationDone) {
             this.setForceHeating(config.forceHeating());
-            this.setMaximumRequests(config.maxRequestAllowedAtOnce());
+            this.setMaximumRequests(config.maxDecentralizedSystemsAllowedAtOnce());
             this.forcing = this.getForceHeating();
             this.maxAllowedRequests = this.getMaximumRequests();
             this.communicationController = HELPER.createCommunicationControllerWithRequests(config, this.cpm);
@@ -207,7 +207,7 @@ public class CommunicationMasterControllerImpl extends AbstractOpenemsComponent 
             FallbackHandling fallback = config.fallback();
 
             this.setFallbackLogic(fallback);
-            this.maxAllowedRequests = config.maxRequestAllowedAtOnce();
+            this.maxAllowedRequests = config.maxDecentralizedSystemsAllowedAtOnce();
             this.getMaximumRequestChannel().setNextValue(this.maxAllowedRequests);
             this.configSucceed = true;
         }
@@ -598,7 +598,7 @@ public class CommunicationMasterControllerImpl extends AbstractOpenemsComponent 
             CommunicationController controller;
             if (config.connectionType() == ConnectionType.REST) {
                 controller = new RestLeafletCommunicationControllerImpl(config.connectionType(),
-                        config.manageType(), config.maxRequestAllowedAtOnce(),
+                        config.manageType(), config.maxDecentralizedSystemsAllowedAtOnce(),
                         config.forceHeating());
                 controller.setMaxWaitTime(config.maxWaitTimeAllowed());
             } else {

@@ -15,7 +15,7 @@ import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.common.taskmanager.Priority;
 import io.openems.edge.consolinno.leaflet.core.api.Error;
 import io.openems.edge.consolinno.leaflet.core.api.LeafletCore;
-import io.openems.edge.relay.api.Relay;
+import io.openems.edge.io.api.Relay;
 import org.osgi.service.cm.ConfigurationAdmin;
 import org.osgi.service.cm.ConfigurationException;
 import org.osgi.service.component.ComponentContext;

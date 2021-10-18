@@ -13,7 +13,7 @@ Bundle-Description: \
 	io.openems.edge.common,\
 	io.openems.edge.thermometer.api,\
 	io.openems.edge.heater.api,\
-	io.openems.edge.heater.decentral,\
+	io.openems.edge.heater.decentralized,\
 	io.openems.edge.controller.heatnetwork.multipleheatercombined,\
 	io.openems.edge.bridge.rest,\
 	io.openems.edge.controller.api,\

@@ -95,6 +95,7 @@
 	bnd.identity;id='io.openems.edge.controller.heatnetwork.pump.grundfos',\
 	bnd.identity;id='io.openems.edge.controller.heatnetwork.surveillance.temperature',\
 	bnd.identity;id='io.openems.edge.controller.heatnetwork.warmup',\
+	bnd.identity;id='io.openems.edge.controller.heatnetwork.watchdog',\
 	bnd.identity;id='io.openems.edge.controller.highloadtimeslot',\
 	bnd.identity;id='io.openems.edge.controller.hydrauliccomponent',\
 	bnd.identity;id='io.openems.edge.controller.io.alarm',\
@@ -147,18 +148,17 @@
 	bnd.identity;id='io.openems.edge.heater.chp.kwenergy',\
 	bnd.identity;id='io.openems.edge.heater.chp.viessmann',\
 	bnd.identity;id='io.openems.edge.heater.chp.wolf',\
-	bnd.identity;id='io.openems.edge.heater.decentral',\
+	bnd.identity;id='io.openems.edge.heater.decentralized',\
 	bnd.identity;id='io.openems.edge.heater.gasboiler.buderus',\
 	bnd.identity;id='io.openems.edge.heater.gasboiler.viessmann',\
 	bnd.identity;id='io.openems.edge.heater.heatpump.alphainnotec',\
 	bnd.identity;id='io.openems.edge.heater.heatpump.tecalor',\
 	bnd.identity;id='io.openems.edge.heatsystem.components',\
+	bnd.identity;id='io.openems.edge.hydraulic',\
 	bnd.identity;id='io.openems.edge.io.kmtronic',\
 	bnd.identity;id='io.openems.edge.io.revpi',\
 	bnd.identity;id='io.openems.edge.io.shelly',\
 	bnd.identity;id='io.openems.edge.io.wago',\
-	bnd.identity;id='io.openems.edge.lucidcontrol.module',\
-	bnd.identity;id='io.openems.edge.lucidcontrol.device',\
 	bnd.identity;id='io.openems.edge.kbr4f96',\
 	bnd.identity;id='io.openems.edge.kostal.piko',\
 	bnd.identity;id='io.openems.edge.meter.abb',\
@@ -184,7 +184,6 @@
 	bnd.identity;id='io.openems.edge.pvinverter.sma',\
 	bnd.identity;id='io.openems.edge.pvinverter.solarlog',\
 	bnd.identity;id='io.openems.edge.pvinverter.sunspec',\
-	bnd.identity;id='io.openems.edge.relay.api',\
 	bnd.identity;id='io.openems.edge.scheduler.allalphabetically',\
 	bnd.identity;id='io.openems.edge.scheduler.daily',\
 	bnd.identity;id='io.openems.edge.scheduler.fixedorder',\
@@ -272,6 +271,7 @@
     io.openems.edge.controller.heatnetwork.pump.grundfos;version=snapshot,\
     io.openems.edge.controller.heatnetwork.surveillance.temperature;version=snapshot,\
     io.openems.edge.controller.heatnetwork.warmup;version=snapshot,\
+    io.openems.edge.controller.heatnetwork.watchdog;version=snapshot,\
 	io.openems.edge.controller.highloadtimeslot;version=snapshot,\
 	io.openems.edge.controller.hydrauliccomponent;version=snapshot,\
 	io.openems.edge.controller.io.alarm;version=snapshot,\
@@ -328,10 +328,11 @@
 	io.openems.edge.heater.chp.wolf;version=snapshot,\
 	io.openems.edge.heater.gasboiler.buderus;version=snapshot,\
 	io.openems.edge.heater.gasboiler.viessmann;version=snapshot,\
-	io.openems.edge.heater.decentral;version=snapshot,\
+	io.openems.edge.heater.decentralized;version=snapshot,\
 	io.openems.edge.heater.heatpump.alphainnotec;version=snapshot,\
 	io.openems.edge.heater.heatpump.tecalor;version=snapshot,\
 	io.openems.edge.heatsystem.components;version=snapshot,\
+	io.openems.edge.hydraulic;version=snapshot,\
 	io.openems.edge.io.api;version=snapshot,\
 	io.openems.edge.io.kmtronic;version=snapshot,\
 	io.openems.edge.io.revpi;version=snapshot,\
@@ -339,8 +340,6 @@
 	io.openems.edge.io.wago;version=snapshot,\
 	io.openems.edge.kbr4f96;version=snapshot,\
 	io.openems.edge.kostal.piko;version=snapshot,\
-	io.openems.edge.lucidcontrol.device;version=snapshot,\
-	io.openems.edge.lucidcontrol.module;version=snapshot,\
 	io.openems.edge.meter.abb;version=snapshot,\
 	io.openems.edge.meter.api;version=snapshot,\
 	io.openems.edge.meter.artemes.am2;version=snapshot,\
@@ -367,7 +366,6 @@
 	io.openems.edge.pvinverter.sma;version=snapshot,\
 	io.openems.edge.pvinverter.solarlog;version=snapshot,\
 	io.openems.edge.pvinverter.sunspec;version=snapshot,\
-	io.openems.edge.relay.api;version=snapshot,\
 	io.openems.edge.scheduler.allalphabetically;version=snapshot,\
 	io.openems.edge.scheduler.api;version=snapshot,\
 	io.openems.edge.scheduler.daily;version=snapshot,\

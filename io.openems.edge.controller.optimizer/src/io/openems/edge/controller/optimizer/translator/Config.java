@@ -4,8 +4,7 @@ import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
 
-
-@ObjectClassDefinition(name = "Consolinno Optimizer Translator", description = "Translator for the Broker Json to the Optimizer Json")
+@ObjectClassDefinition(name = "Optimizer Translator", description = "Translator for the Broker Json to the Optimizer Json")
 @interface Config {
     @AttributeDefinition(name = "Id", description = "Unique Id for this Translator.")
     String id() default "Translator";
@@ -17,22 +16,22 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     String optimizerId() default "Optimizer0";
 
     @AttributeDefinition(name = "Component", description = "Unique Id of the Component that has to be Optimized.")
-    String componentId();
+    String componentId() default "Heater0";
 
     @AttributeDefinition(name = "ChannelIds", description = "This List will automatically filled with ChannelIds")
     String[] channelIdList() default {};
 
     @AttributeDefinition(name = "ComponentChannel", description = "Channel of the Component that has to be Optimized.")
-    String componentChannel();
+    String componentChannel() default "SetPointHeatingPower";
 
     @AttributeDefinition(name = "Fallback", description = "The value the component has to take if there are no new values.")
-    String fallback();
+    String fallback() default "50";
 
     @AttributeDefinition(name = "EnableSignal", description = "Check if the Component needs an additional EnableSignal Channel")
     boolean enableSignal() default false;
 
     @AttributeDefinition(name = "EnableChannel", description = "Enable Channel of the Component that has to be Optimized.")
-    String enableChannel();
+    String enableChannel() default "EnableSignal";
 
     boolean configurationDone() default false;
 

@@ -90,7 +90,7 @@ public class RestRemoteDeviceImpl extends AbstractOpenemsComponent implements Op
             if (this.cpm.getComponent(config.restBridgeId()) instanceof RestBridge) {
                 this.restBridge = this.cpm.getComponent(config.restBridgeId());
                 this.task = this.createNewTask(config.deviceChannel(),
-                        config.id(), config.realDeviceId(), config.deviceMode());
+                        config.id(), config.realDeviceId(), config.operationMode());
                 this.restBridge.addRestRequest(super.id(), this.task);
             } else {
                 throw new ConfigurationException(config.restBridgeId(), "Bridge Id Incorrect for : " + super.id() + "!");
@@ -118,12 +118,12 @@ public class RestRemoteDeviceImpl extends AbstractOpenemsComponent implements Op
      * @throws ConfigurationException if TemperatureSensor is set to Write; or if an impossible Case occurs (deviceMode neither Read/Write)
      */
     private RestRequest createNewTask(String deviceChannel, String remoteDeviceId,
-                                      String realDeviceId, String deviceMode) throws ConfigurationException, OpenemsError.OpenemsNamedException {
+                                      String realDeviceId, OperationType deviceMode) throws ConfigurationException, OpenemsError.OpenemsNamedException {
 
         RestRequest task;
-        if (deviceMode.equals("Write")) {
+        if (deviceMode.equals(OperationType.WRITE)) {
 
-            this.getTypeSetChannel().setNextValue("Write");
+            this.getTypeSetChannel().setNextValue(OperationType.WRITE.name());
             this.isRead = false;
             task = new RestRemoteWriteTask(remoteDeviceId, realDeviceId, deviceChannel,
                     ChannelAddress.fromString(super.id() + "/" + this.getWriteValueChannel().channelId().id()),
@@ -131,8 +131,8 @@ public class RestRemoteDeviceImpl extends AbstractOpenemsComponent implements Op
                     this.log, this.cpm);
             return task;
 
-        } else if (deviceMode.equals("Read")) {
-            this.getTypeSetChannel().setNextValue("Read");
+        } else if (deviceMode.equals(OperationType.READ)) {
+            this.getTypeSetChannel().setNextValue(OperationType.READ.name());
             this.isRead = true;
             //String deviceId, String masterSlaveId, boolean master, String realTemperatureSensor, Channel<Integer> temperature
             task = new RestRemoteReadTask(remoteDeviceId, realDeviceId, deviceChannel,
@@ -147,7 +147,7 @@ public class RestRemoteDeviceImpl extends AbstractOpenemsComponent implements Op
     void modified(ComponentContext context, Config config) throws OpenemsError.OpenemsNamedException, ConfigurationException {
         this.restBridge.removeRestRemoteDevice(super.id());
         super.modified(context, config.id(), config.alias(), config.enabled());
-            this.activationOrModifiedRoutine(config);
+        this.activationOrModifiedRoutine(config);
     }
 
 
@@ -162,16 +162,16 @@ public class RestRemoteDeviceImpl extends AbstractOpenemsComponent implements Op
             this.log.warn("The Type of the Remote Device: " + super.id() + " is not available yet");
             return;
         }
-        if (this.getTypeSetChannel().getNextValue().get().equals("Read")) {
+        if (this.getTypeSetChannel().getNextValue().get().equals(OperationType.READ.name())) {
             this.log.warn("Can't write into ReadTasks: " + super.id());
-        }
+        } else {
 
-        try {
-            this.getWriteValueChannel().setNextWriteValue(value);
-        } catch (OpenemsError.OpenemsNamedException e) {
-            this.log.warn("Couldn't write the Value for : " + super.id());
+            try {
+                this.getWriteValueChannel().setNextWriteValue(value);
+            } catch (OpenemsError.OpenemsNamedException e) {
+                this.log.warn("Couldn't write the Value for : " + super.id());
+            }
         }
-
     }
 
     /**
@@ -181,7 +181,7 @@ public class RestRemoteDeviceImpl extends AbstractOpenemsComponent implements Op
      */
     @Override
     public String getValue() {
-        if (this.getTypeSetChannel().value().get().equals("Write")) {
+        if (this.getTypeSetChannel().value().get().equals(OperationType.WRITE.name())) {
             if (this.getWriteValueChannel().value().isDefined()) {
                 return this.getWriteValueChannel().value().get();
             } else {
@@ -238,18 +238,6 @@ public class RestRemoteDeviceImpl extends AbstractOpenemsComponent implements Op
     }
 
     @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        } else if (o instanceof RestRemoteDeviceImpl) {
-            RestRemoteDeviceImpl other = (RestRemoteDeviceImpl) o;
-            return other.id().equals(this.id());
-        }
-
-        return false;
-    }
-
-    @Override
     public void handleEvent(Event event) {
         if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE)) {
             if (this.isEnabled()) {
@@ -265,7 +253,7 @@ public class RestRemoteDeviceImpl extends AbstractOpenemsComponent implements Op
                             try {
                                 if (this.task == null) {
                                     this.task = this.createNewTask(this.config.deviceChannel(),
-                                            this.config.id(), this.config.realDeviceId(), this.config.deviceMode());
+                                            this.config.id(), this.config.realDeviceId(), this.config.operationMode());
                                 }
                                 this.restBridge.addRestRequest(this.id(), this.task);
                             } catch (ConfigurationException e) {

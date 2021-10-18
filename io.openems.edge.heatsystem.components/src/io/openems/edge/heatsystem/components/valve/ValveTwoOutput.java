@@ -13,7 +13,7 @@ import io.openems.edge.common.event.EdgeEventConstants;
 import io.openems.edge.exceptionalstate.api.ExceptionalState;
 import io.openems.edge.heatsystem.components.ConfigurationType;
 import io.openems.edge.heatsystem.components.HydraulicComponent;
-import io.openems.edge.relay.api.Relay;
+import io.openems.edge.io.api.Relay;
 import org.osgi.service.cm.ConfigurationException;
 import org.osgi.service.component.ComponentContext;
 import org.osgi.service.component.annotations.Activate;

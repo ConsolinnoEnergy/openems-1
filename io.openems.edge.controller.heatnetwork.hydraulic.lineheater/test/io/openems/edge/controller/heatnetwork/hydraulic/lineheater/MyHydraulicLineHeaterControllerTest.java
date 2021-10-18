@@ -8,7 +8,7 @@ import io.openems.edge.common.test.TimeLeapClock;
 import io.openems.edge.controller.heatnetwork.hydraulic.lineheater.test.DummyHydraulicLineController;
 import io.openems.edge.controller.test.ControllerTest;
 import io.openems.edge.common.test.AbstractComponentTest.TestCase;
-import io.openems.edge.heater.decentral.test.DummyDecentralizedHeater;
+import io.openems.edge.heater.decentralized.test.DummyDecentralizedHeater;
 import io.openems.edge.heatsystem.components.HydraulicComponent;
 import io.openems.edge.heatsystem.components.test.DummyValve;
 import io.openems.edge.thermometer.api.test.DummyThermometer;

@@ -3,8 +3,8 @@ package io.openems.edge.heatsystem.components.test;
 import io.openems.edge.common.component.AbstractOpenemsComponent;
 import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.heatsystem.components.HydraulicComponent;
-import io.openems.edge.relay.api.Relay;
-import io.openems.edge.relay.api.test.DummyRelay;
+import io.openems.edge.io.api.Relay;
+import io.openems.edge.io.test.DummyRelay;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
