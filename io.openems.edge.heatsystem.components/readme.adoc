@@ -2,3 +2,39 @@
 
 This Bundle provides basic Interfaces and Components that will be used in Heatsystems/Heatnetworks.
 
+The Components are: an analogue Pump and two different Valves.
+In general pumps do have a Relay to turn them on and off and/or another Analogue output, controlling the Percentage based Power, where 0% means off.
+Some Pumps may need both, a relay to turn them on/off, and an Analogue Signal for percentage base power.
+
+A Valve can follow two different approaches.
+The First one is a Valve controller by Two Outputs (BooleanChannelAddresses) / two Relays, while the other one is controlled by One AnalogueOutput only.
+
+All Components implement Methods to a) accept an exceptional State (e.g. emergency occurred and you need to close valve for a long time and or open them) and b) check their output.
+E.g. you want to open a Valve, but the outputs tell you something different.
+
+
+
+== Example
+
+ValveTwoRelays
+
+Let's say you have a Valve controlled by two Relays (One is for opening and one for closing).
+The Relay interface allows to write into a Relay, and Read from it.
+If the Read Value does not match the supposed state of the Valve -> e.g. if the Valve should open -> Opening Relay should be on and Closing Relay should be off.
+If this should not be the case, the percentage value calculated before, will be reset, and the opening process will be retried.
+
+PLUS if the PowerValue of a Valve is reached, but exceeded, the Valve will check itself, if the PercentValue is okay (within a tolerance) or not, and if not -> adapt the value.
+
+Let's say you set the valve to 70% and per cycle 2% adaptation are possible, and the Tolerance is 5%.
+If the Valve reached 71%-75% everything is okay.
+(In a hydraulic sense, these low % Values won't change much in Temperatures) However, if the SetPoint would be 70%, but for whatever reason the Percent value would exceed the 75% -> the Valve would adapt itself and try to get as close to 70% as possible.
+Additionally, if a Valve could NOT adapt, because the Valve changes to fast (SetPoint-current > percentPossiblePerCycle), it will NOT adapt.
+
+The same logic applies for a Valve and Pump.
+(Except Pumps, that will only work with a Relay, the only thing checked, is the Pump on/off if it should be on/off).
+
+Valves also implement the ability to react to a Min and Maximum Value.
+Meaning, that the minimum value cannot fall under that setPoint but also cannot exceed the maximum.
+It is important, to set the maximum and minimum every single cycle, otherwise it will be reset.
+This is a useful feature, to prevent circular dependencies with 2 Valves within a hydraulic system.
+(e.g. 2 PID controller setting valves, but one Valve influence the other one -> prevent to exceed a maximum/minimum).

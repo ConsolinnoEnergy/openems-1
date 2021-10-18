@@ -1,14 +1,15 @@
 package io.openems.edge.heatsystem.components.pump;
 
 import io.openems.edge.heatsystem.components.ConfigurationType;
+import io.openems.edge.heatsystem.components.PumpType;
 import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
-import org.osgi.service.metatype.annotations.Option;
 
 
 @ObjectClassDefinition(
-        name = "Hydraulic Pump Relay and or One Output",
-        description = "A Pump mainly used for the Passing Station and Controller"
+        name = "Hydraulic Pump",
+        description = "A HydraulicComponent. Allows an analogue Pump to run. With a Relay and or analogueOutputs, either"
+                + "with channel Addresses or Components (AIO and Pwm)"
 )
 @interface Config {
 
@@ -27,7 +28,7 @@ import org.osgi.service.metatype.annotations.Option;
     @AttributeDefinition(name = "Pump Type", description = "What Kind of Pump is it?")
     PumpType pump_Type() default PumpType.RELAY;
 
-    @AttributeDefinition(name =  "BooleanChannel or Id of (Relay) Device", description = "Either the BooleanChannel or the Relay Device.")
+    @AttributeDefinition(name = "BooleanChannel or Id of (Relay) Device", description = "Either the BooleanChannel or the Relay Device.")
     String pump_Relay() default "Relay0/WriteOnOff";
 
     @AttributeDefinition(name = "PWM Id/ PwmChannel", description = "Either the WriteChannel or the Pwm Device")
@@ -50,6 +51,9 @@ import org.osgi.service.metatype.annotations.Option;
     String checkPwmOrAioChannelAddress() default "Pwm/ReadPowerLevel";
 
     boolean useExceptionalState() default false;
+
+    @AttributeDefinition(name = "TimerId", description = "Timer to check for missing Components")
+    String timerIdMissingComponents() default "TimerByCycles";
 
     @AttributeDefinition(name = "TimerId", description = "The Timer used for the ExceptionalState")
     String timerId() default "TimerByCycles";

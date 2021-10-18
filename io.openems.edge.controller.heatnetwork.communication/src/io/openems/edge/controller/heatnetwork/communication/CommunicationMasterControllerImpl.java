@@ -1,6 +1,7 @@
 package io.openems.edge.controller.heatnetwork.communication;
 
 import io.openems.common.exceptions.OpenemsError;
+import io.openems.edge.bridge.rest.api.RestRemoteDevice;
 import io.openems.edge.common.component.AbstractOpenemsComponent;
 import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
@@ -22,12 +23,11 @@ import io.openems.edge.controller.heatnetwork.communication.responsewrapper.Chan
 import io.openems.edge.controller.heatnetwork.communication.responsewrapper.MethodResponse;
 import io.openems.edge.controller.heatnetwork.communication.responsewrapper.MethodResponseImpl;
 import io.openems.edge.controller.heatnetwork.communication.responsewrapper.ResponseWrapper;
-import io.openems.edge.controller.heatnetwork.hydraulic.lineheater.api.HydraulicLineHeater;
+import io.openems.edge.controller.heatnetwork.hydraulic.lineheater.api.HydraulicLineController;
 import io.openems.edge.exceptionalstate.api.ExceptionalState;
 import io.openems.edge.exceptionalstate.api.ExceptionalStateHandler;
 import io.openems.edge.exceptionalstate.api.ExceptionalStateHandlerImpl;
-import io.openems.edge.heatsystem.components.Pump;
-import io.openems.edge.remote.rest.device.api.RestRemoteDevice;
+import io.openems.edge.heatsystem.components.HydraulicComponent;
 import io.openems.edge.timer.api.TimerHandler;
 import io.openems.edge.timer.api.TimerHandlerImpl;
 import org.osgi.service.cm.Configuration;
@@ -84,9 +84,9 @@ public class CommunicationMasterControllerImpl extends AbstractOpenemsComponent 
     //Configured communicationController handling one remoteCommunication
     CommunicationController communicationController;
     //The Optional HydraulicLineHeater
-    private HydraulicLineHeater hydraulicLineHeater;
+    private HydraulicLineController hydraulicLineController;
     //The Optional HeatPump
-    private Pump heatPump;
+    private HydraulicComponent heatPump;
     //For Subclasses -> CommunicationController and manager
     private boolean forcing;
     private int maxAllowedRequests;
@@ -165,7 +165,7 @@ public class CommunicationMasterControllerImpl extends AbstractOpenemsComponent 
         this.configurationDone = config.configurationDone();
         if (this.configurationDone) {
             this.setForceHeating(config.forceHeating());
-            this.setMaximumRequests(config.maxRequestAllowedAtOnce());
+            this.setMaximumRequests(config.maxDecentralizedSystemsAllowedAtOnce());
             this.forcing = this.getForceHeating();
             this.maxAllowedRequests = this.getMaximumRequests();
             this.communicationController = HELPER.createCommunicationControllerWithRequests(config, this.cpm);
@@ -177,16 +177,16 @@ public class CommunicationMasterControllerImpl extends AbstractOpenemsComponent 
 
             if (config.usePump()) {
                 optionalComponent = this.cpm.getComponent(config.pumpId());
-                if (optionalComponent instanceof Pump) {
-                    this.heatPump = (Pump) optionalComponent;
+                if (optionalComponent instanceof HydraulicComponent) {
+                    this.heatPump = (HydraulicComponent) optionalComponent;
                 } else {
                     throw new ConfigurationException("CommunicationMaster - Activate - Pump", "PumpId Component - Not an instance of Pump; PumpId: " + config.pumpId());
                 }
             }
             if (config.useHydraulicLineHeater()) {
                 optionalComponent = this.cpm.getComponent(config.hydraulicLineHeaterId());
-                if (optionalComponent instanceof HydraulicLineHeater) {
-                    this.hydraulicLineHeater = (HydraulicLineHeater) optionalComponent;
+                if (optionalComponent instanceof HydraulicLineController) {
+                    this.hydraulicLineController = (HydraulicLineController) optionalComponent;
                 } else {
                     throw new ConfigurationException("CommunicationMaster - Activate - HydraulicLineHeater",
                             "HydraulicLineHeaterId Component - Not an Instance of HydraulicLineHeater : " + config.hydraulicLineHeaterId());
@@ -207,7 +207,7 @@ public class CommunicationMasterControllerImpl extends AbstractOpenemsComponent 
             FallbackHandling fallback = config.fallback();
 
             this.setFallbackLogic(fallback);
-            this.maxAllowedRequests = config.maxRequestAllowedAtOnce();
+            this.maxAllowedRequests = config.maxDecentralizedSystemsAllowedAtOnce();
             this.getMaximumRequestChannel().setNextValue(this.maxAllowedRequests);
             this.configSucceed = true;
         }
@@ -511,12 +511,12 @@ public class CommunicationMasterControllerImpl extends AbstractOpenemsComponent 
                 }
                 break;
             case ACTIVATE_LINE_HEATER:
-                if (this.hydraulicLineHeater != null) {
+                if (this.hydraulicLineController != null) {
                     Boolean lineHeaterActivation = null;
                     if (value != null || value.equals("null") == false) {
                         lineHeaterActivation = Boolean.valueOf(value);
                     }
-                    this.hydraulicLineHeater.enableSignal().setNextWriteValueFromObject(lineHeaterActivation);
+                    this.hydraulicLineController.enableSignalChannel().setNextWriteValueFromObject(lineHeaterActivation);
                 } else {
                     this.log.warn("Wanted to set HydraulicLineHeater to : " + value + " But it is not instantiated! " + super.id());
                 }
@@ -529,7 +529,7 @@ public class CommunicationMasterControllerImpl extends AbstractOpenemsComponent 
      */
     private void clearReferences() {
         this.communicationController = null;
-        this.hydraulicLineHeater = null;
+        this.hydraulicLineController = null;
         this.heatPump = null;
         this.requestTypeAndResponses.clear();
         this.requestTypeIsSet.clear();
@@ -541,13 +541,13 @@ public class CommunicationMasterControllerImpl extends AbstractOpenemsComponent 
     private void checkChangesAndApply() {
         //Check if Components are still enabled
         try {
-            if (this.hydraulicLineHeater != null && this.hydraulicLineHeater.isEnabled() == false) {
-                if (this.cpm.getComponent(this.hydraulicLineHeater.id()) instanceof HydraulicLineHeater) {
-                    this.hydraulicLineHeater = this.cpm.getComponent(this.hydraulicLineHeater.id());
+            if (this.hydraulicLineController != null && this.hydraulicLineController.isEnabled() == false) {
+                if (this.cpm.getComponent(this.hydraulicLineController.id()) instanceof HydraulicLineController) {
+                    this.hydraulicLineController = this.cpm.getComponent(this.hydraulicLineController.id());
                 }
             }
             if (this.heatPump != null && this.heatPump.isEnabled() == false) {
-                if (this.cpm.getComponent(this.heatPump.id()) instanceof Pump) {
+                if (this.cpm.getComponent(this.heatPump.id()) instanceof HydraulicComponent) {
                     this.heatPump = this.cpm.getComponent(this.heatPump.id());
                 }
             }
@@ -598,7 +598,7 @@ public class CommunicationMasterControllerImpl extends AbstractOpenemsComponent 
             CommunicationController controller;
             if (config.connectionType() == ConnectionType.REST) {
                 controller = new RestLeafletCommunicationControllerImpl(config.connectionType(),
-                        config.manageType(), config.maxRequestAllowedAtOnce(),
+                        config.manageType(), config.maxDecentralizedSystemsAllowedAtOnce(),
                         config.forceHeating());
                 controller.setMaxWaitTime(config.maxWaitTimeAllowed());
             } else {

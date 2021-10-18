@@ -1,0 +1,20 @@
+= Heatnetwork Watchdog
+
+== Description
+
+Oversees a part of a Hydraulic Network e.g. a PassingStation (decentralized Heater with a pump).
+Therefore, checking if the HydraulicComponent is working or is broken.
+
+Should the Thermometers have a gap, that exceeds the delta that one has configured, the ExceptionalStates of a target will receive 0 -> blocking the target Component.
+
+== Example
+
+Let's say you have a Heatnetwork.
+Within this Heatnetwork, there is a passing Station (Decentralized Heater w. force heating).
+This passing Station controls a Pump.
+Furthermore, there is a Valve controller, opening up, when a HeatRequest is active and allowing the FlowTemp to increase in Temperature.
+
+Usually after Opening the Valve the FlowTemp should increase, and the PassingStation should heat up.
+(By pumping warm-water through a hydraulic line.) However, if the Valve should be broken -> the Temperature stays cold.
+To prevent the flow of Cold Temperatures -> the Pump receives an exceptional State with a value of 0.
+

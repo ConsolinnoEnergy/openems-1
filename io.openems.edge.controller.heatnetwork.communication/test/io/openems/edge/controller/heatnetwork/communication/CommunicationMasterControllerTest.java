@@ -1,6 +1,8 @@
 package io.openems.edge.controller.heatnetwork.communication;
 
 import io.openems.common.types.ChannelAddress;
+import io.openems.edge.bridge.rest.api.DummyRestDevice;
+import io.openems.edge.bridge.rest.api.RestRemoteDevice;
 import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.common.test.AbstractComponentTest.TestCase;
 import io.openems.edge.common.test.DummyComponentManager;
@@ -11,12 +13,11 @@ import io.openems.edge.controller.heatnetwork.communication.api.ManageType;
 import io.openems.edge.controller.heatnetwork.communication.request.api.MasterResponseType;
 import io.openems.edge.controller.heatnetwork.communication.request.api.MethodTypes;
 import io.openems.edge.controller.heatnetwork.communication.request.api.RequestType;
-import io.openems.edge.controller.heatnetwork.hydraulic.lineheater.api.HydraulicLineHeater;
-import io.openems.edge.controller.heatnetwork.hydraulic.lineheater.test.DummyHydraulicLineHeater;
+import io.openems.edge.controller.heatnetwork.hydraulic.lineheater.api.HydraulicLineController;
+import io.openems.edge.controller.heatnetwork.hydraulic.lineheater.test.DummyHydraulicLineController;
 import io.openems.edge.controller.test.ControllerTest;
+import io.openems.edge.heatsystem.components.PumpType;
 import io.openems.edge.heatsystem.components.test.DummyPump;
-import io.openems.edge.remote.rest.device.api.DummyRestDevice;
-import io.openems.edge.remote.rest.device.api.RestRemoteDevice;
 import io.openems.edge.thermometer.api.test.DummyVirtualThermometer;
 import io.openems.edge.timer.api.DummyTimer;
 import io.openems.edge.timer.api.TimerType;
@@ -70,7 +71,7 @@ public class CommunicationMasterControllerTest {
     private final TimeLeapClock clock = new TimeLeapClock(Instant.ofEpochSecond(1577836800), ZoneOffset.UTC);
     private DummyTimer timer;
     private DummyPump pump;
-    private HydraulicLineHeater dummyLineHeater;
+    private HydraulicLineController dummyLineHeater;
     private final Map<String, ChannelAddress> channelAddressMap = new HashMap<>();
     /*
      * 1. Setup 8 RestRemoteDevices -> 4 Read 4 Write
@@ -102,9 +103,9 @@ public class CommunicationMasterControllerTest {
     public void setup() {
         this.timer = new DummyTimer(TIMER_ID, TimerType.CYCLES);
         this.dummyThermometer = new DummyVirtualThermometer(THERMOMETER_ID);
-        this.pump = new DummyPump(HEAT_PUMP_ID, "Relays");
+        this.pump = new DummyPump(HEAT_PUMP_ID, PumpType.RELAY);
         this.cpm = new DummyComponentManager(clock);
-        this.dummyLineHeater = new DummyHydraulicLineHeater(HYDRAULIC_LINE_HEATER_ID);
+        this.dummyLineHeater = new DummyHydraulicLineController(HYDRAULIC_LINE_HEATER_ID);
         restDeviceIds = new String[]{"Rest0", "Rest1", "Rest2", "Rest3", "Rest4", "Rest5", "Rest6", "Rest7", "Rest8", "Rest9", "Rest10", "Rest11"};
         requestMap = new String[]{"Rest0:Rest1:1:HEAT", "Rest2:Rest3:1:MORE_HEAT",
                 "Rest4:Rest5:2:HEAT", "Rest6:Rest7:2:MORE_HEAT",

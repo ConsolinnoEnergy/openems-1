@@ -1,0 +1,5 @@
+#!/bin/bash
+
+echo "running oems postinstall"
+sudo systemctl enable openems.service
+sudo systemctl start openems.service

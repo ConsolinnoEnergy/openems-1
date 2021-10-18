@@ -14,9 +14,19 @@ import io.openems.edge.common.channel.WriteChannel;
 import io.openems.edge.common.channel.value.Value;
 import io.openems.edge.common.component.OpenemsComponent;
 
+/**
+ * The ApartmentModule. Allows...depending on the Configuration...to monitor a Temperature within a Line and Control 2 Relays
+ * And/Or Monitor if a HeatRequest is active.
+ * Note: Non used Channel are not necessary to run the ApartmentModule. But can be added by a developer if needed.
+ * The ModbusAddress is labeled within the ChannelName.
+ */
 public interface ApartmentModule extends OpenemsComponent {
 
-    public enum ChannelId implements io.openems.edge.common.channel.ChannelId {
+    int DEFAULT_REFERENCE_TEMPERATURE = 1000;
+    int DEFAULT_LAST_KNOWN_TEMPERATURE = 500;
+    int TEMP_CALIBRATION_ALTERNATE_VALUE = -404;
+
+    enum ChannelId implements io.openems.edge.common.channel.ChannelId {
 
         // Input Registers
 
@@ -36,7 +46,7 @@ public interface ApartmentModule extends OpenemsComponent {
          * </ul>
          */
 
-        IR_1_APARTMENT_MODULE_CONFIGURATION(Doc.of(AMconfiguration.values()).accessMode(AccessMode.READ_ONLY)),
+        IR_1_APARTMENT_MODULE_CONFIGURATION(Doc.of(AmConfiguration.values()).accessMode(AccessMode.READ_ONLY)),
 
         /**
          * Error code. Three error bits transmitted as an integer. 0 means no error.
@@ -60,7 +70,7 @@ public interface ApartmentModule extends OpenemsComponent {
         IR_3_LOOP_TIME(Doc.of(OpenemsType.INTEGER).unit(Unit.MILLISECONDS).accessMode(AccessMode.READ_ONLY)),
 
         /**
-         * Is an external request currently active?
+         * Is an external request currently active.
          * <ul>
          *      <li> Type: boolean
          * </ul>
@@ -85,7 +95,6 @@ public interface ApartmentModule extends OpenemsComponent {
          * <li>
          * <li> Type: Integer
          * <li> Unit: dezidegree celsius
-         * </ul>
          */
 
         IR_6_TEMPERATURE(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_ONLY)),
@@ -166,7 +175,6 @@ public interface ApartmentModule extends OpenemsComponent {
          * Temperature calibration. Value to calibrate the PT1000 sensor.
          * <li>
          * <li> Type: Integer
-         * </ul>
          */
 
         HR_2_TEMPERATURE_CALIBRATION(Doc.of(OpenemsType.INTEGER).accessMode(AccessMode.READ_WRITE)),
@@ -189,7 +197,6 @@ public interface ApartmentModule extends OpenemsComponent {
          * <li>
          * <li>Type: Integer
          * <li>Unit: centi seconds = milliseconds *10
-         * </ul>
          */
 
         HR_11_TIMING_RELAY1(Doc.of(OpenemsType.INTEGER).unit(Unit.CENTISECONDS).accessMode(AccessMode.READ_WRITE)),
@@ -212,7 +219,6 @@ public interface ApartmentModule extends OpenemsComponent {
          * <li>
          * <li>Type: Integer
          * <li>Unit: centi seconds = milliseconds *10
-         * </ul>
          */
 
         HR_21_TIMING_RELAY2(Doc.of(OpenemsType.INTEGER).unit(Unit.CENTISECONDS).accessMode(AccessMode.READ_WRITE)),
@@ -222,22 +228,36 @@ public interface ApartmentModule extends OpenemsComponent {
          * False --> Deactivates Hydraulic Mixer.
          */
         ACTIVATE_HYDRAULIC_MIXER(Doc.of(OpenemsType.BOOLEAN).accessMode(AccessMode.READ_WRITE)),
-        /**
-         * The PowerLevel of the Valve (Depends on Seconds open/Close Time etc)
-         * TODO.
-         */
-        POWER_LEVEL(Doc.of(OpenemsType.DOUBLE).accessMode(AccessMode.READ_ONLY)),
 
-        EXTERNAL_HEAT_FLAG(Doc.of(OpenemsType.BOOLEAN)),
+        /**
+         * Status of the Valve (Only Available for Top AMs).
+         */
         VALVE_STATUS(Doc.of(ValveStatus.values())),
+        /**
+         * Last Known Temperature e.g. when ModbusCommunication Fails -> Value will be null in IR_6_TEMPERATURE.
+         */
         LAST_KNOWN_TEMPERATURE(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
+        /**
+         * Was a Request Set.
+         */
         LAST_KNOWN_REQUEST_STATUS(Doc.of(OpenemsType.BOOLEAN)),
+        /**
+         * Did an ApartmentCord send a Request. Usually set by a controller.
+         */
+        CORD_REQUEST(Doc.of(OpenemsType.BOOLEAN).accessMode(AccessMode.READ_WRITE)),
+        /**
+         * The Reference Temperature, used by TopAMs.
+         */
+        REFERENCE_TEMPERATURE(Doc.of(OpenemsType.INTEGER).accessMode(AccessMode.READ_WRITE)),
+        /**
+         * Is this AM a TopModule.
+         */
         IS_TOP_AM(Doc.of(OpenemsType.BOOLEAN));
 
 
         private final Doc doc;
 
-        private ChannelId(Doc doc) {
+        ChannelId(Doc doc) {
             this.doc = doc;
         }
 
@@ -253,7 +273,7 @@ public interface ApartmentModule extends OpenemsComponent {
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getVersionChannel() {
+    default IntegerReadChannel getVersionChannel() {
         return this.channel(ChannelId.IR_0_VERSION);
     }
 
@@ -262,7 +282,7 @@ public interface ApartmentModule extends OpenemsComponent {
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getVersionNumber() {
+    default Value<Integer> getVersionNumber() {
         return this.getVersionChannel().value();
     }
 
@@ -272,7 +292,7 @@ public interface ApartmentModule extends OpenemsComponent {
      *
      * @return the Channel
      */
-    public default Channel<AMconfiguration> getAmConfigurationChannel() {
+    default Channel<AmConfiguration> getAmConfigurationChannel() {
         return this.channel(ChannelId.IR_1_APARTMENT_MODULE_CONFIGURATION);
     }
 
@@ -281,7 +301,7 @@ public interface ApartmentModule extends OpenemsComponent {
      *
      * @return the Channel {@link Value}
      */
-    public default AMconfiguration getAmConfiguration() {
+    default AmConfiguration getAmConfiguration() {
         return this.getAmConfigurationChannel().value().asEnum();
     }
 
@@ -290,7 +310,7 @@ public interface ApartmentModule extends OpenemsComponent {
      *
      * @return the Channel
      */
-    public default Channel<Error> getErrorChannel() {
+    default Channel<Error> getErrorChannel() {
         return this.channel(ChannelId.IR_2_ERROR);
     }
 
@@ -299,7 +319,7 @@ public interface ApartmentModule extends OpenemsComponent {
      *
      * @return the Channel {@link Value}
      */
-    public default Error getError() {
+    default Error getError() {
         return this.getErrorChannel().value().asEnum();
     }
 
@@ -308,7 +328,7 @@ public interface ApartmentModule extends OpenemsComponent {
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getLoopTimeChannel() {
+    default IntegerReadChannel getLoopTimeChannel() {
         return this.channel(ChannelId.IR_3_LOOP_TIME);
     }
 
@@ -318,7 +338,7 @@ public interface ApartmentModule extends OpenemsComponent {
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getLoopTime() {
+    default Value<Integer> getLoopTime() {
         return this.getLoopTimeChannel().value();
     }
 
@@ -327,7 +347,7 @@ public interface ApartmentModule extends OpenemsComponent {
      *
      * @return the Channel
      */
-    public default BooleanReadChannel getExternalRequestCurrentChannel() {
+    default BooleanReadChannel getExternalRequestCurrentChannel() {
         return this.channel(ChannelId.IR_4_EXTERNAL_REQUEST_ACTIVE);
     }
 
@@ -336,7 +356,7 @@ public interface ApartmentModule extends OpenemsComponent {
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Boolean> getExternalRequestCurrent() {
+    default Value<Boolean> getExternalRequestCurrent() {
         return this.getExternalRequestCurrentChannel().value();
     }
 
@@ -345,7 +365,7 @@ public interface ApartmentModule extends OpenemsComponent {
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getRequestSignalTimeChannel() {
+    default IntegerReadChannel getRequestSignalTimeChannel() {
         return this.channel(ChannelId.IR_5_REQUEST_SIGNAL_TIME);
     }
 
@@ -354,7 +374,7 @@ public interface ApartmentModule extends OpenemsComponent {
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getRequestSignalTime() {
+    default Value<Integer> getRequestSignalTime() {
         return this.getRequestSignalTimeChannel().value();
     }
 
@@ -363,7 +383,7 @@ public interface ApartmentModule extends OpenemsComponent {
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getTemperatureChannel() {
+    default IntegerReadChannel getTemperatureChannel() {
         return this.channel(ChannelId.IR_6_TEMPERATURE);
     }
 
@@ -372,7 +392,7 @@ public interface ApartmentModule extends OpenemsComponent {
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getTemperature() {
+    default Value<Integer> getTemperature() {
         return this.getTemperatureChannel().value();
     }
 
@@ -381,7 +401,7 @@ public interface ApartmentModule extends OpenemsComponent {
      *
      * @return the Channel
      */
-    public default Channel<OnOff> getStateRelay1Channel() {
+    default Channel<OnOff> getStateRelay1Channel() {
         return this.channel(ChannelId.IR_10_STATE_RELAY1);
     }
 
@@ -390,7 +410,7 @@ public interface ApartmentModule extends OpenemsComponent {
      *
      * @return the Channel {@link Value}
      */
-    public default OnOff getStateRelay1() {
+    default OnOff getStateRelay1() {
         return this.getStateRelay1Channel().value().asEnum();
     }
 
@@ -399,7 +419,7 @@ public interface ApartmentModule extends OpenemsComponent {
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getRelay1RemainingTimeChannel() {
+    default IntegerReadChannel getRelay1RemainingTimeChannel() {
         return this.channel(ChannelId.IR_11_RELAY1_REMAINING_TIME);
     }
 
@@ -409,7 +429,7 @@ public interface ApartmentModule extends OpenemsComponent {
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getRelay1RemainingTime() {
+    default Value<Integer> getRelay1RemainingTime() {
         return this.getRelay1RemainingTimeChannel().value();
     }
 
@@ -418,7 +438,7 @@ public interface ApartmentModule extends OpenemsComponent {
      *
      * @return the Channel
      */
-    public default Channel<OnOff> getStateRelay2Channel() {
+    default Channel<OnOff> getStateRelay2Channel() {
         return this.channel(ChannelId.IR_20_STATE_RELAY2);
     }
 
@@ -427,7 +447,7 @@ public interface ApartmentModule extends OpenemsComponent {
      *
      * @return the Channel {@link Value}
      */
-    public default OnOff getStateRelay2() {
+    default OnOff getStateRelay2() {
         return this.getStateRelay2Channel().value().asEnum();
     }
 
@@ -436,7 +456,7 @@ public interface ApartmentModule extends OpenemsComponent {
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getRelay2RemainingTimeChannel() {
+    default IntegerReadChannel getRelay2RemainingTimeChannel() {
         return this.channel(ChannelId.IR_21_RELAY2_REMAINING_TIME);
     }
 
@@ -446,7 +466,7 @@ public interface ApartmentModule extends OpenemsComponent {
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getRelay2RemainingTime() {
+    default Value<Integer> getRelay2RemainingTime() {
         return this.getRelay2RemainingTimeChannel().value();
     }
 
@@ -455,7 +475,7 @@ public interface ApartmentModule extends OpenemsComponent {
      *
      * @return the Channel
      */
-    public default WriteChannel<CommunicationCheck> getSetCommunicationCheckChannel() {
+    default WriteChannel<CommunicationCheck> getSetCommunicationCheckChannel() {
         return this.channel(ChannelId.HR_0_COMMUNICATION_CHECK);
     }
 
@@ -464,7 +484,7 @@ public interface ApartmentModule extends OpenemsComponent {
      *
      * @return the Channel
      */
-    public default BooleanWriteChannel getSetExternalRequestFlagChannel() {
+    default BooleanWriteChannel getSetExternalRequestFlagChannel() {
         return this.channel(ChannelId.HR_1_EXTERNAL_REQUEST_FLAG);
     }
 
@@ -473,7 +493,7 @@ public interface ApartmentModule extends OpenemsComponent {
      *
      * @return the Channel
      */
-    public default IntegerWriteChannel setTemperatureCalibrationChannel() {
+    default IntegerWriteChannel setTemperatureCalibrationChannel() {
         return this.channel(ChannelId.HR_2_TEMPERATURE_CALIBRATION);
     }
 
@@ -482,7 +502,7 @@ public interface ApartmentModule extends OpenemsComponent {
      *
      * @return the Channel
      */
-    public default WriteChannel<OnOff> setCommandRelay1Channel() {
+    default WriteChannel<OnOff> setCommandRelay1Channel() {
         return this.channel(ChannelId.HR_10_COMMAND_RELAY1);
     }
 
@@ -491,7 +511,7 @@ public interface ApartmentModule extends OpenemsComponent {
      *
      * @return the Channel
      */
-    public default IntegerWriteChannel setTimeRelay1Channel() {
+    default IntegerWriteChannel setTimeRelay1Channel() {
         return this.channel(ChannelId.HR_11_TIMING_RELAY1);
     }
 
@@ -500,10 +520,15 @@ public interface ApartmentModule extends OpenemsComponent {
      *
      * @return the Channel
      */
-    public default WriteChannel<OnOff> setCommandRelay2Channel() {
+    default WriteChannel<OnOff> setCommandRelay2Channel() {
         return this.channel(ChannelId.HR_20_COMMAND_RELAY2);
     }
 
+    /**
+     * Get the Channel for {@link ChannelId#VALVE_STATUS}.
+     *
+     * @return the Channel
+     */
     default Channel<ValveStatus> getValveStatusChannel() {
         return this.channel(ChannelId.VALVE_STATUS);
     }
@@ -513,11 +538,18 @@ public interface ApartmentModule extends OpenemsComponent {
      *
      * @return the Channel
      */
-    public default IntegerWriteChannel setTimeRelay2Channel() {
+    default IntegerWriteChannel setTimeRelay2Channel() {
         return this.channel(ChannelId.HR_21_TIMING_RELAY2);
     }
 
-    public default boolean setRelay1(OnOff state, int time) {
+    /**
+     * Sets Relay 1 if this is a TopAm. Usually only used by the AM Implementation
+     *
+     * @param state the OnOffState that will be applied
+     * @param time  the Time for the OnOffState.
+     * @return true on success
+     */
+    default boolean _setRelay1(OnOff state, int time) {
         try {
             this.setCommandRelay1Channel().setNextWriteValue(state);
             this.setTimeRelay1Channel().setNextWriteValue(time);
@@ -527,7 +559,14 @@ public interface ApartmentModule extends OpenemsComponent {
         return true;
     }
 
-    public default boolean setRelay2(OnOff state, int time) {
+    /**
+     * Sets Relay 2 if this is a TopAm. Usually only used by the AM Implementation
+     *
+     * @param state the OnOffState that will be applied
+     * @param time  the Time for the OnOffState.
+     * @return true on success
+     */
+    default boolean _setRelay2(OnOff state, int time) {
         try {
             this.setCommandRelay2Channel().setNextWriteValue(state);
             this.setTimeRelay2Channel().setNextWriteValue(time);
@@ -537,41 +576,65 @@ public interface ApartmentModule extends OpenemsComponent {
         return true;
     }
 
-    default WriteChannel<Boolean> isActivationRequest() {
+
+    /**
+     * Get the Channel for {@link ChannelId#ACTIVATE_HYDRAULIC_MIXER}.
+     *
+     * @return the channel.
+     */
+    default WriteChannel<Boolean> isActivationRequestChannel() {
         return this.channel(ChannelId.ACTIVATE_HYDRAULIC_MIXER);
     }
 
-    default boolean isModuleWithRelays() {
-        return this.getAmConfiguration().getValue() == 1;
+    /**
+     * Get the Channel for {@link ChannelId#CORD_REQUEST}.
+     *
+     * @return the channel.
+     */
+    default WriteChannel<Boolean> heatRequestInApartmentCord() {
+        return this.channel(ChannelId.CORD_REQUEST);
     }
 
-    default boolean hasHeatRequest() {
-        Value<Boolean> request = this.getExternalRequestCurrent();
-        if (request.isDefined() == false) {
-            request = this.getExternalRequestCurrentChannel().getNextValue();
-        }
-        if (request.isDefined() == false) {
-            return false;
-        } else {
-            return request.get();
-        }
+    /**
+     * Get the Channel for {@link ChannelId#REFERENCE_TEMPERATURE}.
+     *
+     * @return the channel.
+     */
+    default WriteChannel<Integer> getReferenceTemperatureChannel() {
+        return this.channel(ChannelId.REFERENCE_TEMPERATURE);
     }
 
-    default Channel<Boolean> isHeatRequestFlagChannel() {
-        return this.channel(ChannelId.EXTERNAL_HEAT_FLAG);
-    }
-
-    default boolean isHeatRequestFlag() {
-        return this.isHeatRequestFlagChannel().value().isDefined() ? this.isHeatRequestFlagChannel().value().get() : false;
-    }
-
+    /**
+     * Get the Channel for {@link ChannelId#LAST_KNOWN_TEMPERATURE}.
+     *
+     * @return the channel.
+     */
     default Channel<Integer> getLastKnowTemperatureChannel() {
         return this.channel(ChannelId.LAST_KNOWN_TEMPERATURE);
     }
 
-    default Channel<Boolean> getLastKnownRequestStatusChannel(){
+    /**
+     * Return the Channel for {@link ChannelId#LAST_KNOWN_REQUEST_STATUS}.
+     *
+     * @return the channel.
+     */
+    default Channel<Boolean> getLastKnownRequestStatusChannel() {
         return this.channel(ChannelId.LAST_KNOWN_REQUEST_STATUS);
     }
 
+    /**
+     * Return the Last Know Request Status Value.
+     *
+     * @return the Last Known Request Status.
+     */
+    default boolean getLastKnownRequestStatusValue() {
+        return this.getLastKnownRequestStatusChannel().value().orElse(false);
+    }
+
+    /**
+     * Tells calling Component if this AM is a TOP ApartmentModule.
+     *
+     * @return true if this is a TopAM.
+     */
     boolean isTopAm();
 }

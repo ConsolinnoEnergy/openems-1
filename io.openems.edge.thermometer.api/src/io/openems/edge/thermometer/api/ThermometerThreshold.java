@@ -15,7 +15,7 @@ import io.openems.edge.common.channel.WriteChannel;
  * to decide what to do on changing temperatures, preventing fluctuations.
  * The Threshold can be overwritten.
  * The ThermometerState represents rising or falling in temperature.
- * The TemperatureSetpoint can be set by a component and deposit it's id. The temperature will be locked.
+ * The TemperatureSetPoint can be set by a component and deposit it's id. The temperature will be locked.
  * However it is possible to overwrite the Temperature with any device, if the requested Temperature is above the current SetPoint.
  * If you need to implement a cooling system where a lower Temperature should always be accepted, you need to implement that yourself.
  * The Temperature is stored in SetPointTemperature.
@@ -28,7 +28,7 @@ public interface ThermometerThreshold extends Thermometer {
          * <ul>
          * <li>Interface: ThermometerThreshold
          * <li>Type: Integer
-         * <li>Unit: Dezidegree celsius
+         * <li>Unit: decimal degree Celsius
          * </ul>
          */
         THRESHOLD(Doc.of(OpenemsType.INTEGER) //
@@ -63,7 +63,7 @@ public interface ThermometerThreshold extends Thermometer {
          * <ul>
          *          <li>Interface: ThermometerThreshold
          *          <li>Type: Integer
-         *          <li> Unit: Dezidegree_Celsius
+         *          <li> Unit: decimal degree Celsius
          *          </ul>
          */
         SET_POINT_TEMPERATURE(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE).onInit(
@@ -96,7 +96,7 @@ public interface ThermometerThreshold extends Thermometer {
     }
 
     /**
-     * Get The Thresholdvalue of the Channel or 1 on null.
+     * Get The ThresholdValue of the Channel or 1 on null.
      *
      * @return the Threshold.
      */
@@ -116,7 +116,7 @@ public interface ThermometerThreshold extends Thermometer {
      *
      * @param threshold the new Value for threshold.
      */
-    default void setThresholdInDecidegree(int threshold) {
+    default void setThresholdInDeciDegree(int threshold) {
         this.getThresholdChannel().setNextValue(threshold);
     }
 
@@ -141,15 +141,11 @@ public interface ThermometerThreshold extends Thermometer {
      */
 
     default ThermometerState getThermometerState() {
-        ThermometerState thermometerState = (ThermometerState) this.getValueOfChannel(this.getThermometerStateChannel());
-        if (thermometerState == null) {
-            thermometerState = (ThermometerState) this.getNextValueOfChannel(this.getThermometerStateChannel());
+        ThermometerState thermometerState = ThermometerState.getThermometerStateFromInteger((Integer) this.getValueOfChannel(this.getThermometerStateChannel()));
+        if (thermometerState.equals(ThermometerState.UNDEFINED)) {
+            thermometerState = ThermometerState.getThermometerStateFromInteger((Integer) this.getNextValueOfChannel(this.getThermometerStateChannel()));
         }
-        if (thermometerState != null) {
-            return thermometerState;
-        } else {
-            return ThermometerState.UNDEFINED;
-        }
+        return thermometerState;
     }
 
     /**
@@ -222,7 +218,7 @@ public interface ThermometerThreshold extends Thermometer {
     //------------------------------------------------------------------//
 
     /**
-     * Accept always > temperautres, if < temperature is given,
+     * Accept always > temperatures, if < temperature is given,
      * calling Component has to be in "GuideValueSetById".
      * EXAMPLE:
      * current GuideValue is 400 dC and set By CommunicationMaster0
@@ -274,12 +270,12 @@ public interface ThermometerThreshold extends Thermometer {
     }
 
     /**
-     * Important: If Temperature is rising --> "Greater than" setpoint temperature is still ok if the current Temperature
-     * is greater than or equal to the setpoint.
+     * Important: If Temperature is rising --> "Greater than" SetPoint temperature is still ok if the current Temperature
+     * is greater than or equal to the SetPoint.
      * <p>
      * Example: Temperature is rising: 400 dc 450 dc 500dc Set point is 500 dC.
-     * --> Since the temperature is rising --> 500dC of thermometer will be equal or greater than setpoint so return true.
-     * However if the temperature is falling ---> 600dC --> 550 dC 500 dC and the Setpoint is 500 -->
+     * --> Since the temperature is rising --> 500dC of thermometer will be equal or greater than SetPoint so return true.
+     * However if the temperature is falling ---> 600dC --> 550 dC 500 dC and the SetPoint is 500 -->
      * The Temperature will only be checked if it's greater not greater than or equals (> instead of >=)
      * Since the expected temperature will be falling further.
      * </p>
@@ -287,7 +283,7 @@ public interface ThermometerThreshold extends Thermometer {
      * This will be Equivalent to "SetPointTemperatureBelowThermometer"
      * </p>
      *
-     * @return a boolean: result -> greaterOrEquals than setpoint /greater than setpoint
+     * @return a boolean: result -> greaterOrEquals than SetPoint /greater than SetPoint
      */
 
     default boolean setPointTemperatureAboveThermometer() {
@@ -295,12 +291,12 @@ public interface ThermometerThreshold extends Thermometer {
     }
 
     /**
-     * Important: If Temperature is falling --> "less than" setpoint temperature is still ok if the current Temperature
-     * is less than or equal to the setpoint.
+     * Important: If Temperature is falling --> "less than" SetPoint temperature is still ok if the current Temperature
+     * is less than or equal to the SetPoint.
      * <p>
      * Example: Temperature is falling: 500 dc 450 dc 400dc Set point is 400 dC.
-     * --> Since the temperature is falling --> 400 of thermometer will be equal or greater than setpoint so return true.
-     * However if the temperature is rising ---> 500 --> 550 dC 600 dC and the Setpoint is 600 -->
+     * --> Since the temperature is falling --> 400 of thermometer will be equal or greater than SetPoint so return true.
+     * However if the temperature is rising ---> 500 --> 550 dC 600 dC and the SetPoint is 600 -->
      * The Temperature will only be checked if it's less not less than or equals (< instead of <=)
      * Since the expected temperature will be rising further.
      * </p>
@@ -308,7 +304,7 @@ public interface ThermometerThreshold extends Thermometer {
      * This will be Equivalent to "SetPointTemperatureBelowThermometer"
      * </p>
      *
-     * @return a boolean: result -> lessOrEquals than setpoint /less than setpoint
+     * @return a boolean: result -> lessOrEquals than SetPoint /less than SetPoint
      */
     default boolean setPointTemperatureBelowThermometer() {
         return this.thermometerBelowGivenTemperature(this.getSetPointTemperature());

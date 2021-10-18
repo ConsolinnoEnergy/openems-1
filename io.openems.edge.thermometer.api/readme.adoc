@@ -1,3 +1,14 @@
 = Thermometer
 
 A Thermometer measures temperature.
+
+== AbstractThermometerWrapper
+
+The ThermometerWrapper stores an Activation and Deactivation Temperature and Thermometer, Depending on the Wrapper Type The Activation/Deactivation conditions are different.
+This helps Controller, that should activate/deactivate on certain Temperatures.
+== ThermometerValueWrapper The ThermometerValueWrapper stores either a ChannelAddress, or an Integer value.
+This helps e.g. the ThermometerWrapper, to get teh activation/deactivation temperature (from either a ChannelAddress or, a fixed integer value).
+
+== ThermometerState
+
+This will be used by a ThresholdThermometer to determine ThresholdTemperatures.
