@@ -24,6 +24,7 @@ import io.openems.edge.heater.api.EnableSignalHandler;
 import io.openems.edge.heater.api.EnableSignalHandlerImpl;
 import io.openems.edge.heater.api.Heater;
 import io.openems.edge.heater.api.HeaterState;
+import io.openems.edge.heater.api.HeatpumpControlMode;
 import io.openems.edge.heater.api.SmartGridState;
 import io.openems.edge.heater.heatpump.tecalor.api.HeatpumpTecalor;
 import io.openems.edge.heater.api.HeatpumpSmartGrid;
@@ -55,6 +56,8 @@ import org.slf4j.LoggerFactory;
  * This module reads the most important variables available via Modbus from a Tecalor heat pump and maps them to OpenEMS
  * channels. WriteChannels can be used to send commands to the heat pump via setter methods in
  * HeatpumpAlphaInnotecChannel, HeatpumpSmartGrid and Heater.
+ * The heat pump is controlled either by EnableSignal & ExceptionalState or SmartGridState. The channel UseSmartGridState
+ * determines the control mode.
  */
 @Designate(ocd = Config.class, factory = true)
 @Component(name = "Heater.HeatPump.Tecalor",
@@ -76,10 +79,8 @@ public class HeatPumpTecalorImpl extends AbstractOpenemsModbusComponent implemen
 	private final Logger log = LoggerFactory.getLogger(HeatPumpTecalorImpl.class);
 	private boolean printInfoToLog;
 	private boolean readOnly;
-	private boolean sgReadyActive;
 
 	private OperatingMode defaultModeOfOperation;
-	private boolean useEnableSignal;
 	private EnableSignalHandler enableSignalHandler;
 	private static final String ENABLE_SIGNAL_IDENTIFIER = "HEAT_PUMP_TECALOR_ENABLE_SIGNAL_IDENTIFIER";
 	private boolean useExceptionalState;
@@ -114,19 +115,23 @@ public class HeatPumpTecalorImpl extends AbstractOpenemsModbusComponent implemen
 
 		// Settings needed when not in ’read only’ mode.
 		if (this.readOnly == false) {
-			this.sgReadyActive = config.sgReady();
+			// Use SmartGridState or EnableSignal & ExceptionalState to control heat pump.
+			this._setUseSmartGridState(config.openEmsControlMode() == HeatpumpControlMode.SMART_GRID_STATE);
+			this.getUseSmartGridStateChannel().nextProcessImage();
+
 			this.defaultModeOfOperation = config.defaultModeOfOperation();
+			if (this.defaultModeOfOperation == OperatingMode.UNDEFINED) {
+				// It is possible to select UNDEFINED in config, but that makes no sense.
+				this.defaultModeOfOperation = OperatingMode.ANTIFREEZE;
+			}
 			this.initializeTimers(config);
 		}
 	}
 
 	private void initializeTimers(Config config) throws OpenemsError.OpenemsNamedException, ConfigurationException {
 		TimerHandler timer = new TimerHandlerImpl(super.id(), this.cpm);
-		this.useEnableSignal = config.useEnableSignalChannel();
-		if (this.useEnableSignal) {
-			timer.addOneIdentifier(ENABLE_SIGNAL_IDENTIFIER, config.enableSignalTimerId(), config.waitTimeEnableSignal());
-			this.enableSignalHandler = new EnableSignalHandlerImpl(timer, ENABLE_SIGNAL_IDENTIFIER);
-		}
+		timer.addOneIdentifier(ENABLE_SIGNAL_IDENTIFIER, config.enableSignalTimerId(), config.waitTimeEnableSignal());
+		this.enableSignalHandler = new EnableSignalHandlerImpl(timer, ENABLE_SIGNAL_IDENTIFIER);
 		this.useExceptionalState = config.useExceptionalState();
 		if (this.useExceptionalState) {
 			timer.addOneIdentifier(EXCEPTIONAL_STATE_IDENTIFIER, config.exceptionalStateTimerId(), config.waitTimeExceptionalState());
@@ -386,26 +391,74 @@ public class HeatPumpTecalorImpl extends AbstractOpenemsModbusComponent implemen
 				this._setErrorMessage("No error");
 			}
 		}
+		this.getErrorMessageChannel().nextProcessImage();
 
 		// Map status to Heater interface HeaterState
 		int statusBits = 0;
+		String statusMessage = "";
 		boolean signalReceived = false;
 		boolean isRunning = false;
 		if (this.getStatusBits().isDefined()) {
 			signalReceived = true;
 			statusBits = this.getStatusBits().get();
-			boolean warmupProgram = (statusBits & 0b0100) == 0b0100;	// Aufheizprogramm
-			boolean auxActive = (statusBits & 0b01000) == 0b01000;		// NHZ Stufen im Betrieb
-			boolean circuitHeatingActive = (statusBits & 0b010000) == 0b010000;	// WP im Heizbetrieb
-			boolean waterHeatingActive = (statusBits & 0b0100000) == 0b0100000;	// WP im Warmwasserbetrieb
-			boolean compressorActive = (statusBits & 0b01000000) == 0b01000000;	// Verdichter in Betrieb
-			boolean coolingActive = (statusBits & 0b0100000000) == 0b0100000000;	// Kuehlbetrieb aktiv
+			if ((statusBits & 0b01) == 0b01) {
+				statusMessage = "Pump circuit 1 (HK1 Pumpe), ";
+			}
+			if ((statusBits & 0b010) == 0b010) {
+				statusMessage = statusMessage + "Pump circuit 2 (HK2 Pumpe), ";
+			}
+			boolean warmupProgram = (statusBits & 0b0100) == 0b0100;
+			if (warmupProgram) {
+				statusMessage = statusMessage + "Warmup program (Aufheizprogramm), ";
+			}
+			boolean auxActive = (statusBits & 0b01000) == 0b01000;
+			if (auxActive) {
+				statusMessage = statusMessage + "Auxiliary heaters active (NHZ Stufen in Betrieb), ";
+			}
+			boolean circuitHeatingActive = (statusBits & 0b010000) == 0b010000;
+			if (circuitHeatingActive) {
+				statusMessage = statusMessage + "Circuit heating (WP im Heizbetrieb), ";
+			}
+			boolean waterHeatingActive = (statusBits & 0b0100000) == 0b0100000;
+			if (waterHeatingActive) {
+				statusMessage = statusMessage + "Domestic hot water heating (WP im Warmwasserbetrieb), ";
+			}
+			boolean compressorActive = (statusBits & 0b01000000) == 0b01000000;
+			if (compressorActive) {
+				statusMessage = statusMessage + "Compressor active (Verdichter in Betrieb), ";
+			}
+			if ((statusBits & 0b010000000) == 0b010000000) {
+				statusMessage = statusMessage + "Summer mode active (Sommerbetrieb aktiv), ";
+			}
+			boolean coolingActive = (statusBits & 0b0100000000) == 0b0100000000;
+			if (coolingActive) {
+				statusMessage = statusMessage + "Cooling mode active (Kuehlbetrieb aktiv), ";
+			}
+			if ((statusBits & 0b01000000000) == 0b01000000000) {
+				statusMessage = statusMessage + "Defrost active (Min. eine IWS im Abtaubetrieb), ";
+			}
+			if ((statusBits & 0b010000000000) == 0b010000000000) {
+				statusMessage = statusMessage + "Silentmode 1 active, ";
+			}
+			if ((statusBits & 0b0100000000000) == 0b0100000000000) {
+				statusMessage = statusMessage + "Silentmode 2 active, ";
+			}
 			isRunning = warmupProgram || auxActive || circuitHeatingActive || waterHeatingActive || compressorActive || coolingActive;
 		}
+
 		boolean notBlocked = true;
 		if (this.getElSupBlockRelease().isDefined()) {
 			notBlocked = this.getElSupBlockRelease().get();
+			if (notBlocked == false) {
+				statusMessage = statusMessage + "Blocked by el. supplier (EVU-Sperre), ";
+			}
 		}
+		if (statusMessage.length() > 0) {
+			statusMessage = statusMessage.substring(0, statusMessage.length() - 2) + ".";
+		}
+		this._setStatusMessage(statusMessage);
+		this.getStatusMessageChannel().nextProcessImage();
+
 		if (isRunning) {
 			this._setHeaterState(HeaterState.RUNNING.getValue());
 		} else if (notBlocked && signalReceived) {
@@ -416,6 +469,7 @@ public class HeatPumpTecalorImpl extends AbstractOpenemsModbusComponent implemen
 			// You land here when no channel has data (’signalReceived == false’, ’notBlocked == true’, ’isError == false’).
 			this._setHeaterState(HeaterState.OFF.getValue());
 		}
+		this.getHeaterStateChannel().nextProcessImage();
 
 		// Map HeatPumpSmartGrid "SmartGridState" read values.
 		if (this.getSgReadyOperatingMode().isDefined()) {
@@ -424,96 +478,7 @@ public class HeatPumpTecalorImpl extends AbstractOpenemsModbusComponent implemen
 		} else {
 			this._setSmartGridState(SmartGridState.UNDEFINED.getValue());
 		}
-
-		if (this.readOnly == false) {
-
-			if (this.sgReadyActive) {
-
-				// Map SG generalized "SmartGridState" write values.
-				Optional<Integer> sgState = this.getSmartGridStateChannel().getNextWriteValueAndReset();
-				if (sgState.isPresent()) {
-					SmartGridState smartGridEnum = SmartGridState.valueOf(sgState.get());
-					boolean sgInput1;
-					boolean sgInput2;
-					switch (smartGridEnum) {
-						case SG1_BLOCKED:
-							// Off
-							sgInput1 = false;
-							sgInput2 = true;
-							break;
-						case SG3_STANDARD:
-							// Force on, increased temperature levels. (<- description from manual)
-							sgInput1 = true;
-							sgInput2 = false;
-							break;
-						case SG4_HIGH:
-							// Force on, max temperature levels. (<- description from manual)
-							sgInput1 = true;
-							sgInput2 = true;
-							break;
-						case SG2_LOW:
-						default:
-							// Standard. (<- description from manual)
-							sgInput1 = false;
-							sgInput2 = false;
-							break;
-					}
-					try {
-						this.setSgReadyOnOff(true);
-						this.getSgReadyInput1Channel().setNextWriteValue(sgInput1);
-						this.getSgReadyInput2Channel().setNextWriteValue(sgInput2);
-					} catch (OpenemsError.OpenemsNamedException e) {
-						this.logError(this.log, "Could not write to sg ready channels. "
-								+ "Reason: " + e.getMessage());
-					}
-				}
-			}
-
-			if (this.useEnableSignal || this.useExceptionalState) {
-				boolean turnOnHeatpump = false;
-
-				// Handle EnableSignal.
-				if (this.useEnableSignal) {
-					turnOnHeatpump = this.enableSignalHandler.deviceShouldBeHeating(this);
-				}
-
-				// Handle ExceptionalState. ExceptionalState overwrites EnableSignal.
-				int exceptionalStateValue = 0;
-				boolean exceptionalStateActive = false;
-				if (this.useExceptionalState) {
-					exceptionalStateActive = this.exceptionalStateHandler.exceptionalStateActive(this);
-					if (exceptionalStateActive) {
-						exceptionalStateValue = this.getExceptionalStateValue();
-						if (exceptionalStateValue <= this.DEFAULT_MIN_EXCEPTIONAL_VALUE) {
-							turnOnHeatpump = false;
-						} else {
-							// When ExceptionalStateValue is > 0, turn heat pump on.
-							turnOnHeatpump = true;
-						}
-					}
-				}
-
-				if (turnOnHeatpump) {
-					try {
-						this.setOperatingMode(this.defaultModeOfOperation.getValue());
-					} catch (OpenemsError.OpenemsNamedException e) {
-						this.logError(this.log, "Could not write to operating mode channel. "
-								+ "Reason: " + e.getMessage());
-					}
-
-					/* if (this.useExceptionalState) {
-						// Currently not used. If exceptionalStateValue should do more than just on/off, code for that goes here.
-					} */
-				} else {
-					try {
-						this.setOperatingMode(OperatingMode.ANTIFREEZE.getValue());
-					} catch (OpenemsError.OpenemsNamedException e) {
-						this.logError(this.log, "Could not write to operating mode channel. "
-								+ "Reason: " + e.getMessage());
-					}
-				}
-			}
-		}
+		this.getSmartGridStateChannel().nextProcessImage();
 
 		// Map "getCircuit1SetpointTemp" according to WPM version.
 		if (this.getControllerModelId().isDefined()) {
@@ -522,15 +487,16 @@ public class HeatPumpTecalorImpl extends AbstractOpenemsModbusComponent implemen
 				// WPM version is 3i
 				if (this.channel(HeatpumpTecalor.ChannelId.IR509_TEMP_HC1_SETPOINT).value().isDefined()) {
 					int setpointHk1 = (Integer) this.channel(HeatpumpTecalor.ChannelId.IR509_TEMP_HC1_SETPOINT).value().get();
-					this.getCircuit1SetpointTempChannel().setNextValue(setpointHk1);
+					this._setCircuit1SetpointTemp(setpointHk1);
 				}
 			} else {
 				// WPM version is not 3i
 				if (this.channel(HeatpumpTecalor.ChannelId.IR510_TEMP_HC1_SETPOINT).value().isDefined()) {
 					int setpointHk1 = (Integer) this.channel(HeatpumpTecalor.ChannelId.IR510_TEMP_HC1_SETPOINT).value().get();
-					this.getCircuit1SetpointTempChannel().setNextValue(setpointHk1);
+					this._setCircuit1SetpointTemp(setpointHk1);
 				}
 			}
+			this.getCircuit1SetpointTempChannel().nextProcessImage();
 		}
 
 		// Map energy channels that are transmitted as two modbus values.
@@ -552,44 +518,6 @@ public class HeatPumpTecalorImpl extends AbstractOpenemsModbusComponent implemen
 		this.combineSplitModbusRegisters(this.channel(HeatpumpTecalor.ChannelId.IR3515_CONSUMEDPOWER_WATER_SUMKWH),
 				this.channel(HeatpumpTecalor.ChannelId.IR3516_CONSUMEDPOWER_WATER_SUMMWH),
 				this.getConsumedPowerWaterTotalChannel());
-
-		if (this.printInfoToLog) {
-			this.logInfo(this.log, "--Heat pump Tecalor--");
-			this.logInfo(this.log, "Status Bits 2501:");
-			this.logInfo(this.log, "0 - Pump circuit 1 (HK1 Pumpe) = " + (((statusBits & 0b01) == 0b01) ? 1 : 0));
-			this.logInfo(this.log, "1 - Pump circuit 2 (HK2 Pumpe) = " + (((statusBits & 0b010) == 0b010) ? 1 : 0));
-			this.logInfo(this.log, "2 - Warmup program (Aufheizprogramm) = " + (((statusBits & 0b0100) == 0b0100) ? 1 : 0));
-			this.logInfo(this.log, "3 - Auxiliary heaters active (NHZ Stufen in Betrieb)= " + (((statusBits & 0b01000) == 0b01000) ? 1 : 0));
-			this.logInfo(this.log, "4 - Circuit heating (WP im Heizbetrieb) = " + (((statusBits & 0b010000) == 0b010000) ? 1 : 0));
-			this.logInfo(this.log, "5 - Domestic hot water heating (WP im Warmwasserbetrieb) = " + (((statusBits & 0b0100000) == 0b0100000) ? 1 : 0));
-			this.logInfo(this.log, "6 - Compressor active (Verdichter in Betrieb) = " + (((statusBits & 0b01000000) == 0b01000000) ? 1 : 0));
-			this.logInfo(this.log, "7 - Summer mode active (Sommerbetrieb aktiv) = " + (((statusBits & 0b010000000) == 0b010000000) ? 1 : 0));
-			this.logInfo(this.log, "8 - Cooling mode active (Kuehlbetrieb aktiv) = " + (((statusBits & 0b0100000000) == 0b0100000000) ? 1 : 0));
-			this.logInfo(this.log, "9 - Defrost active (Min. eine IWS im Abtaubetrieb) = " + (((statusBits & 0b01000000000) == 0b01000000000) ? 1 : 0));
-			this.logInfo(this.log, "10 - Silentmode 1 active = " + (((statusBits & 0b010000000000) == 0b010000000000) ? 1 : 0));
-			this.logInfo(this.log, "11 - Silentmode 2 active = " + (((statusBits & 0b0100000000000) == 0b0100000000000) ? 1 : 0));
-			this.logInfo(this.log, "");
-			this.logInfo(this.log, "SmartGrid-Mode (Tecalor, 1-4): " + this.getSgReadyOperatingMode());
-			this.logInfo(this.log, "Controller id (Reglerkennung): " + this.getControllerModelId());
-			this.logInfo(this.log, "El. sup. block (EVU-Freigabe): " + this.getElSupBlockRelease());
-			this.logInfo(this.log, "Error status: " + this.getErrorStatus());
-			this.logInfo(this.log, "Error code: " + this.getErrorCode());
-			this.logInfo(this.log, "");
-			this.logInfo(this.log, "Outside temp: " + this.getOutsideTemp());
-			this.logInfo(this.log, "Storage tank temp: " + this.getStorageTankTemp());
-			this.logInfo(this.log, "Circuit 1 temp: " + this.getCircuit1Temp());
-			this.logInfo(this.log, "Circuit 2 temp: " + this.getCircuit2Temp());
-			this.logInfo(this.log, "Flow temp: " + this.getFlowTemperature());
-			this.logInfo(this.log, "Return temp: " + this.getReturnTemperature());
-			this.logInfo(this.log, "Domestic hot water temp: " + this.getDomesticHotWaterTemp());
-			this.logInfo(this.log, "");
-			this.logInfo(this.log, "--Writable Values--");
-			this.logInfo(this.log, "Operating mode: " + this.getOperatingModeChannel().value().asEnum().getName());
-			this.logInfo(this.log, "SmartGrid-Ready active: " + this.getSgReadyOnOff());
-			this.logInfo(this.log, "SmartGridState (HeatpumpSmartGrid): " + this.getSmartGridStateChannel().value().asEnum().getName());
-			this.logInfo(this.log, "");
-		}
-
 	}
 
 	/**
@@ -609,21 +537,123 @@ public class HeatPumpTecalorImpl extends AbstractOpenemsModbusComponent implemen
 		if (channelsHaveValues) {
 			int sum = kwhChannel.value().get() + (mwhChannel.value().get() * 1000);
 			sumChannel.setNextValue(sum);
+			sumChannel.nextProcessImage();
 		}
 	}
 
 	/**
 	 * Determine commands and send them to the heater.
+	 * The heat pump is controlled either by EnableSignal & ExceptionalState or SmartGridState. The channel
+	 * UseSmartGridState determines the control mode.
 	 */
 	protected void writeCommands() {
+		if (this.getUseSmartGridState().isDefined() && this.getUseSmartGridState().get()) {
 
+			// Map SG generalized "SmartGridState" write values.
+			Optional<Integer> sgState = this.getSmartGridStateChannel().getNextWriteValueAndReset();
+			if (sgState.isPresent()) {
+				SmartGridState smartGridEnum = SmartGridState.valueOf(sgState.get());
+				boolean sgInput1;
+				boolean sgInput2;
+				switch (smartGridEnum) {
+					case SG1_BLOCKED:
+						// Off
+						sgInput1 = false;
+						sgInput2 = true;
+						break;
+					case SG3_STANDARD:
+						// Force on, increased temperature levels. (<- description from manual)
+						sgInput1 = true;
+						sgInput2 = false;
+						break;
+					case SG4_HIGH:
+						// Force on, max temperature levels. (<- description from manual)
+						sgInput1 = true;
+						sgInput2 = true;
+						break;
+					case SG2_LOW:
+					default:
+						// Standard. (<- description from manual)
+						sgInput1 = false;
+						sgInput2 = false;
+						break;
+				}
+				try {
+					this.setSgReadyOnOff(true);
+					this.getSgReadyInput1Channel().setNextWriteValue(sgInput1);
+					this.getSgReadyInput2Channel().setNextWriteValue(sgInput2);
+				} catch (OpenemsError.OpenemsNamedException e) {
+					this.logError(this.log, "Could not write to sg ready channels. "
+							+ "Reason: " + e.getMessage());
+				}
+			}
+		} else {
+
+			// Handle EnableSignal.
+			boolean turnOnHeatpump = this.enableSignalHandler.deviceShouldBeHeating(this);
+
+			// Handle ExceptionalState. ExceptionalState overwrites EnableSignal.
+			int exceptionalStateValue = 0;
+			boolean exceptionalStateActive = false;
+			if (this.useExceptionalState) {
+				exceptionalStateActive = this.exceptionalStateHandler.exceptionalStateActive(this);
+				if (exceptionalStateActive) {
+					exceptionalStateValue = this.getExceptionalStateValue();
+					if (exceptionalStateValue <= this.DEFAULT_MIN_EXCEPTIONAL_VALUE) {
+						turnOnHeatpump = false;
+					} else {
+						// When ExceptionalStateValue is > 0, turn heat pump on.
+						turnOnHeatpump = true;
+					}
+				}
+			}
+
+			if (turnOnHeatpump) {
+				try {
+					this.setSgReadyOnOff(false);
+					this.setOperatingMode(this.defaultModeOfOperation.getValue());
+				} catch (OpenemsError.OpenemsNamedException e) {
+					this.logError(this.log, "Could not write to operating mode channel. "
+							+ "Reason: " + e.getMessage());
+				}
+
+					/* if (this.useExceptionalState) {
+						// Currently not used. If exceptionalStateValue should do more than just on/off, code for that goes here.
+					} */
+			} else {
+				try {
+					this.setSgReadyOnOff(false);
+					this.setOperatingMode(OperatingMode.ANTIFREEZE.getValue());
+				} catch (OpenemsError.OpenemsNamedException e) {
+					this.logError(this.log, "Could not write to operating mode channel. "
+							+ "Reason: " + e.getMessage());
+				}
+			}
+		}
 	}
 
 	/**
 	 * Information that is printed to the log if ’print info to log’ option is enabled.
 	 */
 	protected void printInfo() {
-
+		this.logInfo(this.log, "--Heat pump Tecalor, model " + this.getControllerModelId() + "--");
+		this.logInfo(this.log, "Heater state: " + this.getHeaterState());
+		this.logInfo(this.log, "Flow temp: " + this.getFlowTemperature());
+		this.logInfo(this.log, "Return temp: " + this.getReturnTemperature());
+		this.logInfo(this.log, "Domestic hot water temp: " + this.getDomesticHotWaterTemp());
+		this.logInfo(this.log, "Outside temp: " + this.getOutsideTemp());
+		this.logInfo(this.log, "Storage tank temp: " + this.getStorageTankTemp());
+		this.logInfo(this.log, "Circuit 1 temp: " + this.getCircuit1Temp());
+		this.logInfo(this.log, "Circuit 2 temp: " + this.getCircuit2Temp());
+		this.logInfo(this.log, "SmartGrid-Mode (Tecalor, 1-4): " + this.getSgReadyOperatingMode());
+		this.logInfo(this.log, "Status message: " + this.getStatusMessage().get());
+		this.logInfo(this.log, "Error message: " + this.getErrorMessage().get());
+		this.logInfo(this.log, "");
+		this.logInfo(this.log, "--Writable Values--");
+		this.logInfo(this.log, "Operating mode: " + this.getOperatingModeChannel().value().asEnum().getName());
+		this.logInfo(this.log, "SmartGrid-Ready active: " + this.getSgReadyOnOff());
+		this.logInfo(this.log, "SmartGridState (HeatpumpSmartGrid): " + this.getSmartGridStateChannel().value().asEnum().getName());
+		this.logInfo(this.log, "");
 	}
 
 	/**

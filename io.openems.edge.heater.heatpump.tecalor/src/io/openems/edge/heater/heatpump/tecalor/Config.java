@@ -1,5 +1,6 @@
 package io.openems.edge.heater.heatpump.tecalor;
 
+import io.openems.edge.heater.api.HeatpumpControlMode;
 import io.openems.edge.heater.heatpump.tecalor.api.OperatingMode;
 import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
@@ -22,12 +23,9 @@ import org.osgi.service.metatype.annotations.Option;
 	@AttributeDefinition(name = "Modbus Unit-ID", description = "The Unit-ID of the Modbus device.")
 	int modbusUnitId() default 1;
 
-	@AttributeDefinition(name = "SG-Ready", description = "Enable or disable Smart Grid Ready mode.")
-	boolean sgReady() default false;
-
-	@AttributeDefinition(name = "Use EnableSignal", description = "React to commands from the Heater interface "
-			+ "EnableSignal channel. Will turn off the heat pump when there is no signal, overriding any other commands.")
-	boolean useEnableSignalChannel() default false;
+	@AttributeDefinition(name = "OpenEMS control mode", description = "Use EnableSignal or SmartGridState to control the "
+			+ "heat pump. They are mutually exclusive.")
+	HeatpumpControlMode openEmsControlMode() default HeatpumpControlMode.ENABLE_SIGNAL;
 
 	@AttributeDefinition(name = "Wait time EnableSignal", description = "How long to wait after the EnableSignal is "
 			+ "no longer received before the heat pump is switched off. Unit is seconds, unless cycles option is selected.")

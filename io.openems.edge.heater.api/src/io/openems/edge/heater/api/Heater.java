@@ -630,7 +630,7 @@ public interface Heater extends OpenemsComponent {
     }
 
     /**
-     * Gets the state of the heater.
+     * Gets the state of the heater. Use ’getHeaterState().asEnum()’ to get the enum.
      *
      * <ul>
      *     <li> Type: Integer

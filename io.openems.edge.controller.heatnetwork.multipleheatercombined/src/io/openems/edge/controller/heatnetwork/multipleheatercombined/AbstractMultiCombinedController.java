@@ -271,7 +271,7 @@ public abstract class AbstractMultiCombinedController extends AbstractOpenemsCom
         this.isHeatingOrCooling.set(false);
 
         this.configuredHeater.forEach(heater -> {
-            if (heater.getHeaterState().isDefined() && heater.getHeaterState().get().equals(HeaterState.BLOCKED_OR_ERROR.getValue())) {
+            if (heater.getHeaterState().isDefined() && heater.getHeaterState().asEnum() == HeaterState.BLOCKED_OR_ERROR) {
                 this.heaterError.set(true);
             }
 
