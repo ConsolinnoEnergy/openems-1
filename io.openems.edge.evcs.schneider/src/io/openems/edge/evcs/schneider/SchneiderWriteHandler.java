@@ -1,9 +1,11 @@
 package io.openems.edge.evcs.schneider;
 
+import io.openems.common.exceptions.OpenemsError;
 import io.openems.edge.evcs.api.ChargingType;
 import io.openems.edge.evcs.api.Status;
 import org.osgi.service.cm.ConfigurationAdmin;
 import org.osgi.service.component.annotations.Reference;
+import sun.net.ProgressSource;
 
 /**
  * This WriteHandler writes the Values from the Internal Channels that where retrieved over Modbus into the correct OpenEms Channels.
@@ -30,6 +32,18 @@ public class SchneiderWriteHandler {
         this.detectStatus();
         //The Schneider EVCS reports in kW but OpenEms needs W so StationPower * 1000
         this.parent._setChargePower((int) (this.parent.getStationPowerTotal() * 1000));
+        if (this.parent.getStationPowerTotal() * 1000 > 230 || this.state.toString().equals(Status.READY_FOR_CHARGING.toString())) {
+            try {
+                this.parent.setChargePowerRequest(this.parent.getMinPower() * 230);
+            } catch (OpenemsError.OpenemsNamedException ignored) {
+            }
+        }else {
+            try {
+                this.parent.setChargePowerRequest(null);
+            } catch (OpenemsError.OpenemsNamedException e) {
+                e.printStackTrace();
+            }
+        }
         this.parent._setChargingType(ChargingType.AC);
         this.parent._setMaximumHardwarePower(16 * 230);
         this.parent._setMinimumPower(this.parent.getMinPower() * 230);
@@ -141,7 +155,7 @@ public class SchneiderWriteHandler {
         }
         this.parent._setPhases(phases);
         if (phases == 3) {
-            this.parent._setMinimumHardwarePower(14 * 230);
+            this.parent._setMinimumHardwarePower(6 * 230);
         }
     }
 
