@@ -7,8 +7,10 @@ import io.openems.edge.bridge.modbus.api.ElementToChannelConverter;
 import io.openems.edge.bridge.modbus.api.ModbusProtocol;
 import io.openems.edge.bridge.modbus.api.element.UnsignedWordElement;
 import io.openems.edge.bridge.modbus.api.task.FC4ReadInputRegistersTask;
+import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.common.taskmanager.Priority;
+import io.openems.edge.consolinno.leaflet.aio.AioImpl;
 import io.openems.edge.consolinno.leaflet.core.api.LeafletCore;
 import io.openems.edge.thermometer.api.Thermometer;
 import org.osgi.service.cm.ConfigurationAdmin;
@@ -23,23 +25,28 @@ import org.osgi.service.component.annotations.ReferenceCardinality;
 import org.osgi.service.component.annotations.ReferencePolicy;
 import org.osgi.service.component.annotations.ReferencePolicyOption;
 import org.osgi.service.metatype.annotations.Designate;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 @Designate(ocd = Config.class, factory = true)
-@Component(name = "Consolinno.Leaflet.Temperature", immediate = true,
+@Component(name = "Thermometer.Consolinno.Leaflet.Temperature", immediate = true,
         configurationPolicy = ConfigurationPolicy.REQUIRE)
 public class TemperatureSensorImpl extends AbstractOpenemsModbusComponent implements OpenemsComponent, Thermometer {
-    @Reference(policy = ReferencePolicy.STATIC, policyOption = ReferencePolicyOption.GREEDY, cardinality = ReferenceCardinality.MANDATORY)
-    LeafletCore lc;
 
     @Reference
     protected ConfigurationAdmin cm;
+
+    @Reference
+    protected ComponentManager cpm;
 
     @Reference(policy = ReferencePolicy.STATIC, policyOption = ReferencePolicyOption.GREEDY, cardinality = ReferenceCardinality.MANDATORY)
     protected void setModbus(BridgeModbus modbus) {
         super.setModbus(modbus);
     }
 
+    private LeafletCore lc;
+    private final Logger log = LoggerFactory.getLogger(TemperatureSensorImpl.class);
     private int temperatureModule;
     private int position;
     private int temperatureAnalogInput;
@@ -51,6 +58,11 @@ public class TemperatureSensorImpl extends AbstractOpenemsModbusComponent implem
 
     @Activate
     void activate(ComponentContext context, Config config) throws ConfigurationException, OpenemsException {
+        try {
+            this.lc = this.cpm.getComponent(config.leafletId());
+        } catch (Exception e) {
+            this.log.error("The LeafletCore doesn't exist! Check Config!");
+        }
         this.temperatureModule = config.module();
         this.position = config.position();
         //Check if the Module is physically present, else throws ConfigurationException.

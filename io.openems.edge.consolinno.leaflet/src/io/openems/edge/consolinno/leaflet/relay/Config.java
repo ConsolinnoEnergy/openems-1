@@ -20,6 +20,9 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     @AttributeDefinition(name = "Inverse", description = "Tick if this Relay is Normaly Closed")
     boolean isInverse() default false;
 
+    @AttributeDefinition(name = "LeafletId", description = "Unique Id of the LeafletCore, this Module is attached to.")
+    String leafletId() default "LeafletCore";
+
     boolean enabled() default true;
 
     @AttributeDefinition(name = "ModbusUnitId", description = "ModbusUnitId from Core.")

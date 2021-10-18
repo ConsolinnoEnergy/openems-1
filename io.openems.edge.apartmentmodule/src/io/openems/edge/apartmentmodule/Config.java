@@ -1,11 +1,14 @@
 package io.openems.edge.apartmentmodule;
 
+import io.openems.edge.apartmentmodule.api.ValveDirection;
+import io.openems.edge.apartmentmodule.api.ValveType;
+import io.openems.edge.thermometer.api.Thermometer;
 import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
 @ObjectClassDefinition(
-        name = "Consolinno Apartment Module",
-        description = "A module to map Modbus calls to OpenEMS channels for a Consolinno Apartment Module."
+        name = "Miscellaneous Apartment Module",
+        description = "A module to map Modbus calls to OpenEMS channels for a Apartment Module."
 )
 @interface Config {
 
@@ -26,23 +29,35 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     @AttributeDefinition(name = "Temperature sensor calibration", description = "Calibration value for the PT1000 temperature sensor.")
     int tempCal() default 70;
 
-    // Debug options.
-    @AttributeDefinition(name = "Debug", description = "Debug.")
-    boolean debug() default false;
+    ValveType valveType() default ValveType.ONE_OPEN_ONE_CLOSE;
 
-    @AttributeDefinition(name = "Reset External Request Flag", description = "Writes 0 in Holding Register 1.")
-    boolean resetRequestFlag() default false;
+    @AttributeDefinition(name = "Relay Open or Direction HydraulicMixer", description = "Define the Relays that opens/Direction the hydraulicMixer (1 or 2)")
+    int turnOnOrDirectionRelay() default 1;
 
-    @AttributeDefinition(name = "RelayToOpen HydraulicMixer", description = "Define the Relays that opens the hydraulicMixer (1 or 2)")
-    int turnOnRelay() default 1;
+    @AttributeDefinition(name = "Direction Meaning", description = "IF your valve is of the OneDirection type, when the Relay is activated, what direction does it take")
+    ValveDirection valveDirection() default ValveDirection.ACTIVATION_DIRECTIONAL_EQUALS_OPENING;
 
-    @AttributeDefinition(name = "Relay time.", description = "Relay time.")
-    int relayTime() default 0;
+    @AttributeDefinition(name = "Control Manually", description = "If you set up the relays by hand, tick this box so the position won't change.")
+    boolean manuallyControlled() default false;
 
+    boolean useMaxTemperature() default true;
+
+    @AttributeDefinition(name = "Max Temperature", description = "If this temperature is reached. Close Valve.")
+    int maxTemperature() default 700;
+
+    boolean useMinTemperature() default true;
+
+    @AttributeDefinition(name = "Min Temperature", description = "If this temperature is reached. Close Valve.")
+    int minTemperature() default 450;
+
+    boolean useReferenceTemperature() default false;
+
+    @AttributeDefinition(name = "Reference Thermometer Temperature", description = "Use a ReferenceTemperature to check if secondary Side of AM is ok."
+            + "Set the min Temperature allowed for secondary side.")
+    int minTemperatureThermometer() default 400;
 
     boolean enabled() default true;
 
-
-    String webconsole_configurationFactory_nameHint() default "Consolinno Apartment Module Device [{id}]";
+    String webconsole_configurationFactory_nameHint() default "Miscellaneous Apartment Module Device [{id}]";
 
 }

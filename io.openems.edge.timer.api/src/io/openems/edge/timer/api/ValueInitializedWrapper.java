@@ -2,7 +2,6 @@ package io.openems.edge.timer.api;
 
 import org.joda.time.DateTime;
 
-import java.util.Date;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 

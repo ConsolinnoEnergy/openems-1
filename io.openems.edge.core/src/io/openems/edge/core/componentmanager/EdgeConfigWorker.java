@@ -3,11 +3,13 @@ package io.openems.edge.core.componentmanager;
 import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Dictionary;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
@@ -636,6 +638,74 @@ public class EdgeConfigWorker extends ComponentManagerWorker {
             this.log.warn("Unable to get Natures. " + e.getClass().getSimpleName() + ": " + e.getMessage());
         }
         return new String[0];
+    }
+
+    /**
+     * Reads Import-Packages from the Manifest.
+     *
+     * <pre>
+     * &lt;scr:component&gt;
+     *   &lt;service&gt;
+     *     &lt;provide interface="..."&gt;
+     *   &lt;/service&gt;
+     * &lt;/scr:component&gt;
+     * </pre>
+     *
+     * @return Import-Packages as array of Strings
+     */
+    public String[] getImportPackages(String factoryPid) {
+        final Bundle[] bundles = this.parent.bundleContext.getBundles();
+        List<String> result = new ArrayList<>();
+        for (Bundle bundle : bundles) {
+            final MetaTypeInformation mti = this.parent.metaTypeService.getMetaTypeInformation(bundle);
+            if (mti == null) {
+                continue;
+            }
+
+            // read Bundle Manifest
+            URL manifestUrl = bundle.getResource("META-INF/MANIFEST.MF");
+            Manifest manifest;
+            try {
+                manifest = new Manifest(manifestUrl.openStream());
+            } catch (IOException e) {
+                // unable to read manifest
+                continue;
+            }
+            String serviceComponentsString = manifest.getMainAttributes()
+                    .getValue(ComponentConstants.SERVICE_COMPONENT);
+            if (serviceComponentsString == null) {
+                continue;
+            }
+            String[] serviceComponents = serviceComponentsString.split(",");
+
+            // read Service-Component XML files from OSGI-INF folder
+            for (String serviceComponent : serviceComponents) {
+                if (!serviceComponent.contains(factoryPid)) {
+                    // search for correct XML file
+                    continue;
+                }
+
+                // get "Service-Component"-Entry of Manifest
+                String importPackagesString = manifest.getMainAttributes()
+                        .getValue("Import-Package");
+                if (importPackagesString == null) {
+                    continue;
+                }
+                String[] packages = importPackagesString.split("\\" + "\"" + ",");
+                for (String importPackage : packages) {
+                    if (!importPackage.contains("io.openems.edge") || importPackage.contains("io.openems.edge.common")) {
+                        //do nothing
+                    } else {
+                        String currentPackage = importPackage.split(";",2)[0].replace("io.openems.edge.", "").split(".api",2)[0];
+                        if (!result.toString().contains(currentPackage)) {
+                            result.add(currentPackage);
+                        }
+                    }
+                }
+                return result.toArray(new String[result.size()]);
+            }
+        }
+        return null;
     }
 
     /**

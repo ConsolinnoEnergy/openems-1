@@ -4,8 +4,12 @@ import io.openems.common.channel.Unit;
 import io.openems.common.types.OpenemsType;
 import io.openems.edge.common.channel.Channel;
 import io.openems.edge.common.channel.Doc;
+import io.openems.edge.heater.api.Chp;
 
-public interface ViessmannInformation extends ViessmannPowerPercentage {
+/**
+ * Channels for the Viessmann chp.
+ */
+public interface ViessmannInformation extends Chp {
     public enum ChannelId implements io.openems.edge.common.channel.ChannelId {
         /**
          * Module Modus Channel.
@@ -26,7 +30,7 @@ public interface ViessmannInformation extends ViessmannPowerPercentage {
          * 3 Running
          * 4 Disturbance
          */
-        STATUS(Doc.of(OpenemsType.INTEGER)),
+        STATUS(Doc.of(ModuleStatus.values())),
         /**
          * Operating Mode Type.
          * 0 Off
@@ -37,12 +41,14 @@ public interface ViessmannInformation extends ViessmannPowerPercentage {
          * 5 Between 0-100%
          */
         OPERATING_MODE(Doc.of(OpenemsType.INTEGER)),
+
         /**
          * SetPoint Operation Mode.
          * Format: n (Int 16)
          * Signed Int
          */
-        SET_POINT_OPERATION_MODE(Doc.of(OpenemsType.INTEGER).unit(Unit.PERCENT)),
+        //SET_POINT_OPERATION_MODE(Doc.of(OpenemsType.INTEGER).unit(Unit.PERCENT)), -> Heater EFFECTIVE_HEATING_POWER_PERCENT
+
         /**
          * ErrorBits. Length 2 Byte --> Each bit acts as a flag --> Vitobloc Gateway
          */
@@ -107,8 +113,8 @@ public interface ViessmannInformation extends ViessmannPowerPercentage {
          * <li> Unit: Deci-degree Celsius</li>
          */
         PT_100_1(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
-        PT_100_2(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
-        PT_100_3(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
+        //PT_100_2(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)), -> Heater RETURN_TEMPERATURE
+        //PT_100_3(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)), -> Heater FLOW_TEMPERATURE
         PT_100_4(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
         PT_100_5(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
         PT_100_6(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
@@ -189,7 +195,8 @@ public interface ViessmannInformation extends ViessmannPowerPercentage {
          */
         GENERATOR_ELECTRICITY_TOTAL(Doc.of(OpenemsType.INTEGER).unit(Unit.AMPERE)),
 
-        ENGINE_PERFORMANCE(Doc.of(OpenemsType.INTEGER).unit(Unit.KILOWATT)),
+        // Manual does not say if this is thermal power or electric power. I assume it is electric power.
+        //ENGINE_PERFORMANCE(Doc.of(OpenemsType.INTEGER).unit(Unit.KILOWATT)), -> Chp EFFECTIVE_ELECTRIC_POWER.
 
         SUPPLY_FREQUENCY(Doc.of(OpenemsType.FLOAT).unit(Unit.HERTZ)),
         GENERATOR_FREQUENCY(Doc.of(OpenemsType.FLOAT).unit(Unit.HERTZ)),
@@ -206,13 +213,7 @@ public interface ViessmannInformation extends ViessmannPowerPercentage {
          * <li>Unit: kWh</li>
          * <li>Type: Integer</li>
          */
-        RESERVE(Doc.of(OpenemsType.INTEGER).unit(Unit.KILOWATT_HOURS)),
-        /**
-         * All occuring Errors as String.
-         */
-        ERROR_CHANNEL(Doc.of(OpenemsType.STRING)),
-
-        ERROR_OCCURED(Doc.of(OpenemsType.BOOLEAN));
+        RESERVE(Doc.of(OpenemsType.INTEGER).unit(Unit.KILOWATT_HOURS));
 
 
         private final Doc doc;
@@ -236,10 +237,6 @@ public interface ViessmannInformation extends ViessmannPowerPercentage {
 
     default Channel<Integer> getOperatingMode() {
         return this.channel(ChannelId.OPERATING_MODE);
-    }
-
-    default Channel<Integer> getSetPointOperationMode() {
-        return this.channel(ChannelId.SET_POINT_OPERATION_MODE);
     }
 
     default Channel<Integer> getErrorOne() {
@@ -322,24 +319,16 @@ public interface ViessmannInformation extends ViessmannPowerPercentage {
         return this.channel(ChannelId.PT_100_1);
     }
 
-    default Channel<Integer> getPt100_2() {
-        return this.channel(ChannelId.PT_100_1);
-    }
-
-    default Channel<Integer> getPt100_3() {
-        return this.channel(ChannelId.PT_100_1);
-    }
-
     default Channel<Integer> getPt100_4() {
-        return this.channel(ChannelId.PT_100_1);
+        return this.channel(ChannelId.PT_100_4);
     }
 
     default Channel<Integer> getPt100_5() {
-        return this.channel(ChannelId.PT_100_1);
+        return this.channel(ChannelId.PT_100_5);
     }
 
     default Channel<Integer> getPt100_6() {
-        return this.channel(ChannelId.PT_100_1);
+        return this.channel(ChannelId.PT_100_6);
     }
 
     default Channel<Integer> getBatteryVoltage() {
@@ -402,10 +391,6 @@ public interface ViessmannInformation extends ViessmannPowerPercentage {
         return this.channel(ChannelId.GENERATOR_ELECTRICITY_TOTAL);
     }
 
-    default Channel<Integer> getEnginePerformance() {
-        return this.channel(ChannelId.ENGINE_PERFORMANCE);
-    }
-
     default Channel<Float> getSupplyFrequency() {
         return this.channel(ChannelId.SUPPLY_FREQUENCY);
     }
@@ -420,13 +405,5 @@ public interface ViessmannInformation extends ViessmannPowerPercentage {
 
     default Channel<Integer> getReserve() {
         return this.channel(ChannelId.RESERVE);
-    }
-
-    default Channel<String> getErrorChannel() {
-        return this.channel(ChannelId.ERROR_CHANNEL);
-    }
-
-    default Channel<Boolean> isErrorOccured() {
-        return this.channel(ChannelId.ERROR_OCCURED);
     }
 }

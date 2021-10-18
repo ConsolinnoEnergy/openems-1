@@ -8,6 +8,9 @@ import org.joda.time.DateTime;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * A DummyTimer, provides BaseFunctionality for Unittests, that are using a Timer.
+ */
 public class DummyTimer extends AbstractOpenemsComponent implements OpenemsComponent, Timer {
 
     private final Map<String, ValueInitializedWrapper> identifierToValueWrapper = new HashMap<>();
@@ -24,7 +27,13 @@ public class DummyTimer extends AbstractOpenemsComponent implements OpenemsCompo
         this.type = type;
     }
 
-
+    /**
+     * Check if the Time for this Component is up.
+     *
+     * @param id         the OpenemsComponent Id.
+     * @param identifier the identifier the component uses.
+     * @return true if Time is up.
+     */
     @Override
     public boolean checkIsTimeUp(String id, String identifier) {
         ValueInitializedWrapper wrapper;
@@ -53,16 +62,17 @@ public class DummyTimer extends AbstractOpenemsComponent implements OpenemsCompo
     }
 
 
-    public void addComponentToTimer(String id, Map<String, Integer> identifierToTime) {
-        identifierToTime.forEach((key, value) -> {
-            this.identifierToValueWrapper.put(key, new ValueInitializedWrapper(value));
-        });
-    }
-
     @Override
     public void removeComponent(String id) {
         //Not needed here
     }
+
+    /**
+     * Resets the Timer for the Component calling this method. Multiple Timer per config are possible.
+     *
+     * @param id         the openemsComponent id
+     * @param identifier the identifier the component uses
+     */
 
     @Override
     public void reset(String id, String identifier) {
@@ -75,6 +85,15 @@ public class DummyTimer extends AbstractOpenemsComponent implements OpenemsCompo
     ValueInitializedWrapper getWrapper(String identifier) {
             return this.identifierToValueWrapper.get(identifier);
     }
+
+    /**
+     * Adds an Identifier to the Timer. An Identifier is a Unique Id within a Component.
+     * This is important due to the fact, that a component may need multiple Timer, determining different results.
+     *
+     * @param id         the ComponentId
+     * @param identifier the identifier
+     * @param maxValue   the maxValue (max CycleTime or maxTime to wait)
+     */
 
     @Override
     public void addIdentifierToTimer(String id, String identifier, int maxValue) {

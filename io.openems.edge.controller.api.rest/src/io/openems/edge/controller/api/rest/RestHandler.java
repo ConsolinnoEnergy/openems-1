@@ -24,6 +24,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import io.openems.common.jsonrpc.request.GetActiveComponentsChannelContentRequest;
 import io.openems.common.jsonrpc.request.GetActiveComponentsRequest;
+import io.openems.common.jsonrpc.request.GetDependenciesRequest;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.slf4j.Logger;
@@ -487,6 +488,9 @@ public class RestHandler extends AbstractHandler {
 
             case GetActiveComponentsChannelContentRequest.METHOD:
                 return this.handleGetActiveComponentsChannelContentRequest(user, GetActiveComponentsChannelContentRequest.from(request));
+
+            case GetDependenciesRequest.METHOD:
+                return this.handleGetDependenciesRequest(user, GetDependenciesRequest.from(request));
             default:
                 this.parent.logWarn(this.log, "Unhandled Request: " + request);
                 throw OpenemsError.JSONRPC_UNHANDLED_METHOD.exception(request.getMethod());
@@ -617,9 +621,26 @@ public class RestHandler extends AbstractHandler {
     }
 
     /**
+     * Handles a GetDependenciesRequest.
+     *
+     * @param user                   the User
+     * @param getDependenciesRequest the request
+     * @return the Future JSON-RPC Response
+     * @throws OpenemsNamedException on error
+     */
+    private CompletableFuture<JsonrpcResponseSuccess> handleGetDependenciesRequest(User user,
+                                                                                   GetDependenciesRequest getDependenciesRequest) throws OpenemsNamedException {
+        // wrap original request inside ComponentJsonApiRequest
+        ComponentJsonApiRequest request = new ComponentJsonApiRequest(OpenemsConstants.COMPONENT_MANAGER_ID,
+                getDependenciesRequest);
+
+        return this.handleComponentJsonApiRequest(user, request);
+    }
+
+    /**
      * Handles a GetActiveComponentsChannelContentRequest.
      *
-     * @param user                       the User
+     * @param user                                     the User
      * @param getActiveComponentsChannelContentRequest the request
      * @return the Future JSON-RPC Response
      * @throws OpenemsNamedException on error

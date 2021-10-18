@@ -48,8 +48,10 @@ public class ThermometerThresholdImpl extends AbstractOpenemsComponent implement
     ComponentManager cpm;
 
     private final AtomicInteger intervalToWaitCounter = new AtomicInteger(0);
+    private static final int RESET = 0;
 
     private int maxIntervalToWait;
+    private boolean configSuccess;
 
     private Thermometer referenceThermometer;
 
@@ -59,10 +61,12 @@ public class ThermometerThresholdImpl extends AbstractOpenemsComponent implement
                 ThermometerThreshold.ChannelId.values());
     }
 
+    Config config;
+
     @Activate
-    void activate(ComponentContext context, Config config) throws OpenemsError.OpenemsNamedException, ConfigurationException {
+    void activate(ComponentContext context, Config config) {
         super.activate(context, config.id(), config.alias(), config.enabled());
-        this.acitvationOrModifiedRoutine(config);
+        this.activationOrModifiedRoutine(config);
         this.setThermometerState(ThermometerState.RISING);
     }
 
@@ -70,24 +74,29 @@ public class ThermometerThresholdImpl extends AbstractOpenemsComponent implement
      * This method sets up the basic config on activation/modified.
      *
      * @param config the Config of this Component.
-     * @throws OpenemsError.OpenemsNamedException is thrown if Id of the Thermometer cannot be found.
-     * @throws ConfigurationException             is thrown if the ID exists but it's not an instance of Thermometer.
      */
-    private void acitvationOrModifiedRoutine(Config config) throws OpenemsError.OpenemsNamedException, ConfigurationException {
-        if (this.cpm.getComponent(config.thermometerId()) instanceof Thermometer) {
-            this.referenceThermometer = this.cpm.getComponent(config.thermometerId());
-            int referenceTemperature = this.referenceThermometer.getTemperatureValue();
-            int threshold = config.thresholdTemperature();
-            int fictionalTemperature = (referenceTemperature / threshold) * threshold;
-            this.getTemperatureChannel().setNextValue(fictionalTemperature);
-            this.maxIntervalToWait = config.maxInterval();
-            this.setThresholdInDecidegree(config.thresholdTemperature());
-            if (this.getSetPointTemperature() == Integer.MIN_VALUE) {
-                this.getSetPointTemperatureChannel().setNextValue(config.startSetPointTemperature());
+    private void activationOrModifiedRoutine(Config config) {
+        try {
+            this.config = config;
+            if (this.cpm.getComponent(config.thermometerId()) instanceof Thermometer) {
+                this.referenceThermometer = this.cpm.getComponent(config.thermometerId());
+                int referenceTemperature = this.referenceThermometer.getTemperatureValue();
+                int threshold = config.thresholdTemperature();
+                int fictionalTemperature = (referenceTemperature / threshold) * threshold;
+                this.getTemperatureChannel().setNextValue(fictionalTemperature);
+                this.maxIntervalToWait = config.maxInterval();
+                this.setThresholdInDeciDegree(config.thresholdTemperature());
+                if (this.getSetPointTemperature() == Integer.MIN_VALUE) {
+                    this.getSetPointTemperatureChannel().setNextValue(config.startSetPointTemperature());
+                }
+            } else {
+                throw new ConfigurationException("Activate Method ThresholdTemperatureImpl " + config.id(),
+                        "Activate Method: ThermometerId" + config.thermometerId() + " Not an Instance of Thermometer");
             }
-        } else {
-            throw new ConfigurationException("Activate Method ThresholdTemperatureImpl " + config.id(),
-                    "Activate Method: ThermometerId" + config.thermometerId() + " Not an Instance of Thermometer");
+            this.configSuccess = true;
+        } catch (OpenemsError.OpenemsNamedException | ConfigurationException e) {
+            this.log.warn("Couldn't apply config. Trying again later");
+            this.configSuccess = false;
         }
     }
 
@@ -97,9 +106,10 @@ public class ThermometerThresholdImpl extends AbstractOpenemsComponent implement
     }
 
     @Modified
-    void modified(ComponentContext context, Config config) throws OpenemsError.OpenemsNamedException, ConfigurationException {
+    void modified(ComponentContext context, Config config) {
+        this.configSuccess = false;
         super.modified(context, config.id(), config.alias(), config.enabled());
-        this.acitvationOrModifiedRoutine(config);
+        this.activationOrModifiedRoutine(config);
     }
 
     /**
@@ -110,20 +120,30 @@ public class ThermometerThresholdImpl extends AbstractOpenemsComponent implement
      */
     @Override
     public void handleEvent(Event event) {
-
-        if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE)) {
-            if (this.referenceThermometer != null) {
-                if (this.referenceThermometer.isEnabled() == false) {
-                    try {
-                        this.referenceThermometer = this.cpm.getComponent(this.referenceThermometer.id());
-                    } catch (OpenemsError.OpenemsNamedException e) {
-                        this.log.warn("Couldn't find the ReferenceThermometer!");
+        if (this.configSuccess) {
+            if (this.isEnabled()) {
+                if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE)) {
+                    if (this.referenceThermometer != null) {
+                        try {
+                            OpenemsComponent component = this.cpm.getComponent(this.referenceThermometer.id());
+                            if (this.referenceThermometer.isEnabled() == false
+                                    || !this.referenceThermometer.equals(component)) {
+                                if (component instanceof Thermometer) {
+                                    this.referenceThermometer = (Thermometer) component;
+                                }
+                            }
+                        } catch (OpenemsError.OpenemsNamedException e) {
+                            this.log.warn("Couldn't find the ReferenceThermometer!");
+                        }
+                        if (this.referenceThermometer.getTemperatureChannel().value().isDefined()
+                                && this.referenceThermometer.getTemperatureValue() != Integer.MIN_VALUE) {
+                            this.calculateTemperatureValue();
+                        }
                     }
                 }
-                if (this.referenceThermometer.getTemperatureChannel().value().isDefined() && this.referenceThermometer.getTemperatureValue() != Integer.MIN_VALUE) {
-                    this.calculateFictionalTemperatureValue();
-                }
             }
+        } else {
+            this.activationOrModifiedRoutine(this.config);
         }
     }
 
@@ -143,7 +163,7 @@ public class ThermometerThresholdImpl extends AbstractOpenemsComponent implement
      * </p>
      * If the temperature is FALLING same thing applies.
      */
-    private void calculateFictionalTemperatureValue() {
+    private void calculateTemperatureValue() {
         int currentTemperature = this.getTemperatureValue();
         float thermometerValue = (float) this.referenceThermometer.getTemperatureValue();
         int incomingTemperature;
@@ -172,10 +192,10 @@ public class ThermometerThresholdImpl extends AbstractOpenemsComponent implement
                 }
                 this.getTemperatureChannel().setNextValue(incomingTemperature);
                 this.setThermometerState(newThermometerState);
-                this.intervalToWaitCounter.getAndSet(0);
+                this.intervalToWaitCounter.getAndSet(RESET);
             }
         } else {
-            this.intervalToWaitCounter.getAndSet(0);
+            this.intervalToWaitCounter.getAndSet(RESET);
         }
     }
 

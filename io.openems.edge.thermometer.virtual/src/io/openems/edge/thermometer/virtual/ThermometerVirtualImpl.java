@@ -38,12 +38,16 @@ import java.util.concurrent.atomic.AtomicReference;
 public class ThermometerVirtualImpl extends AbstractOpenemsComponent implements OpenemsComponent, ThermometerVirtual, Thermometer, EventHandler {
 
     private final Logger log = LoggerFactory.getLogger(ThermometerVirtualImpl.class);
+    private int offset = 0;
 
     @Reference
     ComponentManager cpm;
 
     ChannelAddress refThermometer;
     boolean useAnotherChannelAsTemp;
+    boolean configSuccess;
+
+    Config config;
 
     public ThermometerVirtualImpl() {
         super(OpenemsComponent.ChannelId.values(),
@@ -53,13 +57,31 @@ public class ThermometerVirtualImpl extends AbstractOpenemsComponent implements 
 
 
     @Activate
-    void activate(ComponentContext context, Config config) throws OpenemsError.OpenemsNamedException {
+    void activate(ComponentContext context, Config config) {
         super.activate(context, config.id(), config.alias(), config.enabled());
-        this.getTemperatureChannel().setNextValue(Integer.MIN_VALUE);
-        this.useAnotherChannelAsTemp = config.useAnotherChannelAsTemperature();
-        if (this.useAnotherChannelAsTemp) {
-            this.refThermometer = ChannelAddress.fromString(config.channelAddress());
+        this.config = config;
+        this.activationOrModifiedRoutine(config);
+
+    }
+
+    /**
+     * Basic operation on Activation or Modification of this component.
+     *
+     * @param config the config of this component.
+     */
+    private void activationOrModifiedRoutine(Config config) {
+        try {
+            this.getTemperatureChannel().setNextValue(Integer.MIN_VALUE);
+            this.useAnotherChannelAsTemp = config.useAnotherChannelAsTemperature();
+            if (this.useAnotherChannelAsTemp) {
+                this.refThermometer = ChannelAddress.fromString(config.channelAddress());
+            }
+            this.configSuccess = true;
+        } catch (OpenemsError.OpenemsNamedException e) {
+            this.log.warn("Couldn't apply Config. Try again later.");
+            this.configSuccess = false;
         }
+        this.offset = config.offSet();
 
     }
 
@@ -71,24 +93,33 @@ public class ThermometerVirtualImpl extends AbstractOpenemsComponent implements 
     @Modified
     void modified(ComponentContext context, Config config) {
         super.modified(context, config.id(), config.alias(), config.enabled());
+        this.configSuccess = false;
+        this.config = config;
+        this.activationOrModifiedRoutine(config);
     }
 
     @Override
     public void handleEvent(Event event) {
-        if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE)) {
-            Optional<Integer> currentTemp = this.getVirtualTemperature();
-            currentTemp.ifPresent(integer -> this.getTemperatureChannel().setNextValue(integer));
-            if (currentTemp.isPresent() == false && this.useAnotherChannelAsTemp) {
-                try {
-                    Channel<?> temperature = this.cpm.getChannel(this.refThermometer);
-                    if (temperature.value().isDefined()) {
-                        this.getTemperatureChannel().setNextValue(temperature.value().get());
+        if (this.isEnabled()) {
+            if (this.configSuccess) {
+                if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE)) {
+                    Optional<Integer> currentTemp = this.getVirtualTemperature();
+                    currentTemp.ifPresent(integer -> this.getTemperatureChannel().setNextValue(integer + this.offset));
+                    if (currentTemp.isPresent() == false && this.useAnotherChannelAsTemp) {
+                        try {
+                            Channel<?> temperature = this.cpm.getChannel(this.refThermometer);
+                            if (temperature.value().isDefined()) {
+                                this.getTemperatureChannel().setNextValue(temperature.value().get());
+                            }
+                        } catch (OpenemsError.OpenemsNamedException e) {
+                            this.log.warn("Couldn't find Channel: " + this.refThermometer.toString());
+                        }
                     }
-                } catch (OpenemsError.OpenemsNamedException e) {
-                    this.log.warn("Couldn't find Channel: " + this.refThermometer.toString());
-                }
-            }
 
+                }
+            } else {
+                this.activationOrModifiedRoutine(this.config);
+            }
         }
     }
 

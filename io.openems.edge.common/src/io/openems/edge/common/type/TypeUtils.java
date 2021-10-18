@@ -171,7 +171,14 @@ public class TypeUtils {
 					return null;
 				}
 				return (T) Integer.valueOf(Integer.parseInt(stringValue));
+
+		} else if (value instanceof int[]) {
+				int sum = 0;
+			for (int n =0; n<((int[]) value).length;n++){
+				sum += ((int[])value)[n];
 			}
+			return (T) Integer.valueOf(sum);
+		}
 			break;
 
 		case LONG:

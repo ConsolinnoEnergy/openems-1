@@ -11,10 +11,12 @@ import io.openems.edge.common.channel.IntegerReadChannel;
 import io.openems.edge.common.channel.IntegerWriteChannel;
 import io.openems.edge.common.channel.StringReadChannel;
 import io.openems.edge.common.channel.value.Value;
-import io.openems.edge.heater.Heater;
+import io.openems.edge.heater.api.Heater;
 
+/**
+ * Channels for the Buderus gas boiler.
+ */
 public interface HeaterBuderus extends Heater {
-
 
     public enum ChannelId implements io.openems.edge.common.channel.ChannelId {
 
@@ -116,12 +118,11 @@ public interface HeaterBuderus extends Heater {
          *      <li> Unit: Dezi Kelvin / min
          * </ul>
          */
-        //TODO
-        //IR8002_FLOW_TEMP_AENDERUNGSGESCHWINDIGKEIT_KESSEL1(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZI_KELVIN_PER_MINUTE).accessMode(AccessMode.READ_ONLY)),
+        IR8002_FLOW_TEMP_AENDERUNGSGESCHWINDIGKEIT_KESSEL1(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZI_KELVIN_PER_MINUTE).accessMode(AccessMode.READ_ONLY)),
 
         //IR8003_RETURN_TEMP_KESSEL1 -> Heater, RETURN_TEMPERATURE. d°C, signed.
 
-        //IR8004_LEISTUNG_ISTWERT_KESSEL1 -> Heater, READ_EFFECTIVE_POWER_PERCENT. %, unsigned.
+        //IR8004_LEISTUNG_ISTWERT_KESSEL1 -> Heater, EFFECTIVE_HEATING_POWER_PERCENT. %, unsigned.
 
         /**
          * Wärmeerzeuger in Lastbegrenzung Kessel 1.
@@ -486,25 +487,23 @@ public interface HeaterBuderus extends Heater {
         return this.getIR482Fehlerregister4Channel().value();
     }
 
-    // TODO
-
     /**
      * Gets the Channel for {@link ChannelId#IR8002_FLOW_TEMP_AENDERUNGSGESCHWINDIGKEIT_KESSEL1}.
      *
      * @return the Channel
      */
- /*   public default IntegerReadChannel getIR8002FlowTempChangeSpeedChannel() {
+    public default IntegerReadChannel getIR8002FlowTempChangeSpeedChannel() {
         return this.channel(ChannelId.IR8002_FLOW_TEMP_AENDERUNGSGESCHWINDIGKEIT_KESSEL1);
-    }*/
+    }
 
     /**
      * Flow temperature change speed, unit is deci Kelvin / min.
      *
      * @return the Channel {@link Value}
      */
-  /*  public default Value<Integer> getIR8002FlowTempChangeSpeed() {
+    public default Value<Integer> getIR8002FlowTempChangeSpeed() {
         return this.getIR8002FlowTempChangeSpeedChannel().value();
-    }*/
+    }
 
     /**
      * Gets the Channel for {@link ChannelId#IR8005_WAERMEERZEUGER_IN_LASTBEGRENZUNG_KESSEL1}.
