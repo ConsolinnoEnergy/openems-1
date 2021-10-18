@@ -11,12 +11,12 @@ import io.openems.edge.common.event.EdgeEventConstants;
 import io.openems.edge.exceptionalstate.api.ExceptionalState;
 import io.openems.edge.exceptionalstate.api.ExceptionalStateHandler;
 import io.openems.edge.exceptionalstate.api.ExceptionalStateHandlerImpl;
-import io.openems.edge.heater.EnergyControlMode;
-import io.openems.edge.heater.HeaterModbus;
+
+import io.openems.edge.heater.api.Heater;
 import io.openems.edge.heater.electrolyzer.api.ControlMode;
 import io.openems.edge.heater.electrolyzer.api.Electrolyzer;
 import io.openems.edge.heater.electrolyzer.api.ElectrolyzerModbusGeneric;
-import io.openems.edge.heater.Heater;
+
 import io.openems.edge.timer.api.TimerHandler;
 import io.openems.edge.timer.api.TimerHandlerImpl;
 import org.osgi.service.cm.ConfigurationAdmin;
@@ -134,10 +134,10 @@ public class GenericModbusElectrolyzerImpl extends AbstractGenericModbusComponen
         if (this.isEnabled()) {
             switch (event.getTopic()) {
                 case EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE:
-                    handleChannelUpdate(this.getWMZEnergyProducedChannel(), this._hasWMZEnergyProduced());
-                    handleChannelUpdate(this.getWMZTempSourceChannel(), this._hasWMZTempSource());
-                    handleChannelUpdate(this.getWMZTempSinkChannel(), this._hasWMZTempSink());
-                    handleChannelUpdate(this.getWMZPowerChannel(), this._hasWMZPower());
+                    handleChannelUpdate(this.getWmzEnergyProducedChannel(), this._hasWMZEnergyProduced());
+                    handleChannelUpdate(this.getWmzTempSourceChannel(), this._hasWMZTempSource());
+                    handleChannelUpdate(this.getWmzTempSinkChannel(), this._hasWMZTempSink());
+                    handleChannelUpdate(this.getWmzPowerChannel(), this._hasWMZPower());
                     handleChannelUpdate(this.getEffectivePowerPercentChannel(), this._hasEffectivePowerPercent());
                     handleChannelUpdate(this.getEffectivePowerChannel(), this._hasEffectivePowerKw());
                     handleChannelUpdate(this.getFlowTemperatureChannel(), this._hasFlowTemp());

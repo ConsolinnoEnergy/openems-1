@@ -4,8 +4,7 @@ import io.openems.common.channel.AccessMode;
 import io.openems.common.types.OpenemsType;
 import io.openems.edge.common.channel.Channel;
 import io.openems.edge.common.channel.Doc;
-import io.openems.edge.common.channel.WriteChannel;
-import io.openems.edge.heater.Heater;
+import io.openems.edge.heater.api.Heater;
 
 
 public interface Electrolyzer extends Heater {
@@ -42,7 +41,7 @@ public interface Electrolyzer extends Heater {
      *
      * @return the Channel
      */
-    default Channel<Float> getWMZPowerChannel() {
+    default Channel<Float> getWmzPowerChannel() {
         return this.channel(ChannelId.WMZ_POWER);
     }
 
@@ -51,7 +50,7 @@ public interface Electrolyzer extends Heater {
      *
      * @return the Channel
      */
-    default Channel<Float> getWMZTempSinkChannel() {
+    default Channel<Float> getWmzTempSinkChannel() {
         return this.channel(ChannelId.WMZ_TEMP_SINK);
     }
 
@@ -60,7 +59,7 @@ public interface Electrolyzer extends Heater {
      *
      * @return the Channel
      */
-    default Channel<Float> getWMZTempSourceChannel() {
+    default Channel<Float> getWmzTempSourceChannel() {
         return this.channel(ChannelId.WMZ_TEMP_SOURCE);
     }
 
@@ -69,7 +68,7 @@ public interface Electrolyzer extends Heater {
      *
      * @return the Channel
      */
-    default Channel<Float> getWMZEnergyProducedChannel() {
+    default Channel<Float> getWmzEnergyProducedChannel() {
         return this.channel(ChannelId.WMZ_ENERGY_PRODUCED);
     }
 }
