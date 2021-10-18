@@ -13,11 +13,8 @@ import io.openems.edge.timer.api.TimerType;
 import org.junit.Before;
 import org.junit.Test;
 
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
-
-public class ControllerOverseerImplTest {
+public class ControllerWatchdogImplTest {
 
     private static class MyConfig extends AbstractComponentConfig implements Config {
 
@@ -185,7 +182,7 @@ public class ControllerOverseerImplTest {
         overseer.activate(null, config);
 
 
-        AbstractComponentTest controllerTest = new ControllerTest(overseer, cpm, sourceThermometer, targetThermometer, heater, timer, overseer)
+        new ControllerTest(overseer, cpm, sourceThermometer, targetThermometer, heater, timer, overseer)
                 .next(
                         new AbstractComponentTest.TestCase()
                                 .input(source, 300)

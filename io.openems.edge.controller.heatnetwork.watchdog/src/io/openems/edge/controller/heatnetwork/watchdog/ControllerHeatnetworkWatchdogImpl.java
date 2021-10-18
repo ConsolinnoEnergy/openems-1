@@ -82,6 +82,7 @@ public class ControllerHeatnetworkWatchdogImpl extends AbstractOpenemsComponent 
 
     /**
      * This method is called on activation or modification to set up base Configuration.
+     *
      * @param config the config of this component.
      */
     private void activationOrModifiedRoutine(Config config) {
@@ -97,7 +98,7 @@ public class ControllerHeatnetworkWatchdogImpl extends AbstractOpenemsComponent 
             this.timeHandler.addOneIdentifier(CHECK_MISSING_COMPONENTS, config.timerId(), DELTA_TIME_MISSING_COMPONENTS);
             this.configurationDone = config.configurationDone();
             this.allocateComponents(config.sourceThermometer(), config.targetThermometer(), config.targetComponentId());
-            if (!config.componentId().trim().equals("")) {
+            if (config.componentId() != null && !config.componentId().trim().equals("")) {
                 this.update(this.cm.getConfiguration(this.servicePid(), "?"), "channelIdList", new ArrayList<>(this.cpm.getComponent(config.componentId()).channels()), config.channelIdList().length);
             }
             this.configSuccess = true;
