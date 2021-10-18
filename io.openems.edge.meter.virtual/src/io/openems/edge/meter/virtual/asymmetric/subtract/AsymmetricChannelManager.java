@@ -76,7 +76,9 @@ public class AsymmetricChannelManager extends AbstractChannelListenerManager {
             }
 
             IntegerReadChannel channel = this.parent.channel(meterChannelId);
-            channel.setNextValue(result);
+            if (result != null) {
+                channel.setNextValue(result * -1);
+            }
         };
 
         // Minuend
@@ -112,7 +114,9 @@ public class AsymmetricChannelManager extends AbstractChannelListenerManager {
             }
 
             IntegerReadChannel channel = this.parent.channel(meterChannelId);
-            channel.setNextValue(result);
+            if (result != null) {
+                channel.setNextValue(result * -1);
+            }
         };
 
         // Minuend
