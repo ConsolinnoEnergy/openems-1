@@ -1,5 +1,6 @@
 package io.openems.edge.evcs.wallbe;
 
+import io.openems.common.exceptions.OpenemsError;
 import io.openems.common.exceptions.OpenemsException;
 import io.openems.edge.bridge.modbus.api.AbstractOpenemsModbusComponent;
 import io.openems.edge.bridge.modbus.api.BridgeModbus;
@@ -22,6 +23,7 @@ import io.openems.edge.common.taskmanager.Priority;
 import io.openems.edge.evcs.api.Evcs;
 import io.openems.edge.evcs.api.EvcsPower;
 import io.openems.edge.evcs.api.ManagedEvcs;
+import io.openems.edge.evcs.api.Status;
 import io.openems.edge.evcs.wallbe.api.Wallbe;
 import org.osgi.service.cm.ConfigurationAdmin;
 import org.osgi.service.cm.ConfigurationException;
@@ -128,19 +130,19 @@ public class WallbeImpl extends AbstractOpenemsModbusComponent implements Openem
                 new FC4ReadInputRegistersTask(114, Priority.HIGH,
                         m(Wallbe.ChannelId.CURRENT_L1,
                                 new SignedDoublewordElement(114),
-                                ElementToChannelConverter.DIRECT_1_TO_1)),
+                                ElementToChannelConverter.SCALE_FACTOR_MINUS_5)),
                 new FC4ReadInputRegistersTask(116, Priority.HIGH,
                         m(Wallbe.ChannelId.CURRENT_L2,
                                 new SignedDoublewordElement(116),
-                                ElementToChannelConverter.DIRECT_1_TO_1)),
+                                ElementToChannelConverter.SCALE_FACTOR_MINUS_5)),
                 new FC4ReadInputRegistersTask(118, Priority.HIGH,
                         m(Wallbe.ChannelId.CURRENT_L3,
                                 new SignedDoublewordElement(118),
-                                ElementToChannelConverter.DIRECT_1_TO_1)),
+                                ElementToChannelConverter.SCALE_FACTOR_MINUS_5)),
                 new FC4ReadInputRegistersTask(120, Priority.HIGH,
                         m(Wallbe.ChannelId.APPARENT_POWER,
                                 new SignedDoublewordElement(120),
-                                ElementToChannelConverter.DIRECT_1_TO_1)),
+                                ElementToChannelConverter.SCALE_FACTOR_MINUS_5)),
                 new FC4ReadInputRegistersTask(132, Priority.HIGH,
                         m(Wallbe.ChannelId.ENERGY,
                                 new UnsignedDoublewordElement(132),
@@ -163,6 +165,11 @@ public class WallbeImpl extends AbstractOpenemsModbusComponent implements Openem
     }
 
     @Override
+    public int[] getPhaseConfiguration() {
+        return this.phases;
+    }
+    
+    @Override
     public EvcsPower getEvcsPower() {
         return this.evcsPower;
     }
@@ -175,6 +182,16 @@ public class WallbeImpl extends AbstractOpenemsModbusComponent implements Openem
         } catch (Throwable throwable) {
 
         }
+
+        try {
+            //if (this.getSetChargePowerLimit().isDefined() && this.getSetChargePowerLimit().get() <= 6 * 230 && !this.getStatus().equals(Status.CHARGING) || !this.getSetChargePowerLimit().isDefined()) {
+                this.setChargePowerLimit(6 * 230);
+                this.setEnableCharge(true);
+                this.setMaximumChargeCurrent((short)8);
+         //   }
+        } catch (OpenemsError.OpenemsNamedException e) {
+        }
+
     }
 
     /**

@@ -62,6 +62,9 @@ public class WallbeReadHandler {
             int minPower = Math.min(minHwPower, minSwPower);
             if (current < minPower) {
                 current = 0;
+                this.parent.setEnableCharge(false);
+            } else {
+                this.parent.setEnableCharge(true);
             }
             if (this.overLimit) {
                 this.parent.setMaximumChargeCurrent((short) 0);
