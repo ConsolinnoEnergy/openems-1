@@ -1,3 +1,10 @@
+openems-consolinno (0.0.5-1) unstable; urgency=medium
+
+  * Fixed a Bug where SetPoint of EffectiveHeatingPower and
+    EffectiveHeatingPowerPercent where swapped in handleChannelUpdate
+
+ -- Felix <felix@felix-ThinkPad-E15-Gen-2>  Tue, 19 Oct 2021 13:02:35 +0200
+
 openems-consolinno (0.0.4-1) unstable; urgency=medium
 
   * Added Changelog to this Working Branch. Only create tags with

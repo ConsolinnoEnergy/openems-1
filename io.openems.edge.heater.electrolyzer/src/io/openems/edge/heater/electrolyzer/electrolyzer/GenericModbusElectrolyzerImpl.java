@@ -149,8 +149,8 @@ public class GenericModbusElectrolyzerImpl extends AbstractGenericModbusComponen
                     handleChannelUpdate(this.getWmzTempSourceChannel(), this._hasWMZTempSource());
                     handleChannelUpdate(this.getWmzTempSinkChannel(), this._hasWMZTempSink());
                     handleChannelUpdate(this.getWmzPowerChannel(), this._hasWMZPower());
-                    handleChannelUpdate(this.getEffectiveHeatingPowerChannel(), this._hasEffectivePowerPercent());
-                    handleChannelUpdate(this.getEffectiveHeatingPowerPercentChannel(), this._hasEffectivePowerKw());
+                    handleChannelUpdate(this.getEffectiveHeatingPowerPercentChannel(), this._hasEffectivePowerPercent());
+                    handleChannelUpdate(this.getEffectiveHeatingPowerChannel(), this._hasEffectivePowerKw());
                     handleChannelUpdate(this.getFlowTemperatureChannel(), this._hasFlowTemp());
                     handleChannelUpdate(this.getReturnTemperatureChannel(), this._hasReturnTemp());
                     handleChannelUpdate(this.getHeatingPowerSetpointChannel(), this._hasReadSetPoint());
