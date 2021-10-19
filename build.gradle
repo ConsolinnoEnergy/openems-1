@@ -75,6 +75,12 @@ task buildEdgeDeb(dependsOn: buildEdge, type: Deb) {
         into "/etc/systemd/system"
     }
 
+    /* Install changelog */
+    println("Adding changelog")
+    from("debian/changelog.gz") {
+        into "/usr/share/doc/${packageName}"
+
+    }
     postInstall file('debian/postinst')
 
 }

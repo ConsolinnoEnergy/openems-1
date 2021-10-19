@@ -1,0 +1,17 @@
+openems-consolinno (0.0.4-1) unstable; urgency=medium
+
+  * Added Changelog to this Working Branch. Only create tags with
+    changelog!
+  * Remember to add unstable/stable instead of UNRELEASED!
+
+ -- Felix <felix@felix-ThinkPad-E15-Gen-2>  Tue, 19 Oct 2021 11:39:16 +0200
+
+openems-consolinno (0.0.4-1) unstable; urgency=medium
+
+  [ Felix ]
+  * initial Release of OpenEMS with MQTT implementation
+  * Release of OpenEMS-Master Branch 2021.16.0 with MQTT Work of
+    Consolinno with MQTT 3.1. Configure your MQTT Payloads and topics
+    the way you want
+
+ -- Felix <felix@felix-ThinkPad-E15-Gen-2>  Mon, 27 Sep 2021 15:37:52 +0200
