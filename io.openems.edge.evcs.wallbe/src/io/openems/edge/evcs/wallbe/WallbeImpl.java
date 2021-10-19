@@ -168,7 +168,7 @@ public class WallbeImpl extends AbstractOpenemsModbusComponent implements Openem
     public int[] getPhaseConfiguration() {
         return this.phases;
     }
-    
+
     @Override
     public EvcsPower getEvcsPower() {
         return this.evcsPower;
@@ -184,11 +184,11 @@ public class WallbeImpl extends AbstractOpenemsModbusComponent implements Openem
         }
 
         try {
-            //if (this.getSetChargePowerLimit().isDefined() && this.getSetChargePowerLimit().get() <= 6 * 230 && !this.getStatus().equals(Status.CHARGING) || !this.getSetChargePowerLimit().isDefined()) {
+            if (this.getSetChargePowerLimit().isDefined() && this.getSetChargePowerLimit().get() <= 6 * 230 && !this.getWallbeStatus().equals(WallbeStatus.CHARGING) || !this.getSetChargePowerLimit().isDefined()) {
                 this.setChargePowerLimit(6 * 230);
                 this.setEnableCharge(true);
                 this.setMaximumChargeCurrent((short)8);
-         //   }
+           }
         } catch (OpenemsError.OpenemsNamedException e) {
         }
 
