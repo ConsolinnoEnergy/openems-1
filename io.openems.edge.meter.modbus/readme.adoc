@@ -1,0 +1,7 @@
+= Meter Modbus
+
+Implemented Natures::
+- Meter
+- GasMeter
+- WaterMeter
+- HeatMeter

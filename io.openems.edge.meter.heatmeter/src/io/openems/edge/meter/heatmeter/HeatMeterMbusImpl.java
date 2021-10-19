@@ -9,7 +9,8 @@ import io.openems.edge.common.channel.Channel;
 import io.openems.edge.common.channel.Doc;
 import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.common.event.EdgeEventConstants;
-import io.openems.edge.meter.heatmeter.api.HeatMeterMbus;
+import io.openems.edge.meter.api.Meter;
+import io.openems.edge.meter.api.HeatMeter;
 import org.openmuc.jmbus.VariableDataStructure;
 import org.osgi.service.cm.ConfigurationAdmin;
 import org.osgi.service.component.ComponentContext;
@@ -33,7 +34,7 @@ import java.util.List;
         configurationPolicy = ConfigurationPolicy.REQUIRE,
         immediate = true,
         property = {EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE})
-public class HeatMeterMbusImpl extends AbstractOpenemsMbusComponent implements OpenemsComponent, HeatMeterMbus, EventHandler {
+public class HeatMeterMbusImpl extends AbstractOpenemsMbusComponent implements OpenemsComponent, HeatMeter, EventHandler {
 
     @Reference
     protected ConfigurationAdmin cm;
@@ -47,7 +48,8 @@ public class HeatMeterMbusImpl extends AbstractOpenemsMbusComponent implements O
 
     public HeatMeterMbusImpl() {
         super(OpenemsComponent.ChannelId.values(),
-                HeatMeterMbus.ChannelId.values(),
+                HeatMeter.ChannelId.values(),
+                Meter.ChannelId.values(),
                 ChannelId.values());
     }
 
@@ -58,10 +60,10 @@ public class HeatMeterMbusImpl extends AbstractOpenemsMbusComponent implements O
                 this.getFlowRate().setNextValue(this.getFlowRateToMbus().value().get());
             }
             if (this.getPowerToMbus().value().isDefined()) {
-                this.getPower().setNextValue(this.getPowerToMbus().value().get());
+               this.getReadingPowerChannel().setNextValue(this.getPowerToMbus().value().get());
             }
             if (this.getTotalConsumedEnergyToMbus().value().isDefined()) {
-                this.getTotalConsumedEnergy().setNextValue(this.getTotalConsumedEnergyToMbus().value().get());
+                this.getReadingEnergyChannel().setNextValue(this.getTotalConsumedEnergyToMbus().value().get());
             }
         }
     }
@@ -71,7 +73,7 @@ public class HeatMeterMbusImpl extends AbstractOpenemsMbusComponent implements O
                 .unit(Unit.NONE)), //
         DEVICE_ID(Doc.of(OpenemsType.STRING) //
                 .unit(Unit.NONE)), //
-        POWER_TO_MBUS(Doc.of(OpenemsType.INTEGER).unit(Unit.KILOWATT)),
+        READING_TO_MBUS(Doc.of(OpenemsType.INTEGER).unit(Unit.KILOWATT)),
         FLOW_RATE_TO_MBUS(Doc.of(OpenemsType.DOUBLE).unit(Unit.CUBICMETER_PER_HOUR)),
         TOTAL_CONSUMED_ENERGY_TO_MBUS(Doc.of(OpenemsType.INTEGER).unit(Unit.KILOWATT_HOURS)),
         FLOW_TEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
@@ -90,7 +92,7 @@ public class HeatMeterMbusImpl extends AbstractOpenemsMbusComponent implements O
     }
 
     Channel<Integer> getPowerToMbus() {
-        return this.channel(ChannelId.POWER_TO_MBUS);
+        return this.channel(ChannelId.READING_TO_MBUS);
     }
 
     Channel<Double> getFlowRateToMbus() {
@@ -134,18 +136,18 @@ public class HeatMeterMbusImpl extends AbstractOpenemsMbusComponent implements O
     protected void addChannelDataRecords() {
         this.channelDataRecordsList.add(new ChannelRecord(channel(ChannelId.TOTAL_CONSUMED_ENERGY_TO_MBUS), this.heatMeterModel.totalConsumptionEnergyAddress));
         this.channelDataRecordsList.add(new ChannelRecord(channel(ChannelId.FLOW_TEMP), this.heatMeterModel.flowTempAddress));
-        this.channelDataRecordsList.add(new ChannelRecord(channel(HeatMeterMbus.ChannelId.RETURN_TEMP), this.heatMeterModel.returnTempAddress));
-        this.channelDataRecordsList.add(new ChannelRecord(channel(ChannelId.POWER_TO_MBUS), this.heatMeterModel.powerAddress));
+        this.channelDataRecordsList.add(new ChannelRecord(channel(HeatMeter.ChannelId.RETURN_TEMP), this.heatMeterModel.returnTempAddress));
+        this.channelDataRecordsList.add(new ChannelRecord(channel(ChannelId.READING_TO_MBUS), this.heatMeterModel.powerAddress));
         this.channelDataRecordsList.add(new ChannelRecord(channel(ChannelId.FLOW_RATE_TO_MBUS), this.heatMeterModel.flowRateAddress));
         this.channelDataRecordsList.add(new ChannelRecord(channel(ChannelId.MANUFACTURER_ID), ChannelRecord.DataType.Manufacturer));
         this.channelDataRecordsList.add(new ChannelRecord(channel(ChannelId.DEVICE_ID), ChannelRecord.DataType.DeviceId));
 
         // Timestamp created by OpenEMS, not read from meter.
-        this.channelDataRecordsList.add(new ChannelRecord(this.channel(HeatMeterMbus.ChannelId.TIMESTAMP_SECONDS), -1));
+        this.channelDataRecordsList.add(new ChannelRecord(this.channel(Meter.ChannelId.TIMESTAMP_SECONDS), -1));
 
         // TimestampString is always on address -2, since it's an internal method. This channel needs to be
         // called after the TimestampSeconds Channel, as it takes it's value from that channel.
-        this.channelDataRecordsList.add(new ChannelRecord(this.channel(HeatMeterMbus.ChannelId.TIMESTAMP_STRING), -2));
+        this.channelDataRecordsList.add(new ChannelRecord(this.channel(Meter.ChannelId.TIMESTAMP_STRING), -2));
     }
 
     @Override
