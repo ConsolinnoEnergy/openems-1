@@ -31,13 +31,15 @@ public class SchneiderWriteHandler {
         this.setEnergySession();
         this.detectStatus();
         //The Schneider EVCS reports in kW but OpenEms needs W so StationPower * 1000
-        this.parent._setChargePower((int) (this.parent.getStationPowerTotal() * 1000));
+
+        this.parent._setChargePower((int) (this.parent.getStationIntensityPhaseX() + this.parent.getStationIntensityPhase2() + this.parent.getStationIntensityPhase3() * 230  ));
         if (this.parent.getStationPowerTotal() * 1000 > 230 || this.state.toString().equals(Status.READY_FOR_CHARGING.toString())) {
             try {
                 this.parent.setChargePowerRequest(this.parent.getMinPower() * 230);
             } catch (OpenemsError.OpenemsNamedException ignored) {
+                //
             }
-        }else {
+        } else {
             try {
                 this.parent.setChargePowerRequest(null);
             } catch (OpenemsError.OpenemsNamedException e) {
