@@ -8,11 +8,14 @@ import io.openems.edge.common.channel.WriteChannel;
 import io.openems.edge.common.channel.value.Value;
 import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
+import io.openems.edge.common.cycle.Cycle;
 import io.openems.edge.common.event.EdgeEventConstants;
 
 import io.openems.edge.exceptionalstate.api.ExceptionalState;
 import io.openems.edge.heatsystem.components.ConfigurationType;
 import io.openems.edge.heatsystem.components.HydraulicComponent;
+import io.openems.edge.io.api.AnalogInputOutput;
+import io.openems.edge.io.api.Pwm;
 import io.openems.edge.io.api.Relay;
 import org.osgi.service.cm.ConfigurationException;
 import org.osgi.service.component.ComponentContext;
@@ -29,6 +32,9 @@ import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
+
 
 /**
  * This Component allows a Valve  to be configured and controlled.
@@ -39,7 +45,7 @@ import org.slf4j.LoggerFactory;
  * If the value you read is the expected value, everything is ok, otherwise the Components tries to set the expected values again.
  */
 @Designate(ocd = ConfigValveTwoOutput.class, factory = true)
-@Component(name = "HeatsystemComponent.Valve.TwoInput",
+@Component(name = "HeatsystemComponent.Valve.TwoOutput",
         configurationPolicy = ConfigurationPolicy.REQUIRE,
         immediate = true,
         property = {
@@ -66,6 +72,7 @@ public class ValveTwoOutput extends AbstractValve implements OpenemsComponent, H
     @Reference
     ComponentManager cpm;
 
+    AtomicReference<Cycle> cycle = new AtomicReference<>();
 
     private enum ChannelToGet {
         CLOSING, OPENING;
@@ -120,6 +127,9 @@ public class ValveTwoOutput extends AbstractValve implements OpenemsComponent, H
     private void activateOrModifiedRoutine(ConfigValveTwoOutput config) throws ConfigurationException, OpenemsError.OpenemsNamedException {
         this.configSuccess = false;
         this.config = config;
+        Optional<OpenemsComponent> cycleOptional = this.cpm.getAllComponents().stream().filter(component -> component instanceof Cycle).findAny();
+        cycleOptional.ifPresent(component -> this.cycle.set((Cycle) component));
+        super.setCycle(this.cycle.get());
         this.configurationType = config.configurationType();
         this.useCheckOutput = config.useCheckChannel();
         switch (this.configurationType) {
@@ -146,9 +156,21 @@ public class ValveTwoOutput extends AbstractValve implements OpenemsComponent, H
         this.secondsPerPercentage = ((double) config.valve_Time() / 100.d);
         this.timeChannel().setNextValue(0);
         super.createTimerHandler(config.timerId(), config.maxTime(), this.cpm, this, config.useExceptionalState());
-
-        super.percentPossiblePerCycle = super.cycle.getCycleTime() / (this.secondsPerPercentage * MILLI_SECONDS_TO_SECONDS);
+        int deltaMaxTime = Cycle.DEFAULT_CYCLE_TIME;
+        if (this.cycle.get() != null) {
+            deltaMaxTime = this.cycle.get().getCycleTime();
+        }
+        super.percentPossiblePerCycle = deltaMaxTime / (this.secondsPerPercentage * MILLI_SECONDS_TO_SECONDS);
         this.configSuccess = true;
+    }
+
+    /**
+     * Get the Current active {@link Cycle} and set as Reference
+     */
+    private void getCycle() {
+        Optional<OpenemsComponent> cycleOptional = this.cpm.getAllComponents().stream().filter(component -> component instanceof Cycle).findAny();
+        cycleOptional.ifPresent(component -> this.cycle.set((Cycle) component));
+        super.setCycle(this.cycle.get());
     }
 
 
@@ -204,6 +226,10 @@ public class ValveTwoOutput extends AbstractValve implements OpenemsComponent, H
                     this.getIsBusyChannel().setNextValue(false);
                     this.isForced = false;
                     super.adaptValveValue();
+                }
+                if (this.configurationType.equals(ConfigurationType.DEVICE) && super.timerHandler.checkTimeIsUp(CHECK_COMPONENT_IDENTIFIER)) {
+                    this.checkForMissingComponents();
+                    this.timerHandler.resetTimer(CHECK_COMPONENT_IDENTIFIER);
                 }
             } else {
                 try {
@@ -478,6 +504,7 @@ public class ValveTwoOutput extends AbstractValve implements OpenemsComponent, H
 
     /**
      * Returns the Channel that are configured for opening or closing.
+     *
      * @param channelToGet the {@link ChannelToGet}
      * @return the Channel corresponding to {@link ChannelToGet}.
      * @throws OpenemsError.OpenemsNamedException if Channel not found.
@@ -502,6 +529,7 @@ public class ValveTwoOutput extends AbstractValve implements OpenemsComponent, H
 
     /**
      * Checks if the Value of the Channel is equivalent to true.
+     *
      * @param channelToCheck the Channel
      * @return true if Value is true or Value > 0.
      * @throws ConfigurationException if e.g. String does not contain only numbers.
@@ -534,6 +562,34 @@ public class ValveTwoOutput extends AbstractValve implements OpenemsComponent, H
             return false;
         }
     }
+
+
+    /**
+     * This Method will only be called, when someone configured the Valve with the {@link ConfigurationType#DEVICE}.
+     * It sometimes happens, that devices restart or get deactivated etc. The Vaöve will check for old references and refreshes them
+     * every 30 deltaTime (Depends on the Timer).
+     */
+    private void checkForMissingComponents() {
+        OpenemsComponent component;
+        try {
+            if (this.configurationType.equals(ConfigurationType.DEVICE)) {
+                component = this.cpm.getComponent(this.closeRelay.id());
+                if (!this.closeRelay.equals(component) && component instanceof Relay) {
+                    this.closeRelay = (Relay) component;
+                }
+                component = this.cpm.getComponent(this.openRelay.id());
+                if (!this.openRelay.equals(component) && component instanceof Relay) {
+                    this.openRelay = (Relay) component;
+                }
+            }
+            if (this.cycle.get() == null || (!this.cycle.get().equals(this.cpm.getComponent(this.cycle.get().id())))) {
+                this.getCycle();
+            }
+        } catch (OpenemsError.OpenemsNamedException e) {
+            this.log.warn("Couldn't check for missing Components. Reason: " + e.getMessage());
+        }
+    }
+
 
     @Deactivate
     protected void deactivate() {

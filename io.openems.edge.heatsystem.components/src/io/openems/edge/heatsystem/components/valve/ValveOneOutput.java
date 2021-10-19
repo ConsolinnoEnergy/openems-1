@@ -8,6 +8,7 @@ import io.openems.edge.common.channel.WriteChannel;
 import io.openems.edge.common.channel.value.Value;
 import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
+import io.openems.edge.common.cycle.Cycle;
 import io.openems.edge.common.event.EdgeEventConstants;
 import io.openems.edge.exceptionalstate.api.ExceptionalState;
 import io.openems.edge.heatsystem.components.ConfigurationType;
@@ -29,6 +30,9 @@ import org.osgi.service.event.EventHandler;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * This Component allows a Valve  to be configured and controlled.
@@ -62,6 +66,8 @@ public class ValveOneOutput extends AbstractValve implements OpenemsComponent, H
 
     @Reference
     ComponentManager cpm;
+
+    AtomicReference<Cycle> cycle = new AtomicReference<>();
 
 
     public ValveOneOutput() {
@@ -103,6 +109,7 @@ public class ValveOneOutput extends AbstractValve implements OpenemsComponent, H
     private void activationOrModifiedRoutine(ConfigValveOneOutput config) throws ConfigurationException, OpenemsError.OpenemsNamedException {
         this.useCheckOutput = config.useCheckChannel();
         this.configurationType = config.configurationType();
+        this.getCycle();
         switch (this.configurationType) {
             case CHANNEL:
                 try {
@@ -132,9 +139,24 @@ public class ValveOneOutput extends AbstractValve implements OpenemsComponent, H
                 break;
         }
         this.secondsPerPercentage = ((double) config.timeToOpenValve() / 100.d);
-        super.percentPossiblePerCycle = super.cycle.getCycleTime() / (this.secondsPerPercentage * MILLI_SECONDS_TO_SECONDS);
+        this.timeChannel().setNextValue(0);
+        super.createTimerHandler(config.timerId(), config.maxTime(), this.cpm, this, config.useExceptionalState());
+        int deltaMaxTime = Cycle.DEFAULT_CYCLE_TIME;
+        if (this.cycle.get() != null) {
+            deltaMaxTime = this.cycle.get().getCycleTime();
+        }
+        super.percentPossiblePerCycle = deltaMaxTime / (this.secondsPerPercentage * MILLI_SECONDS_TO_SECONDS);
         super.createTimerHandler(config.timerId(), config.maxTime(), this.cpm, this, config.useExceptionalState());
         this.configSuccess = true;
+    }
+
+    /**
+     * Get the Current active {@link Cycle} and set as Reference
+     */
+    private void getCycle() {
+        Optional<OpenemsComponent> cycleOptional = this.cpm.getAllComponents().stream().filter(component -> component instanceof Cycle).findAny();
+        cycleOptional.ifPresent(component -> this.cycle.set((Cycle) component));
+        super.setCycle(this.cycle.get());
     }
 
     @Modified
@@ -438,6 +460,9 @@ public class ValveOneOutput extends AbstractValve implements OpenemsComponent, H
                         }
                     }
                     break;
+            }
+            if (this.cycle.get() == null || (this.cycle.get().equals(this.cpm.getComponent(this.cycle.get().id())) == false)) {
+                this.getCycle();
             }
         } catch (OpenemsError.OpenemsNamedException e) {
             this.log.warn("Couldn't check for missing Components. Reason: " + e.getMessage());

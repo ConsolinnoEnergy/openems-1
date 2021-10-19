@@ -4,7 +4,7 @@ import io.openems.edge.heatsystem.components.ConfigurationType;
 import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
-@ObjectClassDefinition(name = "Valve One Input", description = "A Valve that write a percent Value into another Output(Channel)")
+@ObjectClassDefinition(name = "Valve One Output", description = "A Valve that write a percent Value into another Output(Channel)")
 @interface ConfigValveOneOutput {
 
     String service_pid();

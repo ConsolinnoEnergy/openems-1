@@ -5,6 +5,7 @@ import io.openems.edge.common.channel.Channel;
 import io.openems.edge.common.channel.value.Value;
 import io.openems.edge.common.component.AbstractOpenemsComponent;
 import io.openems.edge.common.component.ComponentManager;
+import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.common.cycle.Cycle;
 import io.openems.edge.exceptionalstate.api.ExceptionalState;
 import io.openems.edge.exceptionalstate.api.ExceptionalStateHandler;
@@ -13,7 +14,6 @@ import io.openems.edge.heatsystem.components.HydraulicComponent;
 import io.openems.edge.timer.api.TimerHandler;
 import io.openems.edge.timer.api.TimerHandlerImpl;
 import org.osgi.service.cm.ConfigurationException;
-import org.osgi.service.component.annotations.Reference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,7 +27,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Its the BaseClass for any Valve that is implemented.
  */
 public abstract class AbstractValve extends AbstractOpenemsComponent implements HydraulicComponent, ExceptionalState {
-    @Reference
+
     Cycle cycle;
 
     protected final Logger log = LoggerFactory.getLogger(AbstractValve.class);
@@ -292,7 +292,11 @@ public abstract class AbstractValve extends AbstractOpenemsComponent implements 
      * After that check if the Valve can adapt to the FuturePowerLevel with it's current PowerLevelValue
      */
     protected void adaptValveValue() {
-        int cycleTime = this.cycle.getCycleTime();
+        int cycleTime = Cycle.DEFAULT_CYCLE_TIME;
+        if (this.cycle != null) {
+            cycleTime = this.cycle.getCycleTime();
+        }
+
         double currentPowerLevelValue = this.getPowerLevelValue();
         double futurePowerLevel = this.getFuturePowerLevelValue();
         double percentPossiblePerCycle = cycleTime / (this.secondsPerPercentage * MILLI_SECONDS_TO_SECONDS);
@@ -319,6 +323,7 @@ public abstract class AbstractValve extends AbstractOpenemsComponent implements 
 
     /**
      * Gets the Value of the optional config channel (output/checkoutput).
+     *
      * @param optionalChannel the channel
      * @return the Wrapped Value either value or nextValue.
      */
@@ -498,5 +503,9 @@ public abstract class AbstractValve extends AbstractOpenemsComponent implements 
         }
         return this.parentActive == false && (this.readyToChange() == false || this.exceptionalStateActive)
                 || percentage == DEFAULT_MIN_POWER_VALUE || ableToAdapt == false;
+    }
+
+    protected void setCycle(Cycle cycle) {
+        this.cycle = cycle;
     }
 }
