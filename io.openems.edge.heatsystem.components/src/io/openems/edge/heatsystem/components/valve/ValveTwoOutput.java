@@ -8,14 +8,12 @@ import io.openems.edge.common.channel.WriteChannel;
 import io.openems.edge.common.channel.value.Value;
 import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
-import io.openems.edge.common.cycle.Cycle;
 import io.openems.edge.common.event.EdgeEventConstants;
 
 import io.openems.edge.exceptionalstate.api.ExceptionalState;
 import io.openems.edge.heatsystem.components.ConfigurationType;
-import io.openems.edge.heatsystem.components.HeatsystemComponent;
-import io.openems.edge.heatsystem.components.Valve;
-import io.openems.edge.relay.api.Relay;
+import io.openems.edge.heatsystem.components.HydraulicComponent;
+import io.openems.edge.io.api.Relay;
 import org.osgi.service.cm.ConfigurationException;
 import org.osgi.service.component.ComponentContext;
 import org.osgi.service.component.annotations.Activate;
@@ -48,7 +46,7 @@ import org.slf4j.LoggerFactory;
                 EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE,
                 EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS}
 )
-public class ValveTwoOutput extends AbstractValve implements OpenemsComponent, Valve, ExceptionalState, EventHandler {
+public class ValveTwoOutput extends AbstractValve implements OpenemsComponent, HydraulicComponent, ExceptionalState, EventHandler {
 
 
     private final Logger log = LoggerFactory.getLogger(ValveTwoOutput.class);
@@ -75,17 +73,17 @@ public class ValveTwoOutput extends AbstractValve implements OpenemsComponent, V
 
 
     public ValveTwoOutput() {
-        super(OpenemsComponent.ChannelId.values(), HeatsystemComponent.ChannelId.values(),
+        super(OpenemsComponent.ChannelId.values(), HydraulicComponent.ChannelId.values(),
                 ExceptionalState.ChannelId.values());
     }
 
 
     @Activate
-    void activate(ComponentContext context, ConfigValveTwoOutput config) throws ConfigurationException {
+    void activate(ComponentContext context, ConfigValveTwoOutput config) {
         super.activate(context, config.id(), config.alias(), config.enabled());
         try {
             this.activateOrModifiedRoutine(config);
-        } catch (OpenemsError.OpenemsNamedException e) {
+        } catch (OpenemsError.OpenemsNamedException | ConfigurationException e) {
             this.configSuccess = false;
             this.log.warn("Couldn't find Components for " + super.id() + " Component Tries again later.");
         } finally {
@@ -99,6 +97,17 @@ public class ValveTwoOutput extends AbstractValve implements OpenemsComponent, V
             }
         }
     }
+
+    @Modified
+    void modified(ComponentContext context, ConfigValveTwoOutput config) {
+        super.modified(context, config.id(), config.alias(), config.enabled());
+        try {
+            this.activateOrModifiedRoutine(config);
+        } catch (OpenemsError.OpenemsNamedException | ConfigurationException e) {
+            this.log.warn("Couldn't find Components for " + super.id() + " Component Tries again later.");
+        }
+    }
+
 
     /**
      * This will be called on either Activation or Modification.
@@ -136,9 +145,9 @@ public class ValveTwoOutput extends AbstractValve implements OpenemsComponent, V
         }
         this.secondsPerPercentage = ((double) config.valve_Time() / 100.d);
         this.timeChannel().setNextValue(0);
-        if (config.useExceptionalState()) {
-            super.createExcpetionalStateHandler(config.timerId(), config.maxTime(), this.cpm, this);
-        }
+        super.createTimerHandler(config.timerId(), config.maxTime(), this.cpm, this, config.useExceptionalState());
+
+        super.percentPossiblePerCycle = super.cycle.getCycleTime() / (this.secondsPerPercentage * MILLI_SECONDS_TO_SECONDS);
         this.configSuccess = true;
     }
 
@@ -181,13 +190,6 @@ public class ValveTwoOutput extends AbstractValve implements OpenemsComponent, V
     }
 
 
-    @Modified
-    void modified(ComponentContext context, ConfigValveTwoOutput config) throws OpenemsError.OpenemsNamedException, ConfigurationException {
-        super.modified(context, config.id(), config.alias(), config.enabled());
-        this.activateOrModifiedRoutine(config);
-    }
-
-
     @Override
     public void handleEvent(Event event) {
         if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE)) {
@@ -209,11 +211,7 @@ public class ValveTwoOutput extends AbstractValve implements OpenemsComponent, V
                     this.configSuccess = true;
                 } catch (ConfigurationException | OpenemsError.OpenemsNamedException e) {
                     this.configSuccess = false;
-                    if (super.configTries.get() >= MAX_CONFIG_TRIES) {
-                        this.log.error("Config is Wrong in : " + super.id());
-                    } else {
-                        this.configTries.getAndIncrement();
-                    }
+                    this.log.error("Config is Wrong in : " + super.id());
                 }
             }
         } else if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS) && this.configSuccess) {
@@ -429,6 +427,10 @@ public class ValveTwoOutput extends AbstractValve implements OpenemsComponent, V
     }
 
     //----------PRIVATE VALVE CHECK ----------- //
+
+    /**
+     * Checks if the the Valve reacts properly, by checking on closing/opening the Channel Values.
+     */
     private void checkValveChannelCorrect() {
         if (this.useCheckOutput) {
             try {
@@ -474,6 +476,12 @@ public class ValveTwoOutput extends AbstractValve implements OpenemsComponent, V
         }
     }
 
+    /**
+     * Returns the Channel that are configured for opening or closing.
+     * @param channelToGet the {@link ChannelToGet}
+     * @return the Channel corresponding to {@link ChannelToGet}.
+     * @throws OpenemsError.OpenemsNamedException if Channel not found.
+     */
     private Channel<?> getInputChannel(ChannelToGet channelToGet) throws OpenemsError.OpenemsNamedException {
         switch (this.configurationType) {
             case CHANNEL:
@@ -492,7 +500,12 @@ public class ValveTwoOutput extends AbstractValve implements OpenemsComponent, V
         }
     }
 
-
+    /**
+     * Checks if the Value of the Channel is equivalent to true.
+     * @param channelToCheck the Channel
+     * @return true if Value is true or Value > 0.
+     * @throws ConfigurationException if e.g. String does not contain only numbers.
+     */
     private boolean checkChannelValueIsTrue(Channel<?> channelToCheck) throws ConfigurationException {
         Value<?> value = channelToCheck.value().isDefined() ? channelToCheck.value()
                 : channelToCheck.getNextValue().isDefined() ? channelToCheck.getNextValue() : null;

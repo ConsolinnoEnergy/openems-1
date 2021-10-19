@@ -9,7 +9,7 @@ import io.openems.edge.common.cycle.Cycle;
 import io.openems.edge.exceptionalstate.api.ExceptionalState;
 import io.openems.edge.exceptionalstate.api.ExceptionalStateHandler;
 import io.openems.edge.exceptionalstate.api.ExceptionalStateHandlerImpl;
-import io.openems.edge.heatsystem.components.Valve;
+import io.openems.edge.heatsystem.components.HydraulicComponent;
 import io.openems.edge.timer.api.TimerHandler;
 import io.openems.edge.timer.api.TimerHandlerImpl;
 import org.osgi.service.cm.ConfigurationException;
@@ -26,7 +26,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * The Abstract Valve. It Provides basic Functions, such as updating the PowerLevel or if tthe powerLevel is reached.
  * Its the BaseClass for any Valve that is implemented.
  */
-public abstract class AbstractValve extends AbstractOpenemsComponent implements Valve, ExceptionalState {
+public abstract class AbstractValve extends AbstractOpenemsComponent implements HydraulicComponent, ExceptionalState {
     @Reference
     Cycle cycle;
 
@@ -41,7 +41,7 @@ public abstract class AbstractValve extends AbstractOpenemsComponent implements 
     protected boolean isClosing = false;
     protected boolean wasAlreadyReset = false;
     protected boolean isForced;
-    private static final int OPTIMIZE_FACTOR = 2;
+    private static final int BUFFER = 5;
 
     protected boolean useCheckOutput;
 
@@ -62,10 +62,11 @@ public abstract class AbstractValve extends AbstractOpenemsComponent implements 
     protected boolean useExceptionalState;
     protected static final String EXCEPTIONAL_STATE_IDENTIFIER = "VALVE_EXCEPTIONAL_STATE_IDENTIFIER";
     protected boolean parentActive;
-    private TimerHandler timerHandler;
+    protected TimerHandler timerHandler;
     protected ExceptionalStateHandler exceptionalStateHandler;
     protected ExceptionalState exceptionalState;
     protected boolean exceptionalStateActive;
+    protected double percentPossiblePerCycle = 1.d;
 
     protected AbstractValve(io.openems.edge.common.channel.ChannelId[] firstInitialChannelIds,
                             io.openems.edge.common.channel.ChannelId[]... furtherInitialChannelIds) {
@@ -169,7 +170,7 @@ public abstract class AbstractValve extends AbstractOpenemsComponent implements 
         if (this.isChanging()) {
             reached = false;
             Double powerLevel = this.getPowerLevelValue();
-            Double futurePowerLevel = this.getFuturePowerLevelValue();
+            double futurePowerLevel = this.getFuturePowerLevelValue();
             if (powerLevel != null) {
                 if (this.isClosing) {
                     reached = powerLevel <= futurePowerLevel;
@@ -225,14 +226,14 @@ public abstract class AbstractValve extends AbstractOpenemsComponent implements 
         if (this.minimum == null) {
             this.minimum = (double) DEFAULT_MIN_POWER_VALUE;
         }
-        return (this.maximum >= this.minimum && this.maximum > 0 && this.minimum >= 0);
+        return (this.maximum >= this.minimum && this.maximum > DEFAULT_MIN_POWER_VALUE && this.minimum >= DEFAULT_MIN_POWER_VALUE);
     }
 
 
     @Override
     public String debugLog() {
         if (this.getPowerLevelChannel().value().isDefined()) {
-            String name = "";
+            String name;
             if (!super.alias().equals("")) {
                 name = super.alias();
             } else {
@@ -244,20 +245,39 @@ public abstract class AbstractValve extends AbstractOpenemsComponent implements 
         }
     }
 
-    protected void createExcpetionalStateHandler(String timerId, int maxTime,
-                                                 ComponentManager cpm, ExceptionalState exceptionalState) throws OpenemsError.OpenemsNamedException, ConfigurationException {
+    /**
+     * Creates the Timer for: Missing Components check, and ExceptionalState support
+     *
+     * @param timerId             the timer Id
+     * @param maxTime             the Maximum Time fpr the Missing Components check and ExceptionalState check
+     * @param cpm                 Component Manager
+     * @param exceptionalState    the exceptionalState component (this)
+     * @param useExceptionalState should the ExceptionalState be used
+     * @throws OpenemsError.OpenemsNamedException if component cannot be found
+     * @throws ConfigurationException             if timerId is wrong (component found but wrong instance).
+     */
+    protected void createTimerHandler(String timerId, int maxTime,
+                                      ComponentManager cpm, ExceptionalState exceptionalState, boolean useExceptionalState) throws OpenemsError.OpenemsNamedException, ConfigurationException {
         TimerHandler timerHandler = new TimerHandlerImpl(super.id(), cpm);
         if (this.timerHandler != null) {
             this.timerHandler.removeComponent();
         }
         this.timerHandler = timerHandler;
-        this.timerHandler.addOneIdentifier(EXCEPTIONAL_STATE_IDENTIFIER, timerId, maxTime);
-        this.exceptionalStateHandler = new ExceptionalStateHandlerImpl(timerHandler, EXCEPTIONAL_STATE_IDENTIFIER);
-        this.exceptionalState = exceptionalState;
-        this.useExceptionalState = true;
+        this.timerHandler.addOneIdentifier(CHECK_COMPONENT_IDENTIFIER, timerId, WAIT_TIME_CHECK_COMPONENTS);
+        if (useExceptionalState) {
+            this.timerHandler.addOneIdentifier(EXCEPTIONAL_STATE_IDENTIFIER, timerId, maxTime);
+            this.exceptionalStateHandler = new ExceptionalStateHandlerImpl(timerHandler, EXCEPTIONAL_STATE_IDENTIFIER);
+            this.exceptionalState = exceptionalState;
+        }
+
+        this.useExceptionalState = useExceptionalState;
     }
 
-
+    /**
+     * Check if ExceptionalState is active.
+     *
+     * @return true if active
+     */
     protected boolean isExceptionalStateActive() {
         if (this.useExceptionalState) {
             return this.exceptionalStateHandler.exceptionalStateActive(this.exceptionalState);
@@ -272,7 +292,7 @@ public abstract class AbstractValve extends AbstractOpenemsComponent implements 
      * After that check if the Valve can adapt to the FuturePowerLevel with it's current PowerLevelValue
      */
     protected void adaptValveValue() {
-        int cycleTime = this.cycle == null ? Cycle.DEFAULT_CYCLE_TIME : this.cycle.getCycleTime();
+        int cycleTime = this.cycle.getCycleTime();
         double currentPowerLevelValue = this.getPowerLevelValue();
         double futurePowerLevel = this.getFuturePowerLevelValue();
         double percentPossiblePerCycle = cycleTime / (this.secondsPerPercentage * MILLI_SECONDS_TO_SECONDS);
@@ -288,11 +308,20 @@ public abstract class AbstractValve extends AbstractOpenemsComponent implements 
         }
     }
 
-
+    /**
+     * Gets the exceptionalState Value.
+     *
+     * @return the value
+     */
     protected int getExceptionalSateValue() {
         return this.exceptionalState.getExceptionalStateValue();
     }
 
+    /**
+     * Gets the Value of the optional config channel (output/checkoutput).
+     * @param optionalChannel the channel
+     * @return the Wrapped Value either value or nextValue.
+     */
     protected Value<?> getValueOfOptionalChannel(Channel<?> optionalChannel) {
         return optionalChannel.value().isDefined() ? optionalChannel.value()
                 : optionalChannel.getNextValue().isDefined() ? optionalChannel.getNextValue() : null;
@@ -338,12 +367,13 @@ public abstract class AbstractValve extends AbstractOpenemsComponent implements 
      *
      * @param setPoint the setPoint that will be changed to a percent value that a valve has to be adapted to.
      */
-    protected void setPowerLevel(double setPoint) {
+    public void setPowerLevel(double setPoint) {
         setPoint -= this.getPowerLevelValue();
         if (this.changeByPercentage(setPoint)) {
             this.setPointPowerLevelChannel().setNextValue(-1);
         }
     }
+
 
     /**
      * Changes Valve Position by incoming percentage.
@@ -352,7 +382,7 @@ public abstract class AbstractValve extends AbstractOpenemsComponent implements 
      * not open/close the valve instantly but slowly. The time it takes from completely closed to completely
      * open is entered in the config. Partial open state of x% is then archived by switching the relay on for
      * time-to-open * x%, or the appropriate amount of time depending on initial state.
-     * Sets the Future PowerLevel; ValveManager calls further Methods to refresh true % state
+     * Sets the Future PowerLevel; ValveManager calls further Methods to refresh true % state.
      *
      * @param percentage adjusting the current powerLevel in % points. Meaning if current state is 10%, requesting
      *                   changeByPercentage(20) will change the state to 30%.
@@ -363,8 +393,8 @@ public abstract class AbstractValve extends AbstractOpenemsComponent implements 
      *                   If percentage is neg. valve needs to be closed (further)
      *                   else it needs to open (further).
      *                   </p>
+     * @return the current PowerLevel
      */
-
     protected double calculateCurrentPowerLevelAndSetTime(double percentage) {
         double currentPowerLevel = this.getPowerLevelValue();
         this.getLastPowerLevelChannel().setNextValue(currentPowerLevel);
@@ -375,15 +405,15 @@ public abstract class AbstractValve extends AbstractOpenemsComponent implements 
             this.maximum = null;
         }
         currentPowerLevel += percentage;
-        if (this.maximum != null && this.maximum < currentPowerLevel) {
+        if (this.maximum != null && this.maximum + BUFFER < currentPowerLevel) {
             currentPowerLevel = this.maximum;
-        } else if (this.lastMaximum != null && this.lastMaximum < currentPowerLevel) {
+        } else if (this.lastMaximum != null && this.lastMaximum + BUFFER < currentPowerLevel) {
             currentPowerLevel = this.lastMaximum;
         } else if (currentPowerLevel >= DEFAULT_MAX_POWER_VALUE) {
             currentPowerLevel = DEFAULT_MAX_POWER_VALUE;
-        } else if (this.minimum != null && this.minimum > currentPowerLevel) {
+        } else if (this.minimum != null && this.minimum - BUFFER > currentPowerLevel) {
             currentPowerLevel = this.minimum;
-        } else if (this.lastMinimum != null && this.lastMinimum > currentPowerLevel) {
+        } else if (this.lastMinimum != null && this.lastMinimum - BUFFER > currentPowerLevel) {
             currentPowerLevel = this.lastMinimum;
         }
         //Set goal Percentage for future reference
@@ -461,7 +491,12 @@ public abstract class AbstractValve extends AbstractOpenemsComponent implements 
      */
 
     protected boolean changeInvalid(double percentage) {
-
-        return this.parentActive == false && (this.readyToChange() == false || this.exceptionalStateActive) || percentage == DEFAULT_MIN_POWER_VALUE;
+        boolean ableToAdapt = Math.abs(percentage) > this.percentPossiblePerCycle;
+        double currentPowerValue = this.getPowerLevelValue();
+        if (currentPowerValue + percentage >= DEFAULT_MAX_POWER_VALUE || currentPowerValue + percentage <= DEFAULT_MIN_POWER_VALUE) {
+            ableToAdapt = true;
+        }
+        return this.parentActive == false && (this.readyToChange() == false || this.exceptionalStateActive)
+                || percentage == DEFAULT_MIN_POWER_VALUE || ableToAdapt == false;
     }
 }

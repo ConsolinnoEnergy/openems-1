@@ -10,11 +10,12 @@ import io.openems.edge.bridge.modbus.api.element.CoilElement;
 import io.openems.edge.bridge.modbus.api.element.ModbusCoilElement;
 import io.openems.edge.bridge.modbus.api.task.FC1ReadCoilsTask;
 import io.openems.edge.bridge.modbus.api.task.FC5WriteCoilTask;
+import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.common.taskmanager.Priority;
 import io.openems.edge.consolinno.leaflet.core.api.Error;
 import io.openems.edge.consolinno.leaflet.core.api.LeafletCore;
-import io.openems.edge.relay.api.Relay;
+import io.openems.edge.io.api.Relay;
 import org.osgi.service.cm.ConfigurationAdmin;
 import org.osgi.service.cm.ConfigurationException;
 import org.osgi.service.component.ComponentContext;
@@ -36,17 +37,18 @@ import org.slf4j.LoggerFactory;
 @Component(name = "Consolinno.Leaflet.Relay")
 public class RelayImpl extends AbstractOpenemsModbusComponent implements OpenemsComponent, Relay {
 
-    @Reference(policy = ReferencePolicy.STATIC, policyOption = ReferencePolicyOption.GREEDY, cardinality = ReferenceCardinality.MANDATORY)
-    LeafletCore lc;
-
     @Reference
     protected ConfigurationAdmin cm;
+
+    @Reference
+    protected ComponentManager cpm;
 
     @Reference(policy = ReferencePolicy.STATIC, policyOption = ReferencePolicyOption.GREEDY, cardinality = ReferenceCardinality.MANDATORY)
     protected void setModbus(BridgeModbus modbus) {
         super.setModbus(modbus);
     }
 
+    private LeafletCore lc;
     private final Logger log = LoggerFactory.getLogger(RelayImpl.class);
     private int relayModule;
     private int position;
@@ -63,6 +65,11 @@ public class RelayImpl extends AbstractOpenemsModbusComponent implements Openems
 
     @Activate
     void activate(ComponentContext context, Config config) throws ConfigurationException, OpenemsException {
+        try {
+            this.lc = this.cpm.getComponent(config.leafletId());
+        } catch (Exception e) {
+            this.log.error("The LeafletCore doesn't exist! Check Config!");
+        }
         this.relayModule = config.module();
         this.position = config.position();
         this.inverted = config.isInverse();

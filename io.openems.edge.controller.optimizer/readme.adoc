@@ -1,0 +1,43 @@
+= Optimizer
+
+This Optimizer receives a Json with WriteChannel write instructions.
+These will be executed one by one and optimize the EMS.
+An AI usually creates the Schedule.
+
+The Jsons will be created by the Translators, and added to the optimizer.
+The Optimizer will write the Values stored in jsons to the Components.
+
+Remember: You can add a fallback Schedule to control the Components.
+
+== Example
+
+You have a Heater 'A', you want to optimize.
+An AI controls the SetPoint PowerValue.
+You receive a Payload via Mqtt or rather the SetPoint is written into a Topic of a MQTT-Broker.
+
+After Enabling the Heater 'A', enabling the MQTT Bridge.
+Start Creating the Optimizer.
+The Optimizer can be seen as a Parent class.
+Receiving piece by piece the Schedule told by 'Children ' (Translators).
+You can create a Translator instance now.
+The translator instance receives the Component ID 'A', the Optimizer ID.
+The Same way you configure a TelemetryComponent, you can hit save and reload the class.
+Every Channel you need to optimize is listed here.
+In This Case SET_POINT_HEATING_POWER_PERCENT.
+Since the Component needs an EnableSignal to work, Tick the Boolean -> enableSignal.
+After setting up the Configuration we finally need to collect the Data.
+The Data comes from a MqttBroker.
+Therefore, Configure a TelemetryComponent, and SUBSCRIBE to a Topic, and Map the SCHEDULE Channel to an identifier.
+The Translator expects a JSON, that is constructed the same way as the broker.json shows link:broker.json[example].
+so usually the key "params" should be mapped to the SCHEDULE channel.
+
+So in short:
+
+- Configure Component you want to optimize
+- Configure the MQTTBridge
+- Configure the Optimizer
+- Configure the TranslatorComponent holding the Component (Channel) you want to optimize, and the optimizer itself as well as a default Value if no Schedule is transmitted/available
+- Configure the MqttTelemetryComponent, with the Translator ID and Map "params" to the Channel "Schedule" and configure the subscribeConfig holding the Topic where the Schedule is put into.
+
+
+

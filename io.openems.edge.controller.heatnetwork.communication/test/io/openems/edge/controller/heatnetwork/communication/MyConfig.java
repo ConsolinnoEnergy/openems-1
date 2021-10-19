@@ -209,7 +209,7 @@ public class MyConfig extends AbstractComponentConfig implements Config {
     }
 
     @Override
-    public int maxRequestAllowedAtOnce() {
+    public int maxDecentralizedSystemsAllowedAtOnce() {
         return this.builder.maxRequestsAllowedAtOnce;
     }
 

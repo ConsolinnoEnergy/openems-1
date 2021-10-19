@@ -77,11 +77,13 @@ public class MqttCommandComponent extends MqttOpenemsComponentConnector implemen
      * @throws OpenemsError.OpenemsNamedException if the ComponentManager couldn't find anything with corresponding id (MqttBridge)
      */
     private void configureMqtt(CommandComponentConfig config) throws MqttException, ConfigurationException, IOException, OpenemsError.OpenemsNamedException {
-        super.setCorrespondingComponent(config.otherComponentId(), this.cpm);
+        if (this.isEnabled()) {
+            super.setCorrespondingComponent(config.otherComponentId(), this.cpm);
 
-        super.setConfiguration(MqttType.COMMAND, config.subscriptionList(), null,
-                config.payloads(), config.createdByOsgi(), config.mqttId(), this.cm, config.channelIdList().length,
-                config.pathForJson(), config.payloadStyle(), config.configurationDone());
+            super.setConfiguration(MqttType.COMMAND, config.subscriptionList(), null,
+                    config.payloads(), config.createdByOsgi(), config.mqttId(), this.cm, config.channelIdList().length,
+                    config.pathForJson(), config.payloadStyle(), config.configurationDone());
+        }
     }
 
 
@@ -179,15 +181,19 @@ public class MqttCommandComponent extends MqttOpenemsComponentConnector implemen
 
     @Override
     public void handleEvent(Event event) {
-        if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE)) {
-            if (this.mqttBridge.get() != null && this.mqttBridge.get().isEnabled() && this.mqttConfigurationComponent == null) {
-                this.mqttBridge.get().removeMqttComponent(this.id());
-                try {
-                    super.setConfiguration(MqttType.COMMAND, this.config.subscriptionList(), null,
-                            this.config.payloads(), this.config.createdByOsgi(), this.config.mqttId(), this.cm, this.config.channelIdList().length,
-                            this.config.pathForJson(), this.config.payloadStyle(), this.config.configurationDone());
-                } catch (IOException | MqttException | ConfigurationException e) {
-                    super.log.warn("Couldn't apply config for this mqttComponent");
+        if (this.isEnabled()) {
+            if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE)) {
+                super.renewReferenceAndMqttConfigurationComponent(this.cpm);
+                if (this.mqttBridge.get() != null && this.mqttBridge.get().isEnabled()
+                        && (!this.mqttBridge.get().containsComponent(this.id()) || this.mqttConfigurationComponent == null)) {
+                    this.mqttBridge.get().addMqttComponent(this.id(), this);
+                    try {
+                        super.setConfiguration(MqttType.COMMAND, this.config.subscriptionList(), null,
+                                this.config.payloads(), this.config.createdByOsgi(), this.config.mqttId(), this.cm, this.config.channelIdList().length,
+                                this.config.pathForJson(), this.config.payloadStyle(), this.config.configurationDone());
+                    } catch (IOException | MqttException | ConfigurationException e) {
+                        super.log.warn("Couldn't apply config for this mqttComponent");
+                    }
                 }
             }
         }

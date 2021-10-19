@@ -13,6 +13,7 @@ import io.openems.edge.bridge.modbus.api.element.UnsignedWordElement;
 import io.openems.edge.bridge.modbus.api.task.FC3ReadRegistersTask;
 import io.openems.edge.bridge.modbus.api.task.FC5WriteCoilTask;
 import io.openems.edge.bridge.modbus.api.task.FC6WriteRegisterTask;
+import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.common.taskmanager.Priority;
 import io.openems.edge.consolinno.leaflet.core.api.Error;
@@ -41,17 +42,19 @@ import org.slf4j.LoggerFactory;
         configurationPolicy = ConfigurationPolicy.REQUIRE)
 
 public class PwmImpl extends AbstractOpenemsModbusComponent implements OpenemsComponent, Pwm {
-    @Reference(policy = ReferencePolicy.STATIC, policyOption = ReferencePolicyOption.GREEDY, cardinality = ReferenceCardinality.MANDATORY)
-    LeafletCore lc;
 
     @Reference
     protected ConfigurationAdmin cm;
+
+    @Reference
+    protected ComponentManager cpm;
 
     @Reference(policy = ReferencePolicy.STATIC, policyOption = ReferencePolicyOption.GREEDY, cardinality = ReferenceCardinality.MANDATORY)
     protected void setModbus(BridgeModbus modbus) {
         super.setModbus(modbus);
     }
 
+    private LeafletCore lc;
     private final Logger log = LoggerFactory.getLogger(PwmImpl.class);
     private int pwmModule;
     private int position;
@@ -65,6 +68,11 @@ public class PwmImpl extends AbstractOpenemsModbusComponent implements OpenemsCo
 
     @Activate
     void activate(ComponentContext context, Config config) throws ConfigurationException, OpenemsException {
+        try {
+            this.lc = this.cpm.getComponent(config.leafletId());
+        } catch (Exception e) {
+            this.log.error("The LeafletCore doesn't exist! Check Config!");
+        }
         this.pwmModule = config.module();
         this.position = config.position();
         //Check if the Module is physically present, else throws ConfigurationException.

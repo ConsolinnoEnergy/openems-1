@@ -22,13 +22,13 @@ public class MyControllerTest {
     private static final ChannelAddress CHARGE_POWER = new ChannelAddress(evcsId, "ChargePower");
     private static final ChannelAddress PHASES = new ChannelAddress(evcsId, "Phases");
     //private static final ChannelAddress output = new ChannelAddress(outputComponentId, outputChannelId);
-
+/*
     @Test
     public void initialTest() throws Exception {
         EvcsLimiterImpl test = new EvcsLimiterImpl();
         final TimeLeapClock clock = new TimeLeapClock(
-                Instant.ofEpochSecond(1577836800) /* starts at 1. January 2020 00:00:00 */, ZoneOffset.UTC);
-
+                Instant.ofEpochSecond(1577836800) /* starts at 1. January 2020 00:00:00 */ /*, ZoneOffset.UTC);
+/*
         new ComponentTest(test)
                 .addReference("cpm", new DummyComponentManager(clock))
                 .addComponent(new DummyManagedEvcs(evcsId, new DummyEvcsPower()))
@@ -68,7 +68,7 @@ public class MyControllerTest {
     public void balanceTest() throws Exception {
         EvcsLimiterImpl test = new EvcsLimiterImpl();
         final TimeLeapClock clock = new TimeLeapClock(
-                Instant.ofEpochSecond(1577836800) /* starts at 1. January 2020 00:00:00 */, ZoneOffset.UTC);
+                Instant.ofEpochSecond(1577836800) /* starts at 1. January 2020 00:00:00 */ /*, ZoneOffset.UTC);
 
         new ComponentTest(test)
                 .addReference("cpm", new DummyComponentManager(clock))
@@ -105,9 +105,9 @@ public class MyControllerTest {
     public void namedExceptionTest() throws Throwable {
         EvcsLimiterImpl test = new EvcsLimiterImpl();
         final TimeLeapClock clock = new TimeLeapClock(
-                Instant.ofEpochSecond(1577836800) /* starts at 1. January 2020 00:00:00 */, ZoneOffset.UTC);
+                Instant.ofEpochSecond(1577836800) /* starts at 1. January 2020 00:00:00 */ /*, ZoneOffset.UTC);
 
-
+/*
         try {
             new ComponentTest(test)
                     .addReference("cpm", new DummyComponentManager(clock))

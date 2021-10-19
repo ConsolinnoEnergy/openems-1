@@ -29,6 +29,9 @@ import org.osgi.service.metatype.annotations.Option;
     @AttributeDefinition(name = "Inverted Logic", description = "Usually ON signal at T. >100°C--> inverted Logic : Signal on at < 100°C")
     boolean inverted() default false;
 
+    @AttributeDefinition(name = "LeafletId", description = "Unique Id of the LeafletCore, this Module is attached to.")
+    String leafletId() default "LeafletCore";
+
     boolean enabled() default true;
 
     @AttributeDefinition(name = "ModbusUnitId", description = "ModbusUnitId from Core.")

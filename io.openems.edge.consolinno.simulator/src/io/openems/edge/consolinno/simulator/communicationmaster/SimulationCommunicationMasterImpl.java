@@ -5,8 +5,8 @@ import io.openems.edge.common.component.AbstractOpenemsComponent;
 import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.controller.api.Controller;
-import io.openems.edge.controller.heatnetwork.hydraulic.lineheater.api.HydraulicLineHeater;
-import io.openems.edge.heater.decentral.api.DecentralHeater;
+import io.openems.edge.controller.heatnetwork.hydraulic.lineheater.api.HydraulicLineController;
+import io.openems.edge.heater.decentralized.api.DecentralizedHeater;
 import org.joda.time.DateTime;
 import org.osgi.service.cm.ConfigurationException;
 import org.osgi.service.component.ComponentContext;
@@ -39,15 +39,15 @@ public class SimulationCommunicationMasterImpl extends AbstractOpenemsComponent 
     Random random = new Random();
     private int maxRequests;
     private final AtomicInteger currentRequests = new AtomicInteger();
-    Map<DecentralHeater, Boolean> isManaged = new HashMap<>();
-    List<DecentralHeater> managedHeaterList = new ArrayList<>();
-    Map<DecentralHeater, DateTime> workMap = new HashMap<>();
+    Map<DecentralizedHeater, Boolean> isManaged = new HashMap<>();
+    List<DecentralizedHeater> managedHeaterList = new ArrayList<>();
+    Map<DecentralizedHeater, DateTime> workMap = new HashMap<>();
     private static final int MIN_WORK_TIME_IN_SECONDS = 20;
 
     private boolean useHeater;
     private boolean useHydraulicLineHeater;
-    private final List<DecentralHeater> decentralHeaterList = new ArrayList<>();
-    private HydraulicLineHeater hydraulicLineHeater;
+    private final List<DecentralizedHeater> decentralHeaterList = new ArrayList<>();
+    private HydraulicLineController hydraulicLineController;
 
     public SimulationCommunicationMasterImpl() {
         super(OpenemsComponent.ChannelId.values(),
@@ -66,8 +66,8 @@ public class SimulationCommunicationMasterImpl extends AbstractOpenemsComponent 
                     OpenemsComponent component;
                     try {
                         component = cpm.getComponent(entry);
-                        if (component instanceof DecentralHeater) {
-                            this.decentralHeaterList.add((DecentralHeater) component);
+                        if (component instanceof DecentralizedHeater) {
+                            this.decentralHeaterList.add((DecentralizedHeater) component);
                         } else {
                             exConfig[0] = new ConfigurationException("Activate: SimulationCommunicationMasterImpl", component.id() + " not a DecentralHeater!");
                         }
@@ -80,8 +80,8 @@ public class SimulationCommunicationMasterImpl extends AbstractOpenemsComponent 
         }
         if (config.useHydraulicLineHeater()) {
             OpenemsComponent lineHeater = cpm.getComponent(config.hydraulicLineHeaterId());
-            if (lineHeater instanceof HydraulicLineHeater) {
-                this.hydraulicLineHeater = (HydraulicLineHeater) lineHeater;
+            if (lineHeater instanceof HydraulicLineController) {
+                this.hydraulicLineController = (HydraulicLineController) lineHeater;
             } else {
                 throw new ConfigurationException("ActivateMethod SimulationCommunicationMaster", "HydraulicLineHeaterId not correct" + lineHeater.id());
             }
@@ -140,11 +140,11 @@ public class SimulationCommunicationMasterImpl extends AbstractOpenemsComponent 
         }
         if (this.useHydraulicLineHeater) {
             boolean enableSignal = atLeastOneRequest.get() && random.nextInt(100) < 90;
-            this.hydraulicLineHeater.enableSignal().setNextWriteValue(enableSignal);
+            this.hydraulicLineController.enableSignalChannel().setNextWriteValue(enableSignal);
         }
     }
 
-    private void enableOrDisableHeater(DecentralHeater decentralHeater, boolean enable) {
+    private void enableOrDisableHeater(DecentralizedHeater decentralHeater, boolean enable) {
         try {
             this.isManaged.put(decentralHeater, enable);
             decentralHeater.getNeedHeatEnableSignalChannel().setNextWriteValue(enable);
@@ -160,13 +160,13 @@ public class SimulationCommunicationMasterImpl extends AbstractOpenemsComponent 
     }
 
     private void checkMissingComponent() {
-        if (this.hydraulicLineHeater != null && this.hydraulicLineHeater.isEnabled() == false) {
+        if (this.hydraulicLineController != null && this.hydraulicLineController.isEnabled() == false) {
             try {
-                this.hydraulicLineHeater = cpm.getComponent(this.hydraulicLineHeater.id());
+                this.hydraulicLineController = cpm.getComponent(this.hydraulicLineController.id());
             } catch (OpenemsError.OpenemsNamedException e) {
                 e.printStackTrace();
             }
-            List<DecentralHeater> missingHeater = this.decentralHeaterList.stream().filter(heater -> heater.isEnabled() == false).collect(Collectors.toList());
+            List<DecentralizedHeater> missingHeater = this.decentralHeaterList.stream().filter(heater -> heater.isEnabled() == false).collect(Collectors.toList());
             missingHeater.forEach(missing -> {
                 try {
                     this.decentralHeaterList.set(this.decentralHeaterList.indexOf(missing), cpm.getComponent(missing.id()));

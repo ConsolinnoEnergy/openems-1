@@ -19,6 +19,7 @@ import io.openems.edge.common.taskmanager.Priority;
 import io.openems.edge.evcs.api.Evcs;
 import io.openems.edge.evcs.api.EvcsPower;
 import io.openems.edge.evcs.api.ManagedEvcs;
+import io.openems.edge.evcs.api.Status;
 import io.openems.edge.evcs.schneider.api.Schneider;
 import org.osgi.service.cm.ConfigurationAdmin;
 import org.osgi.service.cm.ConfigurationException;
@@ -247,7 +248,7 @@ public class SchneiderImpl extends AbstractOpenemsModbusComponent implements Ope
         this.writeHandler.run();
 
         try {
-            if (this.getSetChargePowerLimit().isDefined() && this.getSetChargePowerLimit().get() <= 6 * 230) {
+            if (this.getSetChargePowerLimit().isDefined() && this.getSetChargePowerLimit().get() <= 6 * 230 && !this.getStatus().equals(Status.CHARGING)) {
                 this.setChargePowerLimit(6 * 230);
             }
         } catch (OpenemsError.OpenemsNamedException e) {

@@ -12,6 +12,7 @@ import io.openems.edge.bridge.modbus.api.task.FC1ReadCoilsTask;
 import io.openems.edge.bridge.modbus.api.task.FC3ReadRegistersTask;
 import io.openems.edge.bridge.modbus.api.task.FC4ReadInputRegistersTask;
 import io.openems.edge.bridge.modbus.api.task.FC6WriteRegisterTask;
+import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.common.event.EdgeEventConstants;
 import io.openems.edge.common.taskmanager.Priority;
@@ -43,17 +44,20 @@ import org.slf4j.LoggerFactory;
 @Component(name = "Consolinno.Leaflet.Aio", immediate = true,
         configurationPolicy = ConfigurationPolicy.REQUIRE, property = EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE)
 public class AioImpl extends AbstractOpenemsModbusComponent implements OpenemsComponent, AnalogInputOutput, EventHandler {
-    @Reference(policy = ReferencePolicy.STATIC, policyOption = ReferencePolicyOption.GREEDY, cardinality = ReferenceCardinality.MANDATORY)
-    LeafletCore lc;
+
 
     @Reference
     protected ConfigurationAdmin cm;
+
+    @Reference
+    protected ComponentManager cpm;
 
     @Reference(policy = ReferencePolicy.STATIC, policyOption = ReferencePolicyOption.GREEDY, cardinality = ReferenceCardinality.MANDATORY)
     protected void setModbus(BridgeModbus modbus) {
         super.setModbus(modbus);
     }
 
+    private LeafletCore lc;
     private final Logger log = LoggerFactory.getLogger(AioImpl.class);
     private int aioModule;
     private int position;
@@ -82,6 +86,11 @@ public class AioImpl extends AbstractOpenemsModbusComponent implements OpenemsCo
 
     @Activate
     void activate(ComponentContext context, Config config) throws ConfigurationException, OpenemsException {
+        try {
+            this.lc = this.cpm.getComponent(config.leafletId());
+        } catch (Exception e) {
+            this.log.error("The LeafletCore doesn't exist! Check Config!");
+        }
         this.aioModule = config.module();
         this.position = config.position();
         this.type = config.type();
