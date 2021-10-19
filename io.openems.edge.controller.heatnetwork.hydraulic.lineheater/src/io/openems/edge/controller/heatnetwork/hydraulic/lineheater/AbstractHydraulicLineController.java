@@ -42,7 +42,6 @@ abstract class AbstractHydraulicLineController extends AbstractOpenemsComponent 
 
     private final Logger log = LoggerFactory.getLogger(AbstractHydraulicLineController.class);
 
-    @Reference
     protected ComponentManager cpm;
 
     private static final int DEFAULT_TEMPERATURE = -127;
@@ -98,8 +97,10 @@ abstract class AbstractHydraulicLineController extends AbstractOpenemsComponent 
                             String channelAddress, String[] channels, String bypassValve, String timerId,
                             int deltaTimeFallback, int deltaTimeCycleRestart, boolean shouldFallback,
                             int minuteFallbackStart, int minuteFallbackStop,
-                            double maxValveValue, double minValveValue, boolean minMaxOnly, HeaterType heaterType) {
+                            double maxValveValue, double minValveValue, boolean minMaxOnly, HeaterType heaterType,
+                            ComponentManager cpm) {
         super.activate(context, id, alias, enabled);
+        this.cpm = cpm;
         this.activateOrModifiedRoutine(referenceThermometer, useMinMax, useDecentralizedHeater, decentralizedHeaterId, reactionType,
                 defaultTemperature, lineHeaterType, valueIsBoolean, channelAddress, channels, bypassValve, timerId,
                 deltaTimeFallback, deltaTimeCycleRestart, shouldFallback, minuteFallbackStart, minuteFallbackStop,
@@ -112,8 +113,9 @@ abstract class AbstractHydraulicLineController extends AbstractOpenemsComponent 
                   String channelAddress, String[] channels, String bypassValve, String timerId,
                   int deltaTimeFallback, int deltaTimeCycleRestart, boolean shouldFallback,
                   int minuteFallbackStart, int minuteFallbackStop,
-                  double maxValveValue, double minValveValue, boolean minMaxOnly, HeaterType heaterType) {
+                  double maxValveValue, double minValveValue, boolean minMaxOnly, HeaterType heaterType, ComponentManager cpm) {
         super.modified(context, id, alias, enabled);
+        this.cpm = cpm;
         this.configSuccess = false;
         this.activateOrModifiedRoutine(referenceThermometer, useMinMax, useDecentralizedHeater, decentralizedHeaterId, reactionType,
                 defaultTemperature, lineHeaterType, valueIsBoolean, channelAddress, channels, bypassValve, timerId,

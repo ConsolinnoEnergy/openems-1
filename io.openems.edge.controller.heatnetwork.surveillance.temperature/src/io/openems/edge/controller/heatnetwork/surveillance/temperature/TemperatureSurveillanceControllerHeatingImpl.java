@@ -50,7 +50,7 @@ public class TemperatureSurveillanceControllerHeatingImpl extends AbstractTemper
                 this.config.referenceThermometerId(), AbstractTemperatureSurveillanceController.SurveillanceHeatingType.HEATING,
                 this.config.surveillanceType(), this.config.offsetActivate(), this.config.offsetDeactivate(),
                 this.config.heaterId(), this.config.hydraulicControllerId(),
-                this.config.timerId(), this.config.deltaTimeDelay());
+                this.config.timerId(), this.config.deltaTimeDelay(), this.cpm);
     }
 
     @Modified
@@ -63,7 +63,7 @@ public class TemperatureSurveillanceControllerHeatingImpl extends AbstractTemper
                 this.config.surveillanceType(), this.config.offsetActivate(),
                 this.config.offsetDeactivate(), this.config.heaterId(),
                 this.config.hydraulicControllerId(),
-                this.config.timerId(), this.config.deltaTimeDelay());
+                this.config.timerId(), this.config.deltaTimeDelay(), this.cpm);
     }
 
 

@@ -43,7 +43,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 abstract class AbstractTemperatureSurveillanceController extends AbstractOpenemsComponent implements OpenemsComponent, Controller {
     private final Logger log = LoggerFactory.getLogger(TemperatureSurveillanceControllerHeatingImpl.class);
 
-    @Reference
+
     ComponentManager cpm;
 
     protected boolean configSuccess;
@@ -76,8 +76,9 @@ abstract class AbstractTemperatureSurveillanceController extends AbstractOpenems
                             String thermometerActivateId, String thermometerDeactivateId,
                             String referenceThermometerId, SurveillanceHeatingType heatingType, SurveillanceType surveillanceType,
                             int activationOffset, int deactivationOffset, String heaterId, String hydraulicControllerId,
-                            String timerId, int deltaTime) throws ConfigurationException {
+                            String timerId, int deltaTime, ComponentManager cpm) throws ConfigurationException {
         super.activate(context, id, alias, enabled);
+        this.cpm = cpm;
         this.heatingType = heatingType;
         this.surveillanceType = surveillanceType;
         this.activationOrModifiedRoutine(thermometerActivateId, thermometerDeactivateId, referenceThermometerId,
@@ -142,8 +143,9 @@ abstract class AbstractTemperatureSurveillanceController extends AbstractOpenems
                   String thermometerActivateId, String thermometerDeactivateId,
                   String referenceThermometerId, SurveillanceHeatingType heatingType, SurveillanceType surveillanceType,
                   int activationOffset, int deactivationOffset, String heaterId, String hydraulicControllerId,
-                  String timerId, int deltaTime) throws ConfigurationException {
+                  String timerId, int deltaTime, ComponentManager cpm) throws ConfigurationException {
         super.modified(context, id, alias, enabled);
+        this.cpm = cpm;
         this.configSuccess = false;
         this.heatingType = heatingType;
         this.surveillanceType = surveillanceType;

@@ -40,7 +40,7 @@ public abstract class AbstractMultiCombinedController extends AbstractOpenemsCom
 
     private final Logger log = LoggerFactory.getLogger(MultipleHeaterCombinedControllerImpl.class);
 
-    @Reference
+
     protected ComponentManager cpm;
 
     private final Map<Heater, ThermometerWrapper> heaterTemperatureWrapperMap = new HashMap<>();
@@ -63,9 +63,10 @@ public abstract class AbstractMultiCombinedController extends AbstractOpenemsCom
     void activate(ComponentContext context, String id, String alias, boolean enabled, boolean useTimer, String timerId,
                   int deltaTime, ControlType controlType, String[] heaterIds,
                   String[] activationThermometers, String[] activationTemperatures,
-                  String[] deactivationThermometers, String[] deactivationTemperatures) {
+                  String[] deactivationThermometers, String[] deactivationTemperatures, ComponentManager cpm) {
 
         super.activate(context, id, alias, enabled);
+        this.cpm = cpm;
         this.useTimer = useTimer;
         //----------------------ALLOCATE/ CONFIGURE HEATER/TemperatureSensor -----------------//
         try {
@@ -81,8 +82,9 @@ public abstract class AbstractMultiCombinedController extends AbstractOpenemsCom
     void modified(ComponentContext context, String id, String alias, boolean enabled, boolean useTimer, String timerId,
                   int deltaTime, ControlType controlType, String[] heaterIds,
                   String[] activationThermometers, String[] activationTemperatures,
-                  String[] deactivationThermometers, String[] deactivationTemperatures) {
+                  String[] deactivationThermometers, String[] deactivationTemperatures, ComponentManager cpm) {
         super.modified(context, id, alias, enabled);
+        this.cpm = cpm;
         this.configuredHeater.clear();
         this.activeStateHeaterAndHeatWrapper.clear();
         this.heaterTemperatureWrapperMap.clear();

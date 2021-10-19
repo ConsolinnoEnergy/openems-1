@@ -51,7 +51,7 @@ public class DecentralizedCoolerImpl extends AbstractDecentralizedComponent impl
                 config.forceCooling(), config.enableExceptionalStateHandling(),
                 config.timerNeedCoolResponse(), config.timeNeedCoolResponse(),
                 config.timerExceptionalState(), config.timeToWaitExceptionalState(),
-                this.getForceCoolChannel(), this.getNeedCoolEnableSignalChannel());
+                this.getForceCoolChannel(), this.getNeedCoolEnableSignalChannel(), this.cpm);
 
         this.getNeedCoolChannel().setNextValue(false);
         this.getNeedMoreCoolChannel().setNextValue(false);
@@ -67,7 +67,7 @@ public class DecentralizedCoolerImpl extends AbstractDecentralizedComponent impl
                 config.forceCooling(), config.enableExceptionalStateHandling(),
                 config.timerNeedCoolResponse(), config.timeToWaitExceptionalState(),
                 config.timerExceptionalState(), config.timeToWaitExceptionalState(),
-                this.getForceCoolChannel(), this.getNeedCoolEnableSignalChannel());
+                this.getForceCoolChannel(), this.getNeedCoolEnableSignalChannel(), this.cpm);
     }
 
     /**

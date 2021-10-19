@@ -53,7 +53,7 @@ public class MultipleCoolerCombinedControllerImpl extends AbstractMultiCombinedC
         super.activate(context, config.id(), config.alias(), config.enabled(), config.useTimer(), config.timerId(),
                 config.timeDelta(), ControlType.COOLER, config.coolerIds(),
                 config.activationThermometers(), config.activationTemperatures(),
-                config.deactivationThermometers(), config.deactivationTemperatures());
+                config.deactivationThermometers(), config.deactivationTemperatures(), this.cpm);
     }
 
     @Modified
@@ -62,7 +62,7 @@ public class MultipleCoolerCombinedControllerImpl extends AbstractMultiCombinedC
         super.modified(context, config.id(), config.alias(), config.enabled(), config.useTimer(), config.timerId(),
                 config.timeDelta(), ControlType.COOLER, config.coolerIds(),
                 config.activationThermometers(), config.activationTemperatures(),
-                config.deactivationThermometers(), config.deactivationTemperatures());
+                config.deactivationThermometers(), config.deactivationTemperatures(), this.cpm);
     }
 
 

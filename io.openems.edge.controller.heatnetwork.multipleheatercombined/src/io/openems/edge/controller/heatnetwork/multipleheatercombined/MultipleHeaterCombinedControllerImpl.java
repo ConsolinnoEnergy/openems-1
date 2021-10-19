@@ -51,14 +51,14 @@ public class MultipleHeaterCombinedControllerImpl extends AbstractMultiCombinedC
     void activate(ComponentContext context, ConfigMultipleHeater config) {
         this.config = config;
         super.activate(context, config.id(), config.alias(), config.enabled(), config.useTimer(), config.timerId(), config.timeDelta(), ControlType.HEATER, config.heaterIds(),
-                config.activationThermometers(), config.activationTemperatures(), config.deactivationThermometers(), config.deactivationTemperatures());
+                config.activationThermometers(), config.activationTemperatures(), config.deactivationThermometers(), config.deactivationTemperatures(), this.cpm);
     }
 
     @Modified
     void modified(ComponentContext context, ConfigMultipleHeater config) {
         this.config = config;
         super.modified(context, config.id(), config.alias(), config.enabled(), config.useTimer(), config.timerId(), config.timeDelta(), ControlType.HEATER, config.heaterIds(),
-                config.activationThermometers(), config.activationTemperatures(), config.deactivationThermometers(), config.deactivationTemperatures());
+                config.activationThermometers(), config.activationTemperatures(), config.deactivationThermometers(), config.deactivationTemperatures(), this.cpm);
     }
 
     /**

@@ -47,7 +47,7 @@ public class HydraulicLineCoolerController extends AbstractHydraulicLineControll
                 config.channelAddress(), config.channels(), config.valveBypass(), config.timerId(),
                 config.timeoutMaxRemote(), config.timeoutRestartCycle(), config.shouldFallback(),
                 config.minuteFallbackStart(), config.minuteFallbackStop(),
-                config.maxValveValue(), config.minValveValue(), config.maxMinOnly(), HeaterType.COOLER);
+                config.maxValveValue(), config.minValveValue(), config.maxMinOnly(), HeaterType.COOLER, this.cpm);
     }
 
     @Modified
@@ -62,7 +62,7 @@ public class HydraulicLineCoolerController extends AbstractHydraulicLineControll
                 config.channelAddress(), config.channels(), config.valveBypass(), config.timerId(),
                 config.timeoutMaxRemote(), config.timeoutRestartCycle(), config.shouldFallback(),
                 config.minuteFallbackStart(), config.minuteFallbackStop(),
-                config.maxValveValue(), config.minValveValue(), config.maxMinOnly(), HeaterType.COOLER);
+                config.maxValveValue(), config.minValveValue(), config.maxMinOnly(), HeaterType.COOLER, this.cpm);
     }
 
 

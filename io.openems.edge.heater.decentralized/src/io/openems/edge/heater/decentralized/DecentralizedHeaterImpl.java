@@ -56,7 +56,7 @@ public class DecentralizedHeaterImpl extends AbstractDecentralizedComponent impl
                 config.componentOrControllerId(), config.thresholdThermometerId(), config.setPointTemperature(),
                 config.forceHeating(), config.useExceptionalState(),
                 config.timerNeedHeatResponse(), config.waitTimeNeedHeatResponse(),
-                config.timerExceptionalState(), config.timeToWaitExceptionalState(), this.getForceHeatChannel(), this.getNeedHeatEnableSignalChannel());
+                config.timerExceptionalState(), config.timeToWaitExceptionalState(), this.getForceHeatChannel(), this.getNeedHeatEnableSignalChannel(), this.cpm);
         this.getNeedHeatChannel().setNextValue(false);
         this.getNeedMoreHeatChannel().setNextValue(false);
     }
@@ -71,7 +71,7 @@ public class DecentralizedHeaterImpl extends AbstractDecentralizedComponent impl
                 config.forceHeating(), config.useExceptionalState(),
                 config.timerNeedHeatResponse(), config.waitTimeNeedHeatResponse(),
                 config.timerExceptionalState(), config.timeToWaitExceptionalState(),
-                this.getForceHeatChannel(), this.getNeedHeatEnableSignalChannel());
+                this.getForceHeatChannel(), this.getNeedHeatEnableSignalChannel(), this.cpm);
     }
 
     /**
