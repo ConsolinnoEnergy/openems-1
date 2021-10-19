@@ -556,7 +556,7 @@ public class ApartmentModuleImpl extends AbstractOpenemsModbusComponent implemen
                         + "4 External Request Active: " + getExternalRequestCurrent().orElse(false)
                         + "\nHolding Registers\n"
                         + "0 Modbus Communication Check: " + getSetCommunicationCheckChannel().value().asEnum().getName()
-                        + "1 External Request Flag: " + getSetExternalRequestFlagChannel().value().asEnum().getValue();
+                        + "1 External Request Flag: " + getSetExternalRequestFlagChannel().value().orElse(false);
 
         if (this.topAM) {
             debug +=
@@ -567,7 +567,7 @@ public class ApartmentModuleImpl extends AbstractOpenemsModbusComponent implemen
                             + "20 State Relay2: " + getStateRelay2().getName()
                             + "\nHolding Registers\n"
                             + "2 Temperature Calibration: " + this.setTemperatureCalibrationChannel().value().orElse(TEMP_CALIBRATION_ALTERNATE_VALUE)
-                            + "ValveStatus: " + this.getValveStatusChannel().value();
+                            + "ValveStatus: " + this.getValveStatusChannel().value().asEnum().getName();
         }
         return debug;
     }
