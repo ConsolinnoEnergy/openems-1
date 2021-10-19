@@ -1,5 +1,6 @@
 package io.openems.edge.controller.heatnetwork.hydraulic.lineheater;
 
+import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.controller.api.Controller;
 import io.openems.edge.controller.heatnetwork.hydraulic.lineheater.api.HydraulicLineController;
@@ -9,6 +10,7 @@ import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.ConfigurationPolicy;
 import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Modified;
+import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.metatype.annotations.Designate;
 
 /**
@@ -25,6 +27,8 @@ import org.osgi.service.metatype.annotations.Designate;
         immediate = true)
 public class HydraulicLineCoolerController extends AbstractHydraulicLineController implements OpenemsComponent, Controller, HydraulicLineController {
 
+    @Reference
+    ComponentManager cpm;
 
     ConfigLineCooler config;
     //NOTE: If more Variation comes --> create extra "LineHeater"Classes in this controller etc

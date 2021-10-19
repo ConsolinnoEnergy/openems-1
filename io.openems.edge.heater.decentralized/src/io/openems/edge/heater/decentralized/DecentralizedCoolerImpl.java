@@ -1,6 +1,7 @@
 package io.openems.edge.heater.decentralized;
 
 import io.openems.common.exceptions.OpenemsError;
+import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.common.event.EdgeEventConstants;
 import io.openems.edge.exceptionalstate.api.ExceptionalState;
@@ -13,6 +14,7 @@ import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.ConfigurationPolicy;
 import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Modified;
+import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.event.Event;
 import org.osgi.service.event.EventConstants;
 import org.osgi.service.event.EventHandler;
@@ -33,6 +35,10 @@ import org.osgi.service.metatype.annotations.Designate;
         property = {EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS,
                 EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE})
 public class DecentralizedCoolerImpl extends AbstractDecentralizedComponent implements OpenemsComponent, EventHandler, Heater, DecentralizedCooler {
+
+
+    @Reference
+    ComponentManager cpm;
 
     public DecentralizedCoolerImpl() {
         super(OpenemsComponent.ChannelId.values(),

@@ -1,6 +1,7 @@
 package io.openems.edge.heater.decentralized;
 
 import io.openems.common.exceptions.OpenemsError;
+import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.common.event.EdgeEventConstants;
 import io.openems.edge.exceptionalstate.api.ExceptionalState;
@@ -15,6 +16,7 @@ import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.ConfigurationPolicy;
 import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Modified;
+import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.event.Event;
 import org.osgi.service.event.EventConstants;
 import org.osgi.service.event.EventHandler;
@@ -47,6 +49,9 @@ public class DecentralizedHeaterImpl extends AbstractDecentralizedComponent impl
     }
 
     ConfigDecentralizedHeater config;
+
+    @Reference
+    ComponentManager cpm;
 
 
     @Activate

@@ -1,6 +1,7 @@
 package io.openems.edge.controller.heatnetwork.multipleheatercombined;
 
 import io.openems.common.exceptions.OpenemsError;
+import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.controller.api.Controller;
 import io.openems.edge.controller.heatnetwork.multipleheatercombined.api.MultipleHeaterCombinedController;
@@ -12,6 +13,7 @@ import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.ConfigurationPolicy;
 import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Modified;
+import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,6 +40,9 @@ public class MultipleHeaterCombinedControllerImpl extends AbstractMultiCombinedC
     private final Logger log = LoggerFactory.getLogger(MultipleHeaterCombinedControllerImpl.class);
 
     private ConfigMultipleHeater config;
+
+    @Reference
+    ComponentManager cpm;
 
     public MultipleHeaterCombinedControllerImpl() {
 
