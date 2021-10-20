@@ -555,19 +555,19 @@ public class ApartmentModuleImpl extends AbstractOpenemsModbusComponent implemen
                 "Input Register"
                         + "4 External Request Active: " + getExternalRequestCurrent().orElse(false)
                         + "\nHolding Registers\n"
-                        + "0 Modbus Communication Check: " + getSetCommunicationCheckChannel().value().asEnum().getName()
-                        + "1 External Request Flag: " + getSetExternalRequestFlagChannel().value().orElse(false);
+                        + " 0 Modbus Communication Check: " + getSetCommunicationCheckChannel().value().asEnum().getName()
+                        + " 1 External Request Flag: " + getSetExternalRequestFlagChannel().value().orElse(false);
 
         if (this.topAM) {
             debug +=
                     "\n--- TOP AM ---\n"
                             + "Input Register\n"
                             + "6 Temperature: " + getLastKnowTemperatureChannel().value().orElse(0) / 10.0 + "°C"
-                            + "10 State Relay1: " + getStateRelay1().getName()
-                            + "20 State Relay2: " + getStateRelay2().getName()
+                            + " 10 State Relay1: " + getStateRelay1().getName()
+                            + " 20 State Relay2: " + getStateRelay2().getName()
                             + "\nHolding Registers\n"
-                            + "2 Temperature Calibration: " + this.setTemperatureCalibrationChannel().value().orElse(TEMP_CALIBRATION_ALTERNATE_VALUE)
-                            + "ValveStatus: " + this.getValveStatusChannel().value().asEnum().getName();
+                            + " 2 Temperature Calibration: " + this.setTemperatureCalibrationChannel().value().orElse(TEMP_CALIBRATION_ALTERNATE_VALUE)
+                            + " ValveStatus: " + this.getValveStatusChannel().value().asEnum().getName();
         }
         return debug;
     }
