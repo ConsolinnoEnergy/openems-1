@@ -401,30 +401,30 @@ public abstract class AbstractValve extends AbstractOpenemsComponent implements 
      * @return the current PowerLevel
      */
     protected double calculateCurrentPowerLevelAndSetTime(double percentage) {
-        double currentPowerLevel = this.getPowerLevelValue();
-        this.getLastPowerLevelChannel().setNextValue(currentPowerLevel);
+        double futurePowerLevel = this.getPowerLevelValue();
+        this.getLastPowerLevelChannel().setNextValue(futurePowerLevel);
         this.maximum = this.getMaxAllowedValue();
         this.minimum = this.getMinAllowedValue();
         if (this.maxMinValid() == false) {
             this.minimum = null;
             this.maximum = null;
         }
-        currentPowerLevel += percentage;
-        if (this.maximum != null && this.maximum + BUFFER < currentPowerLevel) {
-            currentPowerLevel = this.maximum;
-        } else if (this.lastMaximum != null && this.lastMaximum + BUFFER < currentPowerLevel) {
-            currentPowerLevel = this.lastMaximum;
-        } else if (currentPowerLevel >= DEFAULT_MAX_POWER_VALUE) {
-            currentPowerLevel = DEFAULT_MAX_POWER_VALUE;
-        } else if (this.minimum != null && this.minimum - BUFFER > currentPowerLevel) {
-            currentPowerLevel = this.minimum;
-        } else if (this.lastMinimum != null && this.lastMinimum - BUFFER > currentPowerLevel) {
-            currentPowerLevel = this.lastMinimum;
+        futurePowerLevel += percentage;
+        if (this.maximum != null && this.maximum + BUFFER < futurePowerLevel) {
+            futurePowerLevel = this.maximum;
+        } else if (this.lastMaximum != null && this.lastMaximum + BUFFER < futurePowerLevel) {
+            futurePowerLevel = this.lastMaximum;
+        } else if (futurePowerLevel >= DEFAULT_MAX_POWER_VALUE) {
+            futurePowerLevel = DEFAULT_MAX_POWER_VALUE;
+        } else if (this.minimum != null && this.minimum - BUFFER > futurePowerLevel) {
+            futurePowerLevel = this.minimum;
+        } else if (this.lastMinimum != null && this.lastMinimum - BUFFER > futurePowerLevel) {
+            futurePowerLevel = this.lastMinimum;
         }
         //Set goal Percentage for future reference
-        this.futurePowerLevelChannel().setNextValue(Math.round(currentPowerLevel));
+        this.futurePowerLevelChannel().setNextValue(Math.round(futurePowerLevel));
         //if same power level do not change and return --> relays is not always powered
-        if (getLastPowerLevelChannel().getNextValue().get() == currentPowerLevel) {
+        if (getLastPowerLevelChannel().getNextValue().get() == futurePowerLevel) {
             this.isChanging = false;
             return -1;
         }
@@ -434,7 +434,7 @@ public abstract class AbstractValve extends AbstractOpenemsComponent implements 
         } else {
             this.timeChannel().setNextValue(Math.abs(percentage) * this.secondsPerPercentage);
         }
-        return currentPowerLevel;
+        return futurePowerLevel;
     }
 
     /**

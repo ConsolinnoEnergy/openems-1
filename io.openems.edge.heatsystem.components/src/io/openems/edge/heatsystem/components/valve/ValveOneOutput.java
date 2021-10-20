@@ -200,16 +200,16 @@ public class ValveOneOutput extends AbstractValve implements OpenemsComponent, H
      */
     @Override
     public boolean changeByPercentage(double percentage) {
-        double currentPowerLevel;
+        double futurePowerLevel;
         if (super.changeInvalid(percentage)) {
             return false;
         } else {
             //Setting the oldPowerLevel and adjust the percentage Value
-            currentPowerLevel = super.calculateCurrentPowerLevelAndSetTime(percentage);
-            if (currentPowerLevel < 0) {
+            futurePowerLevel = super.calculateCurrentPowerLevelAndSetTime(percentage);
+            if (futurePowerLevel < 0) {
                 return false;
             }
-            this.writeToOutputChannel(Math.round(currentPowerLevel));
+            this.writeToOutputChannel(Math.round(futurePowerLevel));
             boolean prevClosing = this.isClosing;
             this.isClosing = percentage < DEFAULT_MIN_POWER_VALUE;
             this.isChanging = true;

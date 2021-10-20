@@ -49,7 +49,7 @@ import java.util.concurrent.atomic.AtomicReference;
         configurationPolicy = ConfigurationPolicy.REQUIRE,
         immediate = true,
         property = {
-                EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE,
+                EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE,
                 EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS}
 )
 public class ValveTwoOutput extends AbstractValve implements OpenemsComponent, HydraulicComponent, ExceptionalState, EventHandler {
@@ -214,7 +214,7 @@ public class ValveTwoOutput extends AbstractValve implements OpenemsComponent, H
 
     @Override
     public void handleEvent(Event event) {
-        if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE)) {
+        if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE)) {
             if (this.configSuccess) {
                 this.lastMaximum = this.maximum;
                 this.lastMinimum = this.minimum;
@@ -290,8 +290,8 @@ public class ValveTwoOutput extends AbstractValve implements OpenemsComponent, H
         if (super.changeInvalid(percentage)) {
             return false;
         } else {
-            double currentPowerLevel = super.calculateCurrentPowerLevelAndSetTime(percentage);
-            if (currentPowerLevel < 0) {
+            double futurePowerLevel = super.calculateCurrentPowerLevelAndSetTime(percentage);
+            if (futurePowerLevel < 0) {
                 this.shutdownRelays();
                 return false;
             }
@@ -465,6 +465,10 @@ public class ValveTwoOutput extends AbstractValve implements OpenemsComponent, H
 
                 Channel<?> channelToCheckForTrue;
                 Channel<?> channelToCheckForFalse;
+                //Either it was Closing before but powerLevel fell below future OR it was opening before and not set to closed -> Future < current
+                this.isClosing = this.isClosing
+                        || this.futurePowerLevelChannel().value().orElse((double) HydraulicComponent.DEFAULT_MAX_POWER_VALUE)
+                        < this.getPowerLevelChannel().value().orElse((double) HydraulicComponent.DEFAULT_MIN_POWER_VALUE);
                 if (this.isClosing) {
                     channelToCheckForTrue = this.getInputChannel(ChannelToGet.CLOSING);
                     channelToCheckForFalse = this.getInputChannel(ChannelToGet.OPENING);
