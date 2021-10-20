@@ -1,3 +1,9 @@
+openems-consolinno (0.0.7-1) unstable; urgency=medium
+
+  * Fixed: Applied source Target for each OpenEMS Type nec.
+
+ -- Felix <felix@felix-ThinkPad-E15-Gen-2>  Wed, 20 Oct 2021 17:02:57 +0200
+
 openems-consolinno (0.0.6-1) unstable; urgency=medium
 
   * Fixed a Bug where Generic Modbus Component configuration won't be reset on modification
