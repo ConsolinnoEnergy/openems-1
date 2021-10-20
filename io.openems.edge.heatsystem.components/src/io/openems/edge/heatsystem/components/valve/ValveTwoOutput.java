@@ -257,9 +257,11 @@ public class ValveTwoOutput extends AbstractValve implements OpenemsComponent, H
         Double maxAllowed = this.getMaxAllowedValue();
         Double minAllowed = this.getMinAllowedValue();
         double futurePowerLevel = this.getFuturePowerLevelValue();
-        if (maxAllowed != null && maxAllowed + TOLERANCE < futurePowerLevel) {
-            this.changeByPercentage(maxAllowed - this.getPowerLevelValue());
-        } else if (minAllowed != null && minAllowed - TOLERANCE > futurePowerLevel) {
+        double currentPowerLevel = this.getPowerLevelValue();
+        double powerValueToCompare = this.isChanging ? futurePowerLevel : currentPowerLevel;
+        if (maxAllowed != null && (this.isChanging && maxAllowed + TOLERANCE < powerValueToCompare)) {
+            this.setPowerLevel(maxAllowed);
+        } else if (minAllowed != null && (!this.isChanging && minAllowed - TOLERANCE > powerValueToCompare)) {
             this.changeByPercentage(minAllowed - futurePowerLevel);
         }
     }
@@ -484,18 +486,24 @@ public class ValveTwoOutput extends AbstractValve implements OpenemsComponent, H
                         timeStampValveCurrent = -1;
                         // if channel who needs to be true is NOT true but false and channel which needs to be false is true
                         // Check if closing -> then add percent increase(is Opening) else -> is closing further
+                        double powerLevelToApply = super.powerLevelBeforeUpdate;
                         if (!channelValueIsTrue && channelValueIsNotFalse) {
                             if (this.isClosing) {
-                                this.getPowerLevelChannel().setNextValue(this.powerLevelBeforeUpdate + super.percentIncreaseThisRun);
+                                powerLevelToApply += super.percentIncreaseThisRun;
+                                powerLevelToApply = Math.min(powerLevelToApply, HydraulicComponent.DEFAULT_MAX_POWER_VALUE);
                             } else {
-                                this.getPowerLevelChannel().setNextValue(this.powerLevelBeforeUpdate - super.percentIncreaseThisRun);
+                                powerLevelToApply -= super.percentIncreaseThisRun;
+                                powerLevelToApply = Math.max(powerLevelToApply, HydraulicComponent.DEFAULT_MAX_POWER_VALUE);
                             }
                         }
-                            if (this.isClosing) {
-                                this.valveClose();
-                            } else {
-                                this.valveOpen();
-                            }
+                        this.getPowerLevelChannel().setNextValue(powerLevelToApply);
+
+                        if (this.isClosing) {
+                            this.valveClose();
+                        } else {
+                            this.valveOpen();
+                        }
+
                     } else {
                         updateOk = true;
                     }
