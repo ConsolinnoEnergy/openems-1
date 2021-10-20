@@ -50,14 +50,14 @@ public class MennekesReadHandler {
         if (valueOpt.isPresent()) {
             Integer power = valueOpt.get();
             int phases = this.parent.getPhases().orElse(3);
-            int current = (power / phases) / GRID_VOLTAGE;
-            int maxHwPower = this.parent.getMaximumHardwarePower().get();
+            int current = (power) / GRID_VOLTAGE;
+            int maxHwPower = this.parent.getMaximumHardwarePower().get() / 230;
             int maxSwPower = this.parent.getMaxPower();
             int maxPower = Math.min(maxHwPower, maxSwPower);
-            if (current > maxPower / GRID_VOLTAGE) {
-                current = maxPower / GRID_VOLTAGE;
+            if (current > maxPower) {
+                current = maxPower;
             }
-            int minHwPower = this.parent.getMinimumHardwarePower().get();
+            int minHwPower = this.parent.getMinimumHardwarePower().get() / 230;
             int minSwPower = this.parent.getMinPower();
             int minPower = Math.min(minHwPower, minSwPower);
             if (current < minPower) {

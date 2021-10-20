@@ -50,7 +50,7 @@ public class WallbeReadHandler {
         if (valueOpt.isPresent()) {
             Integer power = valueOpt.get();
             int phases = this.parent.getPhases().orElse(3);
-            int current = (power / phases) / GRID_VOLTAGE;
+            int current = (power) / GRID_VOLTAGE;
             int maxHwPower = this.parent.getMaximumHardwarePower().get();
             int maxSwPower = this.parent.getMaxPower();
             int maxPower = Math.min(maxHwPower, maxSwPower);

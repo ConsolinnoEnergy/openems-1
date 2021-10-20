@@ -6,6 +6,7 @@ import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.common.event.EdgeEventConstants;
 import io.openems.edge.evcs.api.ManagedEvcs;
+import io.openems.edge.evcs.api.Status;
 import io.openems.edge.meter.api.AsymmetricMeter;
 import io.openems.edge.meter.api.SymmetricMeter;
 import org.joda.time.DateTime;
@@ -2515,6 +2516,7 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
 
                         //-----------Reallocate to the waitingList------------\\
                         int n = 0;
+                        AtomicReference<List<String>> tested = new AtomicReference<>(new ArrayList<>());
                         while (freeResources > MINIMUM_POWER && this.powerWaitingList.isEmpty() == false) {
                             n++;
                             AtomicReference<String> waitingId = new AtomicReference<>();
@@ -2522,14 +2524,19 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
                             AtomicInteger waitingPhases = new AtomicInteger();
                             AtomicInteger waitingPower = new AtomicInteger();
                             AtomicBoolean waitingWantToCharge = new AtomicBoolean(false);
+                            AtomicBoolean foundAEvcsToTurnOn = new AtomicBoolean(false);
+                            int finalFreeResources1 = freeResources;
                             this.powerWaitingList.forEach((id, evcs) -> {
-                                if ((waitingTime.get() == null || evcs.getTimestamp().isBefore(waitingTime.get()))) {
+
+                                if (((waitingTime.get() == null || evcs.getTimestamp().isBefore(waitingTime.get())) || finalFreeResources1 > MINIMUM_POWER) && !tested.get().contains(id) && !foundAEvcsToTurnOn.get()) {
                                     waitingTime.set(evcs.getTimestamp());
                                     waitingPhases.set(evcs.getPhases());
                                     waitingId.set(id);
                                     waitingPower.set(evcs.getPower());
+                                    foundAEvcsToTurnOn.set(true);
                                     try {
-                                        waitingWantToCharge.set(evcs.getWantToCharge() || (this.cpm.getComponent(id).channel("setChargePowerRequest").getNextValue().isDefined()));
+                                        ManagedEvcs target = this.cpm.getComponent(id);
+                                        waitingWantToCharge.set(evcs.getWantToCharge() || target.getSetChargePowerRequest().isDefined() || target.getStatus().equals(Status.CHARGING));
                                     } catch (OpenemsError.OpenemsNamedException e) {
                                         waitingWantToCharge.set(evcs.getWantToCharge());
                                     }
@@ -2551,7 +2558,9 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
                                         freeResources -= MINIMUM_POWER * evcs.getPhases().orElse(3);
                                         this.powerWaitingList.remove(waitingId.get());
                                     } else {
-                                        // do nothing
+                                        List<String> add = tested.get();
+                                                add.add(waitingId.get());
+                                        tested.set(add);
                                     }
                                 }
 
@@ -2574,6 +2583,7 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
                             AtomicReference<String> waitingId = new AtomicReference<>();
                             AtomicReference<DateTime> waitingTime = new AtomicReference<>();
                             AtomicInteger waitingPhases = new AtomicInteger();
+                            AtomicBoolean waitingWantToCharge = new AtomicBoolean(false);
                             int finalFreeResources = freeResources;
                             this.powerWaitingList.forEach((id, evcs) -> {
                                 int resourceReduction = Math.floorDiv(finalFreeResources, evcs.getPhases());
@@ -2582,6 +2592,12 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
                                     waitingTime.set(evcs.getTimestamp());
                                     waitingPhases.set(evcs.getPhases());
                                     waitingId.set(id);
+                                    try {
+                                        ManagedEvcs target = this.cpm.getComponent(id);
+                                        waitingWantToCharge.set(evcs.getWantToCharge() || target.getSetChargePowerRequest().isDefined() || target.getStatus().equals(Status.CHARGING));
+                                    } catch (OpenemsError.OpenemsNamedException e) {
+                                        waitingWantToCharge.set(evcs.getWantToCharge());
+                                    }
                                 }
                             });
                             try {
@@ -2592,7 +2608,7 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
 
                                 int resourceReduction = Math.floorDiv(freeResources, waitingPhases.get());
                                 if (resourceReduction > 0 && resourceReduction >= Math.min(evcs.getMinimumHardwarePower().orElse(99), evcs.getMinimumPower().orElse(99))
-                                        && evcs.getChargePower().get() > 1) {
+                                        && (evcs.getChargePower().get() > 1) || waitingWantToCharge.get()) {
                                     this.powerWaitingList.remove(waitingId.get());
                                     evcs.setChargePowerLimit(resourceReduction * GRID_VOLTAGE);
                                     freeResources -= resourceReduction;
