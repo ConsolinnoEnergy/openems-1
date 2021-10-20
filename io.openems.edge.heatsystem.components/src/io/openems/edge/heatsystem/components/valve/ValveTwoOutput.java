@@ -259,9 +259,9 @@ public class ValveTwoOutput extends AbstractValve implements OpenemsComponent, H
         double futurePowerLevel = this.getFuturePowerLevelValue();
         double currentPowerLevel = this.getPowerLevelValue();
         double powerValueToCompare = this.isChanging ? futurePowerLevel : currentPowerLevel;
-        if (maxAllowed != null && (this.isChanging && maxAllowed + TOLERANCE < powerValueToCompare)) {
+        if (maxAllowed != null && (maxAllowed + TOLERANCE < powerValueToCompare)) {
             this.setPowerLevel(maxAllowed);
-        } else if (minAllowed != null && (!this.isChanging && minAllowed - TOLERANCE > powerValueToCompare)) {
+        } else if (minAllowed != null && (minAllowed - TOLERANCE > powerValueToCompare)) {
             this.changeByPercentage(minAllowed - futurePowerLevel);
         }
     }
