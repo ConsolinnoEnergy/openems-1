@@ -179,20 +179,10 @@ public class WallbeImpl extends AbstractOpenemsModbusComponent implements Openem
         this.writeHandler.run();
         try {
             this.readHandler.run();
+
         } catch (Throwable throwable) {
             //
         }
-        /*
-        try {
-            if (this.getSetChargePowerLimit().isDefined() && this.getSetChargePowerLimit().get() <= 6 * 230 && !this.getWallbeStatus().equals(WallbeStatus.CHARGING) || !this.getSetChargePowerLimit().isDefined()) {
-                this.setChargePowerLimit(6 * 230);
-                this.setEnableCharge(true);
-                this.setMaximumChargeCurrent((short)8);
-           }
-        } catch (OpenemsError.OpenemsNamedException e) {
-        }
-
-        */
     }
 
     /**

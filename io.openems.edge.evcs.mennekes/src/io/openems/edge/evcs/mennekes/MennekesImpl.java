@@ -118,8 +118,8 @@ public class MennekesImpl extends AbstractOpenemsModbusComponent implements Open
                 new FC3ReadRegistersTask(105, Priority.HIGH,
                         m(Mennekes.ChannelId.ERROR_CODE_1,
                                 new UnsignedDoublewordElement(105),
-                                ElementToChannelConverter.DIRECT_1_TO_1)) ,
-            new FC3ReadRegistersTask(107, Priority.HIGH,
+                                ElementToChannelConverter.DIRECT_1_TO_1)),
+                new FC3ReadRegistersTask(107, Priority.HIGH,
                         m(Mennekes.ChannelId.ERROR_CODE_2,
                                 new UnsignedDoublewordElement(107),
                                 ElementToChannelConverter.DIRECT_1_TO_1)),
@@ -143,13 +143,6 @@ public class MennekesImpl extends AbstractOpenemsModbusComponent implements Open
                         m(Mennekes.ChannelId.CP_AVAILABILITY,
                                 new SignedWordElement(124),
                                 ElementToChannelConverter.DIRECT_1_TO_1)),
-                /*
-                new FC3ReadRegistersTask(130, Priority.HIGH,
-                        m(Mennekes.ChannelId.MODBUS_ADDRESS_OFFSET,
-                                new SignedWordElement(130),
-                                ElementToChannelConverter.DIRECT_1_TO_1)),
-
-                 */
                 new FC3ReadRegistersTask(131, Priority.HIGH,
                         m(Mennekes.ChannelId.SAFE_CURRENT,
                                 new UnsignedWordElement(131),
@@ -158,20 +151,20 @@ public class MennekesImpl extends AbstractOpenemsModbusComponent implements Open
                         m(Mennekes.ChannelId.COMM_TIMEOUT,
                                 new UnsignedWordElement(132),
                                 ElementToChannelConverter.DIRECT_1_TO_1)),
-   /*             new FC3ReadRegistersTask(200, Priority.HIGH,
+                new FC3ReadRegistersTask(200, Priority.HIGH,
                         m(Mennekes.ChannelId.METER_ENERGY_L1,
-                                new UnsignedDoublewordElement(200),
+                                new FloatDoublewordElement(200),
                                 ElementToChannelConverter.DIRECT_1_TO_1)),
                 new FC3ReadRegistersTask(202, Priority.HIGH,
                         m(Mennekes.ChannelId.METER_ENERGY_L2,
-                                new UnsignedDoublewordElement(202),
+                                new FloatDoublewordElement(202),
                                 ElementToChannelConverter.DIRECT_1_TO_1)),
                 new FC3ReadRegistersTask(204, Priority.HIGH,
                         m(Mennekes.ChannelId.METER_ENERGY_L3,
-                                new UnsignedDoublewordElement(204),
+                                new FloatDoublewordElement(204),
                                 ElementToChannelConverter.DIRECT_1_TO_1)),
 
-    */
+
                 new FC3ReadRegistersTask(206, Priority.HIGH,
                         m(Mennekes.ChannelId.METER_POWER_L1,
                                 new UnsignedDoublewordElement(206),
@@ -196,13 +189,6 @@ public class MennekesImpl extends AbstractOpenemsModbusComponent implements Open
                         m(Mennekes.ChannelId.METER_CURRENT_L3,
                                 new UnsignedDoublewordElement(216),
                                 ElementToChannelConverter.DIRECT_1_TO_1)),
-                /*
-                new FC3ReadRegistersTask(700, Priority.HIGH,
-                        m(Mennekes.ChannelId.REQUIRED_ENERGY,
-                                new UnsignedWordElement(700),
-                                ElementToChannelConverter.DIRECT_1_TO_1)),
-
-                 */
                 new FC3ReadRegistersTask(701, Priority.HIGH,
                         m(Mennekes.ChannelId.SCHEDULED_DEPARTURE_TIME,
                                 new UnsignedDoublewordElement(701),
@@ -276,17 +262,6 @@ public class MennekesImpl extends AbstractOpenemsModbusComponent implements Open
         } catch (Throwable throwable) {
             //
         }
-      /*  try {
-
-            if (this.getSetChargePowerLimit().isDefined() && this.getSetChargePowerLimit().get() <= 6 * 230 && this.getVehicleState() != 3 || !this.getSetChargePowerLimit().isDefined()) {
-                this.setChargePowerLimit(6 * 230);
-                this.setCurrentLimit(6);
-
-
-            }
-        } catch (OpenemsError.OpenemsNamedException e) {
-            //
-        }*/
     }
 
     /**

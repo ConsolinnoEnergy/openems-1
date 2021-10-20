@@ -40,13 +40,13 @@ import org.osgi.service.metatype.annotations.Designate;
 
 import java.util.Arrays;
 
-
-@Designate(ocd = Config.class, factory = true)
-@Component(name = "SchneiderImpl", immediate = true,
-        configurationPolicy = ConfigurationPolicy.REQUIRE, property = EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE)
 /**
  * This Provides the Schneider EVCS Modbus TCP implementation.
  */
+@Designate(ocd = Config.class, factory = true)
+@Component(name = "SchneiderImpl", immediate = true,
+        configurationPolicy = ConfigurationPolicy.REQUIRE, property = EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE)
+
 public class SchneiderImpl extends AbstractOpenemsModbusComponent implements OpenemsComponent, ManagedEvcs, Schneider, Evcs, EventHandler {
 
     @Reference
@@ -252,13 +252,14 @@ public class SchneiderImpl extends AbstractOpenemsModbusComponent implements Ope
                 this.setChargePowerLimit(6 * 230);
             }
         } catch (OpenemsError.OpenemsNamedException e) {
+            //
         }
 
 
         try {
             this.readHandler.run();
         } catch (Throwable throwable) {
-
+            //
         }
     }
 

@@ -90,15 +90,6 @@ public interface Mennekes extends OpenemsComponent {
          */
         CP_AVAILABILITY(Doc.of(OpenemsType.SHORT).accessMode(AccessMode.READ_WRITE)),
         /**
-         * Offset of the Modbus Addresses. Defaults to 0.
-         * <ul>
-         * <li>Interface: Mennekes
-         * <li>Type: Short
-         * <li>Unit: Na
-         * </ul>
-         */
-        MODBUS_ADDRESS_OFFSET(Doc.of(OpenemsType.SHORT).accessMode(AccessMode.READ_WRITE)),
-        /**
          * Safe Current the EVCS will fall back to in case the Modbus Communication fails.
          * <ul>
          * <li>Interface: Mennekes
@@ -418,25 +409,6 @@ public interface Mennekes extends OpenemsComponent {
      */
     default Short getChargePointAvailability() {
         Channel<Short> channel = this.getChargePointAvailabilityChannel();
-        return channel.value().orElse(channel.getNextValue().orElse((short) 0));
-    }
-
-    /**
-     * Gets the Channel for {@link Mennekes.ChannelId#MODBUS_ADDRESS_OFFSET}.
-     *
-     * @return the Channel
-     */
-    default Channel<Short> getModbusAddressOffsetChannel() {
-        return this.channel(ChannelId.MODBUS_ADDRESS_OFFSET);
-    }
-
-    /**
-     * Gets the Value of {@link Mennekes.ChannelId#MODBUS_ADDRESS_OFFSET}.
-     *
-     * @return the value
-     */
-    default Short getModbusAddressOffset() {
-        Channel<Short> channel = this.getModbusAddressOffsetChannel();
         return channel.value().orElse(channel.getNextValue().orElse((short) 0));
     }
 
