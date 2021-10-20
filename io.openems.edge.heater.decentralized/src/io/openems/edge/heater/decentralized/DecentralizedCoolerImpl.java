@@ -124,6 +124,7 @@ public class DecentralizedCoolerImpl extends AbstractDecentralizedComponent impl
             if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS)
                     && super.isEnabled() && super.configurationSuccess) {
                 if (super.currentRunEnabled()) {
+                    this.getNeedCoolChannel().setNextValue(true);
                     if (super.checkAllowedToExecuteLogic()) {
                         int setPointTemperature = this.getTemperatureSetpoint().orElse(DEFAULT_SET_POINT_TEMPERATURE);
                         boolean temperatureOk = this.thresholdThermometer.thermometerBelowGivenTemperature(setPointTemperature);

@@ -50,7 +50,7 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
     @AttributeDefinition(name = "RequestMapper", description = "Type in RequestComponent:CallbackComponent:Position:RequestType"
             + "Available RequestTypes will be listed below")
-    String[] requestMap() default "RestRemoteComponent0:RestRemoteComponent1:1:HEAT";
+    String[] requestMap() default "RemoteDevice0:RemoteDevice1:1:HEAT";
 
     String[] requestTypes() default {};
 

@@ -201,7 +201,7 @@ public class ThermometerThresholdImpl extends AbstractOpenemsComponent implement
 
     @Override
     public String debugLog() {
-        return "T: " + (this.getTemperatureValue() == Integer.MIN_VALUE ? "NotDefined" : this.getTemperatureValue())
+        return "Temperature: " + (this.getTemperatureValue() == Integer.MIN_VALUE ? "NotDefined" : this.getTemperatureValue())
                 + this.getTemperatureChannel().channelDoc().getUnit().getSymbol();
     }
 }
