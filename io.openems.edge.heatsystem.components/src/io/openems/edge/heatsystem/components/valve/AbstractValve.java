@@ -67,6 +67,7 @@ public abstract class AbstractValve extends AbstractOpenemsComponent implements 
     protected ExceptionalState exceptionalState;
     protected boolean exceptionalStateActive;
     protected double percentPossiblePerCycle = 1.d;
+    protected double percentIncreaseThisRun = 0.0d;
 
     protected AbstractValve(io.openems.edge.common.channel.ChannelId[] firstInitialChannelIds,
                             io.openems.edge.common.channel.ChannelId[]... furtherInitialChannelIds) {
@@ -123,6 +124,7 @@ public abstract class AbstractValve extends AbstractOpenemsComponent implements 
 
     protected void updatePowerLevel() {
         //Only Update PowerLevel if the Valve is Changing
+        this.percentIncreaseThisRun = 0.0d;
         if (this.isChanging()) {
             long elapsedTime = this.getMilliSecondTime();
             //If it's the first update of PowerLevel
@@ -139,6 +141,7 @@ public abstract class AbstractValve extends AbstractOpenemsComponent implements 
             }
             this.timeStampValveCurrent = this.getMilliSecondTime();
             double percentIncrease = elapsedTime / (this.secondsPerPercentage * 1000);
+            this.percentIncreaseThisRun = percentIncrease;
             if (this.isClosing) {
                 percentIncrease *= -1;
             }
@@ -153,6 +156,7 @@ public abstract class AbstractValve extends AbstractOpenemsComponent implements 
                 truncatedDouble = DEFAULT_MIN_POWER_VALUE;
             }
             this.getPowerLevelChannel().setNextValue(truncatedDouble);
+            this.getPowerLevelChannel().nextProcessImage();
             if (this.updateOk) {
                 this.powerLevelBeforeUpdate = truncatedDouble;
             }

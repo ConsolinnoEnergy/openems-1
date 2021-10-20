@@ -482,12 +482,20 @@ public class ValveTwoOutput extends AbstractValve implements OpenemsComponent, H
                     if (channelValueIsTrue == false || channelValueIsNotFalse) {
                         updateOk = false;
                         timeStampValveCurrent = -1;
-                        this.getPowerLevelChannel().setNextValue(this.powerLevelBeforeUpdate);
-                        if (this.isClosing) {
-                            this.valveClose();
-                        } else {
-                            this.valveOpen();
+                        // if channel who needs to be true is NOT true but false and channel which needs to be false is true
+                        // Check if closing -> then add percent increase(is Opening) else -> is closing further
+                        if (!channelValueIsTrue && channelValueIsNotFalse) {
+                            if (this.isClosing) {
+                                this.getPowerLevelChannel().setNextValue(this.powerLevelBeforeUpdate + super.percentIncreaseThisRun);
+                            } else {
+                                this.getPowerLevelChannel().setNextValue(this.powerLevelBeforeUpdate - super.percentIncreaseThisRun);
+                            }
                         }
+                            if (this.isClosing) {
+                                this.valveClose();
+                            } else {
+                                this.valveOpen();
+                            }
                     } else {
                         updateOk = true;
                     }
