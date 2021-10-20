@@ -1762,8 +1762,13 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
         } else {
             oldPower = (evcs.getChargePower().get() / GRID_VOLTAGE);
         }
-        //evcs.setChargePowerLimit(Math.max(evcs.getMinimumHardwarePower().orElse(1150), evcs.getMinimumPower().orElse(1150)) / GRID_VOLTAGE);
-        evcs.setChargePowerLimit(0);
+
+        if (evcs.getStatus() == Status.CHARGING) {
+            evcs.setChargePowerLimit(0);
+        } else {
+            evcs.setChargePowerLimit(Math.max(evcs.getMinimumHardwarePower().orElse(//
+                    1150), evcs.getMinimumPower().orElse(1150)) / GRID_VOLTAGE);
+        }
         this.removeEvcsFromActive(evcs);
         return oldPower;
     }

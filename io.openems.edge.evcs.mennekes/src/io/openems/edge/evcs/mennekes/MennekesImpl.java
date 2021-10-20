@@ -276,14 +276,17 @@ public class MennekesImpl extends AbstractOpenemsModbusComponent implements Open
         } catch (Throwable throwable) {
             //
         }
-        try {
+      /*  try {
+
             if (this.getSetChargePowerLimit().isDefined() && this.getSetChargePowerLimit().get() <= 6 * 230 && this.getVehicleState() != 3 || !this.getSetChargePowerLimit().isDefined()) {
                 this.setChargePowerLimit(6 * 230);
                 this.setCurrentLimit(6);
+
+
             }
         } catch (OpenemsError.OpenemsNamedException e) {
             //
-        }
+        }*/
     }
 
     /**
