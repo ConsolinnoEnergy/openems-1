@@ -15,6 +15,7 @@ import io.openems.edge.common.event.EdgeEventConstants;
 import io.openems.edge.common.taskmanager.Priority;
 import io.openems.edge.evcs.api.Evcs;
 import io.openems.edge.evcs.api.EvcsPower;
+import io.openems.edge.evcs.api.GridVoltage;
 import io.openems.edge.evcs.api.ManagedEvcs;
 import io.openems.edge.evcs.compleo.api.Compleo;
 import org.osgi.service.cm.ConfigurationAdmin;
@@ -73,11 +74,11 @@ public class CompleoImpl extends AbstractOpenemsModbusComponent implements Opene
         }
         super.activate(context, config.id(), config.alias(), config.enabled(), config.modbusUnitId(), this.cm,
                 "Modbus", config.modbusBridgeId());
-        this._setMinimumHardwarePower(6 * 230);
+        this._setMinimumHardwarePower(6 * GridVoltage.V_230_HZ_50.getValue());
         this._setMaximumPower(this.maxPower);
-        this._setMaximumHardwarePower(32 * 230);
+        this._setMaximumHardwarePower(32 * GridVoltage.V_230_HZ_50.getValue());
         this._setMinimumPower(this.minPower);
-        this._setPowerPrecision(1 * 230);
+        this._setPowerPrecision(GridVoltage.V_230_HZ_50.getValue());
         this._setIsPriority(config.priority());
         this.readHandler = new CompleoReadHandler(this);
         this.writeHandler = new CompleoWriteHandler(this);
@@ -161,7 +162,7 @@ public class CompleoImpl extends AbstractOpenemsModbusComponent implements Opene
         try {
             this.readHandler.run();
         } catch (Throwable throwable) {
-
+        //
         }
     }
 

@@ -1,6 +1,5 @@
 package io.openems.edge.evcs.mennekes;
 
-import io.openems.common.exceptions.OpenemsError;
 import io.openems.common.exceptions.OpenemsException;
 import io.openems.edge.bridge.modbus.api.AbstractOpenemsModbusComponent;
 import io.openems.edge.bridge.modbus.api.BridgeModbus;
@@ -8,19 +7,17 @@ import io.openems.edge.bridge.modbus.api.ElementToChannelConverter;
 import io.openems.edge.bridge.modbus.api.ModbusProtocol;
 import io.openems.edge.bridge.modbus.api.element.FloatDoublewordElement;
 import io.openems.edge.bridge.modbus.api.element.SignedWordElement;
-import io.openems.edge.bridge.modbus.api.element.StringWordElement;
 import io.openems.edge.bridge.modbus.api.element.UnsignedDoublewordElement;
 import io.openems.edge.bridge.modbus.api.element.UnsignedWordElement;
 import io.openems.edge.bridge.modbus.api.task.FC3ReadRegistersTask;
-import io.openems.edge.bridge.modbus.api.task.FC4ReadInputRegistersTask;
 import io.openems.edge.bridge.modbus.api.task.FC6WriteRegisterTask;
 import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.common.event.EdgeEventConstants;
 import io.openems.edge.common.taskmanager.Priority;
 import io.openems.edge.evcs.api.Evcs;
 import io.openems.edge.evcs.api.EvcsPower;
+import io.openems.edge.evcs.api.GridVoltage;
 import io.openems.edge.evcs.api.ManagedEvcs;
-import io.openems.edge.evcs.api.Status;
 import io.openems.edge.evcs.mennekes.api.Mennekes;
 import org.osgi.service.cm.ConfigurationAdmin;
 import org.osgi.service.cm.ConfigurationException;
@@ -80,11 +77,11 @@ public class MennekesImpl extends AbstractOpenemsModbusComponent implements Open
         }
         super.activate(context, config.id(), config.alias(), config.enabled(), config.modbusUnitId(), this.cm,
                 "Modbus", config.modbusBridgeId());
-        this._setMinimumHardwarePower(6 * 230);
+        this._setMinimumHardwarePower(6 * GridVoltage.V_230_HZ_50.getValue());
         this._setMaximumPower(this.maxPower);
-        this._setMaximumHardwarePower(32 * 230);
+        this._setMaximumHardwarePower(32 * GridVoltage.V_230_HZ_50.getValue());
         this._setMinimumPower(this.minPower);
-        this._setPowerPrecision(1 * 230);
+        this._setPowerPrecision(GridVoltage.V_230_HZ_50.getValue());
         this._setIsPriority(config.priority());
         this.readHandler = new MennekesReadHandler(this);
         this.writeHandler = new MennekesWriteHandler(this);
@@ -241,7 +238,7 @@ public class MennekesImpl extends AbstractOpenemsModbusComponent implements Open
 
     @Override
     public String debugLog() {
-        return "Total: " + this.getChargePower().get() + " W | L1 " + this.getPowerL1() / 230 + " A | L2 " + this.getPowerL2() / 230 + " A | L3 " + this.getPowerL3() / 230 + " A";
+        return "Total: " + this.getChargePower().get() + " W | L1 " + this.getPowerL1() / GridVoltage.V_230_HZ_50.getValue() + " A | L2 " + this.getPowerL2() / GridVoltage.V_230_HZ_50.getValue() + " A | L3 " + this.getPowerL3() / GridVoltage.V_230_HZ_50.getValue() + " A";
     }
 
     @Override

@@ -5,6 +5,7 @@ import io.openems.edge.common.component.AbstractOpenemsComponent;
 import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.common.event.EdgeEventConstants;
+import io.openems.edge.evcs.api.GridVoltage;
 import io.openems.edge.evcs.api.ManagedEvcs;
 import io.openems.edge.evcs.api.Status;
 import io.openems.edge.meter.api.AsymmetricMeter;
@@ -77,7 +78,7 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
     private int minIndex;
     private int min2Index;
     private static final int MINIMUM_POWER = 5;
-    private static final int GRID_VOLTAGE = 230;
+    private static final int GRID_VOLTAGE = GridVoltage.V_230_HZ_50.getValue();
     private static final int MAXIMUM_LOAD_DELTA = 20;
     private static final int ONE_PHASE_INDEX = 0;
     private static final int TWO_PHASE_INDEX = 1;
