@@ -47,7 +47,6 @@ public abstract class AbstractAnalogueHeaterOrCooler extends AbstractOpenemsComp
     private static final String POWER_IDENTIFIER = "POWER_IDENTIFIER";
     private boolean isActive = false;
     private int overwritePower;
-    private boolean isAutoRun = false;
     private int maxPowerKw;
     protected boolean configurationSuccess = false;
     private int defaultRunPower;
@@ -65,11 +64,11 @@ public abstract class AbstractAnalogueHeaterOrCooler extends AbstractOpenemsComp
     protected void activate(ComponentContext context, String id, String alias, boolean enabled,
                             String[] analogueIds, AnalogueType analogueType, ControlType controlType,
                             int defaultMinPower, String timerId, int maxTimeEnableSignal,
-                            int maxTimePowerSignal, int defaultRunPower, boolean autoRun, int maxPower) {
+                            int maxTimePowerSignal, int defaultRunPower, int maxPower) {
         super.activate(context, id, alias, enabled);
         try {
             this.activationOrModifiedRoutine(analogueIds, analogueType, controlType, defaultMinPower, timerId, maxTimeEnableSignal,
-                    maxTimePowerSignal, defaultRunPower, autoRun, maxPower);
+                    maxTimePowerSignal, defaultRunPower, maxPower);
         } catch (OpenemsError.OpenemsNamedException | ConfigurationException e) {
             this.log.warn("Configuration Apply failed, try again later!");
         }
@@ -78,13 +77,13 @@ public abstract class AbstractAnalogueHeaterOrCooler extends AbstractOpenemsComp
     void modified(ComponentContext context, String id, String alias, boolean enabled,
                   String[] analogueIds, AnalogueType analogueType, ControlType controlType,
                   int defaultMinPower, String timerId, int maxTimeEnableSignal,
-                  int maxTimePowerSignal, int defaultRunPower, boolean autoRun, int maxPower) {
+                  int maxTimePowerSignal, int defaultRunPower, int maxPower) {
         super.modified(context, id, alias, enabled);
         this.configurationSuccess = false;
         this.heaterComponent.clear();
         try {
             this.activationOrModifiedRoutine(analogueIds, analogueType, controlType, defaultMinPower, timerId, maxTimeEnableSignal,
-                    maxTimePowerSignal, defaultRunPower, autoRun, maxPower);
+                    maxTimePowerSignal, defaultRunPower, maxPower);
         } catch (OpenemsError.OpenemsNamedException | ConfigurationException e) {
             this.log.warn("Configuration Apply failed, try again later!");
         }
@@ -102,14 +101,13 @@ public abstract class AbstractAnalogueHeaterOrCooler extends AbstractOpenemsComp
      * @param maxTimeEnableSignal the maximum Time an EnableSignal is allowed to be absent after EnableSignal was set to true.
      * @param maxTimePowerSignal  the maximum Time a new SetPoint for a PowerValue is allowed to be absent.
      * @param defaultRunPower     the default RunPower, when EnableSignal is true and no SetPoint was set.
-     * @param autoRun             should the Heater always run.
      * @param maxPower            the maximum Power available for this heater.
      * @throws OpenemsError.OpenemsNamedException if a component couldn't be found
      * @throws ConfigurationException             if a component could be found but was not the correct instance of XYZ.
      */
     protected void activationOrModifiedRoutine(String[] analogueIds, AnalogueType analogueType, ControlType controlType,
                                                int defaultMinPower, String timerId, int maxTimeEnableSignal,
-                                               int maxTimePowerSignal, int defaultRunPower, boolean autoRun, int maxPower) throws OpenemsError.OpenemsNamedException, ConfigurationException {
+                                               int maxTimePowerSignal, int defaultRunPower, int maxPower) throws OpenemsError.OpenemsNamedException, ConfigurationException {
         this.heaterComponent.clear();
         Arrays.stream(analogueIds).forEach(id -> {
             try {
@@ -141,7 +139,6 @@ public abstract class AbstractAnalogueHeaterOrCooler extends AbstractOpenemsComp
         this.overwritePower = defaultRunPower;
         this.getDefaultActivePowerChannel().setNextValue(defaultRunPower);
         this.getDefaultMinPowerChannel().setNextValue(defaultMinPower);
-        this.isAutoRun = autoRun;
         this.maxPowerKw = maxPower;
         this.type = controlType;
         this.defaultRunPower = defaultRunPower;
@@ -242,9 +239,6 @@ public abstract class AbstractAnalogueHeaterOrCooler extends AbstractOpenemsComp
      */
 
     private boolean shouldRun() {
-        if (this.isAutoRun) {
-            return true;
-        }
         Optional<Boolean> enableValue = this.getEnableSignalChannel().getNextWriteValueAndReset();
         if (enableValue.isPresent()) {
             this.timer.resetTimer(ENABLE_IDENTIFIER);

@@ -30,7 +30,6 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     @AttributeDefinition(name = "SetPointTemperature", description = "SetPoint to OpenValve, also setPoint To Tell: NeedMoreCool, Unit: DeciDegree: 1°C = 10dC")
     int setPointTemperature() default 300;
 
-    boolean shouldCloseOnActivation() default true;
 
     @AttributeDefinition(name = "Force Cooling", description = "On CoolerEnabled Signal -> Force Cooling no matter if the Response/Callback says ok or not")
     boolean forceCooling() default false;
