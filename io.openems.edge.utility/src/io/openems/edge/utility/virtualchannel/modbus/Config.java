@@ -47,7 +47,7 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
             + "Priorities are by default LOW and are only needed by Read Coils and Inputs, WRITE_REGISTER using wordOrder Here"
             + "In any way the last entry should always be the Length of an expected String OR the ScaleFactor. (10^ScaleFactor)"
             + "NOTE: Use only ModbusChannel")
-    String[] configurationList() default {"ReadLong:1:READ_REGISTER:WORD_TYPE:HIGH:2", "SetPointPower:2:WRITE_REGISTER:FLOAT_32:MSWLSW:0"};
+    String[] configurationList() default {"ReadLong:1:READ_REGISTER:WORD_TYPE:HIGH:2", "WriteLong:2:WRITE_REGISTER:FLOAT_32:MSWLSW:0"};
 
     boolean enabled() default true;
 

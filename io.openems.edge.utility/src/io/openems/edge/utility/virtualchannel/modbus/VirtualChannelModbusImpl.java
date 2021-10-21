@@ -78,7 +78,7 @@ public class VirtualChannelModbusImpl extends AbstractGenericModbusComponent imp
         if (this.isEnabled()) {
             switch (event.getTopic()) {
                 case EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE:
-                    handleChannelUpdate(this.getIntegerChannel(), this._hasReadLong());
+                    handleChannelUpdate(this.getLongChannel(), this._hasReadLong());
                     handleChannelUpdate(this.getBooleanChannel(), this._hasReadBoolean());
                     handleChannelUpdate(this.getDoubleChannel(), this._hasReadDouble());
                     handleChannelUpdate(this.getStringChannel(), this._hasReadString());
@@ -86,7 +86,7 @@ public class VirtualChannelModbusImpl extends AbstractGenericModbusComponent imp
 
                 case EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS:
                     this.handleChannelWriteFromOriginalToModbus(this._getWriteBooleanChannel(), this.getBooleanChannel());
-                    this.handleChannelWriteFromOriginalToModbus(this._getWriteLongChannel(), this.getIntegerChannel());
+                    this.handleChannelWriteFromOriginalToModbus(this._getWriteLongChannel(), this.getLongChannel());
                     this.handleChannelWriteFromOriginalToModbus(this._getWriteDoubleChannel(), this.getDoubleChannel());
                     this.handleChannelWriteFromOriginalToModbus(this._getWriteStringChannel(), this.getStringChannel());
                     break;
