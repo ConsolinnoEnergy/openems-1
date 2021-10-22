@@ -106,8 +106,9 @@ public class GenericModbusElectrolyzerImpl extends AbstractGenericModbusComponen
 
     /**
      * Base configuration for a Heater extending from {@link AbstractGenericModbusComponent}.
+     *
      * @throws OpenemsError.OpenemsNamedException if a component cannot be found.
-     * @throws ConfigurationException if existing component is of a wrong instance
+     * @throws ConfigurationException             if existing component is of a wrong instance
      */
     private void baseConfiguration() throws OpenemsError.OpenemsNamedException, ConfigurationException {
         this.controlMode = this.config.controlMode();
@@ -166,9 +167,17 @@ public class GenericModbusElectrolyzerImpl extends AbstractGenericModbusComponen
                                 return;
                             }
                         }
-                        if (this.isAutoRun || (this.getEnableSignalChannel().getNextWriteValue().isPresent())
+                        try {
+                            if (this.isAutoRun) {
+                                this.getEnableSignalChannel().setNextWriteValueFromObject(true);
+                            }
+                        } catch (OpenemsError.OpenemsNamedException e) {
+                            this.log.warn("This error shouldn't occur");
+                        }
+                        if ((this.getEnableSignalChannel().getNextWriteValue().isPresent())
                                 || (this.isRunning && this.timerHandler.checkTimeIsUp(ENABLE_SIGNAL_IDENTIFIER) == false)) {
                             this.isRunning = true;
+
                             if (this.getEnableSignalChannel().getNextWriteValue().isPresent()) {
                                 this.timerHandler.resetTimer(ENABLE_SIGNAL_IDENTIFIER);
                             } else {

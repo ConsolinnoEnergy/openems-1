@@ -449,8 +449,9 @@ public abstract class AbstractGenericModbusComponent extends AbstractOpenemsModb
 
     /**
      * Adds WriteRegister to a ModbusProtocol.
+     *
      * @param protocol the protocol, where Tasks should be added.
-     * @param wrapper a ModbusConfig Wrapper, usually from AbstractGenericModbusComponent
+     * @param wrapper  a ModbusConfig Wrapper, usually from AbstractGenericModbusComponent
      * @throws OpenemsException if adding a task fails.
      */
     private void addWriteRegister(ModbusProtocol protocol, ModbusConfigWrapper wrapper) throws OpenemsException {
@@ -532,8 +533,8 @@ public abstract class AbstractGenericModbusComponent extends AbstractOpenemsModb
                 break;
             case FLOAT_32:
                 element = new FloatDoublewordElement(address);
-               break;
-               case FLOAT_64:
+                break;
+            case FLOAT_64:
                 element = new FloatQuadrupleWordElement(address);
                 break;
             case STRING:
@@ -624,8 +625,12 @@ public abstract class AbstractGenericModbusComponent extends AbstractOpenemsModb
                 try {
                     switch (source.channelDoc().getType()) {
                         case BOOLEAN:
+                            target.setNextWriteValueFromObject(targetValue.get());
+                            targetSetValue = (Boolean) targetValue.get() ?  1 : 0;
+                            break;
                         case STRING:
                             target.setNextWriteValueFromObject(targetValue.get());
+                            targetSetValue = Double.parseDouble((String)targetValue.get());
                             break;
                         case SHORT:
                             scaleFactor = this.modbusConfig.get(target.channelId()).getStringLengthOrScaleFactor();
@@ -687,6 +692,7 @@ public abstract class AbstractGenericModbusComponent extends AbstractOpenemsModb
 
     /**
      * Return this ModbusConfig
+     *
      * @return the modbus Config.
      */
     protected Map<io.openems.edge.common.channel.ChannelId, ModbusConfigWrapper> getModbusConfig() {
