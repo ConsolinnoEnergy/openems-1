@@ -18,7 +18,7 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     String alias() default "";
 
     @AttributeDefinition(name = "Allocated Passing Device", description = "Unique Name of the allocated Device.")
-    String allocatedPassingDevice() default "Valve0";
+    String allocatedHydraulicComponent() default "Valve0";
 
     @AttributeDefinition(name = "Proportional Gain", description = "The proportional gain value for PID.")
     double proportionalGain() default 2.0;
