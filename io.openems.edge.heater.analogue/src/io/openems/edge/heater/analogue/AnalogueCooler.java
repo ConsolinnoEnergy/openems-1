@@ -59,7 +59,7 @@ public class AnalogueCooler extends AbstractAnalogueHeaterOrCooler implements Op
         this.config = config;
         super.activate(context, config.id(), config.alias(), config.enabled(), config.analogueId(), config.analogueType(),
                 config.controlType(), config.defaultMinPower(), config.timerId(), config.maxTimeEnableSignal(),
-                config.maxTimePowerSignal(), config.defaultRunPower(), config.autoRun(), config.maxPower());
+                config.maxTimePowerSignal(), config.defaultRunPower(), config.maxPower());
     }
 
     @Modified
@@ -67,7 +67,7 @@ public class AnalogueCooler extends AbstractAnalogueHeaterOrCooler implements Op
         this.config = config;
         super.modified(context, config.id(), config.alias(), config.enabled(), config.analogueId(), config.analogueType(),
                 config.controlType(), config.defaultMinPower(), config.timerId(), config.maxTimeEnableSignal(),
-                config.maxTimePowerSignal(), config.defaultRunPower(), config.autoRun(), config.maxPower());
+                config.maxTimePowerSignal(), config.defaultRunPower(), config.maxPower());
 
     }
 
@@ -84,7 +84,7 @@ public class AnalogueCooler extends AbstractAnalogueHeaterOrCooler implements Op
             try {
                 super.activationOrModifiedRoutine(this.config.analogueId(), this.config.analogueType(),
                         this.config.controlType(), this.config.defaultMinPower(), this.config.timerId(), this.config.maxTimeEnableSignal(),
-                        this.config.maxTimePowerSignal(), this.config.defaultRunPower(), this.config.autoRun(), this.config.maxPower());
+                        this.config.maxTimePowerSignal(), this.config.defaultRunPower(), this.config.maxPower());
             } catch (OpenemsError.OpenemsNamedException | ConfigurationException e) {
                 super.log.warn("Couldn't apply Config yet. Reason: " + e.getMessage());
             }
