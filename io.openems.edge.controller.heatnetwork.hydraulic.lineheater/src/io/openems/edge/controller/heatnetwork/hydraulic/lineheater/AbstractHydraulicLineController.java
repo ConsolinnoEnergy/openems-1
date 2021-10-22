@@ -224,9 +224,16 @@ abstract class AbstractHydraulicLineController extends AbstractOpenemsComponent 
                 this.createLineHeater(valueToWriteIsBoolean, channelAddress);
                 break;
             case MULTIPLE_CHANNEL:
-                int compareLength = !this.onlyMinMax ? CONFIG_CHANNEL_LIST_WITH_READ_WRITE_AND_MIN_MAX_LENGTH : CONFIG_CHANNEL_LIST_LENGTH_NO_MIN_MAX_OR_ONLY_MIN_MAX;
+                int compareLength = CONFIG_CHANNEL_LIST_WITH_READ_WRITE_AND_MIN_MAX_LENGTH;
+                if (channels.length == CONFIG_CHANNEL_LIST_LENGTH_NO_MIN_MAX_OR_ONLY_MIN_MAX && useMinMax) {
+                    this.onlyMinMax = true;
+                    compareLength = CONFIG_CHANNEL_LIST_LENGTH_NO_MIN_MAX_OR_ONLY_MIN_MAX;
+                } else if (!useMinMax && channels.length == CONFIG_CHANNEL_LIST_LENGTH_NO_MIN_MAX_OR_ONLY_MIN_MAX) {
+                    compareLength = CONFIG_CHANNEL_LIST_LENGTH_NO_MIN_MAX_OR_ONLY_MIN_MAX;
+                    this.onlyMinMax = false;
+                }
 
-                if (channels.length != compareLength) {
+                if (channels.length != CONFIG_CHANNEL_LIST_WITH_READ_WRITE_AND_MIN_MAX_LENGTH && channels.length != CONFIG_CHANNEL_LIST_LENGTH_NO_MIN_MAX_OR_ONLY_MIN_MAX) {
                     throw new ConfigurationException("ChannelSize", "ChannelSize should be" + compareLength + " but is : " + channels.length);
                 } else {
                     this.createChannelLineHeater(valueToWriteIsBoolean, channels, useMinMax);
