@@ -2393,10 +2393,11 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
      */
     private void updatePower(boolean tempered) {
 
+
         int l1Offset = 0;
         int l2Offset = 0;
         int l3Offset = 0;
-        if (this.useMeter && this.meter != null) {
+       /*  if (this.useMeter && this.meter != null) {
             int l1 = Math.abs(this.meter.getActivePowerL1().orElse(0) / GRID_VOLTAGE);
             int l2 = Math.abs(this.meter.getActivePowerL2().orElse(0) / GRID_VOLTAGE);
             int l3 = Math.abs(this.meter.getActivePowerL3().orElse(0) / GRID_VOLTAGE);
@@ -2404,10 +2405,12 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
             l1Offset = l1 - minPower;
             l2Offset = l2 - minPower;
             l3Offset = l3 - minPower;
-        }
+        }*/
         this.powerL1 = l1Offset;
         this.powerL2 = l2Offset;
         this.powerL3 = l3Offset;
+
+
         //Updates current Power Consumption
         if (!tempered) {
             for (int i = 0; i < this.evcss.length; i++) {
@@ -2763,9 +2766,12 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
                     }
                     */
                     //-----------Reallocate to everyone else-------------\\
+                    this.setFreePower(freeResources);
+
                     if (freeResources > 0) {
                         ManagedEvcs[] everyone = this.active.stream().filter(//
                                 evcs -> !this.powerWaitingList.containsKey(evcs.id())).toArray(ManagedEvcs[]::new);
+                        this.setActive(Arrays.toString(everyone));
                         if (everyone.length != 0) {
                             int powerForEveryone = freeResources / everyone.length;
                             this.increasePowerBy(powerForEveryone, everyone);
