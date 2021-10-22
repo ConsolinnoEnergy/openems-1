@@ -2469,15 +2469,15 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
                         switch (phases[n]) {
                             case 1:
                                 this.powerL1 += (target.getChargePower().orElse(//
-                                        target.getChargePowerChannel().getNextValue().orElse(0)) / GRID_VOLTAGE);
+                                        target.getChargePowerChannel().getNextValue().orElse(0)) / GRID_VOLTAGE)/phaseCount;
                                 break;
                             case 2:
                                 this.powerL2 += (target.getChargePower().orElse(//
-                                        target.getChargePowerChannel().getNextValue().orElse(0)) / GRID_VOLTAGE);
+                                        target.getChargePowerChannel().getNextValue().orElse(0)) / GRID_VOLTAGE)/phaseCount;
                                 break;
                             case 3:
                                 this.powerL3 += (target.getChargePower().orElse(//
-                                        target.getChargePowerChannel().getNextValue().orElse(0)) / GRID_VOLTAGE);
+                                        target.getChargePowerChannel().getNextValue().orElse(0)) / GRID_VOLTAGE)/phaseCount;
                                 break;
                         }
                     }
