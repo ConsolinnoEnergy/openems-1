@@ -33,10 +33,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 public abstract class AbstractAnalogueHeaterOrCooler extends AbstractOpenemsComponent implements OpenemsComponent, Heater {
 
-
-    @Reference
     ConfigurationAdmin ca;
-    @Reference
+
     ComponentManager cpm;
 
 
@@ -64,8 +62,10 @@ public abstract class AbstractAnalogueHeaterOrCooler extends AbstractOpenemsComp
     protected void activate(ComponentContext context, String id, String alias, boolean enabled,
                             String[] analogueIds, AnalogueType analogueType, ControlType controlType,
                             int defaultMinPower, String timerId, int maxTimeEnableSignal,
-                            int maxTimePowerSignal, int defaultRunPower, int maxPower) {
+                            int maxTimePowerSignal, int defaultRunPower, int maxPower, ComponentManager cpm, ConfigurationAdmin ca) {
         super.activate(context, id, alias, enabled);
+        this.cpm = cpm;
+        this.ca = ca;
         try {
             this.activationOrModifiedRoutine(analogueIds, analogueType, controlType, defaultMinPower, timerId, maxTimeEnableSignal,
                     maxTimePowerSignal, defaultRunPower, maxPower);
@@ -77,8 +77,10 @@ public abstract class AbstractAnalogueHeaterOrCooler extends AbstractOpenemsComp
     void modified(ComponentContext context, String id, String alias, boolean enabled,
                   String[] analogueIds, AnalogueType analogueType, ControlType controlType,
                   int defaultMinPower, String timerId, int maxTimeEnableSignal,
-                  int maxTimePowerSignal, int defaultRunPower, int maxPower) {
+                  int maxTimePowerSignal, int defaultRunPower, int maxPower, ComponentManager cpm, ConfigurationAdmin ca) {
         super.modified(context, id, alias, enabled);
+        this.cpm = cpm;
+        this.ca = ca;
         this.configurationSuccess = false;
         this.heaterComponent.clear();
         try {
