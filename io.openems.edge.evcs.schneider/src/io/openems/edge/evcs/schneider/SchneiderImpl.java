@@ -89,6 +89,11 @@ public class SchneiderImpl extends AbstractOpenemsModbusComponent implements Ope
         this._setMinimumPower(this.minPower * 230);
         this.readHandler = new SchneiderReadHandler(this);
         this.writeHandler = new SchneiderWriteHandler(this);
+        try {
+            this.setRemoteCommand(RemoteCommand.RESTART_CHARGING);
+        } catch (OpenemsError.OpenemsNamedException ignored) {
+            //
+        }
     }
 
     @Deactivate

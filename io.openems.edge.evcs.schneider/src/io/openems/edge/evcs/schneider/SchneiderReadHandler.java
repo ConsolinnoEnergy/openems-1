@@ -92,7 +92,6 @@ public class SchneiderReadHandler {
                     this.parent.setRemoteCommand(this.command);
                 //}
 */
-
             }
             if (this.acknowledgeFlag) {
                 int remoteStatus = this.parent.getRemoteCommandStatus();
