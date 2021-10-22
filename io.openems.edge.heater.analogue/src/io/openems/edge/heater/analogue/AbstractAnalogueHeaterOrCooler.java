@@ -247,7 +247,7 @@ public abstract class AbstractAnalogueHeaterOrCooler extends AbstractOpenemsComp
             this.getEnableSignalChannel().setNextValue(enableValue.get());
             return enableValue.get();
         } else {
-            return this.isActive || this.timer.checkTimeIsUp(ENABLE_IDENTIFIER) == false;
+            return this.timer.checkTimeIsUp(ENABLE_IDENTIFIER) == false;
         }
     }
 
