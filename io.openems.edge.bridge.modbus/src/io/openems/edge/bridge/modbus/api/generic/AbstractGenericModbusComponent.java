@@ -669,9 +669,9 @@ public abstract class AbstractGenericModbusComponent extends AbstractOpenemsModb
                             target.setNextWriteValueFromObject((long) targetSetValue);
                             break;
                         case FLOAT:
+                        case DOUBLE:
                             target.setNextWriteValueFromObject((float) targetSetValue);
                             break;
-                        case DOUBLE:
                         case STRING:
                             target.setNextWriteValueFromObject(targetSetValue);
                             break;
