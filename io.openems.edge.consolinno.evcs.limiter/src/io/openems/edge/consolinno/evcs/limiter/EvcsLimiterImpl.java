@@ -2769,8 +2769,9 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
                     if (freeResources > 0) {
                         ManagedEvcs[] everyone = this.active.stream().filter(//
                                 evcs -> !this.powerWaitingList.containsKey(evcs.id())).toArray(ManagedEvcs[]::new);
-                        this.setActive(Arrays.toString(everyone));
+
                         if (everyone.length != 0) {
+                            this.setActive(everyone.length);
                             int powerForEveryone = freeResources / everyone.length;
                             this.increasePowerBy(powerForEveryone, everyone);
                         }
@@ -2792,9 +2793,14 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
     private void increasePowerBy(int powerForEveryone, ManagedEvcs[] evcss) {
 
         for (int i = 0; i < evcss.length; i++) {
+            int newIncreaseAmount = 0;
             boolean allow = !evcss[i].getIsPriority().get() && !this.powerWaitingList.containsKey(evcss[i].id());
+            //TODO this is a problem, because it wont increase the load at all if there are a lot of free resources.
             boolean overLimit = ((this.getMaximumLoad() - this.getMinimumLoad()) + powerForEveryone >= MAXIMUM_LOAD_DELTA
                     || this.getMiddleLoad() - this.getMinimumLoad() + powerForEveryone >= 20);
+            if (overLimit) {
+                newIncreaseAmount = (MAXIMUM_LOAD_DELTA - (this.getMaximumLoad() - this.getMinimumLoad())) / evcss.length;
+            }
             int[] phaseConfiguration = evcss[i].getPhaseConfiguration();
             int phaseCount = evcss[i].getPhases().orElse(0);
             if (evcss[i].getChargePower().get() + powerForEveryone //
@@ -2821,6 +2827,16 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
             if (allow) {
                 int oldPower = this.getPower(evcss[i]);
                 int newPower = oldPower + powerForEveryone;
+                try {
+                    if (newPower >= (Math.min(evcss[i].getMinimumHardwarePower().get(), evcss[i].getMinimumPower().get()) / GRID_VOLTAGE)) {
+                        evcss[i].setChargePowerLimit(newPower * GRID_VOLTAGE);
+                    }
+                } catch (OpenemsError.OpenemsNamedException e) {
+                    this.log.error("Couldn't increase Power for " + evcss[i].id());
+                }
+            } else if (newIncreaseAmount > 0) {
+                int oldPower = this.getPower(evcss[i]);
+                int newPower = oldPower + newIncreaseAmount;
                 try {
                     if (newPower >= (Math.min(evcss[i].getMinimumHardwarePower().get(), evcss[i].getMinimumPower().get()) / GRID_VOLTAGE)) {
                         evcss[i].setChargePowerLimit(newPower * GRID_VOLTAGE);
