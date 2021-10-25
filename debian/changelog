@@ -1,3 +1,9 @@
+openems-consolinno (0.1.0-1) unstable; urgency=medium
+
+  * Fixed ConditionApplierProblem where old ConfigurationData was not reset/cleared
+
+ -- Felix <felix@felix-ThinkPad-E15-Gen-2>  Mon, 25 Oct 2021 21:40:24 +0200
+
 openems-consolinno (0.0.9-1) unstable; urgency=medium
 
   * Fixed Generic Modbus Channel
