@@ -120,8 +120,7 @@ public class DecentralizedCoolerImpl extends AbstractDecentralizedComponent impl
                         this.configurationSuccess = false;
                     }
                 }
-            }
-            if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS)
+            } else if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS)
                     && super.isEnabled() && super.configurationSuccess) {
                 if (super.currentRunEnabled()) {
                     this.getNeedCoolChannel().setNextValue(true);
