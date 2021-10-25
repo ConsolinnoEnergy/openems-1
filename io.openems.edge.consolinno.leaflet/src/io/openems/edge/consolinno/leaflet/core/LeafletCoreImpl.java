@@ -708,7 +708,11 @@ public class LeafletCoreImpl extends AbstractOpenemsModbusComponent implements O
             this.ownerMap.put(id, firstRun);
             return true;
         } else {
-            return this.ownerMap.get(id).equals(new PinOwner(type, moduleNumber, position));
+            if (this.ownerMap.containsKey(id)) {
+                return this.ownerMap.get(id).equals(new PinOwner(type, moduleNumber, position));
+            } else {
+                return false;
+            }
         }
     }
 
