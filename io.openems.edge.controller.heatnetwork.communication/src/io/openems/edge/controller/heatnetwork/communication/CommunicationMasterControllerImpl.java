@@ -131,6 +131,8 @@ public class CommunicationMasterControllerImpl extends AbstractOpenemsComponent 
             this.configureController(config);
             if (this.communicationController != null) {
                 this.communicationController.enable();
+            } else {
+                this.configSucceed = false;
             }
         } catch (ConfigurationException | OpenemsError.OpenemsNamedException e) {
             this.log.warn("Couldn't apply config, try again later " + super.id());
@@ -147,6 +149,11 @@ public class CommunicationMasterControllerImpl extends AbstractOpenemsComponent 
         this.clearReferences();
         try {
             this.configureController(config);
+            if (this.communicationController != null) {
+                this.communicationController.enable();
+            } else {
+                this.configSucceed = false;
+            }
         } catch (OpenemsError.OpenemsNamedException | ConfigurationException e) {
             this.log.warn("Couldn't apply modified Configuration : " + super.id());
             this.configSucceed = false;
@@ -365,6 +372,11 @@ public class CommunicationMasterControllerImpl extends AbstractOpenemsComponent 
         } else {
             try {
                 this.configureController(this.config);
+                if (this.communicationController != null) {
+                    this.communicationController.enable();
+                } else {
+                    this.configSucceed = false;
+                }
             } catch (ConfigurationException | OpenemsError.OpenemsNamedException e) {
                 this.clearReferences();
                 if (this.configFailCounter.get() >= MAX_FAIL_COUNTER) {

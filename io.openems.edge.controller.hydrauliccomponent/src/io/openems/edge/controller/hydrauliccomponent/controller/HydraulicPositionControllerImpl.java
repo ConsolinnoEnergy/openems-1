@@ -357,7 +357,9 @@ public class HydraulicPositionControllerImpl extends AbstractOpenemsComponent im
             Optional<Boolean> enableSignal = this.getEnableSignalChannel().getNextWriteValueAndReset();
             if (enableSignal.isPresent()) {
                 this.hadToFallbackBefore = false;
-                this.timer.resetTimer(MIN_RUN_TIME_AFTER_FALLBACK_IDENTIFIER);
+                if(this.useFallback) {
+                    this.timer.resetTimer(MIN_RUN_TIME_AFTER_FALLBACK_IDENTIFIER);
+                }
                 this.timer.resetTimer(MAX_WAIT_CYCLE_IDENTIFIER);
                 return enableSignal.get();
             } else {

@@ -14,7 +14,7 @@ LimitRTPRIO=2
 LimitRTTIME=60000000
 CPUSchedulingPolicy=rr
 CPUSchedulingPriority=1
-ExecStart=/usr/bin/java -Dfelix.cm.dir=/etc/openems.d/ -jar /usr/lib/openems/openems-edge.jar
+ExecStart=/usr/bin/java -Dfelix.cm.dir=/etc/openems.d/ -jar /usr/lib/openems/openems.jar
 SuccessExitStatus=143
 Restart=always
 RestartSec=10

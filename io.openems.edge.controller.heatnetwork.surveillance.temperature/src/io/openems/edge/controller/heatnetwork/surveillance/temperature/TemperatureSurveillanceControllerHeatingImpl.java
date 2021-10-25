@@ -1,5 +1,6 @@
 package io.openems.edge.controller.heatnetwork.surveillance.temperature;
 
+import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.controller.api.Controller;
 import io.openems.edge.controller.heatnetwork.surveillance.temperature.api.TemperatureSurveillanceController;
@@ -10,6 +11,7 @@ import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.ConfigurationPolicy;
 import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Modified;
+import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,6 +37,8 @@ public class TemperatureSurveillanceControllerHeatingImpl extends AbstractTemper
 
     private ConfigTempSurveillanceHeating config;
 
+    @Reference
+    ComponentManager cpm;
 
     public TemperatureSurveillanceControllerHeatingImpl() {
         super(OpenemsComponent.ChannelId.values(),
@@ -50,7 +54,7 @@ public class TemperatureSurveillanceControllerHeatingImpl extends AbstractTemper
                 this.config.referenceThermometerId(), AbstractTemperatureSurveillanceController.SurveillanceHeatingType.HEATING,
                 this.config.surveillanceType(), this.config.offsetActivate(), this.config.offsetDeactivate(),
                 this.config.heaterId(), this.config.hydraulicControllerId(),
-                this.config.timerId(), this.config.deltaTimeDelay());
+                this.config.timerId(), this.config.deltaTimeDelay(), this.cpm);
     }
 
     @Modified
@@ -63,7 +67,7 @@ public class TemperatureSurveillanceControllerHeatingImpl extends AbstractTemper
                 this.config.surveillanceType(), this.config.offsetActivate(),
                 this.config.offsetDeactivate(), this.config.heaterId(),
                 this.config.hydraulicControllerId(),
-                this.config.timerId(), this.config.deltaTimeDelay());
+                this.config.timerId(), this.config.deltaTimeDelay(), this.cpm);
     }
 
 

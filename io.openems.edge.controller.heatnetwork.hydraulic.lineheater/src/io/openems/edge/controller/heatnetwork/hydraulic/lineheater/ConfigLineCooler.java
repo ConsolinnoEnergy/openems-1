@@ -35,7 +35,7 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     String channelAddress() default "AM_2/ActivateHydraulicMixer";
 
     @AttributeDefinition(name = "Channels To Read and Write From", description = "First Channel is to Read, Second to Write, Third for Max Value, Fourth for min Value only important if Multiple Channel are controlled")
-    String[] channels() default {"valve0/PowerLevel", "valve0/SetPowerLevel", "valve0/MaxValvePower", "valve0/MinValveValue"};
+    String[] channels() default {"valve0/CurrentPowerLevel", "valve0/SetPointPowerLevel", "valve0/MaxAllowedValue", "valve0/MinAllowedValue"};
 
     @AttributeDefinition(name = "Reference Valve", description = "The Valve for the LineHeater.")
     String valveBypass() default "Valve0";

@@ -107,8 +107,9 @@ public class ThermometerVirtualConfigurable extends AbstractOpenemsComponent imp
 
     /**
      * Creates the TimerHandler, needed to handle EnableSignal Missing signals.
-     * @param id the id of the Component.
-     * @param timerId the TimerId of the Timer that is configured.
+     *
+     * @param id          the id of the Component.
+     * @param timerId     the TimerId of the Timer that is configured.
      * @param maxWaitTime the waiting Time.
      */
     private void createTimer(String id, String timerId, int maxWaitTime) {
@@ -134,7 +135,7 @@ public class ThermometerVirtualConfigurable extends AbstractOpenemsComponent imp
     @Override
     public void handleEvent(Event event) {
         if (this.configurationSuccess) {
-            if(this.isEnabled()) {
+            if (this.isEnabled()) {
                 if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS)) {
 
                     if (this._getDefaultActiveTemperatureChannel().getNextWriteValue().isPresent()) {
@@ -193,5 +194,11 @@ public class ThermometerVirtualConfigurable extends AbstractOpenemsComponent imp
         } catch (IOException e) {
             this.log.warn("Couldn't update ChannelProperty, reason: " + e.getMessage());
         }
+    }
+
+    @Override
+    public String debugLog() {
+        return "Current Virtual Temperature: " + this.getTemperature().orElse(Integer.MIN_VALUE)
+                + this.getTemperatureChannel().channelDoc().getUnit().getSymbol();
     }
 }

@@ -18,11 +18,12 @@ public class ValveLineController extends AbstractLineController {
     @Override
     public boolean startProcess() throws OpenemsError.OpenemsNamedException {
 
+        if (super.useMinMax) {
+            this.valve.maxValueChannel().setNextWriteValue(this.max);
+            this.valve.minValueChannel().setNextWriteValue(this.min);
+        }
         if (this.isRunning == false || this.valve.powerLevelReached() == false) {
-            if (super.useMinMax) {
-                this.valve.maxValueChannel().setNextWriteValue(this.max);
-                this.valve.minValueChannel().setNextWriteValue(this.min);
-            }
+
             this.isRunning = true;
             //Either fullpower set .--> ValveManager handles OR you could change Valve directly
             //this.valveBypass.setPowerLevelPercent().setNextValue((FULL_POWER));

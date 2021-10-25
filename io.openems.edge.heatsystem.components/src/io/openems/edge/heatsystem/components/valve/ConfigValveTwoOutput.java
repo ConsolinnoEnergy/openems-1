@@ -6,8 +6,8 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
 
 @ObjectClassDefinition(
-        name = "Valve Two Input ",
-        description = "A valve controlled by two inputs."
+        name = "Valve Two Output",
+        description = "A valve controlled by two outputs."
 )
 @interface ConfigValveTwoOutput {
 
