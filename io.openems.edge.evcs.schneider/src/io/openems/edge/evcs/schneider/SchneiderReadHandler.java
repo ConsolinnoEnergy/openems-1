@@ -82,6 +82,7 @@ public class SchneiderReadHandler {
 
                 /*
                 //TODO:this may be redundant
+                //TODO update: this may be a big problem actually
                 if (current < minPower) {
                     this.acknowledgeFlag = true;
                     this.command = RemoteCommand.SUSPEND_CHARGING;

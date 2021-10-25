@@ -28,7 +28,7 @@ public interface EvcsLimiterPower extends OpenemsComponent {
          */
         CURRENT_POWER(Doc.of(OpenemsType.INTEGER).unit(Unit.WATT)),
         FREE_POWER(Doc.of(OpenemsType.INTEGER).unit(Unit.WATT)),
-        ACTIVE(Doc.of(OpenemsType.STRING).unit(Unit.WATT)),
+        ACTIVE(Doc.of(OpenemsType.INTEGER).unit(Unit.WATT)),
         ;
         private final Doc doc;
 
@@ -73,10 +73,10 @@ public interface EvcsLimiterPower extends OpenemsComponent {
     default void setFreePower(int limit) {
         this.getFreePowerChannel().setNextValue(limit);
     }
-    default Channel<String> getActive() {
+    default Channel<Integer> getActive() {
         return this.channel(ChannelId.ACTIVE);
     }
-    default void setActive(String limit) {
+    default void setActive(int limit) {
         this.getActive().setNextValue(limit);
     }
 }
