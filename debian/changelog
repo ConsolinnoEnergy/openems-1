@@ -1,3 +1,10 @@
+openems-consolinno (0.0.8-1) unstable; urgency=medium
+
+  * Added more ModbusGenericComponents
+  * Bugfixes in most Components and Controller, that the Unittest oversaw
+
+ -- Felix <felix@felix-ThinkPad-E15-Gen-2>  Mon, 25 Oct 2021 13:17:32 +0200
+
 openems-consolinno (0.0.7-1) unstable; urgency=medium
 
   * Fixed: Applied source Target for each OpenEMS Type nec.
