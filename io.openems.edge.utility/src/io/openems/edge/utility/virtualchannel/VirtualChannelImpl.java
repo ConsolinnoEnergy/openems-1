@@ -79,7 +79,7 @@ public class VirtualChannelImpl extends AbstractOpenemsComponent implements Open
                 debugString += this.getDoubleChannel().value();
                 break;
             case INTEGER:
-                debugString += this.getIntegerChannel().value();
+                debugString += this.getLongChannel().value();
                 break;
         }
         return debugString;
@@ -100,7 +100,7 @@ public class VirtualChannelImpl extends AbstractOpenemsComponent implements Open
                     this.getDoubleChannel().getNextWriteValue().ifPresent(entry -> this.getDoubleChannel().setNextValue(entry));
                     break;
                 case INTEGER:
-                    this.getIntegerChannel().getNextWriteValue().ifPresent(entry -> this.getIntegerChannel().setNextValue(entry));
+                    this.getLongChannel().getNextWriteValue().ifPresent(entry -> this.getLongChannel().setNextValue(entry));
                     break;
             }
 

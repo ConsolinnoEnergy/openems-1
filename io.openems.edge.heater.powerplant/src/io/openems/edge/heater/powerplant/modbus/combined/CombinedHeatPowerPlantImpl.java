@@ -60,7 +60,7 @@ import java.util.Arrays;
         property = {EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE,
                 EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS})
 public class CombinedHeatPowerPlantImpl extends AbstractGenericModbusComponent implements OpenemsComponent,
-        CombinedHeatPowerPlant, Heater, ExceptionalState, EventHandler, CombinedHeatPowerPlantModbus {
+        CombinedHeatPowerPlant, Heater, ExceptionalState, EventHandler, CombinedHeatPowerPlantModbus, HeaterModbus {
 
     private final Logger log = LoggerFactory.getLogger(CombinedHeatPowerPlantImpl.class);
     private boolean isAutoRun;
