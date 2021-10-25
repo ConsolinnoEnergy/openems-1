@@ -8,11 +8,14 @@ import io.openems.edge.common.channel.WriteChannel;
 import io.openems.edge.common.channel.value.Value;
 import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
+import io.openems.edge.common.cycle.Cycle;
 import io.openems.edge.common.event.EdgeEventConstants;
 
 import io.openems.edge.exceptionalstate.api.ExceptionalState;
 import io.openems.edge.heatsystem.components.ConfigurationType;
 import io.openems.edge.heatsystem.components.HydraulicComponent;
+import io.openems.edge.io.api.AnalogInputOutput;
+import io.openems.edge.io.api.Pwm;
 import io.openems.edge.io.api.Relay;
 import org.osgi.service.cm.ConfigurationException;
 import org.osgi.service.component.ComponentContext;
@@ -29,6 +32,9 @@ import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
+
 
 /**
  * This Component allows a Valve  to be configured and controlled.
@@ -39,11 +45,11 @@ import org.slf4j.LoggerFactory;
  * If the value you read is the expected value, everything is ok, otherwise the Components tries to set the expected values again.
  */
 @Designate(ocd = ConfigValveTwoOutput.class, factory = true)
-@Component(name = "HeatsystemComponent.Valve.TwoInput",
+@Component(name = "HeatsystemComponent.Valve.TwoOutput",
         configurationPolicy = ConfigurationPolicy.REQUIRE,
         immediate = true,
         property = {
-                EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE,
+                EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE,
                 EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS}
 )
 public class ValveTwoOutput extends AbstractValve implements OpenemsComponent, HydraulicComponent, ExceptionalState, EventHandler {
@@ -66,6 +72,7 @@ public class ValveTwoOutput extends AbstractValve implements OpenemsComponent, H
     @Reference
     ComponentManager cpm;
 
+    AtomicReference<Cycle> cycle = new AtomicReference<>();
 
     private enum ChannelToGet {
         CLOSING, OPENING;
@@ -120,6 +127,9 @@ public class ValveTwoOutput extends AbstractValve implements OpenemsComponent, H
     private void activateOrModifiedRoutine(ConfigValveTwoOutput config) throws ConfigurationException, OpenemsError.OpenemsNamedException {
         this.configSuccess = false;
         this.config = config;
+        Optional<OpenemsComponent> cycleOptional = this.cpm.getAllComponents().stream().filter(component -> component instanceof Cycle).findAny();
+        cycleOptional.ifPresent(component -> this.cycle.set((Cycle) component));
+        super.setCycle(this.cycle.get());
         this.configurationType = config.configurationType();
         this.useCheckOutput = config.useCheckChannel();
         switch (this.configurationType) {
@@ -146,9 +156,21 @@ public class ValveTwoOutput extends AbstractValve implements OpenemsComponent, H
         this.secondsPerPercentage = ((double) config.valve_Time() / 100.d);
         this.timeChannel().setNextValue(0);
         super.createTimerHandler(config.timerId(), config.maxTime(), this.cpm, this, config.useExceptionalState());
-
-        super.percentPossiblePerCycle = super.cycle.getCycleTime() / (this.secondsPerPercentage * MILLI_SECONDS_TO_SECONDS);
+        int deltaMaxTime = Cycle.DEFAULT_CYCLE_TIME;
+        if (this.cycle.get() != null) {
+            deltaMaxTime = this.cycle.get().getCycleTime();
+        }
+        super.percentPossiblePerCycle = deltaMaxTime / (this.secondsPerPercentage * MILLI_SECONDS_TO_SECONDS);
         this.configSuccess = true;
+    }
+
+    /**
+     * Get the Current active {@link Cycle} and set as Reference
+     */
+    private void getCycle() {
+        Optional<OpenemsComponent> cycleOptional = this.cpm.getAllComponents().stream().filter(component -> component instanceof Cycle).findAny();
+        cycleOptional.ifPresent(component -> this.cycle.set((Cycle) component));
+        super.setCycle(this.cycle.get());
     }
 
 
@@ -192,7 +214,7 @@ public class ValveTwoOutput extends AbstractValve implements OpenemsComponent, H
 
     @Override
     public void handleEvent(Event event) {
-        if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE)) {
+        if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE)) {
             if (this.configSuccess) {
                 this.lastMaximum = this.maximum;
                 this.lastMinimum = this.minimum;
@@ -204,6 +226,10 @@ public class ValveTwoOutput extends AbstractValve implements OpenemsComponent, H
                     this.getIsBusyChannel().setNextValue(false);
                     this.isForced = false;
                     super.adaptValveValue();
+                }
+                if (this.configurationType.equals(ConfigurationType.DEVICE) && super.timerHandler.checkTimeIsUp(CHECK_COMPONENT_IDENTIFIER)) {
+                    this.checkForMissingComponents();
+                    this.timerHandler.resetTimer(CHECK_COMPONENT_IDENTIFIER);
                 }
             } else {
                 try {
@@ -231,9 +257,11 @@ public class ValveTwoOutput extends AbstractValve implements OpenemsComponent, H
         Double maxAllowed = this.getMaxAllowedValue();
         Double minAllowed = this.getMinAllowedValue();
         double futurePowerLevel = this.getFuturePowerLevelValue();
-        if (maxAllowed != null && maxAllowed + TOLERANCE < futurePowerLevel) {
-            this.changeByPercentage(maxAllowed - this.getPowerLevelValue());
-        } else if (minAllowed != null && minAllowed - TOLERANCE > futurePowerLevel) {
+        double currentPowerLevel = this.getPowerLevelValue();
+        double powerValueToCompare = this.isChanging ? futurePowerLevel : currentPowerLevel;
+        if (maxAllowed != null && (maxAllowed + TOLERANCE < powerValueToCompare)) {
+            this.setPowerLevel(maxAllowed);
+        } else if (minAllowed != null && (minAllowed - TOLERANCE > powerValueToCompare)) {
             this.changeByPercentage(minAllowed - futurePowerLevel);
         }
     }
@@ -264,8 +292,8 @@ public class ValveTwoOutput extends AbstractValve implements OpenemsComponent, H
         if (super.changeInvalid(percentage)) {
             return false;
         } else {
-            double currentPowerLevel = super.calculateCurrentPowerLevelAndSetTime(percentage);
-            if (currentPowerLevel < 0) {
+            double futurePowerLevel = super.calculateCurrentPowerLevelAndSetTime(percentage);
+            if (futurePowerLevel < 0) {
                 this.shutdownRelays();
                 return false;
             }
@@ -439,6 +467,10 @@ public class ValveTwoOutput extends AbstractValve implements OpenemsComponent, H
 
                 Channel<?> channelToCheckForTrue;
                 Channel<?> channelToCheckForFalse;
+                //Either it was Closing before but powerLevel fell below future OR it was opening before and not set to closed -> Future < current
+                this.isClosing = this.isClosing
+                        || this.futurePowerLevelChannel().value().orElse((double) HydraulicComponent.DEFAULT_MAX_POWER_VALUE)
+                        < this.getPowerLevelChannel().value().orElse((double) HydraulicComponent.DEFAULT_MIN_POWER_VALUE);
                 if (this.isClosing) {
                     channelToCheckForTrue = this.getInputChannel(ChannelToGet.CLOSING);
                     channelToCheckForFalse = this.getInputChannel(ChannelToGet.OPENING);
@@ -452,12 +484,26 @@ public class ValveTwoOutput extends AbstractValve implements OpenemsComponent, H
                     if (channelValueIsTrue == false || channelValueIsNotFalse) {
                         updateOk = false;
                         timeStampValveCurrent = -1;
-                        this.getPowerLevelChannel().setNextValue(this.powerLevelBeforeUpdate);
+                        // if channel who needs to be true is NOT true but false and channel which needs to be false is true
+                        // Check if closing -> then add percent increase(is Opening) else -> is closing further
+                        double powerLevelToApply = super.powerLevelBeforeUpdate;
+                        if (!channelValueIsTrue && channelValueIsNotFalse) {
+                            if (this.isClosing) {
+                                powerLevelToApply += super.percentIncreaseThisRun;
+                                powerLevelToApply = Math.min(powerLevelToApply, HydraulicComponent.DEFAULT_MAX_POWER_VALUE);
+                            } else {
+                                powerLevelToApply -= super.percentIncreaseThisRun;
+                                powerLevelToApply = Math.max(powerLevelToApply, HydraulicComponent.DEFAULT_MAX_POWER_VALUE);
+                            }
+                        }
+                        this.getPowerLevelChannel().setNextValue(powerLevelToApply);
+
                         if (this.isClosing) {
                             this.valveClose();
                         } else {
                             this.valveOpen();
                         }
+
                     } else {
                         updateOk = true;
                     }
@@ -478,6 +524,7 @@ public class ValveTwoOutput extends AbstractValve implements OpenemsComponent, H
 
     /**
      * Returns the Channel that are configured for opening or closing.
+     *
      * @param channelToGet the {@link ChannelToGet}
      * @return the Channel corresponding to {@link ChannelToGet}.
      * @throws OpenemsError.OpenemsNamedException if Channel not found.
@@ -502,6 +549,7 @@ public class ValveTwoOutput extends AbstractValve implements OpenemsComponent, H
 
     /**
      * Checks if the Value of the Channel is equivalent to true.
+     *
      * @param channelToCheck the Channel
      * @return true if Value is true or Value > 0.
      * @throws ConfigurationException if e.g. String does not contain only numbers.
@@ -534,6 +582,34 @@ public class ValveTwoOutput extends AbstractValve implements OpenemsComponent, H
             return false;
         }
     }
+
+
+    /**
+     * This Method will only be called, when someone configured the Valve with the {@link ConfigurationType#DEVICE}.
+     * It sometimes happens, that devices restart or get deactivated etc. The Vaöve will check for old references and refreshes them
+     * every 30 deltaTime (Depends on the Timer).
+     */
+    private void checkForMissingComponents() {
+        OpenemsComponent component;
+        try {
+            if (this.configurationType.equals(ConfigurationType.DEVICE)) {
+                component = this.cpm.getComponent(this.closeRelay.id());
+                if (!this.closeRelay.equals(component) && component instanceof Relay) {
+                    this.closeRelay = (Relay) component;
+                }
+                component = this.cpm.getComponent(this.openRelay.id());
+                if (!this.openRelay.equals(component) && component instanceof Relay) {
+                    this.openRelay = (Relay) component;
+                }
+            }
+            if (this.cycle.get() == null || (!this.cycle.get().equals(this.cpm.getComponent(this.cycle.get().id())))) {
+                this.getCycle();
+            }
+        } catch (OpenemsError.OpenemsNamedException e) {
+            this.log.warn("Couldn't check for missing Components. Reason: " + e.getMessage());
+        }
+    }
+
 
     @Deactivate
     protected void deactivate() {

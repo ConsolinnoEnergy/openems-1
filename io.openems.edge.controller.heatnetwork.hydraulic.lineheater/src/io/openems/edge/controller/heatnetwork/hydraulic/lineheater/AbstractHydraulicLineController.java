@@ -42,7 +42,6 @@ abstract class AbstractHydraulicLineController extends AbstractOpenemsComponent 
 
     private final Logger log = LoggerFactory.getLogger(AbstractHydraulicLineController.class);
 
-    @Reference
     protected ComponentManager cpm;
 
     private static final int DEFAULT_TEMPERATURE = -127;
@@ -98,8 +97,10 @@ abstract class AbstractHydraulicLineController extends AbstractOpenemsComponent 
                             String channelAddress, String[] channels, String bypassValve, String timerId,
                             int deltaTimeFallback, int deltaTimeCycleRestart, boolean shouldFallback,
                             int minuteFallbackStart, int minuteFallbackStop,
-                            double maxValveValue, double minValveValue, boolean minMaxOnly, HeaterType heaterType) {
+                            double maxValveValue, double minValveValue, boolean minMaxOnly, HeaterType heaterType,
+                            ComponentManager cpm) {
         super.activate(context, id, alias, enabled);
+        this.cpm = cpm;
         this.activateOrModifiedRoutine(referenceThermometer, useMinMax, useDecentralizedHeater, decentralizedHeaterId, reactionType,
                 defaultTemperature, lineHeaterType, valueIsBoolean, channelAddress, channels, bypassValve, timerId,
                 deltaTimeFallback, deltaTimeCycleRestart, shouldFallback, minuteFallbackStart, minuteFallbackStop,
@@ -112,8 +113,9 @@ abstract class AbstractHydraulicLineController extends AbstractOpenemsComponent 
                   String channelAddress, String[] channels, String bypassValve, String timerId,
                   int deltaTimeFallback, int deltaTimeCycleRestart, boolean shouldFallback,
                   int minuteFallbackStart, int minuteFallbackStop,
-                  double maxValveValue, double minValveValue, boolean minMaxOnly, HeaterType heaterType) {
+                  double maxValveValue, double minValveValue, boolean minMaxOnly, HeaterType heaterType, ComponentManager cpm) {
         super.modified(context, id, alias, enabled);
+        this.cpm = cpm;
         this.configSuccess = false;
         this.activateOrModifiedRoutine(referenceThermometer, useMinMax, useDecentralizedHeater, decentralizedHeaterId, reactionType,
                 defaultTemperature, lineHeaterType, valueIsBoolean, channelAddress, channels, bypassValve, timerId,
@@ -222,8 +224,16 @@ abstract class AbstractHydraulicLineController extends AbstractOpenemsComponent 
                 this.createLineHeater(valueToWriteIsBoolean, channelAddress);
                 break;
             case MULTIPLE_CHANNEL:
-                int compareLength = useMinMax ? CONFIG_CHANNEL_LIST_WITH_READ_WRITE_AND_MIN_MAX_LENGTH : CONFIG_CHANNEL_LIST_LENGTH_NO_MIN_MAX_OR_ONLY_MIN_MAX;
-                if (channels.length != compareLength) {
+                int compareLength = CONFIG_CHANNEL_LIST_WITH_READ_WRITE_AND_MIN_MAX_LENGTH;
+                if (channels.length == CONFIG_CHANNEL_LIST_LENGTH_NO_MIN_MAX_OR_ONLY_MIN_MAX && useMinMax) {
+                    this.onlyMinMax = true;
+                    compareLength = CONFIG_CHANNEL_LIST_LENGTH_NO_MIN_MAX_OR_ONLY_MIN_MAX;
+                } else if (!useMinMax && channels.length == CONFIG_CHANNEL_LIST_LENGTH_NO_MIN_MAX_OR_ONLY_MIN_MAX) {
+                    compareLength = CONFIG_CHANNEL_LIST_LENGTH_NO_MIN_MAX_OR_ONLY_MIN_MAX;
+                    this.onlyMinMax = false;
+                }
+
+                if (channels.length != CONFIG_CHANNEL_LIST_WITH_READ_WRITE_AND_MIN_MAX_LENGTH && channels.length != CONFIG_CHANNEL_LIST_LENGTH_NO_MIN_MAX_OR_ONLY_MIN_MAX) {
                     throw new ConfigurationException("ChannelSize", "ChannelSize should be" + compareLength + " but is : " + channels.length);
                 } else {
                     this.createChannelLineHeater(valueToWriteIsBoolean, channels, useMinMax);

@@ -1,6 +1,7 @@
 package io.openems.edge.heater.decentralized;
 
 import io.openems.common.exceptions.OpenemsError;
+import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.common.event.EdgeEventConstants;
 import io.openems.edge.exceptionalstate.api.ExceptionalState;
@@ -15,6 +16,7 @@ import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.ConfigurationPolicy;
 import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Modified;
+import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.event.Event;
 import org.osgi.service.event.EventConstants;
 import org.osgi.service.event.EventHandler;
@@ -48,6 +50,9 @@ public class DecentralizedHeaterImpl extends AbstractDecentralizedComponent impl
 
     ConfigDecentralizedHeater config;
 
+    @Reference
+    ComponentManager cpm;
+
 
     @Activate
     void activate(ComponentContext context, ConfigDecentralizedHeater config) {
@@ -56,7 +61,7 @@ public class DecentralizedHeaterImpl extends AbstractDecentralizedComponent impl
                 config.componentOrControllerId(), config.thresholdThermometerId(), config.setPointTemperature(),
                 config.forceHeating(), config.useExceptionalState(),
                 config.timerNeedHeatResponse(), config.waitTimeNeedHeatResponse(),
-                config.timerExceptionalState(), config.timeToWaitExceptionalState(), this.getForceHeatChannel(), this.getNeedHeatEnableSignalChannel());
+                config.timerExceptionalState(), config.timeToWaitExceptionalState(), this.getForceHeatChannel(), this.getNeedHeatEnableSignalChannel(), this.cpm);
         this.getNeedHeatChannel().setNextValue(false);
         this.getNeedMoreHeatChannel().setNextValue(false);
     }
@@ -71,7 +76,7 @@ public class DecentralizedHeaterImpl extends AbstractDecentralizedComponent impl
                 config.forceHeating(), config.useExceptionalState(),
                 config.timerNeedHeatResponse(), config.waitTimeNeedHeatResponse(),
                 config.timerExceptionalState(), config.timeToWaitExceptionalState(),
-                this.getForceHeatChannel(), this.getNeedHeatEnableSignalChannel());
+                this.getForceHeatChannel(), this.getNeedHeatEnableSignalChannel(), this.cpm);
     }
 
     /**
@@ -120,6 +125,7 @@ public class DecentralizedHeaterImpl extends AbstractDecentralizedComponent impl
             if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS)
                     && super.isEnabled() && super.configurationSuccess) {
                 if (super.currentRunEnabled()) {
+                    this.getNeedHeatChannel().setNextValue(true);
                     if (super.checkAllowedToExecuteLogic()) {
                         int setPointTemperature = this.getTemperatureSetpoint().orElse(DEFAULT_SET_POINT_TEMPERATURE);
                         boolean temperatureOk = this.thresholdThermometer.thermometerAboveGivenTemperature(setPointTemperature);

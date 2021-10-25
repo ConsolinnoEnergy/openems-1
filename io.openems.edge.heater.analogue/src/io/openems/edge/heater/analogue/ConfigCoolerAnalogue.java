@@ -35,8 +35,6 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     @AttributeDefinition(name = "MinPower", description = "If you want to run the Cooler with a minimum Power, you can set it up here")
     int defaultMinPower() default 0;
 
-    boolean autoRun() default false;
-
     @AttributeDefinition(name = "TimerId", description = "This Timer will be used for the following 2 Configurations.")
     String timerId() default "TimerByCycles";
 

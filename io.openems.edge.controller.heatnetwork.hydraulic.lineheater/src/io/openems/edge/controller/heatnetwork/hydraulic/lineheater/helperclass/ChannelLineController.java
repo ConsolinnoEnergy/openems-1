@@ -30,6 +30,12 @@ public class ChannelLineController extends AbstractLineController {
 
     @Override
     public boolean startProcess() throws OpenemsError.OpenemsNamedException {
+        if (this.useMinMax) {
+            WriteChannel<Double> doubleMaxWriteChannel = this.cpm.getChannel(this.maxAddress);
+            WriteChannel<Double> doubleMinWriteChannel = this.cpm.getChannel(this.minAddress);
+            doubleMaxWriteChannel.setNextWriteValue(this.max);
+            doubleMinWriteChannel.setNextWriteValue(this.min);
+        }
         double currentPowerDouble = this.getLastPower();
         if (this.startConditionsApply(currentPowerDouble)) {
             if (this.writeToChannel(this.isBooleanControlled() ? 1 : HydraulicComponent.DEFAULT_MAX_POWER_VALUE)) {
@@ -64,12 +70,6 @@ public class ChannelLineController extends AbstractLineController {
     }
 
     private boolean writeToChannel(double lastPower) throws OpenemsError.OpenemsNamedException {
-        if (this.useMinMax) {
-            WriteChannel<Double> doubleMaxWriteChannel = this.cpm.getChannel(this.maxAddress);
-            WriteChannel<Double> doubleMinWriteChannel = this.cpm.getChannel(this.minAddress);
-            doubleMaxWriteChannel.setNextWriteValue(this.max);
-            doubleMinWriteChannel.setNextWriteValue(this.min);
-        }
         if (this.isBooleanControlled()) {
             WriteChannel<Boolean> booleanWriteChannel = this.cpm.getChannel(this.writeAddress);
             booleanWriteChannel.setNextWriteValue(lastPower > 0);

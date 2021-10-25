@@ -23,8 +23,6 @@ import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.concurrent.atomic.AtomicBoolean;
-
 /**
  * <p>
  * This HydraulicController controls an hydraulicComponent, by applying a PID filtered SetPoint Value and adding it to the
@@ -118,7 +116,7 @@ public class PidHydraulicControllerImpl extends AbstractOpenemsComponent impleme
     private void activationOrModifiedRoutine(PidConfig config) throws OpenemsError.OpenemsNamedException, ConfigurationException {
         this.config = config;
         this.allocateComponent(config.temperatureSensorId());
-        this.allocateComponent(config.allocatedPassingDevice());
+        this.allocateComponent(config.allocatedHydraulicComponent());
         this.pidFilter = new PidFilter(this.config.proportionalGain(), this.config.integralGain(), this.config.derivativeGain());
         this.pidFilter.setLimits(config.lowerLimit(), config.upperLimit());
         this.inactivePowerValue = this.config.offPercentage();
@@ -252,7 +250,7 @@ public class PidHydraulicControllerImpl extends AbstractOpenemsComponent impleme
     private boolean componentIsMissing() {
         try {
             if (this.hydraulicComponent.isEnabled() == false) {
-                this.hydraulicComponent = this.cpm.getComponent(this.config.allocatedPassingDevice());
+                this.hydraulicComponent = this.cpm.getComponent(this.config.allocatedHydraulicComponent());
             }
             if (this.thermometer.isEnabled() == false) {
                 this.thermometer = this.cpm.getComponent(this.config.temperatureSensorId());

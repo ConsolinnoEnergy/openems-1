@@ -39,7 +39,6 @@ public abstract class AbstractDecentralizedComponent extends AbstractOpenemsComp
 
     protected final Logger log = LoggerFactory.getLogger(AbstractDecentralizedComponent.class);
 
-    @Reference
     protected ComponentManager cpm;
 
     private static final String NEED_HEAT_RESPONSE_IDENTIFIER = "DECENTRALIZED_COMPONENT_COOL_OR_HEAT_RESPONSE_IDENTIFIER";
@@ -66,8 +65,9 @@ public abstract class AbstractDecentralizedComponent extends AbstractOpenemsComp
                   String componentId, String thresholdId, int tempSetPoint, boolean forceHeatingOrCooling,
                   boolean useExceptionalState, String timerResponse, int waitTimeResponse,
                   String timerExceptionalState, int timeToWaitExceptionalState,
-                  WriteChannel<Boolean> forced, WriteChannel<Boolean> response) {
+                  WriteChannel<Boolean> forced, WriteChannel<Boolean> response, ComponentManager cpm) {
         super.activate(context, id, alias, enabled);
+        this.cpm = cpm;
         if (enabled == false) {
             return;
         }
@@ -101,10 +101,10 @@ public abstract class AbstractDecentralizedComponent extends AbstractOpenemsComp
      * @throws OpenemsError.OpenemsNamedException if Component cannot be found.
      */
     protected void activationOrModifiedRoutine(ComponentType componentType, String componentId, String thresholdId, int tempSetPoint,
-                                             boolean forceHeatingOrCooling, boolean useExceptionalState,
-                                             String timerResponse, int waitTimeResponse,
-                                             String timerExceptionalState, int timeToWaitExceptionalState,
-                                             WriteChannel<Boolean> forced, WriteChannel<Boolean> response)
+                                               boolean forceHeatingOrCooling, boolean useExceptionalState,
+                                               String timerResponse, int waitTimeResponse,
+                                               String timerExceptionalState, int timeToWaitExceptionalState,
+                                               WriteChannel<Boolean> forced, WriteChannel<Boolean> response)
             throws ConfigurationException, OpenemsError.OpenemsNamedException {
         OpenemsComponent componentFetchedByComponentManager;
         this.componentType = componentType;
@@ -153,8 +153,9 @@ public abstract class AbstractDecentralizedComponent extends AbstractOpenemsComp
                   boolean forceHeating, boolean useExceptionalState,
                   String timerNeedHeatResponse, int waitTimeNeedHeatResponse,
                   String timerExceptionalState, int timeToWaitExceptionalState,
-                  WriteChannel<Boolean> forced, WriteChannel<Boolean> needResponse) {
+                  WriteChannel<Boolean> forced, WriteChannel<Boolean> needResponse, ComponentManager cpm) {
         super.modified(context, id, alias, enabled);
+        this.cpm = cpm;
         this.timer.removeComponent();
         try {
             this.activationOrModifiedRoutine(componentType, componentId, thresholdId, tempSetPoint,
@@ -338,9 +339,9 @@ public abstract class AbstractDecentralizedComponent extends AbstractOpenemsComp
     /**
      * Initialize the Timer to the identifier.
      *
-     * @param timerIdResponse Id of the Timer for the response channel.
-     * @param waitTimeResponse waitTime for the Response Channel if no Signal is incoming.
-     * @param timerIdExceptionalState Timer Id to use for the ExceptionalState (if enabled)
+     * @param timerIdResponse            Id of the Timer for the response channel.
+     * @param waitTimeResponse           waitTime for the Response Channel if no Signal is incoming.
+     * @param timerIdExceptionalState    Timer Id to use for the ExceptionalState (if enabled)
      * @param timeToWaitExceptionalState WaitTime for the Exceptional State to become invalid, if it was present before.
      * @throws OpenemsError.OpenemsNamedException if the timer couldn't be found
      * @throws ConfigurationException             if id is found but they're not instances of timer in {@link TimerHandler}

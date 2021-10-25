@@ -1,6 +1,7 @@
 package io.openems.edge.heater.decentralized;
 
 import io.openems.common.exceptions.OpenemsError;
+import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.common.event.EdgeEventConstants;
 import io.openems.edge.exceptionalstate.api.ExceptionalState;
@@ -13,6 +14,7 @@ import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.ConfigurationPolicy;
 import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Modified;
+import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.event.Event;
 import org.osgi.service.event.EventConstants;
 import org.osgi.service.event.EventHandler;
@@ -34,6 +36,10 @@ import org.osgi.service.metatype.annotations.Designate;
                 EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE})
 public class DecentralizedCoolerImpl extends AbstractDecentralizedComponent implements OpenemsComponent, EventHandler, Heater, DecentralizedCooler {
 
+
+    @Reference
+    ComponentManager cpm;
+
     public DecentralizedCoolerImpl() {
         super(OpenemsComponent.ChannelId.values(),
                 Heater.ChannelId.values(),
@@ -51,7 +57,7 @@ public class DecentralizedCoolerImpl extends AbstractDecentralizedComponent impl
                 config.forceCooling(), config.enableExceptionalStateHandling(),
                 config.timerNeedCoolResponse(), config.timeNeedCoolResponse(),
                 config.timerExceptionalState(), config.timeToWaitExceptionalState(),
-                this.getForceCoolChannel(), this.getNeedCoolEnableSignalChannel());
+                this.getForceCoolChannel(), this.getNeedCoolEnableSignalChannel(), this.cpm);
 
         this.getNeedCoolChannel().setNextValue(false);
         this.getNeedMoreCoolChannel().setNextValue(false);
@@ -67,7 +73,7 @@ public class DecentralizedCoolerImpl extends AbstractDecentralizedComponent impl
                 config.forceCooling(), config.enableExceptionalStateHandling(),
                 config.timerNeedCoolResponse(), config.timeToWaitExceptionalState(),
                 config.timerExceptionalState(), config.timeToWaitExceptionalState(),
-                this.getForceCoolChannel(), this.getNeedCoolEnableSignalChannel());
+                this.getForceCoolChannel(), this.getNeedCoolEnableSignalChannel(), this.cpm);
     }
 
     /**
@@ -118,6 +124,7 @@ public class DecentralizedCoolerImpl extends AbstractDecentralizedComponent impl
             if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS)
                     && super.isEnabled() && super.configurationSuccess) {
                 if (super.currentRunEnabled()) {
+                    this.getNeedCoolChannel().setNextValue(true);
                     if (super.checkAllowedToExecuteLogic()) {
                         int setPointTemperature = this.getTemperatureSetpoint().orElse(DEFAULT_SET_POINT_TEMPERATURE);
                         boolean temperatureOk = this.thresholdThermometer.thermometerBelowGivenTemperature(setPointTemperature);

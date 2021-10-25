@@ -5,6 +5,7 @@ import io.openems.edge.common.channel.Channel;
 import io.openems.edge.common.channel.value.Value;
 import io.openems.edge.common.component.AbstractOpenemsComponent;
 import io.openems.edge.common.component.ComponentManager;
+import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.common.cycle.Cycle;
 import io.openems.edge.exceptionalstate.api.ExceptionalState;
 import io.openems.edge.exceptionalstate.api.ExceptionalStateHandler;
@@ -13,7 +14,6 @@ import io.openems.edge.heatsystem.components.HydraulicComponent;
 import io.openems.edge.timer.api.TimerHandler;
 import io.openems.edge.timer.api.TimerHandlerImpl;
 import org.osgi.service.cm.ConfigurationException;
-import org.osgi.service.component.annotations.Reference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,7 +27,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Its the BaseClass for any Valve that is implemented.
  */
 public abstract class AbstractValve extends AbstractOpenemsComponent implements HydraulicComponent, ExceptionalState {
-    @Reference
+
     Cycle cycle;
 
     protected final Logger log = LoggerFactory.getLogger(AbstractValve.class);
@@ -67,6 +67,7 @@ public abstract class AbstractValve extends AbstractOpenemsComponent implements 
     protected ExceptionalState exceptionalState;
     protected boolean exceptionalStateActive;
     protected double percentPossiblePerCycle = 1.d;
+    protected double percentIncreaseThisRun = 0.0d;
 
     protected AbstractValve(io.openems.edge.common.channel.ChannelId[] firstInitialChannelIds,
                             io.openems.edge.common.channel.ChannelId[]... furtherInitialChannelIds) {
@@ -123,6 +124,7 @@ public abstract class AbstractValve extends AbstractOpenemsComponent implements 
 
     protected void updatePowerLevel() {
         //Only Update PowerLevel if the Valve is Changing
+        this.percentIncreaseThisRun = 0.0d;
         if (this.isChanging()) {
             long elapsedTime = this.getMilliSecondTime();
             //If it's the first update of PowerLevel
@@ -139,6 +141,7 @@ public abstract class AbstractValve extends AbstractOpenemsComponent implements 
             }
             this.timeStampValveCurrent = this.getMilliSecondTime();
             double percentIncrease = elapsedTime / (this.secondsPerPercentage * 1000);
+            this.percentIncreaseThisRun = percentIncrease;
             if (this.isClosing) {
                 percentIncrease *= -1;
             }
@@ -153,6 +156,7 @@ public abstract class AbstractValve extends AbstractOpenemsComponent implements 
                 truncatedDouble = DEFAULT_MIN_POWER_VALUE;
             }
             this.getPowerLevelChannel().setNextValue(truncatedDouble);
+            this.getPowerLevelChannel().nextProcessImage();
             if (this.updateOk) {
                 this.powerLevelBeforeUpdate = truncatedDouble;
             }
@@ -292,7 +296,11 @@ public abstract class AbstractValve extends AbstractOpenemsComponent implements 
      * After that check if the Valve can adapt to the FuturePowerLevel with it's current PowerLevelValue
      */
     protected void adaptValveValue() {
-        int cycleTime = this.cycle.getCycleTime();
+        int cycleTime = Cycle.DEFAULT_CYCLE_TIME;
+        if (this.cycle != null) {
+            cycleTime = this.cycle.getCycleTime();
+        }
+
         double currentPowerLevelValue = this.getPowerLevelValue();
         double futurePowerLevel = this.getFuturePowerLevelValue();
         double percentPossiblePerCycle = cycleTime / (this.secondsPerPercentage * MILLI_SECONDS_TO_SECONDS);
@@ -319,6 +327,7 @@ public abstract class AbstractValve extends AbstractOpenemsComponent implements 
 
     /**
      * Gets the Value of the optional config channel (output/checkoutput).
+     *
      * @param optionalChannel the channel
      * @return the Wrapped Value either value or nextValue.
      */
@@ -396,30 +405,30 @@ public abstract class AbstractValve extends AbstractOpenemsComponent implements 
      * @return the current PowerLevel
      */
     protected double calculateCurrentPowerLevelAndSetTime(double percentage) {
-        double currentPowerLevel = this.getPowerLevelValue();
-        this.getLastPowerLevelChannel().setNextValue(currentPowerLevel);
+        double futurePowerLevel = this.getPowerLevelValue();
+        this.getLastPowerLevelChannel().setNextValue(futurePowerLevel);
         this.maximum = this.getMaxAllowedValue();
         this.minimum = this.getMinAllowedValue();
         if (this.maxMinValid() == false) {
             this.minimum = null;
             this.maximum = null;
         }
-        currentPowerLevel += percentage;
-        if (this.maximum != null && this.maximum + BUFFER < currentPowerLevel) {
-            currentPowerLevel = this.maximum;
-        } else if (this.lastMaximum != null && this.lastMaximum + BUFFER < currentPowerLevel) {
-            currentPowerLevel = this.lastMaximum;
-        } else if (currentPowerLevel >= DEFAULT_MAX_POWER_VALUE) {
-            currentPowerLevel = DEFAULT_MAX_POWER_VALUE;
-        } else if (this.minimum != null && this.minimum - BUFFER > currentPowerLevel) {
-            currentPowerLevel = this.minimum;
-        } else if (this.lastMinimum != null && this.lastMinimum - BUFFER > currentPowerLevel) {
-            currentPowerLevel = this.lastMinimum;
+        futurePowerLevel += percentage;
+        if (this.maximum != null && this.maximum + BUFFER < futurePowerLevel) {
+            futurePowerLevel = this.maximum;
+        } else if (this.lastMaximum != null && this.lastMaximum + BUFFER < futurePowerLevel) {
+            futurePowerLevel = this.lastMaximum;
+        } else if (futurePowerLevel >= DEFAULT_MAX_POWER_VALUE) {
+            futurePowerLevel = DEFAULT_MAX_POWER_VALUE;
+        } else if (this.minimum != null && this.minimum - BUFFER > futurePowerLevel) {
+            futurePowerLevel = this.minimum;
+        } else if (this.lastMinimum != null && this.lastMinimum - BUFFER > futurePowerLevel) {
+            futurePowerLevel = this.lastMinimum;
         }
         //Set goal Percentage for future reference
-        this.futurePowerLevelChannel().setNextValue(Math.round(currentPowerLevel));
+        this.futurePowerLevelChannel().setNextValue(Math.round(futurePowerLevel));
         //if same power level do not change and return --> relays is not always powered
-        if (getLastPowerLevelChannel().getNextValue().get() == currentPowerLevel) {
+        if (getLastPowerLevelChannel().getNextValue().get() == futurePowerLevel) {
             this.isChanging = false;
             return -1;
         }
@@ -429,7 +438,7 @@ public abstract class AbstractValve extends AbstractOpenemsComponent implements 
         } else {
             this.timeChannel().setNextValue(Math.abs(percentage) * this.secondsPerPercentage);
         }
-        return currentPowerLevel;
+        return futurePowerLevel;
     }
 
     /**
@@ -498,5 +507,9 @@ public abstract class AbstractValve extends AbstractOpenemsComponent implements 
         }
         return this.parentActive == false && (this.readyToChange() == false || this.exceptionalStateActive)
                 || percentage == DEFAULT_MIN_POWER_VALUE || ableToAdapt == false;
+    }
+
+    protected void setCycle(Cycle cycle) {
+        this.cycle = cycle;
     }
 }
