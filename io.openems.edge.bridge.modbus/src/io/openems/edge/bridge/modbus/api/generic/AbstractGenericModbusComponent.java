@@ -148,6 +148,7 @@ public abstract class AbstractGenericModbusComponent extends AbstractOpenemsModb
                                ConfigurationAdmin cm, String modbusId, ComponentManager cpm, List<String> modbusConfiguration) throws OpenemsException, ConfigurationException {
         this.cpm.set(cpm);
         this.cm.set(cm);
+        this.modbusConfig.clear();
         this.configureChannelConfiguration(modbusConfiguration);
         return super.modified(context, id, alias, enabled, unitId, cm, "Modbus", modbusId);
     }
@@ -617,7 +618,7 @@ public abstract class AbstractGenericModbusComponent extends AbstractOpenemsModb
 
         if (this.modbusConfig.containsKey(target.channelId())) {
             int scaleFactor;
-            double targetSetValue;
+            double targetSetValue = 0.0d;
             Optional<?> targetValue = source.getNextWriteValueAndReset();
             if (targetValue.isPresent()) {
                 try {
@@ -627,60 +628,50 @@ public abstract class AbstractGenericModbusComponent extends AbstractOpenemsModb
                             target.setNextWriteValueFromObject(targetValue.get());
                             break;
                         case SHORT:
+                            scaleFactor = this.modbusConfig.get(target.channelId()).getStringLengthOrScaleFactor();
+                            targetSetValue = ((Short) targetValue.get()).doubleValue() * Math.pow(10, scaleFactor);
+                            break;
                         case INTEGER:
+                            scaleFactor = this.modbusConfig.get(target.channelId()).getStringLengthOrScaleFactor();
+                            targetSetValue = ((Integer) targetValue.get()).doubleValue() * Math.pow(10, scaleFactor);
+                            break;
                         case LONG:
                             scaleFactor = this.modbusConfig.get(target.channelId()).getStringLengthOrScaleFactor();
                             targetSetValue = ((Long) targetValue.get()).doubleValue() * Math.pow(10, scaleFactor);
-                            switch (target.getType()) {
-
-                                case BOOLEAN:
-                                    target.setNextWriteValueFromObject(((int) targetSetValue) > 0);
-                                    break;
-                                case SHORT:
-                                    target.setNextWriteValueFromObject((short) targetSetValue);
-                                    break;
-                                case INTEGER:
-                                    target.setNextWriteValueFromObject((int) targetSetValue);
-                                    break;
-                                case LONG:
-                                    target.setNextWriteValueFromObject((long) targetSetValue);
-                                    break;
-                                case FLOAT:
-                                    target.setNextWriteValueFromObject((float) targetSetValue);
-                                    break;
-                                case DOUBLE:
-                                case STRING:
-                                    target.setNextWriteValueFromObject(targetSetValue);
-                                    break;
-                            }
                             break;
                         case FLOAT:
+                            scaleFactor = this.modbusConfig.get(target.channelId()).getStringLengthOrScaleFactor();
+                            targetSetValue = ((Float) targetValue.get()).doubleValue() * Math.pow(10, scaleFactor);
+                            break;
                         case DOUBLE:
+                        default:
                             scaleFactor = this.modbusConfig.get(target.channelId()).getStringLengthOrScaleFactor();
                             targetSetValue = (Double) targetValue.get() * Math.pow(10, scaleFactor);
-                            switch (target.getType()) {
-
-                                case BOOLEAN:
-                                    target.setNextWriteValueFromObject(((int) targetSetValue) > 0);
-                                    break;
-                                case SHORT:
-                                    target.setNextWriteValueFromObject((short) targetSetValue);
-                                    break;
-                                case INTEGER:
-                                    target.setNextWriteValueFromObject((int) targetSetValue);
-                                    break;
-                                case LONG:
-                                    target.setNextWriteValueFromObject((long) targetSetValue);
-                                    break;
-                                case FLOAT:
-                                    target.setNextWriteValueFromObject((float) targetSetValue);
-                                    break;
-                                case DOUBLE:
-                                case STRING:
-                                    target.setNextWriteValueFromObject(targetSetValue);
-                                    break;
-                            }
+                            break;
                     }
+                    switch (target.getType()) {
+
+                        case BOOLEAN:
+                            target.setNextWriteValueFromObject(((int) targetSetValue) > 0);
+                            break;
+                        case SHORT:
+                            target.setNextWriteValueFromObject((short) targetSetValue);
+                            break;
+                        case INTEGER:
+                            target.setNextWriteValueFromObject((int) targetSetValue);
+                            break;
+                        case LONG:
+                            target.setNextWriteValueFromObject((long) targetSetValue);
+                            break;
+                        case FLOAT:
+                            target.setNextWriteValueFromObject((float) targetSetValue);
+                            break;
+                        case DOUBLE:
+                        case STRING:
+                            target.setNextWriteValueFromObject(targetSetValue);
+                            break;
+                    }
+
                 } catch (OpenemsError.OpenemsNamedException e) {
                     this.log.warn("Couldn't find target Channel, please check your configuration/Component/Code: " + e.getMessage());
                     return false;
