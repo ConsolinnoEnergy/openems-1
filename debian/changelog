@@ -1,3 +1,9 @@
+openems-consolinno (0.1.3-1) unstable; urgency=medium
+
+  * Fixed a Bug in Virtual Channel where Default Value was not applied
+
+ -- Felix <felix@felix-ThinkPad-E15-Gen-2>  Tue, 26 Oct 2021 13:11:34 +0200
+
 openems-consolinno (0.1.2-1) unstable; urgency=medium
 
   * Added a configurable constant to ModbusThermometer

@@ -18,7 +18,7 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
     VirtualChannelType channelType() default VirtualChannelType.BOOLEAN;
 
-    @AttributeDefinition(name = "Default Value", description = "Default Value applied to the Channel, depending on the VirtualChannelType")
+    @AttributeDefinition(name = "Default Value at the Beginning", description = "Default Value applied to the Channel, depending on the VirtualChannelType")
     String defaultValue() default "true";
 
     boolean enabled() default true;
