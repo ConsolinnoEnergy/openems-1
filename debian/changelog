@@ -1,3 +1,9 @@
+openems-consolinno (0.1.1-1) unstable; urgency=medium
+
+  * Added a new Utility Class for ChannelMapping 1:1
+
+ -- Felix <felix@felix-ThinkPad-E15-Gen-2>  Tue, 26 Oct 2021 10:39:26 +0200
+
 openems-consolinno (0.1.0-1) unstable; urgency=medium
 
   * Fixed ConditionApplierProblem where old ConfigurationData was not reset/cleared
