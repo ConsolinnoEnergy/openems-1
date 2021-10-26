@@ -7,6 +7,7 @@ import io.openems.edge.bridge.modbus.api.ModbusProtocol;
 import io.openems.edge.bridge.modbus.api.element.FloatDoublewordElement;
 import io.openems.edge.bridge.modbus.api.element.SignedWordElement;
 import io.openems.edge.bridge.modbus.api.element.UnsignedWordElement;
+import io.openems.edge.bridge.modbus.api.task.FC3ReadRegistersTask;
 import io.openems.edge.bridge.modbus.api.task.FC4ReadInputRegistersTask;
 import io.openems.edge.bridge.modbus.api.task.Task;
 import io.openems.edge.common.component.OpenemsComponent;
@@ -20,6 +21,7 @@ import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.ConfigurationPolicy;
 import org.osgi.service.component.annotations.Deactivate;
+import org.osgi.service.component.annotations.Modified;
 import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.component.annotations.ReferenceCardinality;
 import org.osgi.service.component.annotations.ReferencePolicy;
@@ -32,7 +34,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * A Generalized ModbusThermometer Implementation. Map any Modbussaddress to a Temperature.
+ * A Generalized ModbusThermometer Implementation. Map any ModbusAddress to a Temperature.
  */
 @Designate(ocd = Config.class, factory = true)
 @Component(name = "Thermometer.Modbus",
@@ -71,6 +73,14 @@ public class ThermometerModbusImpl extends AbstractOpenemsModbusComponent implem
         this.valueToAddOrSubtract = config.constantValueToAddOrSubtract();
     }
 
+    @Modified
+    void modified(ComponentContext context, Config config) throws OpenemsException {
+        this.config = config;
+        super.modified(context, config.id(), config.alias(), config.enabled(), config.modbusUnitId(), this.cm,
+                "Modbus", config.modbusBridgeId());
+        this.valueToAddOrSubtract = config.constantValueToAddOrSubtract();
+    }
+
     @Deactivate
     protected void deactivate() {
         super.deactivate();
@@ -96,14 +106,29 @@ public class ThermometerModbusImpl extends AbstractOpenemsModbusComponent implem
 
             case DOUBLE:
             case FLOAT:
-                return new FC4ReadInputRegistersTask(this.config.address(), Priority.HIGH,
-                        m(ThermometerModbus.ChannelId.TEMPERATURE_MODBUS_FLOAT, new FloatDoublewordElement(this.config.address())));
+                if (this.config.isHoldingRegister()) {
+                    return new FC3ReadRegistersTask(this.config.address(), Priority.HIGH,
+                            m(ThermometerModbus.ChannelId.TEMPERATURE_MODBUS_FLOAT, new FloatDoublewordElement(this.config.address())));
+                } else {
+                    return new FC4ReadInputRegistersTask(this.config.address(), Priority.HIGH,
+                            m(ThermometerModbus.ChannelId.TEMPERATURE_MODBUS_FLOAT, new FloatDoublewordElement(this.config.address())));
+                }
             case INTEGER_UNSIGNED:
-                return new FC4ReadInputRegistersTask(this.config.address(), Priority.HIGH,
-                        m(ThermometerModbus.ChannelId.TEMPERATURE_MODBUS_INTEGER, new UnsignedWordElement(this.config.address())));
+                if (this.config.isHoldingRegister()) {
+                    return new FC3ReadRegistersTask(this.config.address(), Priority.HIGH,
+                            m(ThermometerModbus.ChannelId.TEMPERATURE_MODBUS_INTEGER, new UnsignedWordElement(this.config.address())));
+                } else {
+                    return new FC4ReadInputRegistersTask(this.config.address(), Priority.HIGH,
+                            m(ThermometerModbus.ChannelId.TEMPERATURE_MODBUS_INTEGER, new UnsignedWordElement(this.config.address())));
+                }
             case INTEGER_SIGNED:
-                return new FC4ReadInputRegistersTask(this.config.address(), Priority.HIGH,
-                        m(ThermometerModbus.ChannelId.TEMPERATURE_MODBUS_INTEGER, new SignedWordElement(this.config.address())));
+                if (this.config.isHoldingRegister()) {
+                    return new FC3ReadRegistersTask(this.config.address(), Priority.HIGH,
+                            m(ThermometerModbus.ChannelId.TEMPERATURE_MODBUS_INTEGER, new SignedWordElement(this.config.address())));
+                } else {
+                    return new FC4ReadInputRegistersTask(this.config.address(), Priority.HIGH,
+                            m(ThermometerModbus.ChannelId.TEMPERATURE_MODBUS_INTEGER, new SignedWordElement(this.config.address())));
+                }
         }
         this.log.warn("Couldn't apply Config for Temperature Sensor. No Task will be added: " + super.id());
         return null;
@@ -142,6 +167,13 @@ public class ThermometerModbusImpl extends AbstractOpenemsModbusComponent implem
         }
     }
 
+    /**
+     * Calculates the Temperature, depending on the TemperatureUnit configured.
+     *
+     * @param valueTemperature the Value read via Modbus
+     * @param unit             the unit expected from the modbus input.
+     * @return the temperature Value in dC.
+     */
     private Object calculateTemperature(float valueTemperature, TEMPERATURE_UNIT unit) {
         switch (unit) {
 

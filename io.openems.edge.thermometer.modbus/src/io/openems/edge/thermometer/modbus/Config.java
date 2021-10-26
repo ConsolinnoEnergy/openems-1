@@ -35,6 +35,9 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     @AttributeDefinition(name = "WordElement modbus", description = "The ModbusWordElement. For Temperatures it's usually Float or Signed")
     Word word() default Word.FLOAT;
 
+    @AttributeDefinition(name = "HoldingRegister?", description = "Is the ModbusRegister a Holding Register (FC3)? If false -> InputRegister(Fc4)")
+    boolean isHoldingRegister() default false;
+
     boolean enabled() default true;
 
     String webconsole_configurationFactory_nameHint() default "Thermometer Modbus[{id}]";
