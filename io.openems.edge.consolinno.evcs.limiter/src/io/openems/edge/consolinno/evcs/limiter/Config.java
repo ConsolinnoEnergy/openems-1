@@ -1,5 +1,6 @@
 package io.openems.edge.consolinno.evcs.limiter;
 
+import io.openems.edge.evcs.api.GridVoltage;
 import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
@@ -13,6 +14,9 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     String alias() default "";
 
     boolean enabled() default true;
+
+    @AttributeDefinition(name = "GridVoltage", description = "Voltage of the Power Grid.")
+    GridVoltage grid() default GridVoltage.V_230_HZ_50;
 
     @AttributeDefinition(name = "evcsIDs", description = "Ids of the EVCS that have to be managed.")
     String[] evcss() default {"evcs0","evcs1"};

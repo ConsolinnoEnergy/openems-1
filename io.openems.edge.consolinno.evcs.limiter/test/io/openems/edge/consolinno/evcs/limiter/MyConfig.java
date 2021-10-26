@@ -1,6 +1,7 @@
 package io.openems.edge.consolinno.evcs.limiter;
 
 import io.openems.edge.common.test.AbstractComponentConfig;
+import io.openems.edge.evcs.api.GridVoltage;
 
 
 @SuppressWarnings("all")
@@ -101,6 +102,11 @@ public class MyConfig extends AbstractComponentConfig implements Config {
     @Override
     public boolean enabled() {
         return this.builder.enabled;
+    }
+
+    @Override
+    public GridVoltage grid() {
+        return null;
     }
 
     @Override
