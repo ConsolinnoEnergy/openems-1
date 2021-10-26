@@ -47,6 +47,8 @@ public class ThermometerModbusImpl extends AbstractOpenemsModbusComponent implem
     @Reference
     protected ConfigurationAdmin cm;
 
+    private int valueToAddOrSubtract = 0;
+
 
     @Reference(policy = ReferencePolicy.STATIC, policyOption = ReferencePolicyOption.GREEDY, cardinality = ReferenceCardinality.MANDATORY)
     protected void setModbus(BridgeModbus modbus) {
@@ -66,6 +68,7 @@ public class ThermometerModbusImpl extends AbstractOpenemsModbusComponent implem
         this.config = config;
         super.activate(context, config.id(), config.alias(), config.enabled(), config.modbusUnitId(), this.cm,
                 "Modbus", config.modbusBridgeId());
+        this.valueToAddOrSubtract = config.constantValueToAddOrSubtract();
     }
 
     @Deactivate
@@ -133,6 +136,7 @@ public class ThermometerModbusImpl extends AbstractOpenemsModbusComponent implem
                     break;
             }
             if (isDefined) {
+                valueTemperature += this.valueToAddOrSubtract;
                 this.getTemperatureChannel().setNextValue(this.calculateTemperature(valueTemperature, unit));
             }
         }

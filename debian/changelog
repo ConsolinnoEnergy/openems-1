@@ -1,3 +1,10 @@
+openems-consolinno (0.1.2-1) unstable; urgency=medium
+
+  * Added a configurable constant to ModbusThermometer
+  * Added the support of HoldingRegister for Read and Write in Generic Modbus Components(untested)
+
+ -- Felix <felix@felix-ThinkPad-E15-Gen-2>  Tue, 26 Oct 2021 11:54:59 +0200
+
 openems-consolinno (0.1.1-1) unstable; urgency=medium
 
   * Added a new Utility Class for ChannelMapping 1:1

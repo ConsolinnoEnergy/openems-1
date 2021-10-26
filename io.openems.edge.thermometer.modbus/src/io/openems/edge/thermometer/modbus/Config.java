@@ -26,7 +26,10 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     @AttributeDefinition(name = "Modbus Register currentTemp outside", description = "Modbus Register for currentTemp outside.")
     int address() default -1;
 
-    @AttributeDefinition(name = "Unit", description = "Unit of the Modbus Thermometer, will be converted to Decidegree Celsius")
+    @AttributeDefinition(name = "AddOrSubtract this Value", description = "Add or Subtract a Certain Value before Converting Unit.")
+    int constantValueToAddOrSubtract() default 0;
+
+    @AttributeDefinition(name = "Unit", description = "Unit of the Modbus Thermometer, will be converted to DeciDegree Celsius")
     TEMPERATURE_UNIT temperatureUnit() default TEMPERATURE_UNIT.DEZIDEGREE_CELSIUS;
 
     @AttributeDefinition(name = "WordElement modbus", description = "The ModbusWordElement. For Temperatures it's usually Float or Signed")
