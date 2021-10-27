@@ -400,6 +400,9 @@ public class ChpKwEnergySmartblockImpl extends AbstractOpenemsModbusComponent im
 
 		// Set Heater interface STATUS channel
 		if (this.connectionAlive == false) {
+			statusMessage = statusMessage + "No modbus connection, ";
+			warningMessage = warningMessage + "No modbus connection, ";
+			errorMessage = errorMessage + "No modbus connection, ";
 			this._setHeaterState(HeaterState.OFF.getValue());
 		} else if (chpEngineRunning) {
 			this._setHeaterState(HeaterState.RUNNING.getValue());
@@ -463,13 +466,12 @@ public class ChpKwEnergySmartblockImpl extends AbstractOpenemsModbusComponent im
 		// Can only send commands if handshake is successful.
 		if (this.connectionAlive) {
 
-			boolean exceptionalStateActive = false;
-			int exceptionalStateValue = 0;
-
 			// Handle EnableSignal.
 			boolean turnOnChp = this.enableSignalHandler.deviceShouldBeHeating(this);
 
 			// Handle ExceptionalState. ExceptionalState overwrites EnableSignal.
+			int exceptionalStateValue = 0;
+			boolean exceptionalStateActive = false;
 			if (this.useExceptionalState) {
 				exceptionalStateActive = this.exceptionalStateHandler.exceptionalStateActive(this);
 				if (exceptionalStateActive) {

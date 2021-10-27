@@ -10,12 +10,12 @@ public enum PoolMode implements OptionsEnum {
 	UNDEFINED(-1, "Undefined"), //
 	AUTOMATIC(0, "Automatic"), //
 	VALUE_NOT_USED(1, "Value not used (Wert nicht benutzt)"), //
-	PARTY(2, "No late night throttling (Party)"), //
-	VACATION(3, "Holidays, full time throttling (Ferien)"), //
+	PARTY(2, "No night setback (Party)"), //
+	VACATION(3, "Holidays, full time setback (Ferien)"), //
 	OFF(4, "Off"); //
 
-	private int value;
-	private String name;
+	private final int value;
+	private final String name;
 
 	private PoolMode(int value, String name) {
 		this.value = value;

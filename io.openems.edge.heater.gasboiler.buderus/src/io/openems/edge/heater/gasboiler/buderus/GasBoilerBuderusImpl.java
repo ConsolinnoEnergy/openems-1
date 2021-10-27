@@ -400,6 +400,7 @@ public class GasBoilerBuderusImpl extends AbstractOpenemsModbusComponent impleme
 			// If the code gets to here, the state is undefined.
 			this._setHeaterState(HeaterState.UNDEFINED.getValue());
 		}
+		this.getHeaterStateChannel().nextProcessImage();
 
 		// Fill status channel.
 		if (this.connectionAlive) {
@@ -590,18 +591,18 @@ public class GasBoilerBuderusImpl extends AbstractOpenemsModbusComponent impleme
 	protected void printInfo() {
 		this.logInfo(this.log, "--Buderus Kessel--");
 		this.logInfo(this.log, "Heater STATE channel: " + this.getHeaterState());
-		this.logInfo(this.log, "Heater flow temperature: " + this.getFlowTemperature() + " d°C");
-		this.logInfo(this.log, "Heater maximum flow temperature: " + this.getMaximumFlowTempBoiler1().get() + " d°C");
-		this.logInfo(this.log, "Heater flow temperature change speed: " + this.getIR8002FlowTempRateOfChange().get() + " dK/min");
-		this.logInfo(this.log, "Heater return temperature: " + this.getReturnTemperature() + " d°C");
-		this.logInfo(this.log, "Heater effective power percent: " + this.getEffectiveHeatingPowerPercent() + " %");
-		this.logInfo(this.log, "Heater minimum power percent: " + this.getMinimumPowerPercentBoiler1().get() + " %");
-		this.logInfo(this.log, "Heater set point flow temp: " + this.getRequestedTemperatureSetPointBoiler1().get() + " d°C");
-		this.logInfo(this.log, "Heater set point power percent: " + this.getRequestedPowerPercentSetPointBoiler1().get() + " %");
-		this.logInfo(this.log, "Heater pressure: " + this.getPressureBoiler1().get() + " dBar");
-		this.logInfo(this.log, "Heater number of startups: " + this.getNumberOfStartsBoiler1().get());
-		this.logInfo(this.log, "Heater running time: " + this.getRunningTimeBoiler1().get() + " minutes");
-		this.logInfo(this.log, "Register 402: " + this.getRunPermissionChannel().value().get());
+		this.logInfo(this.log, "Heater flow temperature: " + this.getFlowTemperature());
+		this.logInfo(this.log, "Heater maximum flow temperature: " + this.getMaximumFlowTempBoiler1());
+		this.logInfo(this.log, "Heater flow temperature change speed: " + this.getIR8002FlowTempRateOfChange());
+		this.logInfo(this.log, "Heater return temperature: " + this.getReturnTemperature());
+		this.logInfo(this.log, "Heater effective power percent: " + this.getEffectiveHeatingPowerPercent());
+		this.logInfo(this.log, "Heater minimum power percent: " + this.getMinimumPowerPercentBoiler1());
+		this.logInfo(this.log, "Heater set point flow temp: " + this.getRequestedTemperatureSetPointBoiler1());
+		this.logInfo(this.log, "Heater set point power percent: " + this.getRequestedPowerPercentSetPointBoiler1());
+		this.logInfo(this.log, "Heater pressure: " + this.getPressureBoiler1());
+		this.logInfo(this.log, "Heater number of startups: " + this.getNumberOfStartsBoiler1());
+		this.logInfo(this.log, "Heater running time: " + this.getRunningTimeBoiler1());
+		this.logInfo(this.log, "Run permission (register 402): " + this.getRunPermissionChannel().value().get());
 		this.logInfo(this.log, "Heater status message: " + this.getStatusMessage().get());
 		this.logInfo(this.log, "Heater warning message: " + this.getWarningMessage().get());
 		this.logInfo(this.log, "Heater error message: " + this.getErrorMessage().get());

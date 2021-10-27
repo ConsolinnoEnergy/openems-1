@@ -197,7 +197,7 @@ public class HeatPumpTecalorImpl extends AbstractOpenemsModbusComponent implemen
 				new FC4ReadInputRegistersTask(2500, Priority.HIGH,
 						m(HeatpumpTecalor.ChannelId.IR2501_STATUSBITS, new UnsignedWordElement(2500),
 								ElementToChannelConverter.DIRECT_1_TO_1),
-						m(HeatpumpTecalor.ChannelId.IR2502_ELSUP_BLOCK_RELEASE, new UnsignedWordElement(2501),
+						m(HeatpumpTecalor.ChannelId.IR2502_DSM_SWITCH, new UnsignedWordElement(2501),
 								ElementToChannelConverter.DIRECT_1_TO_1),
 						new DummyRegisterElement(2502),
 						m(HeatpumpTecalor.ChannelId.IR2504_ERRORSTATUS, new UnsignedWordElement(2503),
@@ -376,33 +376,37 @@ public class HeatPumpTecalorImpl extends AbstractOpenemsModbusComponent implemen
 
 		// Map error to Heater interface ErrorMessage.
 		boolean isError = false;
+		boolean signalReceived = false;
+		String statusMessage = "";
 		if (this.getErrorStatus().isDefined()) {
+			signalReceived = true;
 			isError = this.getErrorStatus().get();
 		}
+		int errorCode = 0;
 		if (this.getErrorCode().isDefined()) {
-			int errorCode = this.getErrorCode().get();
+			errorCode = this.getErrorCode().get();
+		}
+		if (signalReceived) {
 			if (errorCode > 0) {
 				this._setErrorMessage("Error Code: " + errorCode);
-			}
-		} else {
-			if (isError) {
+			} else if (isError) {
 				this._setErrorMessage("An unknown error occurred.");
 			} else {
 				this._setErrorMessage("No error");
 			}
+		} else {
+			statusMessage = "No modbus connection, ";
+			this._setErrorMessage("No modbus connection.");
 		}
 		this.getErrorMessageChannel().nextProcessImage();
 
 		// Map status to Heater interface HeaterState
 		int statusBits = 0;
-		String statusMessage = "";
-		boolean signalReceived = false;
 		boolean isRunning = false;
 		if (this.getStatusBits().isDefined()) {
-			signalReceived = true;
 			statusBits = this.getStatusBits().get();
 			if ((statusBits & 0b01) == 0b01) {
-				statusMessage = "Pump circuit 1 (HK1 Pumpe), ";
+				statusMessage = statusMessage + "Pump circuit 1 (HK1 Pumpe), ";
 			}
 			if ((statusBits & 0b010) == 0b010) {
 				statusMessage = statusMessage + "Pump circuit 2 (HK2 Pumpe), ";
@@ -447,10 +451,10 @@ public class HeatPumpTecalorImpl extends AbstractOpenemsModbusComponent implemen
 		}
 
 		boolean notBlocked = true;
-		if (this.getElSupBlockRelease().isDefined()) {
-			notBlocked = this.getElSupBlockRelease().get();
+		if (this.getDsmSwitch().isDefined()) {
+			notBlocked = this.getDsmSwitch().get();
 			if (notBlocked == false) {
-				statusMessage = statusMessage + "Blocked by el. supplier (EVU-Sperre), ";
+				statusMessage = statusMessage + "DSM off state (EVU-Sperre), ";
 			}
 		}
 		if (statusMessage.length() > 0) {
@@ -602,7 +606,6 @@ public class HeatPumpTecalorImpl extends AbstractOpenemsModbusComponent implemen
 					if (exceptionalStateValue <= this.DEFAULT_MIN_EXCEPTIONAL_VALUE) {
 						turnOnHeatpump = false;
 					} else {
-						// When ExceptionalStateValue is > 0, turn heat pump on.
 						turnOnHeatpump = true;
 					}
 				}
@@ -650,9 +653,9 @@ public class HeatPumpTecalorImpl extends AbstractOpenemsModbusComponent implemen
 		this.logInfo(this.log, "Error message: " + this.getErrorMessage().get());
 		this.logInfo(this.log, "");
 		this.logInfo(this.log, "--Writable Values--");
-		this.logInfo(this.log, "Operating mode: " + this.getOperatingModeChannel().value().asEnum().getName());
+		this.logInfo(this.log, "Operating mode: " + this.getOperatingMode().asEnum().getName());
 		this.logInfo(this.log, "SmartGrid-Ready active: " + this.getSgReadyOnOff());
-		this.logInfo(this.log, "SmartGridState (HeatpumpSmartGrid): " + this.getSmartGridStateChannel().value().asEnum().getName());
+		this.logInfo(this.log, "SmartGridState: " + this.getSmartGridState().asEnum().getName());
 		this.logInfo(this.log, "");
 	}
 

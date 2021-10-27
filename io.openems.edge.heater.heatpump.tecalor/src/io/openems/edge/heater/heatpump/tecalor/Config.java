@@ -46,8 +46,8 @@ import org.osgi.service.metatype.annotations.Option;
 	@AttributeDefinition(name = "ExceptionalState timer Id", description = "Name of the timer used for the ExceptionalState.")
 	String exceptionalStateTimerId() default "TimerByTime";
 
-	@AttributeDefinition(name = "Default mode of operation", description = "When EnableSignal or ExceptionalState turns "
-			+ "on the heat pump, switch these modes to \"automatic\".")
+	@AttributeDefinition(name = "Default on state", description = "When EnableSignal or ExceptionalState turns "
+			+ "on the heat pump, switch to this mode. (The \"off\" state is \"antifreeze\".)")
 	OperatingMode defaultModeOfOperation() default OperatingMode.PROGRAM_MODE;
 
 	@AttributeDefinition(name = "Read only", description = "Only read values from Modbus, don't send commands.")

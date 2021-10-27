@@ -17,8 +17,8 @@ public enum SystemStatus implements OptionsEnum {
 	EXTERNAL_ENERGY_SOURCE(6, "External energy source (Externe Energiequelle)"), //
 	COOLING(7, "Cooling (Kuehlung)"); //
 
-	private int value;
-	private String name;
+	private final int value;
+	private final String name;
 
 	private SystemStatus(int value, String name) {
 		this.value = value;

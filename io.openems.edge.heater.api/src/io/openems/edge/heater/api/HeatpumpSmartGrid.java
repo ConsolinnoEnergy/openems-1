@@ -24,7 +24,7 @@ public interface HeatpumpSmartGrid extends Heater {
 		 *      <li> Type: Integer
 		 *      <li> Possible values: -1, 1 ... 4
 		 *      <li> State -1: Undefined
-		 *      <li> State 1: Electric supplier block
+		 *      <li> State 1: Operation blocked by demand side management (DSM)
 		 *      <li> State 2: Low energy consumption
 		 *      <li> State 3: Standard
 		 *      <li> State 4: High energy consumption
@@ -72,7 +72,7 @@ public interface HeatpumpSmartGrid extends Heater {
 	 *      <li> Type: Integer
 	 *      <li> Possible values: -1, 1 ... 4
 	 *      <li> State -1: Undefined
-	 *      <li> State 1: Electric supplier block
+	 *      <li> State 1: Operation blocked by demand side management (DSM)
 	 *      <li> State 2: Low energy consumption
 	 *      <li> State 3: Standard
 	 *      <li> State 4: High energy consumption
@@ -122,7 +122,7 @@ public interface HeatpumpSmartGrid extends Heater {
 	 * <ul>
 	 *      <li> Type: Integer
 	 *      <li> Possible values: 1 ... 4
-	 *      <li> State 1: Electric supplier block
+	 *      <li> State 1: Operation blocked by demand side management (DSM)
 	 *      <li> State 2: Low energy consumption
 	 *      <li> State 3: Standard
 	 *      <li> State 4: High energy consumption
@@ -141,7 +141,7 @@ public interface HeatpumpSmartGrid extends Heater {
 	 * <ul>
 	 *      <li> Type: Integer
 	 *      <li> Possible values: 1 ... 4
-	 *      <li> State 1: Electric supplier block
+	 *      <li> State 1: Operation blocked by demand side management (DSM)
 	 *      <li> State 2: Low energy consumption
 	 *      <li> State 3: Standard
 	 *      <li> State 4: High energy consumption
@@ -160,7 +160,7 @@ public interface HeatpumpSmartGrid extends Heater {
 	 * <ul>
 	 *      <li> Type: Integer
 	 *      <li> Possible values: 1 ... 4
-	 *      <li> State 1: Electric supplier block
+	 *      <li> State 1: Operation blocked by demand side management (DSM)
 	 *      <li> State 2: Low energy consumption
 	 *      <li> State 3: Standard
 	 *      <li> State 4: High energy consumption

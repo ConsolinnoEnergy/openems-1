@@ -19,12 +19,16 @@ import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.common.event.EdgeEventConstants;
 import io.openems.edge.common.taskmanager.Priority;
 import io.openems.edge.exceptionalstate.api.ExceptionalState;
+import io.openems.edge.exceptionalstate.api.ExceptionalStateHandler;
+import io.openems.edge.exceptionalstate.api.ExceptionalStateHandlerImpl;
 import io.openems.edge.heater.api.EnableSignalHandler;
 import io.openems.edge.heater.api.EnableSignalHandlerImpl;
 import io.openems.edge.heater.api.Heater;
 import io.openems.edge.heater.api.HeaterState;
 import io.openems.edge.heater.heatpump.heliotherm.api.HeatpumpHeliotherm;
+import io.openems.edge.heater.heatpump.heliotherm.api.ControlMode;
 import io.openems.edge.heater.heatpump.heliotherm.api.OperatingMode;
+import io.openems.edge.heater.heatpump.heliotherm.api.PowerControlSetting;
 import io.openems.edge.timer.api.TimerHandler;
 import io.openems.edge.timer.api.TimerHandlerImpl;
 import org.osgi.service.cm.ConfigurationAdmin;
@@ -47,17 +51,20 @@ import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.Optional;
 
 
 /**
- * This module reads the most important variables available via Modbus from a Heliotherm heatpump and maps them to OpenEMS
+ * This module reads the most important variables available via Modbus from a Heliotherm heat pump and maps them to OpenEMS
  * channels. The module is written to be used with the Heater interface methods.
  * When setEnableSignal() from the Heater interface is set to true with no other parameters like temperature specified,
- * the heatpump will turn on with default settings. The default settings are configurable in the config.
- * The heatpump can be controlled with setSetPointTemperature() and/or setSetPointPowerPercent().
+ * the heat pump will turn on with default settings. The default settings are configurable in the config.
+ * The heat pump can be controlled with setSetPointTemperature() and/or setSetPointPowerPercent().
  * A certain configuration of the pump is required for setSetPointPowerPercent() to work.
  * setSetPointPower() and related methods are not supported by this heater.
  */
+
+// ToDo: Add smart grid functionality using AiO module.
 
 @Designate(ocd = Config.class, factory = true)
 @Component(name = "Heater.HeatPump.Heliotherm",
@@ -78,16 +85,23 @@ public class HeatpumpHeliothermImpl extends AbstractOpenemsModbusComponent imple
 
     private final Logger log = LoggerFactory.getLogger(HeatpumpHeliothermImpl.class);
     private boolean printInfoToLog;
-    private LocalDateTime fiveSecondTimestamp;
-    private int defaultSetPointPowerPercent;
-    private int defaultSetPointTemperature;
-    private int maxElectricPower;
-    private boolean heatpumpError = false;
     private boolean readOnly;
+    private LocalDateTime fiveSecondTimestamp;
+    private static final int sendIntervalSeconds = 6; // How often to send commands to the heat pump. Allowed minimum is 5.
+    private int maxElectricPower;
+    private int maxCompressorSpeed;
+    private ControlMode controlModeSetting;
+    private PowerControlSetting powerControlSetting;
+    private boolean mapPowerPercentToConsumption;
+    private int lastTemperatureSetPoint;
+    private double lastPowerPercentSetPoint;
+    private int lastConsumptionSetPoint;
 
-    private TimerHandler timer;
-    private static final String ENABLE_SIGNAL_IDENTIFIER = "HEAT_PUMP_HELIOTHERM_ENABLE_SIGNAL_IDENTIFIER";
     private EnableSignalHandler enableSignalHandler;
+    private static final String ENABLE_SIGNAL_IDENTIFIER = "HEAT_PUMP_HELIOTHERM_ENABLE_SIGNAL_IDENTIFIER";
+    private boolean useExceptionalState;
+    private ExceptionalStateHandler exceptionalStateHandler;
+    private static final String EXCEPTIONAL_STATE_IDENTIFIER = "HEAT_PUMP_HELIOTHERM_EXCEPTIONAL_STATE_IDENTIFIER";
 
     // This is essential for Modbus to work, but the compiler does not warn you when it is missing!
     @Reference(policy = ReferencePolicy.STATIC, policyOption = ReferencePolicyOption.GREEDY, cardinality = ReferenceCardinality.MANDATORY)
@@ -98,7 +112,8 @@ public class HeatpumpHeliothermImpl extends AbstractOpenemsModbusComponent imple
     public HeatpumpHeliothermImpl() {
         super(OpenemsComponent.ChannelId.values(),
                 HeatpumpHeliotherm.ChannelId.values(),
-                Heater.ChannelId.values());    // Even though ChpKwEnergySmartblockChannel extends this channel, it needs to be added separately.
+                Heater.ChannelId.values(),
+                ExceptionalState.ChannelId.values());
     }
 
     @Activate
@@ -106,20 +121,35 @@ public class HeatpumpHeliothermImpl extends AbstractOpenemsModbusComponent imple
         super.activate(context, config.id(), config.alias(), config.enabled(), config.modbusUnitId(), this.cm,
                 "Modbus", config.modbusBridgeId());
 
-        this.printInfoToLog = config.debug();
-        this.fiveSecondTimestamp = LocalDateTime.now().minusMinutes(5);    // Initialize with past time value so code executes immediately on first run.
-        this.defaultSetPointPowerPercent = config.defaultSetPointPowerPercent();
-        this.defaultSetPointTemperature = config.defaultSetPointTemperature() * 10; // Convert to d°C.
-        this.maxElectricPower = config.maxElectricPower();
+        this.printInfoToLog = config.printInfoToLog();
         this.readOnly = config.readOnly();
-        this.timer = new TimerHandlerImpl(super.id(), this.cpm);
-        this.timer.addOneIdentifier(ENABLE_SIGNAL_IDENTIFIER, config.timerIdEnableSignal(), config.waitTimeEnableSignal());
-        this.enableSignalHandler = new EnableSignalHandlerImpl(this.timer, ENABLE_SIGNAL_IDENTIFIER);
         if (this.isEnabled() == false) {
             this._setHeaterState(HeaterState.OFF.getValue());
         }
-        this.getOperatingModeChannel().setNextWriteValue(config.defaultOperatingMode().getValue());
 
+        if (this.readOnly == false) {
+            this.controlModeSetting = config.defaultControlMode();
+            this.lastTemperatureSetPoint = config.defaultSetPointTemperature() * 10; // Convert to d°C.
+            this.setTemperatureSetpoint(this.lastTemperatureSetPoint);
+            this.powerControlSetting = config.powerControlSetting();
+            this.maxElectricPower = config.maxElectricPower();
+            this.mapPowerPercentToConsumption = config.mapPowerPercentToConsumption();
+            this.maxCompressorSpeed = config.maxCompressorSpeed();
+            this.fiveSecondTimestamp = LocalDateTime.now().minusSeconds(sendIntervalSeconds);    // Initialize with past time value so code executes immediately on first run.
+            this.setHeatingPowerPercentSetpoint(config.defaultSetPointPowerPercent());
+            this.initializeTimers(config);
+        }
+    }
+
+    private void initializeTimers(Config config) throws OpenemsError.OpenemsNamedException, ConfigurationException {
+        TimerHandler timer = new TimerHandlerImpl(super.id(), this.cpm);
+        timer.addOneIdentifier(ENABLE_SIGNAL_IDENTIFIER, config.enableSignalTimerId(), config.waitTimeEnableSignal());
+        this.enableSignalHandler = new EnableSignalHandlerImpl(timer, ENABLE_SIGNAL_IDENTIFIER);
+        this.useExceptionalState = config.useExceptionalState();
+        if (this.useExceptionalState) {
+            timer.addOneIdentifier(EXCEPTIONAL_STATE_IDENTIFIER, config.exceptionalStateTimerId(), config.waitTimeExceptionalState());
+            this.exceptionalStateHandler = new ExceptionalStateHandlerImpl(timer, EXCEPTIONAL_STATE_IDENTIFIER);
+        }
     }
 
     @Deactivate
@@ -131,15 +161,15 @@ public class HeatpumpHeliothermImpl extends AbstractOpenemsModbusComponent imple
     protected ModbusProtocol defineModbusProtocol() throws OpenemsException {
         ModbusProtocol protocol = new ModbusProtocol(this,
                 // Input register read.
-                new FC4ReadInputRegistersTask(12, Priority.HIGH,
-                        // Use SignedWordElement when the number can be negative. Signed 16bit maps every number >32767
-                        // to negative. That means if the value you read is positive and <32767, there is no difference
-                        // between signed and unsigned.
+                new FC4ReadInputRegistersTask(10, Priority.HIGH,
+                        m(HeatpumpHeliotherm.ChannelId.IR10_OUTSIDE_TEMPERATURE, new SignedWordElement(10),
+                                ElementToChannelConverter.DIRECT_1_TO_1),
+                        new DummyRegisterElement(11),
                         m(Heater.ChannelId.FLOW_TEMPERATURE, new SignedWordElement(12),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
                         m(Heater.ChannelId.RETURN_TEMPERATURE, new SignedWordElement(13),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
-                        m(HeatpumpHeliotherm.ChannelId.IR14_BUFFER_TEMPERATURE, new SignedWordElement(14),
+                        m(HeatpumpHeliotherm.ChannelId.IR14_STORAGE_TANK_TEMPERATURE, new SignedWordElement(14),
                                 ElementToChannelConverter.DIRECT_1_TO_1)
                 ),
                 new FC4ReadInputRegistersTask(25, Priority.HIGH,
@@ -149,12 +179,12 @@ public class HeatpumpHeliothermImpl extends AbstractOpenemsModbusComponent imple
                                 ElementToChannelConverter.DIRECT_1_TO_1),
                         new DummyRegisterElement(27),
                         new DummyRegisterElement(28),
-                        m(HeatpumpHeliotherm.ChannelId.IR29_READ_VERDICHTER_DREHZAHL, new SignedWordElement(29),
+                        m(HeatpumpHeliotherm.ChannelId.IR29_READ_COMPRESSOR_SPEED, new SignedWordElement(29),
                                 ElementToChannelConverter.SCALE_FACTOR_MINUS_1),
                         m(HeatpumpHeliotherm.ChannelId.IR30_COP, new SignedWordElement(30),
-                                ElementToChannelConverter.SCALE_FACTOR_1),
+                                ElementToChannelConverter.SCALE_FACTOR_MINUS_1),
                         new DummyRegisterElement(31),
-                        m(HeatpumpHeliotherm.ChannelId.IR32_EVU_FREIGABE, new SignedWordElement(32),
+                        m(HeatpumpHeliotherm.ChannelId.IR32_DSM_INDICATOR, new SignedWordElement(32),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
                         new DummyRegisterElement(33),
                         m(HeatpumpHeliotherm.ChannelId.IR34_READ_TEMP_SET_POINT, new SignedWordElement(34),
@@ -165,7 +195,7 @@ public class HeatpumpHeliothermImpl extends AbstractOpenemsModbusComponent imple
                                 ElementToChannelConverter.DIRECT_1_TO_1)
                 ),
                 new FC4ReadInputRegistersTask(70, Priority.HIGH,
-                        m(HeatpumpHeliotherm.ChannelId.IR70_71_CURRENT_ELECTRIC_POWER, new UnsignedDoublewordElement(70),
+                        m(HeatpumpHeliotherm.ChannelId.IR70_71_ELECTRIC_POWER_CONSUMPTION, new UnsignedDoublewordElement(70),
                                 ElementToChannelConverter.DIRECT_1_TO_1)
                 ),
                 new FC4ReadInputRegistersTask(74, Priority.HIGH,
@@ -178,7 +208,7 @@ public class HeatpumpHeliothermImpl extends AbstractOpenemsModbusComponent imple
                         m(HeatpumpHeliotherm.ChannelId.HR100_OPERATING_MODE, new UnsignedWordElement(100),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
                         new DummyRegisterElement(101),
-                        m(HeatpumpHeliotherm.ChannelId.HR102_SET_POINT_TEMPERATUR, new SignedWordElement(102),
+                        m(Heater.ChannelId.SET_POINT_TEMPERATURE, new SignedWordElement(102),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
                         m(HeatpumpHeliotherm.ChannelId.HR103_USE_SET_POINT_TEMPERATURE, new UnsignedWordElement(103),
                                 ElementToChannelConverter.DIRECT_1_TO_1)
@@ -190,24 +220,24 @@ public class HeatpumpHeliothermImpl extends AbstractOpenemsModbusComponent imple
                 new FC3ReadRegistersTask(125, Priority.HIGH,
                         m(HeatpumpHeliotherm.ChannelId.HR125_SET_POINT_ELECTRIC_POWER_CONSUMPTION, new UnsignedWordElement(125),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
-                        m(HeatpumpHeliotherm.ChannelId.HR126_SET_POINT_VERDICHTERDREHZAHL_PERCENT, new SignedWordElement(126),
-                                ElementToChannelConverter.SCALE_FACTOR_MINUS_1),
+                        m(HeatpumpHeliotherm.ChannelId.HR126_MODBUS, new SignedWordElement(126),
+                                ElementToChannelConverter.DIRECT_1_TO_1),
                         new DummyRegisterElement(127),
                         m(HeatpumpHeliotherm.ChannelId.HR128_RESET_ERROR, new UnsignedWordElement(128),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
-                        m(HeatpumpHeliotherm.ChannelId.HR129_OUTSIDE_TEMPERATURE, new SignedWordElement(129),
+                        m(HeatpumpHeliotherm.ChannelId.HR129_OUTSIDE_TEMPERATURE_SEND, new SignedWordElement(129),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
                         m(HeatpumpHeliotherm.ChannelId.HR130_USE_MODBUS_OUTSIDE_TEMPERATURE, new UnsignedWordElement(130),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
-                        m(HeatpumpHeliotherm.ChannelId.HR131_BUFFER_TEMPERATURE, new SignedWordElement(131),
+                        m(HeatpumpHeliotherm.ChannelId.HR131_STORAGE_TANK_TEMPERATURE_SEND, new SignedWordElement(131),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
-                        m(HeatpumpHeliotherm.ChannelId.HR132_USE_MODBUS_BUFFER_TEMPERATURE, new UnsignedWordElement(132),
+                        m(HeatpumpHeliotherm.ChannelId.HR132_USE_MODBUS_SENT_STORAGE_TANK_TEMP, new UnsignedWordElement(132),
                                 ElementToChannelConverter.DIRECT_1_TO_1)
                 ),
                 new FC3ReadRegistersTask(149, Priority.HIGH,
-                        m(HeatpumpHeliotherm.ChannelId.HR149_EVU_FREIGABE, new SignedWordElement(149),
+                        m(HeatpumpHeliotherm.ChannelId.HR149_DSM_SWITCH, new SignedWordElement(149),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
-                        m(HeatpumpHeliotherm.ChannelId.HR150_USE_MODBUS_EVU_FREIGABE, new SignedWordElement(150),
+                        m(HeatpumpHeliotherm.ChannelId.HR150_USE_MODBUS_DSM_SWITCH, new SignedWordElement(150),
                                 ElementToChannelConverter.DIRECT_1_TO_1)
                 )
         );
@@ -215,39 +245,39 @@ public class HeatpumpHeliothermImpl extends AbstractOpenemsModbusComponent imple
         if (this.readOnly == false) {
             protocol.addTasks(
                     new FC16WriteRegistersTask(100,
-                            m(HeatpumpHeliotherm.ChannelId.HR100_OPERATING_MODE, new UnsignedWordElement(100),
+                            m(HeatpumpHeliotherm.ChannelId.HR100_MODBUS, new UnsignedWordElement(100),
                                     ElementToChannelConverter.DIRECT_1_TO_1)
                     ),
                     new FC6WriteRegisterTask(102,
-                            m(HeatpumpHeliotherm.ChannelId.HR102_SET_POINT_TEMPERATUR, new SignedWordElement(102))),
+                            m(HeatpumpHeliotherm.ChannelId.HR102_MODBUS, new SignedWordElement(102))),
                     new FC6WriteRegisterTask(103,
-                            m(HeatpumpHeliotherm.ChannelId.HR103_USE_SET_POINT_TEMPERATURE, new UnsignedWordElement(103))),
+                            m(HeatpumpHeliotherm.ChannelId.HR103_MODBUS, new UnsignedWordElement(103))),
 
                     new FC16WriteRegistersTask(117,
-                            m(HeatpumpHeliotherm.ChannelId.HR117_USE_POWER_CONTROL, new UnsignedWordElement(117),
+                            m(HeatpumpHeliotherm.ChannelId.HR117_MODBUS, new UnsignedWordElement(117),
                                     ElementToChannelConverter.DIRECT_1_TO_1)
                     ),
                     new FC16WriteRegistersTask(125,
-                            m(HeatpumpHeliotherm.ChannelId.HR125_SET_POINT_ELECTRIC_POWER_CONSUMPTION, new UnsignedWordElement(125),
+                            m(HeatpumpHeliotherm.ChannelId.HR125_MODBUS, new UnsignedWordElement(125),
                                     ElementToChannelConverter.DIRECT_1_TO_1),
-                            m(HeatpumpHeliotherm.ChannelId.HR126_SET_POINT_VERDICHTERDREHZAHL_PERCENT, new SignedWordElement(126),
-                                    ElementToChannelConverter.SCALE_FACTOR_MINUS_1),
+                            m(HeatpumpHeliotherm.ChannelId.HR126_MODBUS, new SignedWordElement(126),
+                                    ElementToChannelConverter.DIRECT_1_TO_1),
                             new DummyRegisterElement(127),
-                            m(HeatpumpHeliotherm.ChannelId.HR128_RESET_ERROR, new UnsignedWordElement(128),
+                            m(HeatpumpHeliotherm.ChannelId.HR128_MODBUS, new UnsignedWordElement(128),
                                     ElementToChannelConverter.DIRECT_1_TO_1),
-                            m(HeatpumpHeliotherm.ChannelId.HR129_OUTSIDE_TEMPERATURE, new SignedWordElement(129),
+                            m(HeatpumpHeliotherm.ChannelId.HR129_MODBUS, new SignedWordElement(129),
                                     ElementToChannelConverter.DIRECT_1_TO_1),
-                            m(HeatpumpHeliotherm.ChannelId.HR130_USE_MODBUS_OUTSIDE_TEMPERATURE, new UnsignedWordElement(130),
+                            m(HeatpumpHeliotherm.ChannelId.HR130_MODBUS, new UnsignedWordElement(130),
                                     ElementToChannelConverter.DIRECT_1_TO_1),
-                            m(HeatpumpHeliotherm.ChannelId.HR131_BUFFER_TEMPERATURE, new SignedWordElement(131),
+                            m(HeatpumpHeliotherm.ChannelId.HR131_MODBUS, new SignedWordElement(131),
                                     ElementToChannelConverter.DIRECT_1_TO_1),
-                            m(HeatpumpHeliotherm.ChannelId.HR132_USE_MODBUS_BUFFER_TEMPERATURE, new UnsignedWordElement(132),
+                            m(HeatpumpHeliotherm.ChannelId.HR132_MODBUS, new UnsignedWordElement(132),
                                     ElementToChannelConverter.DIRECT_1_TO_1)
                     ),
                     new FC16WriteRegistersTask(149,
-                            m(HeatpumpHeliotherm.ChannelId.HR149_EVU_FREIGABE, new SignedWordElement(149),
+                            m(HeatpumpHeliotherm.ChannelId.HR149_MODBUS, new SignedWordElement(149),
                                     ElementToChannelConverter.DIRECT_1_TO_1),
-                            m(HeatpumpHeliotherm.ChannelId.HR150_USE_MODBUS_EVU_FREIGABE, new SignedWordElement(150),
+                            m(HeatpumpHeliotherm.ChannelId.HR150_MODBUS, new SignedWordElement(150),
                                     ElementToChannelConverter.DIRECT_1_TO_1)
                     )
             );
@@ -273,204 +303,323 @@ public class HeatpumpHeliothermImpl extends AbstractOpenemsModbusComponent imple
     // Put values in channels that are not directly Modbus read values but derivatives.
     protected void channelmapping() {
 
-        if (readOnly == false) {
-
-            boolean turnOnHeatpump = this.enableSignalHandler.deviceShouldBeHeating(this);
-
-            // Map the set points. Set default set point (defined in config) if there is no set point in the channels
-            int setPointTemperature = defaultSetPointTemperature;
-            double setPointPowerPercent = defaultSetPointPowerPercent;
-            if (this.getTemperatureSetpoint().isDefined()) {
-                setPointTemperature = this.getTemperatureSetpoint().get();
-            }
-            if (this.getHeatingPowerPercentSetpoint().isDefined()) {
-                setPointPowerPercent = this.getHeatingPowerPercentSetpoint().get();
-            }
-            if (setPointPowerPercent > 100) {
-                setPointPowerPercent = 100;
-            } else if (setPointPowerPercent < 0) {
-                setPointPowerPercent = 0;
-            }
-            int setPointElectricPower = (int) Math.round((setPointPowerPercent * maxElectricPower) / 100);
-
-
-            // Handbuch: "Die Register sollten prinzipiell zyklisch, aber nicht schneller als in einem 5 Sekunden-Intervall
-            // beschrieben werden."
-            // -> Modbus Writes machen get and reset vom nextWriteValue, senden nur wenn dort ein Wert steht.
-            // Deswegen: sämtliche Write Channel die auf Holding Register gemapped sind haben Setter als interne Methode
-            // gekennzeichnet. Diese Setter dürfen nur von diesem Modul benutzt werden. Ihre Verwendung ist beschränkt auf
-            // einen Codebereich der nur alle 5s ausgeführt wird.
-
-            // All Modbus writes are only allowed in this if statement. You should not send writes to the heatpump faster
-            // than every 5 seconds.
-            if (ChronoUnit.SECONDS.between(fiveSecondTimestamp, LocalDateTime.now()) >= 6) {
-                fiveSecondTimestamp = LocalDateTime.now();
-
-                // Turn on heater when enableSignal == true.
-                if (turnOnHeatpump) {
-                    // If nothing is in the channel yet, take set point power percent as default behavior.
-                    boolean useSetPointTemperature = getOperatingMode().isDefined() && (getOperatingMode().asEnum() == OperatingMode.SET_POINT_TEMPERATURE);
-
-                    try {
-                        if (useSetPointTemperature) {
-                            _setHr100OperatingMode(1);    // Automatic
-                            _setHr102SetPointTemperature(setPointTemperature);
-                            _setHr103UseSetPointTemperature(1);
-                            //_setHr117UsePowerControl(0);
-                            // Set point temperature mappen
-                        } else {
-                            _setHr100OperatingMode(4);    // Dauerbetrieb
-                            _setHr125SetPointElectricPower(setPointElectricPower);
-                            _setHr103UseSetPointTemperature(0);
-                            _setHr117UsePowerControl(1);
-                            // Set point power mappen
-                        }
-                    } catch (OpenemsError.OpenemsNamedException e) {
-                        this.log.warn("Couldn't write in Channel " + e.getMessage());
-                    }
-                } else {
-                    try {
-                        _setHr100OperatingMode(0);    // Aus
-                    } catch (OpenemsError.OpenemsNamedException e) {
-                        this.log.warn("Couldn't write in Channel " + e.getMessage());
-                    }
-                }
-            }
-        }
-
-        // Status and other.
-        if (this.getCurrentElectricPower().isDefined()) {
+        // Map heatingPowerPercent
+        if (this.getElectricPowerConsumption().isDefined()) {
             // The channel READ_EFFECTIVE_POWER_PERCENT in the Heater interface tracks the heating power. Assume the
             // heating power of the heatpump scales linearly with the electric power draw. Then calculate heating power
             // in percent with currentElectricPower / maxElectricPower.
-            double effectivePowerPercent = (this.getCurrentElectricPower().get() * 1.0 / this.maxElectricPower) * 100;    // Convert to %.
+            double effectivePowerPercent = (this.getElectricPowerConsumption().get() * 1.0 / this.maxElectricPower) * 100;    // Convert to %.
             this._setEffectiveHeatingPowerPercent(effectivePowerPercent);
         }
+
+        // Evaluate error indicator
+        boolean heatpumpError = false;
         boolean connectionAlive = false;
         if (this.getErrorIndicator().isDefined()) {
-            this.heatpumpError = getErrorIndicator().get();
-            connectionAlive = true;        // ToDo: testen ob getErrorIndicator() auf not defined geht wenn die Verbindung weg ist.
+            connectionAlive = true;        // ToDo: test if getErrorIndicator() goes back to ’not defined’ on connection loss.
+            heatpumpError = getErrorIndicator().get();
+            if (heatpumpError) {
+                this._setErrorMessage("An unknown error occurred.");
+            } else {
+                this._setErrorMessage("No error");
+            }
         } else {
-            connectionAlive = false;
+            this._setErrorMessage("No Modbus connection.");
         }
+        this.getErrorMessageChannel().nextProcessImage();
 
+        // Get some status parameters
         boolean heatpumpRunning = getHeatpumpRunningIndicator().isDefined() && getHeatpumpRunningIndicator().get();
-        boolean heatpumpEvuIndicator = getEvuFreigabeIndicator().isDefined() && getEvuFreigabeIndicator().get();
+        boolean heatpumpDsmIndicator = getDsmIndicator().isDefined() && getDsmIndicator().get();
+        boolean runRequestActive = getRunRequestType().isDefined() && getRunRequestType().get() > 0;
         boolean heatpumpReady = false;
-        int operatingModeRegister = 0;
+        OperatingMode operatingModeEnum = OperatingMode.UNDEFINED;
         if (getHr100OperatingMode().isDefined()) {
-            operatingModeRegister = getHr100OperatingMode().get();
-            if (operatingModeRegister < 8) {
+            operatingModeEnum = getHr100OperatingMode().asEnum();
+            if (operatingModeEnum.getValue() < 8 && operatingModeEnum.getValue() >= 0) {
                 heatpumpReady = true;
             }
         }
 
         // Set Heater interface STATUS channel
-        if (connectionAlive == false || heatpumpEvuIndicator == false) {
-            this._setHeaterState(HeaterState.OFF.getValue());
-        } else if (heatpumpRunning) {
-            this._setHeaterState(HeaterState.RUNNING.getValue());
-        } else if (heatpumpReady) {
-            this._setHeaterState(HeaterState.STANDBY.getValue());
+        if (connectionAlive) {
+            if (heatpumpRunning) {
+                this._setHeaterState(HeaterState.RUNNING.getValue());
+            } else if (heatpumpDsmIndicator || heatpumpError) {
+                this._setHeaterState(HeaterState.BLOCKED_OR_ERROR.getValue());
+            } else if (runRequestActive) {
+                this._setHeaterState(HeaterState.STARTING_UP_OR_PREHEAT.getValue());
+            } else if (heatpumpReady) {
+                this._setHeaterState(HeaterState.STANDBY.getValue());
+            } else if (operatingModeEnum == OperatingMode.OFF || operatingModeEnum == OperatingMode.MAIN_SWITCH_OFF) {
+                this._setHeaterState(HeaterState.OFF.getValue());
+            } else {
+                this._setHeaterState(HeaterState.UNDEFINED.getValue());
+            }
         } else {
-            // If the code gets to here, the state is undefined.
             this._setHeaterState(HeaterState.UNDEFINED.getValue());
         }
-
-        // Parse status, fill status channel.
-        if (connectionAlive) {
-            String statusMessage = "";
-            switch (operatingModeRegister) {
-                case 0:
-                    statusMessage = "Heatpump status: off, ";
-                    break;
-                case 1:
-                    statusMessage = "Heatpump operating mode: Automatik, ";
-                    break;
-                case 2:
-                    statusMessage = "Heatpump operating mode: Kühlen, ";
-                    break;
-                case 3:
-                    statusMessage = "Heatpump operating mode: Sommer, ";
-                    break;
-                case 4:
-                    statusMessage = "Heatpump operating mode: Dauerbetrieb, ";
-                    break;
-                case 5:
-                    statusMessage = "Heatpump operating mode: Absenkung, ";
-                    break;
-                case 6:
-                    statusMessage = "Heatpump operating mode: Urlaub, ";
-                    break;
-                case 7:
-                    statusMessage = "Heatpump operating mode: Party, ";
-                    break;
-                case 8:
-                    statusMessage = "Heatpump status: Ausheizen, ";
-                    break;
-                case 9:
-                    statusMessage = "Heatpump status: EVU Sperre, ";
-                    break;
-                case 10:
-                    statusMessage = "Heatpump status: Hauptschalter aus, ";
-                    break;
-            }
-            if (heatpumpError) {
-                statusMessage = statusMessage + " Störung, ";
-            }
-            if (heatpumpRunning) {
-                statusMessage = statusMessage + " Pumpe läuft, ";
-                if (getEffectiveHeatingPower().isDefined() && getEffectiveHeatingPower().get() > 0) {
-                    statusMessage = statusMessage + " Heizleistung " + getEffectiveHeatingPower().get() + " kW, ";
-                }
-            } else {
-                statusMessage = statusMessage + " Pumpe steht, ";
-            }
-            statusMessage = statusMessage.substring(0, statusMessage.length() - 2) + ".";
-            _setStatusMessage(statusMessage);
-        } else {
-            _setStatusMessage("Modbus not connected.");
-        }
-
-
-        if (printInfoToLog) {
-            this.logInfo(this.log, "--Heatpump Heliotherm--");
-            this.logInfo(this.log, "Flow temperature: " + getFlowTemperature() + " [d°C]");
-            this.logInfo(this.log, "Buffer temperature: " + getBufferTemperature().get() + " [d°C]");
-            this.logInfo(this.log, "Return temperature: " + getReturnTemperature() + " [d°C]");
-            this.logInfo(this.log, "OutsideTemperature: " + getHr129OutsideTemperature() + " [d°C]");
-            this.logInfo(this.log, "SetPoint Temperature " + getSetPointTemperatureIndicator() + "[d°C]");
-            this.logInfo(this.log, "Current heating power: " + this.getEffectiveHeatingPower() + " [kW]");
-            this.logInfo(this.log, "Current electric power consumption: " + getCurrentElectricPower().get() + " [W]");
-            this.logInfo(this.log, "Current coefficient of performance: " + getCop().get());
-
-            double heatingPowerFromCop = 0;
-            if (getCop().isDefined() && getCurrentElectricPower().isDefined()) {
-                // ToDo: check if cop has the right dimension.
-                heatingPowerFromCop = getCurrentElectricPower().get() * (getCop().get() / 10.0) / 1000; // Convert to kilowatt
-            }
-
-            this.logInfo(this.log, "Heating power calculated from cop & electric power: " + heatingPowerFromCop + " [kW]");
-            this.logInfo(this.log, "Verdichterdrehzahl: " + getVerdichterDrehzahl() + " [%]");
-            this.logInfo(this.log, "State enum: " + this.getHeaterState());
-            this.logInfo(this.log, "Status message: " + getStatusMessage().get());
-            this.logInfo(this.log, "");
-        }
-
+        this.getHeaterStateChannel().nextProcessImage();
     }
 
     /**
      * Determine commands and send them to the heater.
+     * From the manual:
+     * "The registers should be written to cyclically, but not faster than every 5 seconds."
+     * ("Die Register sollten prinzipiell zyklisch, aber nicht schneller als in einem 5 Sekunden-Intervall beschrieben
+     * werden.")
+     * Testing suggests writing to a register once is enough.
+     * The OpenEMS Modbus implementation can potentially send a write every cycle if there is a ’nextWrite’ available in
+     * the channel (it does ’getAndReset’). This is faster than the heat pump allows. The code takes care of this
+     * limitation and hides it from the user in the following way:
+     * The heat pump has ’public’ write channels that do not have their ’nextWrite’ mapped to Modbus registers. Every
+     * ’public’ write channel has a non public duplicate (marked ’internal use only’) that has it's ’nextWrite’ mapped
+     * to Modbus. The non public duplicate channel gets the ’nextWrite’ of the ’public’ channel every 6 seconds and
+     * sends it to the heat pump. The ’public’ channels can then be used without worrying about the 5 sec rule.
      */
     protected void writeCommands() {
 
+        // Handle set point power percent, if heat pump is in a configuration that allows it.
+        int powerPercentToModbus = 0;
+        Optional<Double> heatingPowerPercentSetPointOptional = this.getHeatingPowerPercentSetpointChannel().getNextWriteValueAndReset();
+        if (heatingPowerPercentSetPointOptional.isPresent()
+                && (this.powerControlSetting == PowerControlSetting.COMPRESSOR_SPEED || this.mapPowerPercentToConsumption)) {
+            this.lastPowerPercentSetPoint = heatingPowerPercentSetPointOptional.get();
+            this.lastPowerPercentSetPoint = Math.min(this.lastPowerPercentSetPoint, 100);
+            this.lastPowerPercentSetPoint = Math.max(this.lastPowerPercentSetPoint, 0);
+            if (this.mapPowerPercentToConsumption && this.lastPowerPercentSetPoint > 1) {
+                this.lastConsumptionSetPoint = (int) Math.round((this.lastPowerPercentSetPoint * this.maxElectricPower) / 100);
+            }
+            this._setHeatingPowerPercentSetpoint(this.lastPowerPercentSetPoint);
+        }
+        if (this.powerControlSetting == PowerControlSetting.COMPRESSOR_SPEED && this.lastPowerPercentSetPoint > 1) {
+            // Modbus unit is per mill, so for 100% send 1000 to Modbus.
+            powerPercentToModbus = (int) Math.round(this.lastPowerPercentSetPoint * 10 * (this.maxCompressorSpeed / 100.0));
+        }
+
+        // Handle set point power consumption, if heat pump is in a configuration that allows it.
+        int consumptionToModbus = 0;
+        Optional<Integer> powerConsumptionSetPointOptional = this.getHr125SetPointElectricPowerChannel().getNextWriteValueAndReset();
+        if (powerConsumptionSetPointOptional.isPresent()
+                && this.powerControlSetting == PowerControlSetting.CONSUMPTION && this.mapPowerPercentToConsumption == false) {
+            this.lastConsumptionSetPoint = powerConsumptionSetPointOptional.get();
+        }
+        if (this.powerControlSetting == PowerControlSetting.CONSUMPTION && this.lastConsumptionSetPoint > 1) {
+            consumptionToModbus = this.lastConsumptionSetPoint;
+        }
+
+        // Determine if heat pump is set to temperature mode or EnableSignal. This can change at runtime.
+        Optional<Boolean> useTemperatureControlModeOptional = this.getHr103UseSetPointTemperatureChannel().getNextWriteValueAndReset();
+        if (useTemperatureControlModeOptional.isPresent()) {
+            if (useTemperatureControlModeOptional.get()) {
+                this.controlModeSetting = ControlMode.TEMPERATURE_SET_POINT;
+            } else {
+                this.controlModeSetting = ControlMode.ENABLE_SIGNAL;
+            }
+        }
+        if (this.controlModeSetting == ControlMode.TEMPERATURE_SET_POINT) {
+            Optional<Integer> temperatureSetPointOptional = this.getTemperatureSetpointChannel().getNextWriteValueAndReset();
+            temperatureSetPointOptional.ifPresent(integer -> this.lastTemperatureSetPoint = integer);
+            this.lastTemperatureSetPoint = Math.min(this.lastTemperatureSetPoint, 1200);
+            this.lastTemperatureSetPoint = Math.max(this.lastTemperatureSetPoint, 0);
+            try {
+                this.setHr100OperatingMode(OperatingMode.AUTOMATIC);
+            } catch (OpenemsError.OpenemsNamedException e) {
+                this.log.warn("Couldn't write in Channel " + e.getMessage());
+            }
+        } else {
+
+            // Handle EnableSignal.
+            boolean turnOnHeatpump = this.enableSignalHandler.deviceShouldBeHeating(this);
+
+            // Handle ExceptionalState. ExceptionalState overwrites EnableSignal.
+            boolean exceptionalStateActive = false;
+            if (this.useExceptionalState) {
+                exceptionalStateActive = this.exceptionalStateHandler.exceptionalStateActive(this);
+                if (exceptionalStateActive) {
+                    int exceptionalStateValue = this.getExceptionalStateValue();
+                    if (exceptionalStateValue <= this.DEFAULT_MIN_EXCEPTIONAL_VALUE) {
+                        turnOnHeatpump = false;
+                    } else {
+                        turnOnHeatpump = true;
+                        exceptionalStateValue = Math.min(exceptionalStateValue, this.DEFAULT_MAX_EXCEPTIONAL_VALUE);
+
+                        // Calculate a power set point from the exceptionalStateValue, depending on heat pump config.
+                        if (this.powerControlSetting == PowerControlSetting.COMPRESSOR_SPEED) {
+                            // Modbus unit is per mill, so 100% = 1000.
+                            powerPercentToModbus = (int) Math.round(exceptionalStateValue * 10 * (this.maxCompressorSpeed / 100.0));
+                        } else {
+                            consumptionToModbus = (exceptionalStateValue * this.maxElectricPower) / 100;
+                        }
+                    }
+                }
+            }
+
+            // Turn on heater when enableSignal == true.
+            if (turnOnHeatpump) {
+                try {
+                    // ToDo: not sure about this ’if’ statement here.
+                    if (exceptionalStateActive) {
+                        this.setHr100OperatingMode(OperatingMode.ALWAYS_ON);
+                    } else {
+                        this.setHr100OperatingMode(OperatingMode.AUTOMATIC);
+                    }
+                    this.setHr117UsePowerControl(true);
+                } catch (OpenemsError.OpenemsNamedException e) {
+                    this.log.warn("Couldn't write in Channel " + e.getMessage());
+                }
+            } else {
+                try {
+                    this.setHr100OperatingMode(OperatingMode.OFF);
+                    this.setHr117UsePowerControl(false);
+                } catch (OpenemsError.OpenemsNamedException e) {
+                    this.log.warn("Couldn't write in Channel " + e.getMessage());
+                }
+            }
+        }
+
+        // This part handles the 5 second rule. Write values are only sent every ’sendIntervalSeconds’ seconds.
+        if (ChronoUnit.SECONDS.between(this.fiveSecondTimestamp, LocalDateTime.now()) >= sendIntervalSeconds) {
+            this.fiveSecondTimestamp = LocalDateTime.now();
+
+            Optional<Integer> writeValueHr100 = this.getHr100OperatingModeChannel().getNextWriteValueAndReset();
+            if (writeValueHr100.isPresent()) {
+                try {
+                    this.getHr100ModbusChannel().setNextWriteValue(writeValueHr100.get());
+                } catch (OpenemsError.OpenemsNamedException e) {
+                    this.log.warn("Couldn't write in Channel " + e.getMessage());
+                }
+            }
+
+            if (this.controlModeSetting == ControlMode.TEMPERATURE_SET_POINT) {
+                try {
+                    this.getHr102ModbusChannel().setNextWriteValue(this.lastTemperatureSetPoint);
+                    this.getHr103ModbusChannel().setNextWriteValue(true);
+                } catch (OpenemsError.OpenemsNamedException e) {
+                    this.log.warn("Couldn't write in Channel " + e.getMessage());
+                }
+            } else {
+                try {
+                    this.getHr103ModbusChannel().setNextWriteValue(false);
+                } catch (OpenemsError.OpenemsNamedException e) {
+                    this.log.warn("Couldn't write in Channel " + e.getMessage());
+                }
+            }
+
+            Optional<Boolean> writeValueHr117 = this.getHr117UsePowerControlChannel().getNextWriteValueAndReset();
+            if (writeValueHr117.isPresent()) {
+                try {
+                    this.getHr117ModbusChannel().setNextWriteValue(writeValueHr117.get());
+                } catch (OpenemsError.OpenemsNamedException e) {
+                    this.log.warn("Couldn't write in Channel " + e.getMessage());
+                }
+            }
+            if (this.powerControlSetting == PowerControlSetting.CONSUMPTION) {
+                try {
+                    this.getHr125ModbusChannel().setNextWriteValue(consumptionToModbus);
+                } catch (OpenemsError.OpenemsNamedException e) {
+                    this.log.warn("Couldn't write in Channel " + e.getMessage());
+                }
+            } else {
+                try {
+                    this.getHr126ModbusChannel().setNextWriteValue(powerPercentToModbus);
+                } catch (OpenemsError.OpenemsNamedException e) {
+                    this.log.warn("Couldn't write in Channel " + e.getMessage());
+                }
+            }
+
+            Optional<Boolean> writeValueHr128 = this.getHr128ResetErrorChannel().getNextWriteValueAndReset();
+            if (writeValueHr128.isPresent()) {
+                try {
+                    this.getHr128ModbusChannel().setNextWriteValue(writeValueHr128.get());
+                } catch (OpenemsError.OpenemsNamedException e) {
+                    this.log.warn("Couldn't write in Channel " + e.getMessage());
+                }
+            }
+
+            Optional<Integer> writeValueHr129 = this.getHr129OutsideTemperatureSendChannel().getNextWriteValueAndReset();
+            if (writeValueHr129.isPresent()) {
+                try {
+                    this.getHr129ModbusChannel().setNextWriteValue(writeValueHr129.get());
+                } catch (OpenemsError.OpenemsNamedException e) {
+                    this.log.warn("Couldn't write in Channel " + e.getMessage());
+                }
+            }
+            Optional<Boolean> writeValueHr130 = this.getHr130UseModbusOutsideTemperatureSettingChannel().getNextWriteValueAndReset();
+            if (writeValueHr130.isPresent()) {
+                try {
+                    this.getHr130ModbusChannel().setNextWriteValue(writeValueHr130.get());
+                } catch (OpenemsError.OpenemsNamedException e) {
+                    this.log.warn("Couldn't write in Channel " + e.getMessage());
+                }
+            }
+
+            Optional<Integer> writeValueHr131 = this.getHr131StorageTankTemperatureSendChannel().getNextWriteValueAndReset();
+            if (writeValueHr131.isPresent()) {
+                try {
+                    this.getHr131ModbusChannel().setNextWriteValue(writeValueHr131.get());
+                } catch (OpenemsError.OpenemsNamedException e) {
+                    this.log.warn("Couldn't write in Channel " + e.getMessage());
+                }
+            }
+            Optional<Boolean> writeValueHr132 = this.getHr132UseModbusStorageTankTemperatureSettingChannel().getNextWriteValueAndReset();
+            if (writeValueHr132.isPresent()) {
+                try {
+                    this.getHr132ModbusChannel().setNextWriteValue(writeValueHr132.get());
+                } catch (OpenemsError.OpenemsNamedException e) {
+                    this.log.warn("Couldn't write in Channel " + e.getMessage());
+                }
+            }
+
+            Optional<Boolean> writeValueHr149 = this.getHr149DsmSwitchChannel().getNextWriteValueAndReset();
+            if (writeValueHr149.isPresent()) {
+                try {
+                    this.getHr149ModbusChannel().setNextWriteValue(writeValueHr149.get());
+                } catch (OpenemsError.OpenemsNamedException e) {
+                    this.log.warn("Couldn't write in Channel " + e.getMessage());
+                }
+            }
+            Optional<Boolean> writeValueHr150 = this.getHr150UseModbusDsmSwitchChannel().getNextWriteValueAndReset();
+            if (writeValueHr150.isPresent()) {
+                try {
+                    this.getHr150ModbusChannel().setNextWriteValue(writeValueHr150.get());
+                } catch (OpenemsError.OpenemsNamedException e) {
+                    this.log.warn("Couldn't write in Channel " + e.getMessage());
+                }
+            }
+
+        }
     }
 
     /**
      * Information that is printed to the log if ’print info to log’ option is enabled.
      */
     protected void printInfo() {
+        this.logInfo(this.log, "--Heatpump Heliotherm--");
+        this.logInfo(this.log, "State enum: " + this.getHeaterState());
+        this.logInfo(this.log, "Operating mode: " + getHr100OperatingMode().asEnum().getName());
+        this.logInfo(this.log, "Compressor speed: " + getCompressorSpeed());
+        this.logInfo(this.log, "OutsideTemperature: " + getOutsideTemperature());
+        this.logInfo(this.log, "Flow temperature: " + getFlowTemperature());
+        this.logInfo(this.log, "Return temperature: " + getReturnTemperature());
+        this.logInfo(this.log, "Buffer temperature: " + getStorageTankTemperature());
+        this.logInfo(this.log, "SetPoint Temperature " + getTemperatureSetPointIndicator());
+        this.logInfo(this.log, "Current heating power: " + this.getEffectiveHeatingPower());
+        /*
+        this.logInfo(this.log, "Current electric power consumption: " + getElectricPowerConsumption());
+        this.logInfo(this.log, "Current coefficient of performance: " + getCop());
 
+        double heatingPowerFromCop = 0;
+        if (getCop().isDefined() && getElectricPowerConsumption().isDefined()) {
+            // ToDo: check if cop has the right dimension.
+            heatingPowerFromCop = getElectricPowerConsumption().get() * (getCop().get() / 10.0) / 1000; // Convert to kilowatt
+        }
+        this.logInfo(this.log, "Heating power calculated from cop & electric power: " + heatingPowerFromCop + " [kW]");
+        */
+
+        this.logInfo(this.log, "Run request code: " + getRunRequestType().get());
+        this.logInfo(this.log, "Error message: " + getErrorMessage().get());
+        this.logInfo(this.log, "");
     }
 
     /**

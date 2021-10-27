@@ -219,12 +219,13 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
         IR2501_STATUSBITS(Doc.of(OpenemsType.INTEGER)),
 
         /**
-         * Electric supplier block/release (EVU Freigabe). True = release.
+         * Demand side management (DSM) switch (EVU Freigabe).
+         * ’true’ = heat pump is allowed to run, ’false’ = stop heat pump.
          * <ul>
          *      <li> Type: Boolean
          * </ul>
          */
-        IR2502_ELSUP_BLOCK_RELEASE(Doc.of(OpenemsType.BOOLEAN)),
+        IR2502_DSM_SWITCH(Doc.of(OpenemsType.BOOLEAN)),
 
         /**
          * Error status. False for no error.
@@ -1109,22 +1110,23 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
     }
 
     /**
-     * Gets the Channel for {@link ChannelId#IR2502_ELSUP_BLOCK_RELEASE}.
+     * Gets the Channel for {@link ChannelId#IR2502_DSM_SWITCH}.
      *
      * @return the Channel
      */
-    default BooleanReadChannel getElSupBlockReleaseChannel() {
-        return this.channel(ChannelId.IR2502_ELSUP_BLOCK_RELEASE);
+    default BooleanReadChannel getDsmSwitchChannel() {
+        return this.channel(ChannelId.IR2502_DSM_SWITCH);
     }
 
     /**
-     * Gets the electric supplier block/release status (EVU Freigabe). True = release.
-     * See {@link ChannelId#IR2502_ELSUP_BLOCK_RELEASE}.
+     * Gets the demand side management (DSM) status (EVU Freigabe).
+     * ’true’ = heat pump is allowed to run, ’false’ = stop heat pump.
+     * See {@link ChannelId#IR2502_DSM_SWITCH}.
      *
      * @return the Channel {@link Value}
      */
-    default Value<Boolean> getElSupBlockRelease() {
-        return this.getElSupBlockReleaseChannel().value();
+    default Value<Boolean> getDsmSwitch() {
+        return this.getDsmSwitchChannel().value();
     }
 
     /**

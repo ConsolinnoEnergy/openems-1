@@ -218,14 +218,14 @@ public enum Unit {
 	// ##########
 
 	/**
-	 * Unit of Temperature [C]
+	 * Unit of Temperature [°C]
 	 */
-	DEGREE_CELSIUS("C"),
+	DEGREE_CELSIUS("°C"),
 
 	/**
-	 * Unit of Temperature [dC]
+	 * Unit of Temperature [d°C]
 	 */
-	DECIDEGREE_CELSIUS("dC", DEGREE_CELSIUS, -1),
+	DECIDEGREE_CELSIUS("d°C", DEGREE_CELSIUS, -1),
 
 	/**
 	 * Unit of Temperature [K]

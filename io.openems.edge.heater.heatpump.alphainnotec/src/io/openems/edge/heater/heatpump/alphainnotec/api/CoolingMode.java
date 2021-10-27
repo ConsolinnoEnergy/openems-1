@@ -11,8 +11,8 @@ public enum CoolingMode implements OptionsEnum {
 	OFF(0, "Off"), //
 	AUTOMATIC(1, "Automatic"); //
 
-	private int value;
-	private String name;
+	private final int value;
+	private final String name;
 
 	private CoolingMode(int value, String name) {
 		this.value = value;

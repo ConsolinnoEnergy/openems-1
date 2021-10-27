@@ -197,7 +197,7 @@ public abstract class AbstractAnalogueHeaterOrCooler extends AbstractOpenemsComp
      */
     private void updatePowerChannel(int currentPowerApplied) {
         this._setEffectiveHeatingPowerPercent(currentPowerApplied);
-        int currentlyAppliedPowerInKw = (this.maxPowerKw * currentPowerApplied) / 100;
+        double currentlyAppliedPowerInKw = (this.maxPowerKw * currentPowerApplied) / 100.0;
         this._setEffectiveHeatingPower(currentlyAppliedPowerInKw);
     }
 

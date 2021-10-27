@@ -684,8 +684,8 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
          *      <li> State -1: Undefined
          *      <li> State 0: Automatic
          *      <li> State 1: Second heat generator (Zusaetzlicher Waermeerzeuger)
-         *      <li> State 2: No late night throttling (Party)
-         *      <li> State 3: Holidays, full time throttling (Ferien)
+         *      <li> State 2: No night setback (Party)
+         *      <li> State 3: Holidays, full time setback (Ferien)
          *      <li> State 4: Off
          * </ul>
          */
@@ -699,8 +699,8 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
          *      <li> State -1: Undefined
          *      <li> State 0: Automatic
          *      <li> State 1: Second heat generator (Zusaetzlicher Waermeerzeuger)
-         *      <li> State 2: No late night throttling (Party)
-         *      <li> State 3: Holidays, full time throttling (Ferien)
+         *      <li> State 2: No night setback (Party)
+         *      <li> State 3: Holidays, full time setback (Ferien)
          *      <li> State 4: Off
          * </ul>
          */
@@ -715,8 +715,8 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
          *      <li> State -1: Undefined
          *      <li> State 0: Automatic
          *      <li> State 1: Second heat generator (Zusaetzlicher Waermeerzeuger)
-         *      <li> State 2: No late night throttling (Party)
-         *      <li> State 3: Holidays, full time throttling (Ferien)
+         *      <li> State 2: No night setback (Party)
+         *      <li> State 3: Holidays, full time setback (Ferien)
          *      <li> State 4: Off
          * </ul>
          */
@@ -731,8 +731,8 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
          *      <li> State -1: Undefined
          *      <li> State 0: Automatic
          *      <li> State 1: Second heat generator (Zusaetzlicher Waermeerzeuger)
-         *      <li> State 2: No late night throttling (Party)
-         *      <li> State 3: Holidays, full time throttling (Ferien)
+         *      <li> State 2: No night setback (Party)
+         *      <li> State 3: Holidays, full time setback (Ferien)
          *      <li> State 4: Off
          * </ul>
          */
@@ -758,8 +758,8 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
          *      <li> Possible values: -1, 0 ... 3
          *      <li> State -1: Undefined
          *      <li> State 0: Automatic
-         *      <li> State 1: No late night throttling (Party)
-         *      <li> State 2: Holidays, full time throttling (Ferien)
+         *      <li> State 1: No night setback (Party)
+         *      <li> State 2: Holidays, full time setback (Ferien)
          *      <li> State 3: Off
          * </ul>
          */
@@ -774,8 +774,8 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
          *      <li> State -1: Undefined
          *      <li> State 0: Automatic
          *      <li> State 1: Value not in use (Wert nicht benutzt)
-         *      <li> State 2: No late night throttling (Party)
-         *      <li> State 3: Holidays, full time throttling (Ferien)
+         *      <li> State 2: No night setback (Party)
+         *      <li> State 3: Holidays, full time setback (Ferien)
          *      <li> State 4: Off
          * </ul>
          */
@@ -2548,8 +2548,8 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
      *      <li> State -1: Undefined
      *      <li> State 0: Automatic
      *      <li> State 1: Second heat generator (Zusaetzlicher Waermeerzeuger)
-     *      <li> State 2: No late night throttling (Party)
-     *      <li> State 3: Holidays, full time throttling (Ferien)
+     *      <li> State 2: No night setback (Party)
+     *      <li> State 3: Holidays, full time setback (Ferien)
      *      <li> State 4: Off
      * </ul>
 	 * See {@link ChannelId#HR_7_CIRCUIT_HEATING_OPERATION_MODE}.
@@ -2568,8 +2568,8 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
      *      <li> State -1: Undefined
      *      <li> State 0: Automatic
      *      <li> State 1: Second heat generator (Zusaetzlicher Waermeerzeuger)
-     *      <li> State 2: No late night throttling (Party)
-     *      <li> State 3: Holidays, full time throttling (Ferien)
+     *      <li> State 2: No night setback (Party)
+     *      <li> State 3: Holidays, full time setback (Ferien)
      *      <li> State 4: Off
      * </ul>
 	 * See {@link ChannelId#HR_7_CIRCUIT_HEATING_OPERATION_MODE}.
@@ -2589,8 +2589,8 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
      *      <li> State -1: Undefined
      *      <li> State 0: Automatic
      *      <li> State 1: Second heat generator (Zusaetzlicher Waermeerzeuger)
-     *      <li> State 2: No late night throttling (Party)
-     *      <li> State 3: Holidays, full time throttling (Ferien)
+     *      <li> State 2: No night setback (Party)
+     *      <li> State 3: Holidays, full time setback (Ferien)
      *      <li> State 4: Off
      * </ul>
 	 * See {@link ChannelId#HR_7_CIRCUIT_HEATING_OPERATION_MODE}.
@@ -2619,8 +2619,8 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
      *      <li> State -1: Undefined
      *      <li> State 0: Automatic
      *      <li> State 1: Second heat generator (Zusaetzlicher Waermeerzeuger)
-     *      <li> State 2: No late night throttling (Party)
-     *      <li> State 3: Holidays, full time throttling (Ferien)
+     *      <li> State 2: No night setback (Party)
+     *      <li> State 3: Holidays, full time setback (Ferien)
      *      <li> State 4: Off
      * </ul>
 	 * See {@link ChannelId#HR_8_WATER_OPERATION_MODE}.
@@ -2639,8 +2639,8 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
      *      <li> State -1: Undefined
      *      <li> State 0: Automatic
      *      <li> State 1: Second heat generator (Zusaetzlicher Waermeerzeuger)
-     *      <li> State 2: No late night throttling (Party)
-     *      <li> State 3: Holidays, full time throttling (Ferien)
+     *      <li> State 2: No night setback (Party)
+     *      <li> State 3: Holidays, full time setback (Ferien)
      *      <li> State 4: Off
      * </ul>
 	 * See {@link ChannelId#HR_8_WATER_OPERATION_MODE}.
@@ -2660,8 +2660,8 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
      *      <li> State -1: Undefined
      *      <li> State 0: Automatic
      *      <li> State 1: Second heat generator (Zusaetzlicher Waermeerzeuger)
-     *      <li> State 2: No late night throttling (Party)
-     *      <li> State 3: Holidays, full time throttling (Ferien)
+     *      <li> State 2: No night setback (Party)
+     *      <li> State 3: Holidays, full time setback (Ferien)
      *      <li> State 4: Off
      * </ul>
 	 * See {@link ChannelId#HR_8_WATER_OPERATION_MODE}.
@@ -2691,8 +2691,8 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
      *      <li> State -1: Undefined
      *      <li> State 0: Automatic
      *      <li> State 1: Second heat generator (Zusaetzlicher Waermeerzeuger)
-     *      <li> State 2: No late night throttling (Party)
-     *      <li> State 3: Holidays, full time throttling (Ferien)
+     *      <li> State 2: No night setback (Party)
+     *      <li> State 3: Holidays, full time setback (Ferien)
      *      <li> State 4: Off
      * </ul>
 	 * See {@link ChannelId#HR_9_MC2_OPERATION_MODE}.
@@ -2712,8 +2712,8 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
      *      <li> State -1: Undefined
      *      <li> State 0: Automatic
      *      <li> State 1: Second heat generator (Zusaetzlicher Waermeerzeuger)
-     *      <li> State 2: No late night throttling (Party)
-     *      <li> State 3: Holidays, full time throttling (Ferien)
+     *      <li> State 2: No night setback (Party)
+     *      <li> State 3: Holidays, full time setback (Ferien)
      *      <li> State 4: Off
      * </ul>
 	 * See {@link ChannelId#HR_9_MC2_OPERATION_MODE}.
@@ -2734,8 +2734,8 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
      *      <li> State -1: Undefined
      *      <li> State 0: Automatic
      *      <li> State 1: Second heat generator (Zusaetzlicher Waermeerzeuger)
-     *      <li> State 2: No late night throttling (Party)
-     *      <li> State 3: Holidays, full time throttling (Ferien)
+     *      <li> State 2: No night setback (Party)
+     *      <li> State 3: Holidays, full time setback (Ferien)
      *      <li> State 4: Off
      * </ul>
 	 * See {@link ChannelId#HR_9_MC2_OPERATION_MODE}.
@@ -2765,8 +2765,8 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
      *      <li> State -1: Undefined
      *      <li> State 0: Automatic
      *      <li> State 1: Second heat generator (Zusaetzlicher Waermeerzeuger)
-     *      <li> State 2: No late night throttling (Party)
-     *      <li> State 3: Holidays, full time throttling (Ferien)
+     *      <li> State 2: No night setback (Party)
+     *      <li> State 3: Holidays, full time setback (Ferien)
      *      <li> State 4: Off
      * </ul>
 	 * See {@link ChannelId#HR_10_MC3_OPERATION_MODE}.
@@ -2786,8 +2786,8 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
      *      <li> State -1: Undefined
      *      <li> State 0: Automatic
      *      <li> State 1: Second heat generator (Zusaetzlicher Waermeerzeuger)
-     *      <li> State 2: No late night throttling (Party)
-     *      <li> State 3: Holidays, full time throttling (Ferien)
+     *      <li> State 2: No night setback (Party)
+     *      <li> State 3: Holidays, full time setback (Ferien)
      *      <li> State 4: Off
      * </ul>
 	 * See {@link ChannelId#HR_10_MC3_OPERATION_MODE}.
@@ -2808,8 +2808,8 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
      *      <li> State -1: Undefined
      *      <li> State 0: Automatic
      *      <li> State 1: Second heat generator (Zusaetzlicher Waermeerzeuger)
-     *      <li> State 2: No late night throttling (Party)
-     *      <li> State 3: Holidays, full time throttling (Ferien)
+     *      <li> State 2: No night setback (Party)
+     *      <li> State 3: Holidays, full time setback (Ferien)
      *      <li> State 4: Off
      * </ul>
 	 * See {@link ChannelId#HR_10_MC3_OPERATION_MODE}.
@@ -2900,8 +2900,8 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
      *      <li> Possible values: -1, 0 ... 3
      *      <li> State -1: Undefined
      *      <li> State 0: Automatic
-     *      <li> State 1: No late night throttling (Party)
-     *      <li> State 2: Holidays, full time throttling (Ferien)
+     *      <li> State 1: No night setback (Party)
+     *      <li> State 2: Holidays, full time setback (Ferien)
      *      <li> State 3: Off
      * </ul>
 	 * See {@link ChannelId#HR_12_VENTILATION_OPERATION_MODE}.
@@ -2920,8 +2920,8 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
      *      <li> Possible values: -1, 0 ... 3
      *      <li> State -1: Undefined
      *      <li> State 0: Automatic
-     *      <li> State 1: No late night throttling (Party)
-     *      <li> State 2: Holidays, full time throttling (Ferien)
+     *      <li> State 1: No night setback (Party)
+     *      <li> State 2: Holidays, full time setback (Ferien)
      *      <li> State 3: Off
      * </ul>
 	 * See {@link ChannelId#HR_12_VENTILATION_OPERATION_MODE}.
@@ -2941,8 +2941,8 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
      *      <li> Possible values: -1, 0 ... 3
      *      <li> State -1: Undefined
      *      <li> State 0: Automatic
-     *      <li> State 1: No late night throttling (Party)
-     *      <li> State 2: Holidays, full time throttling (Ferien)
+     *      <li> State 1: No night setback (Party)
+     *      <li> State 2: Holidays, full time setback (Ferien)
      *      <li> State 3: Off
      * </ul>
 	 * See {@link ChannelId#HR_12_VENTILATION_OPERATION_MODE}.
@@ -2972,8 +2972,8 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
      *      <li> State -1: Undefined
      *      <li> State 0: Automatic
      *      <li> State 1: Value not in use (Wert nicht benutzt)
-     *      <li> State 2: No late night throttling (Party)
-     *      <li> State 3: Holidays, full time throttling (Ferien)
+     *      <li> State 2: No night setback (Party)
+     *      <li> State 3: Holidays, full time setback (Ferien)
      *      <li> State 4: Off
      * </ul>
 	 * See {@link ChannelId#HR_13_POOL_OPERATION_MODE}.
@@ -2993,8 +2993,8 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
      *      <li> State -1: Undefined
      *      <li> State 0: Automatic
      *      <li> State 1: Value not in use (Wert nicht benutzt)
-     *      <li> State 2: No late night throttling (Party)
-     *      <li> State 3: Holidays, full time throttling (Ferien)
+     *      <li> State 2: No night setback (Party)
+     *      <li> State 3: Holidays, full time setback (Ferien)
      *      <li> State 4: Off
      * </ul>
 	 * See {@link ChannelId#HR_13_POOL_OPERATION_MODE}.
@@ -3015,8 +3015,8 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
      *      <li> State -1: Undefined
      *      <li> State 0: Automatic
      *      <li> State 1: Value not in use (Wert nicht benutzt)
-     *      <li> State 2: No late night throttling (Party)
-     *      <li> State 3: Holidays, full time throttling (Ferien)
+     *      <li> State 2: No night setback (Party)
+     *      <li> State 3: Holidays, full time setback (Ferien)
      *      <li> State 4: Off
      * </ul>
 	 * See {@link ChannelId#HR_13_POOL_OPERATION_MODE}.

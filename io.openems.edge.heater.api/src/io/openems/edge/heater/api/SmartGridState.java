@@ -9,7 +9,7 @@ import io.openems.edge.common.channel.value.Value;
 
 public enum SmartGridState implements OptionsEnum {
 	UNDEFINED(-1, "Undefined"), //
-	SG1_BLOCKED(1, "Smart Grid state 1: Electric supplier block"), //
+	SG1_BLOCKED(1, "Smart Grid state 1: Operation blocked by demand side management (DSM)"), //
 	SG2_LOW(2, "Smart Grid state 2: Low energy consumption"), //
 	SG3_STANDARD(3, "Smart Grid state 3: Standard"), //
 	SG4_HIGH(4, "Smart Grid state 4: High energy consumption"); //
