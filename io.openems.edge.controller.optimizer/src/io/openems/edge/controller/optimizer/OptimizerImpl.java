@@ -75,12 +75,12 @@ public class OptimizerImpl extends AbstractOpenemsComponent implements OpenemsCo
     }
 
     @Activate
-    public void activate(ComponentContext context, Config config) {
+    void activate(ComponentContext context, Config config) {
         this.jsonPatchWorker = new JsonPatchWorker(getJsonChannel(), getFallbackChannel());
         this.stopOnError = config.stop();
         this.lastMemberSeconds = config.lastMemberTime();
         try {
-            this.mqttBridge = cpm.getComponent(config.bridgeId());
+            this.mqttBridge = this.cpm.getComponent(config.bridgeId());
         } catch (OpenemsError.OpenemsNamedException e) {
             // in case the bridge is not Configured when this is activated
             this.bridgeId = config.bridgeId();
@@ -92,11 +92,11 @@ public class OptimizerImpl extends AbstractOpenemsComponent implements OpenemsCo
     }
 
     @Modified
-    public void modified(ComponentContext context, Config config) {
+    void modified(ComponentContext context, Config config) {
 
         this.stopOnError = config.stop();
         try {
-            this.mqttBridge = cpm.getComponent(config.bridgeId());
+            this.mqttBridge = this.cpm.getComponent(config.bridgeId());
         } catch (OpenemsError.OpenemsNamedException e) {
             // in case the bridge is not Configured when this is modified
             this.bridgeId = config.bridgeId();
@@ -108,26 +108,26 @@ public class OptimizerImpl extends AbstractOpenemsComponent implements OpenemsCo
     }
 
     @Deactivate
-    public void deactivate() {
+    protected void deactivate() {
         super.deactivate();
 
     }
 
     @Override
     public void handleEvent(Event event) {
-        pingMqtt(checkPingTime());
+        this.pingMqtt(this.checkPingTime());
 
         try {
-            this.jsonPatchWorker.work(jsonString);
+            this.jsonPatchWorker.work(this.jsonString);
         } catch (OpenemsError.OpenemsNamedException ignored) {
             this.log.error("Error in Handle Event. OpenemsNamedException! jsonString is not Correct for Json Patch worker");
         }
 
         JsonObject json;
         if (this.jsonString.equals("null")) {
-            this.lastUpdate = jsonString;
+            this.lastUpdate = this.jsonString;
             this.jsonString = getJsonString();
-            if (jsonString != null && this.jsonString.equals("null") == false) {
+            if (this.jsonString != null && this.jsonString.equals("null") == false) {
                 json = new Gson().fromJson(this.jsonString, JsonObject.class);
                 this.jsonArray = json.getAsJsonArray("time");
             }
@@ -136,11 +136,11 @@ public class OptimizerImpl extends AbstractOpenemsComponent implements OpenemsCo
         String updateString = getJsonString();
         if (updateString != null && updateString.equals("null") == false && this.jsonString.equals(updateString) == false) {
 
-            if (lastUpdate != null && updateString.equals(lastUpdate) == false) {
+            if (this.lastUpdate != null && updateString.equals(this.lastUpdate) == false) {
                 this.jsonString = updateString;
                 this.fallback = false;
             }
-            if (lastUpdate == null) {
+            if (this.lastUpdate == null) {
                 this.jsonString = updateString;
             }
             this.lastUpdate = updateString;
@@ -180,7 +180,7 @@ public class OptimizerImpl extends AbstractOpenemsComponent implements OpenemsCo
                     timestamp = Integer.parseInt("0" + timestamp);
                 }
                 timeArray[i] = Integer.parseInt(this.jsonArray.get(i).getAsJsonObject().entrySet().iterator().next().getKey());
-                if (minTime != DEFAULT) {
+                if (this.minTime != DEFAULT) {
                     this.minDeltaTime = timestamp - this.minTime;
                 }
                 int deltaTime = timestamp - timeArray[i];
@@ -195,30 +195,30 @@ public class OptimizerImpl extends AbstractOpenemsComponent implements OpenemsCo
                 }
             }
             if (this.minTime != DEFAULT) {
-                if (jsonArray.size() > this.activeTask) {
+                if (this.jsonArray.size() > this.activeTask) {
                     DateTime lastMemberCountDown;
                     if (this.activeTask == this.jsonArray.size() - 1) {
-                        lastMemberCountDown = new DateTime().plusSeconds(lastMemberSeconds);
+                        lastMemberCountDown = new DateTime().plusSeconds(this.lastMemberSeconds);
                     } else {
                         lastMemberCountDown = null;
                     }
-                    JsonElement activeJsonTask = jsonArray.get(this.activeTask);
-                    if ((stopOnError && stop && new DateTime().getMinuteOfHour() % 2 == 0)
+                    JsonElement activeJsonTask = this.jsonArray.get(this.activeTask);
+                    if ((this.stopOnError && this.stop && new DateTime().getMinuteOfHour() % 2 == 0)
                             || (lastMemberCountDown != null
                             && new DateTime().getMinuteOfDay() == lastMemberCountDown.getMinuteOfDay())) {
                         this.fallback = true;
-                    } else if (!stop) {
+                    } else if (!this.stop) {
                         this.fallback = false;
                     }
-                    List<List<String>> channelIdAndValues = getChannelIdsAndValues(activeJsonTask, this.minTime);
-                    executeActiveTask(channelIdAndValues);
+                    List<List<String>> channelIdAndValues = this.getChannelIdsAndValues(activeJsonTask, this.minTime);
+                    this.executeActiveTask(channelIdAndValues);
 
                 }
             }
         }
-        if ((stopOnError && stop && jsonArray == null)) {
+        if ((this.stopOnError && this.stop && this.jsonArray == null)) {
             this.fallback = true;
-        } else if (!stop) {
+        } else if (!this.stop) {
             this.fallback = false;
         }
 
@@ -231,12 +231,12 @@ public class OptimizerImpl extends AbstractOpenemsComponent implements OpenemsCo
      * @return true if the time is up or this optimizer was just created
      */
     private boolean checkPingTime() {
-        if (ping != null) {
+        if (this.ping != null) {
             if (getStatus().equals("Error")) {
-                return checkReconnectTime();
+                return this.checkReconnectTime();
             }
-            return (new DateTime().getMinuteOfDay() - ping.getMinuteOfDay() < 0
-                    || new DateTime().getMinuteOfDay() - ping.getMinuteOfDay() >= PING_TIME_DELTA
+            return (new DateTime().getMinuteOfDay() - this.ping.getMinuteOfDay() < 0
+                    || new DateTime().getMinuteOfDay() - this.ping.getMinuteOfDay() >= PING_TIME_DELTA
             );
         }
         return true;
@@ -249,9 +249,9 @@ public class OptimizerImpl extends AbstractOpenemsComponent implements OpenemsCo
      * @return true if the time is up
      */
     private boolean checkReconnectTime() {
-        if (reconnectTime != null) {
-            return (new DateTime().getSecondOfDay() - reconnectTime.getSecondOfDay() < 0
-                    || new DateTime().getSecondOfDay() - reconnectTime.getSecondOfDay() >= RECONNECT_SECOND_TIME_DELTA
+        if (this.reconnectTime != null) {
+            return (new DateTime().getSecondOfDay() - this.reconnectTime.getSecondOfDay() < 0
+                    || new DateTime().getSecondOfDay() - this.reconnectTime.getSecondOfDay() >= RECONNECT_SECOND_TIME_DELTA
             );
         } else {
             return true;
@@ -266,17 +266,17 @@ public class OptimizerImpl extends AbstractOpenemsComponent implements OpenemsCo
     private void pingMqtt(Boolean ping) {
         if (ping || this.reconnect) {
             this.ping = new DateTime();
-            if (mqttBridge != null && mqttBridge.isConnected()) {
+            if (this.mqttBridge != null && this.mqttBridge.isConnected()) {
                 if (getStatus().equals("Online") == false) {
-                    this.log.info("Connection established to Mqtt Server after " + logDisconnect + " attempt/-s");
-                    logDisconnect = 1;
+                    this.log.info("Connection established to Mqtt Server after " + this.logDisconnect + " attempt/-s");
+                    this.logDisconnect = 1;
                     this.stop = false;
 
                     getStatusChannel().setNextValue("Online");
                 }
             } else {
                 this.logDisconnect++;
-                if (getStatus().equals("Error") == false) {
+                if (this.getStatus().equals("Error") == false) {
                     this.log.warn("Connection Lost to Mqtt Server");
                     this.stop = true;
                     getStatusChannel().setNextValue("Error");
@@ -290,10 +290,10 @@ public class OptimizerImpl extends AbstractOpenemsComponent implements OpenemsCo
 
         /* Try to establish a connection to the MqttBridge in case the optimizer was unable to at the point of activation/modification. */
 
-        if (mqttBridge == null && checkReconnectTime()) {
+        if (this.mqttBridge == null && this.checkReconnectTime()) {
             try {
                 this.log.info("Trying to reconnect to Bridge");
-                this.mqttBridge = cpm.getComponent(this.bridgeId);
+                this.mqttBridge = this.cpm.getComponent(this.bridgeId);
                 this.reconnect = true;
                 this.log.info("Success");
             } catch (OpenemsError.OpenemsNamedException e) {
@@ -309,6 +309,7 @@ public class OptimizerImpl extends AbstractOpenemsComponent implements OpenemsCo
      *
      * @param channelIdAndValues The return of the getChannelIdsAndValues method
      */
+    @SuppressWarnings("unchecked")
     private void executeActiveTask(List<List<String>> channelIdAndValues) {
         List<String> channel = channelIdAndValues.get(CHANNEL_INDEX);
         List<String> values = channelIdAndValues.get(VALUE_INDEX);

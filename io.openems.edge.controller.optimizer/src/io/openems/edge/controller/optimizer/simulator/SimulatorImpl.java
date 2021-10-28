@@ -21,12 +21,12 @@ public class SimulatorImpl extends AbstractOpenemsComponent implements OpenemsCo
 
 
     @Activate
-    public void activate(ComponentContext context, Config config) {
+    void activate(ComponentContext context, Config config) {
         super.activate(context, config.id(), config.alias(), config.enabled());
     }
 
     @Deactivate
-    public void deactivate() {
+    protected void deactivate() {
         super.deactivate();
 
     }

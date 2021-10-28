@@ -62,23 +62,23 @@ public class BrokerJsonTranslatorImpl extends AbstractOpenemsComponent implement
     }
 
     @Activate
-    public void activate(ComponentContext context, Config config) throws OpenemsError.OpenemsNamedException, IOException {
+    void activate(ComponentContext context, Config config) throws OpenemsError.OpenemsNamedException, IOException {
         this.componentId = config.componentId();
         this.enable = config.enableSignal();
         this.enableChannel = config.enableChannel();
         this.channelId = config.componentChannel();
         this.lastSchedule = null;
         String optimizerId = config.optimizerId();
-        this.optimizer = cpm.getComponent(optimizerId);
-        this.optimizer.handleNewSchedule(createSchedule());
+        this.optimizer = this.cpm.getComponent(optimizerId);
+        this.optimizer.handleNewSchedule(this.createSchedule());
         this.fallback = config.fallback();
         this.configurationDone = config.configurationDone();
         List<List<String>> fallbackSchedule;
-        fallbackSchedule = createSchedule();
-        optimizer.addFallbackSchedule(fallbackSchedule);
+        fallbackSchedule = this.createSchedule();
+        this.optimizer.addFallbackSchedule(fallbackSchedule);
 
         super.activate(context, config.id(), config.alias(), config.enabled());
-        update(cm.getConfiguration(this.servicePid(), "?"), "channelIdList", new ArrayList<>(cpm.getComponent(this.componentId).channels()), config.channelIdList().length);
+        this.update(this.cm.getConfiguration(this.servicePid(), "?"), "channelIdList", new ArrayList<>(this.cpm.getComponent(this.componentId).channels()), config.channelIdList().length);
 
     }
 
@@ -109,10 +109,10 @@ public class BrokerJsonTranslatorImpl extends AbstractOpenemsComponent implement
     }
 
     @Deactivate
-    public void deactivate() {
-        optimizer.deleteChannel("\"" + componentId + "\"" + "/" + "\"" + channelId + "\"");
+    protected void deactivate() {
+        this.optimizer.deleteChannel("\"" + this.componentId + "\"" + "/" + "\"" + this.channelId + "\"");
         if (this.enable) {
-            optimizer.deleteChannel("\"" + componentId + "\"" + "/" + "\"" + enableChannel + "\"");
+            this.optimizer.deleteChannel("\"" + this.componentId + "\"" + "/" + "\"" + this.enableChannel + "\"");
         }
         super.deactivate();
 
@@ -122,28 +122,28 @@ public class BrokerJsonTranslatorImpl extends AbstractOpenemsComponent implement
     public void handleEvent(Event event) {
         if (this.configurationDone) {
             List<List<String>> newSchedule;
-            newSchedule = createSchedule();
-            if (lastSchedule == null) {
+            newSchedule = this.createSchedule();
+            if (this.lastSchedule == null) {
                 if (newSchedule.isEmpty() == false) {
-                    optimizer.handleNewSchedule(newSchedule);
+                    this.optimizer.handleNewSchedule(newSchedule);
                     this.lastSchedule = newSchedule.toString();
                 }
             } else if (newSchedule.isEmpty() == false && lastSchedule.equals(newSchedule.toString()) == false) {
-                optimizer.handleNewSchedule(newSchedule);
+                this.optimizer.handleNewSchedule(newSchedule);
                 this.lastSchedule = newSchedule.toString();
 
                 //Periodically tells the Optimizer to reload the Schedule even if it is the same one.
                 //Mainly used to update after the Day changes at 00:00
-            } else if (now.plusMinutes(RELOAD_SCHEDULE_TIME).getMinuteOfDay() >= new DateTime().getMinuteOfDay()) {
-                optimizer.handleNewSchedule(newSchedule);
-                now = new DateTime();
+            } else if (this.now.plusMinutes(RELOAD_SCHEDULE_TIME).getMinuteOfDay() >= new DateTime().getMinuteOfDay()) {
+                this.optimizer.handleNewSchedule(newSchedule);
+                this.now = new DateTime();
             }
-            if (fallbackString == null) {
+            if (this.fallbackString == null) {
                 if (this.fallback != null) {
                     List<List<String>> fallbackSchedule;
-                    fallbackSchedule = createFallbackSchedule();
-                    optimizer.addFallbackSchedule(fallbackSchedule);
-                    fallbackString = fallbackSchedule.toString();
+                    fallbackSchedule = this.createFallbackSchedule();
+                    this.optimizer.addFallbackSchedule(fallbackSchedule);
+                    this.fallbackString = fallbackSchedule.toString();
                 }
             }
         }
@@ -208,7 +208,7 @@ public class BrokerJsonTranslatorImpl extends AbstractOpenemsComponent implement
 
         try {
             Dictionary<String, Object> properties = config.getProperties();
-            properties.put(configTarget, propertyInput(Arrays.toString(channelIdArray)));
+            properties.put(configTarget, this.propertyInput(Arrays.toString(channelIdArray)));
             config.update(properties);
 
         } catch (IOException e) {
