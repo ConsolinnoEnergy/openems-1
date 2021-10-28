@@ -2236,7 +2236,7 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
                             + " is not a EVCS");
                 }
             }
-        } catch (OpenemsError.OpenemsNamedException e) {
+        } catch (Exception e) {
             this.log.info("Unable to find Component. OpenEms is either still starting or the Name is incorrect.");
             this.evcss = new ManagedEvcs[this.ids.length];
         }
