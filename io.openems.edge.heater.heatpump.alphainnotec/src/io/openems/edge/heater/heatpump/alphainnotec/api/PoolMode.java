@@ -35,5 +35,28 @@ public enum PoolMode implements OptionsEnum {
 	@Override
 	public OptionsEnum getUndefined() {
 		return UNDEFINED;
-	}	
+	}
+
+	/**
+	 * Returns the enum corresponding to the integer value.
+	 *
+	 * @param value the integer value of the enum
+	 * @return the enum
+	 */
+	public static PoolMode valueOf(int value) {
+		switch (value) {
+			case 0:
+				return PoolMode.AUTOMATIC;
+			case 1:
+				return PoolMode.VALUE_NOT_USED;
+			case 2:
+				return PoolMode.PARTY;
+			case 3:
+				return PoolMode.VACATION;
+			case 4:
+				return PoolMode.OFF;
+			default:
+				return PoolMode.UNDEFINED;
+		}
+	}
 }

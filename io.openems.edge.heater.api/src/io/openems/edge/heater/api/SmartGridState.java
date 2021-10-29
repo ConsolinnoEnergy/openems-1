@@ -44,21 +44,17 @@ public enum SmartGridState implements OptionsEnum {
 	 * @return the SmartGridState enum
 	 */
 	public static SmartGridState valueOf(int value) {
-		SmartGridState SmartGridEnum = SmartGridState.UNDEFINED;
 		switch (value) {
 			case 1:
-				SmartGridEnum = SmartGridState.SG1_BLOCKED;
-				break;
+				return SmartGridState.SG1_BLOCKED;
 			case 2:
-				SmartGridEnum = SmartGridState.SG2_LOW;
-				break;
+				return SmartGridState.SG2_LOW;
 			case 3:
-				SmartGridEnum = SmartGridState.SG3_STANDARD;
-				break;
+				return SmartGridState.SG3_STANDARD;
 			case 4:
-				SmartGridEnum = SmartGridState.SG4_HIGH;
-				break;
+				return SmartGridState.SG4_HIGH;
+			default:
+				return SmartGridState.UNDEFINED;
 		}
-		return SmartGridEnum;
 	}
 }

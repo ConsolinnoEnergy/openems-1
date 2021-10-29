@@ -36,5 +36,30 @@ public enum OperatingMode implements OptionsEnum {
 	@Override
 	public OptionsEnum getUndefined() {
 		return UNDEFINED;
-	}	
+	}
+
+	/**
+	 * Returns the enum state corresponding to the integer value.
+	 *
+	 * @param value the integer value of the enum
+	 * @return the enum state
+	 */
+	public static OperatingMode valueOf(int value) {
+		switch (value) {
+			case 0:
+				return OperatingMode.ANTIFREEZE;
+			case 1:
+				return OperatingMode.STANDBY;
+			case 2:
+				return OperatingMode.PROGRAM_MODE;
+			case 3:
+				return OperatingMode.COMFORT_MODE;
+			case 4:
+				return OperatingMode.ECO_MODE;
+			case 5:
+				return OperatingMode.DOMESTIC_HOT_WATER;
+			default:
+				return OperatingMode.UNDEFINED;
+		}
+	}
 }

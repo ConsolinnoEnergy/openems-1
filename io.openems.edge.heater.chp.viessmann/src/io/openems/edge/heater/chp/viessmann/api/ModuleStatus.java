@@ -44,24 +44,19 @@ public enum ModuleStatus implements OptionsEnum {
 	 * @return the enum state
 	 */
 	public static ModuleStatus valueOf(int value) {
-		ModuleStatus returnEnum = ModuleStatus.UNDEFINED;
 		switch (value) {
 			case 0:
-				returnEnum = ModuleStatus.OFF;
-				break;
+				return ModuleStatus.OFF;
 			case 1:
-				returnEnum = ModuleStatus.READY;
-				break;
+				return ModuleStatus.READY;
 			case 2:
-				returnEnum = ModuleStatus.START;
-				break;
+				return ModuleStatus.START;
 			case 3:
-				returnEnum = ModuleStatus.RUNNING;
-				break;
+				return ModuleStatus.RUNNING;
 			case 4:
-				returnEnum = ModuleStatus.DISTURBANCE;
-				break;
+				return ModuleStatus.DISTURBANCE;
+			default:
+				return ModuleStatus.UNDEFINED;
 		}
-		return returnEnum;
 	}
 }

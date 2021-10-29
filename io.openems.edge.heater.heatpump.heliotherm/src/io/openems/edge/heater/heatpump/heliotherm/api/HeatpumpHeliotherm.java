@@ -5,12 +5,11 @@ import io.openems.common.channel.Unit;
 import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
 import io.openems.common.types.OpenemsType;
 import io.openems.edge.common.channel.BooleanReadChannel;
-import io.openems.edge.common.channel.DoubleReadChannel;
 import io.openems.edge.common.channel.BooleanWriteChannel;
 import io.openems.edge.common.channel.Doc;
+import io.openems.edge.common.channel.DoubleReadChannel;
 import io.openems.edge.common.channel.IntegerReadChannel;
 import io.openems.edge.common.channel.IntegerWriteChannel;
-import io.openems.edge.common.channel.StringReadChannel;
 import io.openems.edge.common.channel.value.Value;
 import io.openems.edge.heater.api.Heater;
 
@@ -182,9 +181,11 @@ public interface HeatpumpHeliotherm extends Heater {
         HR103_MODBUS(Doc.of(OpenemsType.BOOLEAN).accessMode(AccessMode.READ_WRITE)),
 
         /**
-         * Use set point power percent control mode / Use set point electric power control mode. Unsigned.
-         * Control modes power percent and electric power are mutually exclusive. Which is used depends on heat pump
-         * configuration. This register is then the toggle for whichever control mode the heat pump is set to.
+         * Use set point power percent control mode / Use set point electric power control mode.
+         * Control modes power percent and electric power consumption are mutually exclusive. Which is used depends on
+         * heat pump configuration. This register is then the toggle for whichever control mode the heat pump is set to.
+         * Currently this flag is set automatically!
+         * If the power set point (power percent or consumption) is > 0 this is set to true, otherwise false.
          * <ul>
          *      <li> Type: Boolean
          * </ul>
@@ -557,7 +558,7 @@ public interface HeatpumpHeliotherm extends Heater {
      * @throws OpenemsNamedException on error
      */
     default void setHr100OperatingMode(Integer value) throws OpenemsNamedException {
-        if (value < 8) {
+        if (value <= 7 && value >= 0) {
             this.getHr100OperatingModeChannel().setNextWriteValue(value);
         }
     }
@@ -581,7 +582,7 @@ public interface HeatpumpHeliotherm extends Heater {
      * @throws OpenemsNamedException on error
      */
     default void setHr100OperatingMode(int value) throws OpenemsNamedException {
-        if (value < 8) {
+        if (value <= 7 && value >= 0) {
             this.getHr100OperatingModeChannel().setNextWriteValue(value);
         }
     }
@@ -605,7 +606,7 @@ public interface HeatpumpHeliotherm extends Heater {
      * @throws OpenemsNamedException on error
      */
     default void setHr100OperatingMode(OperatingMode mode) throws OpenemsNamedException {
-        if (mode != null && mode.getValue() < 8) {
+        if (mode != null && mode.getValue() <= 7 && mode.getValue() >= 0) {
             this.getHr100OperatingModeChannel().setNextWriteValue(mode.getValue());
         }
     }
@@ -685,6 +686,8 @@ public interface HeatpumpHeliotherm extends Heater {
      * Get the setting for ’use power control’.
      * This is either ’power percent control mode’ or ’power consumption control mode’, depending on the heat pump
      * configuration.
+     * Currently this flag is set automatically!
+     * If the power set point (power percent or consumption) is > 0 this is set to true, otherwise false.
      * See {@link ChannelId#HR117_USE_POWER_CONTROL}.
      *
      * @return the Channel {@link Value}
@@ -694,6 +697,7 @@ public interface HeatpumpHeliotherm extends Heater {
     }
 
     /**
+     * Currently disabled!
      * Set the setting for ’use power control’.
      * This is either ’power percent control mode’ or ’power consumption control mode’, depending on the heat pump
      * configuration.

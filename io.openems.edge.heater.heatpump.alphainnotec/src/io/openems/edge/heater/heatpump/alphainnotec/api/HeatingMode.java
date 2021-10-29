@@ -1,6 +1,7 @@
 package io.openems.edge.heater.heatpump.alphainnotec.api;
 
 import io.openems.common.types.OptionsEnum;
+import io.openems.edge.heater.api.SmartGridState;
 
 /**
  * Possible states of the heating mode.
@@ -35,5 +36,28 @@ public enum HeatingMode implements OptionsEnum {
 	@Override
 	public OptionsEnum getUndefined() {
 		return UNDEFINED;
-	}	
+	}
+
+	/**
+	 * Returns the enum corresponding to the integer value.
+	 *
+	 * @param value the integer value of the enum
+	 * @return the enum
+	 */
+	public static HeatingMode valueOf(int value) {
+		switch (value) {
+			case 0:
+				return HeatingMode.AUTOMATIC;
+			case 1:
+				return HeatingMode.AUXILIARY_HEATER;
+			case 2:
+				return HeatingMode.PARTY;
+			case 3:
+				return HeatingMode.VACATION;
+			case 4:
+				return HeatingMode.OFF;
+			default:
+				return HeatingMode.UNDEFINED;
+		}
+	}
 }

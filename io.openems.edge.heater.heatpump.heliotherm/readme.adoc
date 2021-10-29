@@ -1,9 +1,18 @@
 = Heat Pump Heliotherm
 
-This module reads the most important variables available via Modbus from a Heliotherm heatpump and maps them to OpenEMS
-channels. The module is written to be used with the Heater interface methods.
-When setEnableSignal() from the Heater interface is set to true with no other parameters like temperature specified,
-the heatpump will turn on with default settings. The default settings are configurable in the config.
-The heatpump can be controlled with setSetPointTemperature() and/or setSetPointPowerPercent().
-A certain configuration of the pump is required for setSetPointPowerPercent() to work.
-setSetPointPower() and related methods are not supported by this heater.
+This module reads the most important variables available via Modbus from a Heliotherm heat pump and maps them to OpenEMS
+channels.
+
+This heat pump has three types of control modes::
+* Basic on/off: temperature set point or heater interface EnableSignal.
+* Operating mode: The operating mode used when it is on. For example ’automatic’, ’always on’ or ’cooling’.
+* Power set point: Optional, switched on when specified set point is > 0. Can be power percent or power consumption, depending on heat pump setting. Not sure how this interacts with operating mode.
+
+Basic on/off can be changed during runtime by using the channel HR103_USE_SET_POINT_TEMPERATURE. Operating mode can be changed during runtime by using the channel HR100_OPERATING_MODE. +
+*Warning*: Operating mode can be set to ’off’ by the channel. In that case the EnableSignal or the temperature set point won't be able to switch the heat pump on.
+
+ExceptionalState::
+ExceptionalState does not change the operating mode, so when the operating mode is set to ’off’ the ExceptionalState cannot turn the heat pump on. The ExceptionalState activates the power set point and the exceptional state value is mapped to the power set point. Using the power set point requires a correct configuration of the heat pump and matching setting in the module config. +
+The ExceptionalState overwrites the power set point, but does not change it. Commands to change the power set point are still received and processed during ExceptionalState, but only take effect once the ExceptionalState ends.
+
+

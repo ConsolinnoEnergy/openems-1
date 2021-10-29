@@ -1,9 +1,11 @@
 package io.openems.edge.heater.heatpump.heliotherm;
 
 import io.openems.edge.heater.heatpump.heliotherm.api.ControlMode;
+import io.openems.edge.heater.heatpump.heliotherm.api.OperatingMode;
 import io.openems.edge.heater.heatpump.heliotherm.api.PowerControlSetting;
 import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
+import org.osgi.service.metatype.annotations.Option;
 
 @ObjectClassDefinition(
         name = "Heat Pump Heliotherm",
@@ -34,6 +36,19 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
             + "specified temperature. Configuration of the heat pump determines which temperature "
             + "input is used as reference. Valid values are 0 to 120, unit is °C.")
     int defaultSetPointTemperature() default 60;
+
+    @AttributeDefinition(name = "Default operating mode", description = "When the heat pump turns on because of "
+            + "either EnableSignal or the temperature set point, this is the default operating mode.",
+            options = {
+                    @Option(label = "Automatic", value = "Automatic"),
+                    @Option(label = "Cooling", value = "Cooling"),
+                    @Option(label = "Summer", value = "Summer"),
+                    @Option(label = "Always on (Dauerbetrieb)", value = "Always on (Dauerbetrieb)"),
+                    @Option(label = "Setback mode (Absenkung)", value = "Setback mode (Absenkung)"),
+                    @Option(label = "Holidays, full time setback (Urlaub)", value = "Holidays, full time setback (Urlaub)"),
+                    @Option(label = "No night setback (Party)", value = "No night setback (Party)"),
+            })
+    String defaultOperatingMode() default "Automatic";
 
     @AttributeDefinition(name = "Power control setting", description = "Enter the power control mode that results from "
             + "the heat pump configuration. Consumption (photovoltaic mode on) or compressor speed (photovoltaic mode off).")

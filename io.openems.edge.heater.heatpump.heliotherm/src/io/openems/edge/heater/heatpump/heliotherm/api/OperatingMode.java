@@ -23,7 +23,7 @@ public enum OperatingMode implements OptionsEnum {
 	private final int value;
 	private final String name;
 
-	private OperatingMode(int value, String name) {
+	OperatingMode(int value, String name) {
 		this.value = value;
 		this.name = name;
 	}
@@ -41,5 +41,40 @@ public enum OperatingMode implements OptionsEnum {
 	@Override
 	public OptionsEnum getUndefined() {
 		return UNDEFINED;
-	}	
+	}
+
+	/**
+	 * Returns the enum state corresponding to the integer value.
+	 *
+	 * @param value the integer value of the enum
+	 * @return the enum state
+	 */
+	public static OperatingMode valueOf(int value) {
+		switch (value) {
+			case 0:
+				return OperatingMode.OFF;
+			case 1:
+				return OperatingMode.AUTOMATIC;
+			case 2:
+				return OperatingMode.COOLING;
+			case 3:
+				return OperatingMode.SUMMER;
+			case 4:
+				return OperatingMode.ALWAYS_ON;
+			case 5:
+				return OperatingMode.SETBACK;
+			case 6:
+				return OperatingMode.VACATION;
+			case 7:
+				return OperatingMode.PARTY;
+			case 8:
+				return OperatingMode.BAKE_OUT;
+			case 9:
+				return OperatingMode.DSM_BLOCK;
+			case 10:
+				return OperatingMode.MAIN_SWITCH_OFF;
+			default:
+				return OperatingMode.UNDEFINED;
+		}
+	}
 }

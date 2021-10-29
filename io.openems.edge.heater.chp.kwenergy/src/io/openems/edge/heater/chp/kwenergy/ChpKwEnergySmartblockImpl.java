@@ -576,8 +576,8 @@ public class ChpKwEnergySmartblockImpl extends AbstractOpenemsModbusComponent im
 		this.logInfo(this.log, "Effective electrical power: " + this.getEffectiveElectricPower() + " of max "
 				+ this.maxChpPower + " kW (" + (1.0 * this.getEffectiveElectricPower().orElse(0.0) / this.maxChpPower) + "%)");
 		this.logInfo(this.log, "Power set point: " + this.getPowerSetpoint());
-		this.logInfo(this.log, "Flow temperature: " + this.getFlowTemperature() + " d°C");
-		this.logInfo(this.log, "Return temperature: " + this.getReturnTemperature() + " d°C");
+		this.logInfo(this.log, "Flow temperature: " + this.getFlowTemperature());
+		this.logInfo(this.log, "Return temperature: " + this.getReturnTemperature());
 		this.logInfo(this.log, "CHP model: " + this.getChpModel());
 		this.logInfo(this.log, "Operating hours: " + this.getOperatingHours());
 		this.logInfo(this.log, "Engine start counter: " + this.getEngineStartCounter());

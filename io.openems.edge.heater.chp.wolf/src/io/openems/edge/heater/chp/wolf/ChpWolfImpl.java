@@ -442,20 +442,20 @@ public class ChpWolfImpl extends AbstractOpenemsModbusComponent implements Opene
 		this.logInfo(this.log, "Chp state: " + this.getHeaterState());
 		this.logInfo(this.log, "Flow temperature: " + this.getFlowTemperature());
 		this.logInfo(this.log, "Return temperature: " + this.getReturnTemperature());
-		this.logInfo(this.log, "Buffer tank temp top: " + (this.getBufferTankTempTop().orElse(0) / 10.0) + "°C");
-		this.logInfo(this.log, "Buffer tank temp middle: " + (this.getBufferTankTempMiddle().orElse(0) / 10.0) + "°C");
-		this.logInfo(this.log, "Buffer tank temp bottom: " + (this.getBufferTankTempBottom().orElse(0) / 10.0) + "°C");
+		this.logInfo(this.log, "Buffer tank temp top: " + this.getBufferTankTempTop());
+		this.logInfo(this.log, "Buffer tank temp middle: " + this.getBufferTankTempMiddle());
+		this.logInfo(this.log, "Buffer tank temp bottom: " + this.getBufferTankTempBottom());
 		this.logInfo(this.log, "Electric power: " + this.getEffectiveElectricPower());
-		this.logInfo(this.log, "Engine rpm: " + this.getRpm().get() + " rpm");
-		this.logInfo(this.log, "Runtime: " + this.getRuntime().get() + " h");
-		this.logInfo(this.log, "Engine starts: " + this.getEngineStarts().get());
-		this.logInfo(this.log, "Produced electric work total: " + this.getElectricalWork().get() + " kWh");
+		this.logInfo(this.log, "Engine rpm: " + this.getRpm());
+		this.logInfo(this.log, "Runtime: " + this.getRuntime());
+		this.logInfo(this.log, "Engine starts: " + this.getEngineStarts());
+		this.logInfo(this.log, "Produced electric work total: " + this.getElectricalWork());
 		this.logInfo(this.log, "Warning message: " + this.getWarningMessage().get());
 		this.logInfo(this.log, "Error message: " + this.getErrorMessage().get());
 		this.logInfo(this.log, "");
 		this.logInfo(this.log, "--Writable values--");
 		this.logInfo(this.log, "EnableSignal: " + this.getEnableSignal());
-		this.logInfo(this.log, "Set point electric power [kW]: " + this.getElectricPowerSetpoint().get());
+		this.logInfo(this.log, "Set point electric power: " + this.getElectricPowerSetpoint());
 		this.logInfo(this.log, "");
 	}
 

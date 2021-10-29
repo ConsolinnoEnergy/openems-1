@@ -12,6 +12,7 @@ import io.openems.edge.common.channel.Doc;
 import io.openems.edge.common.channel.StringReadChannel;
 import io.openems.edge.common.channel.value.Value;
 import io.openems.edge.heater.api.HeatpumpSmartGrid;
+import io.openems.edge.heater.api.SmartGridState;
 
 /**
  * Channels for the Tecalor heat pump.
@@ -525,6 +526,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
          * </ul>
          */
         HR1501_OPERATING_MODE(Doc.of(OperatingMode.values()).accessMode(AccessMode.READ_WRITE)),
+        HR1501_MODBUS(Doc.of(OpenemsType.INTEGER).accessMode(AccessMode.READ_WRITE)),
 
         /**
          * Comfort temperature setting, heating circuit 1.
@@ -1522,6 +1524,39 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
      */
     default void setOperatingMode(Integer value) throws OpenemsNamedException {
         this.getOperatingModeChannel().setNextWriteValue(value);
+    }
+
+    /**
+     * Set the operating mode.
+     * <ul>
+     *      <li> Type: Integer
+     *      <li> Possible values: 0 ... 5
+     *      <li> State 0: Antifreeze protection only (Notbetrieb)
+     *      <li> State 1: Standby mode (Bereitschaftsbetrieb)
+     *      <li> State 2: Program mode (Programmbetrieb)
+     *      <li> State 3: Comfort mode (Komfortbetrieb)
+     *      <li> State 4: ECO mode (ECO-Betrieb)
+     *      <li> State 5: Domestic hot water (Warmwasserbetrieb)
+     * </ul>
+     * See {@link ChannelId#HR1501_OPERATING_MODE}.
+     *
+     * @param mode the next write value
+     * @throws OpenemsNamedException on error
+     */
+    default void setOperatingMode(OperatingMode mode) throws OpenemsNamedException {
+        if (mode != null && mode != OperatingMode.UNDEFINED) {
+            this.getOperatingModeChannel().setNextWriteValue(mode.getValue());
+        }
+    }
+
+    /**
+     * For internal use only!
+     * Gets the Channel for {@link ChannelId#HR1501_MODBUS}.
+     *
+     * @return the Channel
+     */
+    default IntegerWriteChannel getHr1501ModbusChannel() {
+        return this.channel(ChannelId.HR1501_MODBUS);
     }
     
     /**

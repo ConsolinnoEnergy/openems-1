@@ -55,13 +55,9 @@ import java.util.Optional;
 
 
 /**
- * This module reads the most important variables available via Modbus from a Heliotherm heat pump and maps them to OpenEMS
- * channels. The module is written to be used with the Heater interface methods.
- * When setEnableSignal() from the Heater interface is set to true with no other parameters like temperature specified,
- * the heat pump will turn on with default settings. The default settings are configurable in the config.
- * The heat pump can be controlled with setSetPointTemperature() and/or setSetPointPowerPercent().
- * A certain configuration of the pump is required for setSetPointPowerPercent() to work.
- * setSetPointPower() and related methods are not supported by this heater.
+ * This module reads the most important variables available via Modbus from a Heliotherm heat pump and maps them to
+ * OpenEMS channels. WriteChannels can be used to send commands to the heat pump via setter methods in
+ * HeatpumpHeliotherm and Heater.
  */
 
 // ToDo: Add smart grid functionality using AiO module.
@@ -91,6 +87,7 @@ public class HeatpumpHeliothermImpl extends AbstractOpenemsModbusComponent imple
     private int maxElectricPower;
     private int maxCompressorSpeed;
     private ControlMode controlModeSetting;
+    private OperatingMode operatingModeSetting;
     private PowerControlSetting powerControlSetting;
     private boolean mapPowerPercentToConsumption;
     private int lastTemperatureSetPoint;
@@ -129,6 +126,7 @@ public class HeatpumpHeliothermImpl extends AbstractOpenemsModbusComponent imple
 
         if (this.readOnly == false) {
             this.controlModeSetting = config.defaultControlMode();
+            this.operatingModeSetting = this.parseConfigOperatingMode(config.defaultOperatingMode());
             this.lastTemperatureSetPoint = config.defaultSetPointTemperature() * 10; // Convert to d°C.
             this.setTemperatureSetpoint(this.lastTemperatureSetPoint);
             this.powerControlSetting = config.powerControlSetting();
@@ -138,6 +136,26 @@ public class HeatpumpHeliothermImpl extends AbstractOpenemsModbusComponent imple
             this.fiveSecondTimestamp = LocalDateTime.now().minusSeconds(sendIntervalSeconds);    // Initialize with past time value so code executes immediately on first run.
             this.setHeatingPowerPercentSetpoint(config.defaultSetPointPowerPercent());
             this.initializeTimers(config);
+        }
+    }
+
+    private OperatingMode parseConfigOperatingMode(String string) {
+        switch (string) {
+            case "Cooling":
+                return OperatingMode.COOLING;
+            case "Summer":
+                return OperatingMode.SUMMER;
+            case "Always on (Dauerbetrieb)":
+                return OperatingMode.ALWAYS_ON;
+            case "Setback mode (Absenkung)":
+                return OperatingMode.SETBACK;
+            case "Holidays, full time setback (Urlaub)":
+                return OperatingMode.VACATION;
+            case "No night setback (Party)":
+                return OperatingMode.PARTY;
+            case "Automatic":
+            default:
+                return OperatingMode.AUTOMATIC;
         }
     }
 
@@ -379,8 +397,19 @@ public class HeatpumpHeliothermImpl extends AbstractOpenemsModbusComponent imple
      */
     protected void writeCommands() {
 
+        // Handle OperatingMode channel
+        Optional<Integer> operatingModeOptional = this.getHr100OperatingModeChannel().getNextWriteValueAndReset();
+        if (operatingModeOptional.isPresent()) {
+            int enumAsInt = operatingModeOptional.get();
+            // Restrict to valid write values
+            if (enumAsInt >= 0 && enumAsInt <= 7) {
+                this.operatingModeSetting = OperatingMode.valueOf(enumAsInt);
+            }
+        }
+
         // Handle set point power percent, if heat pump is in a configuration that allows it.
         int powerPercentToModbus = 0;
+        boolean powerSetPointAvailable = false;
         Optional<Double> heatingPowerPercentSetPointOptional = this.getHeatingPowerPercentSetpointChannel().getNextWriteValueAndReset();
         if (heatingPowerPercentSetPointOptional.isPresent()
                 && (this.powerControlSetting == PowerControlSetting.COMPRESSOR_SPEED || this.mapPowerPercentToConsumption)) {
@@ -393,6 +422,7 @@ public class HeatpumpHeliothermImpl extends AbstractOpenemsModbusComponent imple
             this._setHeatingPowerPercentSetpoint(this.lastPowerPercentSetPoint);
         }
         if (this.powerControlSetting == PowerControlSetting.COMPRESSOR_SPEED && this.lastPowerPercentSetPoint > 1) {
+            powerSetPointAvailable = true;
             // Modbus unit is per mill, so for 100% send 1000 to Modbus.
             powerPercentToModbus = (int) Math.round(this.lastPowerPercentSetPoint * 10 * (this.maxCompressorSpeed / 100.0));
         }
@@ -405,6 +435,7 @@ public class HeatpumpHeliothermImpl extends AbstractOpenemsModbusComponent imple
             this.lastConsumptionSetPoint = powerConsumptionSetPointOptional.get();
         }
         if (this.powerControlSetting == PowerControlSetting.CONSUMPTION && this.lastConsumptionSetPoint > 1) {
+            powerSetPointAvailable = true;
             consumptionToModbus = this.lastConsumptionSetPoint;
         }
 
@@ -417,30 +448,29 @@ public class HeatpumpHeliothermImpl extends AbstractOpenemsModbusComponent imple
                 this.controlModeSetting = ControlMode.ENABLE_SIGNAL;
             }
         }
+
+        // Logic code of operating modes temperature and EnableSignal.
+        int operatingModeToModbus = 0;
         if (this.controlModeSetting == ControlMode.TEMPERATURE_SET_POINT) {
             Optional<Integer> temperatureSetPointOptional = this.getTemperatureSetpointChannel().getNextWriteValueAndReset();
             temperatureSetPointOptional.ifPresent(integer -> this.lastTemperatureSetPoint = integer);
             this.lastTemperatureSetPoint = Math.min(this.lastTemperatureSetPoint, 1200);
             this.lastTemperatureSetPoint = Math.max(this.lastTemperatureSetPoint, 0);
-            try {
-                this.setHr100OperatingMode(OperatingMode.AUTOMATIC);
-            } catch (OpenemsError.OpenemsNamedException e) {
-                this.log.warn("Couldn't write in Channel " + e.getMessage());
-            }
+            operatingModeToModbus = this.operatingModeSetting.getValue();
         } else {
 
             // Handle EnableSignal.
             boolean turnOnHeatpump = this.enableSignalHandler.deviceShouldBeHeating(this);
 
             // Handle ExceptionalState. ExceptionalState overwrites EnableSignal.
-            boolean exceptionalStateActive = false;
             if (this.useExceptionalState) {
-                exceptionalStateActive = this.exceptionalStateHandler.exceptionalStateActive(this);
+                boolean exceptionalStateActive = this.exceptionalStateHandler.exceptionalStateActive(this);
                 if (exceptionalStateActive) {
                     int exceptionalStateValue = this.getExceptionalStateValue();
                     if (exceptionalStateValue <= this.DEFAULT_MIN_EXCEPTIONAL_VALUE) {
                         turnOnHeatpump = false;
                     } else {
+                        powerSetPointAvailable = true;
                         turnOnHeatpump = true;
                         exceptionalStateValue = Math.min(exceptionalStateValue, this.DEFAULT_MAX_EXCEPTIONAL_VALUE);
 
@@ -457,24 +487,10 @@ public class HeatpumpHeliothermImpl extends AbstractOpenemsModbusComponent imple
 
             // Turn on heater when enableSignal == true.
             if (turnOnHeatpump) {
-                try {
-                    // ToDo: not sure about this ’if’ statement here.
-                    if (exceptionalStateActive) {
-                        this.setHr100OperatingMode(OperatingMode.ALWAYS_ON);
-                    } else {
-                        this.setHr100OperatingMode(OperatingMode.AUTOMATIC);
-                    }
-                    this.setHr117UsePowerControl(true);
-                } catch (OpenemsError.OpenemsNamedException e) {
-                    this.log.warn("Couldn't write in Channel " + e.getMessage());
-                }
+                // Warning: operatingModeSetting can be set to OFF, meaning the heat pump won't switch on!
+                operatingModeToModbus = this.operatingModeSetting.getValue();
             } else {
-                try {
-                    this.setHr100OperatingMode(OperatingMode.OFF);
-                    this.setHr117UsePowerControl(false);
-                } catch (OpenemsError.OpenemsNamedException e) {
-                    this.log.warn("Couldn't write in Channel " + e.getMessage());
-                }
+                operatingModeToModbus = OperatingMode.OFF.getValue();
             }
         }
 
@@ -482,13 +498,10 @@ public class HeatpumpHeliothermImpl extends AbstractOpenemsModbusComponent imple
         if (ChronoUnit.SECONDS.between(this.fiveSecondTimestamp, LocalDateTime.now()) >= sendIntervalSeconds) {
             this.fiveSecondTimestamp = LocalDateTime.now();
 
-            Optional<Integer> writeValueHr100 = this.getHr100OperatingModeChannel().getNextWriteValueAndReset();
-            if (writeValueHr100.isPresent()) {
-                try {
-                    this.getHr100ModbusChannel().setNextWriteValue(writeValueHr100.get());
-                } catch (OpenemsError.OpenemsNamedException e) {
-                    this.log.warn("Couldn't write in Channel " + e.getMessage());
-                }
+            try {
+                this.getHr100ModbusChannel().setNextWriteValue(operatingModeToModbus);
+            } catch (OpenemsError.OpenemsNamedException e) {
+                this.log.warn("Couldn't write in Channel " + e.getMessage());
             }
 
             if (this.controlModeSetting == ControlMode.TEMPERATURE_SET_POINT) {
@@ -506,13 +519,10 @@ public class HeatpumpHeliothermImpl extends AbstractOpenemsModbusComponent imple
                 }
             }
 
-            Optional<Boolean> writeValueHr117 = this.getHr117UsePowerControlChannel().getNextWriteValueAndReset();
-            if (writeValueHr117.isPresent()) {
-                try {
-                    this.getHr117ModbusChannel().setNextWriteValue(writeValueHr117.get());
-                } catch (OpenemsError.OpenemsNamedException e) {
-                    this.log.warn("Couldn't write in Channel " + e.getMessage());
-                }
+            try {
+                this.getHr117ModbusChannel().setNextWriteValue(powerSetPointAvailable);
+            } catch (OpenemsError.OpenemsNamedException e) {
+                this.log.warn("Couldn't write in Channel " + e.getMessage());
             }
             if (this.powerControlSetting == PowerControlSetting.CONSUMPTION) {
                 try {

@@ -55,7 +55,7 @@ import org.slf4j.LoggerFactory;
 /**
  * This module reads the most important variables available via Modbus from a Tecalor heat pump and maps them to OpenEMS
  * channels. WriteChannels can be used to send commands to the heat pump via setter methods in
- * HeatpumpAlphaInnotecChannel, HeatpumpSmartGrid and Heater.
+ * HeatpumpTecalor, HeatpumpSmartGrid and Heater.
  * The heat pump is controlled either by EnableSignal & ExceptionalState or SmartGridState. The channel UseSmartGridState
  * determines the control mode.
  */
@@ -302,7 +302,7 @@ public class HeatPumpTecalorImpl extends AbstractOpenemsModbusComponent implemen
 		if (this.readOnly == false) {
 			protocol.addTasks(
 					new FC16WriteRegistersTask(1500,
-							m(HeatpumpTecalor.ChannelId.HR1501_OPERATING_MODE, new UnsignedWordElement(1500),
+							m(HeatpumpTecalor.ChannelId.HR1501_MODBUS, new UnsignedWordElement(1500),
 									ElementToChannelConverter.DIRECT_1_TO_1),
 							m(HeatpumpTecalor.ChannelId.HR1502_COMFORT_TEMP_HC1, new SignedWordElement(1501),
 									ElementToChannelConverter.DIRECT_1_TO_1),
@@ -551,44 +551,59 @@ public class HeatPumpTecalorImpl extends AbstractOpenemsModbusComponent implemen
 	 * UseSmartGridState determines the control mode.
 	 */
 	protected void writeCommands() {
+		// Handle OperatingMode channel
+		Optional<Integer> operatingModeOptional = this.getOperatingModeChannel().getNextWriteValueAndReset();
+		if (operatingModeOptional.isPresent()) {
+			int enumAsInt = operatingModeOptional.get();
+			// Restrict to valid write values
+			if (enumAsInt >= 0 && enumAsInt <= 7) {
+				this.defaultModeOfOperation = OperatingMode.valueOf(enumAsInt);
+			}
+		}
+
+		int operatingModeToModbus = OperatingMode.ANTIFREEZE.getValue();	// Used when turnOnHeatpump = false
 		if (this.getUseSmartGridState().isDefined() && this.getUseSmartGridState().get()) {
+			// Set operating mode.
+			operatingModeToModbus = this.defaultModeOfOperation.getValue();
 
 			// Map SG generalized "SmartGridState" write values.
 			Optional<Integer> sgState = this.getSmartGridStateChannel().getNextWriteValueAndReset();
 			if (sgState.isPresent()) {
 				SmartGridState smartGridEnum = SmartGridState.valueOf(sgState.get());
-				boolean sgInput1;
-				boolean sgInput2;
-				switch (smartGridEnum) {
-					case SG1_BLOCKED:
-						// Off
-						sgInput1 = false;
-						sgInput2 = true;
-						break;
-					case SG3_STANDARD:
-						// Force on, increased temperature levels. (<- description from manual)
-						sgInput1 = true;
-						sgInput2 = false;
-						break;
-					case SG4_HIGH:
-						// Force on, max temperature levels. (<- description from manual)
-						sgInput1 = true;
-						sgInput2 = true;
-						break;
-					case SG2_LOW:
-					default:
-						// Standard. (<- description from manual)
-						sgInput1 = false;
-						sgInput2 = false;
-						break;
-				}
-				try {
-					this.setSgReadyOnOff(true);
-					this.getSgReadyInput1Channel().setNextWriteValue(sgInput1);
-					this.getSgReadyInput2Channel().setNextWriteValue(sgInput2);
-				} catch (OpenemsError.OpenemsNamedException e) {
-					this.logError(this.log, "Could not write to sg ready channels. "
-							+ "Reason: " + e.getMessage());
+				if (smartGridEnum != SmartGridState.UNDEFINED) {
+					boolean sgInput1;
+					boolean sgInput2;
+					switch (smartGridEnum) {
+						case SG1_BLOCKED:
+							// Off
+							sgInput1 = false;
+							sgInput2 = true;
+							break;
+						case SG3_STANDARD:
+							// Force on, increased temperature levels. (<- description from manual)
+							sgInput1 = true;
+							sgInput2 = false;
+							break;
+						case SG4_HIGH:
+							// Force on, max temperature levels. (<- description from manual)
+							sgInput1 = true;
+							sgInput2 = true;
+							break;
+						case SG2_LOW:
+						default:
+							// Standard. (<- description from manual)
+							sgInput1 = false;
+							sgInput2 = false;
+							break;
+					}
+					try {
+						this.setSgReadyOnOff(true);
+						this.getSgReadyInput1Channel().setNextWriteValue(sgInput1);
+						this.getSgReadyInput2Channel().setNextWriteValue(sgInput2);
+					} catch (OpenemsError.OpenemsNamedException e) {
+						this.logError(this.log, "Could not write to sg ready channels. "
+								+ "Reason: " + e.getMessage());
+					}
 				}
 			}
 		} else {
@@ -598,9 +613,8 @@ public class HeatPumpTecalorImpl extends AbstractOpenemsModbusComponent implemen
 
 			// Handle ExceptionalState. ExceptionalState overwrites EnableSignal.
 			int exceptionalStateValue = 0;
-			boolean exceptionalStateActive = false;
 			if (this.useExceptionalState) {
-				exceptionalStateActive = this.exceptionalStateHandler.exceptionalStateActive(this);
+				boolean exceptionalStateActive = this.exceptionalStateHandler.exceptionalStateActive(this);
 				if (exceptionalStateActive) {
 					exceptionalStateValue = this.getExceptionalStateValue();
 					if (exceptionalStateValue <= this.DEFAULT_MIN_EXCEPTIONAL_VALUE) {
@@ -612,26 +626,31 @@ public class HeatPumpTecalorImpl extends AbstractOpenemsModbusComponent implemen
 			}
 
 			if (turnOnHeatpump) {
+				operatingModeToModbus = this.defaultModeOfOperation.getValue();
 				try {
 					this.setSgReadyOnOff(false);
-					this.setOperatingMode(this.defaultModeOfOperation.getValue());
 				} catch (OpenemsError.OpenemsNamedException e) {
 					this.logError(this.log, "Could not write to operating mode channel. "
 							+ "Reason: " + e.getMessage());
 				}
-
 					/* if (this.useExceptionalState) {
 						// Currently not used. If exceptionalStateValue should do more than just on/off, code for that goes here.
 					} */
 			} else {
 				try {
 					this.setSgReadyOnOff(false);
-					this.setOperatingMode(OperatingMode.ANTIFREEZE.getValue());
 				} catch (OpenemsError.OpenemsNamedException e) {
 					this.logError(this.log, "Could not write to operating mode channel. "
 							+ "Reason: " + e.getMessage());
 				}
 			}
+		}
+
+		try {
+			this.getHr1501ModbusChannel().setNextWriteValue(operatingModeToModbus);
+		} catch (OpenemsError.OpenemsNamedException e) {
+			this.logError(this.log, "Could not write to operating mode channel. "
+					+ "Reason: " + e.getMessage());
 		}
 	}
 
