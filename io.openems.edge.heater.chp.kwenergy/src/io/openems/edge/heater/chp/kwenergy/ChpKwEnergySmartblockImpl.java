@@ -47,6 +47,7 @@ import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.Optional;
 
 
 /**
@@ -85,6 +86,7 @@ public class ChpKwEnergySmartblockImpl extends AbstractOpenemsModbusComponent im
 	private boolean startupStateChecked = false;
 	private int maxChpPower;
 	private int lastReceivedHandshake = 0;
+	private double powerPercentSetpoint;
 
 	// No successful handshake for this amount of seconds results in: heater state changing to ’off’, stop sending commands.
 	private final int handshakeTimeoutSeconds = 30;
@@ -126,20 +128,22 @@ public class ChpKwEnergySmartblockImpl extends AbstractOpenemsModbusComponent im
 		if (this.readOnly == false) {
 			this.initializeTimers(config);
 			switch (config.controlMode()) {
-				case "powerPercent":
-					this.setControlMode(ControlMode.POWER_PERCENT.getValue());
-					this.setHeatingPowerPercentSetpoint(config.defaultSetPointPowerPercent());
-					break;
 				case "power":
-					this.setControlMode(ControlMode.POWER.getValue());
+					this.setControlMode(ControlMode.POWER);
 					double setpointValue = config.defaultSetPointElectricPower();
 					setpointValue = Math.min(setpointValue, this.maxChpPower);
 					setpointValue = Math.max(setpointValue, this.maxChpPower / 2.0);
-					double calculatedPercent = setpointValue / this.maxChpPower;
-					this.setHeatingPowerPercentSetpoint(calculatedPercent);
+					this.powerPercentSetpoint = setpointValue / this.maxChpPower;
 					break;
 				case "consumption":
 					this.setControlMode(ControlMode.CONSUMPTION.getValue());
+					break;
+				case "powerPercent":
+				default:
+					this.setControlMode(ControlMode.POWER_PERCENT);
+					this.powerPercentSetpoint = config.defaultSetPointPowerPercent();
+					this.powerPercentSetpoint = Math.min(this.powerPercentSetpoint, 100);
+					this.powerPercentSetpoint = Math.max(0, this.powerPercentSetpoint);
 					break;
 			}
 			this.getControlModeChannel().nextProcessImage();    // So ’value’ field of channel is filled immediately.
@@ -159,6 +163,14 @@ public class ChpKwEnergySmartblockImpl extends AbstractOpenemsModbusComponent im
 
 	@Deactivate
 	protected void deactivate() {
+		if (this.readOnly == false) {
+			try {
+				// This switches the chp back to local mode, meaning commands are set at the control panel.
+				setCommandBits1to16(0);
+			} catch (OpenemsError.OpenemsNamedException e) {
+				this.log.warn("Couldn't write in Channel " + e.getMessage());
+			}
+		}
 		super.deactivate();
 	}
 
@@ -229,11 +241,11 @@ public class ChpKwEnergySmartblockImpl extends AbstractOpenemsModbusComponent im
 						Makes no sense to read the command bits.
 						m(ChpKwEnergySmartblockChannel.ChannelId.HR109_COMMAND_BITS_1_to_16, new UnsignedWordElement(109),
 								ElementToChannelConverter.DIRECT_1_TO_1)
-						No read for SET_POINT_POWER_PERCENT and SET_POINT_POWER, since those channels immediately
-						copy setNextWrite to setNextValue.
 						*/
 				),
-				new FC3ReadRegistersTask(112, Priority.HIGH,
+				new FC3ReadRegistersTask(111, Priority.HIGH,
+						m(Heater.ChannelId.SET_POINT_HEATING_POWER_PERCENT, new UnsignedWordElement(111),
+								ElementToChannelConverter.SCALE_FACTOR_MINUS_1),
 						m(ChpKwEnergySmartblock.ChannelId.HR112_GRID_POWER_DRAW, new UnsignedWordElement(112),
 								ElementToChannelConverter.SCALE_FACTOR_MINUS_1)
 				)
@@ -251,8 +263,8 @@ public class ChpKwEnergySmartblockImpl extends AbstractOpenemsModbusComponent im
 							m(ChpKwEnergySmartblock.ChannelId.HR109_COMMAND_BITS_1_to_16, new UnsignedWordElement(109),
 									ElementToChannelConverter.DIRECT_1_TO_1),
 							new DummyRegisterElement(110),
-							m(Heater.ChannelId.SET_POINT_HEATING_POWER_PERCENT, new UnsignedWordElement(111),
-									ElementToChannelConverter.SCALE_FACTOR_MINUS_1),
+							m(ChpKwEnergySmartblock.ChannelId.HR111_MODBUS, new UnsignedWordElement(111),
+									ElementToChannelConverter.DIRECT_1_TO_1),
 							m(ChpKwEnergySmartblock.ChannelId.HR112_GRID_POWER_DRAW, new UnsignedWordElement(112),
 									ElementToChannelConverter.SCALE_FACTOR_MINUS_1)
 					),
@@ -501,35 +513,51 @@ public class ChpKwEnergySmartblockImpl extends AbstractOpenemsModbusComponent im
 				}
 			}
 
-			// Send command bits, based on settings. ’turnOnChp’ can be set to true by config, EnableSignal or ExceptionalState.
+			// Send command bits, based on settings.
 			int commandBits1to16 = 0;
 			if (turnOnChp) {
 				ControlMode controlMode = this.getControlMode().asEnum();
-
-				// Map EffectiveElectricPowerSetpoint channel from Chp interface.
-				if (exceptionalStateActive == false && controlMode == ControlMode.POWER
-						&& this.getElectricPowerSetpointChannel().getNextWriteValue().isPresent()) {
-					double setpointValue = this.getElectricPowerSetpointChannel().getNextWriteValue().get();
-					setpointValue = Math.min(setpointValue, this.maxChpPower);
-					setpointValue = Math.max(setpointValue, this.maxChpPower / 2.0);
-					double calculatedPercent = setpointValue / this.maxChpPower;
+				if (exceptionalStateActive) {
+					controlMode = ControlMode.POWER_PERCENT;
+				}
+				if (controlMode == ControlMode.POWER_PERCENT) {
+					Optional<Double> powerPercentOptional = this.getHeatingPowerPercentSetpointChannel().getNextWriteValueAndReset();
+					if (powerPercentOptional.isPresent()) {
+						this.powerPercentSetpoint = powerPercentOptional.get();
+						this.powerPercentSetpoint = Math.min(this.powerPercentSetpoint, 100);
+						this.powerPercentSetpoint = Math.max(0, this.powerPercentSetpoint);
+					}
+					// Convert to per mill
+					int powerPercentToModbus = (int)Math.round(this.powerPercentSetpoint * 10);
+					if (exceptionalStateActive) {
+						powerPercentToModbus = exceptionalStateValue * 10;
+					}
+					this._setElectricPowerSetpoint((powerPercentToModbus * this.maxChpPower) / 1000.0);
+					this._setHeatingPowerPercentSetpoint(powerPercentToModbus / 10.0);
 					try {
-						this.setHeatingPowerPercentSetpoint(calculatedPercent);
-						this._setElectricPowerSetpoint(setpointValue);
+						this.getHr111ModbusChannel().setNextWriteValue(powerPercentToModbus);
 					} catch (OpenemsError.OpenemsNamedException e) {
 						this.log.warn("Couldn't write in Channel " + e.getMessage());
 					}
-				} else if (exceptionalStateActive && exceptionalStateValue > 0) {
-					// When ExceptionalStateValue is between 0 and 100, set Chp to this PowerPercentage.
+				} else if (controlMode == ControlMode.POWER) {
+					// Map EffectiveElectricPowerSetpoint channel from Chp interface.
+					Optional<Double> powerSetPointOptional = this.getElectricPowerSetpointChannel().getNextWriteValueAndReset();
+					if (powerSetPointOptional.isPresent()) {
+						double setpointValue = powerSetPointOptional.get();
+						setpointValue = Math.min(setpointValue, this.maxChpPower);
+						setpointValue = Math.max(setpointValue, this.maxChpPower / 2.0);
+						this._setElectricPowerSetpoint(setpointValue);
+						this.powerPercentSetpoint = 100 * setpointValue / this.maxChpPower;;
+					}
+					// Convert to per mill
+					int powerPercentToModbus = (int)Math.round(this.powerPercentSetpoint * 10);
+					this._setHeatingPowerPercentSetpoint(powerPercentToModbus / 10.0);
 					try {
-						this.setHeatingPowerPercentSetpoint(exceptionalStateValue);
-						controlMode = ControlMode.POWER_PERCENT;
-						this.setControlMode(ControlMode.POWER_PERCENT.getValue());
+						this.getHr111ModbusChannel().setNextWriteValue(powerPercentToModbus);
 					} catch (OpenemsError.OpenemsNamedException e) {
 						this.log.warn("Couldn't write in Channel " + e.getMessage());
 					}
 				}
-
 
 				/* Command bits:
 				   0 - Control over bus, always needs to be 1 to send commands. (Steuerung ueber Bussystem (muss fuer Steuerung immer 1 sein))
@@ -570,15 +598,14 @@ public class ChpKwEnergySmartblockImpl extends AbstractOpenemsModbusComponent im
 	 * Information that is printed to the log if ’print info to log’ option is enabled.
 	 */
 	protected void printInfo() {
-		this.logInfo(this.log, "--CHP KW Energy Smartblock--");
+		this.logInfo(this.log, "--CHP KW Energy Smartblock model " + this.getChpModel() + "--");
 		this.logInfo(this.log, "Engine rpm: " + this.getEngineRpm());
 		this.logInfo(this.log, "Engine temperature: " + this.getEngineTemperature());
-		this.logInfo(this.log, "Effective electrical power: " + this.getEffectiveElectricPower() + " of max "
-				+ this.maxChpPower + " kW (" + (1.0 * this.getEffectiveElectricPower().orElse(0.0) / this.maxChpPower) + "%)");
-		this.logInfo(this.log, "Power set point: " + this.getPowerSetpoint());
+		this.logInfo(this.log, "Effective electrical power set point: " + this.getEffectiveElectricPower() + " of max "
+				+ this.maxChpPower + " kW (" + this.getHeatingPowerPercentSetpoint() + ")");
+		this.logInfo(this.log, "Power set point read: " + this.getPowerSetpoint());
 		this.logInfo(this.log, "Flow temperature: " + this.getFlowTemperature());
 		this.logInfo(this.log, "Return temperature: " + this.getReturnTemperature());
-		this.logInfo(this.log, "CHP model: " + this.getChpModel());
 		this.logInfo(this.log, "Operating hours: " + this.getOperatingHours());
 		this.logInfo(this.log, "Engine start counter: " + this.getEngineStartCounter());
 		this.logInfo(this.log, "Produced active energy (Wirkleistung): " + this.getActiveEnergy());

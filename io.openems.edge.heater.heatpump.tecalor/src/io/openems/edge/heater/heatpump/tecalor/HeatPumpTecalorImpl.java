@@ -549,9 +549,17 @@ public class HeatPumpTecalorImpl extends AbstractOpenemsModbusComponent implemen
 	 * Determine commands and send them to the heater.
 	 * The heat pump is controlled either by EnableSignal & ExceptionalState or SmartGridState. The channel
 	 * UseSmartGridState determines the control mode.
+	 * The operating mode channel get special treatment because it is used by EnableSignal/ExceptionalState to switch
+	 * the heat pump on/off. The write of the operating mode channel is not mapped to Modbus. This is done by a duplicate
+	 * ’private’ channel. The write to the ’public’ operating mode channel is stored in a local variable and sent to
+	 * Modbus using the ’private’ channel.
+	 * The benefit of this design is that when EnableSignal is false (heat pump off), writing to the operating mode
+	 * channels is still registered and the value saved, but not executed. The changed operating mode is then applied
+	 * once EnableSignal is true. This way you don't have to pay attention to the state of the heat pump when writing
+	 * in the operating mode channel.
 	 */
 	protected void writeCommands() {
-		// Handle OperatingMode channel
+		// Collect OperatingMode channel ’nextWrite’.
 		Optional<Integer> operatingModeOptional = this.getOperatingModeChannel().getNextWriteValueAndReset();
 		if (operatingModeOptional.isPresent()) {
 			int enumAsInt = operatingModeOptional.get();

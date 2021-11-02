@@ -192,6 +192,8 @@ public interface ChpKwEnergySmartblock extends Chp {
         HR109_COMMAND_BITS_1_to_16(Doc.of(OpenemsType.INTEGER).accessMode(AccessMode.READ_WRITE)),
 
         // HR111_SET_POINT_POWER_PERCENT -> Heater, SET_POINT_POWER_PERCENT, percent. Value from CHP is percent*10, watch the conversion!
+        // Channel HR111_MODBUS is integer and mapped 1 to 1.
+        HR111_MODBUS(Doc.of(OpenemsType.INTEGER).unit(Unit.PERCENT).accessMode(AccessMode.READ_WRITE)),
 
         /**
          * Grid power draw (Netzbezugswert). Watch the conversion, the value in the device is kW*10!
@@ -626,6 +628,16 @@ public interface ChpKwEnergySmartblock extends Chp {
     }
 
     /**
+     * For internal use only!
+     * Gets the Channel for {@link ChannelId#HR111_MODBUS}.
+     *
+     * @return the Channel
+     */
+    default IntegerWriteChannel getHr111ModbusChannel() {
+        return this.channel(ChannelId.HR111_MODBUS);
+    }
+
+    /**
      * Gets the Channel for {@link ChannelId#HR112_GRID_POWER_DRAW}.
      *
      * @return the Channel
@@ -763,8 +775,7 @@ public interface ChpKwEnergySmartblock extends Chp {
      * Sets the control mode of the CHP.
      * <ul>
      *      <li> Type: Integer
-     *      <li> Possible values: -1, 0 ... 2
-     *      <li> State -1: Undefined
+     *      <li> Possible values: 0 ... 2
      *      <li> State 0: Control mode power percent
      *      <li> State 1: Control mode electric power
      *      <li> State 2: Control mode consumption
@@ -782,8 +793,7 @@ public interface ChpKwEnergySmartblock extends Chp {
      * Sets the control mode of the CHP.
      * <ul>
      *      <li> Type: Integer
-     *      <li> Possible values: -1, 0 ... 2
-     *      <li> State -1: Undefined
+     *      <li> Possible values: 0 ... 2
      *      <li> State 0: Control mode power percent
      *      <li> State 1: Control mode electric power
      *      <li> State 2: Control mode consumption
@@ -795,6 +805,26 @@ public interface ChpKwEnergySmartblock extends Chp {
      */
     default void setControlMode(Integer value) throws OpenemsError.OpenemsNamedException {
         this.getControlModeChannel().setNextWriteValue(value);
+    }
+
+    /**
+     * Sets the control mode of the CHP.
+     * <ul>
+     *      <li> Type: Integer
+     *      <li> Possible values: 0 ... 2
+     *      <li> State 0: Control mode power percent
+     *      <li> State 1: Control mode electric power
+     *      <li> State 2: Control mode consumption
+     * </ul>
+     * See {@link ChannelId#CONTROL_MODE}.
+     *
+     * @param mode the next write value
+     * @throws OpenemsNamedException on error
+     */
+    default void setControlMode(ControlMode mode) throws OpenemsError.OpenemsNamedException {
+        if (mode != ControlMode.UNDEFINED) {
+            this.getControlModeChannel().setNextWriteValue(mode.getValue());
+        }
     }
 
     /**

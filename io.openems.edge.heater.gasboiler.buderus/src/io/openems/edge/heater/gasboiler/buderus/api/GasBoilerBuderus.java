@@ -6,6 +6,7 @@ import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
 import io.openems.common.types.OpenemsType;
 import io.openems.edge.common.channel.BooleanWriteChannel;
 import io.openems.edge.common.channel.Doc;
+import io.openems.edge.common.channel.DoubleWriteChannel;
 import io.openems.edge.common.channel.EnumWriteChannel;
 import io.openems.edge.common.channel.IntegerReadChannel;
 import io.openems.edge.common.channel.IntegerWriteChannel;
@@ -274,6 +275,7 @@ public interface GasBoilerBuderus extends Heater {
         //HR400_SET_POINT_FLOW_TEMPERATUR -> Heater, SET_POINT_TEMPERATURE, d°C. Unit at heater is °C, not d°C, so watch the conversion.
 
         //HR401_SET_POINT_POWER_PERCENT -> Heater, SET_POINT_POWER_PERCENT, %. Unit at heater is also %, a value of 50 in the channel means 50%.
+        HR401_MODBUS(Doc.of(OpenemsType.DOUBLE).unit(Unit.PERCENT).accessMode(AccessMode.READ_WRITE)),
 
         /**
          * Give the heater run permission.
@@ -834,6 +836,16 @@ public interface GasBoilerBuderus extends Heater {
      */
     public default Value<Integer> getHeartBeatOut() {
         return this.getHeartBeatOutChannel().value();
+    }
+
+    /**
+     * For internal use only!
+     * Gets the Channel for {@link ChannelId#HR401_MODBUS}.
+     *
+     * @return the Channel
+     */
+    default DoubleWriteChannel getHr401ModbusChannel() {
+        return this.channel(ChannelId.HR401_MODBUS);
     }
 
     /**

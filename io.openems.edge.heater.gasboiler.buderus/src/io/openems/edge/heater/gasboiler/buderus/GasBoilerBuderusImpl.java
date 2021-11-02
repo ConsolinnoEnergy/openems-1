@@ -48,6 +48,7 @@ import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.Optional;
 
 
 /**
@@ -86,6 +87,7 @@ public class GasBoilerBuderusImpl extends AbstractOpenemsModbusComponent impleme
 	private boolean connectionAlive = false;
 	private LocalDateTime connectionTimestamp;
 	private boolean readOnly;
+	private double heatingPowerPercentSetting;
 
 	// No successful handshake for this amount of seconds results in: heater state changing to ’off’, stop sending commands.
 	private final int handshakeTimeoutSeconds = 30;
@@ -124,7 +126,7 @@ public class GasBoilerBuderusImpl extends AbstractOpenemsModbusComponent impleme
 			this.connectionTimestamp = LocalDateTime.now().minusSeconds(this.handshakeTimeoutSeconds + 1);	// Initialize with past time value so connection test is negative at start.
 			this.setOperatingMode(config.operatingMode().getValue());
 			this.setTemperatureSetpoint(config.defaultSetPointTemperature() * 10);	// Convert to d°C.
-			this.setHeatingPowerPercentSetpoint(config.defaultSetPointPowerPercent());
+			this.heatingPowerPercentSetting = config.defaultSetPointPowerPercent();
 			this.initializeTimers(config);
 		}
 	}
@@ -241,7 +243,7 @@ public class GasBoilerBuderusImpl extends AbstractOpenemsModbusComponent impleme
 					new FC16WriteRegistersTask(400,
 							m(Heater.ChannelId.SET_POINT_TEMPERATURE, new UnsignedWordElement(400),
 									ElementToChannelConverter.SCALE_FACTOR_1),
-							m(Heater.ChannelId.SET_POINT_HEATING_POWER_PERCENT, new UnsignedWordElement(401),
+							m(GasBoilerBuderus.ChannelId.HR401_MODBUS, new UnsignedWordElement(401),
 									ElementToChannelConverter.DIRECT_1_TO_1),
 							m(GasBoilerBuderus.ChannelId.HR402_RUN_PERMISSION, new UnsignedWordElement(402),
 									ElementToChannelConverter.DIRECT_1_TO_1)
@@ -502,8 +504,26 @@ public class GasBoilerBuderusImpl extends AbstractOpenemsModbusComponent impleme
 
 	/**
 	 * Determine commands and send them to the heater.
+	 * The channel SET_POINT_HEATING_POWER_PERCENT gets special treatment, because that is changed by ExceptionalState.
+	 * The write of that channel is not mapped to Modbus. This is done by a duplicate ’private’ channel. The write to
+	 * the ’public’ channel SET_POINT_HEATING_POWER_PERCENT is stored in a local variable and sent to Modbus using the
+	 * ’private’ channel.
+	 * The benefit of this design is that when ExceptionalState is active and applies it's own heatingPowerPercentSetpoint,
+	 * the previous set point is saved. Also, it is still possible to write to the channel during ExceptionalState.
+	 * A write to SET_POINT_HEATING_POWER_PERCENT is still registered and the value saved, but not executed. The changed
+	 * set point is then applied once ExceptionalState ends. This way you don't have to pay attention to the state of
+	 * the heat pump when writing in the SET_POINT_HEATING_POWER_PERCENT channel.
 	 */
 	protected void writeCommands() {
+		// Collect heatingPowerPercentSetpoint channel ’nextWrite’.
+		Optional<Double> heatingPowerPercentOptional = this.getHeatingPowerPercentSetpointChannel().getNextWriteValueAndReset();
+		if (heatingPowerPercentOptional.isPresent()) {
+			double setpoint = heatingPowerPercentOptional.get();
+			// Restrict to valid write values
+			setpoint = Math.min(setpoint, 100);
+			setpoint = Math.max(0, setpoint);
+			this.heatingPowerPercentSetting = setpoint;
+		}
 
 		// Send and increment heartbeatCounter.
 		try {
@@ -531,26 +551,19 @@ public class GasBoilerBuderusImpl extends AbstractOpenemsModbusComponent impleme
 		boolean turnOnHeater = this.enableSignalHandler.deviceShouldBeHeating(this);
 
 		// Handle ExceptionalState. ExceptionalState overwrites EnableSignal.
-		int exceptionalStateValue = 0;
+		double heatingPowerPercentSetpointToModbus = this.heatingPowerPercentSetting;
 		boolean exceptionalStateActive = false;
 		if (this.useExceptionalState) {
 			exceptionalStateActive = this.exceptionalStateHandler.exceptionalStateActive(this);
 			if (exceptionalStateActive) {
-				exceptionalStateValue = this.getExceptionalStateValue();
+				int exceptionalStateValue = this.getExceptionalStateValue();
 				if (exceptionalStateValue <= this.DEFAULT_MIN_EXCEPTIONAL_VALUE) {
 					turnOnHeater = false;
 				} else {
 					// When ExceptionalStateValue is between 0 and 100, set heater to this PowerPercentage.
 					turnOnHeater = true;
 					exceptionalStateValue = Math.min(exceptionalStateValue, this.DEFAULT_MAX_EXCEPTIONAL_VALUE);
-					try {
-						this.setHeatingPowerPercentSetpoint(exceptionalStateValue);
-						// Set heater to control mode power percent, as ExceptionalState value uses that.
-						this.setOperatingMode(OperatingMode.SET_POINT_POWER_PERCENT.getValue());
-						this.getOperatingModeChannel().nextProcessImage();
-					} catch (OpenemsError.OpenemsNamedException e) {
-						this.log.warn("Couldn't write in Channel " + e.getMessage());
-					}
+					heatingPowerPercentSetpointToModbus = exceptionalStateValue;
 				}
 			}
 		}
@@ -559,18 +572,23 @@ public class GasBoilerBuderusImpl extends AbstractOpenemsModbusComponent impleme
 		if (this.connectionAlive) {
 			if (turnOnHeater) {
 				try {
-					this.setRunPermission(true);	// Nicht sicher ob das so stimmt. Das eine Handbuch sagt 0 = an, das andere sagt 1 = an.
+					this.setRunPermission(true);	// Not sure if this is correct. One manual says ’1 = on’, the other ’0 = on’.
 				} catch (OpenemsError.OpenemsNamedException e) {
 					this.log.warn("Couldn't write in Channel " + e.getMessage());
 				}
 
 				// If nothing is in the channel yet, take set point power percent as default behavior.
 				boolean useSetPointTemperature = this.getOperatingMode().isDefined() && (this.getOperatingMode().asEnum() == OperatingMode.SET_POINT_TEMPERATURE);
+				if (exceptionalStateActive) {
+					// ExceptionalState uses SET_POINT_POWER_PERCENT, overwrites control mode.
+					useSetPointTemperature = false;
+				}
 				try {
 					if (useSetPointTemperature) {
 						this.setCommandBits(0b0101); // Control mode temperature (Temperaturgefuehrte Regelung).
 					} else {
 						this.setCommandBits(0b1001);	// Control mode power (Leistungsgefuehrte Regelung).
+						this.getHr401ModbusChannel().setNextWriteValue(heatingPowerPercentSetpointToModbus);
 					}
 				} catch (OpenemsError.OpenemsNamedException e) {
 					this.log.warn("Couldn't write in Channel " + e.getMessage());

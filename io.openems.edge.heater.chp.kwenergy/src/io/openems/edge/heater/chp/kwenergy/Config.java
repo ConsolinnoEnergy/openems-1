@@ -1,5 +1,6 @@
 package io.openems.edge.heater.chp.kwenergy;
 
+import io.openems.edge.heater.chp.kwenergy.api.ControlMode;
 import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 import org.osgi.service.metatype.annotations.Option;

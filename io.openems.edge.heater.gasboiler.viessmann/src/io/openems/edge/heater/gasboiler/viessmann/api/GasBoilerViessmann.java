@@ -6,6 +6,7 @@ import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
 import io.openems.common.types.OpenemsType;
 import io.openems.edge.common.channel.BooleanReadChannel;
 import io.openems.edge.common.channel.Doc;
+import io.openems.edge.common.channel.DoubleWriteChannel;
 import io.openems.edge.common.channel.IntegerReadChannel;
 import io.openems.edge.common.channel.IntegerWriteChannel;
 import io.openems.edge.common.channel.value.Value;
@@ -28,7 +29,7 @@ public interface GasBoilerViessmann extends Heater {
          */
         DEVICE_POWER_MODE(Doc.of(OpenemsType.INTEGER).accessMode(AccessMode.READ_WRITE)),
 
-        /*
+        /**
          * Power Level in Percent (Note: Modbus uses per mil).
          * 0       = Off
          * 1..50   = Run at 50%
@@ -36,6 +37,7 @@ public interface GasBoilerViessmann extends Heater {
          */
         //DEVICE_POWER_LEVEL_SETPOINT(Doc.of(OpenemsType.INTEGER).unit(Unit.PERCENT).accessMode(AccessMode.READ_WRITE)),
         // -> Heater SET_POINT_HEATING_POWER_PERCENT
+        HR11_MODBUS(Doc.of(OpenemsType.DOUBLE).unit(Unit.PERCENT).accessMode(AccessMode.READ_WRITE)),
 
         /*
          * Device Power Level in Percent (Modbus works with per mil).
@@ -754,6 +756,16 @@ public interface GasBoilerViessmann extends Heater {
      */
     default void setDevicePowerMode(Integer value) throws OpenemsNamedException {
         this.getDevicePowerModeChannel().setNextWriteValue(value);
+    }
+
+    /**
+     * For internal use only!
+     * Gets the Channel for {@link ChannelId#HR11_MODBUS}.
+     *
+     * @return the Channel
+     */
+    default DoubleWriteChannel getHr11ModbusChannel() {
+        return this.channel(ChannelId.HR11_MODBUS);
     }
 
     /**

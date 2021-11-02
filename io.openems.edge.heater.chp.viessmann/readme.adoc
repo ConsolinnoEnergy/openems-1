@@ -8,5 +8,3 @@ The CHP can be controlled with setHeatingPowerSetpoint() or setElectricPowerSetp
 
 setTemperatureSetpoint() and related methods are not supported by this CHP.
 
-If the chp is activated by ExceptionalState, it will go to the setHeatingPowerPercentSetpoint() value specified by the ExceptionalStateValue. The chp will NOT automatically switch back to its prior state when ExceptionalState ends.
-

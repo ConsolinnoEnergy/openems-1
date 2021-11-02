@@ -64,8 +64,6 @@ import java.util.Optional;
  * the same AiO output, so a hierarchy is needed. setHeatingPowerSetpoint() overwrites setElectricPowerSetpoint(), if
  * both are used.
  * setTemperatureSetpoint() and related methods are not supported by this CHP.
- * If the chp is activated by ExceptionalState, it will go to the setHeatingPowerPercentSetpoint() value specified by
- * the ExceptionalStateValue. The chp will NOT automatically switch back to its prior state when ExceptionalState ends.
  */
 @Designate(ocd = Config.class, factory = true)
 @Component(name = "Heater.Chp.Viessmann",
@@ -86,9 +84,7 @@ public class ChpViessmannImpl extends AbstractOpenemsModbusComponent implements 
     private Relay relay;
     private boolean useRelay;
     private AnalogInputOutput aioChannel;
-    private int minValue;
-    private int maxValue;
-    private int percentageRange;
+    private PercentageRange percentageRange;
 
     private final String[] errorPossibilities = ErrorPossibilities.STANDARD_ERRORS.getErrorList();
 
@@ -136,8 +132,6 @@ public class ChpViessmannImpl extends AbstractOpenemsModbusComponent implements 
 
         if (this.readOnly == false) {
             this.allocateComponents(config);
-            this.minValue = config.minLimit();
-            this.maxValue = config.maxLimit();
             this.percentageRange = config.percentageRange();
             this.startupStateChecked = false;
             this.powerPercentSetpoint = config.defaultSetPointPowerPercent();
@@ -437,11 +431,6 @@ public class ChpViessmannImpl extends AbstractOpenemsModbusComponent implements 
                     // When ExceptionalStateValue is between 0 and 100, set Chp to this PowerPercentage.
                     turnOnChp = true;
                     exceptionalStateValue = Math.min(exceptionalStateValue, this.DEFAULT_MAX_EXCEPTIONAL_VALUE);
-                    try {
-                        this.setHeatingPowerPercentSetpoint(exceptionalStateValue);
-                    } catch (OpenemsError.OpenemsNamedException e) {
-                        this.log.warn("Couldn't write in Channel " + e.getMessage());
-                    }
                 }
             }
         }
@@ -462,17 +451,6 @@ public class ChpViessmannImpl extends AbstractOpenemsModbusComponent implements 
             }
         }
 
-        // Use AiO to send commands to chp.
-        this.setPowerPercentWithAio(turnOnChp);
-    }
-
-    /**
-     * Turns the chp on or off using an AiO module and if needed a relay.
-     * Also maps the requested chp power setting to the AiO output.
-     *
-     * @param turnOnChp if chp should be on or not.
-     */
-    protected void setPowerPercentWithAio(boolean turnOnChp) {
         int writeToAioValue = 0;
         if (turnOnChp) {
             if (this.useRelay) {
@@ -499,11 +477,17 @@ public class ChpViessmannImpl extends AbstractOpenemsModbusComponent implements 
             }
             this.powerPercentSetpoint = Math.min(this.powerPercentSetpoint, 100);
             this.powerPercentSetpoint = Math.max(this.powerPercentSetpoint, 0);
-            this._setHeatingPowerPercentSetpoint(this.powerPercentSetpoint);
+            double powerPercentToAio = this.powerPercentSetpoint;
+            if (exceptionalStateActive) {
+                powerPercentToAio = exceptionalStateValue;
+            }
+            this._setHeatingPowerPercentSetpoint(powerPercentToAio);
 
-            // Maps setpoint % to a mA value on the range minValue to maxValue.
-            writeToAioValue = (int)Math.round(this.minValue + ((this.powerPercentSetpoint - this.percentageRange)
-                    / ((100.f - this.percentageRange) / (this.maxValue - this.minValue))));
+            writeToAioValue = (int)Math.round(powerPercentToAio);
+            if (this.percentageRange == PercentageRange.RANGE_50_100) {
+                // Map to 50-100% range.
+                writeToAioValue = (int)Math.round((powerPercentToAio - 50) * 2);
+            }
         } else {
             if (this.useRelay) {
                 try {
@@ -513,8 +497,10 @@ public class ChpViessmannImpl extends AbstractOpenemsModbusComponent implements 
                 }
             }
         }
+
+        // Use AiO to send commands to chp.
         try {
-            this.aioChannel.getWriteChannel().setNextWriteValue(writeToAioValue);
+            this.aioChannel.setPercentChannel().setNextWriteValue(writeToAioValue);
         } catch (OpenemsError.OpenemsNamedException e) {
             this.log.warn("Couldn't write in Channel " + e.getMessage());
         }

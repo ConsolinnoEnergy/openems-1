@@ -32,15 +32,9 @@ import org.osgi.service.metatype.annotations.Option;
             + "Not needed in read only mode.")
     String aioModuleId() default "Aio0";
 
-    @AttributeDefinition(name = "Current min [mA]", description = "For chp power regulation with AIO module: lower limit in mA.")
-    short minLimit() default 0;
-
-    @AttributeDefinition(name = "Current max [mA]", description = "For chp power regulation with AIO module: upper limit in mA.")
-    short maxLimit() default 20;
-
-    @AttributeDefinition(name = "Percentage range", description = "Range of power percent setpoint (depending on chp type):"
-            + " 0-100% (type 0) or 50-100% (type 50).")
-    int percentageRange() default 0;
+    @AttributeDefinition(name = "Percentage range", description = "Range of power percent set point (depending on chp type):"
+            + " 0-100% or 50-100%.")
+    PercentageRange percentageRange() default PercentageRange.RANGE_0_100;
 
     @AttributeDefinition(name = "ModBus-Bridge Id", description = "The Unique Id of the modBus-Bridge you what to allocate to this device.")
     String modbusBridgeId() default "modbus0";

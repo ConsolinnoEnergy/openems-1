@@ -24,6 +24,7 @@ import io.openems.edge.heater.api.EnableSignalHandlerImpl;
 import io.openems.edge.heater.api.Heater;
 import io.openems.edge.heater.api.HeaterState;
 import io.openems.edge.heater.chp.wolf.api.ChpWolf;
+import io.openems.edge.heater.chp.wolf.api.OperatingMode;
 import io.openems.edge.timer.api.TimerHandler;
 import io.openems.edge.timer.api.TimerHandlerImpl;
 import org.osgi.service.cm.ConfigurationAdmin;
@@ -55,12 +56,9 @@ import java.util.Optional;
  * The chp can be controlled with setElectricPowerSetpoint() (set power in kW). Set point methods from the Heater
  * interface (setTemperatureSetpoint(), setHeatingPowerSetpoint() and setHeatingPowerPercentSetpoint()) are not supported.
  * This chp has two other control methods besides setElectricPowerSetpoint(), which are setFeedInSetpoint() and
- * setReserveSetpoint(). The chp changes to the corresponding mode when a set point method is used.
- * If different types of set point methods are used in the same cycle, the hierarchy is: electric power > feed-in > reserve.
- * The lower hierarchy setting will be ignored.
+ * setReserveSetpoint(). The control method is specified in the config or by using the channel ’OperatingMode’.
  * If the chp is activated by ExceptionalState, it will convert the ExceptionalStateValue into a
- * setElectricPowerSetpoint() value. The chp will NOT automatically switch back to its prior state when ExceptionalState
- * ends.
+ * setElectricPowerSetpoint() value.
  */
 @Designate(ocd = Config.class, factory = true)
 @Component(name = "Heater.Chp.Wolf",
@@ -122,6 +120,7 @@ public class ChpWolfImpl extends AbstractOpenemsModbusComponent implements Opene
 
 		if (this.readOnly == false) {
 			this.startupStateChecked = false;
+			this.setOperatingMode(config.defaultOperatingMode());
 			this.setElectricPowerSetpoint(config.defaultSetPointElectricPower());
 			this.initializeTimers(config);
 		}
@@ -340,10 +339,12 @@ public class ChpWolfImpl extends AbstractOpenemsModbusComponent implements Opene
 		}
 
 		// Handle ExceptionalState. ExceptionalState overwrites EnableSignal.
+		int exceptionalStateValue = 0;
+		boolean exceptionalStateActive = false;
 		if (this.useExceptionalState) {
-			boolean exceptionalStateActive = this.exceptionalStateHandler.exceptionalStateActive(this);
+			exceptionalStateActive = this.exceptionalStateHandler.exceptionalStateActive(this);
 			if (exceptionalStateActive) {
-				int exceptionalStateValue = this.getExceptionalStateValue();
+				exceptionalStateValue = this.getExceptionalStateValue();
 				if (exceptionalStateValue <= this.DEFAULT_MIN_EXCEPTIONAL_VALUE) {
 					turnOnChp = false;
 				} else {
@@ -392,43 +393,78 @@ public class ChpWolfImpl extends AbstractOpenemsModbusComponent implements Opene
 			}
 		} else {
 			this.commandCycler = 0;
-			Optional<Double> electricPowerOptional = this.getElectricPowerSetpointChannel().getNextWriteValueAndReset();
-			Optional<Integer> feedInOptional = this.getFeedInSetpointChannel().getNextWriteValueAndReset();
-			Optional<Integer> reserveOptional = this.getReserveSetpointChannel().getNextWriteValueAndReset();
-
-			// Hierarchy: electric power > feed-in > reserve.
-			if (electricPowerOptional.isPresent()) {
-				int electricPowerSetpoint = (int)Math.round(electricPowerOptional.get());
-				// Update channel.
-				this._setElectricPowerSetpoint(electricPowerSetpoint);
-				try {
-					setWriteBits1(2);
-					setWriteBits2(electricPowerSetpoint);
-					setWriteBits3(setElectricPower);
-				} catch (OpenemsNamedException e) {
-					this.logError(this.log, "Error setting next write value: " + e);
+			if (this.getOperatingMode().isDefined()) {
+				OperatingMode operatingMode = this.getOperatingMode().asEnum();
+				if (operatingMode == OperatingMode.UNDEFINED || exceptionalStateActive) {
+					// Exceptional state uses set point power.
+					operatingMode = OperatingMode.ELECTRIC_POWER;
 				}
-			} else if (feedInOptional.isPresent()) {
-				int feedInSetpoint = feedInOptional.get();
-				// Update channel.
-				this.getFeedInSetpointChannel().setNextValue(feedInSetpoint);
-				try {
-					setWriteBits1(2);
-					setWriteBits2(feedInSetpoint);
-					setWriteBits3(setFeedInManagement);
-				} catch (OpenemsNamedException e) {
-					this.logError(this.log, "Error setting next write value: " + e);
-				}
-			} else if (reserveOptional.isPresent()) {
-				int reserveSetpoint = reserveOptional.get();
-				// Update channel.
-				this.getReserveSetpointChannel().setNextValue(reserveSetpoint);
-				try {
-					setWriteBits1(2);
-					setWriteBits2(reserveSetpoint);
-					setWriteBits3(setReserve);
-				} catch (OpenemsNamedException e) {
-					this.logError(this.log, "Error setting next write value: " + e);
+				switch (operatingMode) {
+					case FEED_IN_MANAGEMENT:
+						// Update channel.
+						Optional<Integer> feedInOptional = this.getFeedInSetpointChannel().getNextWriteValueAndReset();
+						if (feedInOptional.isPresent()) {
+							int feedInSetpoint = feedInOptional.get();
+							this.getFeedInSetpointChannel().setNextValue(feedInSetpoint);
+							this.getFeedInSetpointChannel().nextProcessImage();
+						}
+						// Write set point.
+						if (getFeedInSetpoint().isDefined()) {
+							int feedInSetpoint = getFeedInSetpoint().get();
+							try {
+								setWriteBits1(2);
+								setWriteBits2(feedInSetpoint);
+								setWriteBits3(setFeedInManagement);
+							} catch (OpenemsNamedException e) {
+								this.logError(this.log, "Error setting next write value: " + e);
+							}
+						}
+						break;
+					case RESERVE:
+						// Update channel.
+						Optional<Integer> reserveOptional = this.getReserveSetpointChannel().getNextWriteValueAndReset();
+						if (reserveOptional.isPresent()) {
+							int reserveSetpoint = reserveOptional.get();
+							this.getReserveSetpointChannel().setNextValue(reserveSetpoint);
+							this.getReserveSetpointChannel().nextProcessImage();
+						}
+						// Write set point.
+						if (getReserveSetpoint().isDefined()) {
+							int reserveSetpoint = getReserveSetpoint().get();
+							try {
+								setWriteBits1(2);
+								setWriteBits2(reserveSetpoint);
+								setWriteBits3(setReserve);
+							} catch (OpenemsNamedException e) {
+								this.logError(this.log, "Error setting next write value: " + e);
+							}
+						}
+						break;
+					case ELECTRIC_POWER:
+					default:
+						// Update channel.
+						Optional<Double> electricPowerOptional = this.getElectricPowerSetpointChannel().getNextWriteValueAndReset();
+						if (electricPowerOptional.isPresent()) {
+							int electricPowerSetpoint = (int)Math.round(electricPowerOptional.get());
+							this._setElectricPowerSetpoint(electricPowerSetpoint);
+							this.getElectricPowerSetpointChannel().nextProcessImage();
+						}
+						// Write set point.
+						if (getElectricPowerSetpoint().isDefined() || exceptionalStateActive) {
+							int electricPowerSetpoint;
+							if (exceptionalStateActive) {
+								electricPowerSetpoint = (int)Math.round(this.chpMaxElectricPower * exceptionalStateValue / 100.0);
+							} else {
+								electricPowerSetpoint = (int)Math.round(getElectricPowerSetpoint().get());
+							}
+							try {
+								setWriteBits1(2);
+								setWriteBits2(electricPowerSetpoint);
+								setWriteBits3(setElectricPower);
+							} catch (OpenemsNamedException e) {
+								this.logError(this.log, "Error setting next write value: " + e);
+							}
+						}
 				}
 			}
 		}

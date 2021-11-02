@@ -1,5 +1,6 @@
 package io.openems.edge.heater.chp.wolf;
 
+import io.openems.edge.heater.chp.wolf.api.OperatingMode;
 import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 import org.osgi.service.metatype.annotations.Option;
@@ -20,6 +21,9 @@ import org.osgi.service.metatype.annotations.Option;
 
 	@AttributeDefinition(name = "Modbus Unit-ID", description = "The Unit-ID of the Modbus device.")
 	int modbusUnitId() default 1;
+
+	@AttributeDefinition(name = "Default operating mode", description = "Default setting for the operating mode.")
+	OperatingMode defaultOperatingMode() default OperatingMode.ELECTRIC_POWER;
 
 	@AttributeDefinition(name = "Wait time EnableSignal", description = "How long to wait after the EnableSignal is "
 			+ "no longer received before the Chp is switched off. Unit is seconds, unless cycles option is selected.")

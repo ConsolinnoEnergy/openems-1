@@ -4,11 +4,13 @@ import io.openems.common.channel.AccessMode;
 import io.openems.common.channel.Unit;
 import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
 import io.openems.common.types.OpenemsType;
+import io.openems.edge.common.channel.BooleanWriteChannel;
 import io.openems.edge.common.channel.Doc;
 import io.openems.edge.common.channel.IntegerReadChannel;
 import io.openems.edge.common.channel.IntegerWriteChannel;
 import io.openems.edge.common.channel.value.Value;
 import io.openems.edge.heater.api.Chp;
+import io.openems.edge.heater.api.SmartGridState;
 
 /**
  * Channels for the Wolf chp.
@@ -132,6 +134,23 @@ public interface ChpWolf extends Chp {
 
 
         // Non Modbus Channels
+
+        /**
+         * Operating mode of the chp.
+         * <ul>
+         *      <li> Type: Integer
+         *      <li> Possible values: -1, 0 ... 2
+         *      <li> State -1: Undefined
+         *      <li> State 0: Electric power
+         *      <li> State 1: Feed-in management
+         *      <li> State 2: Reserve
+         * </ul>
+         */
+        OPERATING_MODE(Doc.of(OperatingMode.values()).accessMode(AccessMode.READ_WRITE).onInit(
+                channel -> {
+                    ((IntegerWriteChannel) channel).onSetNextWrite(channel::setNextValue);
+                }
+        )),
 
         // EFFECTIVE_ELECTRIC_POWER_SETPOINT -> chp interface
 
@@ -422,6 +441,89 @@ public interface ChpWolf extends Chp {
      */
     default Value<Integer> getElectricalWork() {
         return this.getElectricalWorkChannel().value();
+    }
+
+    /**
+     * Gets the Channel for {@link ChannelId#OPERATING_MODE}.
+     *
+     * @return the Channel
+     */
+    default IntegerWriteChannel getOperatingModeChannel() {
+        return this.channel(ChannelId.OPERATING_MODE);
+    }
+
+    /**
+     * Get the operating mode of the chp.
+     * <ul>
+     *      <li> Type: Integer
+     *      <li> Possible values: -1, 0 ... 2
+     *      <li> State -1: Undefined
+     *      <li> State 0: Electric power
+     *      <li> State 1: Feed-in management
+     *      <li> State 2: Reserve
+     * </ul>
+     * See {@link ChannelId#OPERATING_MODE}.
+     *
+     * @return the Channel {@link Value}
+     */
+    default Value<Integer> getOperatingMode() {
+        return this.getOperatingModeChannel().value();
+    }
+
+    /**
+     * Set the operating mode of the chp.
+     * <ul>
+     *      <li> Type: Integer
+     *      <li> Possible values: 0 ... 2
+     *      <li> State 0: Electric power
+     *      <li> State 1: Feed-in management
+     *      <li> State 2: Reserve
+     * </ul>
+     * See {@link ChannelId#OPERATING_MODE}.
+     *
+     * @param value the next write value
+     * @throws OpenemsNamedException on error
+     */
+    default void setOperatingMode(Integer value) throws OpenemsNamedException {
+        this.getOperatingModeChannel().setNextWriteValue(value);
+    }
+
+    /**
+     * Set the operating mode of the chp.
+     * <ul>
+     *      <li> Type: Integer
+     *      <li> Possible values: 0 ... 2
+     *      <li> State 0: Electric power
+     *      <li> State 1: Feed-in management
+     *      <li> State 2: Reserve
+     * </ul>
+     * See {@link ChannelId#OPERATING_MODE}.
+     *
+     * @param value the next write value
+     * @throws OpenemsNamedException on error
+     */
+    default void setOperatingMode(int value) throws OpenemsNamedException {
+        this.getOperatingModeChannel().setNextWriteValue(value);
+    }
+
+    /**
+     * Set the operating mode of the chp.
+     * <ul>
+     *      <li> Type: Integer
+     *      <li> Possible values: 0 ... 2
+     *      <li> State 0: Electric power
+     *      <li> State 1: Feed-in management
+     *      <li> State 2: Reserve
+     * </ul>
+     * See {@link ChannelId#OPERATING_MODE}.
+     *
+     * @param mode the next write value
+     * @throws OpenemsNamedException on error
+     */
+    default void setOperatingMode(OperatingMode mode) throws OpenemsNamedException {
+        if (mode != null && mode != OperatingMode.UNDEFINED) {
+            this.getOperatingModeChannel().setNextWriteValue(mode.getValue());
+        }
     }
 
     /**

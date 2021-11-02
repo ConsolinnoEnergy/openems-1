@@ -47,6 +47,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 
 /**
@@ -79,6 +80,8 @@ public class GasBoilerViessmannImpl extends AbstractOpenemsModbusComponent imple
 
     private boolean printInfoToLog;
     private boolean readOnly = false;
+    private double heatingPowerPercentSetting;
+    static final int hvac_off = 6;
 
     private EnableSignalHandler enableSignalHandler;
     private static final String ENABLE_SIGNAL_IDENTIFIER = "GASBOILER_VIESSMANN_ENABLE_SIGNAL_IDENTIFIER";
@@ -116,11 +119,10 @@ public class GasBoilerViessmannImpl extends AbstractOpenemsModbusComponent imple
 
         // Settings needed when not in ’read only’ mode.
         if (this.readOnly == false) {
-            this.setHeatingPowerPercentSetpoint(config.defaultSetPointPowerPercent());
+            this.heatingPowerPercentSetting = config.defaultSetPointPowerPercent();
             this.initializeTimers(config);
 
             // Deactivating controllers for heating circuits because we will not need them
-            final int hvac_off = 6;
             this.setHc1OperatingMode(hvac_off);
             this.setHc2OperatingMode(hvac_off);
             this.setHc3OperatingMode(hvac_off);
@@ -442,7 +444,7 @@ public class GasBoilerViessmannImpl extends AbstractOpenemsModbusComponent imple
                     new FC6WriteRegisterTask(10,
                             m(GasBoilerViessmann.ChannelId.DEVICE_POWER_MODE, new UnsignedWordElement(10))),
                     new FC6WriteRegisterTask(11,
-                            m(Heater.ChannelId.SET_POINT_HEATING_POWER_PERCENT, new UnsignedWordElement(11), ElementToChannelConverter.SCALE_FACTOR_MINUS_1)),
+                            m(GasBoilerViessmann.ChannelId.HR11_MODBUS, new UnsignedWordElement(11), ElementToChannelConverter.SCALE_FACTOR_MINUS_1)),
                     new FC6WriteRegisterTask(13,
                             m(Heater.ChannelId.SET_POINT_TEMPERATURE, new UnsignedWordElement(13), ElementToChannelConverter.SCALE_FACTOR_MINUS_1)),
                     new FC6WriteRegisterTask(17,
@@ -488,17 +490,17 @@ public class GasBoilerViessmannImpl extends AbstractOpenemsModbusComponent imple
      */
     protected void channelmapping() {
 
-        // Parse errors.
-        List<String> errorList = this.generateErrorList();
-        if ((errorList.size() > 0)) {
-            this._setErrorMessage(errorList.toString());
-        } else {
-            this._setErrorMessage("No error");
-        }
-        this.getErrorMessageChannel().nextProcessImage();
-
         // Parse state.
         if (getBoilerState().isDefined()) {
+
+            // Parse errors.
+            List<String> errorList = this.generateErrorList();
+            if ((errorList.size() > 0)) {
+                this._setErrorMessage(errorList.toString());
+            } else {
+                this._setErrorMessage("No error");
+            }
+
             int boilerState = getBoilerState().get();
             if (boilerState > 0) {
                 this._setHeaterState(HeaterState.RUNNING.getValue());
@@ -507,36 +509,52 @@ public class GasBoilerViessmannImpl extends AbstractOpenemsModbusComponent imple
             }
         } else {
             this._setHeaterState(HeaterState.UNDEFINED.getValue());
+            this._setErrorMessage("No Modbus connection");
         }
+        this.getErrorMessageChannel().nextProcessImage();
         this.getHeaterStateChannel().nextProcessImage();
     }
 
     /**
      * Determine commands and send them to the heater.
+     * The channel SET_POINT_HEATING_POWER_PERCENT gets special treatment, because that is changed by ExceptionalState.
+     * The write of that channel is not mapped to Modbus. This is done by a duplicate ’private’ channel. The write to
+     * the ’public’ channel SET_POINT_HEATING_POWER_PERCENT is stored in a local variable and sent to Modbus using the
+     * ’private’ channel.
+     * The benefit of this design is that when ExceptionalState is active and applies it's own heatingPowerPercentSetpoint,
+     * the previous set point is saved. Also, it is still possible to write to the channel during ExceptionalState.
+     * A write to SET_POINT_HEATING_POWER_PERCENT is still registered and the value saved, but not executed. The changed
+     * set point is then applied once ExceptionalState ends. This way you don't have to pay attention to the state of
+     * the heat pump when writing in the SET_POINT_HEATING_POWER_PERCENT channel.
      */
     protected void writeCommands() {
+        // Collect heatingPowerPercentSetpoint channel ’nextWrite’.
+        Optional<Double> heatingPowerPercentOptional = this.getHeatingPowerPercentSetpointChannel().getNextWriteValueAndReset();
+        if (heatingPowerPercentOptional.isPresent()) {
+            double setpoint = heatingPowerPercentOptional.get();
+            // Restrict to valid write values
+            setpoint = Math.min(setpoint, 100);
+            setpoint = Math.max(0, setpoint);
+            this.heatingPowerPercentSetting = setpoint;
+        }
 
         // Handle EnableSignal.
         boolean turnOnHeater = this.enableSignalHandler.deviceShouldBeHeating(this);
 
         // Handle ExceptionalState. ExceptionalState overwrites EnableSignal.
-        int exceptionalStateValue = 0;
+        double heatingPowerPercentSetpointToModbus = this.heatingPowerPercentSetting;
         boolean exceptionalStateActive = false;
         if (this.useExceptionalState) {
             exceptionalStateActive = this.exceptionalStateHandler.exceptionalStateActive(this);
             if (exceptionalStateActive) {
-                exceptionalStateValue = this.getExceptionalStateValue();
+                int exceptionalStateValue = this.getExceptionalStateValue();
                 if (exceptionalStateValue <= this.DEFAULT_MIN_EXCEPTIONAL_VALUE) {
                     turnOnHeater = false;
                 } else {
                     // When ExceptionalStateValue is between 0 and 100, set heater to this PowerPercentage.
                     turnOnHeater = true;
                     exceptionalStateValue = Math.min(exceptionalStateValue, this.DEFAULT_MAX_EXCEPTIONAL_VALUE);
-                    try {
-                        this.setHeatingPowerPercentSetpoint(exceptionalStateValue);
-                    } catch (OpenemsError.OpenemsNamedException e) {
-                        this.log.warn("Couldn't write in Channel " + e.getMessage());
-                    }
+                    heatingPowerPercentSetpointToModbus = exceptionalStateValue;
                 }
             }
         }
@@ -545,6 +563,7 @@ public class GasBoilerViessmannImpl extends AbstractOpenemsModbusComponent imple
         if (turnOnHeater) {
             try {
                 this.setDevicePowerMode(1);
+                this.getHr11ModbusChannel().setNextWriteValue(heatingPowerPercentSetpointToModbus);
             } catch (OpenemsError.OpenemsNamedException e) {
                 this.log.warn("Couldn't write in Channel " + e.getMessage());
             }
