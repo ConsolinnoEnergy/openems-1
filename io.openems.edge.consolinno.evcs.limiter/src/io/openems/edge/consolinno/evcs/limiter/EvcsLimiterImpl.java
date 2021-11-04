@@ -2679,7 +2679,7 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
                                     break;
                                 }
                                 ManagedEvcs evcs = this.cpm.getComponent(waitingId.get());
-                                if (evcs.getChargePower().get() > 1 || waitingPower.get() > 1) {
+                                if (evcs.getChargePower().orElse(0) > 1 || waitingPower.get() > 1) {
 
                                     if (freeResources >= waitingPower.get() && (waitingWantToCharge.get() //
                                             && waitingPower.get() //
@@ -2798,7 +2798,7 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
             int[] phaseConfiguration = evcss[i].getPhaseConfiguration();
             int phaseCount = evcss[i].getPhases().orElse(0);
             if (evcss[i].getChargePower().get() + powerForEveryone //
-                    < (Math.min(evcss[i].getMinimumHardwarePower().get(), evcss[i].getMinimumPower().get()) / GRID_VOLTAGE)) {
+                    < (Math.min(evcss[i].getMinimumHardwarePower().orElse(MINIMUM_POWER_WATT), evcss[i].getMinimumPower().orElse(MINIMUM_POWER_WATT)) / GRID_VOLTAGE)) {
                 allow = false;
             }
             switch (phaseCount) {
@@ -2822,7 +2822,7 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
                 int oldPower = this.getPower(evcss[i]);
                 int newPower = oldPower + powerForEveryone;
                 try {
-                    if (newPower >= (Math.min(evcss[i].getMinimumHardwarePower().get(), evcss[i].getMinimumPower().get()) / GRID_VOLTAGE)) {
+                    if (newPower >= (Math.min(evcss[i].getMinimumHardwarePower().orElse(MINIMUM_POWER_WATT), evcss[i].getMinimumPower().orElse(MINIMUM_POWER_WATT)) / GRID_VOLTAGE)) {
                         evcss[i].setChargePowerLimit(newPower * GRID_VOLTAGE);
                     }
                 } catch (OpenemsError.OpenemsNamedException e) {
