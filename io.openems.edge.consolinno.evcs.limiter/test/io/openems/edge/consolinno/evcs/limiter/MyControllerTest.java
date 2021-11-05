@@ -6,6 +6,7 @@ import io.openems.edge.common.test.DummyComponentManager;
 import io.openems.edge.common.test.TimeLeapClock;
 import io.openems.edge.common.test.AbstractComponentTest.TestCase;
 import io.openems.edge.evcs.api.GridVoltage;
+import io.openems.edge.evcs.api.MeasuringEvcs;
 import io.openems.edge.evcs.test.DummyEvcsPower;
 import io.openems.edge.evcs.test.DummyManagedEvcs;
 import io.openems.edge.meter.test.DummyAsymmetricMeter;
@@ -22,6 +23,7 @@ public class MyControllerTest {
     private static final ChannelAddress CHARGE_POWER = new ChannelAddress(evcsId, "ChargePower");
     private static final ChannelAddress PHASES = new ChannelAddress(evcsId, "Phases");
     private static final ChannelAddress POWERLIMIT = new ChannelAddress(id, "PowerLimit");
+    private static final ChannelAddress METER_POWER = new ChannelAddress(meterId,"ActivePower");
     //private static final ChannelAddress output = new ChannelAddress(outputComponentId, outputChannelId);
 
     @Test
@@ -75,10 +77,13 @@ public class MyControllerTest {
         EvcsLimiterImpl test = new EvcsLimiterImpl();
         final TimeLeapClock clock = new TimeLeapClock(
                 Instant.ofEpochSecond(1577836800) /* starts at 1. January 2020 00:00:00 */ , ZoneOffset.UTC);
-
+        DummyManagedEvcs evcs = new DummyManagedEvcs(evcsId, new DummyEvcsPower());
+        evcs.setPriority(false);
+        evcs.setMinimumHardwarePower(6800);
+        evcs.setMinimumPower(6800);
         new ComponentTest(test)
                 .addReference("cpm", new DummyComponentManager(clock))
-                .addComponent(new DummyManagedEvcs(evcsId, new DummyEvcsPower()))
+                .addComponent(evcs)
                 .activate(MyConfig.create()
                         .setId(id)
                         .setEnabled(true)
@@ -122,10 +127,13 @@ public class MyControllerTest {
         EvcsLimiterImpl test = new EvcsLimiterImpl();
         final TimeLeapClock clock = new TimeLeapClock(
                 Instant.ofEpochSecond(1577836800) , ZoneOffset.UTC);
-
+        DummyManagedEvcs evcs = new DummyManagedEvcs(evcsId, new DummyEvcsPower());
+        evcs.setPriority(false);
+        evcs.setMinimumHardwarePower(6800);
+        evcs.setMinimumPower(6800);
             new ComponentTest(test)
                     .addReference("cpm", new DummyComponentManager(clock))
-                    .addComponent(new DummyManagedEvcs(evcsId, new DummyEvcsPower()))
+                    .addComponent(evcs)
                     .addComponent(new DummyAsymmetricMeter(meterId))
                     .activate(MyConfig.create()
                             .setId(id)
@@ -141,13 +149,69 @@ public class MyControllerTest {
                             .build())
                     .next(new TestCase()
                             .timeleap(clock, 1, ChronoUnit.SECONDS)
-                            .input(PHASES, 1)
+                            .input(PHASES, 3)
                             .input(CHARGE_POWER, 30 * 230)
                     )
+                    .next(new TestCase()
+                            .timeleap(clock, 1, ChronoUnit.SECONDS)
+                            .input(PHASES, 3)
+                            .input(CHARGE_POWER, 30 * 230)
+                            .input(METER_POWER, 40*230)
+                    )
+                    .next(new TestCase()
+                            .timeleap(clock, 1, ChronoUnit.SECONDS)
+                            .input(PHASES, 3)
+                            .input(CHARGE_POWER, 30 * 230)
+                            .input(METER_POWER, 40*230)
+                    )
+
             ;
 
     }
 
+    @Test
+    public void priorityTest() throws Throwable {
+        EvcsLimiterImpl test = new EvcsLimiterImpl();
+        final TimeLeapClock clock = new TimeLeapClock(
+                Instant.ofEpochSecond(1577836800) , ZoneOffset.UTC);
+        DummyManagedEvcs evcs = new DummyManagedEvcs(evcsId, new DummyEvcsPower());
+        evcs.setPriority(true);
+        evcs.setMinimumHardwarePower(6800);
+        evcs.setMinimumPower(6800);
+        new ComponentTest(test)
+                .addReference("cpm", new DummyComponentManager(clock))
+                .addComponent(evcs)
+                .addComponent(new DummyAsymmetricMeter(meterId))
+                .activate(MyConfig.create()
+                        .setId(id)
+                        .setEnabled(true)
+                        .setEvcss(new String[]{evcsId})
+                        .setUseMeter(false)
+                        .setMeter(meterId)
+                        .setSymmetry(true)
+                        .setOffTime(20)
+                        .setGrid(GridVoltage.V_230_HZ_50)
+                        .setPhaseLimit(16 * 230)
+                        .setPowerLimit(32 * 230)
+                        .build())
+                .next(new TestCase()
+                        .timeleap(clock, 1, ChronoUnit.SECONDS)
+                        .input(PHASES, 3)
+                        .input(CHARGE_POWER, 30 * 230)
+                )
+                .next(new TestCase()
+                        .timeleap(clock, 1, ChronoUnit.SECONDS)
+                        .input(PHASES, 3)
+                        .input(CHARGE_POWER, 30 * 230)
+                )
+                .next(new TestCase()
+                        .timeleap(clock, 1, ChronoUnit.SECONDS)
+                        .input(PHASES, 3)
+                        .input(CHARGE_POWER, 30 * 230)
+                )
 
+        ;
+
+    }
 
 }
