@@ -61,8 +61,7 @@ import java.util.Optional;
  * When ExceptionalState is used, the heater will automatically switch to control mode ’heating power percent’.
  * With the current code, setTemperatureSetpoint() is then only usable when ExceptionalState is disabled.
  * If the heater is activated by ExceptionalState, it will switch to control mode power percent and use the
- * setHeatingPowerPercentSetpoint() specified by the ExceptionalStateValue. The heater will NOT automatically switch
- * back to its prior state when ExceptionalState ends.
+ * setHeatingPowerPercentSetpoint() specified by the ExceptionalStateValue.
  */
 @Designate(ocd = Config.class, factory = true)
 @Component(name = "Heater.GasBoiler.Buderus",
@@ -512,17 +511,16 @@ public class GasBoilerBuderusImpl extends AbstractOpenemsModbusComponent impleme
 	 * the previous set point is saved. Also, it is still possible to write to the channel during ExceptionalState.
 	 * A write to SET_POINT_HEATING_POWER_PERCENT is still registered and the value saved, but not executed. The changed
 	 * set point is then applied once ExceptionalState ends. This way you don't have to pay attention to the state of
-	 * the heat pump when writing in the SET_POINT_HEATING_POWER_PERCENT channel.
+	 * the heater when writing in the SET_POINT_HEATING_POWER_PERCENT channel.
 	 */
 	protected void writeCommands() {
 		// Collect heatingPowerPercentSetpoint channel ’nextWrite’.
 		Optional<Double> heatingPowerPercentOptional = this.getHeatingPowerPercentSetpointChannel().getNextWriteValueAndReset();
 		if (heatingPowerPercentOptional.isPresent()) {
-			double setpoint = heatingPowerPercentOptional.get();
+			this.heatingPowerPercentSetting = heatingPowerPercentOptional.get();
 			// Restrict to valid write values
-			setpoint = Math.min(setpoint, 100);
-			setpoint = Math.max(0, setpoint);
-			this.heatingPowerPercentSetting = setpoint;
+			this.heatingPowerPercentSetting = Math.min(this.heatingPowerPercentSetting, 100);
+			this.heatingPowerPercentSetting = Math.max(0, this.heatingPowerPercentSetting);
 		}
 
 		// Send and increment heartbeatCounter.

@@ -13,11 +13,11 @@ setReserveSetpoint(). The chp changes to the corresponding mode when a set point
 If different types of set point methods are used in the same cycle, the hierarchy is: electric power > feed-in > reserve.
 The lower hierarchy setting will be ignored.
 
-If the chp is activated by ExceptionalState, it will convert the ExceptionalStateValue into a setElectricPowerSetpoint() value. The chp will NOT automatically switch back to its prior state when ExceptionalState ends.
+If the chp is activated by ExceptionalState, it will convert the ExceptionalStateValue into a setElectricPowerSetpoint() value.
 
 https://github.com/OpenEMS/openems/tree/develop/io.openems.edge.heater.chp.wolf[Source Code icon:github[]]
 
 // ToDo: Granularity of electric power setpoint is very coarse. The Wolf GTK 4 has 4 kW electric
-//  power. Mosbus power setpoint is an int with unit kW. Usually a chp can only go as low as 50%
-//  of maximum power. That means the GTK 4 has only 3 possible setpoints: 2 kW, 3 kW and 4 kW.
-//  Check if that is really the case or if manual is wrong about power setpoint unit.
+//  power. Modbus power set point is an int with unit kW. Usually a chp can only go as low as 50%
+//  of maximum power. That means the GTK 4 has only 3 possible set points: 2 kW, 3 kW and 4 kW.
+//  Check if that is really the case or if manual is wrong about power set point unit.

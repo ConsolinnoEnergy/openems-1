@@ -56,10 +56,10 @@ import java.util.Optional;
  * When setEnableSignal() from the Heater interface is set to true with no other parameters like setPointPowerPercent()
  * specified, the chp will turn on with default settings. The default settings are configurable in the config.
  * The chp can be controlled with setHeatingPowerPercentSetpoint(), setElectricPowerSetpoint() or
+ * setGridPowerDrawSetpoint(). The chp needs to be set in the corresponding control mode with setControlMode().
  * setTemperatureSetpoint() and setHeatingPowerSetpoint() are not supported by this CHP.
  * If the chp is activated by ExceptionalState, it will switch to control mode power percent and use the
- * setHeatingPowerPercentSetpoint() specified by the ExceptionalStateValue. The chp will NOT automatically switch back
- * to its prior state when ExceptionalState ends.
+ * setHeatingPowerPercentSetpoint() specified by the ExceptionalStateValue.
  */
 @Designate(ocd = Config.class, factory = true)
 @Component(name = "Heater.Chp.KwEnergySmartblock",
@@ -451,6 +451,15 @@ public class ChpKwEnergySmartblockImpl extends AbstractOpenemsModbusComponent im
 
 	/**
 	 * Determine commands and send them to the heater.
+	 * The channels SET_POINT_HEATING_POWER_PERCENT and EFFECTIVE_ELECTRIC_POWER_SETPOINT get special treatment. The chp
+	 * cannot do EFFECTIVE_ELECTRIC_POWER_SETPOINT, so it is mapped to SET_POINT_HEATING_POWER_PERCENT as a workaround.
+	 * The write of SET_POINT_HEATING_POWER_PERCENT is not directly mapped to Modbus, because ExceptionalState should be
+	 * able to override that value. To send the write of SET_POINT_HEATING_POWER_PERCENT to Modbus, a duplicate
+	 * ’private’ channel is used.
+	 * The benefit of this design is that when ExceptionalState is active and applies it's own heatingPowerPercentSetpoint,
+	 * the previous set point is saved. Also, it is still possible to write to the set point channels during
+	 * ExceptionalState. The value is saved and applied once ExceptionalState ends. This way you don't have to pay
+	 * attention to the state of the chp when writing in the set point channels.
 	 */
 	protected void writeCommands() {
 
@@ -533,7 +542,6 @@ public class ChpKwEnergySmartblockImpl extends AbstractOpenemsModbusComponent im
 						powerPercentToModbus = exceptionalStateValue * 10;
 					}
 					this._setElectricPowerSetpoint((powerPercentToModbus * this.maxChpPower) / 1000.0);
-					this._setHeatingPowerPercentSetpoint(powerPercentToModbus / 10.0);
 					try {
 						this.getHr111ModbusChannel().setNextWriteValue(powerPercentToModbus);
 					} catch (OpenemsError.OpenemsNamedException e) {
@@ -551,7 +559,6 @@ public class ChpKwEnergySmartblockImpl extends AbstractOpenemsModbusComponent im
 					}
 					// Convert to per mill
 					int powerPercentToModbus = (int)Math.round(this.powerPercentSetpoint * 10);
-					this._setHeatingPowerPercentSetpoint(powerPercentToModbus / 10.0);
 					try {
 						this.getHr111ModbusChannel().setNextWriteValue(powerPercentToModbus);
 					} catch (OpenemsError.OpenemsNamedException e) {

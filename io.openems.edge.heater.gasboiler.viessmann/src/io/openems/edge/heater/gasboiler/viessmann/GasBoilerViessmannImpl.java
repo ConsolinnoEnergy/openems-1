@@ -59,8 +59,7 @@ import java.util.Optional;
  * However, currently the code does not yet support setTemperatureSetpoint().
  * setHeatingPowerSetpoint() (set power in kW) and related methods are currently not supported by this heater.
  * If the heater is activated by ExceptionalState, it will go to the setHeatingPowerPercentSetpoint() value specified
- * by the ExceptionalStateValue. The heater will NOT automatically switch back to its prior state when ExceptionalState
- * ends.
+ * by the ExceptionalStateValue.
  */
 @Designate(ocd = Config.class, factory = true)
 @Component(name = "Heater.GasBoiler.Viessmann",
@@ -525,7 +524,7 @@ public class GasBoilerViessmannImpl extends AbstractOpenemsModbusComponent imple
      * the previous set point is saved. Also, it is still possible to write to the channel during ExceptionalState.
      * A write to SET_POINT_HEATING_POWER_PERCENT is still registered and the value saved, but not executed. The changed
      * set point is then applied once ExceptionalState ends. This way you don't have to pay attention to the state of
-     * the heat pump when writing in the SET_POINT_HEATING_POWER_PERCENT channel.
+     * the heater when writing in the SET_POINT_HEATING_POWER_PERCENT channel.
      */
     protected void writeCommands() {
         // Collect heatingPowerPercentSetpoint channel ’nextWrite’.
