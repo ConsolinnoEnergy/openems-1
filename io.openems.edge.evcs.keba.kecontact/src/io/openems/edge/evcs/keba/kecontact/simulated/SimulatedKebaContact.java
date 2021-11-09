@@ -54,6 +54,7 @@ public class SimulatedKebaContact extends AbstractOpenemsComponent implements Ma
     private int initialPower;
     private int chargeLimit;
     private int minimumHardwarePower;
+    private boolean ocpp;
 
     public SimulatedKebaContact() {
         super(//
@@ -83,13 +84,13 @@ public class SimulatedKebaContact extends AbstractOpenemsComponent implements Ma
             this._setMinimumHardwarePower(config.minHwPower() * 3 * 230);
             this.minimumHardwarePower = config.minHwPower();
         }
-        this._setMinimumPower(5 * 3 * 230);
+        this._setMinimumPower(config.minSwPower() * 3 * 230);
         this._setPhases(0);
         this._setPowerPrecision(0.23);
-        this._setMaximumPower(32 * 3 * 230);
-        this._setMaximumHardwarePower(32 * 3 * 230);
+        this._setMaximumPower(config.maxSwPower() * 3 * 230);
+        this._setMaximumHardwarePower(config.maxHwPower() * 3 * 230);
         this._setIsPriority(config.priority());
-
+        this.ocpp = config.ocpp();
     }
 
     private boolean checkPhases() {
@@ -116,12 +117,13 @@ public class SimulatedKebaContact extends AbstractOpenemsComponent implements Ma
             this._setMinimumHardwarePower(config.minHwPower() * 3 * 230);
             this.minimumHardwarePower = config.minHwPower();
         }
-        this._setMinimumPower(5 * 3 * 230);
+        this._setMinimumPower(config.minSwPower() * 3 * 230);
         this._setPhases(0);
-        this._setMaximumPower(32 * 3 * 230);
-        this._setMaximumHardwarePower(32 * 3 * 230);
+        this._setMaximumPower(config.maxSwPower() * 3 * 230);
+        this._setMaximumHardwarePower(config.maxHwPower() * 3 * 230);
         this._setPowerPrecision(0.23);
         this._setIsPriority(config.priority());
+        this.ocpp = config.ocpp();
     }
 
     @Override
@@ -144,21 +146,22 @@ public class SimulatedKebaContact extends AbstractOpenemsComponent implements Ma
 
     @Override
     public void handleEvent(Event event) {
-        this._setPhases(this.phaseCount);
-        WriteChannel<Integer> channel = this.channel(ManagedEvcs.ChannelId.SET_CHARGE_POWER_LIMIT);
-        Optional<Integer> valueOpt = channel.getNextWriteValueAndReset();
-        if (valueOpt.isPresent()) {
-            if (this.phaseCount == 0) {
-                this.limitPower(0);
-            } else {
-                this.limitPower(((valueOpt.get()) / 230) / this.phaseCount);
+        if (!this.ocpp) {
+            this._setPhases(this.phaseCount);
+            WriteChannel<Integer> channel = this.channel(ManagedEvcs.ChannelId.SET_CHARGE_POWER_LIMIT);
+            Optional<Integer> valueOpt = channel.getNextWriteValueAndReset();
+            if (valueOpt.isPresent()) {
+                if (this.phaseCount == 0) {
+                    this.limitPower(0);
+                } else {
+                    this.limitPower(((valueOpt.get()) / 230) / this.phaseCount);
+                }
             }
+            this._setChargePower((this.l1Power + this.l2Power + this.l3Power) * 230);
+            this._setMaximumPower(this.initialPower * this.phaseCount * 230);
+            this._setMinimumHardwarePower(5 * this.phaseCount * 230);
+            this._setMinimumPower(5 * this.phaseCount * 230);
         }
-        this._setChargePower((this.l1Power + this.l2Power + this.l3Power) * 230);
-        this._setMaximumPower(this.initialPower * this.phaseCount * 230);
-        this._setMinimumHardwarePower(5 * this.phaseCount * 230);
-        this._setMinimumPower(5 * this.phaseCount * 230);
-
     }
 
     /**

@@ -10,6 +10,7 @@ import io.openems.edge.evcs.api.MeasuringEvcs;
 import io.openems.edge.evcs.test.DummyEvcsPower;
 import io.openems.edge.evcs.test.DummyManagedEvcs;
 import io.openems.edge.meter.test.DummyAsymmetricMeter;
+import org.junit.Before;
 import org.junit.Test;
 
 import java.time.Instant;
@@ -19,25 +20,40 @@ import java.time.temporal.ChronoUnit;
 public class MyControllerTest {
     private static final String id = "test";
     private static final String evcsId = "evcs0";
+    private static final String nonPriorityId = "nonPriority0";
     private static final String meterId = "meter";
     private static final ChannelAddress CHARGE_POWER = new ChannelAddress(evcsId, "ChargePower");
     private static final ChannelAddress PHASES = new ChannelAddress(evcsId, "Phases");
+    private static final ChannelAddress NON_PRIORITY_CHARGE_POWER = new ChannelAddress(nonPriorityId, "ChargePower");
+    private static final ChannelAddress NON_PRIORITY_PHASES = new ChannelAddress(nonPriorityId, "Phases");
     private static final ChannelAddress POWERLIMIT = new ChannelAddress(id, "PowerLimit");
     private static final ChannelAddress METER_POWER = new ChannelAddress(meterId,"ActivePower");
+    private DummyManagedEvcs evcs;
+    private DummyManagedEvcs nonPriority;
     //private static final ChannelAddress output = new ChannelAddress(outputComponentId, outputChannelId);
 
+
+    @Before
+    public void setup(){
+        this.evcs = new DummyManagedEvcs(evcsId, new DummyEvcsPower());
+        this.evcs.setPriority(true);
+        this.evcs.setMinimumHardwarePower(6800);
+        this.evcs.setMinimumPower(6800);
+        this.nonPriority = new DummyManagedEvcs(nonPriorityId, new DummyEvcsPower());
+        this.nonPriority.setPriority(false);
+        this.nonPriority.setMinimumHardwarePower(6800);
+        this.nonPriority.setMinimumPower(6800);
+
+    }
     @Test
     public void initialTest() throws Exception {
         EvcsLimiterImpl test = new EvcsLimiterImpl();
         final TimeLeapClock clock = new TimeLeapClock(
                 Instant.ofEpochSecond(1577836800), ZoneOffset.UTC);
-        DummyManagedEvcs evcs = new DummyManagedEvcs(evcsId, new DummyEvcsPower());
-        evcs.setPriority(false);
-        evcs.setMinimumHardwarePower(6800);
-        evcs.setMinimumPower(6800);
+
         new ComponentTest(test)
                 .addReference("cpm", new DummyComponentManager(clock))
-                .addComponent(evcs)
+                .addComponent(this.evcs)
                 .activate(MyConfig.create()
                         .setId(id)
                         .setEnabled(true)
@@ -77,13 +93,9 @@ public class MyControllerTest {
         EvcsLimiterImpl test = new EvcsLimiterImpl();
         final TimeLeapClock clock = new TimeLeapClock(
                 Instant.ofEpochSecond(1577836800) /* starts at 1. January 2020 00:00:00 */ , ZoneOffset.UTC);
-        DummyManagedEvcs evcs = new DummyManagedEvcs(evcsId, new DummyEvcsPower());
-        evcs.setPriority(false);
-        evcs.setMinimumHardwarePower(6800);
-        evcs.setMinimumPower(6800);
         new ComponentTest(test)
                 .addReference("cpm", new DummyComponentManager(clock))
-                .addComponent(evcs)
+                .addComponent(this.evcs)
                 .activate(MyConfig.create()
                         .setId(id)
                         .setEnabled(true)
@@ -127,13 +139,9 @@ public class MyControllerTest {
         EvcsLimiterImpl test = new EvcsLimiterImpl();
         final TimeLeapClock clock = new TimeLeapClock(
                 Instant.ofEpochSecond(1577836800) , ZoneOffset.UTC);
-        DummyManagedEvcs evcs = new DummyManagedEvcs(evcsId, new DummyEvcsPower());
-        evcs.setPriority(false);
-        evcs.setMinimumHardwarePower(6800);
-        evcs.setMinimumPower(6800);
             new ComponentTest(test)
                     .addReference("cpm", new DummyComponentManager(clock))
-                    .addComponent(evcs)
+                    .addComponent(this.evcs)
                     .addComponent(new DummyAsymmetricMeter(meterId))
                     .activate(MyConfig.create()
                             .setId(id)
@@ -174,13 +182,9 @@ public class MyControllerTest {
         EvcsLimiterImpl test = new EvcsLimiterImpl();
         final TimeLeapClock clock = new TimeLeapClock(
                 Instant.ofEpochSecond(1577836800) , ZoneOffset.UTC);
-        DummyManagedEvcs evcs = new DummyManagedEvcs(evcsId, new DummyEvcsPower());
-        evcs.setPriority(true);
-        evcs.setMinimumHardwarePower(6800);
-        evcs.setMinimumPower(6800);
         new ComponentTest(test)
                 .addReference("cpm", new DummyComponentManager(clock))
-                .addComponent(evcs)
+                .addComponent(this.evcs)
                 .addComponent(new DummyAsymmetricMeter(meterId))
                 .activate(MyConfig.create()
                         .setId(id)
@@ -209,9 +213,54 @@ public class MyControllerTest {
                         .input(PHASES, 3)
                         .input(CHARGE_POWER, 30 * 230)
                 )
-
         ;
+    }
 
+    @Test
+    public void priorityWithNonPriorityTest() throws Throwable {
+        EvcsLimiterImpl test = new EvcsLimiterImpl();
+        final TimeLeapClock clock = new TimeLeapClock(
+                Instant.ofEpochSecond(1577836800) , ZoneOffset.UTC);
+
+        new ComponentTest(test)
+                .addReference("cpm", new DummyComponentManager(clock))
+                .addComponent(this.evcs)
+                .addComponent(this.nonPriority)
+                .addComponent(new DummyAsymmetricMeter(meterId))
+                .activate(MyConfig.create()
+                        .setId(id)
+                        .setEnabled(true)
+                        .setEvcss(new String[]{evcsId,nonPriorityId})
+                        .setUseMeter(false)
+                        .setMeter(meterId)
+                        .setSymmetry(true)
+                        .setOffTime(20)
+                        .setGrid(GridVoltage.V_230_HZ_50)
+                        .setPhaseLimit(16 * 230)
+                        .setPowerLimit(32 * 230)
+                        .build())
+                .next(new TestCase()
+                        .timeleap(clock, 1, ChronoUnit.SECONDS)
+                        .input(PHASES, 3)
+                        .input(CHARGE_POWER, 30 * 230)
+                        .input(NON_PRIORITY_PHASES, 3)
+                        .input(NON_PRIORITY_CHARGE_POWER, 30 * 230)
+                )
+                .next(new TestCase()
+                        .timeleap(clock, 1, ChronoUnit.SECONDS)
+                        .input(PHASES, 3)
+                        .input(CHARGE_POWER, 30 * 230)
+                        .input(NON_PRIORITY_PHASES, 3)
+                        .input(NON_PRIORITY_CHARGE_POWER, 30 * 230)
+                )
+                .next(new TestCase()
+                        .timeleap(clock, 1, ChronoUnit.SECONDS)
+                        .input(PHASES, 3)
+                        .input(CHARGE_POWER, 30 * 230)
+                        .input(NON_PRIORITY_PHASES, 3)
+                        .input(NON_PRIORITY_CHARGE_POWER, 30 * 230)
+                )
+        ;
     }
 
 }
