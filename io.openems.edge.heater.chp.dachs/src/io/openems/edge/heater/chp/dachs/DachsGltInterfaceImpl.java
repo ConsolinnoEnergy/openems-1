@@ -27,7 +27,11 @@ import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
+import java.io.InputStream;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -41,11 +45,11 @@ import java.util.Base64;
  * OpenEMS channels. Read and write is supported.
  * Not all GLT commands have been coded in yet, only those for basic CHP operation.
  *
- * The module is written to be used with the Heater interface methods. However, this chp does not have variable power
+ * <p>The module is written to be used with the Heater interface methods. However, this chp does not have variable power
  * control. So the methods setHeatingPowerSetpoint(), setElectricPowerSetpoint() and setTemperatureSetpoint() are not
  * available. This also means power control with ExceptionalState value is not possible.
  * Some sort of power control is possible if it is a bigger chp containing several units. It is possible to set
- * the number of modules that should turn on. This is not coded in yet.
+ * the number of modules that should turn on. This is not coded in yet.</p>
  */
 @Designate(ocd = Config.class, factory = true)
 @Component(name = "Heater.Chp.SenertecDachs",
@@ -134,7 +138,7 @@ public class DachsGltInterfaceImpl extends AbstractOpenemsComponent implements O
 	}
 
 	@Override
-	public void run() throws OpenemsError.OpenemsNamedException {
+	public void run() {
 		
 		// How often the Dachs is polled is determined by ’interval’.
 		if (this.isEnabled() && ChronoUnit.SECONDS.between(this.timestamp, LocalDateTime.now()) >= this.interval) {
@@ -187,9 +191,9 @@ public class DachsGltInterfaceImpl extends AbstractOpenemsComponent implements O
 				   And activateDachs() might be ignored because of a limitation.
 				 - Timing: need to send ’on’ command at least every 10 minutes for the Dachs to keep running.
 				   ’interval’ is capped at 9 minutes, so this should be taken care of.
-				 - Also: You cannot switch a CHP on/off as you want. There is a limit on how often you can start. 
-				   Number of starts should be minimized. 
-				   Currently the code does not enforce any restrictions in this regard! */
+				 - Also: You cannot switch a CHP on/off as you want. Number of starts should be minimized, and because
+				   of that there is a limit/hour on how often you can start. If the limit is reached, the chp won't start.
+				   Currently the code does not enforce any restrictions to not hit that limit! */
 				if (turnOnChp) {
 					this.activateDachs();
 				} else {
@@ -245,13 +249,13 @@ public class DachsGltInterfaceImpl extends AbstractOpenemsComponent implements O
 			if (runClearanceBitsAsIntString.length() > 0) {
 				if (runClearanceBitsAsIntString.equals("65535")) {	// This is the int equivalent of hex FFFF. Manual discusses ’Freigabe’ code in hex.
 					runClearance = true;
-					this._setNotReadyMessage("Code FFFF: Dachs is ready to run.");
+					this._setRunEnableBits("Code FFFF: Dachs is ready to run.");
 				} else {
-					errorMessage = errorMessage + this.parseAndSetRunClearance(runClearanceBitsAsIntString);
+					errorMessage = errorMessage + this.parseAndSetDachsRunEnable(runClearanceBitsAsIntString);
 				}
 			} else {
 				errorMessage = errorMessage + "Failed to transmit Chp ready indicator (Freigabe), ";
-				this._setNotReadyMessage("Failed to transmit Chp ready indicator (Freigabe).");
+				this._setRunEnableBits("Failed to transmit Chp ready indicator (Freigabe).");
 				stateUndefined = true;
 			}
 
@@ -259,12 +263,12 @@ public class DachsGltInterfaceImpl extends AbstractOpenemsComponent implements O
 			String runRequestBitsAsIntString = this.readEntryAfterString(serverMessage, "Hka_Bd.UHka_Anf.usAnforderung=");
 			if (runRequestBitsAsIntString.length() > 0) {
 				if (runRequestBitsAsIntString.equals("0")) {
-					this._setRunRequestMessage("Code 0: Nothing is requesting the Dachs to run right now.");
+					this._setRequestOfRunBits("Code 0: Nothing is requesting the Dachs to run right now.");
 				} else {
 					try {
 						int runRequestBits = Integer.parseInt(runRequestBitsAsIntString.trim());
 						String returnMessage = this.parseRunRequestBits(runRequestBits);
-						this._setRunRequestMessage(returnMessage);
+						this._setRequestOfRunBits(returnMessage);
 						if (runRequestBits > 0) {
 							// This is probably not necessary, but just in case.
 							stateStartingUp = true;
@@ -272,185 +276,48 @@ public class DachsGltInterfaceImpl extends AbstractOpenemsComponent implements O
 					} catch (NumberFormatException e) {
 						// This is not really needed for chp operation, so it is a warning and not an error.
 						warningMessage = warningMessage + "Can't parse run request code (Lauf Anforderung): " + e.getMessage() + ", ";
-						this._setRunRequestMessage("Code " + runRequestBitsAsIntString + ": Error parsing code.");
+						this._setRequestOfRunBits("Code " + runRequestBitsAsIntString + ": Error parsing code.");
 					}
 				}
 			} else {
 				warningMessage = warningMessage + "Failed to transmit run request code (Lauf Anforderung), ";
-				this._setRunRequestMessage("Failed to transmit run request code (Lauf Anforderung).");
+				this._setRequestOfRunBits("Failed to transmit run request code (Lauf Anforderung).");
 			}
 
 			warningMessage = warningMessage + this.parseAndSetNumberOfModules(serverMessage);
 
-			warningMessage = warningMessage + this.parseAndSetElectricGuidedModeClearance(serverMessage);
+			warningMessage = warningMessage + this.parseAndSetEnableElectricity(serverMessage);
 
-			if (serverMessage.contains("Hka_Bd.UHka_Anf.Anforderung.fStrom=")) {
-				String anforderungStrom = this.readEntryAfterString(serverMessage, "Hka_Bd.UHka_Anf.Anforderung.fStrom=");
-				if (anforderungStrom.equals("true")) {
-					this._setElectricModeRunFlag(true);
-				} else {
-					this._setElectricModeRunFlag(false);
-				}
-				if (anforderungStrom.length() == 0) {
-					warningMessage = warningMessage + "Failed to transmit electricity guided mode run flag (Anforderung Strom), ";
-				}
-			} else {
-				warningMessage = warningMessage + "Failed to transmit electricity guided mode run flag (Anforderung Strom), ";
-				this._setElectricModeRunFlag(false);
-			}
+			warningMessage = warningMessage + this.parseAndSetElectricityDemandFlag(serverMessage);
 
+			warningMessage = warningMessage + this.parseAndSetElectricityRequestBits(serverMessage);
 
-			if (serverMessage.contains("Hka_Bd.Anforderung.UStromF_Anf.bFlagSF=")) {
-				String stromAnforderungSettings = "";
-				stromAnforderungSettings = stromAnforderungSettings + this.readEntryAfterString(serverMessage, "Hka_Bd.Anforderung.UStromF_Anf.bFlagSF=");
-				if (stromAnforderungSettings.equals("0")) {
-					this._setElectricModeSettingsMessage("Code 0: No component is requesting electric power guided mode.");
-				} else {
-					try {
-						int tempInt = Integer.parseInt(stromAnforderungSettings.trim());
-						String returnMessage = "Code " + Integer.toHexString(tempInt).toUpperCase() + ": Electric power guided mode requested by";
-						// This code represents 5 options. Their 0 or 1 states are concatenated to a 5 digit binary that the
-						// server transmits as a base 10 integer. The Manual discusses the code as a hex number.
-						String inBinary = Integer.toBinaryString(tempInt);
-						// Make sure the string has 5 digits to avoid string out of bounds error.
-						for (int i = inBinary.length(); i < 5; i++) {
-							inBinary = "0" + inBinary;
-						}
-						if (inBinary.charAt(0) == '1') {
-							returnMessage = returnMessage + " Energie Zaehler 2,";
-						}
-						if (inBinary.charAt(1) == '1') {
-							returnMessage = returnMessage + " Energie Zaehler 1,";
-						}
-						if (inBinary.charAt(2) == '1') {
-							returnMessage = returnMessage + " DigExtern,";
-						}
-						if (inBinary.charAt(3) == '1') {
-							returnMessage = returnMessage + " Uhr intern,";
-						}
-						if (inBinary.charAt(4) == '1') {
-							returnMessage = returnMessage + " Can extern.";
-						}
-						if (returnMessage.charAt(returnMessage.length() - 1) == ',') {
-							returnMessage = returnMessage.substring(0, returnMessage.length() - 1) + ".";
-						}
-						this._setElectricModeSettingsMessage(returnMessage);
-					} catch (NumberFormatException e) {
-						warningMessage = warningMessage + "Can't parse electricity guided mode requests (Anforderungen Stromfuehrung): " + e.getMessage() + ", ";
-						this._setElectricModeSettingsMessage("Code " + stromAnforderungSettings + ": Error deciphering code.");
-					}
-				}
-			} else {
-				warningMessage = warningMessage + "Failed to transmit electricity guided mode requests (Anforderungen Stromfuehrung), ";
-				this._setElectricModeSettingsMessage("Failed to transmit electricity guided mode requests (Anforderungen Stromfuehrung).");
-			}
+			warningMessage = warningMessage + this.parseAndSetGeneratedElectricalWork(serverMessage);
 
+			warningMessage = warningMessage + this.parseAndSetGeneratedThermalWork(serverMessage);
 
-			if (serverMessage.contains("Hka_Bd.ulArbeitElektr=")) {
-				String arbeitElectr = "";
-				arbeitElectr = arbeitElectr + this.readEntryAfterString(serverMessage, "Hka_Bd.ulArbeitElektr=");
-				try {
-					this._setElectricalWork(Double.parseDouble(arbeitElectr));
-				} catch (NumberFormatException e) {
-					warningMessage = warningMessage + "Can't parse generated electrical work (Erzeugte elektrische Arbeit): " + e.getMessage() + ", ";
-					this._setElectricalWork(-1.0);	// -1 to indicate an error.
-				}
-			} else {
-				warningMessage = warningMessage + "Failed to transmit generated electrical work (Erzeugte elektrische Arbeit), ";
-				this._setElectricalWork(-1.0);
-			}
+			warningMessage = warningMessage + this.parseAndSetGeneratedThermalWorkCond(serverMessage);
 
-
-			if (serverMessage.contains("Hka_Bd.ulArbeitThermHka=")) {
-				String arbeitTherm = "";
-				arbeitTherm = arbeitTherm + this.readEntryAfterString(serverMessage, "Hka_Bd.ulArbeitThermHka=");
-				try {
-					this._setThermalWork(Double.parseDouble(arbeitTherm));
-				} catch (NumberFormatException e) {
-					warningMessage = warningMessage + "Can't parse generated thermal work (Erzeugte thermische Arbeit): " + e.getMessage() + ", ";
-					this._setThermalWork(-1.0);	// -1 to indicate an error.
-				}
-			} else {
-				warningMessage = warningMessage + "Failed to transmit generated thermal work (Erzeugte thermische Arbeit), ";
-				this._setThermalWork(-1.0);
-			}
-
-
-			if (serverMessage.contains("Hka_Bd.ulArbeitThermKon=")) {
-				String arbeitThermKon = "";
-				arbeitThermKon = arbeitThermKon + this.readEntryAfterString(serverMessage, "Hka_Bd.ulArbeitThermKon=");
-				try {
-					this._setThermalWorkCond(Double.parseDouble(arbeitThermKon));
-				} catch (NumberFormatException e) {
-					warningMessage = warningMessage + "Can't parse generated thermal work condenser (Erzeugte thermische Arbeit Kondenser): " + e.getMessage() + ", ";
-					this._setThermalWorkCond(-1.0);	// -1 to indicate an error.
-				}
-			} else {
-				warningMessage = warningMessage + "Failed to transmit generated thermal work condenser (Erzeugte thermische Arbeit Kondenser), ";
-				this._setThermalWorkCond(-1.0);
-			}
-
-
-			if (serverMessage.contains("Hka_Bd.ulBetriebssekunden=")) {
-				String runtimeSinceRestart = "";
-				runtimeSinceRestart = runtimeSinceRestart + this.readEntryAfterString(serverMessage, "Hka_Bd.ulBetriebssekunden=");
-				try {
-					this._setRuntimeSinceRestart(Double.parseDouble(runtimeSinceRestart));
-				} catch (NumberFormatException e) {
-					warningMessage = warningMessage + "Can't parse runtime since restart (Betriebsstunden): " + e.getMessage() + ", ";
-					this._setRuntimeSinceRestart(-1.0);	// -1 to indicate an error.
-				}
-			} else {
-				warningMessage = warningMessage + "Failed to transmit runtime since restart (Betriebsstunden), ";
-				this._setRuntimeSinceRestart(-1.0);
-			}
-
+			warningMessage = warningMessage + this.parseAndSetRuntimeSinceRestart(serverMessage);
 
 			int rpmReadout = 0;
-			if (serverMessage.contains("Hka_Mw1.usDrehzahl=")) {
-				String drehzahl = "";
-				drehzahl = drehzahl + this.readEntryAfterString(serverMessage, "Hka_Mw1.usDrehzahl=");
+			String engineSpeedString = this.readEntryAfterString(serverMessage, "Hka_Mw1.usDrehzahl=");
+			if (engineSpeedString.length() > 0) {
 	            try {
-					rpmReadout = Integer.parseInt(drehzahl.trim());
+					rpmReadout = Integer.parseInt(engineSpeedString.trim());
 	                this._setRpm(rpmReadout);
 	            } catch (NumberFormatException e) {
 	            	errorMessage = errorMessage + "Can't parse engine rpm (Motordrehzahl): " + e.getMessage() + ", ";
-					this._setRpm(-1);	// -1 to indicate an error.
+					this._setRpm(NO_DATA);
 	            }
 			} else {
 				errorMessage = errorMessage + "Failed to transmit engine rpm (Motordrehzahl), ";
-				this._setRpm(-1);
+				this._setRpm(NO_DATA);
 			}
 
+			warningMessage = warningMessage + this.parseAndSetEngineStarts(serverMessage);
 
-			if (serverMessage.contains("Hka_Bd.ulAnzahlStarts=")) {
-				String engineStarts = "";
-				engineStarts = engineStarts + this.readEntryAfterString(serverMessage, "Hka_Bd.ulAnzahlStarts=");
-				try {
-					this._setEngineStarts(Integer.parseInt(engineStarts.trim()));
-				} catch (NumberFormatException e) {
-					warningMessage = warningMessage + "Can't parse engine starts (Anzahl Starts): " + e.getMessage() + ", ";
-					this._setEngineStarts(-1);	// -1 to indicate an error.
-				}
-			} else {
-				warningMessage = warningMessage + "Failed to transmit engine starts (Anzahl Starts), ";
-				this._setEngineStarts(-1);
-			}
-
-
-			String wartungFlag = this.readEntryAfterString(serverMessage, "Wartung_Cache.fStehtAn=");
-			if (serverMessage.contains("Wartung_Cache.fStehtAn=") && wartungFlag.length() > 0) {
-				if (wartungFlag.equals("true")) {
-					this._setMaintenanceFlag(true);
-					warningMessage = warningMessage + "Maintenance needed (Wartung steht an), ";
-				} else {
-					this._setMaintenanceFlag(false);
-				}
-			} else {
-				warningMessage = warningMessage + "Failed to transmit maintenance flag (Wartung steht an), ";
-				this._setMaintenanceFlag(false);
-			}
-			
+			warningMessage = warningMessage + this.parseAndSetMaintenanceFlag(serverMessage);
 			
 			if (errorMessage.length() > 0) {
 				errorMessage = errorMessage.substring(0, errorMessage.length() - 2) + ".";
@@ -988,78 +855,78 @@ public class DachsGltInterfaceImpl extends AbstractOpenemsComponent implements O
 	}
 
 	/**
-	 * Parses the run clearance bits from a string and puts the result in the channel NOT_READY_MESSAGE.
+	 * Parses the run enable bits from a string and puts the result in the channel RUN_ENABLE_BITS.
 	 * Returns an error message if an error occurred, otherwise the return string is empty.
 	 *
-	 * @param runClearanceBitsAsIntString the run clearance bits as an int string
+	 * @param runEnableBitsAsIntString the run clearance bits as an int string
 	 * @return an error message on error or an empty string
 	 */
-	protected String parseAndSetRunClearance(String runClearanceBitsAsIntString) {
+	protected String parseAndSetDachsRunEnable(String runEnableBitsAsIntString) {
 		String errorMessage = "";
 		try {
-			int runClearanceBits = Integer.parseInt(runClearanceBitsAsIntString.trim());
-			StringBuilder inHex = new StringBuilder(Integer.toHexString(runClearanceBits).toUpperCase());
+			int runEnableBits = Integer.parseInt(runEnableBitsAsIntString.trim());
+			StringBuilder inHex = new StringBuilder(Integer.toHexString(runEnableBits).toUpperCase());
 			for (int i = inHex.length(); i < 4; i++) {
 				inHex.insert(0, "0");
 			}
-			String returnMessage = "Code " + inHex + ": Clearance not given by";
-			if ((runClearanceBits & 0b01) == 0) {
+			String returnMessage = "Code " + inHex + ": Run enable not given by";
+			if ((runEnableBits & 0b01) == 0) {
 				returnMessage = returnMessage + " request of CHP (Anforderung Dachs),";
 			}
-			if ((runClearanceBits & 0b010) == 0) {
+			if ((runEnableBits & 0b010) == 0) {
 				returnMessage = returnMessage + " shutoff time (Abschaltzeit),";
 			}
-			if ((runClearanceBits & 0b0100) == 0) {
+			if ((runEnableBits & 0b0100) == 0) {
 				returnMessage = returnMessage + " standstill time (Stillstandzeit),";
 			}
-			if ((runClearanceBits & 0b01000) == 0) {
+			if ((runEnableBits & 0b01000) == 0) {
 				returnMessage = returnMessage + " run24h (Lauf24h),";
 			}
-			if ((runClearanceBits & 0b010000) == 0) {
+			if ((runEnableBits & 0b010000) == 0) {
 				returnMessage = returnMessage + " error (Stoerung),";
 			}
-			if ((runClearanceBits & 0b0100000) == 0) {
+			if ((runEnableBits & 0b0100000) == 0) {
 				returnMessage = returnMessage + " temperature,";
 			}
-			if ((runClearanceBits & 0b01000000) == 0) {
+			if ((runEnableBits & 0b01000000) == 0) {
 				returnMessage = returnMessage + " max return temperature (Max Ruecklauftemp),";
 			}
-			if ((runClearanceBits & 0b010000000) == 0) {
+			if ((runEnableBits & 0b010000000) == 0) {
 				returnMessage = returnMessage + " feedback safety chain (Rueckmeldung SiKette),";
 			}
-			if ((runClearanceBits & 0b0100000000) == 0) {
+			if ((runEnableBits & 0b0100000000) == 0) {
 				returnMessage = returnMessage + " power grid OK (Netz OK),";
 			}
-			if ((runClearanceBits & 0b01000000000) == 0) {
+			if ((runEnableBits & 0b01000000000) == 0) {
 				returnMessage = returnMessage + " startup delay (Startverzoegerung),";
 			}
-			if ((runClearanceBits & 0b010000000000) == 0) {
+			if ((runEnableBits & 0b010000000000) == 0) {
 				returnMessage = returnMessage + " power grid connection OK (Zuschaltung Netz OK),";
 			}
 			// Bit 0b0100000000000 not used.
-			if ((runClearanceBits & 0b01000000000000) == 0) {
+			if ((runEnableBits & 0b01000000000000) == 0) {
 				returnMessage = returnMessage + " input enable module (Eingang Modulfreigabe),";
 			}
-			if ((runClearanceBits & 0b010000000000000) == 0) {
+			if ((runEnableBits & 0b010000000000000) == 0) {
 				returnMessage = returnMessage + " internal enable of CHP (Interne Freigabe Dachs),";
 			}
-			if ((runClearanceBits & 0b0100000000000000) == 0) {
+			if ((runEnableBits & 0b0100000000000000) == 0) {
 				returnMessage = returnMessage + " key OnOff (Taste OnOff),";
 			}
-			if ((runClearanceBits & 0b01000000000000000) == 0) {
+			if ((runEnableBits & 0b01000000000000000) == 0) {
 				returnMessage = returnMessage + " commissioning OK (Inbetriebnahme OK).";
 			}
-			if ((runClearanceBits & 0b01111011111111111) == 0b01111011111111111) {
+			if ((runEnableBits & 0b01111011111111111) == 0b01111011111111111) {
 				returnMessage = returnMessage + " unknown.";
 			}
 			if (returnMessage.charAt(returnMessage.length() - 1) == ',') {
 				returnMessage = returnMessage.substring(0, returnMessage.length() - 1) + ".";
 			}
-			this._setNotReadyMessage(returnMessage);
+			this._setRunEnableBits(returnMessage);
 		} catch (NumberFormatException e) {
-			errorMessage = errorMessage + "Can't parse Chp ready indicator (Freigabe): " + e.getMessage() + ", ";
-			this.logError(this.log, "Error, can't parse NotReadyCode: " + e.getMessage());
-			this._setNotReadyMessage("Code " + runClearanceBitsAsIntString + ": Error parsing code.");
+			errorMessage = errorMessage + "Can't parse Dachs run enable bits (Freigabe): " + e.getMessage() + ", ";
+			this.logError(this.log, "Error, can't parse Dachs run enable bits: " + e.getMessage());
+			this._setRunEnableBits("Code " + runEnableBitsAsIntString + ": Error parsing code.");
 		}
 		return errorMessage;
 	}
@@ -1109,56 +976,283 @@ public class DachsGltInterfaceImpl extends AbstractOpenemsComponent implements O
 	}
 
 	/**
-	 * Parses the electric power guided mode bits from the server message and puts the result in the channel
-	 * ELECTRICITY_GUIDED_OPERATION_CLEARANCE.
+	 * Parses the enable electricity bits from the server message and puts the result in the channel
+	 * ENABLE_ELECTRICITY_BITS.
 	 * Returns a warning message if an error occurred, otherwise the return string is empty.
 	 *
 	 * @param serverMessage the server message
 	 * @return a warning message on error or an empty string
 	 */
-	protected String parseAndSetElectricGuidedModeClearance(String serverMessage) {
+	protected String parseAndSetEnableElectricity(String serverMessage) {
 		String warningMessage = "";
-		String electricModeClearanceString = this.readEntryAfterString(serverMessage, "Hka_Bd.UStromF_Frei.bFreigabe=");
-		if (electricModeClearanceString.length() > 0) {
-			if (electricModeClearanceString.equals("255")) {
-				this._setElectricModeClearanceMessage("Code FF: Dachs is in electric power guided mode.");
+		String enableElectricityBitsString = this.readEntryAfterString(serverMessage, "Hka_Bd.UStromF_Frei.bFreigabe=");
+		if (enableElectricityBitsString.length() > 0) {
+			if (enableElectricityBitsString.equals("255")) {
+				this._setEnableElectricityBits("Code FF: Enable electricity is true.");
 			} else {
 				try {
-					int electricModeClearanceBits = Integer.parseInt(electricModeClearanceString.trim());
-					String inHex = Integer.toHexString(electricModeClearanceBits).toUpperCase();
-					String returnMessage = "Code " + inHex + ": No electric power guided mode because the following is missing -";
-					if ((electricModeClearanceBits & 0b01) == 0) {
+					int enableElectricityBits = Integer.parseInt(enableElectricityBitsString.trim());
+					String inHex = Integer.toHexString(enableElectricityBits).toUpperCase();
+					String returnMessage = "Code " + inHex + ": Enable electricity is false because the following is missing -";
+					if ((enableElectricityBits & 0b01) == 0) {
 						returnMessage = returnMessage + " Electricity demand (Anforderung Strom),";
 					}
-					if ((electricModeClearanceBits & 0b010) == 0) {
+					if ((enableElectricityBits & 0b010) == 0) {
 						returnMessage = returnMessage + " MaxElectricity (MaxStrom),";
 					}
-					if ((electricModeClearanceBits & 0b0100) == 0) {
+					if ((enableElectricityBits & 0b0100) == 0) {
 						returnMessage = returnMessage + " HtLt (HtNt),";
 					}
-					if ((electricModeClearanceBits & 0b01000) == 0) {
+					if ((enableElectricityBits & 0b01000) == 0) {
 						returnMessage = returnMessage + " SuWi (SoWi).";
 					}
-					if ((electricModeClearanceBits & 0b01111) == 0b01111) {
+					if ((enableElectricityBits & 0b01111) == 0b01111) {
 						returnMessage = returnMessage + " unknown.";
 					}
 					if (returnMessage.charAt(returnMessage.length() - 1) == ',') {
 						returnMessage = returnMessage.substring(0, returnMessage.length() - 1) + ".";
 					}
-					this._setElectricModeClearanceMessage(returnMessage);
+					this._setEnableElectricityBits(returnMessage);
 				} catch (NumberFormatException e) {
-					warningMessage = "Can't parse electricity guided mode clearance code (Freigabe Stromfuehrung): " + e.getMessage() + ", ";
-					this._setElectricModeClearanceMessage("Code " + electricModeClearanceString + ": Error parsing code.");
+					warningMessage = "Can't parse enable electricity code (Freigabe Stromfuehrung): " + e.getMessage() + ", ";
+					this._setEnableElectricityBits("Code " + enableElectricityBitsString + ": Error parsing code.");
 				}
 			}
 		} else {
 			warningMessage = warningMessage + "Failed to transmit electricity guided mode clearance code (Freigabe Stromfuehrung), ";
-			this._setElectricModeClearanceMessage("Failed to transmit electricity guided mode clearance code (Freigabe Stromfuehrung).");
+			this._setEnableElectricityBits("Failed to transmit electricity guided mode clearance code (Freigabe Stromfuehrung).");
 		}
 		return warningMessage;
 	}
 
-    // Separate method for these as they don't change and only need to be requested once.
+	/**
+	 * Parses the electricity request bits from the server message and puts the result in the channel
+	 * ELECTRICITY_REQUEST_BITS.
+	 * Returns a warning message if an error occurred, otherwise the return string is empty.
+	 *
+	 * @param serverMessage the server message
+	 * @return a warning message on error or an empty string
+	 */
+	protected String parseAndSetElectricityRequestBits(String serverMessage) {
+		String warningMessage = "";
+		String electricityRequestBitsString = this.readEntryAfterString(serverMessage, "Hka_Bd.Anforderung.UStromF_Anf.bFlagSF=");
+		if (electricityRequestBitsString.length() > 0) {
+			if (electricityRequestBitsString.equals("0")) {
+				this._setElectricityRequestBits("Code 0: No component is requesting electricity.");
+			} else {
+				try {
+					int tempInt = Integer.parseInt(electricityRequestBitsString.trim());
+					String returnMessage = "Code " + Integer.toHexString(tempInt).toUpperCase() + ": Electricity requested by";
+					if ((tempInt & 0b01) == 0b01) {
+						returnMessage = returnMessage + " Can external,";
+					}
+					if ((tempInt & 0b010) == 0b010) {
+						returnMessage = returnMessage + " Internal timer (Uhr intern),";
+					}
+					if ((tempInt & 0b0100) == 0b0100) {
+						returnMessage = returnMessage + " DigExternal,";
+					}
+					if ((tempInt & 0b01000) == 0b01000) {
+						returnMessage = returnMessage + " Energy meter 1 (Energie Zaehler 1),";
+					}
+					if ((tempInt & 0b010000) == 0b010000) {
+						returnMessage = returnMessage + " Energy meter 2 (Energie Zaehler 2),";
+					}
+					if ((tempInt & 0b0100000) == 0b0100000) {
+						returnMessage = returnMessage + " Siemens remote control (Siemens Fernbedienung).";
+					}
+					if ((tempInt & 0b0111111) == 0) {
+						returnMessage = " unknown.";
+					}
+					if (returnMessage.charAt(returnMessage.length() - 1) == ',') {
+						returnMessage = returnMessage.substring(0, returnMessage.length() - 1) + ".";
+					}
+					this._setElectricityRequestBits(returnMessage);
+				} catch (NumberFormatException e) {
+					warningMessage = warningMessage + "Can't parse electricity request bits (Anforderungen Stromfuehrung): " + e.getMessage() + ", ";
+					this._setElectricityRequestBits("Code " + electricityRequestBitsString + ": Error parsing code.");
+				}
+			}
+		} else {
+			warningMessage = warningMessage + "Failed to transmit electricity request bits (Anforderungen Stromfuehrung), ";
+			this._setElectricityRequestBits("Failed to transmit electricity request bits (Anforderungen Stromfuehrung).");
+		}
+		return warningMessage;
+	}
+
+	/**
+	 * Parses the electricity demand flag from the server message and puts the result in the channel
+	 * ELECTRICITY_REQUEST_FLAG.
+	 * Returns a warning message if an error occurred, otherwise the return string is empty.
+	 *
+	 * @param serverMessage the server message
+	 * @return a warning message on error or an empty string
+	 */
+	protected String parseAndSetElectricityDemandFlag(String serverMessage) {
+		String warningMessage = "";
+		String electricModeRunFlagString = this.readEntryAfterString(serverMessage, "Hka_Bd.UHka_Anf.Anforderung.fStrom=");
+		if (electricModeRunFlagString.length() > 0) {
+			if (electricModeRunFlagString.equals("true")) {
+				this._setElectricityRequestFlag(true);
+			} else {
+				this._setElectricityRequestFlag(false);
+			}
+		} else {
+			warningMessage = "Failed to transmit electricity guided mode run flag (Anforderung Strom), ";
+			this._setElectricityRequestFlag(false);
+		}
+		return warningMessage;
+	}
+
+	/**
+	 * Parses the generated electrical work from the server message and puts the result in the channel ELECTRICAL_WORK.
+	 * Returns a warning message if an error occurred, otherwise the return string is empty.
+	 *
+	 * @param serverMessage the server message
+	 * @return a warning message on error or an empty string
+	 */
+	protected String parseAndSetGeneratedElectricalWork(String serverMessage) {
+		String warningMessage = "";
+		String electricalWorkString = this.readEntryAfterString(serverMessage, "Hka_Bd.ulArbeitElektr=");
+		if (electricalWorkString.length() > 0) {
+			try {
+				this._setElectricalWork(Double.parseDouble(electricalWorkString));
+			} catch (NumberFormatException e) {
+				warningMessage = warningMessage + "Can't parse generated electrical work (Erzeugte elektrische Arbeit): " + e.getMessage() + ", ";
+				this._setElectricalWork(NO_DATA);
+			}
+		} else {
+			warningMessage = warningMessage + "Failed to transmit generated electrical work (Erzeugte elektrische Arbeit), ";
+			this._setElectricalWork(NO_DATA);
+		}
+		return warningMessage;
+	}
+
+	/**
+	 * Parses the generated thermal work from the server message and puts the result in the channel THERMAL_WORK.
+	 * Returns a warning message if an error occurred, otherwise the return string is empty.
+	 *
+	 * @param serverMessage the server message
+	 * @return a warning message on error or an empty string
+	 */
+	protected String parseAndSetGeneratedThermalWork(String serverMessage) {
+		String warningMessage = "";
+		String thermalWorkString = this.readEntryAfterString(serverMessage, "Hka_Bd.ulArbeitThermHka=");
+		if (thermalWorkString.length() > 0) {
+			try {
+				this._setThermalWork(Double.parseDouble(thermalWorkString));
+			} catch (NumberFormatException e) {
+				warningMessage = warningMessage + "Can't parse generated thermal work (Erzeugte thermische Arbeit): " + e.getMessage() + ", ";
+				this._setThermalWork(NO_DATA);
+			}
+		} else {
+			warningMessage = warningMessage + "Failed to transmit generated thermal work (Erzeugte thermische Arbeit), ";
+			this._setThermalWork(NO_DATA);
+		}
+		return warningMessage;
+	}
+
+	/**
+	 * Parses the generated thermal work condenser from the server message and puts the result in the channel THERMAL_WORK.
+	 * Returns a warning message if an error occurred, otherwise the return string is empty.
+	 *
+	 * @param serverMessage the server message
+	 * @return a warning message on error or an empty string
+	 */
+	protected String parseAndSetGeneratedThermalWorkCond(String serverMessage) {
+		String warningMessage = "";
+		String thermalWorkCondString = this.readEntryAfterString(serverMessage, "Hka_Bd.ulArbeitThermKon=");
+		if (thermalWorkCondString.length() > 0) {
+			try {
+				this._setThermalWorkCond(Double.parseDouble(thermalWorkCondString));
+			} catch (NumberFormatException e) {
+				warningMessage = warningMessage + "Can't parse generated thermal work condenser (Erzeugte thermische Arbeit Kondenser): " + e.getMessage() + ", ";
+				this._setThermalWorkCond(NO_DATA);
+			}
+		} else {
+			warningMessage = warningMessage + "Failed to transmit generated thermal work condenser (Erzeugte thermische Arbeit Kondenser), ";
+			this._setThermalWorkCond(NO_DATA);
+		}
+		return warningMessage;
+	}
+
+	/**
+	 * Parses the runtime since restart from the server message and puts the result in the channel RUNTIME.
+	 * Returns a warning message if an error occurred, otherwise the return string is empty.
+	 *
+	 * @param serverMessage the server message
+	 * @return a warning message on error or an empty string
+	 */
+	protected String parseAndSetRuntimeSinceRestart(String serverMessage) {
+		String warningMessage = "";
+		String runtimeSinceRestartString = this.readEntryAfterString(serverMessage, "Hka_Bd.ulBetriebssekunden=");
+		if (runtimeSinceRestartString.length() > 0) {
+			try {
+				this._setRuntimeSinceRestart(Double.parseDouble(runtimeSinceRestartString));
+			} catch (NumberFormatException e) {
+				warningMessage = warningMessage + "Can't parse runtime since restart (Betriebsstunden): " + e.getMessage() + ", ";
+				this._setRuntimeSinceRestart(NO_DATA);
+			}
+		} else {
+			warningMessage = warningMessage + "Failed to transmit runtime since restart (Betriebsstunden), ";
+			this._setRuntimeSinceRestart(NO_DATA);
+		}
+		return warningMessage;
+	}
+
+	/**
+	 * Parses the engine starts from the server message and puts the result in the channel ENGINE_STARTS.
+	 * Returns a warning message if an error occurred, otherwise the return string is empty.
+	 *
+	 * @param serverMessage the server message
+	 * @return a warning message on error or an empty string
+	 */
+	protected String parseAndSetEngineStarts(String serverMessage) {
+		String warningMessage = "";
+		String engineStarts = this.readEntryAfterString(serverMessage, "Hka_Bd.ulAnzahlStarts=");
+		if (engineStarts.length() > 0) {
+			try {
+				this._setEngineStarts(Integer.parseInt(engineStarts.trim()));
+			} catch (NumberFormatException e) {
+				warningMessage = warningMessage + "Can't parse engine starts (Anzahl Starts): " + e.getMessage() + ", ";
+				this._setEngineStarts(NO_DATA);
+			}
+		} else {
+			warningMessage = warningMessage + "Failed to transmit engine starts (Anzahl Starts), ";
+			this._setEngineStarts(NO_DATA);
+		}
+		return warningMessage;
+	}
+
+	/**
+	 * Parses the maintenance flag from the server message and puts the result in the channel MAINTENANCE.
+	 * Returns a warning message if the maintenance flag is true or if an error occurred. Otherwise the return string is
+	 * empty.
+	 *
+	 * @param serverMessage the server message
+	 * @return a warning message if maintenance is needed or on error, otherwise an empty string
+	 */
+	protected String parseAndSetMaintenanceFlag(String serverMessage) {
+		String warningMessage = "";
+		String maintenanceFlagString = this.readEntryAfterString(serverMessage, "Wartung_Cache.fStehtAn=");
+		if (maintenanceFlagString.length() > 0) {
+			if (maintenanceFlagString.equals("true")) {
+				this._setMaintenanceFlag(true);
+				warningMessage = "Maintenance needed (Wartung steht an), ";
+			} else {
+				this._setMaintenanceFlag(false);
+			}
+		} else {
+			warningMessage = "Failed to transmit maintenance flag (Wartung steht an), ";
+			this._setMaintenanceFlag(false);
+		}
+		return warningMessage;
+	}
+
+    /**
+	 * Read the serial number and parts number.
+	 * Separate method for these as they don't change and only need to be requested once.
+	 */
     protected void getSerialAndPartsNumber() {
         String serverMessage = this.getKeyDachs("k=Hka_Bd_Stat.uchSeriennummer&k=Hka_Bd_Stat.uchTeilenummer");
         if (serverMessage.contains("Hka_Bd_Stat.uchSeriennummer=")) {
@@ -1185,8 +1279,10 @@ public class DachsGltInterfaceImpl extends AbstractOpenemsComponent implements O
 			return "";
 		}
 	}
-    
-    
+
+    /**
+	 * Information that is printed to the log if ’print info to log’ option is enabled.
+	 */
     protected void printDataToLog() {
     	if (this.basicInfo) {
     		this.logInfo(this.log, "---- CHP Senertec Dachs ----");
@@ -1203,12 +1299,12 @@ public class DachsGltInterfaceImpl extends AbstractOpenemsComponent implements O
     		this.logInfo(this.log, "Parts number: " + getPartsNumber());
     		this.logInfo(this.log, "Engine starts: " + getEngineStarts());
     		this.logInfo(this.log, "Runtime: " + getRuntimeSinceRestart());
-    		this.logInfo(this.log, "Run request message: " + getRunRequestMessage());
-    		this.logInfo(this.log, "Not ready message: " + getNotReadyMessage());
+    		this.logInfo(this.log, "Run request message: " + getRequestOfRunBits());
+    		this.logInfo(this.log, "Not ready message: " + getRunEnableBits());
     		this.logInfo(this.log, "Number of modules requested: " + getNumberOfModules());
-    		this.logInfo(this.log, "Electricity guided operation clearance: " + getElectricModeClearanceMessage());
-    		this.logInfo(this.log, "Electricity guided operation settings: " + getElectricModeSettingsMessage());
-    		this.logInfo(this.log, "Electricity guided operation run flag: " + getElectricModeRunFlag());
+    		this.logInfo(this.log, "Electricity guided operation clearance: " + getEnableElectricityBits());
+    		this.logInfo(this.log, "Electricity guided operation settings: " + getElectricityRequestBits());
+    		this.logInfo(this.log, "Electricity guided operation run flag: " + getElectricityRequestFlag());
     		this.logInfo(this.log, "Electrical work done: " + getElectricalWork());
     		this.logInfo(this.log, "Thermal work done: " + getThermalWork());
     		this.logInfo(this.log, "Thermal work condenser done: " + getThermalWorkCond());
@@ -1235,6 +1331,7 @@ public class DachsGltInterfaceImpl extends AbstractOpenemsComponent implements O
 
 	/**
 	 * Send read request to server.
+	 *
 	 * @param key the request string.
 	 * @return the answer string.
 	 */
@@ -1282,6 +1379,7 @@ public class DachsGltInterfaceImpl extends AbstractOpenemsComponent implements O
 
 	/**
 	 * Send write request to server.
+	 *
 	 * @param key the request string.
 	 * @return the answer string.
 	 */
@@ -1328,6 +1426,9 @@ public class DachsGltInterfaceImpl extends AbstractOpenemsComponent implements O
 		return message;
 	}
 
+	/**
+	 * Activate the Dachs.
+	 */
 	protected void activateDachs() {
 		String returnMessage = this.setKeysDachs("Stromf_Ew.Anforderung_GLT.bAktiv=1");
 		if (this.debug) {
@@ -1335,6 +1436,9 @@ public class DachsGltInterfaceImpl extends AbstractOpenemsComponent implements O
 		}
 	}
 
+	/**
+	 * Deactivate the Dachs.
+	 */
 	protected void deactivateDachs() {
 		String returnMessage = this.setKeysDachs("Stromf_Ew.Anforderung_GLT.bAktiv=0");
 		if (this.debug) {
