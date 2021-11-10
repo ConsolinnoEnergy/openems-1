@@ -13,6 +13,9 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
     boolean enabled() default true;
 
+    @AttributeDefinition(name = "LeafletId", description = "Unique Id of the LeafletCore, this Module is attached to.")
+    String leafletId() default "LeafletCore";
+
     @AttributeDefinition(name = "Pwm Module Module Number", description = "Module Number for the Pwm Module that has to be configured.")
     int moduleNumber();
 
