@@ -3,6 +3,7 @@ package io.openems.edge.heater.chp.viessmann.api;
 import io.openems.common.channel.Unit;
 import io.openems.common.types.OpenemsType;
 import io.openems.edge.common.channel.Doc;
+import io.openems.edge.common.channel.EnumReadChannel;
 import io.openems.edge.common.channel.FloatReadChannel;
 import io.openems.edge.common.channel.IntegerReadChannel;
 import io.openems.edge.common.channel.value.Value;
@@ -348,7 +349,7 @@ public interface ChpViessmann extends Chp {
      *
      * @return the Channel
      */
-    default IntegerReadChannel getModuleStatusChannel() {
+    default EnumReadChannel getModuleStatusChannel() {
         return this.channel(ChannelId.STATUS);
     }
 

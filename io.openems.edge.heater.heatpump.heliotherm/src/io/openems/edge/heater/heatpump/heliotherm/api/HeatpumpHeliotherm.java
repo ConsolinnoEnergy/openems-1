@@ -8,6 +8,7 @@ import io.openems.edge.common.channel.BooleanReadChannel;
 import io.openems.edge.common.channel.BooleanWriteChannel;
 import io.openems.edge.common.channel.Doc;
 import io.openems.edge.common.channel.DoubleReadChannel;
+import io.openems.edge.common.channel.EnumWriteChannel;
 import io.openems.edge.common.channel.IntegerReadChannel;
 import io.openems.edge.common.channel.IntegerWriteChannel;
 import io.openems.edge.common.channel.value.Value;
@@ -514,7 +515,7 @@ public interface HeatpumpHeliotherm extends Heater {
      *
      * @return the Channel
      */
-    default IntegerWriteChannel getHr100OperatingModeChannel() {
+    default EnumWriteChannel getHr100OperatingModeChannel() {
         return this.channel(ChannelId.HR100_OPERATING_MODE);
     }
 

@@ -4,6 +4,7 @@ import io.openems.common.channel.AccessMode;
 import io.openems.common.channel.Unit;
 import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
 import io.openems.common.types.OpenemsType;
+import io.openems.edge.common.channel.EnumWriteChannel;
 import io.openems.edge.common.channel.IntegerReadChannel;
 import io.openems.edge.common.channel.IntegerWriteChannel;
 import io.openems.edge.common.channel.BooleanReadChannel;
@@ -1460,7 +1461,7 @@ public interface HeatpumpTecalor extends HeatpumpSmartGrid {
      *
      * @return the Channel
      */
-    default IntegerWriteChannel getOperatingModeChannel() {
+    default EnumWriteChannel getOperatingModeChannel() {
         return this.channel(ChannelId.HR1501_OPERATING_MODE);
     }
 

@@ -5,7 +5,7 @@ import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
 import io.openems.common.types.OpenemsType;
 import io.openems.edge.common.channel.BooleanWriteChannel;
 import io.openems.edge.common.channel.Doc;
-import io.openems.edge.common.channel.IntegerWriteChannel;
+import io.openems.edge.common.channel.EnumWriteChannel;
 import io.openems.edge.common.channel.value.Value;
 
 /**
@@ -62,7 +62,7 @@ public interface HeatpumpSmartGrid extends Heater {
      *
      * @return the Channel
      */
-    default IntegerWriteChannel getSmartGridStateChannel() {
+    default EnumWriteChannel getSmartGridStateChannel() {
         return this.channel(ChannelId.SMART_GRID_STATE);
     }
     

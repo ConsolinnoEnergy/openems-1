@@ -7,6 +7,8 @@ import io.openems.common.types.OpenemsType;
 import io.openems.edge.common.channel.BooleanReadChannel;
 import io.openems.edge.common.channel.BooleanWriteChannel;
 import io.openems.edge.common.channel.Doc;
+import io.openems.edge.common.channel.EnumReadChannel;
+import io.openems.edge.common.channel.EnumWriteChannel;
 import io.openems.edge.common.channel.IntegerReadChannel;
 import io.openems.edge.common.channel.IntegerWriteChannel;
 import io.openems.edge.common.channel.value.Value;
@@ -1697,7 +1699,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
      *
      * @return the Channel
      */
-    default IntegerReadChannel getHeatpumpOperatingModeChannel() {
+    default EnumReadChannel getHeatpumpOperatingModeChannel() {
         return this.channel(ChannelId.IR_37_STATUS);
     }
     
@@ -2478,7 +2480,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
      *
      * @return the Channel
      */
-	default IntegerWriteChannel getBlockReleaseChannel() {
+	default EnumWriteChannel getBlockReleaseChannel() {
 	    return this.channel(ChannelId.HR_6_BLOCK_RELEASE);
 	}
 
@@ -2561,7 +2563,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
      *
      * @return the Channel
      */
-	default IntegerWriteChannel getHeatingOperationModeChannel() {
+	default EnumWriteChannel getHeatingOperationModeChannel() {
 	    return this.channel(ChannelId.HR_7_CIRCUIT_HEATING_OPERATION_MODE);
 	}
 
@@ -2662,7 +2664,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
      *
      * @return the Channel
      */
-	default IntegerWriteChannel getDomesticHotWaterOperationModeChannel() {
+	default EnumWriteChannel getDomesticHotWaterOperationModeChannel() {
         return this.channel(ChannelId.HR_8_WATER_OPERATION_MODE);
     }
 
@@ -2763,7 +2765,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
      *
      * @return the Channel
      */
-	default IntegerWriteChannel getCircuit2OperationModeChannel() {
+	default EnumWriteChannel getCircuit2OperationModeChannel() {
 	    return this.channel(ChannelId.HR_9_MC2_OPERATION_MODE);
 	}
 
@@ -2868,7 +2870,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
      *
      * @return the Channel
      */
-	default IntegerWriteChannel getCircuit3OperationModeChannel() {
+	default EnumWriteChannel getCircuit3OperationModeChannel() {
 	    return this.channel(ChannelId.HR_10_MC3_OPERATION_MODE);
 	}
 
@@ -2973,7 +2975,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
      *
      * @return the Channel
      */
-	default IntegerWriteChannel getCoolingOperationModeChannel() {
+	default EnumWriteChannel getCoolingOperationModeChannel() {
 	    return this.channel(ChannelId.HR_11_COOLING_OPERATION_MODE);
 	}
 
@@ -3062,7 +3064,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
      *
      * @return the Channel
      */
-	default IntegerWriteChannel getVentilationOperationModeChannel() {
+	default EnumWriteChannel getVentilationOperationModeChannel() {
 	    return this.channel(ChannelId.HR_12_VENTILATION_OPERATION_MODE);
 	}
 
@@ -3163,7 +3165,7 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
      *
      * @return the Channel
      */
-	default IntegerWriteChannel getPoolHeatingOperationModeChannel() {
+	default EnumWriteChannel getPoolHeatingOperationModeChannel() {
 	    return this.channel(ChannelId.HR_13_POOL_OPERATION_MODE);
 	}
 

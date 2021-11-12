@@ -6,6 +6,7 @@ import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
 import io.openems.common.types.OpenemsType;
 import io.openems.edge.common.channel.BooleanWriteChannel;
 import io.openems.edge.common.channel.Doc;
+import io.openems.edge.common.channel.EnumWriteChannel;
 import io.openems.edge.common.channel.IntegerReadChannel;
 import io.openems.edge.common.channel.IntegerWriteChannel;
 import io.openems.edge.common.channel.value.Value;
@@ -448,7 +449,7 @@ public interface ChpWolf extends Chp {
      *
      * @return the Channel
      */
-    default IntegerWriteChannel getOperatingModeChannel() {
+    default EnumWriteChannel getOperatingModeChannel() {
         return this.channel(ChannelId.OPERATING_MODE);
     }
 
