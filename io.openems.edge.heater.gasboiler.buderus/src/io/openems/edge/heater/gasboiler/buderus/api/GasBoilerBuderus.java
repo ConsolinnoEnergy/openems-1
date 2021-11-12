@@ -337,7 +337,7 @@ public interface GasBoilerBuderus extends Heater {
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getIR386StatusStrategyChannel() {
+    default IntegerReadChannel getIR386StatusStrategyChannel() {
         return this.channel(ChannelId.IR386_STATUS_STRATEGY);
     }
 
@@ -354,7 +354,7 @@ public interface GasBoilerBuderus extends Heater {
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getIR386StatusStrategy() {
+    default Value<Integer> getIR386StatusStrategy() {
         return this.getIR386StatusStrategyChannel().value();
     }
 
@@ -363,7 +363,7 @@ public interface GasBoilerBuderus extends Heater {
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getIR390RunrequestInitiatorChannel() {
+    default IntegerReadChannel getIR390RunrequestInitiatorChannel() {
         return this.channel(ChannelId.IR390_RUNREQUEST_INITIATOR);
     }
 
@@ -379,7 +379,7 @@ public interface GasBoilerBuderus extends Heater {
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getIR390RunrequestInitiator() {
+    default Value<Integer> getIR390RunrequestInitiator() {
         return this.getIR390RunrequestInitiatorChannel().value();
     }
 
@@ -388,7 +388,7 @@ public interface GasBoilerBuderus extends Heater {
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getIR394StrategyBitblockChannel() {
+    default IntegerReadChannel getIR394StrategyBitblockChannel() {
         return this.channel(ChannelId.IR394_STRATEGY_BITBLOCK);
     }
 
@@ -398,7 +398,7 @@ public interface GasBoilerBuderus extends Heater {
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getIR394StrategyBitblock() {
+    default Value<Integer> getIR394StrategyBitblock() {
         return this.getIR394StrategyBitblockChannel().value();
     }
 
@@ -407,7 +407,7 @@ public interface GasBoilerBuderus extends Heater {
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getIR395MaxFlowTempRequestedChannel() {
+    default IntegerReadChannel getIR395MaxFlowTempRequestedChannel() {
         return this.channel(ChannelId.IR395_MAX_FLOW_TEMP_REQUESTED);
     }
 
@@ -418,7 +418,7 @@ public interface GasBoilerBuderus extends Heater {
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getIR395MaxFlowTempRequested() {
+    default Value<Integer> getIR395MaxFlowTempRequested() {
         return this.getIR395MaxFlowTempRequestedChannel().value();
     }
 
@@ -427,7 +427,7 @@ public interface GasBoilerBuderus extends Heater {
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getIR476ErrorRegister1Channel() {
+    default IntegerReadChannel getIR476ErrorRegister1Channel() {
         return this.channel(ChannelId.IR476_ERROR_REGISTER1);
     }
 
@@ -437,7 +437,7 @@ public interface GasBoilerBuderus extends Heater {
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getIR476ErrorRegister1() {
+    default Value<Integer> getIR476ErrorRegister1() {
         return this.getIR476ErrorRegister1Channel().value();
     }
 
@@ -446,7 +446,7 @@ public interface GasBoilerBuderus extends Heater {
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getIR478ErrorRegister2Channel() {
+    default IntegerReadChannel getIR478ErrorRegister2Channel() {
         return this.channel(ChannelId.IR478_ERROR_REGISTER2);
     }
 
@@ -456,7 +456,7 @@ public interface GasBoilerBuderus extends Heater {
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getIR478ErrorRegister2() {
+    default Value<Integer> getIR478ErrorRegister2() {
         return this.getIR478ErrorRegister2Channel().value();
     }
 
@@ -465,7 +465,7 @@ public interface GasBoilerBuderus extends Heater {
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getIR480ErrorRegister3Channel() {
+    default IntegerReadChannel getIR480ErrorRegister3Channel() {
         return this.channel(ChannelId.IR480_ERROR_REGISTER3);
     }
 
@@ -475,7 +475,7 @@ public interface GasBoilerBuderus extends Heater {
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getIR480ErrorRegister3() {
+    default Value<Integer> getIR480ErrorRegister3() {
         return this.getIR480ErrorRegister3Channel().value();
     }
 
@@ -484,7 +484,7 @@ public interface GasBoilerBuderus extends Heater {
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getIR482ErrorRegister4Channel() {
+    default IntegerReadChannel getIR482ErrorRegister4Channel() {
         return this.channel(ChannelId.IR482_ERROR_REGISTER4);
     }
 
@@ -494,7 +494,7 @@ public interface GasBoilerBuderus extends Heater {
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getIR482ErrorRegister4() {
+    default Value<Integer> getIR482ErrorRegister4() {
         return this.getIR482ErrorRegister4Channel().value();
     }
 
@@ -503,7 +503,7 @@ public interface GasBoilerBuderus extends Heater {
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getIR8002FlowTempRateOfChangeChannel() {
+    default IntegerReadChannel getIR8002FlowTempRateOfChangeChannel() {
         return this.channel(ChannelId.IR8002_FLOW_TEMP_RATE_OF_CHANGE_BOILER1);
     }
 
@@ -513,7 +513,7 @@ public interface GasBoilerBuderus extends Heater {
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getIR8002FlowTempRateOfChange() {
+    default Value<Integer> getIR8002FlowTempRateOfChange() {
         return this.getIR8002FlowTempRateOfChangeChannel().value();
     }
 
@@ -522,7 +522,7 @@ public interface GasBoilerBuderus extends Heater {
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getIR8005HeaterAtLoadLimitChannel() {
+    default IntegerReadChannel getIR8005HeaterAtLoadLimitChannel() {
         return this.channel(ChannelId.IR8005_HEATER_AT_LOAD_LIMIT_BOILER1);
     }
 
@@ -532,7 +532,7 @@ public interface GasBoilerBuderus extends Heater {
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getIR8005HeaterAtLoadLimit() {
+    default Value<Integer> getIR8005HeaterAtLoadLimit() {
         return this.getIR8005HeaterAtLoadLimitChannel().value();
     }
 
@@ -541,7 +541,7 @@ public interface GasBoilerBuderus extends Heater {
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getMaximumPowerBoiler1Channel() {
+    default IntegerReadChannel getMaximumPowerBoiler1Channel() {
         return this.channel(ChannelId.IR8007_MAXIMUM_POWER_BOILER1);
     }
 
@@ -551,7 +551,7 @@ public interface GasBoilerBuderus extends Heater {
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getMaximumPowerBoiler1() {
+    default Value<Integer> getMaximumPowerBoiler1() {
         return this.getMaximumPowerBoiler1Channel().value();
     }
 
@@ -560,7 +560,7 @@ public interface GasBoilerBuderus extends Heater {
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getMinimumPowerPercentBoiler1Channel() {
+    default IntegerReadChannel getMinimumPowerPercentBoiler1Channel() {
         return this.channel(ChannelId.IR8008_MINIMUM_POWER_PERCENT_BOILER1);
     }
 
@@ -570,7 +570,7 @@ public interface GasBoilerBuderus extends Heater {
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getMinimumPowerPercentBoiler1() {
+    default Value<Integer> getMinimumPowerPercentBoiler1() {
         return this.getMinimumPowerPercentBoiler1Channel().value();
     }
 
@@ -579,7 +579,7 @@ public interface GasBoilerBuderus extends Heater {
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getMaximumFlowTempBoiler1Channel() {
+    default IntegerReadChannel getMaximumFlowTempBoiler1Channel() {
         return this.channel(ChannelId.IR8011_MAXIMUM_FLOW_TEMP_BOILER1);
     }
 
@@ -589,7 +589,7 @@ public interface GasBoilerBuderus extends Heater {
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getMaximumFlowTempBoiler1() {
+    default Value<Integer> getMaximumFlowTempBoiler1() {
         return this.getMaximumFlowTempBoiler1Channel().value();
     }
 
@@ -598,7 +598,7 @@ public interface GasBoilerBuderus extends Heater {
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getStatusBoiler1Channel() {
+    default IntegerReadChannel getStatusBoiler1Channel() {
         return this.channel(ChannelId.IR8012_STATUS_BOILER1);
     }
 
@@ -615,7 +615,7 @@ public interface GasBoilerBuderus extends Heater {
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getStatusBoiler1() {
+    default Value<Integer> getStatusBoiler1() {
         return this.getStatusBoiler1Channel().value();
     }
 
@@ -624,7 +624,7 @@ public interface GasBoilerBuderus extends Heater {
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getBitblockBoiler1Channel() {
+    default IntegerReadChannel getBitblockBoiler1Channel() {
         return this.channel(ChannelId.IR8013_BITBLOCK_BOILER1);
     }
 
@@ -634,7 +634,7 @@ public interface GasBoilerBuderus extends Heater {
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getBitblockBoiler1() {
+    default Value<Integer> getBitblockBoiler1() {
         return this.getBitblockBoiler1Channel().value();
     }
 
@@ -643,7 +643,7 @@ public interface GasBoilerBuderus extends Heater {
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getRequestedTemperatureSetPointBoiler1Channel() {
+    default IntegerReadChannel getRequestedTemperatureSetPointBoiler1Channel() {
         return this.channel(ChannelId.IR8015_REQUESTED_TEMPERATURE_SETPOINT_BOILER1);
     }
 
@@ -653,7 +653,7 @@ public interface GasBoilerBuderus extends Heater {
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getRequestedTemperatureSetPointBoiler1() {
+    default Value<Integer> getRequestedTemperatureSetPointBoiler1() {
         return this.getRequestedTemperatureSetPointBoiler1Channel().value();
     }
 
@@ -662,7 +662,7 @@ public interface GasBoilerBuderus extends Heater {
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getRequestedPowerPercentSetPointBoiler1Channel() {
+    default IntegerReadChannel getRequestedPowerPercentSetPointBoiler1Channel() {
         return this.channel(ChannelId.IR8016_SETPOINT_POWER_PERCENT_BOILER1);
     }
 
@@ -672,7 +672,7 @@ public interface GasBoilerBuderus extends Heater {
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getRequestedPowerPercentSetPointBoiler1() {
+    default Value<Integer> getRequestedPowerPercentSetPointBoiler1() {
         return this.getRequestedPowerPercentSetPointBoiler1Channel().value();
     }
 
@@ -681,7 +681,7 @@ public interface GasBoilerBuderus extends Heater {
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getPressureBoiler1Channel() {
+    default IntegerReadChannel getPressureBoiler1Channel() {
         return this.channel(ChannelId.IR8017_PRESSURE_BOILER1);
     }
 
@@ -691,7 +691,7 @@ public interface GasBoilerBuderus extends Heater {
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getPressureBoiler1() {
+    default Value<Integer> getPressureBoiler1() {
         return this.getPressureBoiler1Channel().value();
     }
 
@@ -700,7 +700,7 @@ public interface GasBoilerBuderus extends Heater {
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getErrorCodeBoiler1Channel() {
+    default IntegerReadChannel getErrorCodeBoiler1Channel() {
         return this.channel(ChannelId.IR8018_ERROR_CODE_BOILER1);
     }
 
@@ -710,7 +710,7 @@ public interface GasBoilerBuderus extends Heater {
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getErrorCodeBoiler1() {
+    default Value<Integer> getErrorCodeBoiler1() {
         return this.getErrorCodeBoiler1Channel().value();
     }
 
@@ -719,7 +719,7 @@ public interface GasBoilerBuderus extends Heater {
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getErrorCodeDisplayBoiler1Channel() {
+    default IntegerReadChannel getErrorCodeDisplayBoiler1Channel() {
         return this.channel(ChannelId.IR8019_DISPLAY_ERROR_CODE_BOILER1);
     }
 
@@ -729,7 +729,7 @@ public interface GasBoilerBuderus extends Heater {
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getErrorCodeDisplayBoiler1() {
+    default Value<Integer> getErrorCodeDisplayBoiler1() {
         return this.getErrorCodeDisplayBoiler1Channel().value();
     }
 
@@ -738,7 +738,7 @@ public interface GasBoilerBuderus extends Heater {
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getNumberOfStartsBoiler1Channel() {
+    default IntegerReadChannel getNumberOfStartsBoiler1Channel() {
         return this.channel(ChannelId.IR8021_NUMBER_OF_STARTS_BOILER1);
     }
 
@@ -748,7 +748,7 @@ public interface GasBoilerBuderus extends Heater {
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getNumberOfStartsBoiler1() {
+    default Value<Integer> getNumberOfStartsBoiler1() {
         return this.getNumberOfStartsBoiler1Channel().value();
     }
 
@@ -757,7 +757,7 @@ public interface GasBoilerBuderus extends Heater {
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getRunningTimeBoiler1Channel() {
+    default IntegerReadChannel getRunningTimeBoiler1Channel() {
         return this.channel(ChannelId.IR8023_RUNNING_TIME_BOILER1);
     }
 
@@ -767,7 +767,7 @@ public interface GasBoilerBuderus extends Heater {
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getRunningTimeBoiler1() {
+    default Value<Integer> getRunningTimeBoiler1() {
         return this.getRunningTimeBoiler1Channel().value();
     }
 
@@ -778,7 +778,7 @@ public interface GasBoilerBuderus extends Heater {
      *
      * @return the Channel
      */
-    public default IntegerWriteChannel getHeartBeatInChannel() {
+    default IntegerWriteChannel getHeartBeatInChannel() {
         return this.channel(ChannelId.HR0_HEARTBEAT_IN);
     }
 
@@ -794,7 +794,7 @@ public interface GasBoilerBuderus extends Heater {
      * @param value the next write value
      * @throws OpenemsNamedException on error
      */
-    public default void setHeartBeatIn(Integer value) throws OpenemsNamedException {
+    default void setHeartBeatIn(Integer value) throws OpenemsNamedException {
         this.getHeartBeatInChannel().setNextWriteValue(value);
     }
 
@@ -810,7 +810,7 @@ public interface GasBoilerBuderus extends Heater {
      * @param value the next write value
      * @throws OpenemsNamedException on error
      */
-    public default void setHeartBeatIn(int value) throws OpenemsNamedException {
+    default void setHeartBeatIn(int value) throws OpenemsNamedException {
         this.getHeartBeatInChannel().setNextWriteValue(value);
     }
 
@@ -819,7 +819,7 @@ public interface GasBoilerBuderus extends Heater {
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getHeartBeatOutChannel() {
+    default IntegerReadChannel getHeartBeatOutChannel() {
         return this.channel(ChannelId.HR1_HEARTBEAT_OUT);
     }
 
@@ -834,7 +834,7 @@ public interface GasBoilerBuderus extends Heater {
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getHeartBeatOut() {
+    default Value<Integer> getHeartBeatOut() {
         return this.getHeartBeatOutChannel().value();
     }
 
@@ -853,7 +853,7 @@ public interface GasBoilerBuderus extends Heater {
      *
      * @return the Channel
      */
-    public default BooleanWriteChannel getRunPermissionChannel() {
+    default BooleanWriteChannel getRunPermissionChannel() {
         return this.channel(ChannelId.HR402_RUN_PERMISSION);
     }
 
@@ -864,7 +864,7 @@ public interface GasBoilerBuderus extends Heater {
      * @param value the next write value
      * @throws OpenemsNamedException on error
      */
-    public default void setRunPermission(Boolean value) throws OpenemsNamedException {
+    default void setRunPermission(Boolean value) throws OpenemsNamedException {
         this.getRunPermissionChannel().setNextWriteValue(value);
     }
 
@@ -873,7 +873,7 @@ public interface GasBoilerBuderus extends Heater {
      *
      * @return the Channel
      */
-    public default IntegerWriteChannel getCommandBitsChannel() {
+    default IntegerWriteChannel getCommandBitsChannel() {
         return this.channel(ChannelId.HR405_COMMAND_BITS);
     }
 
@@ -884,7 +884,7 @@ public interface GasBoilerBuderus extends Heater {
      * @param value the next write value
      * @throws OpenemsNamedException on error
      */
-    public default void setCommandBits(Integer value) throws OpenemsNamedException {
+    default void setCommandBits(Integer value) throws OpenemsNamedException {
         this.getCommandBitsChannel().setNextWriteValue(value);
     }
 
@@ -895,7 +895,7 @@ public interface GasBoilerBuderus extends Heater {
      * @param value the next write value
      * @throws OpenemsNamedException on error
      */
-    public default void setCommandBits(int value) throws OpenemsNamedException {
+    default void setCommandBits(int value) throws OpenemsNamedException {
         this.getCommandBitsChannel().setNextWriteValue(value);
     }
 
@@ -904,7 +904,7 @@ public interface GasBoilerBuderus extends Heater {
      *
      * @return the Channel
      */
-    public default EnumWriteChannel getOperatingModeChannel() {
+    default EnumWriteChannel getOperatingModeChannel() {
         return this.channel(ChannelId.OPERATING_MODE);
     }
 
@@ -914,7 +914,7 @@ public interface GasBoilerBuderus extends Heater {
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getOperatingMode() {
+    default Value<Integer> getOperatingMode() {
         return this.getOperatingModeChannel().value();
     }
 
@@ -925,7 +925,7 @@ public interface GasBoilerBuderus extends Heater {
      * @param value the next write value
      * @throws OpenemsNamedException on error
      */
-    public default void setOperatingMode(Integer value) throws OpenemsNamedException {
+    default void setOperatingMode(Integer value) throws OpenemsNamedException {
         this.getOperatingModeChannel().setNextWriteValue(value);
     }
 
@@ -936,8 +936,21 @@ public interface GasBoilerBuderus extends Heater {
      * @param value the next write value
      * @throws OpenemsNamedException on error
      */
-    public default void setOperatingMode(int value) throws OpenemsNamedException {
+    default void setOperatingMode(int value) throws OpenemsNamedException {
         this.getOperatingModeChannel().setNextWriteValue(value);
+    }
+
+    /**
+     * Operating mode, set point temperature or set point power percent. Default is set point power percent.
+     * See {@link ChannelId#OPERATING_MODE}.
+     *
+     * @param mode the next write value
+     * @throws OpenemsNamedException on error
+     */
+    default void setOperatingMode(OperatingMode mode) throws OpenemsNamedException {
+        if (mode != null && mode != OperatingMode.UNDEFINED) {
+            this.getOperatingModeChannel().setNextWriteValue(mode.getValue());
+        }
     }
 
     /**
@@ -945,7 +958,7 @@ public interface GasBoilerBuderus extends Heater {
      *
      * @return the Channel
      */
-    public default StringReadChannel getStatusMessageChannel() {
+    default StringReadChannel getStatusMessageChannel() {
         return this.channel(ChannelId.STATUS_MESSAGE);
     }
 
@@ -955,7 +968,7 @@ public interface GasBoilerBuderus extends Heater {
      *
      * @return the Channel {@link Value}
      */
-    public default Value<String> getStatusMessage() {
+    default Value<String> getStatusMessage() {
         return this.getStatusMessageChannel().value();
     }
 
@@ -965,7 +978,7 @@ public interface GasBoilerBuderus extends Heater {
      *
      * @param value the next value
      */
-    public default void _setStatusMessage(String value) {
+    default void _setStatusMessage(String value) {
         this.getStatusMessageChannel().setNextValue(value);
     }
 }

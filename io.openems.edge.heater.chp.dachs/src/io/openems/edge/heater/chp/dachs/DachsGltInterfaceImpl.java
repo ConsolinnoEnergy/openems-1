@@ -158,7 +158,7 @@ public class DachsGltInterfaceImpl extends AbstractOpenemsComponent implements O
 					boolean exceptionalStateActive = this.exceptionalStateHandler.exceptionalStateActive(this);
 					if (exceptionalStateActive) {
 						int exceptionalStateValue = this.getExceptionalStateValue();
-						if (exceptionalStateValue <= 0) {
+						if (exceptionalStateValue <= this.DEFAULT_MIN_EXCEPTIONAL_VALUE) {
 							turnOnChp = false;
 						} else {
 							turnOnChp = true;
