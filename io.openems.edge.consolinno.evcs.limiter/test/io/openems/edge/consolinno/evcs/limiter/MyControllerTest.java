@@ -178,45 +178,6 @@ public class MyControllerTest {
     }
 
     @Test
-    public void priorityTest() throws Throwable {
-        EvcsLimiterImpl test = new EvcsLimiterImpl();
-        final TimeLeapClock clock = new TimeLeapClock(
-                Instant.ofEpochSecond(1577836800) , ZoneOffset.UTC);
-        new ComponentTest(test)
-                .addReference("cpm", new DummyComponentManager(clock))
-                .addComponent(this.evcs)
-                .addComponent(new DummyAsymmetricMeter(meterId))
-                .activate(MyConfig.create()
-                        .setId(id)
-                        .setEnabled(true)
-                        .setEvcss(new String[]{evcsId})
-                        .setUseMeter(false)
-                        .setMeter(meterId)
-                        .setSymmetry(true)
-                        .setOffTime(20)
-                        .setGrid(GridVoltage.V_230_HZ_50)
-                        .setPhaseLimit(16 * 230)
-                        .setPowerLimit(32 * 230)
-                        .build())
-                .next(new TestCase()
-                        .timeleap(clock, 1, ChronoUnit.SECONDS)
-                        .input(PHASES, 3)
-                        .input(CHARGE_POWER, 30 * 230)
-                )
-                .next(new TestCase()
-                        .timeleap(clock, 1, ChronoUnit.SECONDS)
-                        .input(PHASES, 3)
-                        .input(CHARGE_POWER, 30 * 230)
-                )
-                .next(new TestCase()
-                        .timeleap(clock, 1, ChronoUnit.SECONDS)
-                        .input(PHASES, 3)
-                        .input(CHARGE_POWER, 30 * 230)
-                )
-        ;
-    }
-
-    @Test
     public void priorityWithNonPriorityTest() throws Throwable {
         EvcsLimiterImpl test = new EvcsLimiterImpl();
         final TimeLeapClock clock = new TimeLeapClock(
