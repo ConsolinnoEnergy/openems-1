@@ -19,6 +19,7 @@ import io.openems.edge.common.taskmanager.Priority;
 import io.openems.edge.evcs.api.Evcs;
 import io.openems.edge.evcs.api.EvcsPower;
 import io.openems.edge.evcs.api.ManagedEvcs;
+import io.openems.edge.evcs.api.Status;
 import io.openems.edge.evcs.schneider.api.Schneider;
 import org.osgi.service.cm.ConfigurationAdmin;
 import org.osgi.service.cm.ConfigurationException;
@@ -81,10 +82,11 @@ public class SchneiderImpl extends AbstractOpenemsModbusComponent implements Ope
         }
         super.activate(context, config.id(), config.alias(), config.enabled(), config.modbusUnitId(), this.cm,
                 "Modbus", config.modbusBridgeId());
-        this._setMinimumHardwarePower(8 * 230);
+        this._setMinimumHardwarePower(5 * 230);
         this._setIsPriority(config.priority());
-        this._setMaximumPower(this.maxPower);
-        this._setMinimumPower(this.minPower);
+        this._setSetChargePowerLimit(6 * 230);
+        this._setMaximumPower(this.maxPower * 230);
+        this._setMinimumPower(this.minPower * 230);
         this.readHandler = new SchneiderReadHandler(this);
         this.writeHandler = new SchneiderWriteHandler(this);
     }
@@ -219,7 +221,7 @@ public class SchneiderImpl extends AbstractOpenemsModbusComponent implements Ope
 
     @Override
     public String debugLog() {
-        return "Total: " + this.getStationPowerTotal() + " W | L1 " + this.getStationIntensityPhaseX() + " A | L2 " + this.getStationIntensityPhase2() + " A | L3 " + this.getStationIntensityPhase3() + " A";
+        return "Total: " + this.getStationPowerTotal() + " kW | L1 " + this.getStationIntensityPhaseX() + " A | L2 " + this.getStationIntensityPhase2() + " A | L3 " + this.getStationIntensityPhase3() + " A";
     }
 
 
@@ -244,6 +246,15 @@ public class SchneiderImpl extends AbstractOpenemsModbusComponent implements Ope
             this._setChargingstationCommunicationFailed(true);
         }
         this.writeHandler.run();
+
+        try {
+            if (this.getSetChargePowerLimit().isDefined() && this.getSetChargePowerLimit().get() <= 6 * 230 && !this.getStatus().equals(Status.CHARGING)) {
+                this.setChargePowerLimit(6 * 230);
+            }
+        } catch (OpenemsError.OpenemsNamedException e) {
+        }
+
+
         try {
             this.readHandler.run();
         } catch (Throwable throwable) {

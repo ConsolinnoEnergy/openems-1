@@ -100,7 +100,7 @@ public class TemperatureSensorImpl extends AbstractOpenemsModbusComponent implem
 
     @Override
     public String debugLog() {
-        String temperature = getTemperature().isDefined() ? getTemperature().get().toString() : "Not Defined";
+        String temperature = getTemperature().isDefined() ? getTemperature().get().toString() + getTemperatureChannel().channelDoc().getUnit().getSymbol() : "Not Defined";
         return "Temperature " + temperature;
     }
 

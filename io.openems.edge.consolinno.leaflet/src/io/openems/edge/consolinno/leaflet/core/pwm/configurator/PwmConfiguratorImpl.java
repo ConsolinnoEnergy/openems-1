@@ -1,8 +1,10 @@
 package io.openems.edge.consolinno.leaflet.core.pwm.configurator;
 
 import io.openems.edge.common.component.AbstractOpenemsComponent;
+import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.consolinno.leaflet.core.api.LeafletCore;
+import io.openems.edge.consolinno.leaflet.relay.RelayImpl;
 import org.osgi.service.cm.ConfigurationException;
 import org.osgi.service.component.ComponentContext;
 import org.osgi.service.component.annotations.Activate;
@@ -15,6 +17,8 @@ import org.osgi.service.component.annotations.ReferenceCardinality;
 import org.osgi.service.component.annotations.ReferencePolicy;
 import org.osgi.service.component.annotations.ReferencePolicyOption;
 import org.osgi.service.metatype.annotations.Designate;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * This Configurator sets the Frequency of the Consolinno Pwm Module.
@@ -26,9 +30,8 @@ import org.osgi.service.metatype.annotations.Designate;
 
 public class PwmConfiguratorImpl extends AbstractOpenemsComponent implements OpenemsComponent {
 
-
-    @Reference(policy = ReferencePolicy.STATIC, policyOption = ReferencePolicyOption.GREEDY, cardinality = ReferenceCardinality.MANDATORY)
-    LeafletCore lc;
+    @Reference
+    protected ComponentManager cpm;
 
     public PwmConfiguratorImpl() {
         super(OpenemsComponent.ChannelId.values());
@@ -39,9 +42,16 @@ public class PwmConfiguratorImpl extends AbstractOpenemsComponent implements Ope
     private static final int DEFAULT_PWM_FREQUENCY = 200;
     private static final int MIN_MODULE_NUMBER = 1;
     private static final int MAX_MODULE_NUMBER = 8;
+    private LeafletCore lc;
+    private final Logger log = LoggerFactory.getLogger(PwmConfiguratorImpl.class);
 
     @Activate
     void activate(ComponentContext context, Config config) throws ConfigurationException {
+        try {
+            this.lc = this.cpm.getComponent(config.leafletId());
+        } catch (Exception e) {
+            this.log.error("The LeafletCore doesn't exist! Check Config!");
+        }
         int frequency = config.frequency();
         this.moduleNumber = config.moduleNumber();
         if (this.moduleNumber >= MIN_MODULE_NUMBER && this.moduleNumber <= MAX_MODULE_NUMBER) {
@@ -55,6 +65,11 @@ public class PwmConfiguratorImpl extends AbstractOpenemsComponent implements Ope
 
     @Modified
     void modified(ComponentContext context, Config config) throws ConfigurationException {
+        try {
+            this.lc = this.cpm.getComponent(config.leafletId());
+        } catch (Exception e) {
+            this.log.error("The LeafletCore doesn't exist! Check Config!");
+        }
         this.lc.setPwmConfiguration(this.moduleNumber, DEFAULT_PWM_FREQUENCY);
         int frequency = config.frequency();
         this.moduleNumber = config.moduleNumber();

@@ -1,6 +1,7 @@
 package io.openems.edge.controller.heatnetwork.multipleheatercombined;
 
 import io.openems.common.exceptions.OpenemsError;
+import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.controller.api.Controller;
 import io.openems.edge.controller.heatnetwork.multipleheatercombined.api.MultipleHeaterCombinedController;
@@ -12,6 +13,7 @@ import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.ConfigurationPolicy;
 import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Modified;
+import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,6 +41,9 @@ public class MultipleHeaterCombinedControllerImpl extends AbstractMultiCombinedC
 
     private ConfigMultipleHeater config;
 
+    @Reference
+    ComponentManager cpm;
+
     public MultipleHeaterCombinedControllerImpl() {
 
         super(OpenemsComponent.ChannelId.values(),
@@ -51,14 +56,14 @@ public class MultipleHeaterCombinedControllerImpl extends AbstractMultiCombinedC
     void activate(ComponentContext context, ConfigMultipleHeater config) {
         this.config = config;
         super.activate(context, config.id(), config.alias(), config.enabled(), config.useTimer(), config.timerId(), config.timeDelta(), ControlType.HEATER, config.heaterIds(),
-                config.activationThermometers(), config.activationTemperatures(), config.deactivationThermometers(), config.deactivationTemperatures());
+                config.activationThermometers(), config.activationTemperatures(), config.deactivationThermometers(), config.deactivationTemperatures(), this.cpm);
     }
 
     @Modified
     void modified(ComponentContext context, ConfigMultipleHeater config) {
         this.config = config;
         super.modified(context, config.id(), config.alias(), config.enabled(), config.useTimer(), config.timerId(), config.timeDelta(), ControlType.HEATER, config.heaterIds(),
-                config.activationThermometers(), config.activationTemperatures(), config.deactivationThermometers(), config.deactivationTemperatures());
+                config.activationThermometers(), config.activationTemperatures(), config.deactivationThermometers(), config.deactivationTemperatures(), this.cpm);
     }
 
     /**

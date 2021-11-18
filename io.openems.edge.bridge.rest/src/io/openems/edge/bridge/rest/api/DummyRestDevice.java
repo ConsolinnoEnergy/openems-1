@@ -5,6 +5,9 @@ import io.openems.edge.common.channel.Channel;
 import io.openems.edge.common.component.AbstractOpenemsComponent;
 import io.openems.edge.common.component.OpenemsComponent;
 
+/**
+ * A Dummy Rest Device for Test purposes.
+ */
 public class DummyRestDevice extends AbstractOpenemsComponent implements OpenemsComponent, RestRemoteDevice {
     private final boolean isWrite;
     private final boolean disturbanceActive;
@@ -36,6 +39,11 @@ public class DummyRestDevice extends AbstractOpenemsComponent implements Openems
         this(id, false);
     }
 
+    /**
+     * Sets the Value of the Device if it's type is Write /allows to write.
+     *
+     * @param value the Value that the Remote Device will be set to and therefore the Remote Device too.
+     */
     @Override
     public void setValue(String value) {
         try {
@@ -44,6 +52,12 @@ public class DummyRestDevice extends AbstractOpenemsComponent implements Openems
             e.printStackTrace();
         }
     }
+
+    /**
+     * Returns the Value as a String. Depending on the Write/Read Type.
+     *
+     * @return the ValueString.
+     */
 
     @Override
     public String getValue() {
@@ -59,21 +73,41 @@ public class DummyRestDevice extends AbstractOpenemsComponent implements Openems
         return "Read Value not available yet";
     }
 
+    /**
+     * Get the Unique Id.
+     *
+     * @return the Id.
+     */
     @Override
     public String getId() {
         return super.id();
     }
 
+    /**
+     * Check if this Device is a Write Remote Device.
+     *
+     * @return a boolean.
+     */
     @Override
     public boolean isWrite() {
         return this.isWrite;
     }
 
+    /**
+     * Checks if this Device is a Read Remote Device.
+     *
+     * @return a boolean.
+     */
     @Override
     public boolean isRead() {
         return !this.isWrite;
     }
 
+    /**
+     * Checks/Asks if the Connection via Rest is ok.
+     *
+     * @return a boolean.
+     */
     @Override
     public boolean connectionOk() {
         return !this.disturbanceActive;

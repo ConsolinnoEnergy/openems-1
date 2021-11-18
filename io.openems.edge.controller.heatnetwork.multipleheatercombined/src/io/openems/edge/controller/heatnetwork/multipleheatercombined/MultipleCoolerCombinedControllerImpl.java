@@ -1,6 +1,7 @@
 package io.openems.edge.controller.heatnetwork.multipleheatercombined;
 
 import io.openems.common.exceptions.OpenemsError;
+import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.controller.api.Controller;
 import io.openems.edge.controller.heatnetwork.multipleheatercombined.api.MultipleCoolerCombinedController;
@@ -12,6 +13,7 @@ import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.ConfigurationPolicy;
 import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Modified;
+import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,6 +48,9 @@ public class MultipleCoolerCombinedControllerImpl extends AbstractMultiCombinedC
 
     }
 
+    @Reference
+    ComponentManager cpm;
+
     @Activate
     void activate(ComponentContext context, ConfigMultipleCooler config) {
 
@@ -53,7 +58,7 @@ public class MultipleCoolerCombinedControllerImpl extends AbstractMultiCombinedC
         super.activate(context, config.id(), config.alias(), config.enabled(), config.useTimer(), config.timerId(),
                 config.timeDelta(), ControlType.COOLER, config.coolerIds(),
                 config.activationThermometers(), config.activationTemperatures(),
-                config.deactivationThermometers(), config.deactivationTemperatures());
+                config.deactivationThermometers(), config.deactivationTemperatures(), this.cpm);
     }
 
     @Modified
@@ -62,7 +67,7 @@ public class MultipleCoolerCombinedControllerImpl extends AbstractMultiCombinedC
         super.modified(context, config.id(), config.alias(), config.enabled(), config.useTimer(), config.timerId(),
                 config.timeDelta(), ControlType.COOLER, config.coolerIds(),
                 config.activationThermometers(), config.activationTemperatures(),
-                config.deactivationThermometers(), config.deactivationTemperatures());
+                config.deactivationThermometers(), config.deactivationTemperatures(), this.cpm);
     }
 
 

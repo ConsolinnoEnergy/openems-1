@@ -4,10 +4,40 @@ This Bundle provides Utility classes.
 
 
 == Natures
+
 - ConditionApplier
 
 == Classes
+
 - MinMaxToChannel
 - ConditionApplier
 
+== MinMaxToChannel
 
+This small class provides the ability to evaluate the Minimum/Maximum Value of a collection of IntegerReadChannel and write the output to a different ChannelAddress.
+This is useful for e.g. TemperatureBased Controlling of a Fallback Heat logic, where the FlowTemp must exceed a Thermometer, otherwise the Fallback starts
+
+=== Example
+
+You have a Heatsystem with 2 Outputs.
+One for Heating up a Room with a SetPoint of 300dC (30°C) and another output for Heating up a Storage with a SetPoint of 700dC(70°C) The Fallback Watches the FlowTemp.
+If the FlowTemp Falls below the SetPoints, it activates a fallback heater.
+However!
+You do not want to Heat to 70°C if only 30°C are needed.
+Therefore you need a MinMax in combination of VirtualThermometer.
+When a Demand is set -> write into VirtualThermometer otherwise write 0 (Room demand gets a VirtualThermometer, and Storage gets another one) The MinMaxer can get the MaximumValue of those Thermometers and write the output to the "Reference" thermometer of the Fallback controller.
+(If a HeatDemand for Storage is active -> 700dC else 0dC, when Room Demand -> 300dC else 0dc -> Maximum of both -> reference) if Flow Temperature falls below MaxValue (Storage demand -> 700dC, RoomDemand and no Heater -> 300dC else 0dC) heat up.
+
+
+== ConditionApplier
+
+The Condition Applier is a useful utility Class, to check for OR/AND Conditions by getting a ChannelAddress and compare it to
+an expected value.
+If the OR/AND condition applies write an active Value to another ChannelAddress, or else an inactive Value (if enabled).
+This is also useful for dynamic complex (Heat/Hydraulic)Systems.
+
+== VirtualChannel
+
+These can be used to enable Generic Channel, for either storing information or use them later.
+E.g. if you want to know if a condition of a ConditionApplier is met -> you can store true/false from the condition
+applier to a virtual Channel.

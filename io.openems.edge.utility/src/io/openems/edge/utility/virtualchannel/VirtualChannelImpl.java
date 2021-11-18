@@ -1,5 +1,6 @@
 package io.openems.edge.utility.virtualchannel;
 
+import io.openems.common.exceptions.OpenemsError;
 import io.openems.edge.common.component.AbstractOpenemsComponent;
 import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.common.event.EdgeEventConstants;
@@ -49,15 +50,45 @@ public class VirtualChannelImpl extends AbstractOpenemsComponent implements Open
     }
 
     @Activate
-    void activate(ComponentContext context, Config config) throws ConfigurationException {
+    void activate(ComponentContext context, Config config) {
         super.activate(context, config.id(), config.alias(), config.enabled());
         this.type = config.channelType();
+        this.applyValue(config.defaultValue());
     }
 
+
     @Modified
-    void modified(ComponentContext context, Config config) throws ConfigurationException {
+    void modified(ComponentContext context, Config config) {
         super.modified(context, config.id(), config.alias(), config.enabled());
         this.type = config.channelType();
+        this.applyValue(config.defaultValue());
+    }
+
+    private void applyValue(String defaultValue) {
+        try {
+            switch (this.type) {
+                case STRING:
+                    this.getStringChannel().setNextWriteValueFromObject(defaultValue);
+                    break;
+                case BOOLEAN:
+                    //Either 0 or negative Value interpreted as false, else true
+                    if (defaultValue.equals("0") || defaultValue.contains("-")) {
+                        defaultValue = "false";
+                    } else {
+                        defaultValue = "true";
+                    }
+                    this.getBooleanChannel().setNextWriteValueFromObject(defaultValue);
+                    break;
+                case DOUBLE:
+                    this.getDoubleChannel().setNextWriteValueFromObject(defaultValue);
+                    break;
+                case INTEGER:
+                    this.getLongChannel().setNextWriteValueFromObject(defaultValue);
+                    break;
+            }
+        } catch (OpenemsError.OpenemsNamedException e) {
+            this.log.warn("Couldn't apply default Value!");
+        }
     }
 
     @Deactivate
@@ -79,7 +110,7 @@ public class VirtualChannelImpl extends AbstractOpenemsComponent implements Open
                 debugString += this.getDoubleChannel().value();
                 break;
             case INTEGER:
-                debugString += this.getIntegerChannel().value();
+                debugString += this.getLongChannel().value();
                 break;
         }
         return debugString;
@@ -100,7 +131,7 @@ public class VirtualChannelImpl extends AbstractOpenemsComponent implements Open
                     this.getDoubleChannel().getNextWriteValue().ifPresent(entry -> this.getDoubleChannel().setNextValue(entry));
                     break;
                 case INTEGER:
-                    this.getIntegerChannel().getNextWriteValue().ifPresent(entry -> this.getIntegerChannel().setNextValue(entry));
+                    this.getLongChannel().getNextWriteValue().ifPresent(entry -> this.getLongChannel().setNextValue(entry));
                     break;
             }
 

@@ -31,7 +31,7 @@ public interface VirtualChannel extends OpenemsComponent {
          * <li>Type: Integer
          * </ul>
          */
-        VIRTUAL_INTEGER(Doc.of(OpenemsType.INTEGER).accessMode(AccessMode.READ_WRITE)),
+        VIRTUAL_LONG(Doc.of(OpenemsType.LONG).accessMode(AccessMode.READ_WRITE)),
         /**
          * Virtual String.
          *
@@ -72,12 +72,12 @@ public interface VirtualChannel extends OpenemsComponent {
     }
 
     /**
-     * Get the {@link ChannelId#VIRTUAL_INTEGER} Channel.
+     * Get the {@link ChannelId#VIRTUAL_LONG} Channel.
      *
      * @return the Channel.
      */
-    default WriteChannel<Integer> getIntegerChannel() {
-        return this.channel(ChannelId.VIRTUAL_INTEGER);
+    default WriteChannel<Long> getLongChannel() {
+        return this.channel(ChannelId.VIRTUAL_LONG);
     }
 
     /**

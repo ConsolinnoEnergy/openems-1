@@ -12,8 +12,8 @@ import io.openems.edge.controller.heatnetwork.hydraulic.lineheater.helperclass.C
 import io.openems.edge.controller.heatnetwork.hydraulic.lineheater.helperclass.LineController;
 import io.openems.edge.controller.heatnetwork.hydraulic.lineheater.helperclass.OneChannelLineController;
 import io.openems.edge.controller.heatnetwork.hydraulic.lineheater.helperclass.ValveLineController;
-import io.openems.edge.heater.decentral.api.DecentralizedCooler;
-import io.openems.edge.heater.decentral.api.DecentralizedHeater;
+import io.openems.edge.heater.decentralized.api.DecentralizedCooler;
+import io.openems.edge.heater.decentralized.api.DecentralizedHeater;
 import io.openems.edge.heatsystem.components.HydraulicComponent;
 import io.openems.edge.thermometer.api.Thermometer;
 import io.openems.edge.thermometer.api.ThermometerValueWrapper;
@@ -42,7 +42,6 @@ abstract class AbstractHydraulicLineController extends AbstractOpenemsComponent 
 
     private final Logger log = LoggerFactory.getLogger(AbstractHydraulicLineController.class);
 
-    @Reference
     protected ComponentManager cpm;
 
     private static final int DEFAULT_TEMPERATURE = -127;
@@ -76,6 +75,7 @@ abstract class AbstractHydraulicLineController extends AbstractOpenemsComponent 
     private boolean wasActiveBefore;
     private DecentralizedReactionType reactionTypeHeaterOrCooler;
     protected boolean configSuccess;
+    private boolean initialHeatUpWasSet;
     //NOTE: If more Variation comes --> create extra "LineHeater"Classes in this controller etc
 
     private HeaterType heaterType = HeaterType.HEATER;
@@ -97,8 +97,10 @@ abstract class AbstractHydraulicLineController extends AbstractOpenemsComponent 
                             String channelAddress, String[] channels, String bypassValve, String timerId,
                             int deltaTimeFallback, int deltaTimeCycleRestart, boolean shouldFallback,
                             int minuteFallbackStart, int minuteFallbackStop,
-                            double maxValveValue, double minValveValue, boolean minMaxOnly, HeaterType heaterType) {
+                            double maxValveValue, double minValveValue, boolean minMaxOnly, HeaterType heaterType,
+                            ComponentManager cpm) {
         super.activate(context, id, alias, enabled);
+        this.cpm = cpm;
         this.activateOrModifiedRoutine(referenceThermometer, useMinMax, useDecentralizedHeater, decentralizedHeaterId, reactionType,
                 defaultTemperature, lineHeaterType, valueIsBoolean, channelAddress, channels, bypassValve, timerId,
                 deltaTimeFallback, deltaTimeCycleRestart, shouldFallback, minuteFallbackStart, minuteFallbackStop,
@@ -111,8 +113,9 @@ abstract class AbstractHydraulicLineController extends AbstractOpenemsComponent 
                   String channelAddress, String[] channels, String bypassValve, String timerId,
                   int deltaTimeFallback, int deltaTimeCycleRestart, boolean shouldFallback,
                   int minuteFallbackStart, int minuteFallbackStop,
-                  double maxValveValue, double minValveValue, boolean minMaxOnly, HeaterType heaterType) {
+                  double maxValveValue, double minValveValue, boolean minMaxOnly, HeaterType heaterType, ComponentManager cpm) {
         super.modified(context, id, alias, enabled);
+        this.cpm = cpm;
         this.configSuccess = false;
         this.activateOrModifiedRoutine(referenceThermometer, useMinMax, useDecentralizedHeater, decentralizedHeaterId, reactionType,
                 defaultTemperature, lineHeaterType, valueIsBoolean, channelAddress, channels, bypassValve, timerId,
@@ -221,8 +224,16 @@ abstract class AbstractHydraulicLineController extends AbstractOpenemsComponent 
                 this.createLineHeater(valueToWriteIsBoolean, channelAddress);
                 break;
             case MULTIPLE_CHANNEL:
-                int compareLength = useMinMax ? CONFIG_CHANNEL_LIST_WITH_READ_WRITE_AND_MIN_MAX_LENGTH : CONFIG_CHANNEL_LIST_LENGTH_NO_MIN_MAX_OR_ONLY_MIN_MAX;
-                if (channels.length != compareLength) {
+                int compareLength = CONFIG_CHANNEL_LIST_WITH_READ_WRITE_AND_MIN_MAX_LENGTH;
+                if (channels.length == CONFIG_CHANNEL_LIST_LENGTH_NO_MIN_MAX_OR_ONLY_MIN_MAX && useMinMax) {
+                    this.onlyMinMax = true;
+                    compareLength = CONFIG_CHANNEL_LIST_LENGTH_NO_MIN_MAX_OR_ONLY_MIN_MAX;
+                } else if (!useMinMax && channels.length == CONFIG_CHANNEL_LIST_LENGTH_NO_MIN_MAX_OR_ONLY_MIN_MAX) {
+                    compareLength = CONFIG_CHANNEL_LIST_LENGTH_NO_MIN_MAX_OR_ONLY_MIN_MAX;
+                    this.onlyMinMax = false;
+                }
+
+                if (channels.length != CONFIG_CHANNEL_LIST_WITH_READ_WRITE_AND_MIN_MAX_LENGTH && channels.length != CONFIG_CHANNEL_LIST_LENGTH_NO_MIN_MAX_OR_ONLY_MIN_MAX) {
                     throw new ConfigurationException("ChannelSize", "ChannelSize should be" + compareLength + " but is : " + channels.length);
                 } else {
                     this.createChannelLineHeater(valueToWriteIsBoolean, channels, useMinMax);
@@ -414,10 +425,13 @@ abstract class AbstractHydraulicLineController extends AbstractOpenemsComponent 
                         temperatureReference = FALLBACK_TEMPERATURE;
                     }
                     if (this.startConditionApplies(temperatureCurrent, temperatureReference)) {
-                        if ((this.timerHandler.checkTimeIsUp(IDENTIFIER_CYCLE_RESTART))
+                        if ((this.timerHandler.checkTimeIsUp(IDENTIFIER_CYCLE_RESTART) || !this.initialHeatUpWasSet)
                                 || this.wasActiveBefore) {
                             this.startProcess();
                             this.timerHandler.resetTimer(IDENTIFIER_CYCLE_RESTART);
+                        } else {
+                            //temperature not Reached but time is not up yet
+                            this.stopProcess();
                         }
                     } else {
                         //temperatureReference Reached
@@ -538,6 +552,7 @@ abstract class AbstractHydraulicLineController extends AbstractOpenemsComponent 
                 this.lineController.startProcess();
             }
             this.wasActiveBefore = true;
+            this.initialHeatUpWasSet = true;
         } catch (OpenemsError.OpenemsNamedException e) {
             this.log.error("Error while trying to heat!");
         }

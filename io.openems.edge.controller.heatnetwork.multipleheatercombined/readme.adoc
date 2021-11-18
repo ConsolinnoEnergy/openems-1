@@ -1,8 +1,39 @@
-# io.openems.edge.controller.multipleheatercombined Provider
+= Multiple Heater Combined Controller
 
-${Bundle-Description}
+To start 'n' Heater/Cooler, you need a Controller to Enable them.
+This Controller enables 'n' heater/Cooler.
+Each heater/Cooler receives an activation and deactivation Thermometer and Temperature.
+If the Heater/Cooler should run, this controller writes true into their EnableSignal.
+The Temperatures can be either fixed Integer Values or ChannelAddresses, since the MultiHeater uses ThermometerWrapper for each heater/Cooler.
 
-## Example
+This allows e.g. Heating up/Cooling down a Storage.
 
-## References
+== Example
+
+You have Heater A, Heater B and Heater C each having different Thermometer in different HeatStorages (A_H, B_H and C_H).
+Heater A Should activate when the Top Sensor falls below 500dC and deactivate when the bottom Sensor reaches 650 dC.
+(Heat storage is "full" when bottom Temperatures reach a maximum, and become empty when the top Sensors getting cold) Heater B should activate at 400 dC and deactivate at 550 dC And Heater C should activate at X and Deactivates at Y...
+
+You would configure the Controller in that way:
+
+=== Configuration
+
+- HeaterIds:
+Heater A, Heater B, Heater C
+
+- activationTemperatures 500, 400, X
+- deactivationTemperatures 650, 550, Y
+- activationThermometers Top_Sensor_A_H, Top_Sensor_B_H, Top_Sensor_C_H
+- deactivationThermometers Bottom_Sensor_A_H, Bottom_Sensor_B_H, Bottom_Sensor_C_H
+
+=== Additional Configuration
+
+Sometimes you want to wait after Heating up / Cooling down a System to execute the logic of this MultiHeater/Cooler again.
+For this case the "useTimer" may come in handy.
+The use of a Timer allows waiting for a certain time if a: The system cooled down/heated up before and should wait until it runs again, or b: on a restart of the system -> wait for a certain time until execute the logic again.
+Remember this is optional.
+If you want to use different times, for a different heater, you may want to configure another MultiHeater/Cooler controller.
+
+
+
 

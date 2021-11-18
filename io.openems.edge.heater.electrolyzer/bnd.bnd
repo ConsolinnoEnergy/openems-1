@@ -1,0 +1,21 @@
+Bundle-Name: OpenEMS Edge Generator
+Bundle-Vendor: Consolinno Energy GmbH
+Bundle-License: https://opensource.org/licenses/EPL-2.0
+Bundle-Version: 1.0.0.${tstamp}
+Bundle-Description: \
+	The provider bundle for the Generator. Provides e.g. an electrolyser \
+	\
+
+-buildpath:  \
+	${buildpath},\
+    io.openems.edge.common,\
+    io.openems.common,\
+    io.openems.edge.storage,\
+    io.openems.edge.bridge.modbus,\
+    io.openems.edge.heater.api,\
+    io.openems.edge.exceptionalstate.api,\
+    io.openems.edge.timer.api,\
+
+-testpath: \
+	${testpath},\
+

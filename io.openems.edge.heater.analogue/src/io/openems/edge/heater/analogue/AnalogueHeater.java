@@ -1,10 +1,13 @@
 package io.openems.edge.heater.analogue;
 
 import io.openems.common.exceptions.OpenemsError;
+import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.common.event.EdgeEventConstants;
 import io.openems.edge.heater.analogue.component.AbstractAnalogueHeaterOrCoolerComponent;
 import io.openems.edge.heater.api.Heater;
+import io.openems.edge.io.api.Relay;
+import org.osgi.service.cm.ConfigurationAdmin;
 import org.osgi.service.cm.ConfigurationException;
 import org.osgi.service.component.ComponentContext;
 import org.osgi.service.component.annotations.Activate;
@@ -12,6 +15,7 @@ import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.ConfigurationPolicy;
 import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Modified;
+import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.event.Event;
 import org.osgi.service.event.EventConstants;
 import org.osgi.service.event.EventHandler;
@@ -26,7 +30,7 @@ import org.osgi.service.metatype.annotations.Designate;
  * <li>{@link io.openems.edge.io.api.AnalogInputOutput}</li>
  * <li>{@link io.openems.edge.bridge.lucidcontrol.api.LucidControlDeviceOutput}</li>
  * <li>{@link io.openems.edge.io.api.Pwm} </li>
- * <li>{@link io.openems.edge.relay.api.Relay}</li>
+ * <li>{@link Relay}</li>
  * </ul>
  * </p>
  * <p>
@@ -46,6 +50,12 @@ public class AnalogueHeater extends AbstractAnalogueHeaterOrCooler implements Op
 
     private ConfigHeaterAnalogue config;
 
+    @Reference
+    ComponentManager cpm;
+
+    @Reference
+    ConfigurationAdmin cm;
+
 
     public AnalogueHeater() {
         super(OpenemsComponent.ChannelId.values(),
@@ -57,7 +67,7 @@ public class AnalogueHeater extends AbstractAnalogueHeaterOrCooler implements Op
         this.config = config;
         super.activate(context, config.id(), config.alias(), config.enabled(), config.analogueId(), config.analogueType(),
                 config.controlType(), config.defaultMinPower(), config.timerId(), config.maxTimeEnableSignal(),
-                config.maxTimePowerSignal(), config.defaultRunPower(), config.autoRun(), config.maxPower());
+                config.maxTimePowerSignal(), config.defaultRunPower(), config.maxPower(), this.cpm, this.cm);
     }
 
     @Modified
@@ -65,7 +75,7 @@ public class AnalogueHeater extends AbstractAnalogueHeaterOrCooler implements Op
         this.config = config;
         super.modified(context, config.id(), config.alias(), config.enabled(), config.analogueId(), config.analogueType(),
                 config.controlType(), config.defaultMinPower(), config.timerId(), config.maxTimeEnableSignal(),
-                config.maxTimePowerSignal(), config.defaultRunPower(), config.autoRun(), config.maxPower());
+                config.maxTimePowerSignal(), config.defaultRunPower(), config.maxPower(), this.cpm, this.cm);
 
     }
 
@@ -82,7 +92,7 @@ public class AnalogueHeater extends AbstractAnalogueHeaterOrCooler implements Op
             try {
                 super.activationOrModifiedRoutine(this.config.analogueId(), this.config.analogueType(),
                         this.config.controlType(), this.config.defaultMinPower(), this.config.timerId(), this.config.maxTimeEnableSignal(),
-                        this.config.maxTimePowerSignal(), this.config.defaultRunPower(), this.config.autoRun(), this.config.maxPower());
+                        this.config.maxTimePowerSignal(), this.config.defaultRunPower(), this.config.maxPower());
             } catch (OpenemsError.OpenemsNamedException | ConfigurationException e) {
                 super.log.warn("Couldn't apply Config yet. Reason: " + e.getMessage());
             }

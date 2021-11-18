@@ -95,6 +95,7 @@ public class MultipleBooleanConditionApplierImpl extends AbstractOpenemsComponen
      *                                            It CONTINUES to apply channelAddresses, even if one entry is wrong -> look at the info log which entry is wrong!
      */
     private void activateOrModifiedRoutine(ConfigMultipleConditionApplier config) throws OpenemsError.OpenemsNamedException {
+        this.conditionsToExpectedValue.clear();
         Arrays.stream(config.channelAddresses()).forEach(entry -> {
             try {
                 String[] splits = entry.split(CONFIGURATION_SPLITTER);

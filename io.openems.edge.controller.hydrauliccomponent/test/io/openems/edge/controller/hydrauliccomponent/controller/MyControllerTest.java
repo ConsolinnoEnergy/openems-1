@@ -7,7 +7,8 @@ import io.openems.edge.controller.hydrauliccomponent.api.ControlType;
 import io.openems.edge.controller.test.ControllerTest;
 import io.openems.edge.common.test.AbstractComponentTest.TestCase;
 import io.openems.edge.heatsystem.components.test.DummyValve;
-import io.openems.edge.relay.api.test.DummyRelay;
+
+import io.openems.edge.io.test.DummyRelay;
 import io.openems.edge.thermometer.api.test.DummyThermometer;
 import io.openems.edge.timer.api.DummyTimer;
 import io.openems.edge.timer.api.TimerType;

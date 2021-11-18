@@ -17,5 +17,5 @@ Bundle-Version: 1.0.0.${tstamp}
 
 -testpath: \
 	${testpath},\
-	io.openems.edge.relay.api
+	io.openems.edge.io.api,\
 

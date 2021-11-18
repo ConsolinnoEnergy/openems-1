@@ -9,7 +9,7 @@ import io.openems.edge.controller.heatnetwork.controlcenter.api.ControlCenter;
 import io.openems.edge.controller.heatnetwork.heatingcurveregulator.api.HeatingCurveRegulatorChannel;
 import io.openems.edge.controller.heatnetwork.warmup.api.ControllerWarmup;
 import io.openems.edge.controller.hydrauliccomponent.api.PidHydraulicController;
-import io.openems.edge.relay.api.Relay;
+import io.openems.edge.io.api.Relay;
 import org.osgi.service.cm.ConfigurationException;
 import org.osgi.service.component.ComponentContext;
 import org.osgi.service.component.annotations.Activate;

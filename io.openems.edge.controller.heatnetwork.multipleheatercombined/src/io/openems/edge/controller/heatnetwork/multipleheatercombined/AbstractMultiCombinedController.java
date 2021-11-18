@@ -40,7 +40,7 @@ public abstract class AbstractMultiCombinedController extends AbstractOpenemsCom
 
     private final Logger log = LoggerFactory.getLogger(MultipleHeaterCombinedControllerImpl.class);
 
-    @Reference
+
     protected ComponentManager cpm;
 
     private final Map<Heater, ThermometerWrapper> heaterTemperatureWrapperMap = new HashMap<>();
@@ -50,7 +50,7 @@ public abstract class AbstractMultiCombinedController extends AbstractOpenemsCom
 
     private boolean useTimer;
     private TimerHandler timer;
-    private final String identifier = "MULTI_COMBINED_IDENTIFIER";
+    private static final String RESTART_CYCLE_ID = "MULTI_COMBINED_IDENTIFIER";
     protected ControlType controlType = ControlType.HEATER;
     protected AtomicBoolean heaterError = new AtomicBoolean(false);
     protected AtomicBoolean isHeatingOrCooling = new AtomicBoolean(false);
@@ -63,9 +63,10 @@ public abstract class AbstractMultiCombinedController extends AbstractOpenemsCom
     void activate(ComponentContext context, String id, String alias, boolean enabled, boolean useTimer, String timerId,
                   int deltaTime, ControlType controlType, String[] heaterIds,
                   String[] activationThermometers, String[] activationTemperatures,
-                  String[] deactivationThermometers, String[] deactivationTemperatures) {
+                  String[] deactivationThermometers, String[] deactivationTemperatures, ComponentManager cpm) {
 
         super.activate(context, id, alias, enabled);
+        this.cpm = cpm;
         this.useTimer = useTimer;
         //----------------------ALLOCATE/ CONFIGURE HEATER/TemperatureSensor -----------------//
         try {
@@ -81,8 +82,9 @@ public abstract class AbstractMultiCombinedController extends AbstractOpenemsCom
     void modified(ComponentContext context, String id, String alias, boolean enabled, boolean useTimer, String timerId,
                   int deltaTime, ControlType controlType, String[] heaterIds,
                   String[] activationThermometers, String[] activationTemperatures,
-                  String[] deactivationThermometers, String[] deactivationTemperatures) {
+                  String[] deactivationThermometers, String[] deactivationTemperatures, ComponentManager cpm) {
         super.modified(context, id, alias, enabled);
+        this.cpm = cpm;
         this.configuredHeater.clear();
         this.activeStateHeaterAndHeatWrapper.clear();
         this.heaterTemperatureWrapperMap.clear();
@@ -125,7 +127,7 @@ public abstract class AbstractMultiCombinedController extends AbstractOpenemsCom
         this.controlType = controlType;
         if (this.useTimer) {
             this.timer = new TimerHandlerImpl(this.id(), this.cpm);
-            this.timer.addOneIdentifier(this.identifier, timerId, deltaTime);
+            this.timer.addOneIdentifier(RESTART_CYCLE_ID, timerId, deltaTime);
         }
 
         List<String> heaterIds = Arrays.asList(heater_id);
@@ -267,48 +269,50 @@ public abstract class AbstractMultiCombinedController extends AbstractOpenemsCom
     protected void abstractRun() {
         this.checkMissingThermometer();
         this.checkMissingHeaterComponents();
-        this.heaterError.set(false);
-        this.isHeatingOrCooling.set(false);
-
-        this.configuredHeater.forEach(heater -> {
-            if (heater.getHeaterState().isDefined() && heater.getHeaterState().asEnum() == HeaterState.BLOCKED_OR_ERROR) {
-                this.heaterError.set(true);
-            }
-
-            //ThermometerWrapper holding min and max values as well as Thermometer corresponding to the heater
-            ThermometerWrapper thermometerWrapper = this.heaterTemperatureWrapperMap.get(heater);
-            //HeatWrapper holding activeState and alwaysActive
-            ActiveWrapper heaterActiveWrapper = this.activeStateHeaterAndHeatWrapper.get(heater);
-            //Get the WrapperClass and check if Heater should be turned of, as well as Checking performance demand
-            //HeatControl                                           PerformanceDemand + Time Control
-            //Enable
-            try {
-                if (thermometerWrapper.shouldDeactivate()) {
-                    heaterActiveWrapper.setActive(false);
-                    //Check wrapper if thermometer below min temp
-                } else if (thermometerWrapper.shouldActivate()) {
-                    heaterActiveWrapper.setActive(true);
+        boolean executeLogic = true;
+        if (this.useTimer && (this.isHeatingOrCooling.get() == false)) {
+            executeLogic = this.timer.checkTimeIsUp(RESTART_CYCLE_ID);
+        }
+        if (executeLogic) {
+            this.heaterError.set(false);
+            this.isHeatingOrCooling.set(false);
+            this.configuredHeater.forEach(heater -> {
+                if (heater.getHeaterState().isDefined() && heater.getHeaterState().get().equals(HeaterState.BLOCKED_OR_ERROR.getValue())) {
+                    this.heaterError.set(true);
                 }
 
-                if (heaterActiveWrapper.isActive()) {
-                    if (!this.useTimer || this.timer.checkTimeIsUp(this.identifier)) {
+                //ThermometerWrapper holding min and max values as well as Thermometer corresponding to the heater
+                ThermometerWrapper thermometerWrapper = this.heaterTemperatureWrapperMap.get(heater);
+                //HeatWrapper holding activeState and alwaysActive
+                ActiveWrapper heaterActiveWrapper = this.activeStateHeaterAndHeatWrapper.get(heater);
+                //Get the WrapperClass and check if Heater should be turned of, as well as Checking performance demand
+                //HeatControl                                           PerformanceDemand + Time Control
+                //Enable
+                try {
+                    if (thermometerWrapper.shouldDeactivate()) {
+                        heaterActiveWrapper.setActive(false);
+                        //Check wrapper if thermometer below min temp
+                    } else if (thermometerWrapper.shouldActivate()) {
+                        heaterActiveWrapper.setActive(true);
+                    }
+
+                    if (heaterActiveWrapper.isActive()) {
                         heater.getEnableSignalChannel().setNextWriteValue(heaterActiveWrapper.isActive());
                         this.isHeatingOrCooling.set(true);
-                        if (this.useTimer) {
-                            this.timer.resetTimer(this.identifier);
-                        }
                     }
-                } else if (this.useTimer) {
-                    this.timer.resetTimer(this.identifier);
+
+                } catch (OpenemsError.OpenemsNamedException e) {
+                    this.heaterError.set(true);
+                    this.log.warn("Couldn't set the enableSignal: " + super.id() + " Reason: " + e.getMessage());
+                } catch (ConfigurationException e) {
+                    this.heaterError.set(true);
+                    this.log.warn("Couldn't read from Configured TemperatureChannel of Heater: " + heater.id());
                 }
-            } catch (OpenemsError.OpenemsNamedException e) {
-                this.heaterError.set(true);
-                this.log.warn("Couldn't set the enableSignal: " + super.id() + " Reason: " + e.getMessage());
-            } catch (ConfigurationException e) {
-                this.heaterError.set(true);
-                this.log.warn("Couldn't read from Configured TemperatureChannel of Heater: " + heater.id());
+            });
+            if (this.useTimer && (this.isHeatingOrCooling.get() == false)) {
+                this.timer.resetTimer(RESTART_CYCLE_ID);
             }
-        });
+        }
     }
 
     /**

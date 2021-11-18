@@ -6,7 +6,7 @@ import io.openems.edge.common.channel.Channel;
 import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.heater.analogue.ControlType;
-import io.openems.edge.relay.api.Relay;
+import io.openems.edge.io.api.Relay;
 import org.osgi.service.cm.ConfigurationException;
 
 /**

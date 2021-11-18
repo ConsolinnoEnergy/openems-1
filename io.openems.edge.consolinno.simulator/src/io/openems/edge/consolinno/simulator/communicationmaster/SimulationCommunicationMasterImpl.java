@@ -6,7 +6,7 @@ import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.controller.api.Controller;
 import io.openems.edge.controller.heatnetwork.hydraulic.lineheater.api.HydraulicLineController;
-import io.openems.edge.heater.decentral.api.DecentralizedHeater;
+import io.openems.edge.heater.decentralized.api.DecentralizedHeater;
 import org.joda.time.DateTime;
 import org.osgi.service.cm.ConfigurationException;
 import org.osgi.service.component.ComponentContext;

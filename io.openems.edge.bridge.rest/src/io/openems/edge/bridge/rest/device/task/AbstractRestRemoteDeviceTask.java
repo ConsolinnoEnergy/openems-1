@@ -4,13 +4,16 @@ import io.openems.edge.bridge.rest.api.RestRequest;
 import io.openems.edge.common.component.ComponentManager;
 import org.slf4j.Logger;
 
+/**
+ * The Abstract Rest Remote Device Task. This stores every common parameters and methods handled by the RestBridge.
+ */
 public abstract class AbstractRestRemoteDeviceTask implements RestRequest {
 
     private final String remoteDeviceId;
     private final String deviceChannel;
     private final String realDeviceId;
-    private final Logger logger;
-    private final ComponentManager cpm;
+    protected final Logger logger;
+    protected final ComponentManager cpm;
 
 
     AbstractRestRemoteDeviceTask(String remoteDeviceId, String realDeviceId, String deviceChannel, Logger log, ComponentManager cpm) {
@@ -39,13 +42,5 @@ public abstract class AbstractRestRemoteDeviceTask implements RestRequest {
     @Override
     public String getDeviceId() {
         return this.remoteDeviceId;
-    }
-
-    protected Logger getLogger() {
-        return this.logger;
-    }
-
-    protected ComponentManager getCpm() {
-        return this.cpm;
     }
 }

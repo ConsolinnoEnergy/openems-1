@@ -17,7 +17,7 @@ import io.openems.edge.heatsystem.components.HydraulicComponent;
 import io.openems.edge.heatsystem.components.PumpType;
 import io.openems.edge.io.api.AnalogInputOutput;
 import io.openems.edge.io.api.Pwm;
-import io.openems.edge.relay.api.Relay;
+import io.openems.edge.io.api.Relay;
 import io.openems.edge.timer.api.TimerHandler;
 import io.openems.edge.timer.api.TimerHandlerImpl;
 import org.osgi.service.cm.ConfigurationException;

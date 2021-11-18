@@ -1,10 +1,12 @@
 package io.openems.edge.bridge.lucidcontrol.api;
 
+import io.openems.edge.common.component.OpenemsComponent;
+
 /**
  * The LucidControlBridge Interface, it provides methods, so LucidControl modules and devices can be added and tasks
  * can be handled.
  */
-public interface LucidControlBridge {
+public interface LucidControlBridge extends OpenemsComponent {
 
     /**
      * Adds the Path of the LucidControl Module.
@@ -22,7 +24,7 @@ public interface LucidControlBridge {
      * @param voltage max voltage of module, usually from config.voltage()
      */
 
-    void addVoltage(String id, String voltage);
+    void addVoltage(String id, Integer voltage);
 
     /**
      * Removes the LucidControl Module from the Bridge.
@@ -63,7 +65,7 @@ public interface LucidControlBridge {
      * @param moduleId is the key to get the max Voltage, usually from Device config.moduleId()
      * @return the maximum Voltage configured.
      */
-    String getVoltage(String moduleId);
+    Integer getVoltage(String moduleId);
 
 
 }

@@ -5,7 +5,7 @@ import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.common.event.EdgeEventConstants;
 import io.openems.edge.io.api.AnalogInputOutput;
 import io.openems.edge.io.api.Pwm;
-import io.openems.edge.relay.api.Relay;
+import io.openems.edge.io.api.Relay;
 import org.osgi.service.component.ComponentContext;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
@@ -17,8 +17,6 @@ import org.osgi.service.event.EventHandler;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.Optional;
 
 /**
  * This Component allows a Valve or Pump to be configured and controlled.
