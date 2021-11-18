@@ -1,3 +1,9 @@
+openems-consolinno (0.1.5-1) unstable; urgency=medium
+
+  * Updated Heater and EVCS Limiter
+
+ -- Felix <felix@felix-ThinkPad-E15-Gen-2>  Thu, 18 Nov 2021 11:09:05 +0100
+
 openems-consolinno (0.1.4-1) unstable; urgency=medium
 
   * Added support of HR for Modbus Thermometer
