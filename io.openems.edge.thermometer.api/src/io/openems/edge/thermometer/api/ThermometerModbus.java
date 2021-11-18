@@ -20,7 +20,7 @@ public interface ThermometerModbus extends Thermometer {
          * </ul>
          */
 
-        TEMPERATURE_MODBUS_FLOAT(Doc.of(OpenemsType.FLOAT).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_ONLY)),
+        TEMPERATURE_MODBUS_FLOAT(Doc.of(OpenemsType.FLOAT).unit(Unit.DECIDEGREE_CELSIUS).accessMode(AccessMode.READ_ONLY)),
 
         /**
          * <ul> Temperature.
@@ -30,7 +30,7 @@ public interface ThermometerModbus extends Thermometer {
          * </ul>
          */
 
-        TEMPERATURE_MODBUS_INTEGER(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_ONLY));
+        TEMPERATURE_MODBUS_INTEGER(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS).accessMode(AccessMode.READ_ONLY));
         private final Doc doc;
 
         ChannelId(Doc doc) {

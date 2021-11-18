@@ -53,16 +53,16 @@ public interface Heater extends OpenemsComponent {
          */
         ENABLE_SIGNAL(Doc.of(OpenemsType.BOOLEAN).accessMode(AccessMode.READ_WRITE)),
 
-        /**
-         * The temperature set point. This usually means the flow temperature set point.
-         *
-         * <ul>
-         *     <li> Interface: Heater
-         *     <li> Type: Integer
-         *     <li> Unit: dezidegree Celsius
-         * </ul>
-         */
-        SET_POINT_TEMPERATURE(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
+		/**
+		 * The temperature set point. This usually means the flow temperature set point.
+		 *
+		 * <ul>
+		 *     <li> Interface: Heater
+		 *     <li> Type: Integer
+		 *     <li> Unit: Decimal degree Celsius
+		 * </ul>
+		 */
+		SET_POINT_TEMPERATURE(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
 
         /**
          * The heating power set point.
@@ -73,7 +73,7 @@ public interface Heater extends OpenemsComponent {
          *     <li> Unit: kilowatt
          * </ul>
          */
-        SET_POINT_HEATING_POWER(Doc.of(OpenemsType.INTEGER).unit(Unit.KILOWATT).accessMode(AccessMode.READ_WRITE)),
+        SET_POINT_HEATING_POWER(Doc.of(OpenemsType.DOUBLE).unit(Unit.KILOWATT).accessMode(AccessMode.READ_WRITE)),
 
         /**
          * The heating power set point in percent. A value of 50 in the channel means 50%.
@@ -94,10 +94,10 @@ public interface Heater extends OpenemsComponent {
          * <ul>
          *     <li> Interface: Heater
          *     <li> Type: Integer
-         *     <li> Unit: dezidegree Celsius
+         *     <li> Unit: Decimal degree Celsius
          * </ul>
          */
-        FLOW_TEMPERATURE(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_ONLY)),
+        FLOW_TEMPERATURE(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS).accessMode(AccessMode.READ_ONLY)),
 
         /**
          * Temperature value of the water return flow.
@@ -105,10 +105,10 @@ public interface Heater extends OpenemsComponent {
          * <ul>
          *     <li> Interface: Heater
          *     <li> Type: Integer
-         *     <li> Unit: dezidegree Celsius
+         *     <li> Unit: Decimal degree Celsius
          * </ul>
          */
-        RETURN_TEMPERATURE(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_ONLY)),
+        RETURN_TEMPERATURE(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS).accessMode(AccessMode.READ_ONLY)),
 
         /**
          * Effective (current) heating power.
@@ -119,7 +119,7 @@ public interface Heater extends OpenemsComponent {
          *     <li> Unit: kilowatt
          * </ul>
          */
-        EFFECTIVE_HEATING_POWER(Doc.of(OpenemsType.INTEGER).unit(Unit.KILOWATT).accessMode(AccessMode.READ_ONLY)),
+        EFFECTIVE_HEATING_POWER(Doc.of(OpenemsType.DOUBLE).unit(Unit.KILOWATT).accessMode(AccessMode.READ_ONLY)),
 
         /**
          * Effective (current) heating power in percent. A value of 50 in the channel means 50%.
@@ -151,6 +151,7 @@ public interface Heater extends OpenemsComponent {
          * </ul>
          */
         ERROR_MESSAGE(Doc.of(OpenemsType.STRING).accessMode(AccessMode.READ_ONLY)),
+
         /**
          * Sets the Default Active Power Value for a Heater.
          * Note: Not all Heater can support this feature.
@@ -160,6 +161,7 @@ public interface Heater extends OpenemsComponent {
          * </ul>
          */
         SET_DEFAULT_ACTIVE_POWER_VALUE(Doc.of(OpenemsType.INTEGER).accessMode(AccessMode.READ_WRITE)),
+
         /**
          * Sets the Default Minimum Power Value for a Heater. (Often: Instead of turning the Heater off -> The minimum Power Value will be used instead.)
          * Note: Not all Heater can support this feature.
@@ -178,18 +180,18 @@ public interface Heater extends OpenemsComponent {
          *     <li> Type: Integer
          *     <li> Possible values: -1 ... 4
          *     <li> State -1: UNDEFINED - Undefined
-         *     <li> State 0: BLOCKED - Heater operation is blocked by something
+         *     <li> State 0: BLOCKED_OR_ERROR - Heater operation is blocked by something
          *     <li> State 1: OFF - Off
          *     <li> State 2: STANDBY - Standby, waiting for commands
          *     <li> State 3: STARTING_UP_OR_PREHEAT - Command to heat received, preparing to start heating
-         *     <li> State 4: HEATING - Heater is heating
+         *     <li> State 4: RUNNING - Heater is heating
          * </ul>
          */
         HEATER_STATE(Doc.of(HeaterState.values()).accessMode(AccessMode.READ_ONLY));
 
         private final Doc doc;
 
-        private ChannelId(Doc doc) {
+        ChannelId(Doc doc) {
             this.doc = doc;
         }
 
@@ -204,7 +206,7 @@ public interface Heater extends OpenemsComponent {
      *
      * @return the Channel
      */
-    public default BooleanWriteChannel getEnableSignalChannel() {
+    default BooleanWriteChannel getEnableSignalChannel() {
         return this.channel((ChannelId.ENABLE_SIGNAL));
     }
 
@@ -214,17 +216,16 @@ public interface Heater extends OpenemsComponent {
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Boolean> getEnableSignal() {
+    default Value<Boolean> getEnableSignal() {
         return this.getEnableSignalChannel().value();
     }
 
     /**
-     * Internal method to set the 'nextValue' on {@link ChannelId#ENABLE_SIGNAL}
-     * Channel.
+	 * Internal method to set the 'nextValue' on {@link ChannelId#ENABLE_SIGNAL} Channel.
      *
      * @param value the next value
      */
-    public default void _setEnableSignal(Boolean value) {
+    default void _setEnableSignal(Boolean value) {
         this.getEnableSignalChannel().setNextValue(value);
     }
 
@@ -242,7 +243,7 @@ public interface Heater extends OpenemsComponent {
      * @param value the next write value
      * @throws OpenemsNamedException on error
      */
-    public default void setEnableSignal(Boolean value) throws OpenemsNamedException {
+    default void setEnableSignal(Boolean value) throws OpenemsNamedException {
         this.getEnableSignalChannel().setNextWriteValue(value);
     }
 
@@ -251,7 +252,7 @@ public interface Heater extends OpenemsComponent {
      *
      * @return the Channel
      */
-    public default IntegerWriteChannel getTemperatureSetpointChannel() {
+    default IntegerWriteChannel getTemperatureSetpointChannel() {
         return this.channel((ChannelId.SET_POINT_TEMPERATURE));
     }
 
@@ -261,27 +262,25 @@ public interface Heater extends OpenemsComponent {
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getTemperatureSetpoint() {
+    default Value<Integer> getTemperatureSetpoint() {
         return this.getTemperatureSetpointChannel().value();
     }
 
     /**
-     * Internal method to set the 'nextValue' on {@link ChannelId#SET_POINT_TEMPERATURE}
-     * Channel.
+	 * Internal method to set the 'nextValue' on {@link ChannelId#SET_POINT_TEMPERATURE} Channel.
      *
      * @param value the next value
      */
-    public default void _setTemperatureSetpoint(int value) {
+    default void _setTemperatureSetpoint(int value) {
         this.getTemperatureSetpointChannel().setNextValue(value);
     }
 
     /**
-     * Internal method to set the 'nextValue' on {@link ChannelId#SET_POINT_TEMPERATURE}
-     * Channel.
+	 * Internal method to set the 'nextValue' on {@link ChannelId#SET_POINT_TEMPERATURE} Channel.
      *
      * @param value the next value
      */
-    public default void _setTemperatureSetpoint(Integer value) {
+    default void _setTemperatureSetpoint(Integer value) {
         this.getTemperatureSetpointChannel().setNextValue(value);
     }
 
@@ -292,7 +291,7 @@ public interface Heater extends OpenemsComponent {
      * @param value the next write value
      * @throws OpenemsNamedException on error
      */
-    public default void setTemperatureSetpoint(int value) throws OpenemsNamedException {
+    default void setTemperatureSetpoint(int value) throws OpenemsNamedException {
         this.getTemperatureSetpointChannel().setNextWriteValue(value);
     }
 
@@ -303,7 +302,7 @@ public interface Heater extends OpenemsComponent {
      * @param value the next write value
      * @throws OpenemsNamedException on error
      */
-    public default void setTemperatureSetpoint(Integer value) throws OpenemsNamedException {
+    default void setTemperatureSetpoint(Integer value) throws OpenemsNamedException {
         this.getTemperatureSetpointChannel().setNextWriteValue(value);
     }
 
@@ -312,7 +311,7 @@ public interface Heater extends OpenemsComponent {
      *
      * @return the Channel
      */
-    public default IntegerWriteChannel getHeatingPowerSetpointChannel() {
+    default DoubleWriteChannel getHeatingPowerSetpointChannel() {
         return this.channel((ChannelId.SET_POINT_HEATING_POWER));
     }
 
@@ -322,27 +321,25 @@ public interface Heater extends OpenemsComponent {
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getHeatingPowerSetpoint() {
+    default Value<Double> getHeatingPowerSetpoint() {
         return this.getHeatingPowerSetpointChannel().value();
     }
 
     /**
-     * Internal method to set the 'nextValue' on {@link ChannelId#SET_POINT_HEATING_POWER}
-     * Channel.
+	 * Internal method to set the 'nextValue' on {@link ChannelId#SET_POINT_HEATING_POWER} Channel.
      *
      * @param value the next value
      */
-    public default void _setHeatingPowerSetpoint(int value) {
+    default void _setHeatingPowerSetpoint(double value) {
         this.getHeatingPowerSetpointChannel().setNextValue(value);
     }
 
     /**
-     * Internal method to set the 'nextValue' on {@link ChannelId#SET_POINT_HEATING_POWER}
-     * Channel.
+	 * Internal method to set the 'nextValue' on {@link ChannelId#SET_POINT_HEATING_POWER} Channel.
      *
      * @param value the next value
      */
-    public default void _setHeatingPowerSetpoint(Integer value) {
+    default void _setHeatingPowerSetpoint(Double value) {
         this.getHeatingPowerSetpointChannel().setNextValue(value);
     }
 
@@ -353,7 +350,7 @@ public interface Heater extends OpenemsComponent {
      * @param value the next write value
      * @throws OpenemsNamedException on error
      */
-    public default void setHeatingPowerSetpoint(int value) throws OpenemsNamedException {
+    default void setHeatingPowerSetpoint(double value) throws OpenemsNamedException {
         this.getHeatingPowerSetpointChannel().setNextWriteValue(value);
     }
 
@@ -364,7 +361,7 @@ public interface Heater extends OpenemsComponent {
      * @param value the next write value
      * @throws OpenemsNamedException on error
      */
-    public default void setHeatingPowerSetpoint(Integer value) throws OpenemsNamedException {
+    default void setHeatingPowerSetpoint(Double value) throws OpenemsNamedException {
         this.getHeatingPowerSetpointChannel().setNextWriteValue(value);
     }
 
@@ -373,7 +370,7 @@ public interface Heater extends OpenemsComponent {
      *
      * @return the Channel
      */
-    public default DoubleWriteChannel getHeatingPowerPercentSetpointChannel() {
+    default DoubleWriteChannel getHeatingPowerPercentSetpointChannel() {
         return this.channel((ChannelId.SET_POINT_HEATING_POWER_PERCENT));
     }
 
@@ -383,27 +380,25 @@ public interface Heater extends OpenemsComponent {
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Double> getHeatingPowerPercentSetpoint() {
+    default Value<Double> getHeatingPowerPercentSetpoint() {
         return this.getHeatingPowerPercentSetpointChannel().value();
     }
 
     /**
-     * Internal method to set the 'nextValue' on {@link ChannelId#SET_POINT_HEATING_POWER_PERCENT}
-     * Channel.
+	 * Internal method to set the 'nextValue' on {@link ChannelId#SET_POINT_HEATING_POWER_PERCENT} Channel.
      *
      * @param value the next value
      */
-    public default void _setHeatingPowerPercentSetpoint(double value) {
+    default void _setHeatingPowerPercentSetpoint(double value) {
         this.getHeatingPowerPercentSetpointChannel().setNextValue(value);
     }
 
     /**
-     * Internal method to set the 'nextValue' on {@link ChannelId#SET_POINT_HEATING_POWER_PERCENT}
-     * Channel.
+	 * Internal method to set the 'nextValue' on {@link ChannelId#SET_POINT_HEATING_POWER_PERCENT} Channel.
      *
      * @param value the next value
      */
-    public default void _setHeatingPowerPercentSetpoint(Double value) {
+    default void _setHeatingPowerPercentSetpoint(Double value) {
         this.getHeatingPowerPercentSetpointChannel().setNextValue(value);
     }
 
@@ -414,7 +409,7 @@ public interface Heater extends OpenemsComponent {
      * @param value the next write value
      * @throws OpenemsNamedException on error
      */
-    public default void setHeatingPowerPercentSetpoint(double value) throws OpenemsNamedException {
+    default void setHeatingPowerPercentSetpoint(double value) throws OpenemsNamedException {
         this.getHeatingPowerPercentSetpointChannel().setNextWriteValue(value);
     }
 
@@ -425,7 +420,7 @@ public interface Heater extends OpenemsComponent {
      * @param value the next write value
      * @throws OpenemsNamedException on error
      */
-    public default void setHeatingPowerPercentSetpoint(Double value) throws OpenemsNamedException {
+    default void setHeatingPowerPercentSetpoint(Double value) throws OpenemsNamedException {
         this.getHeatingPowerPercentSetpointChannel().setNextWriteValue(value);
     }
 
@@ -434,7 +429,7 @@ public interface Heater extends OpenemsComponent {
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getFlowTemperatureChannel() {
+    default IntegerReadChannel getFlowTemperatureChannel() {
         return this.channel(ChannelId.FLOW_TEMPERATURE);
     }
 
@@ -444,27 +439,25 @@ public interface Heater extends OpenemsComponent {
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getFlowTemperature() {
+    default Value<Integer> getFlowTemperature() {
         return this.getFlowTemperatureChannel().value();
     }
 
     /**
-     * Internal method to set the 'nextValue' on {@link ChannelId#FLOW_TEMPERATURE}
-     * Channel.
+	 * Internal method to set the 'nextValue' on {@link ChannelId#FLOW_TEMPERATURE} Channel.
      *
      * @param value the next value
      */
-    public default void _setFlowTemperature(Integer value) {
+    default void _setFlowTemperature(Integer value) {
         this.getFlowTemperatureChannel().setNextValue(value);
     }
 
     /**
-     * Internal method to set the 'nextValue' on {@link ChannelId#FLOW_TEMPERATURE}
-     * Channel.
+	 * Internal method to set the 'nextValue' on {@link ChannelId#FLOW_TEMPERATURE} Channel.
      *
      * @param value the next value
      */
-    public default void _setFlowTemperature(int value) {
+    default void _setFlowTemperature(int value) {
         this.getFlowTemperatureChannel().setNextValue(value);
     }
 
@@ -473,7 +466,7 @@ public interface Heater extends OpenemsComponent {
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getReturnTemperatureChannel() {
+    default IntegerReadChannel getReturnTemperatureChannel() {
         return this.channel(ChannelId.RETURN_TEMPERATURE);
     }
 
@@ -483,26 +476,27 @@ public interface Heater extends OpenemsComponent {
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getReturnTemperature() {
+    default Value<Integer> getReturnTemperature() {
         return this.getReturnTemperatureChannel().value();
     }
 
     /**
-     * Internal method to set the 'nextValue' on {@link ChannelId#RETURN_TEMPERATURE}
-     * Channel.
+	 * Internal method to set the 'nextValue' on {@link ChannelId#RETURN_TEMPERATURE} Channel.
      *
      * @param value the next value
      */
-    public default void _setReturnTemperature(Integer value) {
+    default void _setReturnTemperature(Integer value) {
         this.getReturnTemperatureChannel().setNextValue(value);
     }
 
     /**
+	 * Internal method to set the 'nextValue' on {@link ChannelId#RETURN_TEMPERATURE} Channel.
+	default void _setReturnTemperature(int value) {
      * Gets the Channel for {@link ChannelId#EFFECTIVE_HEATING_POWER}.
      *
      * @return the Channel
      */
-    public default IntegerReadChannel getEffectiveHeatingPowerChannel() {
+    default DoubleReadChannel getEffectiveHeatingPowerChannel() {
         return this.channel(ChannelId.EFFECTIVE_HEATING_POWER);
     }
 
@@ -512,27 +506,25 @@ public interface Heater extends OpenemsComponent {
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getEffectiveHeatingPower() {
+    default Value<Double> getEffectiveHeatingPower() {
         return this.getEffectiveHeatingPowerChannel().value();
     }
 
     /**
-     * Internal method to set the 'nextValue' on {@link ChannelId#EFFECTIVE_HEATING_POWER}
-     * Channel.
+	 * Internal method to set the 'nextValue' on {@link ChannelId#EFFECTIVE_HEATING_POWER} Channel.
      *
      * @param value the next value
      */
-    public default void _setEffectiveHeatingPower(Integer value) {
+    default void _setEffectiveHeatingPower(Double value) {
         this.getEffectiveHeatingPowerChannel().setNextValue(value);
     }
 
     /**
-     * Internal method to set the 'nextValue' on {@link ChannelId#EFFECTIVE_HEATING_POWER}
-     * Channel.
+	 * Internal method to set the 'nextValue' on {@link ChannelId#EFFECTIVE_HEATING_POWER} Channel.
      *
      * @param value the next value
      */
-    public default void _setEffectiveHeatingPower(int value) {
+    default void _setEffectiveHeatingPower(double value) {
         this.getEffectiveHeatingPowerChannel().setNextValue(value);
     }
 
@@ -541,7 +533,7 @@ public interface Heater extends OpenemsComponent {
      *
      * @return the Channel
      */
-    public default DoubleReadChannel getEffectiveHeatingPowerPercentChannel() {
+    default DoubleReadChannel getEffectiveHeatingPowerPercentChannel() {
         return this.channel(ChannelId.EFFECTIVE_HEATING_POWER_PERCENT);
     }
 
@@ -551,27 +543,25 @@ public interface Heater extends OpenemsComponent {
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Double> getEffectiveHeatingPowerPercent() {
+    default Value<Double> getEffectiveHeatingPowerPercent() {
         return this.getEffectiveHeatingPowerPercentChannel().value();
     }
 
     /**
-     * Internal method to set the 'nextValue' on {@link ChannelId#EFFECTIVE_HEATING_POWER_PERCENT}
-     * Channel.
+	 * Internal method to set the 'nextValue' on {@link ChannelId#EFFECTIVE_HEATING_POWER_PERCENT} Channel.
      *
      * @param value the next value
      */
-    public default void _setEffectiveHeatingPowerPercent(Integer value) {
+    default void _setEffectiveHeatingPowerPercent(Double value) {
         this.getEffectiveHeatingPowerPercentChannel().setNextValue(value);
     }
 
     /**
-     * Internal method to set the 'nextValue' on {@link ChannelId#EFFECTIVE_HEATING_POWER_PERCENT}
-     * Channel.
+	 * Internal method to set the 'nextValue' on {@link ChannelId#EFFECTIVE_HEATING_POWER_PERCENT} Channel.
      *
      * @param value the next value
      */
-    public default void _setEffectiveHeatingPowerPercent(int value) {
+    default void _setEffectiveHeatingPowerPercent(double value) {
         this.getEffectiveHeatingPowerPercentChannel().setNextValue(value);
     }
 
@@ -580,7 +570,7 @@ public interface Heater extends OpenemsComponent {
      *
      * @return the Channel
      */
-    public default StringReadChannel getWarningMessageChannel() {
+    default StringReadChannel getWarningMessageChannel() {
         return this.channel(ChannelId.WARNING_MESSAGE);
     }
 
@@ -590,17 +580,16 @@ public interface Heater extends OpenemsComponent {
      *
      * @return the Channel {@link Value}
      */
-    public default Value<String> getWarningMessage() {
+    default Value<String> getWarningMessage() {
         return this.getWarningMessageChannel().value();
     }
 
     /**
-     * Internal method to set the 'nextValue' on {@link ChannelId#WARNING_MESSAGE}
-     * Channel.
+	 * Internal method to set the 'nextValue' on {@link ChannelId#WARNING_MESSAGE} Channel.
      *
      * @param value the next value
      */
-    public default void _setWarningMessage(String value) {
+    default void _setWarningMessage(String value) {
         this.getWarningMessageChannel().setNextValue(value);
     }
 
@@ -609,7 +598,7 @@ public interface Heater extends OpenemsComponent {
      *
      * @return the Channel
      */
-    public default StringReadChannel getErrorMessageChannel() {
+    default StringReadChannel getErrorMessageChannel() {
         return this.channel(ChannelId.ERROR_MESSAGE);
     }
 
@@ -619,17 +608,16 @@ public interface Heater extends OpenemsComponent {
      *
      * @return the Channel {@link Value}
      */
-    public default Value<String> getErrorMessage() {
+    default Value<String> getErrorMessage() {
         return this.getErrorMessageChannel().value();
     }
 
     /**
-     * Internal method to set the 'nextValue' on {@link ChannelId#ERROR_MESSAGE}
-     * Channel.
+	 * Internal method to set the 'nextValue' on {@link ChannelId#ERROR_MESSAGE} Channel.
      *
      * @param value the next value
      */
-    public default void _setErrorMessage(String value) {
+    default void _setErrorMessage(String value) {
         this.getErrorMessageChannel().setNextValue(value);
     }
 
@@ -638,42 +626,41 @@ public interface Heater extends OpenemsComponent {
      *
      * @return the Channel
      */
-    public default EnumReadChannel getHeaterStateChannel() {
+    default EnumReadChannel getHeaterStateChannel() {
         return this.channel(ChannelId.HEATER_STATE);
     }
 
     /**
-     * Gets the state of the heater.
+     * Gets the state of the heater. Use ’getHeaterState().asEnum()’ to get the enum.
      *
      * <ul>
      *     <li> Type: Integer
      *     <li> Possible values: -1 ... 4
      *     <li> State -1: UNDEFINED - Undefined
-     *     <li> State 0: BLOCKED - Heater operation is blocked by something
+     *     <li> State 0: BLOCKED_OR_ERROR - Heater operation is blocked by something
      *     <li> State 1: OFF - Off
      *     <li> State 2: STANDBY - Standby, waiting for commands
      *     <li> State 3: STARTING_UP_OR_PREHEAT - Command to heat received, preparing to start heating
-     *     <li> State 4: HEATING - Heater is heating
+     *     <li> State 4: RUNNING - Heater is heating
      * </ul>
      * See {@link ChannelId#HEATER_STATE}.
      *
      * @return the Channel {@link Value}
      */
-    public default Value<Integer> getHeaterState() {
+    default Value<Integer> getHeaterState() {
         return this.getHeaterStateChannel().value();
     }
 
     /**
-     * Internal method to set the 'nextValue' on {@link ChannelId#HEATER_STATE}
-     * Channel.
+	 * Internal method to set the 'nextValue' on {@link ChannelId#HEATER_STATE} Channel.
      *
      * @param state the next value
      */
-
     default void _setHeaterState(HeaterState state) {
-        this.getHeaterStateChannel().setNextValue(state.getValue());
+        if (state != null) {
+            this.getHeaterStateChannel().setNextValue(state.getValue());
+        }
     }
-
 
     /**
      * Internal method to set the 'nextValue' on {@link ChannelId#HEATER_STATE}
@@ -686,12 +673,11 @@ public interface Heater extends OpenemsComponent {
     }
 
     /**
-     * Internal method to set the 'nextValue' on {@link ChannelId#HEATER_STATE}
-     * Channel.
+	 * Internal method to set the 'nextValue' on {@link ChannelId#HEATER_STATE} Channel.
      *
      * @param value the next value
      */
-    public default void _setHeaterState(Integer value) {
+    default void _setHeaterState(Integer value) {
         this.getHeaterStateChannel().setNextValue(value);
     }
 

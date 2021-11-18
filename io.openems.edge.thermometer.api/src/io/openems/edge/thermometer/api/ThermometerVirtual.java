@@ -16,7 +16,7 @@ import java.util.Optional;
  */
 public interface ThermometerVirtual extends Thermometer {
     enum ChannelId implements io.openems.edge.common.channel.ChannelId {
-        VIRTUAL_TEMPERATURE(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE));
+        VIRTUAL_TEMPERATURE(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE));
 
 
         private final Doc doc;

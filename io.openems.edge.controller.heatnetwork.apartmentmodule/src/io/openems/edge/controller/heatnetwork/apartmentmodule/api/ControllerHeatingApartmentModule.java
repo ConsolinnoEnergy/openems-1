@@ -36,7 +36,7 @@ public interface ControllerHeatingApartmentModule extends OpenemsComponent {
          * </ul>
          */
         SET_POINT_TEMPERATURE(Doc.of(OpenemsType.INTEGER) //
-                .unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE).onInit(
+                .unit(Unit.DECIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE).onInit(
                         channel -> ((IntegerWriteChannel) channel).onSetNextWrite(channel::setNextValue)
                 )),
         /**

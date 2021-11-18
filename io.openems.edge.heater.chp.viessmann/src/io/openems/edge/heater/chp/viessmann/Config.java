@@ -19,28 +19,8 @@ import org.osgi.service.metatype.annotations.Option;
     String alias() default "";
 
     @AttributeDefinition(name = "Chp Type", description = "What Chp Type do you want to use(Not important for pure"
-            + "controlling if no further information is needed).",
-            options = {
-                    @Option(label = "Vitobloc 200 EM - 6/15", value = "EM_6_15"),
-                    @Option(label = "Vitobloc 200 EM - 9/20", value = "EM_9_20"),
-                    @Option(label = "Vitobloc 200 EM - 20/39", value = "EM_20_39"),
-                    @Option(label = "Vitobloc 200 EM - 20/39_70", value = "EM_20_39_70"),
-                    @Option(label = "Vitobloc 200 EM - 50/81", value = "EM_50_81"),
-                    @Option(label = "Vitobloc 200 EM - 70/115", value = "EM_70_115"),
-                    @Option(label = "Vitobloc 200 EM - 100/167", value = "EM_100_167"),
-                    @Option(label = "Vitobloc 200 EM - 140/207 SCR", value = "EM_140_207"),
-                    @Option(label = "Vitobloc 200 EM - 199/263", value = "EM_199_263"),
-                    @Option(label = "Vitobloc 200 EM - 199/293", value = "EM_199_293"),
-                    @Option(label = "Vitobloc 200 EM - 238/363", value = "EM_238_363"),
-                    @Option(label = "Vitobloc 200 EM - 363/498", value = "EM_363_498"),
-                    @Option(label = "Vitobloc 200 EM - 401/549 SCR", value = "EM_401_549"),
-                    @Option(label = "Vitobloc 200 EM - 530/660", value = "EM_530_660"),
-                    @Option(label = "Vitobloc 200 BM - 36/66", value = "BM_36_66"),
-                    @Option(label = "Vitobloc 200 BM - 55/88", value = "BM_55_88"),
-                    @Option(label = "Vitobloc 200 BM - 190/238", value = "BM_190_238"),
-                    @Option(label = "Vitobloc 200 BM - 366/437", value = "BM_366_437")
-            })
-    String chpType() default "EM_140_207";
+            + "controlling if no further information is needed).")
+    ViessmannChpType chpType() default ViessmannChpType.Vito_EM_140_207;
 
     @AttributeDefinition(name = "Chp activated by relay", description = "If the chp needs a relay to switch it on.")
     boolean useRelay() default true;
@@ -52,15 +32,9 @@ import org.osgi.service.metatype.annotations.Option;
             + "Not needed in read only mode.")
     String aioModuleId() default "Aio0";
 
-    @AttributeDefinition(name = "Current min [mA]", description = "For chp power regulation with AIO module: lower limit in mA.")
-    short minLimit() default 0;
-
-    @AttributeDefinition(name = "Current max [mA]", description = "For chp power regulation with AIO module: upper limit in mA.")
-    short maxLimit() default 20;
-
-    @AttributeDefinition(name = "Percentage range", description = "Range of power percent setpoint (depending on chp type):"
-            + " 0-100% (type 0) or 50-100% (type 50).")
-    int percentageRange() default 0;
+    @AttributeDefinition(name = "Percentage range", description = "Range of power percent set point (depending on chp type):"
+            + " 0-100% or 50-100%.")
+    PercentageRange percentageRange() default PercentageRange.RANGE_0_100;
 
     @AttributeDefinition(name = "ModBus-Bridge Id", description = "The Unique Id of the modBus-Bridge you what to allocate to this device.")
     String modbusBridgeId() default "modbus0";
@@ -77,9 +51,8 @@ import org.osgi.service.metatype.annotations.Option;
             + "no longer received before the chp is switched off. Unit is seconds, unless cycles option is selected.")
     int waitTimeEnableSignal() default 30;
 
-    @AttributeDefinition(name = "EnableSignal timer unit is cycles not seconds", description = "Use OpenEMS cycles "
-            + "instead of seconds as the unit for the timer.")
-    boolean enableSignalTimerIsCyclesNotSeconds() default false;
+    @AttributeDefinition(name = "EnableSignal timer Id", description = "Name of the timer used for the EnableSignal.")
+    String enableSignalTimerId() default "TimerByTime";
 
     @AttributeDefinition(name = "Use ExceptionalState", description = "React to commands from the Exceptional State "
             + "interface. When the Exceptional State is active, this will override any other commands.")
@@ -90,9 +63,8 @@ import org.osgi.service.metatype.annotations.Option;
             + "seconds, unless cycles option is selected.")
     int waitTimeExceptionalState() default 30;
 
-    @AttributeDefinition(name = "ExceptionalState timer unit is cycles not seconds", description = "Use OpenEMS cycles "
-            + "instead of seconds as the unit for the timer.")
-    boolean exceptionalStateTimerIsCyclesNotSeconds() default false;
+    @AttributeDefinition(name = "ExceptionalState timer Id", description = "Name of the timer used for the ExceptionalState.")
+    String exceptionalStateTimerId() default "TimerByTime";
 
     @AttributeDefinition(name = "Read only", description = "Only read values from Modbus, don't send commands.")
     boolean readOnly() default false;
@@ -103,6 +75,6 @@ import org.osgi.service.metatype.annotations.Option;
     boolean enabled() default true;
 
 
-    String webconsole_configurationFactory_nameHint() default "Chp Device [{id}]";
+    String webconsole_configurationFactory_nameHint() default "Heater Chp Viessmann [{id}]";
 
 }

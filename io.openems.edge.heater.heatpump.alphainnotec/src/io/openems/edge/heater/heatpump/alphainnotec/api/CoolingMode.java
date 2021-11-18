@@ -11,8 +11,8 @@ public enum CoolingMode implements OptionsEnum {
 	OFF(0, "Off"), //
 	AUTOMATIC(1, "Automatic"); //
 
-	private int value;
-	private String name;
+	private final int value;
+	private final String name;
 
 	private CoolingMode(int value, String name) {
 		this.value = value;
@@ -32,5 +32,22 @@ public enum CoolingMode implements OptionsEnum {
 	@Override
 	public OptionsEnum getUndefined() {
 		return UNDEFINED;
-	}	
+	}
+
+	/**
+	 * Returns the enum corresponding to the integer value.
+	 *
+	 * @param value the integer value of the enum
+	 * @return the enum
+	 */
+	public static CoolingMode valueOf(int value) {
+		switch (value) {
+			case 0:
+				return CoolingMode.OFF;
+			case 1:
+				return CoolingMode.AUTOMATIC;
+			default:
+				return CoolingMode.UNDEFINED;
+		}
+	}
 }

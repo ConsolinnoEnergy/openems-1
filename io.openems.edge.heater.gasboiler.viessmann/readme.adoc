@@ -1,8 +1,19 @@
-# io.openems.edge.heater.gasboiler.viessmann Provider
+= Viessmann gas boiler
 
-${Bundle-Description}
+This module reads the most important variables available via Modbus from a Viessmann gas boiler and maps them to OpenEMS channels. The module is written to be used with the Heater interface methods (EnableSignal) and ExceptionalState. When setEnableSignal() from the Heater interface is set to true with no other parameters like temperature specified, the heater will turn on with default settings. The default settings are configurable in the config.
 
-## Example
+The heater can be controlled with setHeatingPowerPercentSetpoint() (set power in %) or setTemperatureSetpoint(). However, currently the code does not yet support setTemperatureSetpoint().
 
-## References
+setHeatingPowerSetpoint() (set power in kW) and related methods are currently not supported by this heater.
 
+If the heater is activated by ExceptionalState, it will go to the setHeatingPowerPercentSetpoint() value specified by the ExceptionalStateValue.
+
+
+ToDo: The heater can do set point power percent and set point temperature. Currently only default values for
+set point power percent are set.
+setHeatingPowerSetpoint() can be added by mapping it to setHeatingPowerPercentSetpoint().
+
+Unclear how to switch to setpoint temperature mode.
+Speculation:
+DEVICE_POWER_MODE -> 255 is needed for sure.
+DEVICE_OPERATION_MODE -> not sure here. Probably 0 or 1.

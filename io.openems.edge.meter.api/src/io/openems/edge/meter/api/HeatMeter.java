@@ -44,7 +44,7 @@ public interface HeatMeter extends Meter {
          * <li>Unit: DegreeCelsius
          * </ul>
          */
-        RETURN_TEMP(Doc.of(OpenemsType.LONG).unit(Unit.DEZIDEGREE_CELSIUS)),
+        RETURN_TEMP(Doc.of(OpenemsType.LONG).unit(Unit.DECIDEGREE_CELSIUS)),
 
         /**
          * Flow Temp.
@@ -55,7 +55,7 @@ public interface HeatMeter extends Meter {
          * <li>Unit: DegreeCelsius
          * </ul>
          */
-        FLOW_TEMP(Doc.of(OpenemsType.LONG).unit(Unit.DEZIDEGREE_CELSIUS));
+        FLOW_TEMP(Doc.of(OpenemsType.LONG).unit(Unit.DECIDEGREE_CELSIUS));
 
 
         private final Doc doc;

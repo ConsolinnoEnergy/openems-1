@@ -37,7 +37,7 @@ public interface ControllerWarmup extends OpenemsComponent {
          * </ul>
          */
 
-        WARMUP_TEMPERATURE(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_ONLY)),
+        WARMUP_TEMPERATURE(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS).accessMode(AccessMode.READ_ONLY)),
 
         /**
          * Get the total runtime length of the currently loaded heating program.

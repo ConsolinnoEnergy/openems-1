@@ -456,7 +456,7 @@ public class FeneconHomeBatteryImpl extends AbstractOpenemsModbusComponent
 							// Create Temperature Channel
 							ChannelIdImpl channelId = new ChannelIdImpl(//
 									this.getSingleCellPrefix(t, i, j) + "_TEMPERATURE",
-									Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS));
+									Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS));
 							this.addChannel(channelId);
 
 							// Create Modbus-Mapping for Temperatures

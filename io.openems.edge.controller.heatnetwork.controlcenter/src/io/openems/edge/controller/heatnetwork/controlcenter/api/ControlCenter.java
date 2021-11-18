@@ -20,7 +20,7 @@ public interface ControlCenter extends OpenemsComponent {
          * </ul>
          */
 
-        TEMPERATURE_OVERRIDE(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)
+        TEMPERATURE_OVERRIDE(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)
         .onInit(channel -> ((IntegerWriteChannel)channel).onSetNextWrite(channel::setNextValue))),
 
         /**
@@ -38,7 +38,7 @@ public interface ControlCenter extends OpenemsComponent {
         /**
          * Heating temperature.
          */
-        TEMPERATURE_HEATING(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_ONLY)),
+        TEMPERATURE_HEATING(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS).accessMode(AccessMode.READ_ONLY)),
 
         /**
          * Controller output. If the heater should activate or not.

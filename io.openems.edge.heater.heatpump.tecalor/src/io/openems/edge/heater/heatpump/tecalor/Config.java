@@ -1,5 +1,6 @@
 package io.openems.edge.heater.heatpump.tecalor;
 
+import io.openems.edge.heater.api.HeatpumpControlMode;
 import io.openems.edge.heater.heatpump.tecalor.api.OperatingMode;
 import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
@@ -22,20 +23,16 @@ import org.osgi.service.metatype.annotations.Option;
 	@AttributeDefinition(name = "Modbus Unit-ID", description = "The Unit-ID of the Modbus device.")
 	int modbusUnitId() default 1;
 
-	@AttributeDefinition(name = "SG-Ready", description = "Enable or disable Smart Grid Ready mode.")
-	boolean sgReady() default false;
-
-	@AttributeDefinition(name = "Use EnableSignal", description = "React to commands from the Heater interface "
-			+ "EnableSignal channel. Will turn off the heat pump when there is no signal, overriding any other commands.")
-	boolean useEnableSignalChannel() default false;
+	@AttributeDefinition(name = "OpenEMS control mode", description = "Use EnableSignal or SmartGridState to control the "
+			+ "heat pump. They are mutually exclusive.")
+	HeatpumpControlMode openEmsControlMode() default HeatpumpControlMode.ENABLE_SIGNAL;
 
 	@AttributeDefinition(name = "Wait time EnableSignal", description = "How long to wait after the EnableSignal is "
 			+ "no longer received before the heat pump is switched off. Unit is seconds, unless cycles option is selected.")
 	int waitTimeEnableSignal() default 30;
 
-	@AttributeDefinition(name = "EnableSignal timer unit is cycles not seconds", description = "Use OpenEMS cycles "
-			+ "instead of seconds as the unit for the timer.")
-	boolean enableSignalTimerIsCyclesNotSeconds() default false;
+	@AttributeDefinition(name = "EnableSignal timer Id", description = "Name of the timer used for the EnableSignal.")
+	String enableSignalTimerId() default "TimerByTime";
 
 	@AttributeDefinition(name = "Use ExceptionalState", description = "React to commands from the Exceptional State "
 			+ "interface. When the Exceptional State is active, this will override any other commands.")
@@ -46,19 +43,18 @@ import org.osgi.service.metatype.annotations.Option;
 			+ "seconds, unless cycles option is selected.")
 	int waitTimeExceptionalState() default 30;
 
-	@AttributeDefinition(name = "ExceptionalState timer unit is cycles not seconds", description = "Use OpenEMS cycles "
-			+ "instead of seconds as the unit for the timer.")
-	boolean exceptionalStateTimerIsCyclesNotSeconds() default false;
+	@AttributeDefinition(name = "ExceptionalState timer Id", description = "Name of the timer used for the ExceptionalState.")
+	String exceptionalStateTimerId() default "TimerByTime";
 
-	@AttributeDefinition(name = "Default mode of operation", description = "When EnableSignal or ExceptionalState turns "
-			+ "on the heat pump, switch these modes to \"automatic\".")
+	@AttributeDefinition(name = "Default on state", description = "When EnableSignal or ExceptionalState turns "
+			+ "on the heat pump, switch to this mode. (The \"off\" state is \"antifreeze\".)")
 	OperatingMode defaultModeOfOperation() default OperatingMode.PROGRAM_MODE;
 
 	@AttributeDefinition(name = "Read only", description = "Only read values from Modbus, don't send commands.")
 	boolean readOnly() default false;
-	
-    @AttributeDefinition(name = "Debug", description = "Enable debug mode. Print status parameters to the log.")
-    boolean debug() default false;
+
+	@AttributeDefinition(name = "Print info to log", description = "Print status info to the log.")
+    boolean printInfoToLog() default false;
     
 	@AttributeDefinition(name = "Is enabled?", description = "Is this Component enabled?")
 	boolean enabled() default true;

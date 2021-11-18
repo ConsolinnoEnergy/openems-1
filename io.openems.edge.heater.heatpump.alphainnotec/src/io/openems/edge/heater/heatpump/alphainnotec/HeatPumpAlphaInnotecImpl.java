@@ -8,7 +8,6 @@ import io.openems.edge.bridge.modbus.api.ElementToChannelConverter;
 import io.openems.edge.bridge.modbus.api.ModbusProtocol;
 import io.openems.edge.bridge.modbus.api.element.CoilElement;
 import io.openems.edge.bridge.modbus.api.element.DummyCoilElement;
-import io.openems.edge.bridge.modbus.api.element.ModbusCoilElement;
 import io.openems.edge.bridge.modbus.api.element.SignedWordElement;
 import io.openems.edge.bridge.modbus.api.element.UnsignedDoublewordElement;
 import io.openems.edge.bridge.modbus.api.element.UnsignedWordElement;
@@ -29,6 +28,7 @@ import io.openems.edge.heater.api.EnableSignalHandler;
 import io.openems.edge.heater.api.EnableSignalHandlerImpl;
 import io.openems.edge.heater.api.Heater;
 import io.openems.edge.heater.api.HeaterState;
+import io.openems.edge.heater.api.HeatpumpControlMode;
 import io.openems.edge.heater.heatpump.alphainnotec.api.BlockRelease;
 import io.openems.edge.heater.heatpump.alphainnotec.api.CoolingMode;
 import io.openems.edge.heater.heatpump.alphainnotec.api.PoolMode;
@@ -82,13 +82,17 @@ public class HeatPumpAlphaInnotecImpl extends AbstractOpenemsModbusComponent imp
 	protected ComponentManager cpm;
 	
 	private final Logger log = LoggerFactory.getLogger(HeatPumpAlphaInnotecImpl.class);
-	private boolean debug;
-	private boolean componentEnabled;
+	private boolean printInfoToLog;
 	private boolean readOnly;
 
-	private boolean turnOnHeatpump;
-	private String[] defaultModesOfOperation;
-	private boolean useEnableSignal;
+	private HeatingMode heatingModeSetting;
+	private HeatingMode domesticHotWaterModeSetting;
+	private HeatingMode mixingCircuit2ModeSetting;
+	private HeatingMode mixingCircuit3ModeSetting;
+	private CoolingMode coolingModeSetting;
+	private PoolMode poolModeSetting;
+	private VentilationMode ventilationModeSetting;
+
 	private EnableSignalHandler enableSignalHandler;
 	private static final String ENABLE_SIGNAL_IDENTIFIER = "HEAT_PUMP_ALPHA_INNOTEC_ENABLE_SIGNAL_IDENTIFIER";
 	private boolean useExceptionalState;
@@ -114,31 +118,36 @@ public class HeatPumpAlphaInnotecImpl extends AbstractOpenemsModbusComponent imp
 	void activate(ComponentContext context, Config config) throws OpenemsError.OpenemsNamedException, ConfigurationException {
 		super.activate(context, config.id(), config.alias(), config.enabled(), config.modbusUnitId(), this.cm,
 				"Modbus", config.modbus_id());
-		this.debug = config.debug();
-		this.componentEnabled = config.enabled();
+
+		this.printInfoToLog = config.printInfoToLog();
 		this.readOnly = config.readOnly();
-		TimerHandler timer = new TimerHandlerImpl(super.id(), this.cpm);
-		this.useEnableSignal = config.useEnableSignalChannel();
-		this.defaultModesOfOperation = config.defaultModesOfOperation();
-		if (this.useEnableSignal) {
-			String timerIdEnableSignal;
-			if (config.enableSignalTimerIsCyclesNotSeconds()) {
-				timerIdEnableSignal = "TimerByCycles";
-			} else {
-				timerIdEnableSignal = "TimerByTime";
-			}
-			timer.addOneIdentifier(ENABLE_SIGNAL_IDENTIFIER, timerIdEnableSignal, config.waitTimeEnableSignal());
-			this.enableSignalHandler = new EnableSignalHandlerImpl(timer, ENABLE_SIGNAL_IDENTIFIER);
+		if (this.isEnabled() == false) {
+			this._setHeaterState(HeaterState.OFF.getValue());
 		}
+
+		if (this.readOnly == false) {
+			// Use SmartGridState or EnableSignal & ExceptionalState to control heat pump.
+			this._setUseSmartGridState(config.openEmsControlMode() == HeatpumpControlMode.SMART_GRID_STATE);
+			this.getUseSmartGridStateChannel().nextProcessImage();
+
+			this.heatingModeSetting = config.defaultHeatingMode();
+			this.domesticHotWaterModeSetting = config.defaultDomesticHotWaterMode();
+			this.mixingCircuit2ModeSetting = config.defaultMixingCircuit2Mode();
+			this.mixingCircuit3ModeSetting = config.defaultMixingCircuit3Mode();
+			this.coolingModeSetting = config.defaultCoolingMode();
+			this.poolModeSetting = config.defaultPoolMode();
+			this.ventilationModeSetting = config.defaultVentilationMode();
+			this.initializeTimers(config);
+		}
+	}
+
+	private void initializeTimers(Config config) throws OpenemsError.OpenemsNamedException, ConfigurationException {
+		TimerHandler timer = new TimerHandlerImpl(super.id(), this.cpm);
+		timer.addOneIdentifier(ENABLE_SIGNAL_IDENTIFIER, config.enableSignalTimerId(), config.waitTimeEnableSignal());
+		this.enableSignalHandler = new EnableSignalHandlerImpl(timer, ENABLE_SIGNAL_IDENTIFIER);
 		this.useExceptionalState = config.useExceptionalState();
 		if (this.useExceptionalState) {
-			String timerIdEnableSignal;
-			if (config.exceptionalStateTimerIsCyclesNotSeconds()) {
-				timerIdEnableSignal = "TimerByCycles";
-			} else {
-				timerIdEnableSignal = "TimerByTime";
-			}
-			timer.addOneIdentifier(EXCEPTIONAL_STATE_IDENTIFIER, timerIdEnableSignal, config.waitTimeExceptionalState());
+			timer.addOneIdentifier(EXCEPTIONAL_STATE_IDENTIFIER, config.exceptionalStateTimerId(), config.waitTimeExceptionalState());
 			this.exceptionalStateHandler = new ExceptionalStateHandlerImpl(timer, EXCEPTIONAL_STATE_IDENTIFIER);
 		}
 	}
@@ -152,9 +161,9 @@ public class HeatPumpAlphaInnotecImpl extends AbstractOpenemsModbusComponent imp
 	protected ModbusProtocol defineModbusProtocol() throws OpenemsException {
 		ModbusProtocol protocol = new ModbusProtocol(this,
 				new FC2ReadInputsTask(0, Priority.LOW,
-						m(HeatpumpAlphaInnotec.ChannelId.DI_0_EL_SUP_BLOCK, new CoilElement(0),
+						m(HeatpumpAlphaInnotec.ChannelId.DI_0_DMS_BLOCK, new CoilElement(0),
 								ElementToChannelConverter.DIRECT_1_TO_1),
-						m(HeatpumpAlphaInnotec.ChannelId.DI_1_EL_SUP_BLOCK_SG, new CoilElement(1),
+						m(HeatpumpAlphaInnotec.ChannelId.DI_1_DMS_BLOCK_SG, new CoilElement(1),
 								ElementToChannelConverter.DIRECT_1_TO_1),
 						m(HeatpumpAlphaInnotec.ChannelId.DI_2_POOL_THERMOSTAT, new CoilElement(2),
 								ElementToChannelConverter.DIRECT_1_TO_1),
@@ -343,43 +352,43 @@ public class HeatPumpAlphaInnotecImpl extends AbstractOpenemsModbusComponent imp
 			protocol.addTasks(
 					// There is no "write-multiple-coils" command implementation in OpenEMS (yet), so you need a separate write call for each coil.
 					new FC5WriteCoilTask(0,
-							(ModbusCoilElement) m(HeatpumpAlphaInnotec.ChannelId.COIL_0_ERRORRESET, new CoilElement(0),
+							m(HeatpumpAlphaInnotec.ChannelId.COIL_0_ERRORRESET, new CoilElement(0),
 									ElementToChannelConverter.DIRECT_1_TO_1)),
 					new FC5WriteCoilTask(2,
-							(ModbusCoilElement) m(HeatpumpAlphaInnotec.ChannelId.COIL_2_HUP, new CoilElement(2),
+							m(HeatpumpAlphaInnotec.ChannelId.COIL_2_HUP, new CoilElement(2),
 									ElementToChannelConverter.DIRECT_1_TO_1)),
 					new FC5WriteCoilTask(3,
-							(ModbusCoilElement) m(HeatpumpAlphaInnotec.ChannelId.COIL_3_VEN, new CoilElement(3),
+							m(HeatpumpAlphaInnotec.ChannelId.COIL_3_VEN, new CoilElement(3),
 									ElementToChannelConverter.DIRECT_1_TO_1)),
 					new FC5WriteCoilTask(4,
-							(ModbusCoilElement) m(HeatpumpAlphaInnotec.ChannelId.COIL_4_ZUP, new CoilElement(4),
+							m(HeatpumpAlphaInnotec.ChannelId.COIL_4_ZUP, new CoilElement(4),
 									ElementToChannelConverter.DIRECT_1_TO_1)),
 					new FC5WriteCoilTask(5,
-							(ModbusCoilElement) m(HeatpumpAlphaInnotec.ChannelId.COIL_5_BUP, new CoilElement(5),
+							m(HeatpumpAlphaInnotec.ChannelId.COIL_5_BUP, new CoilElement(5),
 									ElementToChannelConverter.DIRECT_1_TO_1)),
 					new FC5WriteCoilTask(6,
-							(ModbusCoilElement) m(HeatpumpAlphaInnotec.ChannelId.COIL_6_BOSUP, new CoilElement(6),
+							m(HeatpumpAlphaInnotec.ChannelId.COIL_6_BOSUP, new CoilElement(6),
 									ElementToChannelConverter.DIRECT_1_TO_1)),
 					new FC5WriteCoilTask(7,
-							(ModbusCoilElement) m(HeatpumpAlphaInnotec.ChannelId.COIL_7_ZIP, new CoilElement(7),
+							m(HeatpumpAlphaInnotec.ChannelId.COIL_7_ZIP, new CoilElement(7),
 									ElementToChannelConverter.DIRECT_1_TO_1)),
 					new FC5WriteCoilTask(8,
-							(ModbusCoilElement) m(HeatpumpAlphaInnotec.ChannelId.COIL_8_FUP2, new CoilElement(8),
+							m(HeatpumpAlphaInnotec.ChannelId.COIL_8_FUP2, new CoilElement(8),
 									ElementToChannelConverter.DIRECT_1_TO_1)),
 					new FC5WriteCoilTask(9,
-							(ModbusCoilElement) m(HeatpumpAlphaInnotec.ChannelId.COIL_9_FUP3, new CoilElement(9),
+							m(HeatpumpAlphaInnotec.ChannelId.COIL_9_FUP3, new CoilElement(9),
 									ElementToChannelConverter.DIRECT_1_TO_1)),
 					new FC5WriteCoilTask(10,
-							(ModbusCoilElement) m(HeatpumpAlphaInnotec.ChannelId.COIL_10_SLP, new CoilElement(10),
+							m(HeatpumpAlphaInnotec.ChannelId.COIL_10_SLP, new CoilElement(10),
 									ElementToChannelConverter.DIRECT_1_TO_1)),
 					new FC5WriteCoilTask(11,
-							(ModbusCoilElement) m(HeatpumpAlphaInnotec.ChannelId.COIL_11_SUP, new CoilElement(11),
+							m(HeatpumpAlphaInnotec.ChannelId.COIL_11_SUP, new CoilElement(11),
 									ElementToChannelConverter.DIRECT_1_TO_1)),
 					new FC5WriteCoilTask(12,
-							(ModbusCoilElement) m(HeatpumpAlphaInnotec.ChannelId.COIL_12_VSK, new CoilElement(12),
+							m(HeatpumpAlphaInnotec.ChannelId.COIL_12_VSK, new CoilElement(12),
 									ElementToChannelConverter.DIRECT_1_TO_1)),
 					new FC5WriteCoilTask(13,
-							(ModbusCoilElement) m(HeatpumpAlphaInnotec.ChannelId.COIL_13_FRH, new CoilElement(13),
+							m(HeatpumpAlphaInnotec.ChannelId.COIL_13_FRH, new CoilElement(13),
 									ElementToChannelConverter.DIRECT_1_TO_1)),
 
 					new FC16WriteRegistersTask(0,
@@ -397,19 +406,19 @@ public class HeatPumpAlphaInnotecImpl extends AbstractOpenemsModbusComponent imp
 									ElementToChannelConverter.DIRECT_1_TO_1),
 							m(HeatpumpAlphaInnotec.ChannelId.HR_6_BLOCK_RELEASE, new UnsignedWordElement(6),
 									ElementToChannelConverter.DIRECT_1_TO_1),
-							m(HeatpumpAlphaInnotec.ChannelId.HR_7_CIRCUIT_HEATING_OPERATION_MODE, new UnsignedWordElement(7),
+							m(HeatpumpAlphaInnotec.ChannelId.HR_7_MODBUS, new UnsignedWordElement(7),
 									ElementToChannelConverter.DIRECT_1_TO_1),
-							m(HeatpumpAlphaInnotec.ChannelId.HR_8_WATER_OPERATION_MODE, new UnsignedWordElement(8),
+							m(HeatpumpAlphaInnotec.ChannelId.HR_8_MODBUS, new UnsignedWordElement(8),
 									ElementToChannelConverter.DIRECT_1_TO_1),
-							m(HeatpumpAlphaInnotec.ChannelId.HR_9_MC2_OPERATION_MODE, new UnsignedWordElement(9),
+							m(HeatpumpAlphaInnotec.ChannelId.HR_9_MODBUS, new UnsignedWordElement(9),
 									ElementToChannelConverter.DIRECT_1_TO_1),
-							m(HeatpumpAlphaInnotec.ChannelId.HR_10_MC3_OPERATION_MODE, new UnsignedWordElement(10),
+							m(HeatpumpAlphaInnotec.ChannelId.HR_10_MODBUS, new UnsignedWordElement(10),
 									ElementToChannelConverter.DIRECT_1_TO_1),
-							m(HeatpumpAlphaInnotec.ChannelId.HR_11_COOLING_OPERATION_MODE, new UnsignedWordElement(11),
+							m(HeatpumpAlphaInnotec.ChannelId.HR_11_MODBUS, new UnsignedWordElement(11),
 									ElementToChannelConverter.DIRECT_1_TO_1),
-							m(HeatpumpAlphaInnotec.ChannelId.HR_12_VENTILATION_OPERATION_MODE, new UnsignedWordElement(12),
+							m(HeatpumpAlphaInnotec.ChannelId.HR_12_MODBUS, new UnsignedWordElement(12),
 									ElementToChannelConverter.DIRECT_1_TO_1),
-							m(HeatpumpAlphaInnotec.ChannelId.HR_13_POOL_OPERATION_MODE, new UnsignedWordElement(13),
+							m(HeatpumpAlphaInnotec.ChannelId.HR_13_MODBUS, new UnsignedWordElement(13),
 									ElementToChannelConverter.DIRECT_1_TO_1),
 							m(HeatpumpAlphaInnotec.ChannelId.HR_14_SMART_GRID, new UnsignedWordElement(14),
 									ElementToChannelConverter.DIRECT_1_TO_1),
@@ -439,36 +448,49 @@ public class HeatPumpAlphaInnotecImpl extends AbstractOpenemsModbusComponent imp
 
 	@Override
 	public void handleEvent(Event event) {
-		if (this.componentEnabled && EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE.equals(event.getTopic())) {
-			//pumpTest();	// Just for testing
+		if (this.isEnabled() == false) {
+			return;
+		}
+		if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE)) {
 			this.channelmapping();
+			if (this.printInfoToLog) {
+				this.printInfo();
+			}
+		} else if (this.readOnly == false && event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS)) {
+			this.writeCommands();
 		}
 	}
 
-	// Put values in channels that are not directly Modbus read values but derivatives.
+	/**
+	 * Put values in channels that are not directly Modbus read values but derivatives.
+	 */
 	protected void channelmapping() {
 
-		SystemStatus heatpumpSystemStatus = getHeatpumpOperatingMode().asEnum();
-		switch (heatpumpSystemStatus) {
-			case OFF:
-				this._setHeaterState(HeaterState.OFF.getValue());
-				break;
-			case BLOCKED:
-				this._setHeaterState(HeaterState.BLOCKED_OR_ERROR.getValue());
-				break;
-			case DEFROST:
-			case COOLING:
-			case POOL_HEATING:
-			case ROOM_HEATING:
-			case DOMESTIC_HOT_WATER_HEATING:
-			case EXTERNAL_ENERGY_SOURCE:
-				this._setHeaterState(HeaterState.RUNNING.getValue());
-				break;
-			case UNDEFINED:
-			default:
-				this._setHeaterState(HeaterState.UNDEFINED.getValue());
-				break;
+		if (this.getHeatpumpOperatingMode().isDefined()) {
+			SystemStatus heatpumpSystemStatus = this.getHeatpumpOperatingMode().asEnum();
+			switch (heatpumpSystemStatus) {
+				case OFF:
+					this._setHeaterState(HeaterState.OFF.getValue());
+					break;
+				case BLOCKED:
+					this._setHeaterState(HeaterState.BLOCKED_OR_ERROR.getValue());
+					break;
+				case DEFROST:
+				case COOLING:
+				case POOL_HEATING:
+				case ROOM_HEATING:
+				case DOMESTIC_HOT_WATER_HEATING:
+				case EXTERNAL_ENERGY_SOURCE:
+					this._setHeaterState(HeaterState.RUNNING.getValue());
+					break;
+				default:
+					this._setHeaterState(HeaterState.UNDEFINED.getValue());
+					break;
+			}
+		} else {
+			this._setHeaterState(HeaterState.UNDEFINED.getValue());
 		}
+		this.getHeaterStateChannel().nextProcessImage();
 
 		// Map smart grid from modbus.
 		if (getSmartGridFromModbus().isDefined()) {
@@ -492,86 +514,173 @@ public class HeatPumpAlphaInnotecImpl extends AbstractOpenemsModbusComponent imp
 		} else {
 			this._setSmartGridState(SmartGridState.UNDEFINED.getValue());
 		}
+		this.getSmartGridStateChannel().nextProcessImage();
 
-		// The value in the channel can be null. Use "orElse" to avoid null pointer exception.
-		int errorCode = this.getErrorCode().orElse(0);
-		if (errorCode != 0) {
-			this._setErrorMessage("Error code: " + errorCode);
+		// Get errors
+		if (this.getErrorCode().isDefined()) {
+			int errorCode = this.getErrorCode().get();
+			if (errorCode != 0) {
+				this._setErrorMessage("Error code: " + errorCode);
+			} else {
+				this._setErrorMessage("No error");
+			}
 		} else {
-			this._setErrorMessage("No error");
+			this._setErrorMessage("No Modbus connection");
+		}
+		this.getErrorMessageChannel().nextProcessImage();
+	}
+
+	/**
+	 * Determine commands and send them to the heater.
+	 * The heat pump is controlled either by EnableSignal & ExceptionalState or SmartGridState. The channel
+	 * UseSmartGridState determines the control mode.
+	 * Operating mode channels get special treatment because these are used by EnableSignal/ExceptionalState to switch
+	 * the heat pump on/off. The write of the operating mode channels is not mapped to Modbus. This is done by duplicate
+	 * ’private’ channels. The write to the ’public’ operating mode channels is stored in a local variable and sent to
+	 * Modbus using the ’private’ channels.
+	 * The benefit of this design is that when EnableSignal is false (heat pump off), writing to the operating mode
+	 * channels is still registered and the value saved, but not executed. The changed operating mode is then applied
+	 * once EnableSignal is true. This way you don't have to pay attention to the state of the heat pump when writing
+	 * in the operating mode channels.
+	 */
+	protected void writeCommands() {
+		// Collect operating mode channels ’nextWrite’.
+		Optional<Integer> heatingModeOptional = this.getHeatingOperationModeChannel().getNextWriteValueAndReset();
+		if (heatingModeOptional.isPresent()) {
+			int enumAsInt = heatingModeOptional.get();
+			// Restrict to valid write values
+			if (enumAsInt >= 0 && enumAsInt <= 4) {
+				this.heatingModeSetting = HeatingMode.valueOf(enumAsInt);
+			}
+		}
+		Optional<Integer> domesticHotWaterModeOptional = this.getDomesticHotWaterOperationModeChannel().getNextWriteValueAndReset();
+		if (domesticHotWaterModeOptional.isPresent()) {
+			int enumAsInt = domesticHotWaterModeOptional.get();
+			// Restrict to valid write values
+			if (enumAsInt >= 0 && enumAsInt <= 4) {
+				this.domesticHotWaterModeSetting = HeatingMode.valueOf(enumAsInt);
+			}
+		}
+		Optional<Integer> mixingCircuit2ModeOptional = this.getCircuit2OperationModeChannel().getNextWriteValueAndReset();
+		if (mixingCircuit2ModeOptional.isPresent()) {
+			int enumAsInt = mixingCircuit2ModeOptional.get();
+			// Restrict to valid write values
+			if (enumAsInt >= 0 && enumAsInt <= 4) {
+				this.mixingCircuit2ModeSetting = HeatingMode.valueOf(enumAsInt);
+			}
+		}
+		Optional<Integer> mixingCircuit3ModeOptional = this.getCircuit3OperationModeChannel().getNextWriteValueAndReset();
+		if (mixingCircuit3ModeOptional.isPresent()) {
+			int enumAsInt = mixingCircuit3ModeOptional.get();
+			// Restrict to valid write values
+			if (enumAsInt >= 0 && enumAsInt <= 4) {
+				this.mixingCircuit3ModeSetting = HeatingMode.valueOf(enumAsInt);
+			}
+		}
+		Optional<Integer> coolingModeOptional = this.getCoolingOperationModeChannel().getNextWriteValueAndReset();
+		if (coolingModeOptional.isPresent()) {
+			int enumAsInt = coolingModeOptional.get();
+			// Restrict to valid write values
+			if (enumAsInt >= 0 && enumAsInt <= 1) {
+				this.coolingModeSetting = CoolingMode.valueOf(enumAsInt);
+			}
+		}
+		Optional<Integer> poolModeOptional = this.getPoolHeatingOperationModeChannel().getNextWriteValueAndReset();
+		if (poolModeOptional.isPresent()) {
+			int enumAsInt = poolModeOptional.get();
+			// Restrict to valid write values
+			if (enumAsInt >= 0 && enumAsInt <= 4 && enumAsInt != 1) {
+				this.poolModeSetting = PoolMode.valueOf(enumAsInt);
+			}
+		}
+		Optional<Integer> ventilationModeOptional = this.getVentilationOperationModeChannel().getNextWriteValueAndReset();
+		if (ventilationModeOptional.isPresent()) {
+			int enumAsInt = ventilationModeOptional.get();
+			// Restrict to valid write values
+			if (enumAsInt >= 0 && enumAsInt <= 3) {
+				this.ventilationModeSetting = VentilationMode.valueOf(enumAsInt);
+			}
 		}
 
-		if (this.readOnly == false) {
+		int heatingModeToModbus = HeatingMode.OFF.getValue();			// These values are used if ’turnOnHeatpump = false’
+		int domesticHotWaterModeToModbus = HeatingMode.OFF.getValue();
+		int mixingCircuit2ModeToModbus = HeatingMode.OFF.getValue();
+		int mixingCircuit3ModeToModbus = HeatingMode.OFF.getValue();
+		int coolingModeToModbus = CoolingMode.OFF.getValue();
+		int poolModeToModbus = PoolMode.OFF.getValue();
+		int ventilationModeToModbus = VentilationMode.OFF.getValue();
+		if (this.getUseSmartGridState().isDefined() && this.getUseSmartGridState().get()) {
+			// Set operating mode values from config/channels.
+			heatingModeToModbus = this.heatingModeSetting.getValue();
+			domesticHotWaterModeToModbus = this.domesticHotWaterModeSetting.getValue();
+			mixingCircuit2ModeToModbus = this.mixingCircuit2ModeSetting.getValue();
+			mixingCircuit3ModeToModbus = this.mixingCircuit3ModeSetting.getValue();
+			coolingModeToModbus = this.coolingModeSetting.getValue();
+			poolModeToModbus = this.poolModeSetting.getValue();
+			ventilationModeToModbus = this.ventilationModeSetting.getValue();
 
 			// Map smart grid write.
-			Optional<Integer> smartGridStateWrite = getSmartGridStateChannel().getNextWriteValueAndReset();
+			Optional<Integer> smartGridStateWrite = this.getSmartGridStateChannel().getNextWriteValueAndReset();
 			if (smartGridStateWrite.isPresent()) {
 				try {
-					switch (smartGridStateWrite.get()) {
-						case 1:
+					switch (SmartGridState.valueOf(smartGridStateWrite.get())) {
+						case SG1_BLOCKED:
 							this.setSmartGridToModbus(0);	// Blocked
 							break;
-						case 2:
+						case SG2_LOW:
 							this.setSmartGridToModbus(1);	// Smart Grid Low
 							break;
-						case 3:
+						case SG3_STANDARD:
 							this.setSmartGridToModbus(2);	// Standard
 							break;
-						case 4:
+						case SG4_HIGH:
 							this.setSmartGridToModbus(3);	// Smart Grid High
 							break;
 						default:
 							/* Manual says: "If a value is no longer to be predefined, a value outside the defined
 							   limits must be transferred." So hopefully this is how you switch smart grid off. */
-							setSmartGridToModbus(smartGridStateWrite.get());
+							this.setSmartGridToModbus(smartGridStateWrite.get());
 					}
 				} catch (OpenemsError.OpenemsNamedException e) {
 					this.logError(this.log, "Unable to set Smart Grid State.");
 				}
 			}
-
-			if (this.useEnableSignal || this.useExceptionalState) {
-
-				// Handle EnableSignal.
-				if (this.useEnableSignal) {
-					this.turnOnHeatpump = this.enableSignalHandler.deviceShouldBeHeating(this);
-				}
-
-				// Handle ExceptionalState. ExceptionalState overwrites EnableSignal.
-				int exceptionalStateValue = 0;
-				boolean exceptionalStateActive = false;
-				if (this.useExceptionalState) {
-					exceptionalStateActive = this.exceptionalStateHandler.exceptionalStateActive(this);
-					if (exceptionalStateActive) {
-						exceptionalStateValue = this.getExceptionalStateValue();
-						if (exceptionalStateValue <= 0) {
-							// Turn off heat pump when ExceptionalStateValue = 0.
-							this.turnOnHeatpump = false;
-						} else {
-							// When ExceptionalStateValue is > 0, turn heat pump on.
-							this.turnOnHeatpump = true;
-							/*
-							if (exceptionalStateValue > 100) {
-								exceptionalStateValue = 100;
-							}
-							*/
-						}
+		} else {
+			// Make sure smart grid is disabled
+			if (getSmartGridFromModbus().isDefined()) {
+				int smartGridFromModbus = getSmartGridFromModbus().get();
+				if (smartGridFromModbus >= 0 && smartGridFromModbus <= 3) {
+					try {
+						// Set a value outside the the limit to disable smart grid.
+						this.setSmartGridToModbus(10);
+					} catch (OpenemsError.OpenemsNamedException e) {
+						this.logError(this.log, "Unable to disable Smart Grid State.");
 					}
 				}
+			}
 
-				if (this.turnOnHeatpump) {
+			// Handle EnableSignal.
+			boolean turnOnHeatpump = this.enableSignalHandler.deviceShouldBeHeating(this);
 
-					// Make sure heat pump is not blocked or partially blocked.
-					if (this.getBlockRelease().isDefined()) {
-						if ((this.getBlockRelease().asEnum() == BlockRelease.RELEASE_2_COMPRESSORS) == false) {
-							try {
-								this.setBlockRelease(BlockRelease.RELEASE_2_COMPRESSORS.getValue());
-							} catch (OpenemsError.OpenemsNamedException e) {
-								this.logError(this.log, "Could not write to channel 'HR_6_BLOCK_RELEASE'. "
-										+ "Reason: " + e.getMessage());
-							}
-						}
+			// Handle ExceptionalState. ExceptionalState overwrites EnableSignal.
+			int exceptionalStateValue = 0;
+			if (this.useExceptionalState) {
+				boolean exceptionalStateActive = this.exceptionalStateHandler.exceptionalStateActive(this);
+				if (exceptionalStateActive) {
+					exceptionalStateValue = this.getExceptionalStateValue();
+					if (exceptionalStateValue <= this.DEFAULT_MIN_EXCEPTIONAL_VALUE) {
+						turnOnHeatpump = false;
 					} else {
+						turnOnHeatpump = true;
+					}
+				}
+			}
+
+			if (turnOnHeatpump) {
+
+				// Make sure heat pump is not blocked or partially blocked.
+				if (this.getBlockRelease().isDefined()) {
+					if ((this.getBlockRelease().asEnum() == BlockRelease.RELEASE_2_COMPRESSORS) == false) {
 						try {
 							this.setBlockRelease(BlockRelease.RELEASE_2_COMPRESSORS.getValue());
 						} catch (OpenemsError.OpenemsNamedException e) {
@@ -579,85 +688,118 @@ public class HeatPumpAlphaInnotecImpl extends AbstractOpenemsModbusComponent imp
 									+ "Reason: " + e.getMessage());
 						}
 					}
-
-					Arrays.stream(this.defaultModesOfOperation).forEach(string -> {
-						try {
-							if (string.equals("") == false) {
-								switch (string) {
-									case "Heating":
-										this.setHeatingOperationMode(HeatingMode.AUTOMATIC.getValue());
-										break;
-									case "DomesticHotWater":
-										this.setDomesticHotWaterOperationMode(HeatingMode.AUTOMATIC.getValue());
-										break;
-									case "MixingCircuit2":
-										this.setCircuit2OperationMode(HeatingMode.AUTOMATIC.getValue());
-										break;
-									case "MixingCircuit3":
-										this.setCircuit3OperationMode(HeatingMode.AUTOMATIC.getValue());
-										break;
-									case "Cooling":
-										this.setCoolingOperationMode(CoolingMode.AUTOMATIC.getValue());
-										break;
-									case "Ventilation":
-										this.setVentilationOperationMode(VentilationMode.AUTOMATIC.getValue());
-										break;
-									case "SwimmingPool":
-										this.setPoolHeatingOperationMode(PoolMode.AUTOMATIC.getValue());
-										break;
-								}
-							}
-						} catch (OpenemsError.OpenemsNamedException e) {
-							this.logError(this.log, "Could not write to operating mode channel. "
-									+ "Reason: " + e.getMessage());
-						}
-
-					});
-					/*
-					if (this.useExceptionalState) {
-						// Currently not used. If exceptionalStateValue should do more than just on/off, code for that goes here.
-					}
-					*/
 				} else {
 					try {
-						this.setHeatingOperationMode(HeatingMode.OFF.getValue());
-						this.setDomesticHotWaterOperationMode(HeatingMode.OFF.getValue());
-						this.setCircuit2OperationMode(HeatingMode.OFF.getValue());
-						this.setCircuit3OperationMode(HeatingMode.OFF.getValue());
-						this.setCoolingOperationMode(CoolingMode.OFF.getValue());
-						this.setVentilationOperationMode(VentilationMode.OFF.getValue());
-						this.setPoolHeatingOperationMode(PoolMode.OFF.getValue());
-						// setBlockRelease(BlockRelease.BLOCKED.getValue());	// Better not use that. If the heat pump has frost protection, this might disable it.
+						this.setBlockRelease(BlockRelease.RELEASE_2_COMPRESSORS.getValue());
 					} catch (OpenemsError.OpenemsNamedException e) {
-						this.logError(this.log, "Could not write to operating mode channels. "
+						this.logError(this.log, "Could not write to channel 'HR_6_BLOCK_RELEASE'. "
 								+ "Reason: " + e.getMessage());
 					}
 				}
+
+				// Set values for ’heat pump = on’
+				heatingModeToModbus = this.heatingModeSetting.getValue();
+				domesticHotWaterModeToModbus = this.domesticHotWaterModeSetting.getValue();
+				mixingCircuit2ModeToModbus = this.mixingCircuit2ModeSetting.getValue();
+				mixingCircuit3ModeToModbus = this.mixingCircuit3ModeSetting.getValue();
+				coolingModeToModbus = this.coolingModeSetting.getValue();
+				poolModeToModbus = this.poolModeSetting.getValue();
+				ventilationModeToModbus = this.ventilationModeSetting.getValue();
+
+				/*
+				if (this.useExceptionalState) {
+					// Currently not used. If exceptionalStateValue should do more than just on/off, code for that goes here.
+					   ToDo: maybe use special settings for the operating modes in exceptional state? Right now it is
+					    possible that all operating modes are set to ’off’ during exceptional state, meaning the pump
+					    won't switch on. (Also possible for EnableSignal)
+				}
+				*/
 			}
-
-		}
-		
-		if (this.debug) {
-			this.logInfo(this.log, "--Heat pump Alpha Innotec--");
-			this.logInfo(this.log, "System State: " + this.getHeatpumpOperatingMode().asEnum().getName());
-			this.logInfo(this.log, "Smart Grid State name: " + this.getSmartGridState().asEnum().getName());
-			this.logInfo(this.log, "Block / release: " + this.getBlockRelease().asEnum().getName());
-			this.logInfo(this.log, "Heating mode: " + this.getHeatingOperationMode().asEnum().getName());
-			this.logInfo(this.log, "Domestic hot water mode: " + this.getDomesticHotWaterOperationMode().asEnum().getName());
-			this.logInfo(this.log, "Cooling mode: " + this.getCoolingOperationMode().asEnum().getName());
-			this.logInfo(this.log, "Flow temperature: " + this.getFlowTemperature());
-			this.logInfo(this.log, "Flow temp circuit 1: " + this.getCircuit1FlowTemp());
-			this.logInfo(this.log, "Flow temp circuit 1 setpoint: " + this.getCircuit1FlowTempSetpoint());
-			this.logInfo(this.log, "Return temperature: " + this.getReturnTemperature());
-			this.logInfo(this.log, "Return temp setpoint: " + this.getReturnTempSetpoint());
-			this.logInfo(this.log, "Outside temperature: " + this.getOutsideTemp());
-			this.logInfo(this.log, "Error Code: " + this.getErrorCode().get());	// Code "0" means no error. "Null" means no reading (yet).
-			this.logInfo(this.log, "");
 		}
 
+		// Write operating modes.
+		try {
+			this.getHr7ModbusChannel().setNextWriteValue(heatingModeToModbus);
+		} catch (OpenemsError.OpenemsNamedException e) {
+			this.logError(this.log, "Could not write to heating mode channel. "
+					+ "Reason: " + e.getMessage());
+		}
+		try {
+			this.getHr8ModbusChannel().setNextWriteValue(domesticHotWaterModeToModbus);
+		} catch (OpenemsError.OpenemsNamedException e) {
+			this.logError(this.log, "Could not write to domestic hot water mode channel. "
+					+ "Reason: " + e.getMessage());
+		}
+		try {
+			this.getHr9ModbusChannel().setNextWriteValue(mixingCircuit2ModeToModbus);
+		} catch (OpenemsError.OpenemsNamedException e) {
+			this.logError(this.log, "Could not write to mixing circuit 2 mode channel. "
+					+ "Reason: " + e.getMessage());
+		}
+		try {
+			this.getHr10ModbusChannel().setNextWriteValue(mixingCircuit3ModeToModbus);
+		} catch (OpenemsError.OpenemsNamedException e) {
+			this.logError(this.log, "Could not write to mixing circuit 3 mode channel. "
+					+ "Reason: " + e.getMessage());
+		}
+		try {
+			this.getHr11ModbusChannel().setNextWriteValue(coolingModeToModbus);
+		} catch (OpenemsError.OpenemsNamedException e) {
+			this.logError(this.log, "Could not write to cooling mode channel. "
+					+ "Reason: " + e.getMessage());
+		}
+		try {
+			this.getHr12ModbusChannel().setNextWriteValue(ventilationModeToModbus);
+		} catch (OpenemsError.OpenemsNamedException e) {
+			this.logError(this.log, "Could not write to ventilation mode channel. "
+					+ "Reason: " + e.getMessage());
+		}
+		try {
+			this.getHr13ModbusChannel().setNextWriteValue(poolModeToModbus);
+		} catch (OpenemsError.OpenemsNamedException e) {
+			this.logError(this.log, "Could not write to pool mode channel. "
+					+ "Reason: " + e.getMessage());
+		}
 	}
 
-	// Just for testing. Needs to be uncommented in handleEvent() to work.
+	/**
+	 * Information that is printed to the log if ’print info to log’ option is enabled.
+	 */
+	protected void printInfo() {
+		this.logInfo(this.log, "--Heat pump Alpha Innotec--");
+		this.logInfo(this.log, "System State: " + this.getHeatpumpOperatingMode().asEnum().getName());
+		this.logInfo(this.log, "Use Smart Grid State: " + this.getUseSmartGridState().get());
+		this.logInfo(this.log, "Smart Grid State name: " + this.getSmartGridState().asEnum().getName());
+		this.logInfo(this.log, "Block / release: " + this.getBlockRelease().asEnum().getName());
+		this.logInfo(this.log, "Heating mode: " + this.getHeatingOperationMode().asEnum().getName());
+		this.logInfo(this.log, "Domestic hot water mode: " + this.getDomesticHotWaterOperationMode().asEnum().getName());
+		this.logInfo(this.log, "Cooling mode: " + this.getCoolingOperationMode().asEnum().getName());
+		this.logInfo(this.log, "Flow temperature: " + this.getFlowTemperature());
+		this.logInfo(this.log, "Flow temp circuit 1: " + this.getCircuit1FlowTemp());
+		this.logInfo(this.log, "Flow temp circuit 1 setpoint: " + this.getCircuit1FlowTempSetpoint());
+		this.logInfo(this.log, "Return temperature: " + this.getReturnTemperature());
+		this.logInfo(this.log, "Return temp setpoint: " + this.getReturnTempSetpoint());
+		this.logInfo(this.log, "Outside temperature: " + this.getOutsideTemp());
+		this.logInfo(this.log, "Error message: " + this.getErrorMessage().get());
+		this.logInfo(this.log, "");
+	}
+
+	/**
+	 * Returns the debug message.
+	 *
+	 * @return the debug message.
+	 */
+	public String debugLog() {
+		String debugMessage = this.getHeaterState().asEnum().asCamelCase() //
+				+ "|F:" + this.getFlowTemperature().asString() //
+				+ "|R:" + this.getReturnTemperature().asString(); //
+		if (this.getErrorMessage().get().equals("No error") == false) {
+			debugMessage = debugMessage + "|Error";
+		}
+		return debugMessage;
+	}
+
+	// Just for testing. Needs to be added to handleEvent() to work.
 	/*
 	protected void pumpTest() {
 		this.logInfo(this.log, "--Testing Channels--");

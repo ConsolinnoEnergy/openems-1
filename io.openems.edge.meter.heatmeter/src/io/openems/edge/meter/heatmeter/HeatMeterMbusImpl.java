@@ -76,7 +76,7 @@ public class HeatMeterMbusImpl extends AbstractOpenemsMbusComponent implements O
         READING_TO_MBUS(Doc.of(OpenemsType.INTEGER).unit(Unit.KILOWATT)),
         FLOW_RATE_TO_MBUS(Doc.of(OpenemsType.DOUBLE).unit(Unit.CUBICMETER_PER_HOUR)),
         TOTAL_CONSUMED_ENERGY_TO_MBUS(Doc.of(OpenemsType.INTEGER).unit(Unit.KILOWATT_HOURS)),
-        FLOW_TEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)),
+        FLOW_TEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS)),
         FLOW_RATE(Doc.of(OpenemsType.DOUBLE).unit(Unit.CUBICMETER_PER_HOUR)),
         ;
 

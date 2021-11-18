@@ -23,7 +23,8 @@ import io.openems.edge.heater.api.EnableSignalHandler;
 import io.openems.edge.heater.api.EnableSignalHandlerImpl;
 import io.openems.edge.heater.api.Heater;
 import io.openems.edge.heater.api.HeaterState;
-import io.openems.edge.heater.chp.wolf.api.ChpWolfChannel;
+import io.openems.edge.heater.chp.wolf.api.ChpWolf;
+import io.openems.edge.heater.chp.wolf.api.OperatingMode;
 import io.openems.edge.timer.api.TimerHandler;
 import io.openems.edge.timer.api.TimerHandlerImpl;
 import org.osgi.service.cm.ConfigurationAdmin;
@@ -46,18 +47,29 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Optional;
 
+
+/**
+ * This module reads the most important variables available via Modbus from a Wolf chp and maps them to OpenEMS
+ * channels. The module is written to be used with the Heater interface EnableSignal methods and ExceptionalState.
+ * When setEnableSignal() from the Heater interface is set to true with no other parameters like electric power specified,
+ * the chp will turn on with default settings. The default settings are configurable in the config.
+ * The chp can be controlled with setElectricPowerSetpoint() (set power in kW). Set point methods from the Heater
+ * interface (setTemperatureSetpoint(), setHeatingPowerSetpoint() and setHeatingPowerPercentSetpoint()) are not supported.
+ * This chp has two other control methods besides setElectricPowerSetpoint(), which are setFeedInSetpoint() and
+ * setReserveSetpoint(). The control method is specified in the config or by using the channel ’OperatingMode’.
+ * If the chp is activated by ExceptionalState, it will convert the ExceptionalStateValue into a
+ * setElectricPowerSetpoint() value.
+ */
 @Designate(ocd = Config.class, factory = true)
 @Component(name = "Heater.Chp.Wolf",
 		immediate = true,
 		configurationPolicy = ConfigurationPolicy.REQUIRE,
-		property = EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE)
-
-/**
- * This module reads all variables available via Modbus from a Wolf CHP and maps them to OpenEMS
- * channels. WriteChannels can be used to send commands to the CHP via "setNextWriteValue" method.
- */
+		property = { //
+				EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE, //
+				EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS //
+		})
 public class ChpWolfImpl extends AbstractOpenemsModbusComponent implements OpenemsComponent, EventHandler,
-		ExceptionalState, ChpWolfChannel {
+		ExceptionalState, ChpWolf {
 
 	@Reference
 	protected ConfigurationAdmin cm;
@@ -66,17 +78,15 @@ public class ChpWolfImpl extends AbstractOpenemsModbusComponent implements Opene
 	protected ComponentManager cpm;
 
 	private final Logger log = LoggerFactory.getLogger(ChpWolfImpl.class);
-	private int testcounter = 0;
-	private boolean debug;
+	private boolean printInfoToLog;
 	private int commandCycler = 0;
+	private static final int ENGINE_RPM_RUNNING_INDICATOR = 10; // If rpm is above this value, consider the chp to be running.
 
-	private boolean componentEnabled;
-	private boolean turnOnChp;
 	private boolean readOnly = false;
 	private boolean startupStateChecked = false;
+	private boolean readyForCommands = false;
 	private int chpMaxElectricPower;
 
-	private boolean useEnableSignal;
 	private EnableSignalHandler enableSignalHandler;
 	private static final String ENABLE_SIGNAL_IDENTIFIER = "KW_ENERGY_SMARTBLOCK_ENABLE_SIGNAL_IDENTIFIER";
 	private boolean useExceptionalState;
@@ -91,58 +101,45 @@ public class ChpWolfImpl extends AbstractOpenemsModbusComponent implements Opene
 
 	public ChpWolfImpl() {
 		super(OpenemsComponent.ChannelId.values(),
-				ChpWolfChannel.ChannelId.values(),
+				ChpWolf.ChannelId.values(),
 				Chp.ChannelId.values(),
 				Heater.ChannelId.values(),
 				ExceptionalState.ChannelId.values());
 	}
 
-
 	@Activate
-	public void activate(ComponentContext context, Config config) throws OpenemsError.OpenemsNamedException, ConfigurationException {
+	void activate(ComponentContext context, Config config) throws OpenemsError.OpenemsNamedException, ConfigurationException {
 		super.activate(context, config.id(), config.alias(), config.enabled(), config.modbusUnitId(), this.cm,
 				"Modbus", config.modbus_id());
-		this.componentEnabled = config.enabled();
-		this.debug = config.debug();
+		this.printInfoToLog = config.printInfoToLog();
 		this.chpMaxElectricPower = config.chpMaxElectricPower();
-
 		this.readOnly = config.readOnly();
-		this.startupStateChecked = false;
-		if (this.readOnly == false) {
-			this.setElectricPowerSetpoint(config.defaultSetPointElectricPower());
-			this.turnOnChp = config.turnOnChp();
-			TimerHandler timer = new TimerHandlerImpl(super.id(), this.cpm);
-			this.useEnableSignal = config.useEnableSignalChannel();
-			if (this.useEnableSignal) {
-				String timerTypeEnableSignal;
-				if (config.enableSignalTimerIsCyclesNotSeconds()) {
-					timerTypeEnableSignal = "TimerByCycles";
-				} else {
-					timerTypeEnableSignal = "TimerByTime";
-				}
-				timer.addOneIdentifier(ENABLE_SIGNAL_IDENTIFIER, timerTypeEnableSignal, config.waitTimeEnableSignal());
-				this.enableSignalHandler = new EnableSignalHandlerImpl(timer, ENABLE_SIGNAL_IDENTIFIER);
-			}
-			this.useExceptionalState = config.useExceptionalState();
-			if (this.useExceptionalState) {
-				String timerTypeExceptionalState;
-				if (config.exceptionalStateTimerIsCyclesNotSeconds()) {
-					timerTypeExceptionalState = "TimerByCycles";
-				} else {
-					timerTypeExceptionalState = "TimerByTime";
-				}
-				timer.addOneIdentifier(EXCEPTIONAL_STATE_IDENTIFIER, timerTypeExceptionalState, config.waitTimeExceptionalState());
-				this.exceptionalStateHandler = new ExceptionalStateHandlerImpl(timer, EXCEPTIONAL_STATE_IDENTIFIER);
-			}
-		}
-		if (this.componentEnabled == false) {
+		if (this.isEnabled() == false) {
 			this._setHeaterState(HeaterState.OFF.getValue());
+		}
+
+		if (this.readOnly == false) {
+			this.startupStateChecked = false;
+			this.setOperatingMode(config.defaultOperatingMode());
+			this.setElectricPowerSetpoint(config.defaultSetPointElectricPower());
+			this.initializeTimers(config);
+		}
+	}
+
+	private void initializeTimers(Config config) throws OpenemsError.OpenemsNamedException, ConfigurationException {
+		TimerHandler timer = new TimerHandlerImpl(super.id(), this.cpm);
+		timer.addOneIdentifier(ENABLE_SIGNAL_IDENTIFIER, config.enableSignalTimerId(), config.waitTimeEnableSignal());
+		this.enableSignalHandler = new EnableSignalHandlerImpl(timer, ENABLE_SIGNAL_IDENTIFIER);
+		this.useExceptionalState = config.useExceptionalState();
+		if (this.useExceptionalState) {
+			timer.addOneIdentifier(EXCEPTIONAL_STATE_IDENTIFIER, config.exceptionalStateTimerId(), config.waitTimeExceptionalState());
+			this.exceptionalStateHandler = new ExceptionalStateHandlerImpl(timer, EXCEPTIONAL_STATE_IDENTIFIER);
 		}
 	}
 
 
 	@Deactivate
-	public void deactivate() {
+	protected void deactivate() {
 		super.deactivate();
 	}
 
@@ -150,27 +147,26 @@ public class ChpWolfImpl extends AbstractOpenemsModbusComponent implements Opene
 	protected ModbusProtocol defineModbusProtocol() throws OpenemsException {
 
 		ModbusProtocol protocol = new ModbusProtocol(this,
-
 				new FC3ReadRegistersTask(2, Priority.HIGH,
-						m(ChpWolfChannel.ChannelId.HR2_STATUS_BITS1, new UnsignedWordElement(0),
+						m(ChpWolf.ChannelId.HR2_STATUS_BITS1, new UnsignedWordElement(0),
 								ElementToChannelConverter.DIRECT_1_TO_1)
 				),
 				new FC3ReadRegistersTask(11, Priority.HIGH,
-						m(ChpWolfChannel.ChannelId.HR11_STATUS_BITS2, new UnsignedWordElement(0),
+						m(ChpWolf.ChannelId.HR11_STATUS_BITS2, new UnsignedWordElement(0),
 								ElementToChannelConverter.DIRECT_1_TO_1)
 				),
-				new FC3ReadRegistersTask(27, Priority.LOW,
+				new FC3ReadRegistersTask(27, Priority.HIGH,
 						m(Heater.ChannelId.FLOW_TEMPERATURE, new UnsignedWordElement(0),
 								ElementToChannelConverter.DIRECT_1_TO_1),
 						m(Heater.ChannelId.RETURN_TEMPERATURE, new UnsignedWordElement(0),
 								ElementToChannelConverter.DIRECT_1_TO_1)
 				),
-				new FC3ReadRegistersTask(32, Priority.LOW,
-						m(ChpWolfChannel.ChannelId.HR32_BUFFERTANK_TEMP_UPPER, new UnsignedWordElement(0),
+				new FC3ReadRegistersTask(32, Priority.HIGH,
+						m(ChpWolf.ChannelId.HR32_BUFFERTANK_TEMP_TOP, new UnsignedWordElement(0),
 								ElementToChannelConverter.DIRECT_1_TO_1),
-						m(ChpWolfChannel.ChannelId.HR33_BUFFERTANK_TEMP_MIDDLE, new UnsignedWordElement(1),
+						m(ChpWolf.ChannelId.HR33_BUFFERTANK_TEMP_MIDDLE, new UnsignedWordElement(1),
 								ElementToChannelConverter.DIRECT_1_TO_1),
-						m(ChpWolfChannel.ChannelId.HR34_BUFFERTANK_TEMP_LOWER, new UnsignedWordElement(2),
+						m(ChpWolf.ChannelId.HR34_BUFFERTANK_TEMP_BOTTOM, new UnsignedWordElement(2),
 								ElementToChannelConverter.DIRECT_1_TO_1)
 				),
 				new FC3ReadRegistersTask(263, Priority.HIGH,
@@ -178,28 +174,28 @@ public class ChpWolfImpl extends AbstractOpenemsModbusComponent implements Opene
 								ElementToChannelConverter.DIRECT_1_TO_1)
 				),
 				new FC3ReadRegistersTask(314, Priority.HIGH,
-						m(ChpWolfChannel.ChannelId.HR314_RPM, new UnsignedWordElement(0),
+						m(ChpWolf.ChannelId.HR314_RPM, new UnsignedWordElement(0),
 								ElementToChannelConverter.DIRECT_1_TO_1)
 				),
-				new FC3ReadRegistersTask(3588, Priority.HIGH,
-						m(ChpWolfChannel.ChannelId.HR3588_RUNTIME, new UnsignedDoublewordElement(0),
+				new FC3ReadRegistersTask(3588, Priority.LOW,
+						m(ChpWolf.ChannelId.HR3588_RUNTIME, new UnsignedDoublewordElement(0),
 								ElementToChannelConverter.DIRECT_1_TO_1),
-						m(ChpWolfChannel.ChannelId.HR3590_ENGINE_STARTS, new UnsignedWordElement(2),
+						m(ChpWolf.ChannelId.HR3590_ENGINE_STARTS, new UnsignedWordElement(2),
 								ElementToChannelConverter.DIRECT_1_TO_1)
 				),
 				new FC3ReadRegistersTask(3596, Priority.LOW,
-						m(ChpWolfChannel.ChannelId.HR3596_ELECTRICAL_WORK, new UnsignedDoublewordElement(0),
+						m(ChpWolf.ChannelId.HR3596_ELECTRICAL_WORK, new UnsignedDoublewordElement(0),
 								ElementToChannelConverter.DIRECT_1_TO_1)
 				)
 		);
 		if (this.readOnly == false) {
 			protocol.addTasks(
 					new FC16WriteRegistersTask(6358,
-							m(ChpWolfChannel.ChannelId.HR6358_WRITE_BITS1, new UnsignedWordElement(0),
+							m(ChpWolf.ChannelId.HR6358_WRITE_BITS1, new UnsignedWordElement(0),
 									ElementToChannelConverter.DIRECT_1_TO_1),
-							m(ChpWolfChannel.ChannelId.HR6359_WRITE_BITS2, new UnsignedWordElement(1),
+							m(ChpWolf.ChannelId.HR6359_WRITE_BITS2, new UnsignedWordElement(1),
 									ElementToChannelConverter.DIRECT_1_TO_1),
-							m(ChpWolfChannel.ChannelId.HR6360_WRITE_BITS3, new UnsignedWordElement(2),
+							m(ChpWolf.ChannelId.HR6360_WRITE_BITS3, new UnsignedWordElement(2),
 									ElementToChannelConverter.DIRECT_1_TO_1)
 					)
 			);
@@ -210,12 +206,22 @@ public class ChpWolfImpl extends AbstractOpenemsModbusComponent implements Opene
 
 	@Override
 	public void handleEvent(Event event) {
-		if (this.componentEnabled && event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE)) {
+		if (this.isEnabled() == false) {
+			return;
+		}
+		if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE)) {
 			this.channelmapping();
+			if (this.printInfoToLog) {
+				this.printInfo();
+			}
+		} else if (this.readOnly == false && this.readyForCommands && event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS)) {
+			this.writeCommands();
 		}
 	}
 
-	// Put values in channels that are not directly Modbus read values but derivatives.
+	/**
+	 * Put values in channels that are not directly Modbus read values but derivatives.
+	 */
 	protected void channelmapping() {
 
 		// Parse status bits.
@@ -227,42 +233,42 @@ public class ChpWolfImpl extends AbstractOpenemsModbusComponent implements Opene
 			String warnMessage = "";
 			statusBits40003 = getStatusBits40003().get();
 			if ((statusBits40003 & 0b0100000) == 0b0100000) {
-				warnMessage = warnMessage + "Kühlwasserdruck minimum Gasmotor, ";
+				warnMessage = warnMessage + "Coolant pressure gas engine at minimum (Kuehlwasserdruck minimum Gasmotor), ";
 			}
 			if ((statusBits40003 & 0b01000000) == 0b01000000) {
-				warnMessage = warnMessage + "Tank Ölvorlage auf Minimum, ";
+				warnMessage = warnMessage + "Oil tank at minimum (Tank Oelvorlage auf Minimum), ";
 			}
 			if ((statusBits40003 & 0b010000000) == 0b010000000) {
-				warnMessage = warnMessage + "Schmieröldruck Gasmotor minimum, ";
+				warnMessage = warnMessage + "Oil pressure gas engine at minimum (Schmieroeldruck Gasmotor minimum), ";
 			}
 			if ((statusBits40003 & 0b0100000000) == 0b0100000000) {
-				warnMessage = warnMessage + "Generatorschutz ausgelöst, ";
+				warnMessage = warnMessage + "Generator protection triggered (Generatorschutz ausgeloest), ";
 			}
 			if ((statusBits40003 & 0b01000000000) == 0b01000000000) {
-				warnMessage = warnMessage + "NA-Schutz Extern ausgelöst, ";
+				warnMessage = warnMessage + "Grid and device protection triggered by external (NA-Schutz Extern ausgeloest), ";
 			}
 			if ((statusBits40003 & 0b010000000000) == 0b010000000000) {
-				warnMessage = warnMessage + "Erdgasdruck an der Gasregelstrecke zu gering, ";
+				warnMessage = warnMessage + "Gas pressure too low (Erdgasdruck an der Gasregelstrecke zu gering), ";
 			}
-			if ((statusBits40003 & 0b0100000000000) == 0) {    // Handbuch sagt hier 0=ein, also vermutlich Störung ist wenn hier 0 ist.
-				warnMessage = warnMessage + "Durchflußwächter Kühlwasserkreis Gasmotor misst keinen Fluß, ";
+			if ((statusBits40003 & 0b0100000000000) == 0) {    // Manual says 0=on, so the warning should probably be trigger when this is off.
+				warnMessage = warnMessage + "No flow detected at coolant circuit (Durchflußwaechter Kuehlwasserkreis Gasmotor misst keinen Fluß), ";
 			}
 			if ((statusBits40003 & 0b01000000000000) == 0b01000000000000) {
-				warnMessage = warnMessage + "Sicherheitstempaturbegrenzer Gasmotor geschaltet, ";
+				warnMessage = warnMessage + "Engine temperature protection triggered (Sicherheitstempaturbegrenzer Gasmotor geschaltet), ";
 			}
 			if ((statusBits40003 & 0b010000000000000) == 0b010000000000000) {
-				warnMessage = warnMessage + "Motorschutz Pumpe Kühlwasser ausgelöst, ";
+				warnMessage = warnMessage + "Coolant pump protection triggered (Motorschutz Pumpe Kuehlwasser ausgeloest), ";
 			}
 			if ((statusBits40003 & 0b0100000000000000) == 0b0100000000000000) {
-				warnMessage = warnMessage + "Motorschutz Pumpe Heizung zum Verteiler ausgelöst, ";
+				warnMessage = warnMessage + "Heating circuit pump protection triggered (Motorschutz Pumpe Heizung zum Verteiler ausgeloest), ";
 			}
 			if ((statusBits40003 & 0b01000000000000000) == 0b01000000000000000) {
-				warnMessage = warnMessage + "Sicherungsautomat Lüfter Schallhaube ausgelöst, ";
+				warnMessage = warnMessage + "Noise cover fan protection triggered (Sicherungsautomat Luefter Schallhaube ausgeloest), ";
 			}
 
 			statusBits40012 = getStatusBits40012().get();
 			if ((statusBits40012 & 0b010000000000000) == 0b010000000000000) {
-				warnMessage = warnMessage + "Meldung Wartungintervall erreicht, ";
+				warnMessage = warnMessage + "Maintenance interval reached (Meldung Wartungintervall erreicht), ";
 			}
 			if (warnMessage.length() > 0) {
 				warnMessage = warnMessage.substring(0, warnMessage.length() - 2) + ".";
@@ -284,14 +290,14 @@ public class ChpWolfImpl extends AbstractOpenemsModbusComponent implements Opene
 			this._setWarningMessage("Modbus not connected");
 			this._setErrorMessage("Modbus not connected");
 		}
+		this.getWarningMessageChannel().nextProcessImage();
+		this.getErrorMessageChannel().nextProcessImage();
 		
 		// Parse status by checking engine rpm.
-		boolean readyForCommands = false;
-		boolean chpEngineRunning = false;
+		this.readyForCommands = false;
 		if (getRpm().isDefined()) {
-			readyForCommands = true;
-			if (getRpm().get() > 10) {
-				chpEngineRunning = true;
+			this.readyForCommands = true;
+			if (getRpm().get() > ENGINE_RPM_RUNNING_INDICATOR) {
 				this._setHeaterState(HeaterState.RUNNING.getValue());
 			} else {
 				if (statusError) {
@@ -305,193 +311,205 @@ public class ChpWolfImpl extends AbstractOpenemsModbusComponent implements Opene
 		} else {
 			this._setHeaterState(HeaterState.UNDEFINED.getValue());
 		}
+		this.getHeaterStateChannel().nextProcessImage();
+	}
 
-		// Only send write commands when readOnly is false. All write commands are in this if statement.
-		if (this.readOnly == false && readyForCommands) {
+	/**
+	 * Determine commands and send them to the heater.
+	 */
+	protected void writeCommands() {
 
-			if (this.useEnableSignal) {
-				this.turnOnChp = this.enableSignalHandler.deviceShouldBeHeating(this);
+		// Handle EnableSignal.
+		boolean turnOnChp = this.enableSignalHandler.deviceShouldBeHeating(this);
 
-				// If the component has just been started, it will most likely take a few cycles before a controller
-				// sends an EnableSignal (assuming the CHP should be running). Since no EnableSignal means ’turn off the
-				// CHP’, the component will always turn off the CHP during the first few cycles. If the CHP is already
-				// on, this would turn the CHP off and on again, which is bad for the lifetime. A scenario where this
-				// would happen is if the component or OpenEMS is restarted while the CHP is running.
-				// To avoid that, check the CHP status at the startup of the component. If it is on, the component sends
-				// the EnableSignal to itself once to keep the CHP on until the timer runs out. This gives any
-				// controllers enough time to send the EnableSignal themselves.
-				if (this.startupStateChecked == false) {
-					this.startupStateChecked = true;
-					this.turnOnChp = chpEngineRunning;
-					if (this.turnOnChp) {
-						try {
-							this.getEnableSignalChannel().setNextWriteValue(true);
-						} catch (OpenemsError.OpenemsNamedException e) {
-							this.log.warn("Couldn't write in Channel " + e.getMessage());
-						}
-					}
+		/* At startup, check if chp is already running. If yes, keep it running by sending 'EnableSignal = true' to
+           yourself once. This gives controllers until the EnableSignal timer runs out to decide the state of the chp.
+           This avoids a chp restart if the controllers want the chp to stay on. -> Longer chp lifetime.
+           Without this function, the chp will always switch off at startup because EnableSignal starts as ’false’. */
+		if (this.startupStateChecked == false) {
+			this.startupStateChecked = true;
+			turnOnChp = (HeaterState.valueOf(this.getHeaterState().orElse(-1)) == HeaterState.RUNNING);
+			if (turnOnChp) {
+				try {
+					this.getEnableSignalChannel().setNextWriteValue(true);
+				} catch (OpenemsError.OpenemsNamedException e) {
+					this.log.warn("Couldn't write in Channel " + e.getMessage());
 				}
 			}
+		}
 
-			// Handle ExceptionalState. ExceptionalState overwrites EnableSignal.
-			if (this.useExceptionalState) {
-				boolean exceptionalStateActive = this.exceptionalStateHandler.exceptionalStateActive(this);
-				if (exceptionalStateActive) {
-					int exceptionalStateValue = this.getExceptionalStateValue();
-					if (exceptionalStateValue <= 0) {
-						// Turn off Chp when ExceptionalStateValue = 0.
-						this.turnOnChp = false;
-					} else {
-						// ToDo: Granularity of electric power setpoint is very coarse. The Wolf GTK 4 has 4 kW electric
-						//  power. Mosbus power setpoint is an int with unit kW. Usually a chp can only go as low as 50%
-						//  of maximum power. That means the GTK 4 has only 3 possible setpoints: 2 kW, 3 kW and 4 kW.
-						//  Check if that is really the case or if manual is wrong about power setpoint unit.
-
-						// When ExceptionalStateValue is between 0 and 100, set Chp to this PowerPercentage.
-						this.turnOnChp = true;
-						if (exceptionalStateValue > 100) {
-							exceptionalStateValue = 100;
-						}
-						int electricPowerSetpoint = (int)Math.round(this.chpMaxElectricPower * exceptionalStateValue / 100.0);
-						try {
-							this.setElectricPowerSetpoint(electricPowerSetpoint);
-						} catch (OpenemsNamedException e) {
-							this.log.warn("Couldn't write in Channel " + e.getMessage());
-						}
-					}
-				}
-			}
-
-			// Write bits mapping.
-			// This chp has an unusual way of handling write commands. Instead of mapping one command to one
-			// register, four commands are mapped to three registers that need to be set simultaneously.
-			// HR6358 - always 2.
-			// HR6359 - the value you want to write.
-			// HR6360 - code deciding which command it is.
-			//			35 = Sollwert elektrische Leistung in kW
-			//			36 = Sollwert Einspeisemanagement (optional)
-			//			37 = Reserve
-			//			38 = on/off, send 1 for on, 0 for off.
-			//
-			// You can only send one command per cycle (need to write all three registers for one command)
-			this.commandCycler++;
-			switch (this.commandCycler) {
-				case 1:
-					int writeValueCase1 = 0;
-					if (this.turnOnChp) {
-						writeValueCase1 = 1;
-					}
+		// Handle ExceptionalState. ExceptionalState overwrites EnableSignal.
+		int exceptionalStateValue = 0;
+		boolean exceptionalStateActive = false;
+		if (this.useExceptionalState) {
+			exceptionalStateActive = this.exceptionalStateHandler.exceptionalStateActive(this);
+			if (exceptionalStateActive) {
+				exceptionalStateValue = this.getExceptionalStateValue();
+				if (exceptionalStateValue <= this.DEFAULT_MIN_EXCEPTIONAL_VALUE) {
+					turnOnChp = false;
+				} else {
+					// When ExceptionalStateValue is between 0 and 100, set Chp to this PowerPercentage.
+					turnOnChp = true;
+					exceptionalStateValue = Math.min(exceptionalStateValue, this.DEFAULT_MAX_EXCEPTIONAL_VALUE);
+					int electricPowerSetpoint = (int)Math.round(this.chpMaxElectricPower * exceptionalStateValue / 100.0);
 					try {
-						setWriteBits1(2);
-						setWriteBits2(writeValueCase1);
-						setWriteBits3(38);
+						this.setElectricPowerSetpoint(electricPowerSetpoint);
 					} catch (OpenemsNamedException e) {
-						this.logError(this.log, "Error setting next write value: " + e);
+						this.log.warn("Couldn't write in Channel " + e.getMessage());
 					}
-					break;
-				case 2:
-					Optional<Double> electricPowerSetpoint = this.getElectricPowerSetpointChannel().getNextWriteValueAndReset();
-					if (electricPowerSetpoint.isPresent()) {
-						int writeValue = (int)Math.round(electricPowerSetpoint.get());
-						// Update channel.
-						_setElectricPowerSetpoint(writeValue);
-						try {
-							setWriteBits1(2);
-							setWriteBits2(writeValue);
-							setWriteBits3(35);
-						} catch (OpenemsNamedException e) {
-							this.logError(this.log, "Error setting next write value: " + e);
-						}
-					}
-					break;
-				case 3:
-					Optional<Integer> einspeisemenagement = getEinspeisemanagementSetpointChannel().getNextWriteValueAndReset();
-					if (einspeisemenagement.isPresent()) {
-						int writeValue = einspeisemenagement.get();
-						// Update channel.
-						getEinspeisemanagementSetpointChannel().setNextValue(writeValue);
-						try {
-							setWriteBits1(2);
-							setWriteBits2(writeValue);
-							setWriteBits3(36);
-						} catch (OpenemsNamedException e) {
-							this.logError(this.log, "Error setting next write value: " + e);
-						}
-					}
-					break;
-				default:
-					this.commandCycler = 0;
-					Optional<Integer> reserve = getReserveSetpointChannel().getNextWriteValueAndReset();
-					if (reserve.isPresent()) {
-						int writeValue = reserve.get();
-						// Update channel.
-						getReserveSetpointChannel().setNextValue(writeValue);
-						try {
-							setWriteBits1(2);
-							setWriteBits2(writeValue);
-							setWriteBits3(37);
-						} catch (OpenemsNamedException e) {
-							this.logError(this.log, "Error setting next write value: " + e);
-						}
-					}
+				}
 			}
 		}
 
-		
-
-		if (debug) {
-			this.logInfo(this.log, "--Status Bits 40003--");
-			this.logInfo(this.log, "0 - RM Ge.Schalter - Rückmeldung Generatorschalter geschlossen = " + (((statusBits40003 & 1) == 1) ? 1 : 0));
-			this.logInfo(this.log, "1 - RM Ne.Schalter - Rückmeldung Netzparallelbetrieb möglich = " + (((statusBits40003 & 2) == 2) ? 1 : 0));
-			this.logInfo(this.log, "2 - Fernstart - Start-Stopp Eingang = " + (((statusBits40003 & 4) == 4) ? 1 : 0));
-			this.logInfo(this.log, "3 - Not stop - Meldung Not-Aus gedrückt = " + (((statusBits40003 & 8) == 8) ? 1 : 0));
-			this.logInfo(this.log, "4 - Stellung Auto - Automatik Fernstart möglich = " + (((statusBits40003 & 16) == 16) ? 1 : 0));
-			this.logInfo(this.log, "5 - Wasserdruck - Kühlwasserdruck minimum Gasmotor = " + (((statusBits40003 & 32) == 32) ? 1 : 0));
-			this.logInfo(this.log, "6 - Ölvorlage - Tank Ölvorlage auf Minimum = " + (((statusBits40003 & 64) == 64) ? 1 : 0));
-			this.logInfo(this.log, "7 - Oeldruck min - Schmieröldruck Gasmotor minimum = " + (((statusBits40003 & 128) == 128) ? 1 : 0));
-			this.logInfo(this.log, "8 - Gen.Schutz - Generatorschutz ausgelöst = " + (((statusBits40003 & 256) == 256) ? 1 : 0));
-			this.logInfo(this.log, "9 - NA-Schutz Extern - NA-Schutz Extern ausgelöst = " + (((statusBits40003 & 512) == 512) ? 1 : 0));
-			this.logInfo(this.log, "10 - Erdgasdruck min - Erdgasdruck an der Gasregelstrecke zu gering = " + (((statusBits40003 & 1024) == 1024) ? 1 : 0));
-			this.logInfo(this.log, "11 - Durchfluß - Durchflußwächter Kühlwasserkreis Gasmotor geschaltet = " + (((statusBits40003 & 2048) == 2048) ? 1 : 0));
-			this.logInfo(this.log, "12 - STB Motor - Sicherheitstempaturbegrenzer Gasmotor geschaltet = " + (((statusBits40003 & 4096) == 4096) ? 1 : 0));
-			this.logInfo(this.log, "13 - Stör P Motor - Motorschutz Pumpe Kühlwasser ausgelöst = " + (((statusBits40003 & 8192) == 8192) ? 1 : 0));
-			this.logInfo(this.log, "14 - Stör P Heizung - Motorschutz Pumpe Heizung zum Verteiler ausgelöst = " + (((statusBits40003 & 16384) == 16384) ? 1 : 0));
-			this.logInfo(this.log, "15 - Stör Lüfter - Sicherungsautomat Lüfter Schallhaube ausgelöst = " + (((statusBits40003 & 32768) == 32768) ? 1 : 0));
-			this.logInfo(this.log, "");
-			this.logInfo(this.log, "--Status Bits 40012--");
-			this.logInfo(this.log, "0 - Starter - Anlasser eingeschaltet = " + (((statusBits40012 & 1) == 1) ? 1 : 0));
-			this.logInfo(this.log, "1 - Kessel - Freigabe Kessel = " + (((statusBits40012 & 2) == 2) ? 1 : 0));
-			this.logInfo(this.log, "2 - Gasventile - Freigabe Gasventile = " + (((statusBits40012 & 4) == 4) ? 1 : 0));
-			this.logInfo(this.log, "3 - Gasventile - Freigabe Gasventile = " + (((statusBits40012 & 8) == 8) ? 1 : 0));
-			this.logInfo(this.log, "4 - GLS Aus/Ein - Generatorschalter Ein / AUS = " + (((statusBits40012 & 16) == 16) ? 1 : 0));
-			this.logInfo(this.log, "5 - Speicher - Freigabe Speicherentladepumpe = " + (((statusBits40012 & 32) == 32) ? 1 : 0));
-			this.logInfo(this.log, "6 - Pumpen+Lüfter - Pumpe Motor Ein, Heizung Ein, Ladeluft Ein, Lüfter Schallhaube Ein = " + (((statusBits40012 & 64) == 64) ? 1 : 0));
-			this.logInfo(this.log, "7 - Zuendung - Freigabe Zündung = " + (((statusBits40012 & 128) == 128) ? 1 : 0));
-			this.logInfo(this.log, "8 - Reserve = " + (((statusBits40012 & 256) == 256) ? 1 : 0));
-			this.logInfo(this.log, "9 - Bereit - Meldung Bereit = " + (((statusBits40012 & 512) == 512) ? 1 : 0));
-			this.logInfo(this.log, "10 - Umluft - Anforderung Umluftklappe öffnen = " + (((statusBits40012 & 1024) == 1024) ? 1 : 0));
-			this.logInfo(this.log, "11 - Störung = " + (((statusBits40012 & 2048) == 2048) ? 1 : 0));
-			this.logInfo(this.log, "12 - Pumpe Ölvorlage - Anforderung Pumpe Ölvorlage = " + (((statusBits40012 & 4096) == 4096) ? 1 : 0));
-			this.logInfo(this.log, "13 - Service Zeit - Meldung Wartungintervall erreicht = " + (((statusBits40012 & 8192) == 8192) ? 1 : 0));
-			this.logInfo(this.log, "14 - res. = " + (((statusBits40012 & 16384) == 16384) ? 1 : 0));
-			this.logInfo(this.log, "15 - res. = " + (((statusBits40012 & 32768) == 32768) ? 1 : 0));
-			this.logInfo(this.log, "");
-			this.logInfo(this.log, "Vorlauf Temperatur: " + getFlowTemperature());
-			this.logInfo(this.log, "Rücklauf Temperatur: " + getReturnTemperature());
-			this.logInfo(this.log, "Pufferspeicher Temperatur oben: " + (getBufferTankTempUpper().orElse(0) / 10.0) + "°C");
-			this.logInfo(this.log, "Pufferspeicher Temperatur mitte: " + (getBufferTankTempMiddle().orElse(0) / 10.0) + "°C");
-			this.logInfo(this.log, "Pufferspeicher Temperatur unten: " + (getBufferTankTempLower().orElse(0) / 10.0) + "°C");
-			this.logInfo(this.log, "Elektrische Leistung: " + getEffectiveElectricPower());
-			this.logInfo(this.log, "Motor Drehzeahl: " + getRpm().get() + " rpm");
-			this.logInfo(this.log, "Laufzeit: " + getRuntime().get() + " h");
-			this.logInfo(this.log, "Anzahl der Starts: " + getEngineStarts().get());
-			this.logInfo(this.log, "Erzeugte elektrische Arbeit gesamt: " + getElectricalWork().get() + " kWh");
-			this.logInfo(this.log, "");
-			this.logInfo(this.log, "--Schreibbare Parameter--");
-			this.logInfo(this.log, "Sollwert elektrische Leistung in kW: " + getElectricPowerSetpointChannel().value().get());
-			this.logInfo(this.log, "On / Off: " + getEnableSignal());
-			this.logInfo(this.log, "");
+		/*
+		Write bits mapping.
+		This chp has an unusual way of handling write commands. Instead of mapping one command to one
+		register, four commands are mapped to three registers that need to be set simultaneously.
+		HR6358 - always 2.
+		HR6359 - the value you want to write.
+		HR6360 - code deciding which command it is.
+				35 = set point electric power [kW] (Sollwert elektrische Leistung in kW).
+				36 = set point feed-in management, optional (Sollwert Einspeisemanagement).
+				37 = Reserve (?)
+				38 = on/off, send 1 for on, 0 for off.
+		You can only send one command per cycle (need to write all three registers for one command).
+		 */
+		final int setElectricPower = 35;
+		final int setFeedInManagement = 36;
+		final int setReserve = 37;
+		final int setOnOff = 38;
+		this.commandCycler++;
+		if (this.commandCycler == 1) {
+			int onOffValue = 0;
+			if (turnOnChp) {
+				onOffValue = 1;
+			}
+			try {
+				setWriteBits1(2);
+				setWriteBits2(onOffValue);
+				setWriteBits3(setOnOff);
+			} catch (OpenemsNamedException e) {
+				this.logError(this.log, "Error setting next write value: " + e);
+			}
+		} else {
+			this.commandCycler = 0;
+			if (this.getOperatingMode().isDefined()) {
+				OperatingMode operatingMode = this.getOperatingMode().asEnum();
+				if (operatingMode == OperatingMode.UNDEFINED || exceptionalStateActive) {
+					// Exceptional state uses set point power.
+					operatingMode = OperatingMode.ELECTRIC_POWER;
+				}
+				switch (operatingMode) {
+					case FEED_IN_MANAGEMENT:
+						// Update channel.
+						Optional<Integer> feedInOptional = this.getFeedInSetpointChannel().getNextWriteValueAndReset();
+						if (feedInOptional.isPresent()) {
+							int feedInSetpoint = feedInOptional.get();
+							this.getFeedInSetpointChannel().setNextValue(feedInSetpoint);
+							this.getFeedInSetpointChannel().nextProcessImage();
+						}
+						// Write set point.
+						if (getFeedInSetpoint().isDefined()) {
+							int feedInSetpoint = getFeedInSetpoint().get();
+							try {
+								setWriteBits1(2);
+								setWriteBits2(feedInSetpoint);
+								setWriteBits3(setFeedInManagement);
+							} catch (OpenemsNamedException e) {
+								this.logError(this.log, "Error setting next write value: " + e);
+							}
+						}
+						break;
+					case RESERVE:
+						// Update channel.
+						Optional<Integer> reserveOptional = this.getReserveSetpointChannel().getNextWriteValueAndReset();
+						if (reserveOptional.isPresent()) {
+							int reserveSetpoint = reserveOptional.get();
+							this.getReserveSetpointChannel().setNextValue(reserveSetpoint);
+							this.getReserveSetpointChannel().nextProcessImage();
+						}
+						// Write set point.
+						if (getReserveSetpoint().isDefined()) {
+							int reserveSetpoint = getReserveSetpoint().get();
+							try {
+								setWriteBits1(2);
+								setWriteBits2(reserveSetpoint);
+								setWriteBits3(setReserve);
+							} catch (OpenemsNamedException e) {
+								this.logError(this.log, "Error setting next write value: " + e);
+							}
+						}
+						break;
+					case ELECTRIC_POWER:
+					default:
+						// Update channel.
+						Optional<Double> electricPowerOptional = this.getElectricPowerSetpointChannel().getNextWriteValueAndReset();
+						if (electricPowerOptional.isPresent()) {
+							int electricPowerSetpoint = (int)Math.round(electricPowerOptional.get());
+							this._setElectricPowerSetpoint(electricPowerSetpoint);
+							this.getElectricPowerSetpointChannel().nextProcessImage();
+						}
+						// Write set point.
+						if (getElectricPowerSetpoint().isDefined() || exceptionalStateActive) {
+							int electricPowerSetpoint;
+							if (exceptionalStateActive) {
+								electricPowerSetpoint = (int)Math.round(this.chpMaxElectricPower * exceptionalStateValue / 100.0);
+							} else {
+								electricPowerSetpoint = (int)Math.round(getElectricPowerSetpoint().get());
+							}
+							try {
+								setWriteBits1(2);
+								setWriteBits2(electricPowerSetpoint);
+								setWriteBits3(setElectricPower);
+							} catch (OpenemsNamedException e) {
+								this.logError(this.log, "Error setting next write value: " + e);
+							}
+						}
+				}
+			}
 		}
+	}
 
+	/**
+	 * Information that is printed to the log if ’print info to log’ option is enabled.
+	 */
+	protected void printInfo() {
+		this.logInfo(this.log, "--Chp Wolf--");
+		this.logInfo(this.log, "Chp state: " + this.getHeaterState());
+		this.logInfo(this.log, "Flow temperature: " + this.getFlowTemperature());
+		this.logInfo(this.log, "Return temperature: " + this.getReturnTemperature());
+		this.logInfo(this.log, "Buffer tank temp top: " + this.getBufferTankTempTop());
+		this.logInfo(this.log, "Buffer tank temp middle: " + this.getBufferTankTempMiddle());
+		this.logInfo(this.log, "Buffer tank temp bottom: " + this.getBufferTankTempBottom());
+		this.logInfo(this.log, "Electric power: " + this.getEffectiveElectricPower());
+		this.logInfo(this.log, "Engine rpm: " + this.getRpm());
+		this.logInfo(this.log, "Runtime: " + this.getRuntime());
+		this.logInfo(this.log, "Engine starts: " + this.getEngineStarts());
+		this.logInfo(this.log, "Produced electric work total: " + this.getElectricalWork());
+		this.logInfo(this.log, "Warning message: " + this.getWarningMessage().get());
+		this.logInfo(this.log, "Error message: " + this.getErrorMessage().get());
+		this.logInfo(this.log, "");
+		this.logInfo(this.log, "--Writable values--");
+		this.logInfo(this.log, "EnableSignal: " + this.getEnableSignal());
+		this.logInfo(this.log, "Set point electric power: " + this.getElectricPowerSetpoint());
+		this.logInfo(this.log, "");
+	}
+
+	/**
+	 * Returns the debug message.
+	 *
+	 * @return the debug message.
+	 */
+	public String debugLog() {
+		String debugMessage = this.getHeaterState().asEnum().asCamelCase() //
+				+ "|F:" + this.getFlowTemperature().asString() //
+				+ "|R:" + this.getReturnTemperature().asString(); //
+		if (this.getWarningMessage().get().equals("No warning") == false) {
+			debugMessage = debugMessage + "|Warning";
+		}
+		if (this.getErrorMessage().get().equals("No error") == false) {
+			debugMessage = debugMessage + "|Error";
+		}
+		return debugMessage;
 	}
 }

@@ -1,8 +1,9 @@
-# io.openems.edge.heater.gasboiler.buderus Provider
+= Buderus gas boiler
 
-${Bundle-Description}
+This module reads the most important variables available via Modbus from a Buderus gas boiler and maps them to OpenEMS channels. The module is written to be used with the Heater interface methods (EnableSignal) and ExceptionalState. When setEnableSignal() from the Heater interface is set to true with no other parameters like temperature specified, the heater will turn on with default settings. The default settings are configurable in the config.
 
-## Example
+The heater can be controlled with setHeatingPowerPercentSetpoint() (set power in %) or setTemperatureSetpoint().
 
-## References
+setHeatingPowerSetpoint() (set power in kW) and related methods are currently not supported by this heater.
 
+If the heater is activated by ExceptionalState, it will switch to control mode power percent and use the setHeatingPowerPercentSetpoint() specified by the ExceptionalStateValue.

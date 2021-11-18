@@ -12,8 +12,8 @@ public enum BlockRelease implements OptionsEnum {
 	RELEASE_1_COMPRESSOR(1, "Release 1 compressor (Freigabe 1 Verdichter)"), //
 	RELEASE_2_COMPRESSORS(2, "Release 2 compressors (Freigabe 2 Verdichter)"); //
 
-	private int value;
-	private String name;
+	private final int value;
+	private final String name;
 
 	private BlockRelease(int value, String name) {
 		this.value = value;
