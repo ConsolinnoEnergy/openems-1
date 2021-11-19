@@ -1,3 +1,9 @@
+openems-consolinno (0.1.6-1) unstable; urgency=medium
+
+  * Perhaps a fix for debian postInstall
+
+ -- Felix <felix@felix-ThinkPad-E15-Gen-2>  Fri, 19 Nov 2021 12:56:12 +0100
+
 openems-consolinno (0.1.5-1) unstable; urgency=medium
 
   * Updated Heater and EVCS Limiter

@@ -68,7 +68,7 @@ task buildEdgeDeb(dependsOn: buildEdge, type: Deb) {
 
     from("${buildDir}/openems.jar") {
         into "/usr/lib/openems"
-        /*rename ("openems-edge.jar", "openems.jar") */
+        rename ("openems-edge.jar", "openems.jar") 
     }
 
     from("openems.service") {
