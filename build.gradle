@@ -66,9 +66,9 @@ task buildEdgeDeb(dependsOn: buildEdge, type: Deb) {
     }
     requires('openjdk-8-jre')
 
-    from("${buildDir}/openems.jar") {
+    from("${buildDir}/openems-edge.jar") {
         into "/usr/lib/openems"
-        /*rename ("openems-edge.jar", "openems.jar") */
+        rename ("openems-edge.jar", "openems.jar")
     }
 
     from("openems.service") {
