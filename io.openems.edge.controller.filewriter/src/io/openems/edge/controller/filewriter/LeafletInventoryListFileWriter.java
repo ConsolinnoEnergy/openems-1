@@ -22,6 +22,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -29,7 +31,6 @@ import java.util.Dictionary;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
@@ -61,10 +62,13 @@ public class LeafletInventoryListFileWriter extends AbstractOpenemsComponent imp
     List<Channel<?>> otherComponentChannelList = new ArrayList<>();
     List<String> channelIds = new ArrayList<>();
     private String filePath;
-    private File file;
+    private boolean fileExists;
     private boolean writtenToPath = false;
     private boolean configSuccess = false;
-
+    private FileWriter fileWriter;
+    private FileReader fileReader;
+    String oldContent = "";
+    String newContent = "";
     Config config;
 
     public LeafletInventoryListFileWriter() {
@@ -119,6 +123,8 @@ public class LeafletInventoryListFileWriter extends AbstractOpenemsComponent imp
                 throw ex[0];
             }
             this.filePath = this.config.fileLocation();
+            this.fileExists = this.fileExist();
+            this.initFileWriter();
         }
 
     }
@@ -180,12 +186,47 @@ public class LeafletInventoryListFileWriter extends AbstractOpenemsComponent imp
 
     @Override
     public void run() throws OpenemsError.OpenemsNamedException {
-        if (this.config.configurationDone() && this.writtenToPath == false) {
-            //see if file at location Exists
-            //if not -> create new file and notify user
-            //look through file if key exists (for each line)
-            // if yes -> get substring until = and change value
-            // if no -> append at the end.
+        if (this.config.configurationDone()) {
+
+            if (this.writtenToPath == false) {
+                if (!this.fileExists) {
+                    this.createFileFromScratch();
+                } else {
+                    this.createNewOutput();
+                    this.writeNewOutputToFile();
+                }
+
+                //look through file if key exists (for each line)
+                // if yes -> get substring until = and change value
+                // if no -> append at the end.
+            } else {
+                //checkForValueChange -> set written to Path to false
+            }
         }
     }
+
+    /**
+     * Cehcks if the csvFile exists.
+     *
+     * @return true if file is not existing.
+     */
+    private boolean fileExist() {
+        File f = new File(this.filePath);
+        return f.exists();
+    }
+
+
+    /**
+     * Initialize a new FileWriter for a CSV File.
+     *
+     * @throws IOException if something is happening.
+     */
+    public void initFileWriter() throws IOException {
+
+        this.fileWriter = new FileWriter(this.filePath);
+        this.fileReader = new FileReader(this.filePath);
+    }
+
 }
+
+
