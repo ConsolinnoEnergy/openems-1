@@ -108,10 +108,10 @@ public class ThermometerModbusImpl extends AbstractOpenemsModbusComponent implem
             case FLOAT:
                 if (this.config.isHoldingRegister()) {
                     return new FC3ReadRegistersTask(this.config.address(), Priority.HIGH,
-                            m(ThermometerModbus.ChannelId.TEMPERATURE_MODBUS_FLOAT, new FloatDoublewordElement(this.config.address())));
+                            m(ThermometerModbus.ChannelId.TEMPERATURE_MODBUS_FLOAT, new FloatDoublewordElement(this.config.address())).wordOrder(this.config.wordorder()));
                 } else {
                     return new FC4ReadInputRegistersTask(this.config.address(), Priority.HIGH,
-                            m(ThermometerModbus.ChannelId.TEMPERATURE_MODBUS_FLOAT, new FloatDoublewordElement(this.config.address())));
+                            m(ThermometerModbus.ChannelId.TEMPERATURE_MODBUS_FLOAT, new FloatDoublewordElement(this.config.address())).wordOrder(this.config.wordorder()));
                 }
             case INTEGER_UNSIGNED:
                 if (this.config.isHoldingRegister()) {
