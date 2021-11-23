@@ -50,7 +50,7 @@ public interface MetaData extends OpenemsComponent {
         return this.channel(ChannelId.SERIAL_NUMBER);
     }
 
-    default WriteChannel<String> getInstallationDate() {
+    default Channel<String> getInstallationDate() {
         return this.channel(ChannelId.INSTALLATION_DATE);
     }
 

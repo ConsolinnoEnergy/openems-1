@@ -25,7 +25,7 @@ import sun.security.x509.SerialNumber;
     String[] keyValuePairs() default {"Straße:Street", "Hausnummer:HouseNumber", "Postleitzahl:PostalCode", "Ort:PlaceOfResidence", "SerienNummer:SerialNumber", "Inbetriebnahme:InstallationDate"};
 
     @AttributeDefinition(name = "FileLocation", description = "Write into the (non existend) file ")
-    String fileLocation() default "data/leaflet/network-settings.json";
+    String fileLocation() default "home/sshconsolinno/data/leaflet/network-settings.json";
 
     @AttributeDefinition(name = "Configuration done", description = "Is your configuration done? Usually tick this, if you configured the keyValuePairs")
     boolean configurationDone() default false;

@@ -3,6 +3,7 @@ package io.openems.edge.controller.filewriter;
 import io.openems.common.exceptions.OpenemsError;
 import io.openems.common.types.ChannelAddress;
 import io.openems.edge.common.channel.Channel;
+import io.openems.edge.common.channel.value.Value;
 import io.openems.edge.common.component.AbstractOpenemsComponent;
 import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
@@ -21,6 +22,7 @@ import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
@@ -31,6 +33,7 @@ import java.util.Dictionary;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
@@ -53,6 +56,8 @@ public class LeafletInventoryListFileWriter extends AbstractOpenemsComponent imp
     private final Logger log = LoggerFactory.getLogger(LeafletInventoryListFileWriter.class);
 
     private final Map<String, ChannelAddress> keyValuePair = new HashMap<>();
+    //ChannelId -> Value
+    private final Map<String, String> channelIdToValueMap = new HashMap<>();
     private static final String CONFIG_SPLIT = ":";
     private static final int CONFIG_SPLIT_LENGTH = 2;
     private static final String LEAFLET_INVENTORY_FILE_LIST_KEY_VALUE_CONNECTOR = "=";
@@ -67,8 +72,6 @@ public class LeafletInventoryListFileWriter extends AbstractOpenemsComponent imp
     private boolean configSuccess = false;
     private FileWriter fileWriter;
     private FileReader fileReader;
-    String oldContent = "";
-    String newContent = "";
     Config config;
 
     public LeafletInventoryListFileWriter() {
@@ -87,6 +90,7 @@ public class LeafletInventoryListFileWriter extends AbstractOpenemsComponent imp
         this.otherComponent = this.cpm.getComponent(config.otherComponentId());
         this.keyValuePair.clear();
         this.channelIds.clear();
+        this.channelIdToValueMap.clear();
         this.update();
         if (this.config.configurationDone()) {
             ConfigurationException[] ex = {null};
@@ -125,8 +129,31 @@ public class LeafletInventoryListFileWriter extends AbstractOpenemsComponent imp
             this.filePath = this.config.fileLocation();
             this.fileExists = this.fileExist();
             this.initFileWriter();
-        }
+            OpenemsError.OpenemsNamedException[] exception = {null};
+            this.keyValuePair.forEach((key, value) -> {
+                if (exception[0] == null) {
+                    Channel<?> channel = null;
 
+                    try {
+                        channel = this.cpm.getChannel(value);
+
+                        Value<?> channelValue = channel.value();
+                        if (!channelValue.isDefined()) {
+                            channelValue = channel.getNextValue();
+                        }
+                        this.channelIdToValueMap.put(channel.channelId().id(), channelValue.asString());
+
+                    } catch (OpenemsError.OpenemsNamedException e) {
+                        this.log.warn("Couldn't find Channel: " + value);
+                        this.channelIdToValueMap.clear();
+                        exception[0] = e;
+                    }
+                }
+            });
+            if (exception[0] != null) {
+                throw exception[0];
+            }
+        }
     }
 
     @Modified
@@ -189,24 +216,138 @@ public class LeafletInventoryListFileWriter extends AbstractOpenemsComponent imp
         if (this.config.configurationDone()) {
 
             if (this.writtenToPath == false) {
-                if (!this.fileExists) {
-                    this.createFileFromScratch();
-                } else {
-                    this.createNewOutput();
-                    this.writeNewOutputToFile();
-                }
 
-                //look through file if key exists (for each line)
-                // if yes -> get substring until = and change value
-                // if no -> append at the end.
+                if (!this.fileExists) {
+                    this.writeNewOutputToFile(this.createOutputFromScratch());
+                } else {
+                    this.writeNewOutputToFile(this.createNewOutput());
+                }
             } else {
                 //checkForValueChange -> set written to Path to false
+                this.otherComponentChannelList.forEach(entry -> {
+                    if (this.channelIdToValueMap.containsKey(entry.channelId().id())) {
+                        String currentChannelValue = entry.value().asString();
+                        String writtenValue = this.channelIdToValueMap.get(entry.channelId().id());
+                        if (!writtenValue.equals(currentChannelValue)) {
+                            this.channelIdToValueMap.replace(entry.channelId().id(), currentChannelValue);
+                            this.writtenToPath = false;
+                        }
+                    }
+                });
             }
         }
     }
 
+    private void writeNewOutputToFile(String newOutput) {
+        try {
+            this.fileWriter.write(newOutput);
+            this.writtenToPath = true;
+        } catch (IOException e) {
+            this.log.warn("Couldn't write into file! Reason: " + e.getCause());
+        }
+    }
+
+    private String createNewOutput() {
+        if (this.fileExist()) {
+            try {
+                //Receive InputLine
+                BufferedReader read = new BufferedReader(this.fileReader);
+                StringBuilder buffer = new StringBuilder();
+                String line;
+                List<String> keyValuePairNotAdded = new ArrayList<>(this.keyValuePair.keySet());
+                //Check each Line
+                while ((line = read.readLine()) != null) {
+                    //If Line could potentially be an easy line to read
+                    if (line.contains(LEAFLET_INVENTORY_FILE_LIST_KEY_VALUE_CONNECTOR)) {
+                        String[] splittedLines = line.split(LEAFLET_INVENTORY_FILE_LIST_KEY_VALUE_CONNECTOR);
+                        String keyValuePairKey = splittedLines[CONFIG_KEY_ENTRY_POSITION];
+                        //check if the position of the key matches an existing configured key
+                        if (this.keyValuePair.containsKey(keyValuePairKey)
+                                && splittedLines.length == CONFIG_SPLIT_LENGTH) {
+                            //since key matches -> will be checked -> remove from potentially missed keys
+                            keyValuePairNotAdded.removeIf(entry -> entry.equals(this.keyValuePair.get(keyValuePairKey)));
+                            String keyForAddress = this.keyValuePair.get(keyValuePairKey).getChannelId();
+                            //get Value of corresponding ChannelId
+                            if (this.channelIdToValueMap.containsKey(keyForAddress)) {
+                                String value = this.channelIdToValueMap.get(keyForAddress);
+                                if (!value.equals("")) {
+                                    splittedLines[CONFIG_VALUE_ENTRY_POSITION] = value;
+                                }
+                                //rearrange Line and append later
+                                line = splittedLines[CONFIG_KEY_ENTRY_POSITION]
+                                        + LEAFLET_INVENTORY_FILE_LIST_KEY_VALUE_CONNECTOR
+                                        + splittedLines[CONFIG_VALUE_ENTRY_POSITION];
+                            }
+                        }
+                    }
+                    buffer.append(line);
+                    buffer.append("\n");
+                }
+                //check for missing KeyValuePairs
+                if (keyValuePairNotAdded.size() > 0) {
+                    keyValuePairNotAdded.forEach(entry -> {
+                        String channelId = this.keyValuePair.get(entry).getChannelId();
+                        String channelValue;
+                        String channelValueString = "";
+                        //get value of "Key" --> key stores ChannelAddress -> get the Value of the Channel
+                        if (this.channelIdToValueMap.containsKey(channelId)) {
+                            channelValue = this.channelIdToValueMap.get(channelId);
+                            channelValueString = channelValue;
+                        }
+                        buffer.append(entry)
+                                .append(LEAFLET_INVENTORY_FILE_LIST_KEY_VALUE_CONNECTOR)
+                                .append(channelValueString)
+                                .append("\n");
+                    });
+                }
+                return buffer.toString();
+            } catch (IOException e) {
+                this.log.warn("Couldn't read line of: " + this.id());
+                return "";
+            }
+
+        } else {
+            return this.createOutputFromScratch();
+        }
+    }
+
+    private String createOutputFromScratch() {
+        StringBuilder builder = new StringBuilder();
+        AtomicBoolean channelAddressWrong = new AtomicBoolean(false);
+
+        this.keyValuePair.forEach((key, value) -> {
+
+            if (!channelAddressWrong.get()) {
+                String channelValueToWrite = "n.a.";
+                try {
+                    Channel<?> channel = this.cpm.getChannel(value);
+                    Value<?> channelValue = channel.value();
+                    if (!channelValue.isDefined()) {
+                        channelValue = channel.getNextValue();
+                    }
+                    if (channelValue.isDefined()) {
+                        channelValueToWrite = channelValue.get().toString();
+                    }
+                    if (this.channelIdToValueMap.containsKey(channel.channelId().id())) {
+                        this.channelIdToValueMap.replace(channel.channelId().id(), channelValue.asString());
+                    } else {
+                        this.channelIdToValueMap.put(channel.channelId().id(), channelValue.asString());
+                    }
+                } catch (OpenemsError.OpenemsNamedException e) {
+                    this.log.warn("ChannelAddress: " + value + " is not available!");
+                }
+                builder.append(key).append(LEAFLET_INVENTORY_FILE_LIST_KEY_VALUE_CONNECTOR).append(channelValueToWrite).append("\n");
+            }
+        });
+        if (channelAddressWrong.get()) {
+            this.log.warn("ChannelAddress wrong! See log for reason");
+            return "";
+        }
+        return builder.toString();
+    }
+
     /**
-     * Cehcks if the csvFile exists.
+     * Checks if the csvFile exists.
      *
      * @return true if file is not existing.
      */
