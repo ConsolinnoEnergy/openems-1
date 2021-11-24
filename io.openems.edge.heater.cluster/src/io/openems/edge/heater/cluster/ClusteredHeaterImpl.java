@@ -156,9 +156,9 @@ public class ClusteredHeaterImpl extends AbstractOpenemsComponent implements Ope
                     //Convert Values depending on expected INPUT -> Convert to general KW input!
                     float defaultPower = this.convertPower((float)
                             this.getDefaultActivePowerChannel().value()
-                                    .orElse(this.getDefaultActivePowerChannel().getNextValue().orElse(100)));
-                    Float recommendedPowerLevel = this.convertPower(this.getRecommendedSetPointHeatingPower().getNextWriteValue().orElse(null));
-                    Float overwritePowerLevel = this.convertPower(this.getOverWriteSetPointHeatingPowerChannel().getNextWriteValueAndReset().orElse(null));
+                                    .orElse(this.getDefaultActivePowerChannel().getNextValue().orElse(100)), this.energyControlModeInput);
+                    Float recommendedPowerLevel = this.convertPower(this.getRecommendedSetPointHeatingPower().getNextWriteValue().orElse(null), this.energyControlModeInput);
+                    Float overwritePowerLevel = this.convertPower(this.getOverWriteSetPointHeatingPowerChannel().getNextWriteValueAndReset().orElse(null), this.energyControlModeInput);
                     List<Heater> keySet = new ArrayList<>(this.currentRunningHeatersWithSetPoint.keySet());
                     keySet.forEach(entry -> {
                         if (entry.getHeaterState().asEnum().equals(HeaterState.BLOCKED_OR_ERROR)) {
@@ -221,7 +221,7 @@ public class ClusteredHeaterImpl extends AbstractOpenemsComponent implements Ope
     private void enableSelectedRunningHeatersAndConvertPowerSetPoint() {
 
         this.currentRunningHeatersWithSetPoint.forEach((heater, setPoint) -> {
-            Float convertedSetPoint = this.convertPower((float) setPoint);
+            Float convertedSetPoint = this.convertPower((float) setPoint, this.energyControlModeOutput);
             if (convertedSetPoint != null) {
                 try {
                     heater.getEnableSignalChannel().setNextWriteValueFromObject(true);
@@ -241,7 +241,7 @@ public class ClusteredHeaterImpl extends AbstractOpenemsComponent implements Ope
                     this.log.warn("Reason: " + e.getCause());
                 }
             }
-            });
+        });
 
     }
 
@@ -307,11 +307,17 @@ public class ClusteredHeaterImpl extends AbstractOpenemsComponent implements Ope
 
     }
 
-    private Float convertPower(Float inputValue) {
+    /**
+     * Converts Power
+     *
+     * @param inputValue
+     * @return
+     */
+    private Float convertPower(Float inputValue, EnergyControlMode controlMode) {
         if (inputValue == null) {
             return null;
         } else {
-            switch (this.energyControlModeInput) {
+            switch (controlMode) {
 
                 case KW:
                     return inputValue;
@@ -323,10 +329,6 @@ public class ClusteredHeaterImpl extends AbstractOpenemsComponent implements Ope
                     return (inputValue * this.maxIndividualHeatingPowerKw) / 100;
             }
         }
-
-    }
-
-    private void checkForRemovalOfNotNeededHeater() {
 
     }
 
