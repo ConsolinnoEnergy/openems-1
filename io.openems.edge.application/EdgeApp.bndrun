@@ -149,6 +149,7 @@
 	bnd.identity;id='io.openems.edge.heater.chp.kwenergy',\
 	bnd.identity;id='io.openems.edge.heater.chp.viessmann',\
 	bnd.identity;id='io.openems.edge.heater.chp.wolf',\
+	bnd.identity;id='io.openems.edge.heater.cluster',\
 	bnd.identity;id='io.openems.edge.heater.electrolyzer',\
 	bnd.identity;id='io.openems.edge.heater.decentralized',\
 	bnd.identity;id='io.openems.edge.heater.gasboiler.buderus',\
@@ -336,6 +337,7 @@
 	io.openems.edge.heater.chp.kwenergy;version=snapshot,\
 	io.openems.edge.heater.chp.viessmann;version=snapshot,\
 	io.openems.edge.heater.chp.wolf;version=snapshot,\
+	io.openems.edge.heater.cluster;version=snapshot,\
 	io.openems.edge.heater.electrolyzer;version=snapshot,\
 	io.openems.edge.heater.gasboiler.buderus;version=snapshot,\
 	io.openems.edge.heater.gasboiler.viessmann;version=snapshot,\
