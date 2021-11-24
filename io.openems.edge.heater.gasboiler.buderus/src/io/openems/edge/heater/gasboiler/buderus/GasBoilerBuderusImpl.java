@@ -523,17 +523,20 @@ public class GasBoilerBuderusImpl extends AbstractOpenemsModbusComponent impleme
 			this.heatingPowerPercentSetting = Math.max(0, this.heatingPowerPercentSetting);
 		}
 
-		// Send and increment heartbeatCounter.
-		try {
-			this.setHeartBeatIn(this.heartbeatCounter);	// Send heartbeatCounter.
-		} catch (OpenemsError.OpenemsNamedException e) {
-			this.log.warn("Couldn't write in Channel " + e.getMessage());
-		}
-		if (this.getHeartBeatOut().isDefined()) {
+		// Check heartbeat.
+		if (this.getHeartBeatOut().isDefined()) { // Test this first to make sure there is a modbus connection.
+			try {
+				this.setHeartBeatIn(this.heartbeatCounter);	// Send heartbeatCounter.
+			} catch (OpenemsError.OpenemsNamedException e) {
+				this.log.warn("Couldn't write in Channel " + e.getMessage());
+			}
 			int receivedHeartbeatCounter = this.getHeartBeatOut().get();	// Get last received heartbeatCounter value.
 			if (receivedHeartbeatCounter == this.heartbeatCounter) {		// Test if the sent value was received.
 				this.connectionTimestamp = LocalDateTime.now();			// Now we know the connection is alive. Set timestamp.
 				this.heartbeatCounter++;
+				if (this.heartbeatCounter >= 100) {	// Overflow protection.
+					this.heartbeatCounter = 1;
+				}
 			}
 		}
 		if (ChronoUnit.SECONDS.between(this.connectionTimestamp, LocalDateTime.now()) >= this.handshakeTimeoutSeconds) {
@@ -541,9 +544,6 @@ public class GasBoilerBuderusImpl extends AbstractOpenemsModbusComponent impleme
 			this.connectionAlive = false;
 		} else {
 			this.connectionAlive = true;
-		}
-		if (this.heartbeatCounter >= 100) {	// Overflow protection.
-			this.heartbeatCounter = 1;
 		}
 
 		boolean turnOnHeater = this.enableSignalHandler.deviceShouldBeHeating(this);
