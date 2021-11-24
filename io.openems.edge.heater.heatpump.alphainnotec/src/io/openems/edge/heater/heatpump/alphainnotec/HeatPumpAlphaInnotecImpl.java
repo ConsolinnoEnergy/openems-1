@@ -84,6 +84,7 @@ public class HeatPumpAlphaInnotecImpl extends AbstractOpenemsModbusComponent imp
 	private final Logger log = LoggerFactory.getLogger(HeatPumpAlphaInnotecImpl.class);
 	private boolean printInfoToLog;
 	private boolean readOnly;
+	private boolean readyForCommands;
 
 	private HeatingMode heatingModeSetting;
 	private HeatingMode domesticHotWaterModeSetting;
@@ -456,7 +457,7 @@ public class HeatPumpAlphaInnotecImpl extends AbstractOpenemsModbusComponent imp
 			if (this.printInfoToLog) {
 				this.printInfo();
 			}
-		} else if (this.readOnly == false && event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS)) {
+		} else if (this.readOnly == false && this.readyForCommands && event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS)) {
 			this.writeCommands();
 		}
 	}
@@ -467,6 +468,7 @@ public class HeatPumpAlphaInnotecImpl extends AbstractOpenemsModbusComponent imp
 	protected void channelmapping() {
 
 		if (this.getHeatpumpOperatingMode().isDefined()) {
+			this.readyForCommands = true;
 			SystemStatus heatpumpSystemStatus = this.getHeatpumpOperatingMode().asEnum();
 			switch (heatpumpSystemStatus) {
 				case OFF:
@@ -488,6 +490,7 @@ public class HeatPumpAlphaInnotecImpl extends AbstractOpenemsModbusComponent imp
 					break;
 			}
 		} else {
+			this.readyForCommands = false;
 			this._setHeaterState(HeaterState.UNDEFINED.getValue());
 		}
 		this.getHeaterStateChannel().nextProcessImage();

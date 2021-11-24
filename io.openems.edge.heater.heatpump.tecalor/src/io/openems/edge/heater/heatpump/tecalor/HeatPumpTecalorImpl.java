@@ -79,6 +79,7 @@ public class HeatPumpTecalorImpl extends AbstractOpenemsModbusComponent implemen
 	private final Logger log = LoggerFactory.getLogger(HeatPumpTecalorImpl.class);
 	private boolean printInfoToLog;
 	private boolean readOnly;
+	private boolean connectionAlive;
 
 	private OperatingMode defaultModeOfOperation;
 	private EnableSignalHandler enableSignalHandler;
@@ -364,7 +365,7 @@ public class HeatPumpTecalorImpl extends AbstractOpenemsModbusComponent implemen
 			if (this.printInfoToLog) {
 				this.printInfo();
 			}
-		} else if (this.readOnly == false && event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS)) {
+		} else if (this.readOnly == false && this.connectionAlive && event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS)) {
 			this.writeCommands();
 		}
 	}
@@ -376,17 +377,18 @@ public class HeatPumpTecalorImpl extends AbstractOpenemsModbusComponent implemen
 
 		// Map error to Heater interface ErrorMessage.
 		boolean isError = false;
-		boolean signalReceived = false;
 		String statusMessage = "";
 		if (this.getErrorStatus().isDefined()) {
-			signalReceived = true;
+			this.connectionAlive = true;
 			isError = this.getErrorStatus().get();
+		} else {
+			this.connectionAlive = false;
 		}
 		int errorCode = 0;
 		if (this.getErrorCode().isDefined()) {
 			errorCode = this.getErrorCode().get();
 		}
-		if (signalReceived) {
+		if (this.connectionAlive) {
 			if (errorCode > 0) {
 				this._setErrorMessage("Error Code: " + errorCode);
 			} else if (isError) {
@@ -465,12 +467,12 @@ public class HeatPumpTecalorImpl extends AbstractOpenemsModbusComponent implemen
 
 		if (isRunning) {
 			this._setHeaterState(HeaterState.RUNNING.getValue());
-		} else if (notBlocked && signalReceived) {
+		} else if (notBlocked && this.connectionAlive) {
 			this._setHeaterState(HeaterState.STANDBY.getValue());
 		} else if (notBlocked == false || isError) {
 			this._setHeaterState(HeaterState.BLOCKED_OR_ERROR.getValue());
 		} else {
-			// You land here when no channel has data (’signalReceived == false’, ’notBlocked == true’, ’isError == false’).
+			// You land here when no channel has data (’this.connectionAlive == false’, ’notBlocked == true’, ’isError == false’).
 			this._setHeaterState(HeaterState.OFF.getValue());
 		}
 		this.getHeaterStateChannel().nextProcessImage();
