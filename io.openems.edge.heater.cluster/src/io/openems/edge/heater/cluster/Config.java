@@ -4,13 +4,13 @@ import io.openems.edge.heater.api.EnergyControlMode;
 import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
-@ObjectClassDefinition(name = "Consolinno ", description = ".")
+@ObjectClassDefinition(name = "Heater Cluster", description = "A Heat Cluster. That handles Multiple Heater and turns them on depending on the demand and priority")
 @interface Config {
 
     String service_pid();
 
     @AttributeDefinition(name = "Id", description = "Unique Id for the .")
-    String id() default "";
+    String id() default "HeaterCluster0";
 
     @AttributeDefinition(name = "Alias", description = "Human readable name of this Configurator.")
     String alias() default "";
@@ -41,15 +41,7 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     @AttributeDefinition(name = "Low Prio Heater", description = "List here the Heater with low Priority (Order matters)")
     String[] lowPrioHeater() default {"Heater6,Heater7,Heater8"};
 
-    /*
-     * TODO DEFAULT PowerLevel
-     *  HIGH MID LOW Prio Heater
-     *   EnergyControlMode
-     *   Default Active Power
-     *   Boolean -> useMaintenance
-     * */
-
     boolean enabled() default true;
 
-    String webconsole_configurationFactory_nameHint() default "{id}";
+    String webconsole_configurationFactory_nameHint() default "Heater Cluster {id}";
 }

@@ -84,9 +84,15 @@ public class ClusteredHeaterImpl extends AbstractOpenemsComponent implements Ope
         this.maxIndividualHeatingPowerKw = config.maxPowerOfaSingleHeaterInThisCluster();
         this.getDefaultActivePowerChannel().setNextValue(config.defaultPowerLevel());
         try {
-            this.putConfiguredHeaterToMap(Arrays.asList(config.highPrioHeater()), this.priorityToHeaterMap.get(ClusteredHeaterPriority.HIGH));
-            this.putConfiguredHeaterToMap(Arrays.asList(config.midPrioHeater()), this.priorityToHeaterMap.get(ClusteredHeaterPriority.MID));
-            this.putConfiguredHeaterToMap(Arrays.asList(config.lowPrioHeater()), this.priorityToHeaterMap.get(ClusteredHeaterPriority.LOW));
+            if (config.highPrioHeater() != null && config.highPrioHeater().length > 0) {
+                this.putConfiguredHeaterToMap(Arrays.asList(config.highPrioHeater()), this.priorityToHeaterMap.get(ClusteredHeaterPriority.HIGH));
+            }
+            if (config.midPrioHeater() != null && config.midPrioHeater().length > 0) {
+                this.putConfiguredHeaterToMap(Arrays.asList(config.midPrioHeater()), this.priorityToHeaterMap.get(ClusteredHeaterPriority.MID));
+            }
+            if (config.lowPrioHeater() != null && config.lowPrioHeater().length > 0) {
+                this.putConfiguredHeaterToMap(Arrays.asList(config.lowPrioHeater()), this.priorityToHeaterMap.get(ClusteredHeaterPriority.LOW));
+            }
         } catch (OpenemsError.OpenemsNamedException | ConfigurationException e) {
             this.configSuccess = false;
             this.log.warn("Something went wrong with configuration, trying again later!");
