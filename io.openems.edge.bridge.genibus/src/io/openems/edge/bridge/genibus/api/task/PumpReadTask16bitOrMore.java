@@ -124,32 +124,67 @@ public class PumpReadTask16bitOrMore extends AbstractPumpTask {
     private double correctValueForChannel(double tempValue) {
         //unitString
         if (super.unitString != null) {
-            // Channel unit is dC.
-            int temperatureFactor = 10;
+            Unit openemsBaseUnit = this.channel.channelDoc().getUnit();
+            int scaleFactor = openemsBaseUnit.getScaleFactor();
+            if (this.channel.channelDoc().getUnit().getBaseUnit() != null) {
+                openemsBaseUnit = openemsBaseUnit.getBaseUnit();
+            }
 
-            switch (super.unitString) {
-                case "Celsius/10":
-                case "Celsius":
-                    //dC
-                    return tempValue * temperatureFactor;
-                case "Kelvin/100":
-                case "Kelvin":
-                    //dC
-                    return (tempValue - 273.15) * temperatureFactor;
-
-                case "Fahrenheit":
-                    //dC
-                    return ((tempValue - 32) * (5.d / 9.d)) * temperatureFactor;
-
-                case "m/10000":
-                case "m/100":
-                case "m/10":
-                case "m":
-                case "m*10":
-                    if (this.channel.channelDoc().getUnit().equals(Unit.BAR)) {
-                        return tempValue / 10.0;
+            switch (openemsBaseUnit) {
+                case DEGREE_CELSIUS:
+                    switch (super.unitString) {
+                        case "Celsius/10":
+                        case "Celsius":
+                            return super.unitCalc * Math.pow(10, -scaleFactor) * tempValue;
+                        case "Kelvin/100":
+                        case "Kelvin":
+                            return super.unitCalc * Math.pow(10, -scaleFactor) * (tempValue - 273.15);
+                        case "Fahrenheit":
+                            return super.unitCalc * Math.pow(10, -scaleFactor) * ((tempValue - 32) * (5.d / 9.d));
                     }
-                    return tempValue;
+                case DEGREE_KELVIN:
+                    switch (super.unitString) {
+                        case "Celsius/10":
+                        case "Celsius":
+                            return super.unitCalc * Math.pow(10, -scaleFactor) * (tempValue + 273.15);
+                        case "Kelvin/100":
+                        case "Kelvin":
+                            return super.unitCalc * Math.pow(10, -scaleFactor) * tempValue;
+                        case "Fahrenheit":
+                            return super.unitCalc * Math.pow(10, -scaleFactor) * (((tempValue - 32) * (5.d / 9.d)) + 273.15);
+                    }
+                case BAR:
+                    switch (super.unitString) {
+                        case "bar/1000":
+                        case "bar/100":
+                        case "bar/10":
+                        case "bar":
+                        case "m/10000":
+                        case "m/100":
+                        case "m/10":
+                        case "m":
+                        case "m*10":
+                        case "psi":
+                        case "psi*10":
+                        case "kPa":
+                            return super.unitCalc * Math.pow(10, -scaleFactor) * tempValue;
+                    }
+                case PASCAL:
+                    switch (super.unitString) {
+                        case "bar/1000":
+                        case "bar/100":
+                        case "bar/10":
+                        case "bar":
+                        case "m/10000":
+                        case "m/100":
+                        case "m/10":
+                        case "m":
+                        case "m*10":
+                        case "psi":
+                        case "psi*10":
+                        case "kPa":
+                            return super.unitCalc * Math.pow(10, -scaleFactor + 5) * tempValue;
+                    }
             }
         }
 

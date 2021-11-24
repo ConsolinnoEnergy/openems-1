@@ -5,7 +5,6 @@ import io.openems.common.channel.Unit;
 import io.openems.common.types.OpenemsType;
 import io.openems.edge.common.channel.Channel;
 import io.openems.edge.common.channel.Doc;
-import io.openems.edge.common.channel.DoubleReadChannel;
 import io.openems.edge.common.channel.WriteChannel;
 import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.bridge.genibus.api.PumpDevice;
@@ -13,18 +12,6 @@ import io.openems.edge.bridge.genibus.api.PumpDevice;
 public interface PumpGrundfos extends OpenemsComponent {
 
     enum ChannelId implements io.openems.edge.common.channel.ChannelId {
-        /*
-        * Disclaimer:
-        * When you get the Information / Data from the pump, the Units may vary.
-        * They will be converted to default Channel Unit.
-        *
-        * PumpType:  <Section> <Number> <identifier>
-        --> In the Data sheet it's listed in the section, Numbers and identifier
-        *
-        *
-        * Hi and Lo values can be read etc but calculation for
-        * concrete value (16bit) not needed and thus not implemented yet.
-         * */
 
         //GET//
 
@@ -111,7 +98,7 @@ public interface PumpGrundfos extends OpenemsComponent {
          *     <li> Magna3: 8 bit Measured Data: 2, 30 i_mo
          * </ul>
          * */
-        CURRENT_MOTOR(Doc.of(OpenemsType.DOUBLE)),
+        MOTOR_ELECTRIC_CURRENT(Doc.of(OpenemsType.DOUBLE).unit(Unit.AMPERE)),
 
         /**
          * Relative speed/frequency applied to motor.
@@ -137,7 +124,6 @@ public interface PumpGrundfos extends OpenemsComponent {
         POWER_CONSUMPTION(Doc.of(OpenemsType.DOUBLE).unit(Unit.WATT)),
 
         /**
-         * Current Pressure.
          * Pressure/Head/level.
          * <ul>
          *     <li> Interface: PumpGrundfosChannels
@@ -146,10 +132,10 @@ public interface PumpGrundfos extends OpenemsComponent {
          *     <li> Magna3: 8 bit Measured Data: 2, 37 h
          * </ul>
          * */
-        CURRENT_PRESSURE(Doc.of(OpenemsType.DOUBLE).unit(Unit.BAR)),
+        PRESSURE(Doc.of(OpenemsType.DOUBLE).unit(Unit.BAR)),
 
         /**
-         * Current Pump Flow.
+         * Pump percolation.
          * <ul>
          *      <li> Interface: PumpGrundfosChannels
          *      <li> Type: Double
@@ -157,7 +143,7 @@ public interface PumpGrundfos extends OpenemsComponent {
          *      <li> Magna3: 8 bit Measured Data: 2, 39 q
          * </ul>
          * */
-        CURRENT_PUMP_FLOW(Doc.of(OpenemsType.DOUBLE).unit(Unit.CUBICMETER_PER_HOUR)),
+        PERCOLATION(Doc.of(OpenemsType.DOUBLE).unit(Unit.CUBICMETER_PER_HOUR)),
 
         /**
          * Currently used setpoint.
@@ -853,7 +839,7 @@ public interface PumpGrundfos extends OpenemsComponent {
     }
 
     default Channel<Double> getCurrentMotor() {
-        return this.channel(ChannelId.CURRENT_MOTOR);
+        return this.channel(ChannelId.MOTOR_ELECTRIC_CURRENT);
     }
 
     default Channel<Double> getPowerConsumption() {
@@ -861,11 +847,11 @@ public interface PumpGrundfos extends OpenemsComponent {
     }
 
     default Channel<Double> getCurrentPressure() {
-        return this.channel(ChannelId.CURRENT_PRESSURE);
+        return this.channel(ChannelId.PRESSURE);
     }
 
     default Channel<Double> getCurrentPumpFlow() {
-        return this.channel(ChannelId.CURRENT_PUMP_FLOW);
+        return this.channel(ChannelId.PERCOLATION);
     }
 
     default Channel<Double> getPumpedWaterMediumTemperature() {

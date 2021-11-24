@@ -5,7 +5,7 @@ import io.openems.edge.bridge.genibus.api.PumpDevice;
 import io.openems.edge.common.taskmanager.ManagedTask;
 
 /**
- * Interface for Grnibus tasks.
+ * Interface for Genibus tasks.
  */
 public interface GenibusTask extends ManagedTask {
 
@@ -33,14 +33,14 @@ public interface GenibusTask extends ManagedTask {
     void processResponse(byte data);
 
     /**
-     * Get the address of the task. The address together with the header is the identifier for a data item in the pump.
+     * Gets the address of the task. The address together with the header is the identifier for a data item in the pump.
      *
      * @return the address.
      */
     byte getAddress();
 
     /**
-     * Get the header of the task. The header together with the address is the identifier for a data item in the pump.
+     * Gets the header of the task. The header together with the address is the identifier for a data item in the pump.
      *
      * @return the header.
      */
@@ -49,21 +49,21 @@ public interface GenibusTask extends ManagedTask {
     /**
      * If a task has INFO and the INFO is of the one byte type, this is used to store the INFO content with the task.
      *
-     * @param vi the value interpretation.
-     * @param bo the byte order.
-     * @param sif the scale information format.
+     * @param vi Value information if set range is 255 else 254. Comes from 5th bit
+     * @param bo Byte order information. 0 is high order, 1 is low order byte. 4th bit
+     * @param sif Scale information format. 0 = not available, 1= bitwise interpreted value.
      */
     void setOneByteInformation(int vi, int bo, int sif);
 
     /**
      * If a task has INFO and the INFO is of the four byte type, this is used to store the INFO content with the task.
      *
-     * @param vi the value interpretation.
-     * @param bo the byte order.
-     * @param sif the scale information format.
+     * @param vi Value information if set range is 255 else 254. Comes from 5th bit
+     * @param bo Byte order information. 0 is high order, 1 is low order byte. 4th bit
+     * @param sif Scale information format. 0 = not available, 1= bitwise interpreted value.
      * @param unitIndex the number to declare what unit it is according to the unit table.
-     * @param scaleFactorZeroOrHigh the zero or high scale factor.
-     * @param scaleFactorRangeOrLow the range or low scale factor.
+     * @param scaleFactorZeroOrHigh either Zero scale factor or factor for high order byte.
+     * @param scaleFactorRangeOrLow range scale factor or low order byte.
      */
     void setFourByteInformation(int vi, int bo, int sif, byte unitIndex, byte scaleFactorZeroOrHigh, byte scaleFactorRangeOrLow);
 

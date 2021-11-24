@@ -1,7 +1,10 @@
 package io.openems.edge.bridge.genibus.api.task;
 
-
 import io.openems.edge.bridge.genibus.api.PumpDevice;
+
+/**
+ * Description of what this class does.
+ */
 
 public abstract class AbstractPumpTask implements GenibusTask {
 
@@ -42,24 +45,33 @@ public abstract class AbstractPumpTask implements GenibusTask {
 
     }
 
+    /**
+     * Gets the address of the task. The address together with the header is the identifier for a data item in the pump.
+     *
+     * @return the address.
+     */
     @Override
     public byte getAddress() {
         return this.address;
     }
 
+    /**
+     * Gets the header of the task. The header together with the address is the identifier for a data item in the pump.
+     *
+     * @return the header.
+     */
     @Override
     public int getHeader() {
         return this.headerNumber;
     }
 
     /**
-     * gets the Information of One byte from the Genibus bridge (from handleResponse() method).
+     * If a task has INFO and the INFO is of the one byte type, this is used to store the INFO content with the task.
      *
-     * @param vi  Value information if set range is 255 else 254. Comes from 5th bit
-     * @param bo  Byte order information 0 is high order 1 is low order byte. 4th bit
-     * @param sif Scale information Format 0 = not available 1= bitwise interpreted value.
+     * @param vi Value information if set range is 255 else 254. Comes from 5th bit
+     * @param bo Byte order information. 0 is high order, 1 is low order byte. 4th bit
+     * @param sif Scale information format. 0 = not available, 1= bitwise interpreted value.
      */
-
     @Override
     public void setOneByteInformation(int vi, int bo, int sif) {
         this.vi = vi != 0;
@@ -74,7 +86,7 @@ public abstract class AbstractPumpTask implements GenibusTask {
     }
 
     /**
-     * get the Information written in 4 byte from the genibus bridge (handleResponse() method).
+     * Gets the Information written in 4 byte from the genibus bridge (handleResponse() method).
      *
      * @param vi                    see OneByteInformation.
      * @param bo                    see OneByteInformation.
@@ -102,9 +114,11 @@ public abstract class AbstractPumpTask implements GenibusTask {
 
             if (this.unitString != null) {
                 switch (this.unitString) {
+                    // All pressure units are converted to bar
 
                     case "Celsius/10":
                     case "bar/10":
+                    case "m":   // <- this is a pressure unit = bar/10
                     case "Ampere*0.1":
                     case "0.1*m³/h":
                     case "10%":
@@ -114,6 +128,7 @@ public abstract class AbstractPumpTask implements GenibusTask {
                     case "Kelvin/100":
                     case "diff-Kelvin/100":
                     case "bar/100":
+                    case "m/10":
                     case "kPa":
                     case "0.01*Hz":
                     case "1%":
@@ -121,6 +136,7 @@ public abstract class AbstractPumpTask implements GenibusTask {
                         break;
 
                     case "bar/1000":
+                    case "m/100":
                     case "0.1%":
                         this.unitCalc = 0.001;
                         break;
@@ -130,15 +146,16 @@ public abstract class AbstractPumpTask implements GenibusTask {
                         break;
 
                     case "ppm":
+                    case "m/10000":
                         this.unitCalc = 0.000001;
                         break;
 
                     case "psi":
-                        this.unitCalc = 0.06895; // convert to bar since channel unit is bar
+                        this.unitCalc = 0.06895;
                         break;
 
                     case "psi*10":
-                        this.unitCalc = 0.6895; // convert to bar
+                        this.unitCalc = 0.6895;
                         break;
 
                     case "2*Hz":
@@ -176,6 +193,7 @@ public abstract class AbstractPumpTask implements GenibusTask {
                     case "diff-Kelvin":
                     case "Watt":
                     case "bar":
+                    case "m*10":
                     case "m³/h":
                     case "Hz":
                     default:
@@ -190,21 +208,8 @@ public abstract class AbstractPumpTask implements GenibusTask {
 
         // Extract pressure sensor interval from h (used to be h_diff (2, 23), but that does not work with pump MGE).
         if (this.headerNumber == 2 && this.address == 37) {
-            if (this.unitString != null) {
-                switch (this.unitString) {
-                    case "m/10000":
-                    case "m/100":
-                    case "m/10":
-                    case "m":
-                    case "m*10":
-                        this.pumpDevice.setPressureSensorMinBar(this.zeroScaleFactor * this.unitCalc / 10);
-                        this.pumpDevice.setPressureSensorRangeBar(this.rangeScaleFactor * this.unitCalc / 10);
-                        break;
-                    default:
-                        this.pumpDevice.setPressureSensorMinBar(this.zeroScaleFactor * this.unitCalc);
-                        this.pumpDevice.setPressureSensorRangeBar(this.rangeScaleFactor * this.unitCalc);
-                }
-            }
+            this.pumpDevice.setPressureSensorMinBar(this.zeroScaleFactor * this.unitCalc);
+            this.pumpDevice.setPressureSensorRangeBar(this.rangeScaleFactor * this.unitCalc);
         }
     }
 

@@ -311,7 +311,7 @@ public enum Unit {
 	/**
 	 * Unit of Pressure[hPa].
 	 */
-	HECTO_PASCAL("hPa", PASCAL, 100),
+	HECTO_PASCAL("hPa", PASCAL, 2),
 
 	/**
 	 * Unit of Pressure [bar].
