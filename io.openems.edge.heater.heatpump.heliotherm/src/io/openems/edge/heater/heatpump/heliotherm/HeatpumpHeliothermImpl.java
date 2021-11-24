@@ -82,6 +82,7 @@ public class HeatpumpHeliothermImpl extends AbstractOpenemsModbusComponent imple
     private final Logger log = LoggerFactory.getLogger(HeatpumpHeliothermImpl.class);
     private boolean printInfoToLog;
     private boolean readOnly;
+    private boolean connectionAlive;
     private LocalDateTime fiveSecondTimestamp;
     private static final int sendIntervalSeconds = 6; // How often to send commands to the heat pump. Allowed minimum is 5.
     private int maxElectricPower;
@@ -313,7 +314,7 @@ public class HeatpumpHeliothermImpl extends AbstractOpenemsModbusComponent imple
             if (this.printInfoToLog) {
                 this.printInfo();
             }
-        } else if (this.readOnly == false && event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS)) {
+        } else if (this.readOnly == false && this.connectionAlive && event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS)) {
             this.writeCommands();
         }
     }
@@ -332,9 +333,8 @@ public class HeatpumpHeliothermImpl extends AbstractOpenemsModbusComponent imple
 
         // Evaluate error indicator
         boolean heatpumpError = false;
-        boolean connectionAlive = false;
         if (this.getErrorIndicator().isDefined()) {
-            connectionAlive = true;        // ToDo: test if getErrorIndicator() goes back to ’not defined’ on connection loss.
+            this.connectionAlive = true; // ToDo: test if getErrorIndicator() goes back to ’not defined’ on connection loss.
             heatpumpError = getErrorIndicator().get();
             if (heatpumpError) {
                 this._setErrorMessage("An unknown error occurred.");
@@ -342,6 +342,7 @@ public class HeatpumpHeliothermImpl extends AbstractOpenemsModbusComponent imple
                 this._setErrorMessage("No error");
             }
         } else {
+            this.connectionAlive = false;
             this._setErrorMessage("No Modbus connection.");
         }
         this.getErrorMessageChannel().nextProcessImage();
@@ -360,7 +361,7 @@ public class HeatpumpHeliothermImpl extends AbstractOpenemsModbusComponent imple
         }
 
         // Set Heater interface STATUS channel
-        if (connectionAlive) {
+        if (this.connectionAlive) {
             if (heatpumpRunning) {
                 this._setHeaterState(HeaterState.RUNNING.getValue());
             } else if (heatpumpDsmIndicator || heatpumpError) {

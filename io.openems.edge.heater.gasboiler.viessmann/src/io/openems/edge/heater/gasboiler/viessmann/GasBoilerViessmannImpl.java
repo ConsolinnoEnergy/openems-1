@@ -81,6 +81,7 @@ public class GasBoilerViessmannImpl extends AbstractOpenemsModbusComponent imple
     private boolean readOnly = false;
     private double heatingPowerPercentSetting;
     static final int hvac_off = 6;
+    private boolean readyForCommands = false;
 
     private EnableSignalHandler enableSignalHandler;
     private static final String ENABLE_SIGNAL_IDENTIFIER = "GASBOILER_VIESSMANN_ENABLE_SIGNAL_IDENTIFIER";
@@ -479,7 +480,7 @@ public class GasBoilerViessmannImpl extends AbstractOpenemsModbusComponent imple
             if (this.printInfoToLog) {
                 this.printInfo();
             }
-        } else if (this.readOnly == false && event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS)) {
+        } else if (this.readOnly == false && this.readyForCommands && event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS)) {
             this.writeCommands();
         }
     }
@@ -491,6 +492,7 @@ public class GasBoilerViessmannImpl extends AbstractOpenemsModbusComponent imple
 
         // Parse state.
         if (getBoilerState().isDefined()) {
+            this.readyForCommands = true;
 
             // Parse errors.
             List<String> errorList = this.generateErrorList();
@@ -507,6 +509,7 @@ public class GasBoilerViessmannImpl extends AbstractOpenemsModbusComponent imple
                 this._setHeaterState(HeaterState.STANDBY.getValue());
             }
         } else {
+            this.readyForCommands = false;
             this._setHeaterState(HeaterState.UNDEFINED.getValue());
             this._setErrorMessage("No Modbus connection");
         }

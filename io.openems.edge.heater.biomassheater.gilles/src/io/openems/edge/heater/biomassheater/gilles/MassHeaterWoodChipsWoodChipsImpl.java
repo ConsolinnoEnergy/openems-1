@@ -379,7 +379,9 @@ public class MassHeaterWoodChipsWoodChipsImpl extends AbstractOpenemsModbusCompo
 
         // Limit setpoint.
         int slideInSetpoint = 0;
+        boolean connectionAlive = false;
         if (this.getSlideInMinSetPointRead().isDefined()) {
+            connectionAlive = true;
             int slideInMinValue = this.getSlideInMinSetPointRead().get();
             this.powerPercentSetpoint = Math.max(this.powerPercentSetpoint, slideInMinValue);
             this._setHeatingPowerPercentSetpoint(this.powerPercentSetpoint);
@@ -414,20 +416,22 @@ public class MassHeaterWoodChipsWoodChipsImpl extends AbstractOpenemsModbusCompo
             }
         }
 
-        if (turnOnHeater) {
-            try {
-                this.setOnOffSwitch(true);
-                if (slideInSetpoint > 0) {
-                    this.setSlideInMaxSetPoint(slideInSetpoint);
+        if (connectionAlive) {
+            if (turnOnHeater) {
+                try {
+                    this.setOnOffSwitch(true);
+                    if (slideInSetpoint > 0) {
+                        this.setSlideInMaxSetPoint(slideInSetpoint);
+                    }
+                } catch (OpenemsError.OpenemsNamedException e) {
+                    this.log.warn("Couldn't write in Channel " + e.getMessage());
                 }
-            } catch (OpenemsError.OpenemsNamedException e) {
-                this.log.warn("Couldn't write in Channel " + e.getMessage());
-            }
-        } else {
-            try {
-                this.setOnOffSwitch(false);
-            } catch (OpenemsError.OpenemsNamedException e) {
-                this.log.warn("Couldn't write in Channel " + e.getMessage());
+            } else {
+                try {
+                    this.setOnOffSwitch(false);
+                } catch (OpenemsError.OpenemsNamedException e) {
+                    this.log.warn("Couldn't write in Channel " + e.getMessage());
+                }
             }
         }
     }
