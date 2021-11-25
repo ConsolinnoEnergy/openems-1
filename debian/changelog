@@ -1,9 +1,11 @@
-openems-consolinno (0.1.8-1) UNRELEASED; urgency=medium
+openems-consolinno (0.1.10-1) unstable; urgency=medium
 
-  * Added WordOrder support to Thermometer Modbus if Float Word is
-    selected
+  * Added a not tested Heater Cluster
+  * ModbusConnectionCheck was added by Sebastian
+  * Adapted Config Entries for ClusteredHeater and fixed a potential bug
+    in activationOrModifiedRoutine
 
- -- Felix <felix@felix-ThinkPad-E15-Gen-2>  Tue, 23 Nov 2021 11:29:45 +0100
+ -- Felix <felix@felix-ThinkPad-E15-Gen-2>  Wed, 24 Nov 2021 18:28:31 +0100
 
 openems-consolinno (0.1.7-1) unstable; urgency=medium
 
@@ -54,53 +56,3 @@ openems-consolinno (0.1.0-1) unstable; urgency=medium
   * Fixed ConditionApplierProblem where old ConfigurationData was not reset/cleared
 
  -- Felix <felix@felix-ThinkPad-E15-Gen-2>  Mon, 25 Oct 2021 21:40:24 +0200
-
-openems-consolinno (0.0.9-1) unstable; urgency=medium
-
-  * Fixed Generic Modbus Channel
-
- -- Felix <felix@felix-ThinkPad-E15-Gen-2>  Mon, 25 Oct 2021 14:13:35 +0200
-
-openems-consolinno (0.0.8-1) unstable; urgency=medium
-
-  * Added more ModbusGenericComponents
-  * Bugfixes in most Components and Controller, that the Unittest oversaw
-
- -- Felix <felix@felix-ThinkPad-E15-Gen-2>  Mon, 25 Oct 2021 13:17:32 +0200
-
-openems-consolinno (0.0.7-1) unstable; urgency=medium
-
-  * Fixed: Applied source Target for each OpenEMS Type nec.
-
- -- Felix <felix@felix-ThinkPad-E15-Gen-2>  Wed, 20 Oct 2021 17:02:57 +0200
-
-openems-consolinno (0.0.6-1) unstable; urgency=medium
-
-  * Fixed a Bug where Generic Modbus Component configuration won't be reset on modification
-
- -- Felix <felix@felix-ThinkPad-E15-Gen-2>  Wed, 20 Oct 2021 12:41:48 +0200
-
-openems-consolinno (0.0.5-1) unstable; urgency=medium
-
-  * Fixed a Bug where SetPoint of EffectiveHeatingPower and
-    EffectiveHeatingPowerPercent where swapped in handleChannelUpdate
-
- -- Felix <felix@felix-ThinkPad-E15-Gen-2>  Tue, 19 Oct 2021 13:02:35 +0200
-
-openems-consolinno (0.0.4-1) unstable; urgency=medium
-
-  * Added Changelog to this Working Branch. Only create tags with
-    changelog!
-  * Remember to add unstable/stable instead of UNRELEASED!
-
- -- Felix <felix@felix-ThinkPad-E15-Gen-2>  Tue, 19 Oct 2021 11:39:16 +0200
-
-openems-consolinno (0.0.4-1) unstable; urgency=medium
-
-  [ Felix ]
-  * initial Release of OpenEMS with MQTT implementation
-  * Release of OpenEMS-Master Branch 2021.16.0 with MQTT Work of
-    Consolinno with MQTT 3.1. Configure your MQTT Payloads and topics
-    the way you want
-
- -- Felix <felix@felix-ThinkPad-E15-Gen-2>  Mon, 27 Sep 2021 15:37:52 +0200
