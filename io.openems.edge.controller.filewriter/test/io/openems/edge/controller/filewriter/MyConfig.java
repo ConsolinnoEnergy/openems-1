@@ -118,7 +118,7 @@ public class MyConfig extends AbstractComponentConfig implements Config {
 
     @Override
     public boolean configurationDone() {
-        return false;
+        return this.builder.configurationDone;
     }
 
     @Override
