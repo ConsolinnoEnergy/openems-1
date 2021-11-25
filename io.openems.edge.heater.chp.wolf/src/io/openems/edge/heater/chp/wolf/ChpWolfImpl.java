@@ -294,7 +294,6 @@ public class ChpWolfImpl extends AbstractOpenemsModbusComponent implements Opene
 		this.getErrorMessageChannel().nextProcessImage();
 		
 		// Parse status by checking engine rpm.
-		this.readyForCommands = false;
 		if (getRpm().isDefined()) {
 			this.readyForCommands = true;
 			if (getRpm().get() > ENGINE_RPM_RUNNING_INDICATOR) {
@@ -309,6 +308,7 @@ public class ChpWolfImpl extends AbstractOpenemsModbusComponent implements Opene
 				}
 			}
 		} else {
+			this.readyForCommands = false;
 			this._setHeaterState(HeaterState.UNDEFINED.getValue());
 		}
 		this.getHeaterStateChannel().nextProcessImage();

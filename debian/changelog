@@ -1,3 +1,10 @@
+openems-consolinno (0.1.8-1) UNRELEASED; urgency=medium
+
+  * Added WordOrder support to Thermometer Modbus if Float Word is
+    selected
+
+ -- Felix <felix@felix-ThinkPad-E15-Gen-2>  Tue, 23 Nov 2021 11:29:45 +0100
+
 openems-consolinno (0.1.7-1) unstable; urgency=medium
 
   * Found Problem why Package does not exist was in gradle

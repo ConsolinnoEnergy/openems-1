@@ -1,5 +1,6 @@
 package io.openems.edge.thermometer.modbus;
 
+import io.openems.edge.bridge.modbus.api.element.WordOrder;
 import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
@@ -34,6 +35,9 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
     @AttributeDefinition(name = "WordElement modbus", description = "The ModbusWordElement. For Temperatures it's usually Float or Signed")
     Word word() default Word.FLOAT;
+
+    @AttributeDefinition(name = "WordOrder", description = "If the WordElement is Float, is the wordOrder MostSignificant or LeastSignificant Bit first.")
+    WordOrder wordorder() default WordOrder.MSWLSW;
 
     @AttributeDefinition(name = "HoldingRegister?", description = "Is the ModbusRegister a Holding Register (FC3)? If false -> InputRegister(Fc4)")
     boolean isHoldingRegister() default false;
