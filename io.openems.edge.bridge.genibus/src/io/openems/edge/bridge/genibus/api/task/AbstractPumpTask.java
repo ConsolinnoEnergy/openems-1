@@ -8,23 +8,18 @@ import io.openems.edge.bridge.genibus.api.PumpDevice;
 
 public abstract class AbstractPumpTask implements GenibusTask {
 
-    double unitCalc;
-    String unitString;
     UnitTable unitTable;
+    int genibusUnitIndex = -66;
+    double genibusUnitFactor = 1.0;
+    String unitString;
     private final byte address;
     private final int headerNumber;
-    //Scale information Factor
-    int sif;
-    //Value interpretation
-    //
-    boolean vi;
+    int sif;    // Scale information factor
+    boolean vi; // Value interpretation
     int range = 254;
-    //Byte Order 0 = HighOrder 1 = Low Order
-    //
-    boolean bo;
-    int unitIndex = -66;
-    int scaleFactorHighOrder;
-    int scaleFactorLowOrder;
+    boolean bo; // Byte Order, 0 = HighOrder 1 = LowOrder
+    int zeroScaleFactorHighOrder;
+    int zeroScaleFactorLowOrder;
     int zeroScaleFactor;
     int rangeScaleFactor;
     private boolean informationAvailable = false;
@@ -91,7 +86,7 @@ public abstract class AbstractPumpTask implements GenibusTask {
      * @param vi                    see OneByteInformation.
      * @param bo                    see OneByteInformation.
      * @param sif                   see OneByteInformation.
-     * @param unitIndex             index Number for the Unit of the task.
+     * @param zeroSignAndUnitIndex             index Number for the Unit of the task.
      * @param scaleFactorRangeOrLow range scale factor or low order byte.
      * @param scaleFactorZeroOrHigh either Zero scale factor or factor for high order byte
      *
@@ -99,117 +94,29 @@ public abstract class AbstractPumpTask implements GenibusTask {
      *                              </p>
      */
     @Override
-    public void setFourByteInformation(int vi, int bo, int sif, byte unitIndex, byte scaleFactorZeroOrHigh, byte scaleFactorRangeOrLow) {
+    public void setFourByteInformation(int vi, int bo, int sif, byte zeroSignAndUnitIndex, byte scaleFactorZeroOrHigh, byte scaleFactorRangeOrLow) {
         this.setOneByteInformation(vi, bo, sif);
-        this.unitIndex = (unitIndex & 127);
+        this.genibusUnitIndex = (zeroSignAndUnitIndex & 0b01111111);
+        int zeroSign = 1;
+        if ((zeroSignAndUnitIndex & 0b10000000) == 0b10000000) {
+            zeroSign = -1;
+        }
         if (sif == 3) {
-            this.scaleFactorHighOrder = Byte.toUnsignedInt(scaleFactorZeroOrHigh);
-            this.scaleFactorLowOrder = Byte.toUnsignedInt(scaleFactorRangeOrLow);
+            this.zeroScaleFactorHighOrder = zeroSign * Byte.toUnsignedInt(scaleFactorZeroOrHigh);
+            this.zeroScaleFactorLowOrder = zeroSign * Byte.toUnsignedInt(scaleFactorRangeOrLow);
         } else {
-            this.zeroScaleFactor = Byte.toUnsignedInt(scaleFactorZeroOrHigh);
+            this.zeroScaleFactor = zeroSign * Byte.toUnsignedInt(scaleFactorZeroOrHigh);
             this.rangeScaleFactor = Byte.toUnsignedInt(scaleFactorRangeOrLow);
         }
-        if (this.unitIndex > 0) {
-            this.unitString = this.unitTable.getInformationData().get(this.unitIndex);
-
-            if (this.unitString != null) {
-                switch (this.unitString) {
-                    // All pressure units are converted to bar
-
-                    case "Celsius/10":
-                    case "bar/10":
-                    case "m":   // <- this is a pressure unit = bar/10
-                    case "Ampere*0.1":
-                    case "0.1*m³/h":
-                    case "10%":
-                        this.unitCalc = 0.1;
-                        break;
-
-                    case "Kelvin/100":
-                    case "diff-Kelvin/100":
-                    case "bar/100":
-                    case "m/10":
-                    case "kPa":
-                    case "0.01*Hz":
-                    case "1%":
-                        this.unitCalc = 0.01;
-                        break;
-
-                    case "bar/1000":
-                    case "m/100":
-                    case "0.1%":
-                        this.unitCalc = 0.001;
-                        break;
-
-                    case "0.01%":
-                        this.unitCalc = 0.0001;
-                        break;
-
-                    case "ppm":
-                    case "m/10000":
-                        this.unitCalc = 0.000001;
-                        break;
-
-                    case "psi":
-                        this.unitCalc = 0.06895;
-                        break;
-
-                    case "psi*10":
-                        this.unitCalc = 0.6895;
-                        break;
-
-                    case "2*Hz":
-                        this.unitCalc = 2.0;
-                        break;
-
-                    case "2.5*Hz":
-                        this.unitCalc = 2.5;
-                        break;
-
-                    case "5*m³/h":
-                        this.unitCalc = 5.0;
-                        break;
-
-                    case "Watt*10":
-                    case "10*m³/h":
-                        this.unitCalc = 10.0;
-                        break;
-
-                    case "Watt*100":
-                        this.unitCalc = 100.0;
-                        break;
-
-                    case "kW":
-                        this.unitCalc = 1000.0;
-                        break;
-
-                    case "kW*10":
-                        this.unitCalc = 10000.0;
-                        break;
-
-                    case "Celsius":
-                    case "Fahrenheit":  // <- conversion to °C in PumpReadTask.java
-                    case "Kelvin":      // <- conversion to °C in PumpReadTask.java
-                    case "diff-Kelvin":
-                    case "Watt":
-                    case "bar":
-                    case "m*10":
-                    case "m³/h":
-                    case "Hz":
-                    default:
-                        this.unitCalc = 1.0;
-                }
-
-                if ((unitIndex & 128) == 128) {
-                    this.unitCalc = this.unitCalc * (-1);
-                }
-            }
+        if (this.genibusUnitIndex > 0) {
+            this.unitString = this.unitTable.getInformationData().get(this.genibusUnitIndex);
+            this.genibusUnitFactor = this.unitTable.getGenibusUnitFactor(this.genibusUnitIndex);
         }
 
-        // Extract pressure sensor interval from h (used to be h_diff (2, 23), but that does not work with pump MGE).
-        if (this.headerNumber == 2 && this.address == 37) {
-            this.pumpDevice.setPressureSensorMinBar(this.zeroScaleFactor * this.unitCalc);
-            this.pumpDevice.setPressureSensorRangeBar(this.rangeScaleFactor * this.unitCalc);
+        // Extract pressure sensor interval.
+        if (this.headerNumber == 2 && this.address == this.pumpDevice.getPressureSensorTaskAddress()) {
+            this.pumpDevice.setPressureSensorMinBar(this.zeroScaleFactor * this.genibusUnitFactor);
+            this.pumpDevice.setPressureSensorRangeBar(this.rangeScaleFactor * this.genibusUnitFactor);
         }
     }
 
@@ -266,7 +173,7 @@ public abstract class AbstractPumpTask implements GenibusTask {
                     if (exponent < 0) {
                         exponent = 0;
                     }
-                    returnString.append("extended precision, min: ").append(Math.pow(256, exponent) * (256 * this.scaleFactorHighOrder + this.scaleFactorLowOrder));
+                    returnString.append("extended precision, min: ").append(Math.pow(256, exponent) * (256 * this.zeroScaleFactorHighOrder + this.zeroScaleFactorLowOrder));
                     break;
                 case 0:
                 default:

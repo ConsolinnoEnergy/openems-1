@@ -55,9 +55,13 @@ public class PumpDevice {
     // These are needed to calculate the setpoint, since GENIbus setpoints are relative to the sensor range.
     private double pressureSensorMinBar = 0;
     private double pressureSensorRangeBar = 0;
+    /* Address for the task from which pressure sensor INFO is collected to calculate the above values.
+       For pumps MGE and Magna 37 works (= h (2, 37)). For Magna also 23 works (= h_diff (2, 23)). */
+    private int pressureSensorTaskAddress;
 
-    public PumpDevice(String deviceId, int genibusAddress, int lowPrioTasksPerCycle, GenibusTask... tasks) {
+    public PumpDevice(String deviceId, int genibusAddress, int pressureSensorTaskAddress, int lowPrioTasksPerCycle, GenibusTask... tasks) {
         this.genibusAddress = genibusAddress;
+        this.pressureSensorTaskAddress = pressureSensorTaskAddress;
         this.pumpDeviceId = deviceId;
         this.lowPrioTasksPerCycle = lowPrioTasksPerCycle;
         for (GenibusTask task : tasks) {
@@ -274,6 +278,14 @@ public class PumpDevice {
      */
     public boolean isAllLowPrioTasksAdded() {
         return this.allLowPrioTasksAdded;
+    }
+
+    /**
+     * Get the task address from which the pressure sensor INFO is taken.
+     * @return the task address.
+     */
+    public int getPressureSensorTaskAddress() {
+        return this.pressureSensorTaskAddress;
     }
 
     /**

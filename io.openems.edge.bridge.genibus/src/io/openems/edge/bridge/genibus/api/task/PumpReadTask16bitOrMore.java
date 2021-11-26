@@ -1,11 +1,11 @@
 package io.openems.edge.bridge.genibus.api.task;
 
-import io.openems.common.channel.Unit;
 import io.openems.edge.common.channel.Channel;
 import io.openems.edge.common.taskmanager.Priority;
+import java.util.OptionalDouble;
 
 /**
- * PumpTask class for reading values with 16bit precision.
+ * PumpTask class for reading values with 16 bit precision. Extended precision supports up to 32 bit.
  */
 public class PumpReadTask16bitOrMore extends AbstractPumpTask {
 
@@ -76,15 +76,21 @@ public class PumpReadTask16bitOrMore extends AbstractPumpTask {
                     for (int i = 0; i < this.dataByteSize; i++) {
                         sumValue = sumValue +  actualDataArray[i] * ((double) super.rangeScaleFactor / (double) range * Math.pow(256, i));
                     }
-                    // value w.o considering Channel
-                    tempValue = (super.zeroScaleFactor + sumValue) * super.unitCalc;
+                    // value w.o. considering units
+                    tempValue = (super.zeroScaleFactor + sumValue);
 
                     /* 16bit formula
                     tempValue = (super.zeroScaleFactor + (actualDataArray[0] * ((double) super.rangeScaleFactor / (double) range))
-                            + (actualDataArray[1] * ((double) super.rangeScaleFactor / ((double) range * 256)))) * super.unitCalc;
+                            + (actualDataArray[1] * ((double) super.rangeScaleFactor / ((double) range * 256))));
                     */
 
-                    this.channel.setNextValue(this.correctValueForChannel(tempValue) * this.channelMultiplier);
+                    OptionalDouble unitAdjustedValue = super.unitTable.convertToOpenEmsUnit(tempValue, super.genibusUnitIndex, this.channel.channelDoc().getUnit());
+                    if (unitAdjustedValue.isPresent()) {
+                        this.channel.setNextValue(unitAdjustedValue.getAsDouble() * this.channelMultiplier);
+                    } else {
+                        // Fallback code if unit is not coded in yet. Chances are this will result in a wrong value.
+                        this.channel.setNextValue(tempValue * super.genibusUnitFactor * this.channelMultiplier);
+                    }
                     break;
                 case 3:
                     // Formula working for 8, 16, 24 and 32 bit.
@@ -96,13 +102,19 @@ public class PumpReadTask16bitOrMore extends AbstractPumpTask {
                     if (exponent < 0) {
                         exponent = 0;
                     }
-                    tempValue = (Math.pow(256, exponent) * (256 * super.scaleFactorHighOrder + super.scaleFactorLowOrder)
-                            + highPrecisionValue) * super.unitCalc;
+                    // value w.o. considering units
+                    tempValue = (Math.pow(256, exponent) * (256 * super.zeroScaleFactorHighOrder + super.zeroScaleFactorLowOrder)
+                            + highPrecisionValue);
 
                     // Extended precision, 8 bit formula.
-                    //tempValue = ((256 * super.scaleFactorHighOrder + super.scaleFactorLowOrder) + actualData) * super.unitCalc;
+                    //tempValue = ((256 * super.scaleFactorHighOrder + super.scaleFactorLowOrder) + actualData);
 
-                    this.channel.setNextValue(this.correctValueForChannel(tempValue) * this.channelMultiplier);
+                    unitAdjustedValue = super.unitTable.convertToOpenEmsUnit(tempValue, super.genibusUnitIndex, this.channel.channelDoc().getUnit());
+                    if (unitAdjustedValue.isPresent()) {
+                        this.channel.setNextValue(unitAdjustedValue.getAsDouble() * this.channelMultiplier);
+                    } else {
+                        this.channel.setNextValue(tempValue * super.genibusUnitFactor * this.channelMultiplier);
+                    }
                     break;
                 case 1:
                 case 0:
@@ -117,78 +129,6 @@ public class PumpReadTask16bitOrMore extends AbstractPumpTask {
 
             }
         }
-
-
-    }
-
-    private double correctValueForChannel(double tempValue) {
-        //unitString
-        if (super.unitString != null) {
-            Unit openemsBaseUnit = this.channel.channelDoc().getUnit();
-            int scaleFactor = openemsBaseUnit.getScaleFactor();
-            if (this.channel.channelDoc().getUnit().getBaseUnit() != null) {
-                openemsBaseUnit = openemsBaseUnit.getBaseUnit();
-            }
-
-            switch (openemsBaseUnit) {
-                case DEGREE_CELSIUS:
-                    switch (super.unitString) {
-                        case "Celsius/10":
-                        case "Celsius":
-                            return super.unitCalc * Math.pow(10, -scaleFactor) * tempValue;
-                        case "Kelvin/100":
-                        case "Kelvin":
-                            return super.unitCalc * Math.pow(10, -scaleFactor) * (tempValue - 273.15);
-                        case "Fahrenheit":
-                            return super.unitCalc * Math.pow(10, -scaleFactor) * ((tempValue - 32) * (5.d / 9.d));
-                    }
-                case DEGREE_KELVIN:
-                    switch (super.unitString) {
-                        case "Celsius/10":
-                        case "Celsius":
-                            return super.unitCalc * Math.pow(10, -scaleFactor) * (tempValue + 273.15);
-                        case "Kelvin/100":
-                        case "Kelvin":
-                            return super.unitCalc * Math.pow(10, -scaleFactor) * tempValue;
-                        case "Fahrenheit":
-                            return super.unitCalc * Math.pow(10, -scaleFactor) * (((tempValue - 32) * (5.d / 9.d)) + 273.15);
-                    }
-                case BAR:
-                    switch (super.unitString) {
-                        case "bar/1000":
-                        case "bar/100":
-                        case "bar/10":
-                        case "bar":
-                        case "m/10000":
-                        case "m/100":
-                        case "m/10":
-                        case "m":
-                        case "m*10":
-                        case "psi":
-                        case "psi*10":
-                        case "kPa":
-                            return super.unitCalc * Math.pow(10, -scaleFactor) * tempValue;
-                    }
-                case PASCAL:
-                    switch (super.unitString) {
-                        case "bar/1000":
-                        case "bar/100":
-                        case "bar/10":
-                        case "bar":
-                        case "m/10000":
-                        case "m/100":
-                        case "m/10":
-                        case "m":
-                        case "m*10":
-                        case "psi":
-                        case "psi*10":
-                        case "kPa":
-                            return super.unitCalc * Math.pow(10, -scaleFactor + 5) * tempValue;
-                    }
-            }
-        }
-
-        return tempValue;
     }
 
     @Override

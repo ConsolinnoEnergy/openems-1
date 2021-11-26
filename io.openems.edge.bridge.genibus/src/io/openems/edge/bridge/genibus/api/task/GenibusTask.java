@@ -61,11 +61,12 @@ public interface GenibusTask extends ManagedTask {
      * @param vi Value information if set range is 255 else 254. Comes from 5th bit
      * @param bo Byte order information. 0 is high order, 1 is low order byte. 4th bit
      * @param sif Scale information format. 0 = not available, 1= bitwise interpreted value.
-     * @param unitIndex the number to declare what unit it is according to the unit table.
+     * @param zeroSignAndUnitIndex bit 0-6 are the number to declare what unit it is according to the unit table.
+     *                             Bit 7 is the sign of the Zero scale factor (0 positive, 1 negative).
      * @param scaleFactorZeroOrHigh either Zero scale factor or factor for high order byte.
      * @param scaleFactorRangeOrLow range scale factor or low order byte.
      */
-    void setFourByteInformation(int vi, int bo, int sif, byte unitIndex, byte scaleFactorZeroOrHigh, byte scaleFactorRangeOrLow);
+    void setFourByteInformation(int vi, int bo, int sif, byte zeroSignAndUnitIndex, byte scaleFactorZeroOrHigh, byte scaleFactorRangeOrLow);
 
     /**
      * If INFO for this task has been stored or not.

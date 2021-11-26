@@ -22,7 +22,7 @@ public enum Unit {
 	/**
 	 * Thousandth [‰], 0-1000
 	 */
-	THOUSANDTH("‰"),
+	THOUSANDTH("‰", PERCENT, -1),
 
 	/**
 	 * On or Off

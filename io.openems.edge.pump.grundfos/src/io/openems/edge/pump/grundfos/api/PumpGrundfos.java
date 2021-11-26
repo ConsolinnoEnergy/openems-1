@@ -156,7 +156,8 @@ public interface PumpGrundfos extends OpenemsComponent {
         REF_ACT(Doc.of(OpenemsType.DOUBLE)),
 
         /**
-         * Normalized setpoint.
+         * Normalized setpoint. Unit depends on control mode and changes when control mode changes, so channel can't
+         * have a unit.
          * <ul>
          * <li>Interface: PumpGrundfosChannels
          * <li>Type: Double
@@ -417,8 +418,9 @@ public interface PumpGrundfos extends OpenemsComponent {
 
         /**
          * Constant Pressure Mode minimum reference. INFO reads unit = 30 = 1%, min = 0, range = 100.
-         * Values for this parameter are 0% - 100% (write 0 - 1.0 in channel), where % is % of the range interval
-         * of the pressure sensor. The range interval of the pressure sensor is the one transmitted by INFO for h_diff.
+         * Values for this parameter are 0% - 100% (write 0 - 1.0 in channel), where % is % of the range interval of the
+         * pressure sensor. The range interval of the pressure sensor is the one transmitted by INFO for h (pumps MGE
+         * and Magna) or h_diff (pump Magna).
          * <ul>
          *        <li> Interface: PumpGrundfosChannels
          *        <li> Type: Double

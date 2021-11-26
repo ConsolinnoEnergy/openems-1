@@ -1,12 +1,11 @@
 package io.openems.edge.bridge.genibus.api.task;
 
-import io.openems.common.channel.Unit;
 import io.openems.edge.common.channel.WriteChannel;
 import io.openems.edge.common.taskmanager.Priority;
-
+import java.util.OptionalDouble;
 
 /**
- * PumpTask class for writing with 16 bit precision.
+ * PumpTask class for writing with 16 bit precision. Extended precision supports up to 32 bit.
  */
 public class PumpWriteTask16bitOrMore extends PumpReadTask16bitOrMore implements GenibusWriteTask {
 
@@ -44,11 +43,19 @@ public class PumpWriteTask16bitOrMore extends PumpReadTask16bitOrMore implements
 
             // For values of type scaled or extended precision:
             // With INFO available, the value in nextWrite is automatically converted to the correct bytes for GENIbus.
-            double dataOfChannel = this.correctValueFromChannel(this.channel.getNextWriteValue().get()) / super.channelMultiplier;
+            double dataOfChannel = this.channel.getNextWriteValue().get() / super.channelMultiplier;
+            OptionalDouble unitAdjustedValue = super.unitTable.convertToGenibusUnit(dataOfChannel, this.channel.channelDoc().getUnit(), super.genibusUnitIndex);
+            double writeValue;
+            if (unitAdjustedValue.isPresent()) {
+                writeValue = unitAdjustedValue.getAsDouble();
+            } else {
+                // Fallback code if unit is not coded in yet. Chances are this will result in a wrong value.
+                writeValue = dataOfChannel / super.genibusUnitFactor;
+            }
             switch (super.sif) {
                 case 2:
                     // Formula working for both 8 and 16 bit
-                    long combinedByteValueScaled = Math.round((-super.zeroScaleFactor * super.unitCalc + dataOfChannel) * (254 * Math.pow(256, (dataByteSize - 1))) / (super.rangeScaleFactor * super.unitCalc));
+                    long combinedByteValueScaled = Math.round((-super.zeroScaleFactor + writeValue) * (254 * Math.pow(256, (dataByteSize - 1))) / super.rangeScaleFactor);
                     if (byteCounter == 0) {
                         returnValue = (byte) (combinedByteValueScaled / Math.pow(256, (dataByteSize - 1)));
                     } else {
@@ -57,7 +64,7 @@ public class PumpWriteTask16bitOrMore extends PumpReadTask16bitOrMore implements
                     break;
                 case 3:
                     // Formula working for 8, 16, 24 and 32 bit.
-                    long combinedByteValueExtended = Math.round(dataOfChannel / super.unitCalc) - (256 * super.scaleFactorHighOrder + super.scaleFactorLowOrder);
+                    long combinedByteValueExtended = Math.round(writeValue) - (256 * super.zeroScaleFactorHighOrder + super.zeroScaleFactorLowOrder);
                     if (byteCounter == 0) {
                         returnValue = (byte) (combinedByteValueExtended / Math.pow(256, (dataByteSize - 1)));
                     } else {
@@ -67,7 +74,7 @@ public class PumpWriteTask16bitOrMore extends PumpReadTask16bitOrMore implements
                 case 1:
                 case 0:
                 default:
-                    returnValue = (byte) Math.round(dataOfChannel);
+                    returnValue = (byte) Math.round(writeValue);
                     break;
             }
 
@@ -81,41 +88,6 @@ public class PumpWriteTask16bitOrMore extends PumpReadTask16bitOrMore implements
 
         }
         return request;
-    }
-
-    private double correctValueFromChannel(double tempValue) {
-        //unitString
-        if (super.unitString != null) {
-            // Channel unit is dC.
-            double temperatureFactor = 0.1;
-
-            switch (super.unitString) {
-                case "Celsius/10":
-                case "Celsius":
-                    //dC
-                    return tempValue * temperatureFactor;
-                case "Kelvin/100":
-                case "Kelvin":
-                    //dC
-                    return (tempValue + 2731.5) * temperatureFactor;
-
-                case "Fahrenheit":
-                    //dC
-                    return (tempValue * temperatureFactor * 1.8) + 32;
-
-                case "m/10000":
-                case "m/100":
-                case "m/10":
-                case "m":
-                case "m*10":
-                    if (this.channel.channelDoc().getUnit().equals(Unit.BAR)) {
-                        return tempValue * 10;
-                    }
-                    return tempValue;
-            }
-        }
-
-        return tempValue;
     }
 
     @Override

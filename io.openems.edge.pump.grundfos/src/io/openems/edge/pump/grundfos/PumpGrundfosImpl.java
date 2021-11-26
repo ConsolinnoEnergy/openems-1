@@ -204,7 +204,7 @@ public class PumpGrundfosImpl extends AbstractOpenemsComponent implements Openem
     private void createTaskList(String deviceId, int pumpAddress) {
         // Broadcast mode is just to find the address of a unit. Not suitable for sending commands.
         if (this.broadcast || this.changeAddress) {
-            this.pumpDevice = new PumpDevice(deviceId, pumpAddress, 4,
+            this.pumpDevice = new PumpDevice(deviceId, pumpAddress, 37, 4,
                     new PumpReadTask8bit(2, 0, getBufferLength(), "Standard", Priority.ONCE),
                     new PumpReadTask8bit(3, 0, getUnitBusMode(), "Standard", Priority.ONCE),
 
@@ -255,7 +255,7 @@ public class PumpGrundfosImpl extends AbstractOpenemsComponent implements Openem
         // So if there are 10 low tasks and lowPrioTasksPerCycle=10, the low tasks behave like high tasks.
         // If in the same situation lowPrioTasksPerCycle=5, a priority low task is executed at half the rate of a
         // priority high task.
-        this.pumpDevice = new PumpDevice(deviceId, pumpAddress, 4,
+        this.pumpDevice = new PumpDevice(deviceId, pumpAddress, 37, 4,
 
 
                 // Commands.
