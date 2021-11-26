@@ -78,7 +78,7 @@ public class EvSimulatorImpl extends AbstractOpenemsComponent implements EvSimul
 
     @Override
     public void handleEvent(Event event) {
-        if (this.getChargePower() > 0 && this.getPhases() > 0) {
+        if (this.getPhases() > 0) {
             this.parent.setCar(true);
             this.parent.setCharge(this.getChargePower());
             this.parent.setPhases(this.getPhases());

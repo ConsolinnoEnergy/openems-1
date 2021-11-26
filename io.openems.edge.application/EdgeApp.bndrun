@@ -195,7 +195,7 @@
 	bnd.identity;id='io.openems.edge.sensor',\
 	bnd.identity;id='io.openems.edge.simulator',\
 	bnd.identity;id='io.openems.edge.solaredge',\
-	bnd.identity;id='io.openems.edge.storage,\
+	bnd.identity;id='io.openems.edge.storage',\
 	bnd.identity;id='io.openems.edge.tesla.powerwall2',\
 	bnd.identity;id='io.openems.edge.thermometer.modbus',\
 	bnd.identity;id='io.openems.edge.thermometer.threshold',\

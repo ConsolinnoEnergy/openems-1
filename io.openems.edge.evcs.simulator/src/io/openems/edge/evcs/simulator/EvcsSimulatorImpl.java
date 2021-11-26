@@ -116,12 +116,18 @@ public class EvcsSimulatorImpl extends AbstractOpenemsComponent implements Evcs,
                 this._setChargePower(0);
             }
             this.setPower();
-            double powerUse = Math.random();
+            double powerUse = Math.random() * 0.1;
+            if (powerUse < 0.001) {
+                powerUse = 0.01246526789;
+            }
             this.l1 += powerUse;
         }
     }
 
     private void setPower() {
+        this.l1 = 0;
+        this.l2 = 0;
+        this.l3 = 0;
         int phaseCount = this.getPhases().orElse(1);
         for (int n = 0; n < phaseCount; n++) {
             switch (this.phaseConfiguration[n]) {
@@ -147,6 +153,6 @@ public class EvcsSimulatorImpl extends AbstractOpenemsComponent implements Evcs,
     @Override
     public String debugLog() {
         return "Total: " + this.getChargePower().get() + " W "
-                + "| L1 " + this.l1 / this.gridVoltage + " A | L2 " + this.l2 / this.gridVoltage + " A | L3 " + this.l3 / this.gridVoltage + " A";
+                + "| L1 " + this.l1 + " A | L2 " + this.l2  + " A | L3 " + this.l3  + " A";
     }
 }

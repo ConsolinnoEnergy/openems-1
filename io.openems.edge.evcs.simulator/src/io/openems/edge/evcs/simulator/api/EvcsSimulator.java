@@ -1,11 +1,9 @@
 package io.openems.edge.evcs.simulator.api;
 
 import io.openems.common.channel.AccessMode;
-import io.openems.common.channel.Unit;
 import io.openems.common.types.OpenemsType;
 import io.openems.edge.common.channel.Channel;
 import io.openems.edge.common.channel.Doc;
-import io.openems.edge.common.channel.WriteChannel;
 import io.openems.edge.common.component.OpenemsComponent;
 
 public interface EvcsSimulator extends OpenemsComponent {
@@ -19,7 +17,7 @@ public interface EvcsSimulator extends OpenemsComponent {
      * </ul>
      */
     public enum ChannelId implements io.openems.edge.common.channel.ChannelId {
-        PHASES(Doc.of(OpenemsType.INTEGER).accessMode(AccessMode.READ_WRITE)),
+        SIMULATED_PHASES(Doc.of(OpenemsType.INTEGER).accessMode(AccessMode.READ_WRITE)),
         CAR(Doc.of(OpenemsType.BOOLEAN).accessMode(AccessMode.READ_ONLY)),
         CHARGE(Doc.of(OpenemsType.INTEGER).accessMode(AccessMode.READ_ONLY));
         private final Doc doc;
@@ -64,7 +62,7 @@ public interface EvcsSimulator extends OpenemsComponent {
         channel.setNextValue(value);
     }
     default Channel<Integer> getSimulatorPhasesChannel() {
-        return this.channel(ChannelId.PHASES);
+        return this.channel(ChannelId.SIMULATED_PHASES);
     }
 
 

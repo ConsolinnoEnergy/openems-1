@@ -32,7 +32,7 @@ public class SchneiderWriteHandler {
         this.detectStatus();
         //The Schneider EVCS reports in kW but OpenEms needs W so StationPower * 1000
 
-        this.parent._setChargePower((int) this.parent.getStationPowerTotal() * 1000);
+        this.parent._setChargePower((int) (this.parent.getStationPowerTotal() * 1000));
 
         if (this.parent.getStationPowerTotal() * 1000 > 230 || this.state.toString().equals(Status.READY_FOR_CHARGING.toString())) {
             try {

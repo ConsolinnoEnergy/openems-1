@@ -8,7 +8,7 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 @interface Config {
 
     @AttributeDefinition(name = "Id", description = "Unique Id for the Simulator.")
-    String id() default "";
+    String id() default "EvcsSimulator0";
 
     @AttributeDefinition(name = "Alias", description = "Human readable name of this Configurator.")
     String alias() default "";
