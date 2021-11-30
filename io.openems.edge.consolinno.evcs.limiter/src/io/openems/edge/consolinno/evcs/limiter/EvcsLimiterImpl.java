@@ -2402,7 +2402,7 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
         int l1Offset = 0;
         int l2Offset = 0;
         int l3Offset = 0;
-        if (this.useMeter && this.meter != null) {
+        if (this.useMeter && this.meter != null && this.powerL1 != null) {
             int testPowerL1 = this.meter.getActivePowerL1().orElse(0) / GRID_VOLTAGE;
             int testPowerL2 = this.meter.getActivePowerL2().orElse(0) / GRID_VOLTAGE;
             int testPowerL3 = this.meter.getActivePowerL3().orElse(0) / GRID_VOLTAGE;
@@ -2422,16 +2422,23 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
                 l3Offset = l3 - minPower;
             }
             */
-            int maxPower = Math.max(Math.max(testPowerL1 * -1, testPowerL2 * -1), testPowerL3 * -1);
-            if (l1 > maxPower) {
-                l1Offset = maxPower - l1;
+
+            l1Offset = (l1 - this.powerL1);
+            if (l1Offset < 0) {
+                l1Offset = 0;
             }
-            if (l2 > maxPower) {
-                l2Offset = maxPower - l2;
+
+
+            l2Offset = (l2 - this.powerL2);
+            if (l2Offset < 0) {
+                l2Offset = 0;
             }
-            if (l3 > maxPower) {
-                l3Offset = maxPower - l3;
+
+            l3Offset = (l3 - this.powerL3);
+            if (l3Offset < 0) {
+                l3Offset = 0;
             }
+
         }
         this.l1Offs = l1Offset;
         this.l2Offs = l2Offset;

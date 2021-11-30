@@ -36,7 +36,7 @@ import java.util.List;
 
 @Designate(ocd = Config.class, factory = true)
 @Component(name = "VirtualAsymmetricSubtractMeter", immediate = true,
-        configurationPolicy = ConfigurationPolicy.REQUIRE, property = EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE)
+        configurationPolicy = ConfigurationPolicy.REQUIRE, property = EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE)
 
 public class VirtualAsymmetricSubtractMeter extends AbstractOpenemsComponent
         implements VirtualMeter, AsymmetricMeter, SymmetricMeter, OpenemsComponent, ModbusSlave, EventHandler {
