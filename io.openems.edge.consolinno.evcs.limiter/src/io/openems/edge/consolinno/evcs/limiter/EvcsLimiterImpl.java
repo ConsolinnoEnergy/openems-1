@@ -2399,54 +2399,9 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
      * @param tempered Was the power already changed in this cycle in some way?
      */
     private void updatePower(boolean tempered) {
-        int l1Offset = 0;
-        int l2Offset = 0;
-        int l3Offset = 0;
-        if (this.useMeter && this.meter != null && this.powerL1 != null) {
-            int testPowerL1 = this.meter.getActivePowerL1().orElse(0) / GRID_VOLTAGE;
-            int testPowerL2 = this.meter.getActivePowerL2().orElse(0) / GRID_VOLTAGE;
-            int testPowerL3 = this.meter.getActivePowerL3().orElse(0) / GRID_VOLTAGE;
-
-            int l1 = Math.abs(testPowerL1);
-            int l2 = Math.abs(testPowerL2);
-            int l3 = Math.abs(testPowerL3);
-            /*
-            int minPower = Math.min(Math.min(l1, l2), l3);
-            if (testPowerL1 > 0 && l1 > minPower) {
-                l1Offset = l1 - minPower;
-            }
-            if (testPowerL2 > 0 && l2 > minPower) {
-                l2Offset = l2 - minPower;
-            }
-            if (testPowerL3 > 0 && l3 > minPower) {
-                l3Offset = l3 - minPower;
-            }
-            */
-
-            l1Offset = (l1 - this.powerL1);
-            if (l1Offset < 0) {
-                l1Offset = 0;
-            }
-
-
-            l2Offset = (l2 - this.powerL2);
-            if (l2Offset < 0) {
-                l2Offset = 0;
-            }
-
-            l3Offset = (l3 - this.powerL3);
-            if (l3Offset < 0) {
-                l3Offset = 0;
-            }
-
-        }
-        this.l1Offs = l1Offset;
-        this.l2Offs = l2Offset;
-        this.l3Offs = l3Offset;
-        this.powerL1 = Math.abs(l1Offset);
-        this.powerL2 = Math.abs(l2Offset);
-        this.powerL3 = Math.abs(l3Offset);
-
+        this.powerL1 = 0;
+        this.powerL2 = 0;
+        this.powerL3 = 0;
 
         //Updates current Power Consumption
         if (!tempered) {
@@ -2522,7 +2477,62 @@ public class EvcsLimiterImpl extends AbstractOpenemsComponent implements Openems
             }
 
         }
+        int l1Offset = 0;
+        int l2Offset = 0;
+        int l3Offset = 0;
+        if (this.useMeter && this.meter != null && this.powerL1 != null) {
+            int testPowerL1 = this.meter.getActivePowerL1().orElse(0) / GRID_VOLTAGE;
+            int testPowerL2 = this.meter.getActivePowerL2().orElse(0) / GRID_VOLTAGE;
+            int testPowerL3 = this.meter.getActivePowerL3().orElse(0) / GRID_VOLTAGE;
 
+            int l1 = Math.abs(testPowerL1);
+            int l2 = Math.abs(testPowerL2);
+            int l3 = Math.abs(testPowerL3);
+            /*
+            int minPower = Math.min(Math.min(l1, l2), l3);
+            if (testPowerL1 > 0 && l1 > minPower) {
+                l1Offset = l1 - minPower;
+            }
+            if (testPowerL2 > 0 && l2 > minPower) {
+                l2Offset = l2 - minPower;
+            }
+            if (testPowerL3 > 0 && l3 > minPower) {
+                l3Offset = l3 - minPower;
+            }
+            */
+            int maxPower = Math.abs(Math.min(Math.min(testPowerL1, testPowerL2), testPowerL3));
+            l1Offset = (l1 - this.powerL1) - maxPower;
+            if (l1Offset < 0) {
+                l1Offset = 0;
+            }
+
+
+            l2Offset = (l2 - this.powerL2) - maxPower;
+            if (l2Offset < 0) {
+                l2Offset = 0;
+            }
+
+            l3Offset = (l3 - this.powerL3) - maxPower;
+            if (l3Offset < 0) {
+                l3Offset = 0;
+            }
+            /*
+            if (l1Offset == l2Offset && l1Offset == l3Offset) {
+                l1Offset = 0;
+                l2Offset = 0;
+                l3Offset = 0;
+            }
+
+             */
+
+
+            this.l1Offs = l1Offset;
+            this.l2Offs = l2Offset;
+            this.l3Offs = l3Offset;
+            this.powerL1 += Math.abs(l1Offset);
+            this.powerL2 += Math.abs(l2Offset);
+            this.powerL3 += Math.abs(l3Offset);
+        }
     }
 
     /**
