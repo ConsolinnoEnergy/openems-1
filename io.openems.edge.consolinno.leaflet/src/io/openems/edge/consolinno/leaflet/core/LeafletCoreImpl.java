@@ -134,16 +134,19 @@ public class LeafletCoreImpl extends AbstractOpenemsModbusComponent implements O
     void activate(ComponentContext context, Config config) throws OpenemsException, ConfigurationException {
         //Reads Source file CSV with the Register information
         this.source = this.sourceReader.readCsv(config.source());
-        //Splits the big CSV Output into the different Modbus Types(OutputCoil,...)
-        this.splitArrayIntoType();
-        //Sets the Register variables for the Configuration
-        this.createRelayInverseRegisterArray();
-        this.setPwmConfigurationAddresses();
+        if (this.source.size() == 1) {
+            throw new ConfigurationException("The Source file could not be found! Check Config!");
+        }
         if (this.checkFirmwareCompatibility()) {
+            //Splits the big CSV Output into the different Modbus Types(OutputCoil,...)
+            this.splitArrayIntoType();
+            //Sets the Register variables for the Configuration
+            this.createRelayInverseRegisterArray();
+            this.setPwmConfigurationAddresses();
             super.activate(context, config.id(), config.alias(), config.enabled(), config.modbusUnitId(), this.cm,
                     "Modbus", config.modbusBridgeId());
         } else {
-            this.log.error("Firmware incompatible or not Running!");
+                this.log.error("Firmware incompatible or not Running!");
             this.log.info("The Configurator will now deactivate itself.");
             this.deactivate();
         }
@@ -891,31 +894,31 @@ public class LeafletCoreImpl extends AbstractOpenemsModbusComponent implements O
         try {
             switch (moduleNumber) {
                 case 1:
-                    this.aioConfigOne = this.aioConfigOne | (position + configInt);
+                    this.aioConfigOne = this.aioConfigOne | (configInt << 4 * (position - 1));
                     getAioConfigOne().setNextWriteValue(this.aioConfigOne);
                     break;
                 case 2:
-                    this.aioConfigTwo = this.aioConfigTwo | (position + configInt);
+                    this.aioConfigTwo = this.aioConfigTwo | (configInt << 4 * (position - 1));
                     getAioConfigTwo().setNextWriteValue(this.aioConfigTwo);
                     break;
                 case 3:
-                    this.aioConfigThree = this.aioConfigThree | (position + configInt);
+                    this.aioConfigThree = this.aioConfigThree | (configInt << 4 * (position - 1));
                     getAioConfigThree().setNextWriteValue(this.aioConfigThree);
                     break;
                 case 4:
-                    this.aioConfigFour = this.aioConfigFour | (position + configInt);
+                    this.aioConfigFour = this.aioConfigFour | (configInt << 4 * (position - 1));
                     getAioConfigFour().setNextWriteValue(this.aioConfigFour);
                     break;
                 case 5:
-                    this.aioConfigFive = this.aioConfigFive | (position + configInt);
+                    this.aioConfigFive = this.aioConfigFive | (configInt << 4 * (position - 1));
                     getAioConfigFive().setNextWriteValue(this.aioConfigFive);
                     break;
                 case 6:
-                    this.aioConfigSix = this.aioConfigSix | (position + configInt);
+                    this.aioConfigSix = this.aioConfigSix | (configInt << 4 * (position - 1));
                     getAioConfigSix().setNextWriteValue(this.aioConfigSix);
                     break;
                 case 7:
-                    this.aioConfigSeven = this.aioConfigSeven | (position + configInt);
+                    this.aioConfigSeven = this.aioConfigSeven | (configInt << 4 * (position - 1));
                     getAioConfigSeven().setNextWriteValue(this.aioConfigSeven);
                     break;
                 default:
@@ -1020,7 +1023,7 @@ public class LeafletCoreImpl extends AbstractOpenemsModbusComponent implements O
      */
     private void enterConfigMode() {
         try {
-            getWriteLeafletConfigChannel().setNextWriteValue(7331);
+            getWriteLeafletConfigChannel().setNextWriteValue(1337);
             this.configFlag = true;
         } catch (OpenemsError.OpenemsNamedException ignored) {
             this.log.error("Error in enterConfigMode");
@@ -1061,7 +1064,7 @@ public class LeafletCoreImpl extends AbstractOpenemsModbusComponent implements O
      */
     private void exitConfigMode() {
         try {
-            getWriteLeafletConfigChannel().setNextWriteValue(1337);
+            getWriteLeafletConfigChannel().setNextWriteValue(7331);
             this.configFlag = false;
         } catch (OpenemsError.OpenemsNamedException ignored) {
             this.log.error("Error in exitConfigMode");
