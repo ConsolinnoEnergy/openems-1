@@ -90,7 +90,7 @@ public class AsymmetricChannelManager extends AbstractChannelListenerManager {
         if (minuendChannel.getNextValue().isDefined()) {
             int result = minuendChannel.getNextValue().get() - subtract;
             IntegerReadChannel parentChannel = this.parent.channel(channel);
-            parentChannel.setNextValue(result);
+            parentChannel.setNextValue(result * -1);
         }
     }
 

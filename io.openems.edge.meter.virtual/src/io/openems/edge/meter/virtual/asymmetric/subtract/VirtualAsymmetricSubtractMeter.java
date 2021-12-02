@@ -99,7 +99,7 @@ public class VirtualAsymmetricSubtractMeter extends AbstractOpenemsComponent
 
     @Override
     public String debugLog() {
-        return "L:" + this.getActivePower().asString();
+        return "L:" + this.getActivePower().orElse(0) * -1;
     }
 
     @Override
@@ -109,7 +109,6 @@ public class VirtualAsymmetricSubtractMeter extends AbstractOpenemsComponent
                 AsymmetricMeter.getModbusSlaveNatureTable(accessMode) //
         );
     }
-
 
 
     @Override
