@@ -149,7 +149,7 @@ public class DefaultConfigurationWorker extends ComponentManagerWorker {
                 this.createConfiguration(defaultConfigurationFailed, "Consolinno.Leaflet.Configurator", Arrays.asList(//
                         new Property("id", "LeafletCore"), //
                         new Property("alias", ""), //
-                        new Property("source", "/usr/include/leaflet/modbusregmap.csv"), //
+                        new Property("source", "/usr/include/leafletbs/modbusregmap.csv"), //
                         new Property("enabled", true), //
                         new Property("modbusUnitId", 1),
                         new Property("modbusBridgeId", "modbus0")

@@ -97,6 +97,13 @@ public class LeafletCoreImpl extends AbstractOpenemsModbusComponent implements O
     private int aioConfigFive = 0;
     private int aioConfigSix = 0;
     private int aioConfigSeven = 0;
+    private int aioConfigRegisterOne;
+    private int aioConfigRegisterTwo;
+    private int aioConfigRegisterThree;
+    private int aioConfigRegisterFour;
+    private int aioConfigRegisterFive;
+    private int aioConfigRegisterSix;
+    private int aioConfigRegisterSeven;
     //leafletModule_x are Binary Representations of the Decimal ModuleNumber
     private static final int LEAFLET_MODULE_ONE = 1;
     private static final int LEAFLET_MODULE_TWO = 2;
@@ -143,6 +150,7 @@ public class LeafletCoreImpl extends AbstractOpenemsModbusComponent implements O
             //Sets the Register variables for the Configuration
             this.createRelayInverseRegisterArray();
             this.setPwmConfigurationAddresses();
+            this.setAioConfigurationAddresses();
             super.activate(context, config.id(), config.alias(), config.enabled(), config.modbusUnitId(), this.cm,
                     "Modbus", config.modbusBridgeId());
         } else {
@@ -355,6 +363,35 @@ public class LeafletCoreImpl extends AbstractOpenemsModbusComponent implements O
                             m(LeafletCore.ChannelId.WRITE_PWM_FREQUENCY_EIGHT,
                                     new UnsignedWordElement(this.pwmConfigRegisterEight),
                                     ElementToChannelConverter.DIRECT_1_TO_1)),
+                    //AIO Configuration
+                    new FC6WriteRegisterTask(this.aioConfigRegisterOne,
+                            m(LeafletCore.ChannelId.WRITE_AIO_CONFIG_ONE,
+                                    new SignedWordElement(this.aioConfigRegisterOne),
+                                    ElementToChannelConverter.DIRECT_1_TO_1)),
+                    new FC6WriteRegisterTask(this.aioConfigRegisterTwo,
+                            m(LeafletCore.ChannelId.WRITE_AIO_CONFIG_TWO,
+                                    new UnsignedWordElement(this.aioConfigRegisterTwo),
+                                    ElementToChannelConverter.DIRECT_1_TO_1)),
+                    new FC6WriteRegisterTask(this.aioConfigRegisterThree,
+                            m(LeafletCore.ChannelId.WRITE_AIO_CONFIG_THREE,
+                                    new UnsignedWordElement(this.aioConfigRegisterThree),
+                                    ElementToChannelConverter.DIRECT_1_TO_1)),
+                    new FC6WriteRegisterTask(this.aioConfigRegisterFour,
+                            m(LeafletCore.ChannelId.WRITE_AIO_CONFIG_FOUR,
+                                    new UnsignedWordElement(this.aioConfigRegisterFour),
+                                    ElementToChannelConverter.DIRECT_1_TO_1)),
+                    new FC6WriteRegisterTask(this.aioConfigRegisterFive,
+                            m(LeafletCore.ChannelId.WRITE_AIO_CONFIG_FIVE,
+                                    new SignedWordElement(this.aioConfigRegisterFive),
+                                    ElementToChannelConverter.DIRECT_1_TO_1)),
+                    new FC6WriteRegisterTask(this.aioConfigRegisterSix,
+                            m(LeafletCore.ChannelId.WRITE_AIO_CONFIG_SIX,
+                                    new UnsignedWordElement(this.aioConfigRegisterSix),
+                                    ElementToChannelConverter.DIRECT_1_TO_1)),
+                    new FC6WriteRegisterTask(this.aioConfigRegisterSeven,
+                            m(LeafletCore.ChannelId.WRITE_AIO_CONFIG_SEVEN,
+                                    new UnsignedWordElement(this.aioConfigRegisterSeven),
+                                    ElementToChannelConverter.DIRECT_1_TO_1)),
 
                     new FC3ReadRegistersTask(this.pwmConfigRegisterOne, Priority.LOW,
                             m(LeafletCore.ChannelId.READ_PWM_FREQUENCY_ONE,
@@ -389,6 +426,34 @@ public class LeafletCoreImpl extends AbstractOpenemsModbusComponent implements O
                                     new UnsignedWordElement(this.pwmConfigRegisterEight),
                                     ElementToChannelConverter.DIRECT_1_TO_1)),
 
+                    new FC3ReadRegistersTask(this.aioConfigRegisterOne, Priority.LOW,
+                            m(LeafletCore.ChannelId.READ_AIO_CONFIG_ONE,
+                                    new SignedWordElement(this.aioConfigRegisterOne),
+                                    ElementToChannelConverter.DIRECT_1_TO_1)),
+                    new FC3ReadRegistersTask(this.aioConfigRegisterTwo, Priority.LOW,
+                            m(LeafletCore.ChannelId.READ_AIO_CONFIG_TWO,
+                                    new UnsignedWordElement(this.aioConfigRegisterTwo),
+                                    ElementToChannelConverter.DIRECT_1_TO_1)),
+                    new FC3ReadRegistersTask(this.aioConfigRegisterThree, Priority.LOW,
+                            m(LeafletCore.ChannelId.READ_AIO_CONFIG_THREE,
+                                    new UnsignedWordElement(this.aioConfigRegisterThree),
+                                    ElementToChannelConverter.DIRECT_1_TO_1)),
+                    new FC3ReadRegistersTask(this.aioConfigRegisterFour, Priority.LOW,
+                            m(LeafletCore.ChannelId.READ_AIO_CONFIG_FOUR,
+                                    new UnsignedWordElement(this.aioConfigRegisterFour),
+                                    ElementToChannelConverter.DIRECT_1_TO_1)),
+                    new FC3ReadRegistersTask(this.aioConfigRegisterFive, Priority.LOW,
+                            m(LeafletCore.ChannelId.READ_AIO_CONFIG_FIVE,
+                                    new SignedWordElement(this.aioConfigRegisterFive),
+                                    ElementToChannelConverter.DIRECT_1_TO_1)),
+                    new FC3ReadRegistersTask(this.aioConfigRegisterSix, Priority.LOW,
+                            m(LeafletCore.ChannelId.READ_AIO_CONFIG_SIX,
+                                    new UnsignedWordElement(this.aioConfigRegisterSix),
+                                    ElementToChannelConverter.DIRECT_1_TO_1)),
+                    new FC3ReadRegistersTask(this.aioConfigRegisterSeven, Priority.LOW,
+                            m(LeafletCore.ChannelId.READ_AIO_CONFIG_SEVEN,
+                                    new UnsignedWordElement(this.aioConfigRegisterSeven),
+                                    ElementToChannelConverter.DIRECT_1_TO_1)),
 
                     new FC3ReadRegistersTask(this.relayInverseRegisters[0], Priority.LOW,
                             m(LeafletCore.ChannelId.READ_RELAY_ONE_INVERT_STATUS,
@@ -1046,6 +1111,19 @@ public class LeafletCoreImpl extends AbstractOpenemsModbusComponent implements O
     }
 
     /**
+     * Stores the aioConfig Register in a local variable.
+     */
+    private void setAioConfigurationAddresses() {
+        this.aioConfigRegisterOne = this.getConfigurationAddress(ModuleType.AIO, 1);
+        this.aioConfigRegisterTwo = this.getConfigurationAddress(ModuleType.AIO, 2);
+        this.aioConfigRegisterThree = this.getConfigurationAddress(ModuleType.AIO, 3);
+        this.aioConfigRegisterFour = this.getConfigurationAddress(ModuleType.AIO, 4);
+        this.aioConfigRegisterFive = this.getConfigurationAddress(ModuleType.AIO, 5);
+        this.aioConfigRegisterSix = this.getConfigurationAddress(ModuleType.AIO, 6);
+        this.aioConfigRegisterSeven = this.getConfigurationAddress(ModuleType.AIO, 7);
+    }
+
+    /**
      * Checks if we are still in Config mode and the Configuration has already taken place.
      *
      * @param event BEFORE_PROCESS_IMAGE
@@ -1054,7 +1132,7 @@ public class LeafletCoreImpl extends AbstractOpenemsModbusComponent implements O
     public void handleEvent(Event event) {
         if (this.configFlag && (getReadAioConfig() == (this.aioConfigOne | this.aioConfigTwo | this.aioConfigThree
                 | this.aioConfigFour | this.aioConfigFive | this.aioConfigSix | this.aioConfigSeven))) {
-            this.exitConfigMode();
+  //          this.exitConfigMode();
         }
 
     }
