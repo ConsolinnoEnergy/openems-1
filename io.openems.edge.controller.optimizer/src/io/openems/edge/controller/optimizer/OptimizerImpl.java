@@ -211,7 +211,9 @@ public class OptimizerImpl extends AbstractOpenemsComponent implements OpenemsCo
                         this.fallback = false;
                     }
                     List<List<String>> channelIdAndValues = this.getChannelIdsAndValues(activeJsonTask, this.minTime);
-                    this.executeActiveTask(channelIdAndValues);
+                    if (channelIdAndValues != null) {
+                        this.executeActiveTask(channelIdAndValues);
+                    }
 
                 }
             }
@@ -386,6 +388,9 @@ public class OptimizerImpl extends AbstractOpenemsComponent implements OpenemsCo
         String timeStamp = minTime + "";
         if (timeStamp.equals("0")) {
             timeStamp = "000";
+        }
+        if (!activeJsonTask.getAsJsonObject().has(timeStamp)) {
+            return null;
         }
         int activeSize = activeJsonTask.getAsJsonObject().get(timeStamp).getAsJsonArray().size();
         for (int i = 0; i < activeSize; i++) {

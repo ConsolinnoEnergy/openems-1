@@ -241,7 +241,7 @@ public class TypeUtils {
 
 			} else if (value instanceof Double) {
 				double doubleValue = (Double) value;
-				if (doubleValue >= Float.MIN_VALUE && doubleValue <= Float.MAX_VALUE) {
+				if ((doubleValue >= Float.MIN_VALUE && doubleValue <= Float.MAX_VALUE) || doubleValue == 0.0d) {
 					return (T) (Float) Float.valueOf((float) doubleValue);
 				} else {
 					throw new IllegalArgumentException(
