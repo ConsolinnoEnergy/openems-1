@@ -99,7 +99,7 @@ public class VirtualAsymmetricSubtractMeter extends AbstractOpenemsComponent
 
     @Override
     public String debugLog() {
-        return "L:" + this.getActivePower().orElse(0) * -1;
+        return "L:" + this.getActivePower().orElse(0);
     }
 
     @Override
