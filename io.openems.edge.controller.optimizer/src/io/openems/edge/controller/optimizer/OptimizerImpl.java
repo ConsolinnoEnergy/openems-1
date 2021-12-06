@@ -329,7 +329,11 @@ public class OptimizerImpl extends AbstractOpenemsComponent implements OpenemsCo
                             case BOOLEAN:
                                 //enable_signal have to be treated differently
                                 if (channelAddress.toString().contains("EnableSignal")) {
-                                    if (value.equals("true") || value.equals("1")) {
+                                    boolean setEnable = true;
+                                    if (values.size() == 2) {
+                                        setEnable = !values.get(1).startsWith("0");
+                                    }
+                                    if (setEnable && value.equals("true") || value.equals("1") ) {
                                         ((WriteChannel<Boolean>) writeChannel).setNextWriteValue(true);
                                     }
                                 } else {
