@@ -29,22 +29,26 @@ public class AsymmetricChannelManager extends AbstractChannelListenerManager {
      * @param subtrahends the Subtrahend Components
      */
     protected void activate(OpenemsComponent minuend, List<OpenemsComponent> subtrahends) {
-        // Minuend
-        if (minuend instanceof AsymmetricMeter) {
-            // OK
-        } else {
-            throw new IllegalArgumentException("Minuend [" + minuend.id() + "] is neither a Meter nor a ESS");
-        }
-
-        // Subtrahends
-        for (OpenemsComponent subtrahend : subtrahends) {
-            if (subtrahend instanceof AsymmetricMeter) {
+        try {
+            // Minuend
+            if (minuend instanceof AsymmetricMeter) {
                 // OK
             } else {
-                throw new IllegalArgumentException("Subtrahend [" + subtrahend.id() + "] is neither a Meter nor a ESS");
+                throw new IllegalArgumentException("Minuend [" + minuend.id() + "] is neither a Meter nor a ESS");
             }
-        }
 
+            // Subtrahends
+            for (OpenemsComponent subtrahend : subtrahends) {
+                if (subtrahend instanceof AsymmetricMeter) {
+                    // OK
+                } else {
+                    throw new IllegalArgumentException("Subtrahend [" + subtrahend.id() + "] is neither a Meter nor a ESS");
+                }
+            }
+            this.handle(minuend, subtrahends);
+        } catch (Exception e) {
+        }
+        /*
         this.activateSubtractInteger(minuend, subtrahends, AsymmetricMeter.ChannelId.ACTIVE_POWER_L1);
         this.activateSubtractInteger(minuend, subtrahends, AsymmetricMeter.ChannelId.ACTIVE_POWER_L2);
         this.activateSubtractInteger(minuend, subtrahends, AsymmetricMeter.ChannelId.ACTIVE_POWER_L3);
@@ -53,8 +57,43 @@ public class AsymmetricChannelManager extends AbstractChannelListenerManager {
         this.activateSubtractInteger(minuend, subtrahends, AsymmetricMeter.ChannelId.REACTIVE_POWER_L2);
         this.activateSubtractInteger(minuend, subtrahends, AsymmetricMeter.ChannelId.REACTIVE_POWER_L3);
         //this.parent._setActivePower(this.parent.getActivePowerL1().orElse(0) + this.parent.getActivePowerL2().orElse(0) + this.parent.getActivePowerL3().orElse(0));
-
+         */
     }
+
+    void handle(OpenemsComponent minuend, List<OpenemsComponent> subtrahends) {
+        try {
+            if (minuend instanceof AsymmetricMeter && subtrahends.stream().findAny().isPresent()) {
+                this.subtract(minuend, subtrahends, "ActivePower");
+                this.subtract(minuend, subtrahends, "ActivePowerL1");
+                this.subtract(minuend, subtrahends, "ActivePowerL2");
+                this.subtract(minuend, subtrahends, "ActivePowerL3");
+                this.subtract(minuend, subtrahends, "ReactivePowerL3");
+                this.subtract(minuend, subtrahends, "ReactivePowerL3");
+                this.subtract(minuend, subtrahends, "ReactivePowerL3");
+            }
+        } catch (Exception e) {
+
+        }
+    }
+
+    private void subtract(OpenemsComponent minuend, List<OpenemsComponent> subtrahends, String channel) {
+        // Minuend
+        IntegerReadChannel minuendChannel = ((AsymmetricMeter) minuend).channel(channel);
+
+        int subtract = 0;
+        for (OpenemsComponent subtrahend : subtrahends) {
+            if (subtrahend instanceof AsymmetricMeter) {
+                IntegerReadChannel sub = ((AsymmetricMeter) subtrahend).channel(channel);
+                subtract += sub.getNextValue().orElse(0);
+            }
+        }
+        if (minuendChannel.getNextValue().isDefined()) {
+            int result = minuendChannel.getNextValue().get() - subtract;
+            IntegerReadChannel parentChannel = this.parent.channel(channel);
+            parentChannel.setNextValue(result);
+        }
+    }
+
 
     private void activateSubtractInteger(OpenemsComponent minuend, List<OpenemsComponent> subtrahends,
                                          AsymmetricMeter.ChannelId meterChannelId) {

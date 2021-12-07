@@ -40,13 +40,13 @@ import org.osgi.service.metatype.annotations.Designate;
 
 import java.util.Arrays;
 
-
-@Designate(ocd = Config.class, factory = true)
-@Component(name = "SchneiderImpl", immediate = true,
-        configurationPolicy = ConfigurationPolicy.REQUIRE, property = EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE)
 /**
  * This Provides the Schneider EVCS Modbus TCP implementation.
  */
+@Designate(ocd = Config.class, factory = true)
+@Component(name = "SchneiderImpl", immediate = true,
+        configurationPolicy = ConfigurationPolicy.REQUIRE, property = EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE)
+
 public class SchneiderImpl extends AbstractOpenemsModbusComponent implements OpenemsComponent, ManagedEvcs, Schneider, Evcs, EventHandler {
 
     @Reference
@@ -89,6 +89,11 @@ public class SchneiderImpl extends AbstractOpenemsModbusComponent implements Ope
         this._setMinimumPower(this.minPower * 230);
         this.readHandler = new SchneiderReadHandler(this);
         this.writeHandler = new SchneiderWriteHandler(this);
+        try {
+            this.setRemoteCommand(RemoteCommand.RESTART_CHARGING);
+        } catch (OpenemsError.OpenemsNamedException ignored) {
+            //
+        }
     }
 
     @Deactivate
@@ -248,17 +253,23 @@ public class SchneiderImpl extends AbstractOpenemsModbusComponent implements Ope
         this.writeHandler.run();
 
         try {
-            if (this.getSetChargePowerLimit().isDefined() && this.getSetChargePowerLimit().get() <= 6 * 230 && !this.getStatus().equals(Status.CHARGING)) {
-                this.setChargePowerLimit(6 * 230);
-            }
-        } catch (OpenemsError.OpenemsNamedException e) {
-        }
-
-
-        try {
             this.readHandler.run();
         } catch (Throwable throwable) {
+            //
+        }
+        //TODO: this should be unnecessary in theory because the Limiter is doing this already but it doesn't work for some reason, or at least not always
+        try {
+            if (this.getSetMaxIntensitySocket() <= 6 * 230 && !this.getStatus().equals(Status.CHARGING)) {
+                this.setChargePowerLimit(6 * 230);
+            }
+            /*
+            if (this.getPhases().orElse(0) == 1) {
+                this.setChargePowerLimit(16 * 230);
+            }
 
+             */
+        } catch (OpenemsError.OpenemsNamedException e) {
+            //
         }
     }
 

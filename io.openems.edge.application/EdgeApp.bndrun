@@ -136,6 +136,7 @@
 	bnd.identity;id='io.openems.edge.evcs.ocpp.common',\
 	bnd.identity;id='io.openems.edge.evcs.ocpp.ies.keywatt.singleccs',\
 	bnd.identity;id='io.openems.edge.evcs.ocpp.server',\
+	bnd.identity;id='io.openems.edge.evcs.simulator',\
 	bnd.identity;id='io.openems.edge.exceptionalstate.api,\
 	bnd.identity;id='io.openems.edge.evcs.schneider',\
 	bnd.identity;id='io.openems.edge.evcs.wallbe',\
@@ -198,7 +199,7 @@
 	bnd.identity;id='io.openems.edge.sensor',\
 	bnd.identity;id='io.openems.edge.simulator',\
 	bnd.identity;id='io.openems.edge.solaredge',\
-	bnd.identity;id='io.openems.edge.storage,\
+	bnd.identity;id='io.openems.edge.storage',\
 	bnd.identity;id='io.openems.edge.tesla.powerwall2',\
 	bnd.identity;id='io.openems.edge.thermometer.modbus',\
 	bnd.identity;id='io.openems.edge.thermometer.threshold',\
@@ -326,6 +327,7 @@
 	io.openems.edge.evcs.ocpp.common;version=snapshot,\
 	io.openems.edge.evcs.ocpp.ies.keywatt.singleccs;version=snapshot,\
 	io.openems.edge.evcs.ocpp.server;version=snapshot,\
+	io.openems.edge.evcs.simulator;version=snapshot,\
 	io.openems.edge.evcs.schneider;version=snapshot,\
 	io.openems.edge.evcs.wallbe;version=latest,\
 	io.openems.edge.exceptionalstate.api;version=snapshot,\

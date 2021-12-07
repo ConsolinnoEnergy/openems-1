@@ -1,6 +1,7 @@
 package io.openems.edge.consolinno.evcs.limiter;
 
 import io.openems.edge.common.test.AbstractComponentConfig;
+import io.openems.edge.evcs.api.GridVoltage;
 
 
 @SuppressWarnings("all")
@@ -10,14 +11,15 @@ public class MyConfig extends AbstractComponentConfig implements Config {
 
     protected static class Builder {
 
-        public String[] evcss;
-        public boolean useMeter;
-        public String meter;
-        public boolean symmetry;
-        public int offTime;
-        public int phaseLimit;
-        public int powerLimit;
-        public int priorityCurrent;
+        private String[] evcss;
+        private boolean useMeter;
+        private String meter;
+        private boolean symmetry;
+        private int offTime;
+        private int phaseLimit;
+        private int powerLimit;
+        private int priorityCurrent;
+        private GridVoltage grid;
         private String id;
         private String alias;
         private boolean enabled = true;
@@ -76,6 +78,11 @@ public class MyConfig extends AbstractComponentConfig implements Config {
             return this;
         }
 
+        public Builder setGrid(GridVoltage grid) {
+            this.grid = grid;
+            return this;
+        }
+
         public MyConfig build() {
             return new MyConfig(this);
         }
@@ -101,6 +108,11 @@ public class MyConfig extends AbstractComponentConfig implements Config {
     @Override
     public boolean enabled() {
         return this.builder.enabled;
+    }
+
+    @Override
+    public GridVoltage grid() {
+        return this.builder.grid;
     }
 
     @Override

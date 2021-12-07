@@ -140,7 +140,7 @@ public class EvcsGridMeter extends AbstractOpenemsComponent
         } else {
             try {
                 this.limiter = this.cpm.getComponent(this.limiterId);
-            } catch (OpenemsError.OpenemsNamedException ignored) {
+            } catch (Exception ignored) {
 
             }
         }
