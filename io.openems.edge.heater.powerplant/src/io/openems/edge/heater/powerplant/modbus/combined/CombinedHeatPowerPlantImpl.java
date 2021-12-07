@@ -287,39 +287,39 @@ public class CombinedHeatPowerPlantImpl extends AbstractGenericModbusComponent i
                     this.log.warn("Couldn't set chosen Channel Value to 0");
                 }
             }
-            this.handleChannelUpdate(writeToThis, chosenChannel);
+            this.handleChannelWriteFromOriginalToModbus(writeToThis, chosenChannel);
         }
     }
 
-    private boolean handleEnableSignal(WriteChannel<?> choosenChannel) {
-        Optional<?> choosenChannelOptional = choosenChannel.getNextWriteValue();
-        Object choosenChannelValue = null;
+    private boolean handleEnableSignal(WriteChannel<?> chosenChannel) {
+        Optional<?> choosenChannelOptional = chosenChannel.getNextWriteValue();
+        Object chosenChannelValue = null;
         int value = 0;
         if (choosenChannelOptional.isPresent()) {
-            choosenChannelValue = choosenChannelOptional.get();
+            chosenChannelValue = choosenChannelOptional.get();
 
-            switch (choosenChannel.getType()) {
+            switch (chosenChannel.getType()) {
 
                 case BOOLEAN:
-                    value = (Boolean) choosenChannelValue ? this.config.defaultEnableSignalValue() : this.config.defaultDisableSignalValue();
+                    value = (Boolean) chosenChannelValue ? this.config.defaultEnableSignalValue() : this.config.defaultDisableSignalValue();
                     break;
                 case SHORT:
-                    value = (Short) choosenChannelValue;
+                    value = (Short) chosenChannelValue;
                     break;
                 case INTEGER:
-                    value = (Integer) choosenChannelValue;
+                    value = (Integer) chosenChannelValue;
                     break;
                 case LONG:
-                    value = ((Long) choosenChannelValue).intValue();
+                    value = ((Long) chosenChannelValue).intValue();
                     break;
                 case FLOAT:
-                    value = ((Float) choosenChannelValue).intValue();
+                    value = ((Float) chosenChannelValue).intValue();
                     break;
                 case DOUBLE:
-                    value = ((Double) choosenChannelValue).intValue();
+                    value = ((Double) chosenChannelValue).intValue();
                     break;
                 case STRING:
-                    value = Integer.parseInt((String) choosenChannelValue);
+                    value = Integer.parseInt((String) chosenChannelValue);
                     break;
             }
         }
