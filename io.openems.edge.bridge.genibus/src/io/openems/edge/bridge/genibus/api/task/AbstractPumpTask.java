@@ -23,7 +23,6 @@ public abstract class AbstractPumpTask implements GenibusTask {
     int zeroScaleFactor;
     int rangeScaleFactor;
     private boolean informationAvailable = false;
-    boolean wasAdded;
     PumpDevice pumpDevice;
     final int dataByteSize;
     private int apduIdentifier;
@@ -110,6 +109,9 @@ public abstract class AbstractPumpTask implements GenibusTask {
         }
         if (this.genibusUnitIndex > 0) {
             this.unitString = this.unitTable.getInformationData().get(this.genibusUnitIndex);
+            if (this.unitString.length() == 0) {
+                this.unitString = "not yet supported";
+            }
             this.genibusUnitFactor = this.unitTable.getGenibusUnitFactor(this.genibusUnitIndex);
         }
 

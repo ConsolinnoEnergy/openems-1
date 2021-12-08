@@ -90,72 +90,55 @@ public enum UnitTable {
                 case "m":   // <- this is the pressure unit ’water head’, m = bar/10
                 case "Ampere*0.1":
                 case "0.1*m³/h":
-                case "10%":
+                case "0.1%":
                     genibusUnitFactor = 0.1;
                     break;
-
                 case "Kelvin/100":
                 case "diff-Kelvin/100":
                 case "bar/100":
                 case "m/10":
                 case "kPa":
                 case "0.01*Hz":
-                case "1%":
+                case "0.01%":
                     genibusUnitFactor = 0.01;
                     break;
-
                 case "bar/1000":
                 case "m/100":
-                case "0.1%":
                     genibusUnitFactor = 0.001;
                     break;
-
-                case "0.01%":
-                    genibusUnitFactor = 0.0001;
-                    break;
-
                 case "ppm":
                 case "m/10000":
                     genibusUnitFactor = 0.000001;
                     break;
-
                 case "psi":
                     genibusUnitFactor = 0.06895;
                     break;
-
                 case "psi*10":
                     genibusUnitFactor = 0.6895;
                     break;
-
                 case "2*Hz":
                     genibusUnitFactor = 2.0;
                     break;
-
                 case "2.5*Hz":
                     genibusUnitFactor = 2.5;
                     break;
-
                 case "5*m³/h":
                     genibusUnitFactor = 5.0;
                     break;
-
                 case "Watt*10":
                 case "10*m³/h":
+                case "10%":
                     genibusUnitFactor = 10.0;
                     break;
-
                 case "Watt*100":
                     genibusUnitFactor = 100.0;
                     break;
-
                 case "kW":
                     genibusUnitFactor = 1000.0;
                     break;
-
                 case "kW*10":
                     genibusUnitFactor = 10000.0;
                     break;
-
                 case "Celsius":
                 case "Fahrenheit":
                 case "Kelvin":
@@ -165,6 +148,7 @@ public enum UnitTable {
                 case "m*10":
                 case "m³/h":
                 case "Hz":
+                case "1%":
                 default:
                     genibusUnitFactor = 1.0;
             }

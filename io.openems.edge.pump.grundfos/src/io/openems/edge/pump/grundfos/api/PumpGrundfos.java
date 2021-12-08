@@ -346,6 +346,7 @@ public interface PumpGrundfos extends OpenemsComponent {
         //WRITE//
 
         // config params //
+
         /**
          * Pump rotation frequency f_upper. Maximum frequency, hardware limit.
          * <ul>
@@ -474,6 +475,7 @@ public interface PumpGrundfos extends OpenemsComponent {
         SET_PUMP_MAX_FLOW(Doc.of(OpenemsType.DOUBLE).unit(Unit.CUBICMETER_PER_HOUR).accessMode(AccessMode.READ_WRITE)),
 
         // Sensor configuration
+
         /**
          * Analogue input 1 function. Enum with values 0-3.
          * 0: Not active
@@ -580,6 +582,7 @@ public interface PumpGrundfos extends OpenemsComponent {
         H_RANGE(Doc.of(OpenemsType.DOUBLE).unit(Unit.BAR).accessMode(AccessMode.READ_WRITE)),
 
         // commands //
+
         /**
          * Start the Motor.
          * <ul>
@@ -749,7 +752,7 @@ public interface PumpGrundfos extends OpenemsComponent {
          *        <li> Magna3: 8 bit Reference Values: 5,1 ref_rem
          * </ul>
          * */
-        REF_REM(Doc.of(OpenemsType.DOUBLE).accessMode(AccessMode.READ_WRITE)),
+        REF_REM(Doc.of(OpenemsType.DOUBLE).unit(Unit.PERCENT).accessMode(AccessMode.READ_WRITE)),
 
         // Strings
         /**

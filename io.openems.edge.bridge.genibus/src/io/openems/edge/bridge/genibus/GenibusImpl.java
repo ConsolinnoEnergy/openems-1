@@ -230,21 +230,22 @@ public class GenibusImpl extends AbstractOpenemsComponent implements OpenemsComp
                             //sif on bit 0 and 1
                             int sif = (data[byteCounter] & 0x03);
                             //only 1 byte of data
-                            if (sif == 0 || sif == 1) {
+                            if (sif == 0 || sif == 1) { // No UNIT, ZERO and RANGE for sif 1 and 2, so INFO is just 1 byte.
                                 geniTask.setOneByteInformation(vi, bo, sif);
-                                // Support for 16bit tasks
-                                byteCounter += geniTask.getDataByteSize();
-                                //only 4byte data
-                            } else {
-                                // Multi byte tasks have a 4 byte INFO for the hi byte and 1 byte info for the folllowing lo bytes
-                                if (byteCounter >= data.length - 2 - geniTask.getDataByteSize()) {
+                                // Tasks with more than 8 bit still only need 1 byte INFO.
+                                byteCounter += 1;
+                            } else {    // Full 4 byte INFO
+                                /* Multi byte tasks have a 4 byte INFO for the hi byte and 1 byte info for the following lo bytes.
+                                   However, the INFO for the lo bytes is not needed. It just says it is a lo byte, but we know that already.
+                                   All the information needed is in INFO of the hi byte, so only that is requested. */
+                                if (byteCounter >= data.length - 3) {
                                     this.logWarn(this.log, "Incorrect Data Length to SIF-->prevented Out of Bounds Exception");
                                     break;
                                 }
                                 geniTask.setFourByteInformation(vi, bo, sif,
                                         data[byteCounter + 1], data[byteCounter + 2], data[byteCounter + 3]);
-                                //bc of 4 byte data additional 3 byte incr. (or more for 16+ bit tasks)
-                                byteCounter += 3 + geniTask.getDataByteSize();
+                                // Full INFO is 4 bytes, so increase by 4.
+                                byteCounter += 4;
                             }
                             if (this.debug) {
                                 this.logInfo(this.log, geniTask.printInfo());

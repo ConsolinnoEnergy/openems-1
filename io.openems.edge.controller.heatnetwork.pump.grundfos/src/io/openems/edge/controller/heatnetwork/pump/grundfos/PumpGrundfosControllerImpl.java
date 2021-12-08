@@ -299,7 +299,7 @@ public class PumpGrundfosControllerImpl extends AbstractOpenemsComponent impleme
                                     setFrequencySetpoint().setNextWriteValue(100.0);
                                     setFrequencySetpoint().setNextValue(100.0);
                                 }
-                                this.setpoint = this.frequencySetpoint / 100.0;
+                                this.setpoint = this.frequencySetpoint;
                                 this.pumpChannels.setRefRem().setNextWriteValue(this.setpoint);
                                 break;
                             case CONST_PRESSURE:
@@ -324,9 +324,9 @@ public class PumpGrundfosControllerImpl extends AbstractOpenemsComponent impleme
                                     }
 
                                     // Don't need to convert to 0-254. The GENIbus bridge does that.
-                                    // ref_rem is a percentage value and you write the percentage in the channel. To send 100%, write 1.00
+                                    // ref_rem is a percentage value and you write the percentage in the channel. To send 100%, write 100
                                     // to the channel.
-                                    this.setpoint = (this.pressureSetpoint - intervalHmin) / intervalHrange;
+                                    this.setpoint = 100 * (this.pressureSetpoint - intervalHmin) / intervalHrange;
                                     this.pumpChannels.setRefRem().setNextWriteValue(this.setpoint);
                                 } else {
                                     this.logWarn(this.log, "Can't send pressure setpoint to pump. INFO of pressure "

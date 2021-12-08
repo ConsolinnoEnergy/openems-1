@@ -1,6 +1,5 @@
 package io.openems.edge.bridge.genibus.api.task;
 
-import io.openems.common.channel.Unit;
 import io.openems.edge.common.channel.Channel;
 import io.openems.edge.common.taskmanager.Priority;
 
@@ -10,9 +9,9 @@ import io.openems.edge.common.taskmanager.Priority;
 public class PumpReadTaskAscii extends AbstractPumpTask {
 
     private final Channel<String> channel;
-
     private final Priority priority;
-    private StringBuilder charStorage = new StringBuilder();
+
+    private final StringBuilder charStorage = new StringBuilder();
 
     public PumpReadTaskAscii(int address, int headerNumber, Channel<String> channel, String unitString, Priority priority) {
         super(address, headerNumber, unitString, 1);
@@ -27,7 +26,7 @@ public class PumpReadTaskAscii extends AbstractPumpTask {
             this.charStorage.append(dataInAscii);
         } else {
             this.channel.setNextValue(this.charStorage);
-            this.charStorage.delete(0, this.charStorage.length()-1);
+            this.charStorage.delete(0, this.charStorage.length() - 1);
         }
     }
 

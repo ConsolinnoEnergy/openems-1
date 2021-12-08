@@ -1,7 +1,7 @@
 package io.openems.edge.bridge.genibus.api;
 
 import io.openems.edge.bridge.genibus.api.task.GenibusTask;
-import io.openems.edge.bridge.genibus.api.task.GenibusWriteTask;
+import io.openems.edge.bridge.genibus.api.task.HeadClass4and5;
 import io.openems.edge.common.taskmanager.TasksManager;
 
 import java.util.ArrayList;
@@ -10,9 +10,9 @@ import java.util.List;
 public class PumpDevice {
 
     /**
-     * The Parent component.
+     * The Parent device id.
      */
-    private final String pumpDeviceId;
+    private final String parentDeviceId;
 
     /**
      * TaskManager that contains all tasks.
@@ -58,11 +58,12 @@ public class PumpDevice {
     /* Address for the task from which pressure sensor INFO is collected to calculate the above values.
        For pumps MGE and Magna 37 works (= h (2, 37)). For Magna also 23 works (= h_diff (2, 23)). */
     private int pressureSensorTaskAddress;
+    private String warningMessage;
 
-    public PumpDevice(String deviceId, int genibusAddress, int pressureSensorTaskAddress, int lowPrioTasksPerCycle, GenibusTask... tasks) {
+    public PumpDevice(String parentDeviceId, int genibusAddress, int pressureSensorTaskAddress, int lowPrioTasksPerCycle, GenibusTask... tasks) {
         this.genibusAddress = genibusAddress;
         this.pressureSensorTaskAddress = pressureSensorTaskAddress;
-        this.pumpDeviceId = deviceId;
+        this.parentDeviceId = parentDeviceId;
         this.lowPrioTasksPerCycle = lowPrioTasksPerCycle;
         for (GenibusTask task : tasks) {
             this.addTask(task);
@@ -154,7 +155,7 @@ public class PumpDevice {
      * @return the pump device id.
      */
     public String getPumpDeviceId() {
-        return this.pumpDeviceId;
+        return this.parentDeviceId;
     }
 
     /**
@@ -362,8 +363,8 @@ public class PumpDevice {
     public void resetDevice() {
         this.taskManager.getAllTasks().forEach(task -> {
             task.resetInfo();
-            if (task instanceof GenibusWriteTask) {
-                ((GenibusWriteTask) task).setSendGet(1);
+            if (task instanceof HeadClass4and5) {
+                ((HeadClass4and5) task).setExecuteGet(true);
             }
         });
         this.addAllOnceTasks = true;
@@ -409,5 +410,19 @@ public class PumpDevice {
      */
     public void setTimeoutCounter(int timeoutCounter) {
         this.timeoutCounter = timeoutCounter;
+    }
+
+    public void setWarningMessage(String message) {
+        if (this.warningMessage.equals("")) {
+            this.warningMessage = message;
+        } else {
+            this.warningMessage = this.warningMessage + " " + message;
+        }
+    }
+
+    public String getAndClearWarningMessage() {
+        String returnMessage = this.warningMessage;
+        this.warningMessage = "";
+        return returnMessage;
     }
 }

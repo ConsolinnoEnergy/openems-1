@@ -9,20 +9,42 @@ import io.openems.edge.common.taskmanager.ManagedTask;
  */
 public interface GenibusTask extends ManagedTask {
 
+    int NO_SET_AVAILABLE = -1;
+
     /**
-     * This method is used to see if this task has a SET to send, as well as to get the value of a SET. This is tied to
-     * the contents of the associated write channel. If "nextWrite" of the channel is empty/false, the method returns
-     * "nothing to write" (-1 or -256).
-     * The point of "clearChannel" is then to tell the task that it has been added to a telegram (with SET) and the
-     * command is executed. The channel is cleared and further getRequests will return "nothing to write", until
-     * something is written in the channel again.
+     * This method is for write tasks. It is used to see if this task has a SET to send (use ’byteNumber = 0’), as well
+     * as to get the unsigned byte value of a SET. Since Java does not have unsigned bytes, the return value is an int
+     * of value 0 to 255. The return value ’-1’ means ’no SET available’ or ’not a write task’.
+     * If a SET is available depends on the associated write channel. If ’nextWrite’ of the channel is empty (or ’false’
+     * in case of a boolean channel), the method returns ’no SET available’.
+     * If a SET is available, this method will return the SET as a byte. For tasks with more than one byte, the
+     * parameter ’byteNumber’ (0 = hi) is used to collect the different bytes. The number of bytes a task has is
+     * available with ’getDataByteSize()’.
      *
-     * @param byteCounter how many bytes this task has.
-     * @param clearChannel mark the task as executed or not.
-     * @return the value of the SET if available, -1 or -256 otherwise.
+     * @param byteNumber which byte of SET to return. When testing if a SET is available, put 0.
+     * @return the byte value of the SET if available, ’NO_SET_AVAILABLE’ otherwise.
      */
-    default int getRequest(int byteCounter, boolean clearChannel) {
-        return -1;
+    default int getByteIfSetAvailable(int byteNumber) {
+        return NO_SET_AVAILABLE;
+    }
+
+    /**
+     * Returns if this task has a SET available.
+     *
+     * @return if a SET is available.
+     */
+    default boolean isSetAvailable() {
+        return false;
+    }
+
+    /**
+     * This method is for write tasks. Should be executed after a SET has been added to an APDU.
+     * Clears the ’nextWrite’ of the write channel associated with this task, so the
+     * value is sent just once. Also, if applicable, marks this task as ’get value from Genibus’, so the channel is
+     * updated to the new value.
+     */
+    default void clearNextWriteAndUpdateChannel() {
+
     }
 
     /**

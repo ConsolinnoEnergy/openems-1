@@ -179,13 +179,21 @@ public class PumpGrundfosImpl extends AbstractOpenemsComponent implements Openem
      * - Headclass 2:           high or low.
      * - Headclass 3, 4 and 5:  high.</p>
      *
-     * <p>Tasks with more than 8 bit are handled as one task using "PumpReadTask16bitOrMore()" and "PumpWriteTask16bitOrMore()".
-     * The address to put is the one of the "hi" value. The "low" values are always on the consecutive addresses. You also
-     * need to specify how many bytes the task has (16 bit = 2 bytes, 24 bit = 3 bytes, 32 bit = 4 bytes). The byte
-     * number is equivalent to the number of addresses a task has (two addresses = one hi, one low; means 16 bit = 2 bytes).
-     * You can also use "PumpReadTask16bitOrMore()" and "PumpWriteTask16bitOrMore()" for 8 bit tasks by setting the byte
-     * number to 1. "PumpReadTask8bit()" and "PumpWriteTask8bit()" function in that way, they map to the "16bitOrMore"
-     * tasks.</p>
+     * <p>Tasks with more than 8 bit are handled as one task using 'PumpReadTask16bitOrMore()' and 'PumpWriteTask16bitOrMore()'.
+     * The address to put is the one of the 'hi' value. The 'low' values are always on the consecutive addresses. You also
+     * need to specify how many bytes the task has (16 bit = 2 bytes, 24 bit = 3 bytes, 32 bit = 4 bytes). The number of
+     * bytes is equivalent to the number of addresses a task has (two addresses = one hi, one low; means 16 bit = 2 bytes).
+     * Using 'PumpReadTask16bitOrMore()' and 'PumpWriteTask16bitOrMore()' with ’number of bytes = 1’ (=8 bit) is equivalent
+     * to using 'PumpReadTask8bit()' and 'PumpWriteTask8bit()'.</p>
+     *
+     * <p>If the data of a task (read/write) has a unit, the data is automatically converted to the unit of the associated
+     * OpenEMS channel, if one is give. If the channel does not have a unit or the channel unit is incompatible with the
+     * unit transmitted by Genibus, the fallback code is to convert the data to the base unit (bar, °Celsius, watt, etc.)
+     * of the one transmitted by Genibus. There is, however, currently no way to display that unit or an error message.
+     *
+     * representation (bar, °Celsius, watt, etc.). The unit can not be communicated, so it is not advised to
+     * of the associated channel. Data conversion (if applicable) can then only be done correctly if the channel has a unit
+     *      * conventions.
      *
      * <p>Data of a task is automatically converted according to the INFO of the task, but also according to OpenEMS
      * conventions. A pressure reading with unit "m" will be converted to "bar" in the OpenEMS channel. Temperature
@@ -713,6 +721,12 @@ public class PumpGrundfosImpl extends AbstractOpenemsComponent implements Openem
         }
         getWarnMessage().setNextValue(allErrors);
 
+        // Get warning messages related to genibus.
+        String genibusWarningMessage = this.pumpDevice.getAndClearWarningMessage();
+        if (genibusWarningMessage.equals("") == false) {
+            this.logWarn(this.log, genibusWarningMessage);
+        }
+
         if (this.broadcast) {
             boolean signalReceived = isConnectionOk().value().isDefined() && isConnectionOk().value().get();
             this.logInfo(this.log, "--GENIbus broadcast--");
@@ -811,5 +825,4 @@ public class PumpGrundfosImpl extends AbstractOpenemsComponent implements Openem
         */
 
     }
-
 }

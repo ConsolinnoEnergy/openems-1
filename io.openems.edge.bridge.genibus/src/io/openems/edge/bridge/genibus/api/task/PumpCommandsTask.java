@@ -17,23 +17,32 @@ public class PumpCommandsTask extends AbstractPumpTask {
     }
 
     @Override
-    public int getRequest(int byteCounter, boolean clearChannel) {
+    public boolean isSetAvailable() {
+        if (this.channel.getNextWriteValue().isPresent()) {
+            return this.channel.getNextWriteValue().get();
+        } else {
+            return false;
+        }
+    }
+
+    @Override
+    public int getByteIfSetAvailable(int byteCounter) {
         if (this.channel.getNextWriteValue().isPresent()) {
             //for REST
             this.channel.setNextValue(this.channel.getNextWriteValue().get());
             if (this.channel.getNextWriteValue().get()) {
-                // If the command is added to a telegram, reset channel to false to send command only once.
-                if (clearChannel) {
-                    try {
-                        this.channel.setNextWriteValue(false);
-                    } catch (OpenemsError.OpenemsNamedException e) {
-                        e.printStackTrace();
-                    }
-                }
                 return 1;
             }
+        } else {
+            this.channel.setNextValue(false);
         }
-        return 0;
+        return GenibusTask.NO_SET_AVAILABLE;
+    }
+
+    @Override
+    public void clearNextWriteAndUpdateChannel() {
+        // If the write task is added to a telegram, reset channel write to null to send write just once.
+        this.channel.getNextWriteValueAndReset();
     }
 
     @Override
