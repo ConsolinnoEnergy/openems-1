@@ -208,8 +208,8 @@ public class CommunicationMasterControllerImpl extends AbstractOpenemsComponent 
             this.setForceHeating(config.forceHeating());
             this.timer = new TimerHandlerImpl(this.id(), this.cpm);
             this.timer.addOneIdentifier(KEEP_ALIVE_IDENTIFIER, config.timerId(), config.keepAlive());
-            this.timer.addOneIdentifier(config.timerId(), CHECK_REMOTE_REFERENCES_IDENTIFIER, MAX_WAIT_TIME_REFERENCES_CHECK_SECONDS);
-            this.timer.addOneIdentifier(config.timerId(), CHECK_OWN_REFERENCES_IDENTIFIER, MAX_WAIT_TIME_REFERENCES_CHECK_SECONDS);
+            this.timer.addOneIdentifier(CHECK_REMOTE_REFERENCES_IDENTIFIER, config.timerId(), MAX_WAIT_TIME_REFERENCES_CHECK_SECONDS);
+            this.timer.addOneIdentifier(CHECK_OWN_REFERENCES_IDENTIFIER, config.timerId(), MAX_WAIT_TIME_REFERENCES_CHECK_SECONDS);
             this.useExceptionalStateHandling = config.useExceptionalStateHandling();
             if (this.useExceptionalStateHandling) {
                 this.timer.addOneIdentifier(EXCEPTIONAL_STATE_IDENTIFIER, config.timerIdExceptionalState(), config.exceptionalStateTime());
@@ -346,6 +346,19 @@ public class CommunicationMasterControllerImpl extends AbstractOpenemsComponent 
     public void run() {
         if (this.configSucceed) {
             if (this.configurationDone) {
+                if (this.timer.checkTimeIsUp(CHECK_REMOTE_REFERENCES_IDENTIFIER)) {
+                    this.timer.resetTimer(CHECK_REMOTE_REFERENCES_IDENTIFIER);
+                    if (this.communicationController.shouldRefreshReferences(this.cpm)) {
+                        this.configSucceed = false;
+                        return;
+                    }
+                }
+                if (this.timer.checkTimeIsUp(CHECK_OWN_REFERENCES_IDENTIFIER)) {
+                    if (this.checkOwnOptionalReferences()) {
+                        this.timer.resetTimer(CHECK_OWN_REFERENCES_IDENTIFIER);
+                    }
+                }
+
                 //Check if Requests have to be added/removed and if components are still enabled
                 this.checkChangesAndApply();
                 //Connections ok?
@@ -394,6 +407,52 @@ public class CommunicationMasterControllerImpl extends AbstractOpenemsComponent 
         }
     }
 
+    /**
+     * Check if the configured OpenEMS Components are still up to date / references are correct.
+     * Otherwise they will be replaced.
+     *
+     * @return true on success. On Error -> return false.
+     */
+    private boolean checkOwnOptionalReferences() {
+
+
+        try {
+            OpenemsComponent component;
+            String idOfComponent;
+            if (this.config.usePump()) {
+                idOfComponent = this.config.pumpId();
+                component = this.cpm.getComponent(idOfComponent);
+                if (component instanceof HydraulicComponent) {
+                    HydraulicComponent hydraulic = (HydraulicComponent) component;
+                    if (this.heatPump == null) {
+                        this.heatPump = hydraulic;
+                    } else {
+                        if (hydraulic.equals(this.heatPump) == false) {
+                            this.heatPump = hydraulic;
+                        }
+                    }
+                }
+            }
+            if (this.config.useHydraulicLineHeater()) {
+                idOfComponent = this.config.hydraulicLineHeaterId();
+                component = this.cpm.getComponent(idOfComponent);
+                if (component instanceof HydraulicLineController) {
+                    HydraulicLineController newHydraulicLineHeater = (HydraulicLineController) component;
+                    if (this.hydraulicLineController == null) {
+                        this.hydraulicLineController = newHydraulicLineHeater;
+                    } else {
+                        if (newHydraulicLineHeater.equals(this.hydraulicLineController) == false) {
+                            this.hydraulicLineController = newHydraulicLineHeater;
+                        }
+                    }
+                }
+            }
+            return true;
+        } catch (OpenemsError.OpenemsNamedException e) {
+            return false;
+        }
+
+    }
 
     /**
      * Fallback Logic of this controller, depending on the set FallbackLogic.
