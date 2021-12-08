@@ -10,6 +10,7 @@ import io.openems.edge.controller.hydrauliccomponent.api.ControlType;
 import io.openems.edge.controller.hydrauliccomponent.api.HydraulicController;
 import io.openems.edge.heater.api.Cooler;
 import io.openems.edge.heater.api.Heater;
+import io.openems.edge.heater.api.HeaterState;
 import io.openems.edge.thermometer.api.Thermometer;
 import io.openems.edge.thermometer.api.ThermometerThreshold;
 import io.openems.edge.thermometer.api.ThermometerType;
@@ -20,14 +21,12 @@ import io.openems.edge.timer.api.TimerHandler;
 import io.openems.edge.timer.api.TimerHandlerImpl;
 import org.osgi.service.cm.ConfigurationException;
 import org.osgi.service.component.ComponentContext;
-import org.osgi.service.component.annotations.Reference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * The TemperatureSurveillanceController is a Controller that monitors 3 different Temperatures and enables/disables it's
@@ -61,6 +60,7 @@ abstract class AbstractTemperatureSurveillanceController extends AbstractOpenems
     private SurveillanceHeatingType heatingType = SurveillanceHeatingType.HEATING;
     private static final String CHECK_COMPONENTS_IDENTIFIER = "TEMP_SURVEILLANCE_CHECK_COMPONENTS";
     private static final int CHECK_MISSING_COMPONENTS_DELTA_TIME = 60;
+    private boolean disableLogicOnOffline = false;
 
     protected enum SurveillanceHeatingType {
         HEATING, COOLING
@@ -76,13 +76,13 @@ abstract class AbstractTemperatureSurveillanceController extends AbstractOpenems
                             String thermometerActivateId, String thermometerDeactivateId,
                             String referenceThermometerId, SurveillanceHeatingType heatingType, SurveillanceType surveillanceType,
                             int activationOffset, int deactivationOffset, String heaterId, String hydraulicControllerId,
-                            String timerId, int deltaTime, ComponentManager cpm) throws ConfigurationException {
+                            String timerId, int deltaTime, ComponentManager cpm, boolean useDisableLogicOnOffline) throws ConfigurationException {
         super.activate(context, id, alias, enabled);
         this.cpm = cpm;
         this.heatingType = heatingType;
         this.surveillanceType = surveillanceType;
         this.activationOrModifiedRoutine(thermometerActivateId, thermometerDeactivateId, referenceThermometerId,
-                activationOffset, deactivationOffset, heaterId, hydraulicControllerId, timerId, deltaTime
+                activationOffset, deactivationOffset, heaterId, hydraulicControllerId, timerId, deltaTime, useDisableLogicOnOffline
         );
     }
 
@@ -101,12 +101,13 @@ abstract class AbstractTemperatureSurveillanceController extends AbstractOpenems
      * @param hydraulicControllerId   hydraulicControllerId the hydraulicController id.
      * @param timerId                 timerId the timer to stop the time.
      * @param deltaTime               the delta Time -> wait cycles or Time.
+     * @param useDisableLogicOnOffline should an "OFFLINE" state be handled in the Same way as the HeaterState "BlockedOrError"
      * @throws ConfigurationException if the Thermometer id's are duplicated.
      */
     protected void activationOrModifiedRoutine(String thermometerActivateId, String thermometerDeactivateId,
                                                String referenceThermometerId,
                                                int activationOffset, int deactivationOffset, String heaterId,
-                                               String hydraulicControllerId, String timerId, int deltaTime) throws ConfigurationException {
+                                               String hydraulicControllerId, String timerId, int deltaTime, boolean useDisableLogicOnOffline) throws ConfigurationException {
         if (this.configContainsSameThermometerIds(thermometerActivateId, thermometerDeactivateId, referenceThermometerId)) {
             this.configSuccess = false;
             throw new ConfigurationException("Activate - TemperatureSurveillanceController",
@@ -116,6 +117,7 @@ abstract class AbstractTemperatureSurveillanceController extends AbstractOpenems
         try {
             this.allocateComponents(thermometerActivateId, thermometerDeactivateId, referenceThermometerId,
                     activationOffset, deactivationOffset, heaterId, hydraulicControllerId, timerId, deltaTime);
+            this.disableLogicOnOffline = useDisableLogicOnOffline;
             this.configSuccess = true;
         } catch (OpenemsError.OpenemsNamedException | ConfigurationException e) {
             this.log.warn("Couldn't allocate Components, this Controller will try again later " + super.id());
@@ -143,15 +145,15 @@ abstract class AbstractTemperatureSurveillanceController extends AbstractOpenems
                   String thermometerActivateId, String thermometerDeactivateId,
                   String referenceThermometerId, SurveillanceHeatingType heatingType, SurveillanceType surveillanceType,
                   int activationOffset, int deactivationOffset, String heaterId, String hydraulicControllerId,
-                  String timerId, int deltaTime, ComponentManager cpm) throws ConfigurationException {
+                  String timerId, int deltaTime, ComponentManager cpm, boolean useDisableLogicOnOffline) throws ConfigurationException {
         super.modified(context, id, alias, enabled);
         this.cpm = cpm;
         this.configSuccess = false;
         this.heatingType = heatingType;
         this.surveillanceType = surveillanceType;
         this.activationOrModifiedRoutine(thermometerActivateId, thermometerDeactivateId, referenceThermometerId,
-                activationOffset, deactivationOffset, heaterId, hydraulicControllerId, timerId, deltaTime
-        );
+                activationOffset, deactivationOffset, heaterId, hydraulicControllerId, timerId, deltaTime,
+                useDisableLogicOnOffline);
     }
 
     /**
@@ -287,7 +289,7 @@ abstract class AbstractTemperatureSurveillanceController extends AbstractOpenems
         try {
             if (this.configSuccess) {
                 this.checkForMissingComponents();
-                if (this.thermometerWrapper.shouldDeactivate()) {
+                if (this.thermometerWrapper.shouldDeactivate() || this.optionalHeaterHasError()) {
                     this.isRunning = false;
                     this.disableComponents();
                     if (this.surveillanceType.equals(SurveillanceType.HEATER_OR_COOLER_AND_HYDRAULIC_CONTROLLER)) {
@@ -319,6 +321,22 @@ abstract class AbstractTemperatureSurveillanceController extends AbstractOpenems
             }
         } catch (ConfigurationException | OpenemsError.OpenemsNamedException e) {
             this.log.warn("Couldn't set EnableSignal, Write to Channel, or ReadFromChannel Address: " + e.getMessage());
+        }
+    }
+
+    private boolean optionalHeaterHasError() {
+        switch (this.surveillanceType) {
+            case HEATER_OR_COOLER_ONLY:
+            case HEATER_OR_COOLER_AND_HYDRAULIC_CONTROLLER:
+                HeaterState state = this.optionalHeater.getHeaterState().asEnum();
+                if (this.disableLogicOnOffline) {
+                    return state.equals(HeaterState.BLOCKED_OR_ERROR) || state.equals(HeaterState.OFF);
+                }
+                return state.equals(HeaterState.BLOCKED_OR_ERROR);
+            case HYDRAULIC_CONTROLLER_ONLY:
+            case NOTHING:
+            default:
+                return false;
         }
     }
 
