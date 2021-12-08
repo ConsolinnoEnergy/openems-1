@@ -44,6 +44,10 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     @AttributeDefinition(name = "Delta Time Delay HydraulicController Enable", description = "How long to wait unit HydraulicController activates")
     int deltaTimeDelay() default 120;
 
+    @AttributeDefinition(name = "Handle OFFLINE state as \"Blocked or error\"", description = "IF Heater is offline, should the Heater be treated in the same way, as if it was blocked/has an error?"
+            + " If this Controller should activate but an error occurred it will stop it's execution of logic.")
+    boolean disableLogicIfHeaterOffline() default false;
+
     boolean enabled() default true;
 
     String webconsole_configurationFactory_nameHint() default "Controller Temperature Surveillance Heating [{id}]";
