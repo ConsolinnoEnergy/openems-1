@@ -103,6 +103,9 @@ public class CommunicationMasterControllerImpl extends AbstractOpenemsComponent 
     private ExceptionalStateHandler exceptionalStateHandler;
     private static final String KEEP_ALIVE_IDENTIFIER = "COMMUNICATION_MASTER_CONTROLLER_KEEP_ALIVE_IDENTIFIER";
     private static final String EXCEPTIONAL_STATE_IDENTIFIER = "COMMUNICATION_MASTER_CONTROLLER_EXCEPTIONAL_STATE_IDENTIFIER";
+    private static final String CHECK_OWN_REFERENCES_IDENTIFIER = "COMMUNICATION_MASTER_CONTROLLER_OWN_REFERENCES";
+    private static final String CHECK_REMOTE_REFERENCES_IDENTIFIER = "COMMUNICATION_MASTER_CONTROLLER_REMOTE_REFERENCES";
+    private static final int MAX_WAIT_TIME_REFERENCES_CHECK_SECONDS = 300;
     private final Map<RequestType, List<ResponseWrapper>> requestTypeAndResponses = new HashMap<>();
     private final Map<RequestType, AtomicBoolean> requestTypeIsSet = new HashMap<>();
 
@@ -205,6 +208,8 @@ public class CommunicationMasterControllerImpl extends AbstractOpenemsComponent 
             this.setForceHeating(config.forceHeating());
             this.timer = new TimerHandlerImpl(this.id(), this.cpm);
             this.timer.addOneIdentifier(KEEP_ALIVE_IDENTIFIER, config.timerId(), config.keepAlive());
+            this.timer.addOneIdentifier(config.timerId(), CHECK_REMOTE_REFERENCES_IDENTIFIER, MAX_WAIT_TIME_REFERENCES_CHECK_SECONDS);
+            this.timer.addOneIdentifier(config.timerId(), CHECK_OWN_REFERENCES_IDENTIFIER, MAX_WAIT_TIME_REFERENCES_CHECK_SECONDS);
             this.useExceptionalStateHandling = config.useExceptionalStateHandling();
             if (this.useExceptionalStateHandling) {
                 this.timer.addOneIdentifier(EXCEPTIONAL_STATE_IDENTIFIER, config.timerIdExceptionalState(), config.exceptionalStateTime());
@@ -371,6 +376,7 @@ public class CommunicationMasterControllerImpl extends AbstractOpenemsComponent 
             }
         } else {
             try {
+                this.clearReferences();
                 this.configureController(this.config);
                 if (this.communicationController != null) {
                     this.communicationController.enable();
