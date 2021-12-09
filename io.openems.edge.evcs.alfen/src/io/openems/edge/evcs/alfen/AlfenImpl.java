@@ -23,6 +23,7 @@ import io.openems.edge.common.taskmanager.Priority;
 import io.openems.edge.evcs.alfen.api.Alfen;
 import io.openems.edge.evcs.api.Evcs;
 import io.openems.edge.evcs.api.EvcsPower;
+import io.openems.edge.evcs.api.GridVoltage;
 import io.openems.edge.evcs.api.ManagedEvcs;
 import org.osgi.service.cm.ConfigurationAdmin;
 import org.osgi.service.cm.ConfigurationException;
@@ -41,7 +42,7 @@ import org.osgi.service.event.EventHandler;
 import org.osgi.service.metatype.annotations.Designate;
 
 import java.util.Arrays;
-
+//TODO This does not support Status apparently. This needs to be addressed by the controller or it wont work correctly
 /**
  * This Provides the Alfen NG9xx EVCS Modbus TCP implementation.
  */
@@ -77,12 +78,12 @@ public class AlfenImpl extends AbstractOpenemsModbusComponent implements Openems
         if (!this.checkPhases()) {
             throw new ConfigurationException("Phase Configuration is not valid!", "Configuration must only contain 1,2 and 3.");
         }
-        this._setMinimumHardwarePower(6 * 230);
-        this._setMaximumHardwarePower(32 * 230);
+        this._setMinimumHardwarePower(6 * GridVoltage.V_230_HZ_50.getValue());
+        this._setMaximumHardwarePower(32 * GridVoltage.V_230_HZ_50.getValue());
         this._setMaximumPower(this.maxPower);
         this._setMinimumPower(this.minPower);
         this._setIsPriority(config.priority());
-        this._setPowerPrecision(1 * 230);
+        this._setPowerPrecision(GridVoltage.V_230_HZ_50.getValue());
         this.readHandler = new AlfenReadHandler(this);
         this.writeHandler = new AlfenWriteHandler(this);
         super.activate(context, config.id(), config.alias(), config.enabled(), config.modbusUnitId(), this.cm,
@@ -378,7 +379,7 @@ public class AlfenImpl extends AbstractOpenemsModbusComponent implements Openems
         try {
             this.readHandler.run();
         } catch (Throwable throwable) {
-
+            //
         }
     }
 }

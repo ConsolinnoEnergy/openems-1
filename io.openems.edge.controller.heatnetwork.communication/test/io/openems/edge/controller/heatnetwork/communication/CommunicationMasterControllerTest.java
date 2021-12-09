@@ -57,7 +57,7 @@ public class CommunicationMasterControllerTest {
     private final boolean usePump = true;
     private final boolean useExceptionalStateHandling = true;
     private final String timerIdExceptionalState = TIMER_ID;
-    private final int exceptioalStateTime = 2;
+    private final int exceptionalStateTime = 2;
     private final boolean forceHeating = false;
     //Do 12 Times and add X
     private final static String HEAT_PUMP_ID = "Pump0";
@@ -166,7 +166,7 @@ public class CommunicationMasterControllerTest {
                             .setService_pid("EverythingIsFine")
                             .setTimerId(TIMER_ID)
                             .setConnectionType(this.connectionType)
-                            .setExceptioalStateTime(this.exceptioalStateTime)
+                            .setExceptioalStateTime(this.exceptionalStateTime)
                             .setFallback(this.fallback)
                             .setForceHeating(this.forceHeating)
                             .setHydraulicLineHeaterId(HYDRAULIC_LINE_HEATER_ID)
@@ -335,7 +335,7 @@ public class CommunicationMasterControllerTest {
                             .setService_pid("FallBack")
                             .setTimerId(TIMER_ID)
                             .setConnectionType(this.connectionType)
-                            .setExceptioalStateTime(this.exceptioalStateTime)
+                            .setExceptioalStateTime(this.exceptionalStateTime)
                             .setFallback(this.fallback)
                             .setForceHeating(this.forceHeating)
                             .setHydraulicLineHeaterId(HYDRAULIC_LINE_HEATER_ID)

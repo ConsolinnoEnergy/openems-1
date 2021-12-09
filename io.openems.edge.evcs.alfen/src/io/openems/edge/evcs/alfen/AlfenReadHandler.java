@@ -3,6 +3,7 @@ package io.openems.edge.evcs.alfen;
 import io.openems.common.exceptions.OpenemsError;
 import io.openems.edge.common.channel.WriteChannel;
 import io.openems.edge.evcs.api.ChargingType;
+import io.openems.edge.evcs.api.GridVoltage;
 import io.openems.edge.evcs.api.ManagedEvcs;
 
 import java.util.Optional;
@@ -13,7 +14,6 @@ import java.util.Optional;
  */
 public class AlfenReadHandler {
     private final AlfenImpl parent;
-    private static final int GRID_VOLTAGE = 230;
     private boolean overLimit;
 
     AlfenReadHandler(AlfenImpl parent) {
@@ -51,12 +51,12 @@ public class AlfenReadHandler {
         if (valueOpt.isPresent()) {
             Integer power = valueOpt.get();
             int phases = this.parent.getPhases().orElse(3);
-            int current = (power / phases) / GRID_VOLTAGE;
+            int current = (power / phases) / GridVoltage.V_230_HZ_50.getValue();
             int maxHwPower = this.parent.getMaximumHardwarePower().get();
             int maxSwPower = this.parent.getMaxPower();
             int maxPower = Math.min(maxHwPower, maxSwPower);
-            if (current > maxPower / GRID_VOLTAGE) {
-                current = maxPower / GRID_VOLTAGE;
+            if (current > maxPower / GridVoltage.V_230_HZ_50.getValue()) {
+                current = maxPower / GridVoltage.V_230_HZ_50.getValue();
             }
             int minHwPower = this.parent.getMinimumHardwarePower().get();
             int minSwPower = this.parent.getMinPower();
@@ -69,7 +69,7 @@ public class AlfenReadHandler {
                 this.parent._setSetChargePowerLimit(0);
             } else {
                 this.parent.setModbusSlaveMaxCurrent(current);
-                this.parent._setSetChargePowerLimit(current * GRID_VOLTAGE);
+                this.parent._setSetChargePowerLimit(current * GridVoltage.V_230_HZ_50.getValue());
             }
         }
     }

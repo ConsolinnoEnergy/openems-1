@@ -1,5 +1,6 @@
 package io.openems.edge.controller.heatnetwork.communication.api;
 
+import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.controller.heatnetwork.communication.request.api.RequestType;
 import io.openems.edge.timer.api.TimerType;
 
@@ -95,7 +96,16 @@ public interface CommunicationController {
 
     /**
      * Sets the Maximum Requests allowed, that can be handled at once.
+     *
      * @param maxAllowedRequests the new amount that can be handled
      */
     void setMaxRequests(int maxAllowedRequests);
+
+    /**
+     * This will check each Containing Component -> is the reference still ok? otherwise tell the Comm.Master
+     *
+     * @param cpm the ComponentManager
+     * @return true if a Component Reference is old / not the same
+     */
+    boolean shouldRefreshReferences(ComponentManager cpm);
 }

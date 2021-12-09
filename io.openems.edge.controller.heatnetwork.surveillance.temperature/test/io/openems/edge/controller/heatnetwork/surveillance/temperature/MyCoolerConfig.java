@@ -21,6 +21,7 @@ public class MyCoolerConfig extends AbstractComponentConfig implements ConfigTem
         private int timeToWaitValveOpen;
         private String service_pid;
         private SurveillanceType surveillanceType;
+        private boolean disableLogicIfHeaterOffline;
 
         private Builder() {
         }
@@ -93,6 +94,11 @@ public class MyCoolerConfig extends AbstractComponentConfig implements ConfigTem
 
         public Builder setService_pid(String service_pid) {
             this.service_pid = service_pid;
+            return this;
+        }
+
+        public Builder setDisableLogicIfHeaterOffline(boolean disableLogicIfHeaterOffline) {
+            this.disableLogicIfHeaterOffline = disableLogicIfHeaterOffline;
             return this;
         }
     }
@@ -168,6 +174,11 @@ public class MyCoolerConfig extends AbstractComponentConfig implements ConfigTem
     @Override
     public int deltaTimeDelay() {
         return this.builder.timeToWaitValveOpen;
+    }
+
+    @Override
+    public boolean disableLogicIfHeaterOffline() {
+        return this.builder.disableLogicIfHeaterOffline;
     }
 
     @Override

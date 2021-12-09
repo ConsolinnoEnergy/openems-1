@@ -54,7 +54,8 @@ public class TemperatureSurveillanceControllerCoolingImpl extends AbstractTemper
                 this.config.referenceThermometerId(), SurveillanceHeatingType.COOLING,
                 this.config.surveillanceType(), this.config.offsetActivate(), this.config.offsetDeactivate(),
                 this.config.coolerId(), this.config.hydraulicControllerId(),
-                this.config.timerId(), this.config.deltaTimeDelay(), this.cpm);
+                this.config.timerId(), this.config.deltaTimeDelay(), this.cpm,
+                config.disableLogicIfHeaterOffline());
     }
 
     @Modified
@@ -67,7 +68,8 @@ public class TemperatureSurveillanceControllerCoolingImpl extends AbstractTemper
                 this.config.surveillanceType(), this.config.offsetActivate(),
                 this.config.offsetDeactivate(), this.config.coolerId(),
                 this.config.hydraulicControllerId(),
-                this.config.timerId(), this.config.deltaTimeDelay(), this.cpm);
+                this.config.timerId(), this.config.deltaTimeDelay(), this.cpm,
+                config.disableLogicIfHeaterOffline());
     }
 
 
@@ -98,7 +100,7 @@ public class TemperatureSurveillanceControllerCoolingImpl extends AbstractTemper
                 super.activationOrModifiedRoutine(this.config.thermometerActivateId(), this.config.thermometerDeactivateId(),
                         this.config.referenceThermometerId(), this.config.offsetActivate(), this.config.offsetDeactivate(),
                         this.config.coolerId(), this.config.hydraulicControllerId(),
-                        this.config.timerId(), this.config.deltaTimeDelay());
+                        this.config.timerId(), this.config.deltaTimeDelay(), this.config.disableLogicIfHeaterOffline());
             } catch (ConfigurationException e) {
                 this.log.warn("Please make sure to have 3 different Thermometer configured!");
             }

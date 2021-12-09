@@ -25,6 +25,7 @@ public class MyConfig extends AbstractComponentConfig implements ConfigTempSurve
         private int timeToWaitValveOpen;
         private String service_pid;
         private SurveillanceType surveillanceType;
+        private boolean disableLogicIfHeaterOffline;
 
         private Builder() {
         }
@@ -70,7 +71,7 @@ public class MyConfig extends AbstractComponentConfig implements ConfigTempSurve
             return this;
         }
 
-        public Builder setSurveillanceType(SurveillanceType type){
+        public Builder setSurveillanceType(SurveillanceType type) {
             this.surveillanceType = type;
             return this;
         }
@@ -97,6 +98,11 @@ public class MyConfig extends AbstractComponentConfig implements ConfigTempSurve
 
         public Builder setService_pid(String service_pid) {
             this.service_pid = service_pid;
+            return this;
+        }
+
+        public Builder setDisableLogicIfHeaterOffline(boolean disableLogicIfHeaterOffline) {
+            this.disableLogicIfHeaterOffline = disableLogicIfHeaterOffline;
             return this;
         }
     }
@@ -172,6 +178,11 @@ public class MyConfig extends AbstractComponentConfig implements ConfigTempSurve
     @Override
     public int deltaTimeDelay() {
         return this.builder.timeToWaitValveOpen;
+    }
+
+    @Override
+    public boolean disableLogicIfHeaterOffline() {
+        return this.builder.disableLogicIfHeaterOffline;
     }
 
     @Override

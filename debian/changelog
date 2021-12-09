@@ -1,3 +1,11 @@
+openems-consolinno (0.1.12-1) unstable; urgency=medium
+
+  * Added Newest Version of EVCS Limiter
+  * Added Feature, where Surveillance Controller checks Heater for ERROR (and offline Mode)
+  * Added CommMaster -> References Check -> static every 5 min
+
+ -- Felix <felix@felix-ThinkPad-E15-Gen-2>  Wed, 08 Dec 2021 19:05:19 +0100
+
 openems-consolinno (0.1.11-1) unstable; urgency=medium
 
   * Added a FileWriter to add OpenEmsComponentChannel Values to a

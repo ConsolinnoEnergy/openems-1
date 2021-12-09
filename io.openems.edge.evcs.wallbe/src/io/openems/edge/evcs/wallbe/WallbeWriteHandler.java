@@ -4,7 +4,8 @@ import io.openems.edge.evcs.api.ChargingType;
 import io.openems.edge.evcs.api.Status;
 
 /**
- * This WriteHandler writes the Values from the Internal Channels that where retrieved over Modbus into the correct OpenEms Channels.
+ * This WriteHandler writes the Values from the Internal Channels that where retrieved over Modbus
+ * into the correct OpenEms Channels.
  * External READ_ONLY Register -> Internal OpenEms
  */
 public class WallbeWriteHandler {

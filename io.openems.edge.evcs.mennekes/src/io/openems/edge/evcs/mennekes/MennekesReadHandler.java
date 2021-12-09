@@ -2,6 +2,7 @@ package io.openems.edge.evcs.mennekes;
 
 import io.openems.common.exceptions.OpenemsError;
 import io.openems.edge.common.channel.WriteChannel;
+import io.openems.edge.evcs.api.GridVoltage;
 import io.openems.edge.evcs.api.ManagedEvcs;
 
 import java.util.Optional;
@@ -13,7 +14,6 @@ import java.util.Optional;
 
 public class MennekesReadHandler {
     private final MennekesImpl parent;
-    private static final int GRID_VOLTAGE = 230;
     private boolean overLimit;
 
     MennekesReadHandler(MennekesImpl parent) {
@@ -50,14 +50,14 @@ public class MennekesReadHandler {
         if (valueOpt.isPresent()) {
             Integer power = valueOpt.get();
             int phases = this.parent.getPhases().orElse(3);
-            int current = (power / phases) / GRID_VOLTAGE;
-            int maxHwPower = this.parent.getMaximumHardwarePower().get();
+            int current = (power) / GridVoltage.V_230_HZ_50.getValue();
+            int maxHwPower = this.parent.getMaximumHardwarePower().get() / 230;
             int maxSwPower = this.parent.getMaxPower();
             int maxPower = Math.min(maxHwPower, maxSwPower);
-            if (current > maxPower / GRID_VOLTAGE) {
-                current = maxPower / GRID_VOLTAGE;
+            if (current > maxPower) {
+                current = maxPower;
             }
-            int minHwPower = this.parent.getMinimumHardwarePower().get();
+            int minHwPower = this.parent.getMinimumHardwarePower().get() / 230;
             int minSwPower = this.parent.getMinPower();
             int minPower = Math.min(minHwPower, minSwPower);
             if (current < minPower) {
@@ -68,7 +68,7 @@ public class MennekesReadHandler {
                 this.parent._setSetChargePowerLimit(0);
             } else {
                 this.parent.setCurrentLimit(current);
-                this.parent._setSetChargePowerLimit(current * GRID_VOLTAGE);
+                this.parent._setSetChargePowerLimit(current * GridVoltage.V_230_HZ_50.getValue());
             }
         }
     }
