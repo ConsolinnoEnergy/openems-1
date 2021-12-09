@@ -145,6 +145,8 @@ public class CombinedHeatPowerPlantImpl extends AbstractGenericModbusComponent i
         this.getDefaultActivePowerChannel().setNextValue(this.config.defaultRunPower());
         this.getDefaultActivePowerChannel().nextProcessImage();
         this.getDefaultActivePowerChannel().setNextWriteValueFromObject(this.config.defaultRunPower());
+        this.getEnableSignalChannel().setNextValue(false);
+        this.getEnableSignalChannel().nextProcessImage();
     }
 
 
@@ -292,11 +294,11 @@ public class CombinedHeatPowerPlantImpl extends AbstractGenericModbusComponent i
     }
 
     private boolean handleEnableSignal(WriteChannel<?> chosenChannel) {
-        Optional<?> choosenChannelOptional = chosenChannel.getNextWriteValue();
+        Optional<?> chosenChannelOptional = chosenChannel.getNextWriteValue();
         Object chosenChannelValue = null;
         int value = 0;
-        if (choosenChannelOptional.isPresent()) {
-            chosenChannelValue = choosenChannelOptional.get();
+        if (chosenChannelOptional.isPresent()) {
+            chosenChannelValue = chosenChannelOptional.get();
 
             switch (chosenChannel.getType()) {
 
@@ -324,11 +326,12 @@ public class CombinedHeatPowerPlantImpl extends AbstractGenericModbusComponent i
             }
         }
         boolean enabled = this.getEnableSignalChannel().getNextWriteValueAndReset().orElse(false)
-                && choosenChannelOptional.isPresent()
+                && chosenChannelOptional.isPresent()
                 && value > 0;
         if (this.getModbusConfig().containsKey(this._getEnableSignalBoolean().channelId())) {
             try {
                 this._getEnableSignalBoolean().setNextWriteValueFromObject(enabled);
+                this._getEnableSignalBoolean().setNextValue(enabled);
                 this.getEnableSignalChannel().setNextValue(enabled);
             } catch (OpenemsError.OpenemsNamedException e) {
                 this.log.warn("Couldn't apply EnableSignal");
@@ -338,8 +341,10 @@ public class CombinedHeatPowerPlantImpl extends AbstractGenericModbusComponent i
             try {
                 if (enabled) {
                     this._getEnableSignalLong().setNextWriteValueFromObject((long) this.config.defaultEnableSignalValue());
+                    this._getEnableSignalLong().setNextValue((long) this.config.defaultEnableSignalValue());
                 } else {
                     this._getEnableSignalLong().setNextWriteValueFromObject((long) this.config.defaultDisableSignalValue());
+                    this._getEnableSignalLong().setNextValue((long) this.config.defaultDisableSignalValue());
                 }
                 this.getEnableSignalChannel().setNextValue(enabled);
             } catch (OpenemsError.OpenemsNamedException e) {
