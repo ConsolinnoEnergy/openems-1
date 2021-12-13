@@ -1,3 +1,9 @@
+openems-consolinno (0.1.14-1) UNRELEASED; urgency=medium
+
+  * Added newest version of log4j, fixes from apache
+
+ -- Felix <felix@felix-ThinkPad-E15-Gen-2>  Mon, 13 Dec 2021 14:53:27 +0100
+
 openems-consolinno (0.1.12-1) unstable; urgency=medium
 
   * Added Newest Version of EVCS Limiter
