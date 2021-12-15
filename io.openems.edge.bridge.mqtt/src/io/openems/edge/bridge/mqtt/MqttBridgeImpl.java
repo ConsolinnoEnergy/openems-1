@@ -95,7 +95,7 @@ public class MqttBridgeImpl extends AbstractOpenemsComponent implements OpenemsC
     private String mqttClientId;
     private int keepAlive = 100;
     private AtomicInteger executorCurrent = new AtomicInteger(10);
-    private static final int EXECUTOR_MAX = 60;
+    private static final int EXECUTOR_MAX = 90;
 
     private DateTime initialTime;
     private boolean initialized;
@@ -446,7 +446,7 @@ public class MqttBridgeImpl extends AbstractOpenemsComponent implements OpenemsC
                 executorService.submit(() -> this.createNewMqttSession.run());
                 try {
                     executorService.shutdown();
-                    executorService.awaitTermination(Math.max(this.executorCurrent.get(), EXECUTOR_MAX), TimeUnit.SECONDS);
+                    executorService.awaitTermination(Math.min(this.executorCurrent.get(), EXECUTOR_MAX), TimeUnit.SECONDS);
                 } catch (InterruptedException e) {
                     this.log.error("Create MQTT Session Interrupted");
                 } finally {
@@ -456,7 +456,7 @@ public class MqttBridgeImpl extends AbstractOpenemsComponent implements OpenemsC
                         this.subscribeManager = null;
                         this.executorCurrent.getAndAdd(5);
                     } else {
-                        this.executorCurrent.set(10);
+                        this.executorCurrent.set(20);
                     }
                     executorService.shutdownNow();
                 }

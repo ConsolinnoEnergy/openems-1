@@ -1,3 +1,10 @@
+openems-consolinno (0.1.15-1) unstable; urgency=medium
+
+  * Reduced Time in MQTT Bridge - is 90 seconds had an error where it
+    could be infinite
+
+ -- Felix <felix@felix-ThinkPad-E15-Gen-2>  Wed, 15 Dec 2021 15:09:17 +0100
+
 openems-consolinno (0.1.14-1) unstable; urgency=medium
 
   * Added newest version of log4j, fixes from apache
