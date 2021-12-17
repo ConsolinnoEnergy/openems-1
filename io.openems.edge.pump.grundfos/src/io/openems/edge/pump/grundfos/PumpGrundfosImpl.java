@@ -1,5 +1,6 @@
 package io.openems.edge.pump.grundfos;
 
+import io.openems.common.channel.Unit;
 import io.openems.common.exceptions.OpenemsError;
 import io.openems.edge.bridge.genibus.api.Genibus;
 import io.openems.edge.bridge.genibus.api.PumpDevice;
@@ -60,6 +61,7 @@ public class PumpGrundfosImpl extends AbstractOpenemsComponent implements Openem
     private boolean changeAddress;
     private double newAddress;
     private boolean isMagna3;
+    private boolean doOnce = false;
 
     /* Setup of a multipump system is not possible with genibus.
     private boolean mpSetup;
@@ -101,6 +103,7 @@ public class PumpGrundfosImpl extends AbstractOpenemsComponent implements Openem
         this.broadcast = config.broadcast();
         this.changeAddress = config.changeAddress();
         this.newAddress = config.newAddress();
+        doOnce = false;
 
         /* Setup of a multipump system is not possible with genibus.
         mpSetup = config.mpSetup();
@@ -212,7 +215,7 @@ public class PumpGrundfosImpl extends AbstractOpenemsComponent implements Openem
     private void createTaskList(String deviceId, int pumpAddress) {
         // Broadcast mode is just to find the address of a unit. Not suitable for sending commands.
         if (this.broadcast || this.changeAddress) {
-            this.pumpDevice = new PumpDevice(deviceId, pumpAddress, 37, 4,
+            this.pumpDevice = new PumpDevice(deviceId, pumpAddress, 37, Unit.BAR, 4,
                     new PumpReadTask8bit(2, 0, getBufferLength(), "Standard", Priority.ONCE),
                     new PumpReadTask8bit(3, 0, getUnitBusMode(), "Standard", Priority.ONCE),
 
@@ -263,7 +266,7 @@ public class PumpGrundfosImpl extends AbstractOpenemsComponent implements Openem
         // So if there are 10 low tasks and lowPrioTasksPerCycle=10, the low tasks behave like high tasks.
         // If in the same situation lowPrioTasksPerCycle=5, a priority low task is executed at half the rate of a
         // priority high task.
-        this.pumpDevice = new PumpDevice(deviceId, pumpAddress, 37, 4,
+        this.pumpDevice = new PumpDevice(deviceId, pumpAddress, 37, Unit.BAR, 4,
 
 
                 // Commands.
@@ -373,8 +376,8 @@ public class PumpGrundfosImpl extends AbstractOpenemsComponent implements Openem
                         setRefRem(), "Standard", Priority.HIGH),
 
                 // Strings
-                new PumpReadTaskAscii(8, 7, getProductNumber(), "Standard", Priority.ONCE),
-                new PumpReadTaskAscii(9, 7, getSerialNumber(), "Standard", Priority.ONCE)
+                new PumpReadTaskAscii(8, getProductNumber(), "Standard", Priority.ONCE),
+                new PumpReadTaskAscii(9, getSerialNumber(), "Standard", Priority.ONCE)
 
                 /*
                 // Multipump commands
@@ -410,6 +413,13 @@ public class PumpGrundfosImpl extends AbstractOpenemsComponent implements Openem
 
         // Get connection status from pump, put it in the channel.
         isConnectionOk().setNextValue(this.pumpDevice.isConnectionOk());
+
+        // Update the read buffer length of the device.
+        if (this.doOnce == false && getBufferLength().value().isDefined()) {
+            this.doOnce = true;
+            int bufferLength = (int)Math.round(getBufferLength().value().get());
+            this.pumpDevice.setDeviceReadBufferLengthBytes(bufferLength);
+        }
 
         // Parse ControlSource value to a string.
         if (getControlSourceBits().value().isDefined()) {

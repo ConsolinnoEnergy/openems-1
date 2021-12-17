@@ -8,6 +8,12 @@ import java.util.OptionalDouble;
 /**
  * PumpTask class for writing values with 8 or 16 bit precision.
  * Extended precision supports 8, 16, 24 and 32 bit.
+ * Limitations: support for more than 8 bit data items is limited to head class 4 at the moment. Specifically, those
+ * data items that have hi and lo bytes on subsequent addresses. For example t_ramp_up_1_hi (4, 23) and t_ramp_up_1_hi
+ * (4, 24).
+ * You give this task the address of the hi byte and the total number of bytes. This task then automatically uses the
+ * addresses following the hi byte and assumes these are the lo bytes. The hi and lo bytes are mapped to a single channel,
+ * the one associated with this task. Combining of bytes for read and splitting of bytes for write is done automatically.
  */
 public class PumpWriteTask16bitOrMore extends PumpReadTask16bitOrMore implements HeadClass4and5 {
 
@@ -44,11 +50,11 @@ public class PumpWriteTask16bitOrMore extends PumpReadTask16bitOrMore implements
     public int getByteIfSetAvailable(int byteCounter) {
 
         // A correct return value is a byte. Choose a return value that is outside the range of byte to indicate an error.
-        int errorReturnValue = GenibusTask.NO_SET_AVAILABLE;
+        int errorReturnValue = HeadClass4and5.NO_SET_AVAILABLE;
         if (byteCounter > dataByteSize - 1) {
             return errorReturnValue;
         }
-        if (this.isSetAvailable()) {
+        if (super.informationDataAvailable() && this.channel.getNextWriteValue().isPresent()) {
             int returnValue;
 
             /* For values of type scaled or extended precision:

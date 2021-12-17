@@ -5,64 +5,30 @@ import io.openems.edge.bridge.genibus.api.PumpDevice;
 import io.openems.edge.common.taskmanager.ManagedTask;
 
 /**
- * Interface for Genibus tasks.
+ * The basic interface for a Genibus task.
+ * A task links an OpenEMS channel to a Genibus data item. This interface contains the getters and setters needed by the
+ * Genibus bridge to map the data from the Genibus device to the OpenEMS channel.
  */
 public interface GenibusTask extends ManagedTask {
 
-    int NO_SET_AVAILABLE = -1;
-
     /**
-     * This method is for write tasks. It is used to see if this task has a SET to send (use ’byteNumber = 0’), as well
-     * as to get the unsigned byte value of a SET. Since Java does not have unsigned bytes, the return value is an int
-     * of value 0 to 255. The return value ’-1’ means ’no SET available’ or ’not a write task’.
-     * If a SET is available depends on the associated write channel. If ’nextWrite’ of the channel is empty (or ’false’
-     * in case of a boolean channel), the method returns ’no SET available’.
-     * If a SET is available, this method will return the SET as a byte. For tasks with more than one byte, the
-     * parameter ’byteNumber’ (0 = hi) is used to collect the different bytes. The number of bytes a task has is
-     * available with ’getDataByteSize()’.
+     * Allocate a byte from a response telegram to this task. For multi byte tasks, call this method for each byte in
+     * the order hi to lo. Once all bytes are allocated, the data is processed and the result put in ’nextValue’ of the
+     * associated OpenEMS channel.
      *
-     * @param byteNumber which byte of SET to return. When testing if a SET is available, put 0.
-     * @return the byte value of the SET if available, ’NO_SET_AVAILABLE’ otherwise.
-     */
-    default int getByteIfSetAvailable(int byteNumber) {
-        return NO_SET_AVAILABLE;
-    }
-
-    /**
-     * Returns if this task has a SET available.
-     *
-     * @return if a SET is available.
-     */
-    default boolean isSetAvailable() {
-        return false;
-    }
-
-    /**
-     * This method is for write tasks. Should be executed after a SET has been added to an APDU.
-     * Clears the ’nextWrite’ of the write channel associated with this task, so the
-     * value is sent just once. Also, if applicable, marks this task as ’get value from Genibus’, so the channel is
-     * updated to the new value.
-     */
-    default void clearNextWriteAndUpdateChannel() {
-
-    }
-
-    /**
-     * Process the response from the pump device.
-     *
-     * @param data data sent from the pump device.
+     * @param data the response byte from the Genibus device for this task.
      */
     void processResponse(byte data);
 
     /**
-     * Gets the address of the task. The address together with the header is the identifier for a data item in the pump.
+     * Gets the address of the task. The address together with the header is the identifier for a data item in the device.
      *
      * @return the address.
      */
     byte getAddress();
 
     /**
-     * Gets the header of the task. The header together with the address is the identifier for a data item in the pump.
+     * Gets the header of the task. The header together with the address is the identifier for a data item in the device.
      *
      * @return the header.
      */
@@ -71,22 +37,37 @@ public interface GenibusTask extends ManagedTask {
     /**
      * If a task has INFO and the INFO is of the one byte type, this is used to store the INFO content with the task.
      *
-     * @param vi Value information if set range is 255 else 254. Comes from 5th bit
-     * @param bo Byte order information. 0 is high order, 1 is low order byte. 4th bit
-     * @param sif Scale information format. 0 = not available, 1= bitwise interpreted value.
+     * @param vi value interpretation.
+     *           0: Only values from 0-254 are legal. 255 means “data not available”.
+     *           1: All values 0-255 are legal values.
+     * @param bo byte order information.
+     *           0: High order byte, this is default for all values that are only 8 bit.
+     *           1: Low order byte to a 16 bit, 24 bit or 32 bit value.
+     * @param sif scale information format.
+     *            0: Scale information not available (no UNIT, ZERO or RANGE in reply).
+     *            1: Bit wise interpreted value (no UNIT, ZERO or RANGE in reply).
+     *            2: Scaled 8/16 bit value (UNIT, ZERO and RANGE in reply).
+     *            3: Extended precision, scaled 8/16/24/32 bit value (UNIT and ZERO hi/lo in reply).
      */
     void setOneByteInformation(int vi, int bo, int sif);
 
     /**
      * If a task has INFO and the INFO is of the four byte type, this is used to store the INFO content with the task.
      *
-     * @param vi Value information if set range is 255 else 254. Comes from 5th bit
-     * @param bo Byte order information. 0 is high order, 1 is low order byte. 4th bit
-     * @param sif Scale information format. 0 = not available, 1= bitwise interpreted value.
-     * @param zeroSignAndUnitIndex bit 0-6 are the number to declare what unit it is according to the unit table.
-     *                             Bit 7 is the sign of the Zero scale factor (0 positive, 1 negative).
-     * @param scaleFactorZeroOrHigh either Zero scale factor or factor for high order byte.
-     * @param scaleFactorRangeOrLow range scale factor or low order byte.
+     * @param vi value interpretation.
+     *           0: Only values from 0-254 are legal. 255 means “data not available”.
+     *           1: All values 0-255 are legal values.
+     * @param bo byte order information.
+     *           0: High order byte, this is default for all values that are only 8 bit.
+     *           1: Low order byte to a 16 bit, 24 bit or 32 bit value.
+     * @param sif scale information format.
+     *            0: Scale information not available (no UNIT, ZERO or RANGE in reply).
+     *            1: Bit wise interpreted value (no UNIT, ZERO or RANGE in reply).
+     *            2: Scaled 8/16 bit value (UNIT, ZERO and RANGE in reply).
+     *            3: Extended precision, scaled 8/16/24/32 bit value (UNIT and ZERO hi/lo in reply).
+     * @param zeroSignAndUnitIndex  zero scale factor sign and unit index number of the task.
+     * @param scaleFactorRangeOrLow the range scale factor or the lo order byte of the extended precision zero scale factor.
+     * @param scaleFactorZeroOrHigh the zero scale factor or the hi order byte of the extended precision zero scale factor.
      */
     void setFourByteInformation(int vi, int bo, int sif, byte zeroSignAndUnitIndex, byte scaleFactorZeroOrHigh, byte scaleFactorRangeOrLow);
 
@@ -103,14 +84,14 @@ public interface GenibusTask extends ManagedTask {
     void resetInfo();
 
     /**
-     * Set the pump device this task belongs to.
+     * Set the Genibus device this task belongs to.
      *
-     * @param pumpDevice the pump device.
+     * @param pumpDevice the Genibus device.
      */
-    void setPumpDevice(PumpDevice pumpDevice);
+    void setGenibusDevice(PumpDevice pumpDevice);
 
     /**
-     * Get the number of bytes this task has in the response telegram.
+     * Get the byte count of this task. An 8 bit task is 1 byte, a 16 bit task is 2 byte, etc.
      *
      * @return the number of bytes.
      */
@@ -118,9 +99,13 @@ public interface GenibusTask extends ManagedTask {
 
     /**
      * Set the APDU identifier. This is an internal variable of the Genibus bridge used by the GenibusWorker to tell
-     * apart the APDUs it is creating for a telegram. When the worker checks if there are enough bytes left for a task,
-     * it determines in which APDU it would put the task. This information is stored with the task via this method, so
-     * it can be retrieved later when the task is actually added to the telegram.
+     * apart the APDUs it is creating for a telegram.
+     * The APDU identifier is a 3 digit decimal number. The 100 digit is the HeadClass of the apdu, the 10 digit is the
+     * operation (0=get, 2=set, 3=info), the 1 digit is a counter starting at 0.
+     * Example: 230 would be HeadClass 2 and INFO, first APDU of this type.
+     *
+     * <p>The last digit, the counter, allows to have more than one APDU of a given type. Since an APDU (request and
+     * answer) is limited to 63 bytes, several APDUs of the same type might be needed to fit all tasks.</p>
      *
      * @param identifier the APDU identifier.
      */
@@ -128,9 +113,14 @@ public interface GenibusTask extends ManagedTask {
 
     /**
      * Get the APDU identifier. This is an internal variable of the Genibus bridge used by the GenibusWorker to tell
-     * apart the APDUs it is creating for a telegram. When the worker checks if there are enough bytes left for a task,
-     * it determines in which APDU it would put the task. This information is stored with the task and can be retrieved
-     * via this method when the task is actually added to a telegram.
+     * apart the APDUs it is creating for a telegram.
+     * The APDU identifier is a 3 digit decimal number. The 100 digit is the HeadClass of the apdu, the 10 digit is the
+     * operation (0=get, 2=set, 3=info), the 1 digit is a counter starting at 0.
+     * Example: 230 would be HeadClass 2 and INFO, first APDU of this type.
+     *
+     * <p>The last digit, the counter, allows to have more than one APDU of a given type. Since an APDU (request and
+     * answer) is limited to 63 bytes, several APDUs of the same type might be needed to fit all tasks.</p>
+     *
      *
      * @return the APDU identifier.
      */

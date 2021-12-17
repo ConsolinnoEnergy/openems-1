@@ -92,8 +92,15 @@ public class GenibusImpl extends AbstractOpenemsComponent implements OpenemsComp
     protected void handleTelegram(Telegram telegram, long cycletimeLeft) {
 
         int emptyTelegramTime = telegram.getPumpDevice().getEmptyTelegramTime();
-        int telegramByteLength = Byte.toUnsignedInt(telegram.getLength()) - 2 // Subtract crc
-                + telegram.getAnswerTelegramLength() - 2;   // Stored value in answerTelegramLength is the estimated upper limit, not the actual value.
+
+        /* For ’additionalBytesEstimate’ we want to calculate the additional bytes sent and received compared to an
+           exchange of empty telegrams. The value is an estimate, because the byte count of the response telegram can
+           only be assumed/estimated.
+           For an empty telegram, ’telegram.getLength()’ will return 2 because the value is PDU size + 2 bytes for
+           destination and source address. An empty telegram has a PDU of size 0, but still a destination and source
+           address. */
+        int additionalBytesEstimate = Byte.toUnsignedInt(telegram.getLength()) - 2
+                + telegram.getAnswerTelegramPduLengthEstimate();
 
         // The time parameter in the "writeTelegram()" method is the timeout until the first bytes of a response, and
         // then again the timeout for the transmission of the answer. Tests have shown that the time until the first byte
@@ -104,7 +111,7 @@ public class GenibusImpl extends AbstractOpenemsComponent implements OpenemsComp
         // answer time clock, + 60 ms (GENIbus timeout length, added in "handleResponse()" method). The same time is
         // then also used as timeout for the transmission time clock. Not accurate, but good enough. Just to have a not
         // too long timer that scales with the telegram length.
-        int telegramEstimatedTimeMillis = (int) (emptyTelegramTime + telegramByteLength * telegram.getPumpDevice().getMillisecondsPerByte());
+        int telegramEstimatedTimeMillis = (int) (emptyTelegramTime + additionalBytesEstimate * telegram.getPumpDevice().getMillisecondsPerByte());
 
         // When testing on the leaflet I saw weird random connection problems. I guess the leaflet has hangups that
         // cause an execution delay. Adding more time to the timeout to counter this problem. Adding just 100 is not enough.
@@ -129,7 +136,7 @@ public class GenibusImpl extends AbstractOpenemsComponent implements OpenemsComp
             return;
         }
 
-        telegram.setAnswerTelegramLength(responseTelegram.getLength());
+        telegram.setAnswerTelegramPduLength(responseTelegram.getLength() - 2);
 
         int requestTelegramAddress = Byte.toUnsignedInt(telegram.getDestinationAddress());
         int responseTelegramAddress = Byte.toUnsignedInt(responseTelegram.getSourceAddress());

@@ -23,26 +23,45 @@ public class Telegram {
     short crcLowOrder;
     Map<Integer, ArrayList<GenibusTask>> telegramTaskList = new HashMap<>();
     private PumpDevice pumpDevice;
-
-    // This variable is used to store the estimate, as well as the actual. Which one it is depends on the timing.
-    private int answerTelegramLength = 0;
+    private int answerTelegramPduLengthEstimate = 0;
+    private int answerTelegramPduLength = 0;
 
     private final Logger log = LoggerFactory.getLogger(Telegram.class);
 
     /**
-     * Set the answer telegram length.
-     * @param answerTelegramLength the answer telegram length.
+     * Set the answer telegram PDU length.
+     *
+     * @param answerTelegramPduLength the answer telegram PDU length.
      */
-    public void setAnswerTelegramLength(int answerTelegramLength) {
-        this.answerTelegramLength = answerTelegramLength;
+    public void setAnswerTelegramPduLength(int answerTelegramPduLength) {
+        this.answerTelegramPduLength = answerTelegramPduLength;
     }
 
     /**
-     * Get the answer telegram length.
-     * @return the answer telegram length.
+     * Get the answer telegram PDU length.
+     *
+     * @return the answer telegram PDU length.
      */
-    public int getAnswerTelegramLength() {
-        return this.answerTelegramLength;
+    public int getAnswerTelegramPduLength() {
+        return this.answerTelegramPduLength;
+    }
+
+    /**
+     * Set the answer telegram PDU length estimate. This value is close to the upper limit, assuming the response to
+     * an INFO is always 4 byte. ASCII response is estimated to be 30 bytes.
+     *
+     * @param answerTelegramPduLengthEstimate the answer telegram PDU length estimate.
+     */
+    public void setAnswerTelegramPduLengthEstimate(int answerTelegramPduLengthEstimate) {
+        this.answerTelegramPduLengthEstimate = answerTelegramPduLengthEstimate;
+    }
+
+    /**
+     * Get the answer telegram PDU length.
+     * @return the answer telegram PDU length estimate.
+     */
+    public int getAnswerTelegramPduLengthEstimate() {
+        return this.answerTelegramPduLengthEstimate;
     }
 
     /**
@@ -100,7 +119,11 @@ public class Telegram {
     }
 
     /**
-     * Get the telegram length.
+     * Get the telegram length. This length is the one used in the second byte of the telegram header.
+     * The number means ’all bytes after Length, excluding crc’, which is is the PDU byte count + 2 bytes for the
+     * destination and source address.
+     * The actual telegram size is 4 bytes larger. The 4 extra bytes are the Start Delimiter, the Length, and 2 bytes CRC.
+     *
      * @return the telegram length.
      */
     public byte getLength() {

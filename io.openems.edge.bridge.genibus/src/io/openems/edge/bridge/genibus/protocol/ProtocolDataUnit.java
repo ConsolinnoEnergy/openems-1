@@ -77,7 +77,9 @@ public class ProtocolDataUnit {
     }
 
     /**
-     * Get the PDU length.
+     * Get the PDU length. This is the amount of bytes of all APDUs, including APDU header. A possible ’Request From Slave’
+     * byte is not included.
+     *
      * @return the PDU length.
      */
     public int getPduLength() {

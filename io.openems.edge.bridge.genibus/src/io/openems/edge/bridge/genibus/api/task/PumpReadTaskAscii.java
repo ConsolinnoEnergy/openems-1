@@ -13,8 +13,8 @@ public class PumpReadTaskAscii extends AbstractPumpTask {
 
     private final StringBuilder charStorage = new StringBuilder();
 
-    public PumpReadTaskAscii(int address, int headerNumber, Channel<String> channel, String unitString, Priority priority) {
-        super(address, headerNumber, unitString, 1);
+    public PumpReadTaskAscii(int address, Channel<String> channel, String unitString, Priority priority) {
+        super(address, 7, unitString, 1);
         this.channel = channel;
         this.priority = priority;
     }

@@ -1,11 +1,18 @@
 package io.openems.edge.bridge.genibus.api;
 
+import io.openems.common.channel.Unit;
 import io.openems.edge.bridge.genibus.api.task.GenibusTask;
 import io.openems.edge.bridge.genibus.api.task.HeadClass4and5;
 import io.openems.edge.common.taskmanager.TasksManager;
 
 import java.util.ArrayList;
 import java.util.List;
+
+/**
+ * This class is the representation of a Genibus device for the Genibus bridge. It holds all the necessary information
+ * about the device like the address, buffer size, connection status, etc. Most importantly, it holds a list of all the
+ * data items (= Genibus tasks) the bridge should request from the device.
+ */
 
 public class PumpDevice {
 
@@ -15,54 +22,122 @@ public class PumpDevice {
     private final String parentDeviceId;
 
     /**
-     * TaskManager that contains all tasks.
+     * TaskManager that contains all Genibus tasks.
      */
     private final TasksManager<GenibusTask> taskManager = new TasksManager<>();
 
     /**
-     * Queue of tasks that should be sent to the device. This list is filled by getting tasks from the task manager.
-     * When a telegram is created, the tasks are taken from this queue. When a task is picked it is removed from the
-     * queue. A telegram has limited capacity, so it may happen that tasks remain in the queue after a telegram is
-     * created. The tasks then stay in the queue until they can be placed in a telegram.
+     * The Genibus task queue. The Genibus bridge processes tasks in the order in which they appear in this queue.
      */
     private final List<GenibusTask> taskQueue = new ArrayList<>();
 
     /**
-     * This list is for priority once tasks that also have INFO. They need two executions to get the complete
-     * information. They are placed in this list for the second execution.
+     * The list of all priority ’once’ Genibus tasks that can do ’INFO’. These tasks need to be executed two times, once
+     * to do INFO and once to do GET.
      */
     private final List<GenibusTask> onceTasksWithInfo = new ArrayList<>();
 
+    /**
+     * The read buffer size in bytes of the device. A request telegram cannot be larger than this.
+     * The value ’70’ is from a Magna3 pump. I assume this is the lower limit, since that doesn't even fit a full APDU.
+     * A telegram with one full APDU is 71 bytes (telegram header 4, CRC 2, APDU header 2, APDU max data 63).
+     * The value can be requested over Genibus from the device, buf_len (0, 2). The OpenEMS module for the device should
+     * read buf_len and then write that value to this class using ’setDeviceReadBufferLengthBytes()’.
+     */
     private int deviceReadBufferLengthBytes = 70;
-    private final int deviceSendBufferLengthBytes = 102;
-    private final int genibusAddress;
+
+    /**
+     * The send buffer size in bytes of the device. A response telegram cannot be larger than this.
+     * The value ’102’ is from a Magna3 pump, found by trial and error. So far no Genibus data item exists to read this
+     * value from the device. Because of that there is no setter method to change this value. Instead, it is assumed
+     * that the send buffer will not be smaller than the read buffer, and not smaller than the 102 bytes of the Magna3.
+     * If the read buffer value is changed to a value bigger than 102, the send buffer will be increased to the same
+     * value.
+     */
+    private int deviceSendBufferLengthBytes = 102;
+
+    /**
+     * The variable ’lowPrioTasksPerCycle’ lets you tune how fast the ’low’ priority tasks are executed, compared to the
+     * ’high’ tasks. A higher number means faster execution, up to the same execution speed as high priority tasks.
+     * Execution speed is ’lowPrioTasksPerCycle’ divided by the total amount of ’low’ tasks. If there are 4 ’low’ tasks,
+     * setting ’lowPrioTasksPerCycle=2’ will mean ’low’ tasks execute at half the rate as ’high’ tasks.
+     * The controller will execute all ’high’ and ’low’ tasks once per cycle if there is enough time. A reduced execution
+     * speed of ’low’ priority tasks happens only when there is not enough time.
+     *
+     * <p>In detail: Commands are sent to the pump device from a task queue. Task priority decides how this queue is filled.
+     * When the queue is empty, all ’high’ tasks are added, plus the amount ’lowPrioTasksPerCycle’ of ’low’ tasks. This
+     * is the ’standard’ refill. The queue is refilled so that tasks will not execute more than once per cycle. If the
+     * ’standard’ refill has executed and there is still enough time in the cycle, the queue will fill with tasks that
+     * were not already in the ’standard’ refill, i.e. all the other ’low’ tasks. After that, the controller will idle.</p>
+     */
     private final int lowPrioTasksPerCycle;
+
+    /**
+     * The parameter ’millisecondsPerByte’ together with ’emptyTelegramTime’ is used to calculate the telegram response
+     * timeout. The timeout length cannot be too long, otherwise one pump that is not responding (because of power
+     * outage, error, wrong address, etc.) will severely slow down communication to other pumps on the same Genibus bridge.
+     * The parameter ’emptyTelegramTime’ measures how long an exchange of empty telegrams takes, in milliseconds. The
+     * parameter ’millisecondsPerByte’ then indicates how much each byte added to the request or response telegram
+     * increases that exchange time, again in milliseconds.
+     * Both parameters are measured during runtime. To smooth out variation, they store multiple measured values in an
+     * array. The return value is then the average of the array.
+     *
+     * <p>The formula for the telegram exchange time is then:
+     * emptyTelegramTime + additionalByteEstimate * millisecondsPerByte
+     * An empty telegram has a PDU of size 0 bytes. ’additionalByteEstimate’ is then the PDU size of the request telegram,
+     * + the estimated PDU size of the response telegram.</p>
+     */
+    private final double[] millisecondsPerByte = {2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0};    // Rough estimate as initial value. Exact value measured at runtime.
+    private int arrayTracker = 0;   // Used to track in which array position the last measurement was put.
+
+    /* Value measured with a laptop is 33 ms. Leaflet timing seems to be slower, so setting a more conservative 40 ms as
+       initial value. Exact value measured at runtime. */
+    private final int[] emptyTelegramTime = {40, 40, 40, 40, 40};
+    private int arrayTracker2 = 0;
+
+    /**
+     * If the pump is in pressure set point mode, ref_rem is mapped to the pressure sensor range. ref_rem is a % value,
+     * so to calculate the actual pressure set point the range of the pressure sensor needs to be known. The pressure
+     * sensor has a Genibus data item, and calling INFO on that data item gives the pressure sensor range. For the pumps
+     * MGE and Magna3 the data item h (2, 37) works. The Magna3 can also use h_diff (2, 23). It is assumed the data item
+     * is head class 2, so ’pressureSensorTaskAddress’ is the ID (also called task address in OpenEMS).
+     * The response to INFO on that data item is then stored in ’pressureSensorMin’ and ’pressureSensorRange', converted
+     * to the OpenEMS unit specified by ’sensorUnit’.
+     * ’ref_rem=0%’ is then ’pressureSensorMin’, while ’ref_rem=100%’ is ’pressureSensorMin + pressureSensorRange’.
+     */
+    private final int pressureSensorTaskAddress;
+    private final Unit sensorUnit;
+    private double pressureSensorMin = 0;
+    private double pressureSensorRange = 0;
+
+    private final int genibusAddress;
     private boolean connectionOk = true;    // Initialize with true, to avoid "no connection" message on startup.
-    private long timestamp;
+    private long timestamp;    // Used to track when the last telegram was sent to this device.
     private boolean allLowPrioTasksAdded;
     private boolean addAllOnceTasks = true;
-    private double[] millisecondsPerByte = {2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0};    // Rough estimate. Exact value measured at runtime.
-    private int arrayTracker = 0;
-
-    // Value measured with a laptop is 33 ms. Leaflet timing seems to be slower, so setting a more conservative 40 ms.
-    private int[] emptyTelegramTime = {40, 40, 40, 40, 40};
-    private int arrayTracker2 = 0;
 
     private boolean firstTelegram = true;
     private boolean emptyTelegramSent = false;
     private int timeoutCounter = 0;
-
-    // These are needed to calculate the setpoint, since GENIbus setpoints are relative to the sensor range.
-    private double pressureSensorMinBar = 0;
-    private double pressureSensorRangeBar = 0;
-    /* Address for the task from which pressure sensor INFO is collected to calculate the above values.
-       For pumps MGE and Magna 37 works (= h (2, 37)). For Magna also 23 works (= h_diff (2, 23)). */
-    private int pressureSensorTaskAddress;
     private String warningMessage;
 
-    public PumpDevice(String parentDeviceId, int genibusAddress, int pressureSensorTaskAddress, int lowPrioTasksPerCycle, GenibusTask... tasks) {
+    /**
+     * Initialize the pump device object. The main purpose of this class is to hold a list of all the tasks the Genibus
+     * bridge should request from the device.
+     *
+     * @param parentDeviceId the device ID of the OpenEMS module creating this PumpDevice
+     * @param genibusAddress the Genibus address of the target device
+     * @param pressureSensorTaskAddress the ID (also called task address in OpenEMS) of the pressure sensor Genibus data
+     *                                  item. For pumps MGE and Magna3, 37 works.
+     * @param sensorUnit the OpenEMS Unit you want ’pressureSensorMin’ and ’pressureSensorRange’ to have.
+     * @param lowPrioTasksPerCycle this parameter lets you tune how fast the low priority tasks are executed, compared
+     *                             to high priority tasks. A higher number means faster execution.
+     * @param tasks the Genibus tasks.
+     */
+    public PumpDevice(String parentDeviceId, int genibusAddress, int pressureSensorTaskAddress, Unit sensorUnit, int lowPrioTasksPerCycle, GenibusTask... tasks) {
         this.genibusAddress = genibusAddress;
         this.pressureSensorTaskAddress = pressureSensorTaskAddress;
+        this.sensorUnit = sensorUnit;
         this.parentDeviceId = parentDeviceId;
         this.lowPrioTasksPerCycle = lowPrioTasksPerCycle;
         for (GenibusTask task : tasks) {
@@ -72,16 +147,18 @@ public class PumpDevice {
     }
 
     /**
-     * Add a task for this device.
+     * Add a Genibus task for this device.
+     *
      * @param task a Genibus task.
      */
     public void addTask(GenibusTask task) {
-        task.setPumpDevice(this);
+        task.setGenibusDevice(this);
         this.taskManager.addTask(task);
     }
 
     /**
-     * Get the task manager.
+     * Get the Genibus task manager. It contains all the Genibus tasks for this device.
+     *
      * @return the task manager.
      */
     public TasksManager<GenibusTask> getTaskManager() {
@@ -89,7 +166,8 @@ public class PumpDevice {
     }
 
     /**
-     * Get the task queue.
+     * Get the Genibus task queue. The Genibus bridge processes tasks in the order in which they appear in this queue.
+     *
      * @return the task queue.
      */
     public List<GenibusTask> getTaskQueue() {
@@ -97,27 +175,39 @@ public class PumpDevice {
     }
 
     /**
-     * Get once tasks that can do ’info’.
-     * @return once tasks that can do ’info’.
+     * Get all priority ’once’ Genibus tasks that can do ’INFO’. These tasks need to be executed two times, once to do
+     * INFO and once to do GET.
+     *
+     * @return a list of all priority ’once’ tasks that can do INFO.
      */
     public List<GenibusTask> getOnceTasksWithInfo() {
         return this.onceTasksWithInfo;
     }
 
     /**
-     * Set the device read buffer length. Can only set values above 70.
+     * Set the device read buffer length. Can only set values above 70, which is assumed is the minimum value a device
+     * can have. The lower limit is a safeguard to not be able to kill Genibus communications by setting the buffer size
+     * too low.
+     * This will also set the device send buffer length to the same value, if the value is above 102. It is reasonable
+     * to assume the send buffer won't be smaller than the read buffer. The send buffer does not have it's own setter
+     * method.
+     *
+     *
      * @param value the device read buffer length.
      */
     public void setDeviceReadBufferLengthBytes(int value) {
-        // 70 is minimum buffer length.
+        // 70 is assumed minimum buffer length.
         if (value >= 70) {
             this.deviceReadBufferLengthBytes = value;
         }
+        // Adjust send buffer as well.
+        this.deviceSendBufferLengthBytes = Math.max(value, 102);
     }
 
     /**
      * Gets the read buffer length (number of bytes) of this GENIbus device. The buffer length is the maximum length a
      * telegram can have that is sent to this device. If this buffer overflows, the device won't answer.
+     *
      * @return the read buffer length (number of bytes).
      */
     public int getDeviceReadBufferLengthBytes() {
@@ -126,8 +216,9 @@ public class PumpDevice {
 
     /**
      * Gets the send buffer length (number of bytes) of this GENIbus device. The buffer length is the maximum length a
-     * telegram can have that the device sends as answer telegram. This buffer can overflow when tasks are sent that
-     * have more return byte than send byte such as INFO and ASCII.
+     * telegram can have that the device sends as a response telegram. This buffer can overflow when tasks are requested
+     * that have more bytes in the response than in the request, such as INFO and ASCII.
+     *
      * @return the send buffer length (number of bytes).
      */
     public int getDeviceSendBufferLengthBytes() {
@@ -135,7 +226,8 @@ public class PumpDevice {
     }
 
     /**
-     * Get the Genibus address.
+     * Get the Genibus address of this device.
+     *
      * @return the Genibus address.
      */
     public int getGenibusAddress() {
@@ -143,7 +235,9 @@ public class PumpDevice {
     }
 
     /**
-     * Get the number of low priority tasks to send per cycle.
+     * Get the number of low priority tasks to send per cycle. This value is only relevant when not all tasks can be
+     * executed in one cycle.
+     *
      * @return the number of low priority tasks to send per cycle.
      */
     public int getLowPrioTasksPerCycle() {
@@ -151,7 +245,8 @@ public class PumpDevice {
     }
 
     /**
-     * Get the pump device id.
+     * Get the OpenEMS device id of the module that created this PumpDevice.
+     *
      * @return the pump device id.
      */
     public String getPumpDeviceId() {
@@ -159,8 +254,8 @@ public class PumpDevice {
     }
 
     /**
-     * Set a timestamp for this pump device. This is done once per cycle when the first telegram is sent to this pump.
-     * This information is used to track which pump has already received a telegram this cycle.
+     * Set a timestamp for this pump device. This is done once per cycle when the first telegram is sent to this device.
+     * This information is used to track if a telegram has already been sent to this device this cycle.
      */
     public void setTimestamp() {
         this.timestamp = System.currentTimeMillis();
@@ -290,35 +385,51 @@ public class PumpDevice {
     }
 
     /**
-     * Get the ’pressureSensorMinBar’ value. This is needed to calculate the value of the transmitted measurement data.
+     * Get the OpenEMS Unit of the sensor values ’min’ and ’range’.
+     * @return the Unit
+     */
+    public Unit getSensorUnit() {
+        return this.sensorUnit;
+    }
+
+    /**
+     * Get the ’pressureSensorMin’ value. This is needed to calculate the value of the transmitted measurement data.
+     * The unit of the value can be queried with ’getSensorUnit()’.
+     *
      * @return the ’pressureSensorMinBar’ value.
      */
-    public double getPressureSensorMinBar() {
-        return this.pressureSensorMinBar;
+    public double getPressureSensorMin() {
+        return this.pressureSensorMin;
     }
 
     /**
-     * Set the ’pressureSensorMinBar’ value. This is needed to calculate the value of the transmitted measurement data.
+     * Set the ’pressureSensorMin’ value. This is needed to calculate the value of the transmitted measurement data.
+     * The unit of the value can be queried with ’getSensorUnit()’.
+     *
      * @param pressureSensorMinBar the ’pressureSensorMinBar’ value.
      */
-    public void setPressureSensorMinBar(double pressureSensorMinBar) {
-        this.pressureSensorMinBar = pressureSensorMinBar;
+    public void setPressureSensorMin(double pressureSensorMinBar) {
+        this.pressureSensorMin = pressureSensorMinBar;
     }
 
     /**
-     * Get the ’pressureSensorRangeBar’ value. This is needed to calculate the value of the transmitted measurement data.
+     * Get the ’pressureSensorRange’ value. This is needed to calculate the value of the transmitted measurement data.
+     * The unit of the value can be queried with ’getSensorUnit()’.
+     *
      * @return the ’pressureSensorRangeBar’ value.
      */
-    public double getPressureSensorRangeBar() {
-        return this.pressureSensorRangeBar;
+    public double getPressureSensorRange() {
+        return this.pressureSensorRange;
     }
 
     /**
-     * Set the ’pressureSensorRangeBar’ value. This is needed to calculate the value of the transmitted measurement data.
+     * Set the ’pressureSensorRange’ value. This is needed to calculate the value of the transmitted measurement data.
+     * The unit of the value can be queried with ’getSensorUnit()’.
+     *
      * @param pressureSensorRangeBar the ’pressureSensorRangeBar’ value.
      */
-    public void setPressureSensorRangeBar(double pressureSensorRangeBar) {
-        this.pressureSensorRangeBar = pressureSensorRangeBar;
+    public void setPressureSensorRange(double pressureSensorRangeBar) {
+        this.pressureSensorRange = pressureSensorRangeBar;
     }
 
     /**
@@ -368,9 +479,10 @@ public class PumpDevice {
             }
         });
         this.addAllOnceTasks = true;
-        this.pressureSensorMinBar = 0;
-        this.pressureSensorRangeBar = 0;
+        this.pressureSensorMin = 0;
+        this.pressureSensorRange = 0;
         this.deviceReadBufferLengthBytes = 70;
+        this.deviceSendBufferLengthBytes = 102;
         this.millisecondsPerByte[0] = 2.0;
         this.millisecondsPerByte[1] = 2.0;
         this.millisecondsPerByte[2] = 2.0;
@@ -412,6 +524,11 @@ public class PumpDevice {
         this.timeoutCounter = timeoutCounter;
     }
 
+    /**
+     * Store a warning message.
+     *
+     * @param message the message as a string.
+     */
     public void setWarningMessage(String message) {
         if (this.warningMessage.equals("")) {
             this.warningMessage = message;
@@ -420,6 +537,11 @@ public class PumpDevice {
         }
     }
 
+    /**
+     * Collect the warning messages and clear the storage variable.
+     *
+     * @return the warning messages as a string.
+     */
     public String getAndClearWarningMessage() {
         String returnMessage = this.warningMessage;
         this.warningMessage = "";

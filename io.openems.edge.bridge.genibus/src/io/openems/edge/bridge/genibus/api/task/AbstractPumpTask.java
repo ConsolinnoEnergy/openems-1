@@ -1,15 +1,19 @@
 package io.openems.edge.bridge.genibus.api.task;
 
+import io.openems.common.channel.Unit;
 import io.openems.edge.bridge.genibus.api.PumpDevice;
 
+import java.util.OptionalDouble;
+
 /**
- * Description of what this class does.
+ * This is the base class for Genibus tasks. It contains the parameters and methods that all the different tasks have in
+ * common.
  */
 
 public abstract class AbstractPumpTask implements GenibusTask {
 
     UnitTable unitTable;
-    int genibusUnitIndex = -66;
+    int genibusUnitIndex = 0; // Initialize as an invalid value. As far as I know 0 is not a valid value in the Genibus unit table.
     double genibusUnitFactor = 1.0;
     String unitString;
     private final byte address;
@@ -40,7 +44,7 @@ public abstract class AbstractPumpTask implements GenibusTask {
     }
 
     /**
-     * Gets the address of the task. The address together with the header is the identifier for a data item in the pump.
+     * Gets the address of the task. The address together with the header is the identifier for a data item in the device.
      *
      * @return the address.
      */
@@ -50,7 +54,7 @@ public abstract class AbstractPumpTask implements GenibusTask {
     }
 
     /**
-     * Gets the header of the task. The header together with the address is the identifier for a data item in the pump.
+     * Gets the header of the task. The header together with the address is the identifier for a data item in the device.
      *
      * @return the header.
      */
@@ -62,9 +66,17 @@ public abstract class AbstractPumpTask implements GenibusTask {
     /**
      * If a task has INFO and the INFO is of the one byte type, this is used to store the INFO content with the task.
      *
-     * @param vi Value information if set range is 255 else 254. Comes from 5th bit
-     * @param bo Byte order information. 0 is high order, 1 is low order byte. 4th bit
-     * @param sif Scale information format. 0 = not available, 1= bitwise interpreted value.
+     * @param vi value interpretation.
+     *           0: Only values from 0-254 are legal. 255 means “data not available”.
+     *           1: All values 0-255 are legal values.
+     * @param bo byte order information.
+     *           0: High order byte, this is default for all values that are only 8 bit.
+     *           1: Low order byte to a 16 bit, 24 bit or 32 bit value.
+     * @param sif scale information format.
+     *            0: Scale information not available (no UNIT, ZERO or RANGE in reply).
+     *            1: Bit wise interpreted value (no UNIT, ZERO or RANGE in reply).
+     *            2: Scaled 8/16 bit value (UNIT, ZERO and RANGE in reply).
+     *            3: Extended precision, scaled 8/16/24/32 bit value (UNIT and ZERO hi/lo in reply).
      */
     @Override
     public void setOneByteInformation(int vi, int bo, int sif) {
@@ -80,17 +92,22 @@ public abstract class AbstractPumpTask implements GenibusTask {
     }
 
     /**
-     * Gets the Information written in 4 byte from the genibus bridge (handleResponse() method).
+     * If a task has INFO and the INFO is of the four byte type, this is used to store the INFO content with the task.
      *
-     * @param vi                    see OneByteInformation.
-     * @param bo                    see OneByteInformation.
-     * @param sif                   see OneByteInformation.
-     * @param zeroSignAndUnitIndex             index Number for the Unit of the task.
-     * @param scaleFactorRangeOrLow range scale factor or low order byte.
-     * @param scaleFactorZeroOrHigh either Zero scale factor or factor for high order byte
-     *
-     *                              <p> Unit calc depends on the unitString ---> unitCalc needed for default Channel Unit.
-     *                              </p>
+     * @param vi value interpretation.
+     *           0: Only values from 0-254 are legal. 255 means “data not available”.
+     *           1: All values 0-255 are legal values.
+     * @param bo byte order information.
+     *           0: High order byte, this is default for all values that are only 8 bit.
+     *           1: Low order byte to a 16 bit, 24 bit or 32 bit value.
+     * @param sif scale information format.
+     *            0: Scale information not available (no UNIT, ZERO or RANGE in reply).
+     *            1: Bit wise interpreted value (no UNIT, ZERO or RANGE in reply).
+     *            2: Scaled 8/16 bit value (UNIT, ZERO and RANGE in reply).
+     *            3: Extended precision, scaled 8/16/24/32 bit value (UNIT and ZERO hi/lo in reply).
+     * @param zeroSignAndUnitIndex  zero scale factor sign and unit index number of the task.
+     * @param scaleFactorRangeOrLow the range scale factor or the lo order byte of the extended precision zero scale factor.
+     * @param scaleFactorZeroOrHigh the zero scale factor or the hi order byte of the extended precision zero scale factor.
      */
     @Override
     public void setFourByteInformation(int vi, int bo, int sif, byte zeroSignAndUnitIndex, byte scaleFactorZeroOrHigh, byte scaleFactorRangeOrLow) {
@@ -117,41 +134,105 @@ public abstract class AbstractPumpTask implements GenibusTask {
 
         // Extract pressure sensor interval.
         if (this.headerNumber == 2 && this.address == this.pumpDevice.getPressureSensorTaskAddress()) {
-            this.pumpDevice.setPressureSensorMinBar(this.zeroScaleFactor * this.genibusUnitFactor);
-            this.pumpDevice.setPressureSensorRangeBar(this.rangeScaleFactor * this.genibusUnitFactor);
+            Unit sensorUnit = this.pumpDevice.getSensorUnit();
+            OptionalDouble sensorMinOptional = OptionalDouble.empty();
+            OptionalDouble sensorRangeOptional = OptionalDouble.empty();;
+            if (this.sif == 2) {
+                sensorMinOptional = this.unitTable.convertToOpenEmsUnit(this.zeroScaleFactor, this.genibusUnitIndex, sensorUnit);
+                sensorRangeOptional = this.unitTable.convertToOpenEmsUnit(this.rangeScaleFactor, this.genibusUnitIndex, sensorUnit);
+            } else if (this.sif == 3) {
+                /* Speculative. Don't know if sensor data in extended precision can be used for ref_rem mapping.
+                   This formula assumes the sensor interval is an 8 bit value. */
+                int minWithoutUnit = 256 * this.zeroScaleFactorHighOrder + this.zeroScaleFactorLowOrder;
+                int maxWithoutUnit = 256 * this.zeroScaleFactorHighOrder + this.zeroScaleFactorLowOrder + 254;
+                sensorMinOptional = this.unitTable.convertToOpenEmsUnit(minWithoutUnit, this.genibusUnitIndex, sensorUnit);
+                sensorRangeOptional = this.unitTable.convertToOpenEmsUnit(maxWithoutUnit, this.genibusUnitIndex, sensorUnit);
+            }
+            if (sensorMinOptional.isPresent() && sensorRangeOptional.isPresent()) {
+                this.pumpDevice.setPressureSensorMin(sensorMinOptional.getAsDouble());
+                this.pumpDevice.setPressureSensorRange(sensorRangeOptional.getAsDouble());
+            }
         }
     }
 
+    /**
+     * If INFO for this task has been stored or not.
+     *
+     * @return true for yes and false for no.
+     */
     @Override
     public boolean informationDataAvailable() {
         return this.informationAvailable;
     }
 
+    /**
+     * Reset the ’informationAvailable’ boolean to false, causing the GenibusWorker to request INFO again for this task.
+     */
     @Override
     public void resetInfo() {
         this.informationAvailable = false;
     }
 
+    /**
+     * Set the Genibus device this task belongs to.
+     *
+     * @param pumpDevice the Genibus device.
+     */
     @Override
-    public void setPumpDevice(PumpDevice pumpDevice) {
+    public void setGenibusDevice(PumpDevice pumpDevice) {
         this.pumpDevice = pumpDevice;
     }
 
+    /**
+     * Get the byte count of this task. An 8 bit task is 1 byte, a 16 bit task is 2 byte, etc.
+     *
+     * @return the number of bytes.
+     */
     @Override
     public int getDataByteSize() {
         return this.dataByteSize;
     }
 
+    /**
+     * Set the APDU identifier. This is an internal variable of the Genibus bridge used by the GenibusWorker to tell
+     * apart the APDUs it is creating for a telegram.
+     * The APDU identifier is a 3 digit decimal number. The 100 digit is the HeadClass of the apdu, the 10 digit is the
+     * operation (0=get, 2=set, 3=info), the 1 digit is a counter starting at 0.
+     * Example: 230 would be HeadClass 2 and INFO, first APDU of this type.
+     *
+     * <p>The last digit, the counter, allows to have more than one APDU of a given type. Since an APDU (request and
+     * answer) is limited to 63 bytes, several APDUs of the same type might be needed to fit all tasks.</p>
+     *
+     * @param identifier the APDU identifier.
+     */
     @Override
     public void setApduIdentifier(int identifier) {
         this.apduIdentifier = identifier;
     }
 
+    /**
+     * Get the APDU identifier. This is an internal variable of the Genibus bridge used by the GenibusWorker to tell
+     * apart the APDUs it is creating for a telegram.
+     * The APDU identifier is a 3 digit decimal number. The 100 digit is the HeadClass of the apdu, the 10 digit is the
+     * operation (0=get, 2=set, 3=info), the 1 digit is a counter starting at 0.
+     * Example: 230 would be HeadClass 2 and INFO, first APDU of this type.
+     *
+     * <p>The last digit, the counter, allows to have more than one APDU of a given type. Since an APDU (request and
+     * answer) is limited to 63 bytes, several APDUs of the same type might be needed to fit all tasks.</p>
+     *
+     *
+     * @return the APDU identifier.
+     */
     @Override
     public int getApduIdentifier() {
         return this.apduIdentifier;
     }
 
+    /**
+     * Print the content of INFO for this task to the log. Will print the data type, unit and scaling (if available).
+     *
+     * @return the parsed contents of INFO as a string.
+     */
     @Override
     public String printInfo() {
         StringBuilder returnString = new StringBuilder();

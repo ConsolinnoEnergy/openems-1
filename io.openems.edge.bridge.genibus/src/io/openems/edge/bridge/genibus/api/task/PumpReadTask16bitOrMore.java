@@ -8,6 +8,11 @@ import java.util.OptionalDouble;
 /**
  * PumpTask class for reading values with 8 or 16 bit precision.
  * Extended precision supports 8, 16, 24 and 32 bit.
+ * Limitations: support for more than 8 bit data items is limited to head class 2 at the moment. Specifically, those
+ * data items that have hi and lo bytes on subsequent addresses. For example t_2hour_hi (2, 24) and t_2hour_lo (2, 25).
+ * You give this task the address of the hi byte and the total number of bytes. This task then automatically requests
+ * data from the addresses following the hi byte and assumes these are the lo bytes. Once all bytes are collected, the
+ * combined value is calculated and put in the channel associated with this task.
  */
 public class PumpReadTask16bitOrMore extends AbstractPumpTask {
 
@@ -16,7 +21,7 @@ public class PumpReadTask16bitOrMore extends AbstractPumpTask {
     protected final double channelMultiplier;
     private int refreshInfoCounter = 0;
     private int byteCounter = 0;
-    private byte[] dataArray = new byte[dataByteSize];
+    private final byte[] dataArray = new byte[dataByteSize];
 
     public PumpReadTask16bitOrMore(int numberOfBytes, int address, int headerNumber, Channel<Double> channel, String unitString, Priority priority, double channelMultiplier) {
         super(address, headerNumber, unitString, numberOfBytes);
@@ -34,90 +39,89 @@ public class PumpReadTask16bitOrMore extends AbstractPumpTask {
 
         // Collect the bytes.
         this.dataArray[this.byteCounter] = data;
-        if (this.byteCounter != this.dataByteSize - 1) {
+        if (this.byteCounter < this.dataByteSize - 1) {
             this.byteCounter++;
             return;
         }
+        // Data is complete. Now calculate value and put it in the channel.
+        this.byteCounter = 0;
 
         // ref_norm changes INFO if control mode is changed. If task is ref_norm (2, 49), regularly update INFO.
-        if (getHeader() == 2 && getAddress() == 49) {
+        final int refNormHeadClass = 2;
+        final int refNormAddress = 49;
+        if (getHeader() == refNormHeadClass && getAddress() == refNormAddress) {
             this.refreshInfoCounter++;
-            if (this.refreshInfoCounter >= 5) {
+            final int updateInterval = 5;
+            if (this.refreshInfoCounter >= updateInterval) {
                 super.resetInfo();
                 this.refreshInfoCounter = 0;
             }
         }
 
-        // Data is complete, now calculate value and put it in the channel.
-        if (this.byteCounter >= this.dataByteSize - 1) {
-            this.byteCounter = 0;
+        // When vi == 0 (false), then 0xFF means "data not available".
+        if (super.vi == false) {
+            if ((this.dataArray[0] & 0xFF) == 0xFF) {
+                this.channel.setNextValue(null);
+                return;
+            }
+        }
 
-            // When vi == 0 (false), then 0xFF means "data not available".
-            if (super.vi == false) {
-                if ((this.dataArray[0] & 0xFF) == 0xFF) {
-                    this.channel.setNextValue(null);
-                    return;
+        int[] actualDataArray = new int[this.dataByteSize];
+        for (int i = 0; i < this.dataByteSize; i++) {
+            actualDataArray[i] = Byte.toUnsignedInt(this.dataArray[i]);
+        }
+
+        int range = 254;
+        if (super.vi) {
+            range = 255;
+        }
+
+        double tempValue;
+        switch (super.sif) {
+            case 2:
+                // Formula working for both 8 and 16 bit
+                double sumValue = 0;
+                for (int i = 0; i < this.dataByteSize; i++) {
+                    sumValue = sumValue +  actualDataArray[i] * ((double) super.rangeScaleFactor / (double) range * Math.pow(256, i));
                 }
-            }
+                // value w.o. considering units
+                tempValue = (super.zeroScaleFactor + sumValue);
 
-            int[] actualDataArray = new int[this.dataByteSize];
-            for (int i = 0; i < this.dataByteSize; i++) {
-                actualDataArray[i] = Byte.toUnsignedInt(this.dataArray[i]);
-            }
+                /* 16bit formula
+                   tempValue = (super.zeroScaleFactor + (actualDataArray[0] * ((double) super.rangeScaleFactor / (double) range))
+                            + (actualDataArray[1] * ((double) super.rangeScaleFactor / ((double) range * 256)))); */
 
-            int range = 254;
-            double tempValue;
-            if (super.vi) {
-                range = 255;
-            }
+                this.scaleValueToOpenEmsAndHandleError(tempValue);
+                break;
+            case 3:
+                // Formula working for 8, 16, 24 and 32 bit.
+                double highPrecisionValue = 0;
+                for (int i = 0; i < dataByteSize; i++) {
+                    highPrecisionValue = highPrecisionValue + actualDataArray[i] * Math.pow(256, (this.dataByteSize - i - 1));
+                }
+                int exponent = dataByteSize - 2;
+                if (exponent < 0) {
+                    exponent = 0;
+                }
+                // value w.o. considering units
+                tempValue = (Math.pow(256, exponent) * (256 * super.zeroScaleFactorHighOrder + super.zeroScaleFactorLowOrder)
+                        + highPrecisionValue);
 
-            switch (super.sif) {
-                case 2:
-                    // Formula working for both 8 and 16 bit
-                    double sumValue = 0;
-                    for (int i = 0; i < this.dataByteSize; i++) {
-                        sumValue = sumValue +  actualDataArray[i] * ((double) super.rangeScaleFactor / (double) range * Math.pow(256, i));
-                    }
-                    // value w.o. considering units
-                    tempValue = (super.zeroScaleFactor + sumValue);
+                /* Extended precision, 8 bit formula.
+                   tempValue = ((256 * super.scaleFactorHighOrder + super.scaleFactorLowOrder) + actualData); */
 
-                    /* 16bit formula
-                    tempValue = (super.zeroScaleFactor + (actualDataArray[0] * ((double) super.rangeScaleFactor / (double) range))
-                            + (actualDataArray[1] * ((double) super.rangeScaleFactor / ((double) range * 256))));
-                    */
-
-                    this.scaleValueToOpenEmsAndHandleError(tempValue);
-                    break;
-                case 3:
-                    // Formula working for 8, 16, 24 and 32 bit.
-                    double highPrecisionValue = 0;
-                    for (int i = 0; i < dataByteSize; i++) {
-                        highPrecisionValue = highPrecisionValue + actualDataArray[i] * Math.pow(256, (this.dataByteSize - i - 1));
-                    }
-                    int exponent = dataByteSize - 2;
-                    if (exponent < 0) {
-                        exponent = 0;
-                    }
-                    // value w.o. considering units
-                    tempValue = (Math.pow(256, exponent) * (256 * super.zeroScaleFactorHighOrder + super.zeroScaleFactorLowOrder)
-                            + highPrecisionValue);
-
-                    // Extended precision, 8 bit formula.
-                    //tempValue = ((256 * super.scaleFactorHighOrder + super.scaleFactorLowOrder) + actualData);
-
-                    this.scaleValueToOpenEmsAndHandleError(tempValue);
-                    break;
-                case 1:
-                case 0:
-                default:
-                    // Formula works for 8 to 32 bit.
-                    double unscaledMultiByte = 0;
-                    for (int i = 0; i < this.dataByteSize; i++) {
-                        unscaledMultiByte = unscaledMultiByte + actualDataArray[i] * Math.pow(256, (this.dataByteSize - i - 1));
-                    }
-                    this.channel.setNextValue(unscaledMultiByte * this.channelMultiplier);
-                    break;
-            }
+                this.scaleValueToOpenEmsAndHandleError(tempValue);
+                break;
+            case 1:
+            case 0:
+            default:
+                // Formula works for 8 to 32 bit.
+                double unscaledMultiByte = 0;
+                for (int i = 0; i < this.dataByteSize; i++) {
+                    unscaledMultiByte = unscaledMultiByte + actualDataArray[i] * Math.pow(256, (this.dataByteSize - i - 1));
+                }
+                this.channel.setNextValue(unscaledMultiByte * this.channelMultiplier);
+                break;
         }
     }
 

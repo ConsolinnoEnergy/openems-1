@@ -1,5 +1,6 @@
 package io.openems.edge.controller.heatnetwork.pump.grundfos;
 
+import io.openems.common.channel.Unit;
 import io.openems.common.exceptions.OpenemsError;
 import io.openems.edge.common.component.AbstractOpenemsComponent;
 import io.openems.edge.common.component.ComponentManager;
@@ -303,8 +304,11 @@ public class PumpGrundfosControllerImpl extends AbstractOpenemsComponent impleme
                                 this.pumpChannels.setRefRem().setNextWriteValue(this.setpoint);
                                 break;
                             case CONST_PRESSURE:
-                                double intervalHrange = this.pumpChannels.getPumpDevice().getPressureSensorRangeBar();
-                                double intervalHmin = this.pumpChannels.getPumpDevice().getPressureSensorMinBar();
+                                Unit channelUnit = setPressureSetpoint().channelDoc().getUnit();
+                                Unit sensorUnit = this.pumpChannels.getPumpDevice().getSensorUnit();
+                                int scaleFactor = channelUnit.getScaleFactor() - sensorUnit.getScaleFactor();
+                                double intervalHrange = this.pumpChannels.getPumpDevice().getPressureSensorRange() * Math.pow(10, -scaleFactor);
+                                double intervalHmin = this.pumpChannels.getPumpDevice().getPressureSensorMin() * Math.pow(10, -scaleFactor);
 
                                 // Test if INFO of pressure sensor is available. If yes, range is not 0.
                                 if (intervalHrange > 0) {
