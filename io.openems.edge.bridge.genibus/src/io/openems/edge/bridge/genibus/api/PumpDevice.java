@@ -73,19 +73,25 @@ public class PumpDevice {
     private final int lowPrioTasksPerCycle;
 
     /**
-     * The parameter ’millisecondsPerByte’ together with ’emptyTelegramTime’ is used to calculate the telegram response
-     * timeout. The timeout length cannot be too long, otherwise one pump that is not responding (because of power
-     * outage, error, wrong address, etc.) will severely slow down communication to other pumps on the same Genibus bridge.
-     * The parameter ’emptyTelegramTime’ measures how long an exchange of empty telegrams takes, in milliseconds. The
-     * parameter ’millisecondsPerByte’ then indicates how much each byte added to the request or response telegram
-     * increases that exchange time, again in milliseconds.
+     * The parameter ’millisecondsPerByte’ together with ’emptyTelegramTime’ is used to estimate the time an exchange of
+     * telegrams (request and response) for this device will take. The parameter ’emptyTelegramTime’ measures how long
+     * an exchange of empty telegrams takes, in milliseconds. The parameter ’millisecondsPerByte’ then indicates how much
+     * each byte added to the request or response telegram increases that exchange time, again in milliseconds.
      * Both parameters are measured during runtime. To smooth out variation, they store multiple measured values in an
      * array. The return value is then the average of the array.
      *
      * <p>The formula for the telegram exchange time is then:
      * emptyTelegramTime + additionalByteEstimate * millisecondsPerByte
      * An empty telegram has a PDU of size 0 bytes. ’additionalByteEstimate’ is then the PDU size of the request telegram,
-     * + the estimated PDU size of the response telegram.</p>
+     * + the estimated PDU size of the response telegram. ’emptyTelegramTime’ and ’millisecondsPerByte’ should be constant,
+     * so the time of a telegram exchange can be calculated from the byte count in the PDUs.</p>
+     *
+     * <p>This timing information is used for two things:
+     * - Adjusting the telegram response timeout to the telegram size. The timeout length cannot be too long, otherwise
+     *   one pump that is not responding (because of power outage, error, wrong address, etc.) will severely slow down
+     *   communication to other pumps on the same Genibus bridge.
+     * - Genibus & OpenEMS cycle synchronisation. Near the end of the OpenEMS cycle, the length of a telegram will be
+     *   limited so that the request/response exchange is done before the cycle ends.</p>
      */
     private final double[] millisecondsPerByte = {2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0};    // Rough estimate as initial value. Exact value measured at runtime.
     private int arrayTracker = 0;   // Used to track in which array position the last measurement was put.
@@ -93,7 +99,7 @@ public class PumpDevice {
     /* Value measured with a laptop is 33 ms. Leaflet timing seems to be slower, so setting a more conservative 40 ms as
        initial value. Exact value measured at runtime. */
     private final int[] emptyTelegramTime = {40, 40, 40, 40, 40};
-    private int arrayTracker2 = 0;
+    private int arrayTracker2 = 0;   // Used to track in which array position the last measurement was put.
 
     /**
      * If the pump is in pressure set point mode, ref_rem is mapped to the pressure sensor range. ref_rem is a % value,
@@ -118,7 +124,7 @@ public class PumpDevice {
 
     private boolean firstTelegram = true;
     private boolean emptyTelegramSent = false;
-    private int timeoutCounter = 0;
+    private int connectionTimeoutCounter = 0;
     private String warningMessage;
 
     /**
@@ -205,8 +211,8 @@ public class PumpDevice {
     }
 
     /**
-     * Gets the read buffer length (number of bytes) of this GENIbus device. The buffer length is the maximum length a
-     * telegram can have that is sent to this device. If this buffer overflows, the device won't answer.
+     * Gets the read buffer length (number of bytes) of this Genibus device. The read buffer length is the maximum length
+     * a telegram can have that is sent to this device. If this buffer overflows, the device won't answer.
      *
      * @return the read buffer length (number of bytes).
      */
@@ -215,8 +221,8 @@ public class PumpDevice {
     }
 
     /**
-     * Gets the send buffer length (number of bytes) of this GENIbus device. The buffer length is the maximum length a
-     * telegram can have that the device sends as a response telegram. This buffer can overflow when tasks are requested
+     * Gets the send buffer length (number of bytes) of this Genibus device. The send buffer length is the maximum length
+     * a telegram can have that the device sends as a response telegram. This buffer can overflow when tasks are requested
      * that have more bytes in the response than in the request, such as INFO and ASCII.
      *
      * @return the send buffer length (number of bytes).
@@ -263,7 +269,8 @@ public class PumpDevice {
 
     /**
      * Gets the last timestamp of this pump device.
-     * This information is used to track which pump has already received a telegram this cycle.
+     * This information is used to track if a telegram has already been sent to this device this cycle.
+     *
      * @return the last timestamp of this pump device.
      */
     public long getTimestamp() {
@@ -271,11 +278,16 @@ public class PumpDevice {
     }
 
     /**
-     * This method is used to store timing information about telegram send and receive. The timing information is
-     * used to estimate if a telegram can still fit in a cycle or not.
-     * To send and receive a telegram takes roughly 33 ms + 3 ms per byte of the APDU. The 33 ms is for an empty telegram.
-     * For a more accurate timing the ms per byte is measured and stored with this method. The method saves the last
-     * three values so an average can be calculated.
+     * This method stores measured values for the ’millisecondsPerByte’ parameter, which is used to calculate telegram
+     * request/response timing. The time it takes to send a telegram and receive the response is:
+     * 'emptyTelegramTime + PduBytes * millisecondsPerByte'
+     * ’emptyTelegramTime’ is the time in ms it takes to send and receive the response to an empty telegram (=PDU size 0
+     * bytes). 'PduBytes' is then the combined byte count of the request and response telegram PDUs. ’emptyTelegramTime’
+     * and ’millisecondsPerByte’ should be constant. If these are known, the time of a telegram exchange can be calculated
+     * from the byte count in the PDUs.
+     * Multiple measurements of ’millisecondsPerByte’ are stored in an array. Calling the value returns an average of
+     * these measurements, to smooth out erratic measurement data. The measurement data is also clamped to the [0.5, 10]
+     * interval, as a safeguard from runaway values rendering the Genibus bridge inoperable.
      *
      * @param millisecondsPerByte the number of milliseconds one byte adds to the telegram send and receive time.
      */
@@ -289,34 +301,49 @@ public class PumpDevice {
         }
         this.millisecondsPerByte[this.arrayTracker] = millisecondsPerByte;
         this.arrayTracker++;
-        if (this.arrayTracker >= 7) {
+        int arrayLength = this.millisecondsPerByte.length;
+        if (this.arrayTracker >= arrayLength) {
             this.arrayTracker = 0;
         }
     }
 
     /**
-     * Gets the time in ms that is added to a telegram process (send and receive) per byte in the apdu. An empty
-     * telegram takes ~33 ms to send and receive, each byte in the apdus adds "this" amount of ms to the process.
+     * Gets the average value of measured values for the ’millisecondsPerByte’ parameter, which is used to calculate
+     * telegram request/response timing. The time it takes to send a telegram and receive the response is:
+     * 'emptyTelegramTime + PduBytes * millisecondsPerByte'
+     * ’emptyTelegramTime’ is the time in ms it takes to send and receive the response to an empty telegram (=PDU size 0
+     * bytes). 'PduBytes' is then the combined byte count of the request and response telegram PDUs. ’emptyTelegramTime’
+     * and ’millisecondsPerByte’ should be constant. If these are known, the time of a telegram exchange can be calculated
+     * from the byte count in the PDUs.
+     * Multiple measurements of ’millisecondsPerByte’ are stored in an array. Calling the value returns an average of
+     * these measurements, to smooth out erratic measurement data.
      *
      * @return the number of milliseconds one byte adds to the telegram send and receive time.
      */
     public double getMillisecondsPerByte() {
-        // Average over the seven entries.
         double returnValue = 0;
-        for (int i = 0; i < 5; i++) {
-            returnValue += this.millisecondsPerByte[i];
+        int arrayLength = this.millisecondsPerByte.length;
+        for (double v : this.millisecondsPerByte) {
+            returnValue += v;
         }
-        return returnValue / 7;
+        return returnValue / arrayLength;   // Average
     }
 
     /**
-     * Set the time it takes to send and receive the response to an empty telegram. Used to calculate the timings of
-     * telegrams.
+     * This method stores measured values for the ’emptyTelegramTime’ parameter, which is used to calculate telegram
+     * request/response timing. The time it takes to send a telegram and receive the response is:
+     * 'emptyTelegramTime + PduBytes * millisecondsPerByte'
+     * ’emptyTelegramTime’ is the time in ms it takes to send and receive the response to an empty telegram (=PDU size 0
+     * bytes). 'PduBytes' is then the combined byte count of the request and response telegram PDUs. ’emptyTelegramTime’
+     * and ’millisecondsPerByte’ should be constant. If these are known, the time of a telegram exchange can be calculated
+     * from the byte count in the PDUs.
+     * Multiple measurements of ’emptyTelegramTime’ are stored in an array. Calling the value returns an average of
+     * these measurements, to smooth out erratic measurement data. The measurement data is also clamped to the [10, 100]
+     * interval, as a safeguard from runaway values rendering the Genibus bridge inoperable.
      *
-     * @param emptyTelegramTime the time it takes to send and receive the response to an empty telegram.
+     * @param emptyTelegramTime the time in milliseconds it takes to send and receive the response to an empty telegram.
      */
     public void setEmptyTelegramTime(int emptyTelegramTime) {
-        // Save five values so we can average and the value won't jump that much.
         if (emptyTelegramTime > 100) {
             emptyTelegramTime = 100;   // Failsafe.
         }
@@ -325,27 +352,37 @@ public class PumpDevice {
         }
         this.emptyTelegramTime[this.arrayTracker2] = emptyTelegramTime;
         this.arrayTracker2++;
-        if (this.arrayTracker2 >= 5) {
+        int arrayLength = this.emptyTelegramTime.length;
+        if (this.arrayTracker2 >= arrayLength) {
             this.arrayTracker2 = 0;
         }
     }
 
     /**
-     * Set the time it takes to send and receive the response to an empty telegram.
+     * Gets the average value of measured values for the ’emptyTelegramTime’ parameter, which is used to calculate
+     * telegram request/response timing. The time it takes to send a telegram and receive the response is:
+     * 'emptyTelegramTime + PduBytes * millisecondsPerByte'
+     * ’emptyTelegramTime’ is the time in ms it takes to send and receive the response to an empty telegram (=PDU size 0
+     * bytes). 'PduBytes' is then the combined byte count of the request and response telegram PDUs. ’emptyTelegramTime’
+     * and ’millisecondsPerByte’ should be constant. If these are known, the time of a telegram exchange can be calculated
+     * from the byte count in the PDUs.
+     * Multiple measurements of ’emptyTelegramTime’ are stored in an array. Calling the value returns an average of
+     * these measurements, to smooth out erratic measurement data.
      *
      * @return the time it takes to send and receive the response to an empty telegram.
      */
     public int getEmptyTelegramTime() {
-        // Average over the five entries.
         int returnValue = 0;
-        for (int i = 0; i < 5; i++) {
-            returnValue += this.emptyTelegramTime[i];
+        int arrayLength = this.emptyTelegramTime.length;
+        for (int j : this.emptyTelegramTime) {
+            returnValue += j;
         }
-        return returnValue / 5;
+        return returnValue / arrayLength;   // Average
     }
 
     /**
-     * If an empty telegram been sent to this device.
+     * If an empty telegram been sent to this device, this cycle.
+     *
      * @return true for yes and false for no.
      */
     public boolean isEmptyTelegramSent() {
@@ -353,15 +390,28 @@ public class PumpDevice {
     }
 
     /**
-     * Set the empty telegram sent boolean.
-     * @param emptyTelegramSent the value for the empty telegram sent boolean.
+     * Set the ’emptyTelegramSent’ boolean. Indicates if an empty telegram has been sent to this device, this cycle
+     * (true) or not (false).
+     *
+     * @param emptyTelegramSent the value for the ’emptyTelegramSent’ boolean.
      */
     public void setEmptyTelegramSent(boolean emptyTelegramSent) {
         this.emptyTelegramSent = emptyTelegramSent;
     }
 
     /**
-     * Set the ’allLowPrioTasksAdded’ boolean.
+     * If all low priority tasks have been added to the task queue, this cycle.
+     *
+     * @return true for yes and false for no.
+     */
+    public boolean isAllLowPrioTasksAdded() {
+        return this.allLowPrioTasksAdded;
+    }
+
+    /**
+     * Set the ’allLowPrioTasksAdded’ boolean. Indicates if all low priority tasks have been added to the task queue,
+     * this cycle (true) or not (false).
+     *
      * @param allLowPrioTasksAdded the value for the ’allLowPrioTasksAdded’ boolean.
      */
     public void setAllLowPrioTasksAdded(boolean allLowPrioTasksAdded) {
@@ -369,15 +419,9 @@ public class PumpDevice {
     }
 
     /**
-     * Get the ’allLowPrioTasksAdded’ boolean.
-     * @return the ’allLowPrioTasksAdded’ boolean.
-     */
-    public boolean isAllLowPrioTasksAdded() {
-        return this.allLowPrioTasksAdded;
-    }
-
-    /**
-     * Get the task address from which the pressure sensor INFO is taken.
+     * Get the task address from which the pressure sensor INFO is taken. In pressure set point mode, ref_rem maps to the
+     * range indicated by that INFO.
+     *
      * @return the task address.
      */
     public int getPressureSensorTaskAddress() {
@@ -385,7 +429,8 @@ public class PumpDevice {
     }
 
     /**
-     * Get the OpenEMS Unit of the sensor values ’min’ and ’range’.
+     * Get the OpenEMS Unit of the pressure sensor values ’pressureSensorMin’ and ’pressureSensorRange’.
+     *
      * @return the Unit
      */
     public Unit getSensorUnit() {
@@ -393,7 +438,7 @@ public class PumpDevice {
     }
 
     /**
-     * Get the ’pressureSensorMin’ value. This is needed to calculate the value of the transmitted measurement data.
+     * Get the ’pressureSensorMin’ value. In pressure set point mode, this is needed to calculate the set point.
      * The unit of the value can be queried with ’getSensorUnit()’.
      *
      * @return the ’pressureSensorMinBar’ value.
@@ -403,7 +448,7 @@ public class PumpDevice {
     }
 
     /**
-     * Set the ’pressureSensorMin’ value. This is needed to calculate the value of the transmitted measurement data.
+     * Set the ’pressureSensorMin’ value. In pressure set point mode, this is needed to calculate the set point.
      * The unit of the value can be queried with ’getSensorUnit()’.
      *
      * @param pressureSensorMinBar the ’pressureSensorMinBar’ value.
@@ -413,7 +458,7 @@ public class PumpDevice {
     }
 
     /**
-     * Get the ’pressureSensorRange’ value. This is needed to calculate the value of the transmitted measurement data.
+     * Get the ’pressureSensorRange’ value. In pressure set point mode, this is needed to calculate the set point.
      * The unit of the value can be queried with ’getSensorUnit()’.
      *
      * @return the ’pressureSensorRangeBar’ value.
@@ -423,7 +468,7 @@ public class PumpDevice {
     }
 
     /**
-     * Set the ’pressureSensorRange’ value. This is needed to calculate the value of the transmitted measurement data.
+     * Set the ’pressureSensorRange’ value. In pressure set point mode, this is needed to calculate the set point.
      * The unit of the value can be queried with ’getSensorUnit()’.
      *
      * @param pressureSensorRangeBar the ’pressureSensorRangeBar’ value.
@@ -433,7 +478,9 @@ public class PumpDevice {
     }
 
     /**
-     * Get the ’connectionOk’ value.
+     * Get the ’connectionOk’ value. The connection is not ok when the communication to the device is not working, or
+     * when the received telegrams can not be parsed.
+     *
      * @return the ’connectionOk’ value.
      */
     public boolean isConnectionOk() {
@@ -441,7 +488,9 @@ public class PumpDevice {
     }
 
     /**
-     * Set the ’connectionOk’ value.
+     * Set the ’connectionOk’ value. The connection is not ok when the communication to the device is not working, or
+     * when the received telegrams can not be parsed.
+     *
      * @param connectionOk the ’connectionOk’ value.
      */
     public void setConnectionOk(boolean connectionOk) {
@@ -449,15 +498,18 @@ public class PumpDevice {
     }
 
     /**
-     * Get the ’addAllOnceTasks’ value.
-     * @return the ’addAllOnceTasks’ value.
+     * If all priority once tasks have been added to the task queue.
+     *
+     * @return true for yes and false for no.
      */
     public boolean isAddAllOnceTasks() {
         return this.addAllOnceTasks;
     }
 
     /**
-     * Set the ’addAllOnceTasks’ value.
+     * Set the ’addAllOnceTasks’ boolean. Indicates if all priority once tasks have been added to the task queue (true)
+     * or not (false).
+     *
      * @param addAllOnceTasks the ’addAllOnceTasks’ value.
      */
     public void setAddAllOnceTasks(boolean addAllOnceTasks) {
@@ -483,45 +535,56 @@ public class PumpDevice {
         this.pressureSensorRange = 0;
         this.deviceReadBufferLengthBytes = 70;
         this.deviceSendBufferLengthBytes = 102;
-        this.millisecondsPerByte[0] = 2.0;
-        this.millisecondsPerByte[1] = 2.0;
-        this.millisecondsPerByte[2] = 2.0;
-        this.millisecondsPerByte[3] = 2.0;
-        this.millisecondsPerByte[4] = 2.0;
-        this.millisecondsPerByte[5] = 2.0;
-        this.millisecondsPerByte[6] = 2.0;
+
+        int arrayLength1 = this.millisecondsPerByte.length;
+        for (int i = 0; i < arrayLength1; i++) {
+            this.millisecondsPerByte[i] = 2.0;
+        }
+
+        int arrayLength2 = this.emptyTelegramTime.length;
+        for (int i = 0; i < arrayLength2; i++) {
+            this.emptyTelegramTime[i] = 40;
+        }
     }
 
     /**
-     * Get the ’firstTelegram’ value.
-     * @return the ’firstTelegram’ value.
+     * If this is the first (non empty) telegram after a connection loss. Queried during telegram creation, when deciding
+     * which tasks to put in the telegram.
+     *
+     * @return true for yes and false for no.
      */
-    public boolean isFirstTelegram() {
+    public boolean isFirstTelegramAfterConnectionLoss() {
         return this.firstTelegram;
     }
 
     /**
-     * Set the ’firstTelegram’ value.
+     * Set the ’firstTelegram’ boolean. Indicates that the next (non empty) telegram to this device will be the first
+     * after a connection loss (true) or not (false).
+     *
      * @param firstTelegram the ’firstTelegram’ value.
      */
-    public void setFirstTelegram(boolean firstTelegram) {
+    public void setFirstTelegramAfterConnectionLoss(boolean firstTelegram) {
         this.firstTelegram = firstTelegram;
     }
 
     /**
-     * Get the ’timeoutCounter’ value.
-     * @return the ’timeoutCounter’ value.
+     * Get the ’connectionTimeoutCounter’ value. Counts the subsequent failed attempts to receive a response telegram,
+     * capped at 3.
+     *
+     * @return the ’connectionTimeoutCounter’ value.
      */
-    public int getTimeoutCounter() {
-        return this.timeoutCounter;
+    public int getConnectionTimeoutCounter() {
+        return this.connectionTimeoutCounter;
     }
 
     /**
-     * Set the ’timeoutCounter’ value.
-     * @param timeoutCounter the ’timeoutCounter’ value.
+     * Set the ’connectionTimeoutCounter’ value. Counts the subsequent failed attempts to receive a response telegram,
+     * capped at 3.
+     *
+     * @param connectionTimeoutCounter the ’connectionTimeoutCounter’ value.
      */
-    public void setTimeoutCounter(int timeoutCounter) {
-        this.timeoutCounter = timeoutCounter;
+    public void setConnectionTimeoutCounter(int connectionTimeoutCounter) {
+        this.connectionTimeoutCounter = connectionTimeoutCounter;
     }
 
     /**
@@ -530,10 +593,12 @@ public class PumpDevice {
      * @param message the message as a string.
      */
     public void setWarningMessage(String message) {
-        if (this.warningMessage.equals("")) {
-            this.warningMessage = message;
-        } else {
-            this.warningMessage = this.warningMessage + " " + message;
+        if (this.warningMessage.length() < 1000) {  // Overflow protection.
+            if (this.warningMessage.equals("")) {
+                this.warningMessage = message;
+            } else {
+                this.warningMessage = this.warningMessage + " " + message;
+            }
         }
     }
 

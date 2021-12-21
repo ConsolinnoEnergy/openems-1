@@ -23,6 +23,17 @@ public class PumpReadTask16bitOrMore extends AbstractPumpTask {
     private int byteCounter = 0;
     private final byte[] dataArray = new byte[dataByteSize];
 
+    /**
+     * Constructor with channel multiplier.
+     *
+     * @param numberOfBytes the number of bytes of this task. 8 bit = 1, 16 bit = 2, etc.
+     * @param address the Genibus data item address
+     * @param headerNumber
+     * @param channel
+     * @param unitString
+     * @param priority
+     * @param channelMultiplier
+     */
     public PumpReadTask16bitOrMore(int numberOfBytes, int address, int headerNumber, Channel<Double> channel, String unitString, Priority priority, double channelMultiplier) {
         super(address, headerNumber, unitString, numberOfBytes);
         this.channel = channel;
@@ -30,10 +41,27 @@ public class PumpReadTask16bitOrMore extends AbstractPumpTask {
         this.channelMultiplier = channelMultiplier;
     }
 
+    /**
+     * Constructor without channel multiplier.
+     *
+     * @param numberOfBytes
+     * @param address
+     * @param headerNumber
+     * @param channel
+     * @param unitString
+     * @param priority
+     */
     public PumpReadTask16bitOrMore(int numberOfBytes, int address, int headerNumber, Channel<Double> channel, String unitString, Priority priority) {
         this(numberOfBytes, address, headerNumber, channel, unitString, priority, 1);
     }
 
+    /**
+     * Allocate a byte from a response telegram to this task. For multi byte tasks, call this method for each byte in
+     * the order hi to lo. Once all bytes are allocated, the data is processed and the result put in ’nextValue’ of the
+     * associated OpenEMS channel.
+     *
+     * @param data the response byte from the Genibus device for this task.
+     */
     @Override
     public void processResponse(byte data) {
 
@@ -157,6 +185,11 @@ public class PumpReadTask16bitOrMore extends AbstractPumpTask {
         }
     }
 
+    /**
+     * Get the priority of this task. High, low or once.
+     *
+     * @return the priority.
+     */
     @Override
     public Priority getPriority() {
         return this.priority;

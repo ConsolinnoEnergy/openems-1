@@ -298,7 +298,7 @@ public enum UnitTable {
      * compatible to the Genibus unit or one of the units is not yet supported.
      * Genibus has the units ’Kelvin’ (absolute temperature) and ’diff-Kelvin’ (temperature difference).
      * It was decided to exclusively link OpenEMS ’Kelvin’ to Genibus ’diff-Kelvin’ to avoid confusion. To convert to
-     * Genibus ’Kelvin’, the OpenEMS source unit must be ’Celsius’.’
+     * Genibus ’Kelvin’, the OpenEMS source unit must be ’Celsius’.
      *
      * @param value the value in OpenEMS units.
      * @param openEmsUnit the OpenEMS unit.

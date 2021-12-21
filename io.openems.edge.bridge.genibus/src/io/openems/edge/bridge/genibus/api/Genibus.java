@@ -1,6 +1,8 @@
 package io.openems.edge.bridge.genibus.api;
 
-import io.openems.edge.common.channel.Channel;
+/**
+ * Interface for the Genibus bridge. Adds or removes a device.
+ */
 
 public interface Genibus {
 

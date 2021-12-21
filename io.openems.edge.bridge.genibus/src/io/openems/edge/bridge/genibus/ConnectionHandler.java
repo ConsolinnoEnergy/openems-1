@@ -295,7 +295,7 @@ public class ConnectionHandler {
 
     /**
      * Sends the telegram and returns the response telegram.
-     * @param timeout how tong to wait for the response telegram before aborting.
+     * @param timeout how long to wait for the response telegram before aborting.
      * @param telegram the telegram to send.
      * @param debug print info to log or not.
      * @return the response telegram if available, otherwise null.
@@ -430,11 +430,11 @@ public class ConnectionHandler {
             e.printStackTrace();
         }
         this.parent.logWarn(this.log, "Telegram response timeout");
-        int timeoutCounter = pumpDevice.getTimeoutCounter();
+        int timeoutCounter = pumpDevice.getConnectionTimeoutCounter();
         if (timeoutCounter < 3) {
             timeoutCounter++;
         }
-        pumpDevice.setTimeoutCounter(timeoutCounter);
+        pumpDevice.setConnectionTimeoutCounter(timeoutCounter);
         return null;
     }
 

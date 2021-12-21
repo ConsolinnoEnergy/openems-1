@@ -80,9 +80,10 @@ class GenibusWorker extends AbstractCycleWorker {
             }
             currentDevice = this.deviceList.get(this.currentDeviceCounter);
 
-            // The timeoutCounter is 0 when the device is responding. If the device has not responded 3 times in a row,
-            // pump is most likely offline or wrong address. Wait 5 seconds before trying again, otherwise skip the pump.
-            if (currentDevice.getTimeoutCounter() > 2) {
+            /* If a device is not responding, don't try every cycle to prevent clogging up the Genibus bridge.
+               The timeoutCounter is 0 when the device is responding. If the device has not responded 3 times in a row,
+               wait 5 seconds before trying again. Otherwise skip the device. */
+            if (currentDevice.getConnectionTimeoutCounter() > 2) {
                 long timeSinceLastTry = System.currentTimeMillis() - currentDevice.getTimestamp();
                 if (timeSinceLastTry > 5000 || timeSinceLastTry < 0) {  // < 0 for overflow protection.
                     break;
@@ -115,7 +116,7 @@ class GenibusWorker extends AbstractCycleWorker {
         if (currentDevice.isConnectionOk() == false) {
             if (this.lastExecutionMillis > this.cycleTimeMs - 50) {
                 currentDevice.setTimestamp();
-                currentDevice.setFirstTelegram(true);
+                currentDevice.setFirstTelegramAfterConnectionLoss(true);
                 if (this.parent.getDebug()) {
                     this.parent.logInfo(this.log, "Sending empty telegram to test if device " + currentDevice.getPumpDeviceId() + " is online.");
                 }
@@ -374,13 +375,13 @@ class GenibusWorker extends AbstractCycleWorker {
             lowTasksToAdd = numberOfLowTasks;
         }
 
-        if (this.lastExecutionMillis > this.cycleTimeMs - 50 || currentDevice.isFirstTelegram()) {
+        if (this.lastExecutionMillis > this.cycleTimeMs - 50 || currentDevice.isFirstTelegramAfterConnectionLoss()) {
             // Check if this was already executed this cycle. This part should execute once per cycle only.
             // isFirstTelegram is true when connection was lost and has just been reestablished.
 
             currentDevice.setTimestamp();
             currentDevice.setAllLowPrioTasksAdded(false);
-            currentDevice.setFirstTelegram(false);
+            currentDevice.setFirstTelegramAfterConnectionLoss(false);
             currentDevice.setEmptyTelegramSent(false);
 
             // Check content of taskQueue. If length is longer than numberOfHighTasks + lowTasksToAdd (=number of tasks

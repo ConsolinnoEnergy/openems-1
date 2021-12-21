@@ -162,7 +162,7 @@ public class GenibusImpl extends AbstractOpenemsComponent implements OpenemsComp
         }
 
         telegram.getPumpDevice().setConnectionOk(true);
-        telegram.getPumpDevice().setTimeoutCounter(0);
+        telegram.getPumpDevice().setConnectionTimeoutCounter(0);
 
         //if (debug) { this.logInfo(this.log, "--Reading Response--"); }
 

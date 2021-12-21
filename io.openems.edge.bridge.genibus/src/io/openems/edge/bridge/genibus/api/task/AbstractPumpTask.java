@@ -6,8 +6,8 @@ import io.openems.edge.bridge.genibus.api.PumpDevice;
 import java.util.OptionalDouble;
 
 /**
- * This is the base class for Genibus tasks. It contains the parameters and methods that all the different tasks have in
- * common.
+ * This is the base class for Genibus tasks. A task links an OpenEMS channel to a Genibus data item.
+ * This class contains the parameters and methods that all the different tasks have in common.
  */
 
 public abstract class AbstractPumpTask implements GenibusTask {
@@ -16,8 +16,8 @@ public abstract class AbstractPumpTask implements GenibusTask {
     int genibusUnitIndex = 0; // Initialize as an invalid value. As far as I know 0 is not a valid value in the Genibus unit table.
     double genibusUnitFactor = 1.0;
     String unitString;
+    private final int headerNumber; // A Genibus data item is identified by two numbers: (headerNumber, address). Example: ref_rem (5, 1)
     private final byte address;
-    private final int headerNumber;
     int sif;    // Scale information factor
     boolean vi; // Value interpretation
     int range = 254;
@@ -40,11 +40,11 @@ public abstract class AbstractPumpTask implements GenibusTask {
             default:
                 this.unitTable = UnitTable.Standard_Unit_Table;
         }
-
     }
 
     /**
-     * Gets the address of the task. The address together with the header is the identifier for a data item in the device.
+     * Gets the address of the Genibus data item associated with this task. A Genibus data item is identified by two
+     * numbers: (headerNumber, address). Example: ref_rem (5, 1)
      *
      * @return the address.
      */
@@ -54,7 +54,8 @@ public abstract class AbstractPumpTask implements GenibusTask {
     }
 
     /**
-     * Gets the header of the task. The header together with the address is the identifier for a data item in the device.
+     * Gets the headerNumber of the Genibus data item associated with this task. A Genibus data item is identified by two
+     * numbers: (headerNumber, address). Example: ref_rem (5, 1)
      *
      * @return the header.
      */
@@ -229,7 +230,7 @@ public abstract class AbstractPumpTask implements GenibusTask {
     }
 
     /**
-     * Print the content of INFO for this task to the log. Will print the data type, unit and scaling (if available).
+     * Get the parsed contents of INFO as a string. Will contain the data type, unit and scaling (if available).
      *
      * @return the parsed contents of INFO as a string.
      */

@@ -5,9 +5,9 @@ import io.openems.edge.bridge.genibus.api.PumpDevice;
 import io.openems.edge.common.taskmanager.ManagedTask;
 
 /**
- * The basic interface for a Genibus task.
- * A task links an OpenEMS channel to a Genibus data item. This interface contains the getters and setters needed by the
- * Genibus bridge to map the data from the Genibus device to the OpenEMS channel.
+ * The basic interface for a Genibus task. A task links an OpenEMS channel to a Genibus data item.
+ * This interface contains the getters and setters needed by the Genibus bridge to map the data from the Genibus device
+ * to the OpenEMS channel.
  */
 public interface GenibusTask extends ManagedTask {
 
@@ -21,14 +21,16 @@ public interface GenibusTask extends ManagedTask {
     void processResponse(byte data);
 
     /**
-     * Gets the address of the task. The address together with the header is the identifier for a data item in the device.
+     * Gets the address of the Genibus data item associated with this task. A Genibus data item is identified by two
+     * numbers: (headerNumber, address). Example: ref_rem (5, 1)
      *
      * @return the address.
      */
     byte getAddress();
 
     /**
-     * Gets the header of the task. The header together with the address is the identifier for a data item in the device.
+     * Gets the headerNumber of the Genibus data item associated with this task. A Genibus data item is identified by two
+     * numbers: (headerNumber, address). Example: ref_rem (5, 1)
      *
      * @return the header.
      */
@@ -127,10 +129,9 @@ public interface GenibusTask extends ManagedTask {
     int getApduIdentifier();
 
     /**
-     * Print the content of INFO for this task to the log. Will print the data type, unit and scaling (if available).
+     * Get the parsed contents of INFO as a string. Will contain the data type, unit and scaling (if available).
      *
      * @return the parsed contents of INFO as a string.
      */
     String printInfo();
-
 }
