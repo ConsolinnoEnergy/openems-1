@@ -289,6 +289,9 @@ public class CombinedHeatPowerPlantImpl extends AbstractGenericModbusComponent i
                     this.log.warn("Couldn't set chosen Channel Value to 0");
                 }
             }
+            if (chosenChannel.getNextWriteValue().isPresent()) {
+                chosenChannel.setNextValue(chosenChannel.getNextWriteValue().get());
+            }
             this.handleChannelWriteFromOriginalToModbus(writeToThis, chosenChannel);
         }
     }
@@ -333,6 +336,7 @@ public class CombinedHeatPowerPlantImpl extends AbstractGenericModbusComponent i
                 this._getEnableSignalBoolean().setNextWriteValueFromObject(enabled);
                 this._getEnableSignalBoolean().setNextValue(enabled);
                 this.getEnableSignalChannel().setNextValue(enabled);
+                this.getEnableSignalChannel().setNextWriteValueFromObject(enabled);
             } catch (OpenemsError.OpenemsNamedException e) {
                 this.log.warn("Couldn't apply EnableSignal");
             }
@@ -347,6 +351,7 @@ public class CombinedHeatPowerPlantImpl extends AbstractGenericModbusComponent i
                     this._getEnableSignalLong().setNextValue((long) this.config.defaultDisableSignalValue());
                 }
                 this.getEnableSignalChannel().setNextValue(enabled);
+                this.getEnableSignalChannel().setNextWriteValueFromObject(enabled);
             } catch (OpenemsError.OpenemsNamedException e) {
                 this.log.warn("Couldn't apply EnableSignal");
             }
