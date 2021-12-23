@@ -31,11 +31,19 @@ public abstract class AbstractPumpTask implements GenibusTask {
     final int dataByteSize;
     private int apduIdentifier;
 
-    public AbstractPumpTask(int address, int headerNumber, String unitString, int dataByteSize) {
+    /**
+     * Constructor.
+     *
+     * @param headerNumber the Genibus data item head class.
+     * @param address the Genibus data item address.
+     * @param unitTable the Genibus unit table. Currently there is just one unit table, so this does not do anything.
+     * @param numberOfBytes the number of bytes of this task. 8 bit = 1, 16 bit = 2, etc.
+     */
+    public AbstractPumpTask(int headerNumber, int address, String unitTable, int numberOfBytes) {
         this.address = (byte) address;
         this.headerNumber = headerNumber;
-        this.dataByteSize = dataByteSize;
-        switch (unitString) {
+        this.dataByteSize = numberOfBytes;
+        switch (unitTable) {
             case "Standard":
             default:
                 this.unitTable = UnitTable.Standard_Unit_Table;

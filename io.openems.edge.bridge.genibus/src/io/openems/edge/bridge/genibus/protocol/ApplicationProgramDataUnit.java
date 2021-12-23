@@ -3,37 +3,14 @@ package io.openems.edge.bridge.genibus.protocol;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
+/**
+ * Class to represent the Application Program Data Unit (APDU) part of a Genibus telegram.
+ */
 public class ApplicationProgramDataUnit {
-    short apduHead;
     byte apduHeadClass;
     byte apduHeadOsAck;
-    boolean isOperationSpecifier;
     // 0...63 Byte
     ByteArrayOutputStream apduDataFields = new ByteArrayOutputStream();
-
-    /**
-     * Get the APDU head.
-     * @return the APDU head.
-     */
-    public int getHead() {
-        return this.apduHead;
-    }
-
-    /**
-     * Set the APDU head.
-     * @param apduHead the APDU head.
-     */
-    public void setHead(short apduHead) {
-        this.apduHead = apduHead;
-    }
-
-    /**
-     * Get the APDU data fields.
-     * @return the APDU data fields
-     */
-    public byte[] getDataFields() {
-        return this.apduDataFields.toByteArray();
-    }
 
     /**
      * Set the APDU data fields.
@@ -68,41 +45,6 @@ public class ApplicationProgramDataUnit {
     }
 
     /**
-     * Set the APDU head class to 2, meaning ’measured data’.
-     */
-    public void setHeadClassMeasuredData() {
-        this.apduHeadClass = 2;
-    }
-
-    /**
-     * Set the APDU head class to 3, meaning ’commands’.
-     */
-    public void setHeadClassCommands() {
-        this.apduHeadClass = 3;
-    }
-
-    /**
-     * Set the APDU head class to 4, meaning ’configuration parameters’.
-     */
-    public void setHeadClassConfigurationParameters() {
-        this.apduHeadClass = 4;
-    }
-
-    /**
-     * Set the APDU head class to 5, meaning ’class reference values’.
-     */
-    public void setHeadClassReferenceValues() {
-        this.apduHeadClass = 5;
-    }
-
-    /**
-     * Set the APDU head class to 7, meaning ’ASCII sting’.
-     */
-    public void setHeadClassAsciiStrings() {
-        this.apduHeadClass = 7;
-    }
-
-    /**
      * Get the shifted APDU head OSACK.
      * @return the shifted APDU head OSACK.
      */
@@ -127,47 +69,6 @@ public class ApplicationProgramDataUnit {
     }
 
     /**
-     * Set the APDU head OSACK to 0, meaning 'get'.
-     */
-    public void setOsGet() {
-        this.apduHeadOsAck = 0;
-    }
-
-    /**
-     * Set the APDU head OSACK to 2, meaning 'set'.
-     */
-    public void setOsSet() {
-        this.apduHeadOsAck = 2;
-    }
-
-    /**
-     * Set the APDU head OSACK to 3, meaning ’info’.
-     */
-    public void setOsInfo() {
-        this.apduHeadOsAck = 3;
-    }
-
-    public void setAckOk() {
-        this.apduHeadOsAck = 0;
-    }
-
-    public void setAckDataClassUnknown() {
-        this.apduHeadOsAck = (byte) 0x01;
-    }
-
-    public void setAckDataItemIdUnknown() {
-        this.apduHeadOsAck = (byte) 0x10;
-    }
-
-    /**
-     * Operation illegal or Data Class write buffer is full, APDU data field will be
-     * empty.
-     */
-    public void setAckIllegalOrBuffFull() {
-        this.apduHeadOsAck = (byte) 0x11;
-    }
-
-    /**
      * Get num bytes in apdu without header bytes.
      *
      * @return the APDU da fields size.
@@ -183,18 +84,6 @@ public class ApplicationProgramDataUnit {
      */
     public byte getApduLength() {
         return (byte) (this.getLength() + 2);
-    }
-
-    /**
-     * Get the operation specifier boolean.
-     * @return the operation specifier boolean.
-     */
-    public boolean isOperationSpecifier() {
-        return this.isOperationSpecifier;
-    }
-
-    public void setOperationSpecifier(boolean isOperationSpecifier) {
-        this.isOperationSpecifier = isOperationSpecifier;
     }
 
     /**

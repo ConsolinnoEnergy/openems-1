@@ -13,14 +13,15 @@ import org.slf4j.LoggerFactory;
 
 import com.github.snksoft.crc.CRC;
 
+/**
+ * Class to represent a Genibus telegram.
+ */
 public class Telegram {
     byte startDelimiter;
     byte length;
     byte destinationAddress;
     byte sourceAddress;
     ProtocolDataUnit protocolDataUnit = new ProtocolDataUnit();
-    short crcHighOrder;
-    short crcLowOrder;
     Map<Integer, ArrayList<GenibusTask>> telegramTaskList = new HashMap<>();
     private PumpDevice pumpDevice;
     private int answerTelegramPduLengthEstimate = 0;
@@ -47,8 +48,8 @@ public class Telegram {
     }
 
     /**
-     * Set the answer telegram PDU length estimate. This value is close to the upper limit, assuming the response to
-     * an INFO is always 4 byte. ASCII response is estimated to be 30 bytes.
+     * Set the answer telegram PDU length estimate. This is used to estimate the time it takes to send and receive a
+     * telegram.
      *
      * @param answerTelegramPduLengthEstimate the answer telegram PDU length estimate.
      */
@@ -57,7 +58,11 @@ public class Telegram {
     }
 
     /**
-     * Get the answer telegram PDU length.
+     * Set the answer telegram PDU length estimate. This is used to estimate the time it takes to send and receive a
+     * telegram.
+     * This value is close to the upper limit, assuming the response to an INFO is always 4 byte. ASCII response is
+     * estimated to be 30 bytes.
+     *
      * @return the answer telegram PDU length estimate.
      */
     public int getAnswerTelegramPduLengthEstimate() {
@@ -66,6 +71,7 @@ public class Telegram {
 
     /**
      * Set the pump device.
+     *
      * @param pumpDevice the pump device.
      */
     public void setPumpDevice(PumpDevice pumpDevice) {
@@ -74,6 +80,7 @@ public class Telegram {
 
     /**
      * Get the pump device.
+     *
      * @return the pump device.
      */
     public PumpDevice getPumpDevice() {
@@ -82,6 +89,7 @@ public class Telegram {
 
     /**
      * Get the start delimiter byte.
+     *
      * @return the start delimiter byte.
      */
     public byte getStartDelimiter() {
@@ -105,20 +113,6 @@ public class Telegram {
     }
 
     /**
-     * Set StartDelimiter to 0x26.
-     */
-    public void setStartDelimiterDataMessage() {
-        this.setStartDelimiter((byte) 0x26);
-    }
-
-    /**
-     * Set StartDelimiter to 0x24.
-     */
-    public void setStartDelimiterDataReply() {
-        this.setStartDelimiter((byte) 0x24);
-    }
-
-    /**
      * Get the telegram length. This length is the one used in the second byte of the telegram header.
      * The number means ’all bytes after Length, excluding crc’, which is is the PDU byte count + 2 bytes for the
      * destination and source address.
@@ -132,6 +126,7 @@ public class Telegram {
 
     /**
      * Set the length of the telegram from an int and return it a as a byte.
+     *
      * @param length the length of the telegram as an int.
      * @return the length of the telegram as a byte.
      */
@@ -142,6 +137,7 @@ public class Telegram {
 
     /**
      * Get the PDU length, add 2 for dest and src address.
+     *
      * @return the PDU length increased by 2 as a byte.
      */
     public byte updateLength() {
@@ -150,6 +146,7 @@ public class Telegram {
 
     /**
      * Get the destination address as a byte.
+     *
      * @return the destination address as a byte.
      */
     public byte getDestinationAddress() {
@@ -158,6 +155,7 @@ public class Telegram {
 
     /**
      * Set the destination address.
+     *
      * @param destinationAddress the destination address.
      */
     public void setDestinationAddress(int destinationAddress) {
@@ -166,6 +164,7 @@ public class Telegram {
 
     /**
      * Get the source address.
+     *
      * @return the source address.
      */
     public byte getSourceAddress() {
@@ -174,6 +173,7 @@ public class Telegram {
 
     /**
      * Set the source address.
+     *
      * @param sourceAddress the source address.
      */
     public void setSourceAddress(int sourceAddress) {
@@ -182,6 +182,7 @@ public class Telegram {
 
     /**
      * Get the PDU.
+     *
      * @return the PDU.
      */
     public ProtocolDataUnit getProtocolDataUnit() {
@@ -190,6 +191,7 @@ public class Telegram {
 
     /**
      * Set the PDU.
+     *
      * @param protocolDataUnit the PDU.
      */
     public void setProtocolDataUnit(ProtocolDataUnit protocolDataUnit) {
@@ -198,6 +200,7 @@ public class Telegram {
 
     /**
      * Set the telegram task list.
+     *
      * @param telegramTaskList the telegram task list.
      */
     public void setTelegramTaskList(Map<Integer, ArrayList<GenibusTask>> telegramTaskList) {
@@ -206,6 +209,7 @@ public class Telegram {
 
     /**
      * Get the telegram task list.
+     *
      * @return the telegram task list.
      */
     public Map<Integer, ArrayList<GenibusTask>> getTelegramTaskList() {
@@ -213,39 +217,8 @@ public class Telegram {
     }
 
     /**
-     * Get the high order CRC.
-     * @return the high order CRC.
-     */
-    public short getCrcHighOrder() {
-        return this.crcHighOrder;
-    }
-
-    /**
-     * Set the high order CRC.
-     * @param crcHighOrder the high order CRC.
-     */
-    public void setCrcHighOrder(short crcHighOrder) {
-        this.crcHighOrder = crcHighOrder;
-    }
-
-    /**
-     * Get the low order CRC.
-     * @return the low order CRC.
-     */
-    public short getCrcLowOrder() {
-        return this.crcLowOrder;
-    }
-
-    /**
-     * Set the low order CRC.
-     * @param crcLowOrder the low order CRC.
-     */
-    public void setCrcLowOrder(short crcLowOrder) {
-        this.crcLowOrder = crcLowOrder;
-    }
-
-    /**
      * Get the bytes for the CRC calculation.
+     *
      * @return the bytes for CRC calculation.
      */
     public byte[] getBytesForCrc() {
@@ -260,7 +233,7 @@ public class Telegram {
         try {
             byteList.write(this.getProtocolDataUnit().getPduAsByteArray());
         } catch (IOException e) {
-            this.log.info(e.getMessage());
+            this.log.error("Error collecting PDU data: " + e.getMessage());
         }
 
         return byteList.toByteArray();
@@ -268,6 +241,7 @@ public class Telegram {
 
     /**
      * Get the telegram as a byte array.
+     *
      * @return the telegram as a byte array.
      */
     public byte[] getTelegramAsByteArray() {
@@ -280,14 +254,13 @@ public class Telegram {
         try {
             byteList.write(byteListForCrc);
         } catch (IOException e) {
-            this.log.info(e.getMessage());
+            this.log.error("Error collecting telegram bytes: " + e.getMessage());
         }
         // Calc crchigh and crclow, create complete telegram
         try {
             byteList.write(getCrc(byteListForCrc));
         } catch (IOException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+            this.log.error("Error collecting CRC bytes: " + e.getMessage());
         }
 
         return byteList.toByteArray();
@@ -316,6 +289,7 @@ public class Telegram {
 
     /**
      * Calculate the CRC from the provided byte array.
+     *
      * @param bytes the provided byte array.
      * @return the CRC as a byte array.
      */
@@ -325,7 +299,7 @@ public class Telegram {
         try {
             crc = CRC.calculateCRC(CRC.Parameters.CCITT, bytes) ^ 0xFFFF;
         } catch (Exception e) {
-            e.printStackTrace();
+            System.out.println("Error calculating CRC: " + e.getMessage());
         }
 
         byte[] ret = new byte[2];

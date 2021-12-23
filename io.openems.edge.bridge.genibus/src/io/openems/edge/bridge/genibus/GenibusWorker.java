@@ -94,15 +94,6 @@ class GenibusWorker extends AbstractCycleWorker {
             }
         }
 
-        // Remaining bytes that the answer telegram can have. You can cause an output buffer overflow in the device too.
-        // This is achieved by sending lots of tasks that can have more bytes in the answer than in the request such as
-        // INFO and ASCII. An INFO answer can be 1 or 4 bytes (for 8 bit tasks), an ASCII answer up to 63 bytes (APDU
-        // maximum). Because of that, ASCII tasks are put in a telegram all by themselves. INFO tasks are assumed to
-        // have the maximum byte count.
-        // Calculated by getting the buffer length of the device and subtracting the telegram header (4 bytes) and the
-        // crc (2 bytes).
-        int responseTelegramRemainingBytes = currentDevice.getDeviceSendBufferLengthBytes() - 6;
-
         // A timestamp is done on the first execution in a cycle (per device). So this is the time since the last first
         // execution. Used to track if more than one telegram is sent to the same device in a cycle.
         this.lastExecutionMillis = System.currentTimeMillis() - currentDevice.getTimestamp();
@@ -127,43 +118,53 @@ class GenibusWorker extends AbstractCycleWorker {
         }
 
         // Estimate how big the telegram can be to still fit in this cycle.
-        long remainingCycleTime = this.cycleTimeMs - 60 - this.cycleStopwatch.elapsed(TimeUnit.MILLISECONDS);  // Include 60 ms buffer.
-        if (remainingCycleTime < 0) {
-            remainingCycleTime = 0;
+        int remainingCycleTime = (int) (this.cycleTimeMs - this.cycleStopwatch.elapsed(TimeUnit.MILLISECONDS));
+        /* Each byte added to a telegram increases the time an exchange of telegrams (request & response) takes. We try
+           to calculate how long the telegrams ćan be to still fit in this cycle.
+           The minimum required time is that for an exchange of empty (PDU = 0 bytes) telegrams. Calculate how long that
+           takes and subtract it from the remaining cycle time. The time that is left is then the time available to
+           transmit the bytes in the PDUs. */
+        int timeForBytes = remainingCycleTime - GenibusImpl.GENIBUS_TIMEOUT_MS - this.parent.timeoutIncreaseMs - currentDevice.getEmptyTelegramTime();
+        if (timeForBytes < 0) {
+            timeForBytes = 0;
         }
-        // Each byte adds a certain time to the telegram execution length. The remaining time in the cycle can then be
-        // expressed as "cycleRemainingBytes".
-        // A telegram with no tasks takes ~33 ms to send and receive. Each additional byte in the telegrams (request and
-        // answer) adds ~1 ms to that. We only calculate for the request bytes here, so divide by 2 as a good estimate.
-        // A buffer of 60 ms was used in the time calculation, the 33 ms base time for a telegram is included in that buffer.
-        int cycleRemainingBytes = (int) (remainingCycleTime / (currentDevice.getMillisecondsPerByte() * 2));
-        if (cycleRemainingBytes < 5) {
-            // Not enough time left. The telegram would be so small that it is not worth sending.
-            // Exit the method without changing the device.
+        // ’cycleRemainingBytes’ expresses ’timeForBytes’ as a byte number. It is for request and response telegram combined.
+        int cycleRemainingBytes = (int) (timeForBytes / currentDevice.getMillisecondsPerByte());
+        if (cycleRemainingBytes < 10) {
+            // Lower limit. Can only exchange 1 or 2 data items with these few bytes, better wait for next cycle.
             if (this.parent.getDebug()) {
                 this.parent.logInfo(this.log, "Not enough time left this cycle to send a telegram.");
             }
             return;
         }
 
-        // Remaining bytes that can be put in this telegram. More bytes will result in a buffer overflow in the device
-        // and there will be no answer.
-        // Calculated by getting the buffer length of the device and subtracting the telegram header (4 bytes) and the
-        // crc (2 bytes).
+        /* Remaining bytes that can be put in the request telegram. More bytes than that will result in a buffer overflow
+           in the device and there will be no answer.
+           Calculated by getting the buffer length of the device and subtracting the telegram header (4 bytes) and the
+           crc (2 bytes). */
         int requestTelegramRemainingBytes = currentDevice.getDeviceReadBufferLengthBytes() - 6;
 
-        // Reduce telegram byte count if time is too short
-        if (cycleRemainingBytes < requestTelegramRemainingBytes) {
-            // If this is the first telegram to that device this cycle and the telegram has a greatly reduced byte count
-            // because of time constraints, don't switch to the next device. So the device is guaranteed to have a full
-            // size telegram in the next cycle. This avoids one device being stuck at the end of the cycle and thus only
-            // getting small telegram sizes.
-            if (this.lastExecutionMillis > this.cycleTimeMs - 50 && cycleRemainingBytes / (requestTelegramRemainingBytes * 1.0) < 0.3) {
+        /* Remaining bytes that can be put in the response telegram. More bytes than that will result in a buffer overflow
+           in the device and there will be no answer. A buffer overflow in the response is possible because tasks like INFO
+           and ASCII can have more bytes in the response than in the request telegram.
+           Calculated by getting the buffer length of the device and subtracting the telegram header (4 bytes) and the
+           crc (2 bytes). */
+        int responseTelegramRemainingBytes = currentDevice.getDeviceSendBufferLengthBytes() - 6;
+
+        // Reduce telegram byte count if time is too short.
+        if (cycleRemainingBytes < (requestTelegramRemainingBytes + responseTelegramRemainingBytes)) {
+            double telegramFullness = 1.0 * cycleRemainingBytes / (requestTelegramRemainingBytes + responseTelegramRemainingBytes);
+            boolean shortTelegram = telegramFullness < 0.3;
+
+            /* If this is the first telegram to that device this cycle and the telegram has a greatly reduced byte count
+               because of time constraints, don't switch to the next device. So the device is guaranteed to have a full
+               size telegram in the next cycle. This avoids one device being stuck at the end of the cycle and thus only
+               getting small telegram sizes. */
+            if (this.lastExecutionMillis > this.cycleTimeMs - 50 && shortTelegram) {
                 this.currentDeviceCounter--;
             }
-            double divisor = 1.0 * cycleRemainingBytes / requestTelegramRemainingBytes;
-            requestTelegramRemainingBytes = cycleRemainingBytes;
-            responseTelegramRemainingBytes = (int) Math.round(responseTelegramRemainingBytes * divisor);
+            requestTelegramRemainingBytes = (int) (telegramFullness * requestTelegramRemainingBytes);
+            responseTelegramRemainingBytes = (int) (telegramFullness * responseTelegramRemainingBytes);
         }
         this.currentDeviceCounter++;
 

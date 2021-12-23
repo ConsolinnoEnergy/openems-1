@@ -2,6 +2,7 @@ package io.openems.edge.bridge.genibus.api.task;
 
 import io.openems.common.channel.Unit;
 import io.openems.edge.common.channel.Channel;
+import io.openems.edge.common.channel.DoubleReadChannel;
 import io.openems.edge.common.taskmanager.Priority;
 import java.util.OptionalDouble;
 
@@ -24,18 +25,19 @@ public class PumpReadTask16bitOrMore extends AbstractPumpTask {
     private final byte[] dataArray = new byte[dataByteSize];
 
     /**
-     * Constructor with channel multiplier.
+     * Constructor with channel multiplier. The channel multiplier is an additional multiplication factor that is applied
+     * to the data value from Genibus before it is put in the channel.
      *
      * @param numberOfBytes the number of bytes of this task. 8 bit = 1, 16 bit = 2, etc.
-     * @param address the Genibus data item address
-     * @param headerNumber
-     * @param channel
-     * @param unitString
-     * @param priority
-     * @param channelMultiplier
+     * @param headerNumber the Genibus data item head class.
+     * @param address the Genibus data item address.
+     * @param channel the channel associated with this task.
+     * @param unitTable the Genibus unit table. Currently there is just one unit table, so this does not do anything.
+     * @param priority the task priority. High, low or once.
+     * @param channelMultiplier the channel multiplier.
      */
-    public PumpReadTask16bitOrMore(int numberOfBytes, int address, int headerNumber, Channel<Double> channel, String unitString, Priority priority, double channelMultiplier) {
-        super(address, headerNumber, unitString, numberOfBytes);
+    public PumpReadTask16bitOrMore(int numberOfBytes, int headerNumber, int address, Channel<Double> channel, String unitTable, Priority priority, double channelMultiplier) {
+        super(headerNumber, address, unitTable, numberOfBytes);
         this.channel = channel;
         this.priority = priority;
         this.channelMultiplier = channelMultiplier;
@@ -44,15 +46,15 @@ public class PumpReadTask16bitOrMore extends AbstractPumpTask {
     /**
      * Constructor without channel multiplier.
      *
-     * @param numberOfBytes
-     * @param address
-     * @param headerNumber
-     * @param channel
-     * @param unitString
-     * @param priority
+     * @param numberOfBytes the number of bytes of this task. 8 bit = 1, 16 bit = 2, etc.
+     * @param headerNumber the Genibus data item head class.
+     * @param address the Genibus data item address.
+     * @param channel the channel associated with this task.
+     * @param unitTable the Genibus unit table. Currently there is just one unit table, so this does not do anything.
+     * @param priority the task priority. High, low or once.
      */
-    public PumpReadTask16bitOrMore(int numberOfBytes, int address, int headerNumber, Channel<Double> channel, String unitString, Priority priority) {
-        this(numberOfBytes, address, headerNumber, channel, unitString, priority, 1);
+    public PumpReadTask16bitOrMore(int numberOfBytes, int headerNumber, int address, Channel<Double> channel, String unitTable, Priority priority) {
+        this(numberOfBytes, headerNumber, address, channel, unitTable, priority, 1);
     }
 
     /**
@@ -127,10 +129,7 @@ public class PumpReadTask16bitOrMore extends AbstractPumpTask {
                 for (int i = 0; i < dataByteSize; i++) {
                     highPrecisionValue = highPrecisionValue + actualDataArray[i] * Math.pow(256, (this.dataByteSize - i - 1));
                 }
-                int exponent = dataByteSize - 2;
-                if (exponent < 0) {
-                    exponent = 0;
-                }
+                int exponent = Math.max(0, dataByteSize - 2);
                 // value w.o. considering units
                 tempValue = (Math.pow(256, exponent) * (256 * super.zeroScaleFactorHighOrder + super.zeroScaleFactorLowOrder)
                         + highPrecisionValue);
@@ -168,7 +167,7 @@ public class PumpReadTask16bitOrMore extends AbstractPumpTask {
         } else {
             // Error handling.
             if (super.unitString.equals("not yet supported")) {
-                super.pumpDevice.setWarningMessage("Data for channel " + this.channel.channelId() + " is "
+                super.pumpDevice.setWarningMessage("Data from Genibus for channel " + this.channel.channelId() + " is "
                         + "transferred in a unit that does not have an entry yet in ’UnitTable.java’. Not possible to apply correct scaling factor.");
             } else if (this.channel.channelDoc().getUnit() == Unit.NONE) {
                 super.pumpDevice.setWarningMessage("Channel " + this.channel.channelId() + " has no unit. "

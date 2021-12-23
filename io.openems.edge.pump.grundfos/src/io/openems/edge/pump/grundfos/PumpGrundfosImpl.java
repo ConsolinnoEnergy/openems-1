@@ -216,15 +216,15 @@ public class PumpGrundfosImpl extends AbstractOpenemsComponent implements Openem
         // Broadcast mode is just to find the address of a unit. Not suitable for sending commands.
         if (this.broadcast || this.changeAddress) {
             this.pumpDevice = new PumpDevice(deviceId, pumpAddress, 37, Unit.BAR, 4,
-                    new PumpReadTask8bit(2, 0, getBufferLength(), "Standard", Priority.ONCE),
-                    new PumpReadTask8bit(3, 0, getUnitBusMode(), "Standard", Priority.ONCE),
+                    new PumpReadTask8bit(0, 2, getBufferLength(), "Standard", Priority.ONCE),
+                    new PumpReadTask8bit(0, 3, getUnitBusMode(), "Standard", Priority.ONCE),
 
-                    new PumpReadTask8bit(148, 2, getUnitFamily(), "Standard", Priority.ONCE),
-                    new PumpReadTask8bit(149, 2, getUnitType(), "Standard", Priority.ONCE),
-                    new PumpReadTask8bit(150, 2, getUnitVersion(), "Standard", Priority.ONCE),
+                    new PumpReadTask8bit(2, 148, getUnitFamily(), "Standard", Priority.ONCE),
+                    new PumpReadTask8bit(2, 149, getUnitType(), "Standard", Priority.ONCE),
+                    new PumpReadTask8bit(2, 150, getUnitVersion(), "Standard", Priority.ONCE),
 
-                    new PumpWriteTask8bit(46, 4, setUnitAddr(), "Standard", Priority.HIGH),
-                    new PumpWriteTask8bit(47, 4, setGroupAddr(), "Standard", Priority.ONCE)
+                    new PumpWriteTask8bit(4, 46, setUnitAddr(), "Standard", Priority.HIGH),
+                    new PumpWriteTask8bit(4, 47, setGroupAddr(), "Standard", Priority.ONCE)
             );
             this.genibus.addDevice(this.pumpDevice);
             return;
@@ -233,16 +233,16 @@ public class PumpGrundfosImpl extends AbstractOpenemsComponent implements Openem
         /* Setup of a multipump system is not possible with genibus.
         if (mpSetup) {
             pumpDevice = new PumpDevice(deviceId, pumpAddress, 4,
-                    new PumpCommandsTask(92, 3, setMpStartMultipump()),
-                    new PumpCommandsTask(93, 3, setMpEndMultipump()),
-                    new PumpCommandsTask(40, 3, setMpMaster()),
-                    new PumpCommandsTask(87, 3, setMpStartSearch()),
-                    new PumpCommandsTask(88, 3, setMpJoinReqAccepted()),
+                    new PumpCommandsTask(3, 92, setMpStartMultipump()),
+                    new PumpCommandsTask(3, 93, setMpEndMultipump()),
+                    new PumpCommandsTask(3, 40, setMpMaster()),
+                    new PumpCommandsTask(3, 87, setMpStartSearch()),
+                    new PumpCommandsTask(3, 88, setMpJoinReqAccepted()),
 
-                    new PumpReadTask8bit(1, 2, getMultipumpMembers(), "Standard", Priority.HIGH),
+                    new PumpReadTask8bit(2, 1, getMultipumpMembers(), "Standard", Priority.HIGH),
 
-                    new PumpWriteTask8bit(45, 4, setMpMasterAddr(), "Standard", Priority.HIGH),
-                    new PumpWriteTask8bit(241, 4, setTpMode(), "Standard", Priority.HIGH)
+                    new PumpWriteTask8bit(4, 45, setMpMasterAddr(), "Standard", Priority.HIGH),
+                    new PumpWriteTask8bit(4, 241, setTpMode(), "Standard", Priority.HIGH)
             );
             genibus.addDevice(pumpDevice);
             return;
@@ -274,122 +274,122 @@ public class PumpGrundfosImpl extends AbstractOpenemsComponent implements Openem
                 // device will act on the command that was sent first. The command list is executed from top to bottom
                 // in the order they are listed here.
                 new PumpCommandsTask(this.pumpType.getRemote(),
-                        this.pumpType.getRemoteHeadClass(), setRemote()),
+                        setRemote()),
                 new PumpCommandsTask(this.pumpType.getStart(),
-                        this.pumpType.getStartHeadClass(), this.setStart()),
+                        this.setStart()),
                 new PumpCommandsTask(this.pumpType.getStop(),
-                        this.pumpType.getStopHeadClass(), this.setStop()),
+                        this.setStop()),
                 new PumpCommandsTask(this.pumpType.getMinMotorCurve(),
-                        this.pumpType.getMinMotorCurveHeadClass(), setMinMotorCurve()),
+                        setMinMotorCurve()),
                 new PumpCommandsTask(this.pumpType.getMaxMotorCurve(),
-                        this.pumpType.getMaxMotorCurveHeadClass(), setMaxMotorCurve()),
+                        setMaxMotorCurve()),
                 new PumpCommandsTask(this.pumpType.getConstFrequency(),
-                        this.pumpType.getConstFrequencyHeadClass(), setConstFrequency()),
+                        setConstFrequency()),
                 new PumpCommandsTask(this.pumpType.getConstPressure(),
-                        this.pumpType.getConstPressureHeadClass(), setConstPressure()),
+                        setConstPressure()),
                 new PumpCommandsTask(this.pumpType.getAutoAdapt(),
-                        this.pumpType.getAutoAdaptHeadClass(), setAutoAdapt()),
-                new PumpCommandsTask(121, 3, setWinkOn()),
-                new PumpCommandsTask(122, 3, setWinkOff()),
+                        setAutoAdapt()),
+                new PumpCommandsTask(121, setWinkOn()),
+                new PumpCommandsTask(122, setWinkOff()),
 
                 // Read tasks priority once
-                new PumpReadTask8bit(2, 0, getBufferLength(), "Standard", Priority.ONCE),
-                new PumpReadTask8bit(3, 0, getUnitBusMode(), "Standard", Priority.ONCE),
-                new PumpReadTask8bit(148, 2, getUnitFamily(), "Standard", Priority.ONCE),
-                new PumpReadTask8bit(149, 2, getUnitType(), "Standard", Priority.ONCE),
-                new PumpReadTask8bit(150, 2, getUnitVersion(), "Standard", Priority.ONCE),
+                new PumpReadTask8bit(0, 2, getBufferLength(), "Standard", Priority.ONCE),
+                new PumpReadTask8bit(0, 3, getUnitBusMode(), "Standard", Priority.ONCE),
+                new PumpReadTask8bit(2, 148, getUnitFamily(), "Standard", Priority.ONCE),
+                new PumpReadTask8bit(2, 149, getUnitType(), "Standard", Priority.ONCE),
+                new PumpReadTask8bit(2, 150, getUnitVersion(), "Standard", Priority.ONCE),
 
                 // Read tasks priority high
-                new PumpReadTask8bit(48, 2, getRefAct(), "Standard", Priority.HIGH),
-                new PumpReadTask8bit(49, 2, getRefNorm(), "Standard", Priority.HIGH),
-                new PumpReadTask8bit(90, 2, getControlSourceBits(), "Standard", Priority.HIGH),
-                new PumpReadTask8bit(this.pumpType.getPlo(), this.pumpType.getPloHeadClass(), getPowerConsumption(), "Standard", Priority.HIGH),
-                new PumpReadTask8bit(this.pumpType.getH(), this.pumpType.gethHeadClass(), getCurrentPressure(), "Standard", Priority.HIGH),
-                new PumpReadTask8bit(this.pumpType.getQ(), this.pumpType.getqHeadClass(), getCurrentPumpFlow(), "Standard", Priority.HIGH),
-                new PumpReadTask8bit(this.pumpType.gettW(), this.pumpType.gettWHeadClass(), getPumpedWaterMediumTemperature(), "Standard", Priority.HIGH),
+                new PumpReadTask8bit(2, 48, getRefAct(), "Standard", Priority.HIGH),
+                new PumpReadTask8bit(2, 49, getRefNorm(), "Standard", Priority.HIGH),
+                new PumpReadTask8bit(2, 90, getControlSourceBits(), "Standard", Priority.HIGH),
+                new PumpReadTask8bit(this.pumpType.getPloHeadClass(), this.pumpType.getPlo(), getPowerConsumption(), "Standard", Priority.HIGH),
+                new PumpReadTask8bit(this.pumpType.gethHeadClass(), this.pumpType.getH(), getCurrentPressure(), "Standard", Priority.HIGH),
+                new PumpReadTask8bit(this.pumpType.getqHeadClass(), this.pumpType.getQ(), getCurrentPumpFlow(), "Standard", Priority.HIGH),
+                new PumpReadTask8bit(this.pumpType.gettWHeadClass(), this.pumpType.gettW(), getPumpedWaterMediumTemperature(), "Standard", Priority.HIGH),
                 // PumpReadTask has an optional channel multiplier. That is a double that is multiplied with the readout
                 // value just before it is put in the channel. Here is an example of how to use this feature:
                 // Apparently the unit returned by INFO is wrong. Unit type = 30 = 2*Hz, but the value is returned in Hz.
                 // Could also be that the error is in the documentation and unit 30 is Hz and not Hz*2.
-                new PumpReadTask8bit(this.pumpType.getfAct(), this.pumpType.getfActHeadClass(), getMotorFrequency(), "Standard", Priority.HIGH, 0.5),
-                new PumpReadTask8bit(this.pumpType.getrMin(), this.pumpType.getrMinHeadClass(), getRmin(), "Standard", Priority.HIGH),
-                new PumpReadTask8bit(this.pumpType.getrMax(), this.pumpType.getrMaxHeadClass(), getRmax(), "Standard", Priority.HIGH),
-                new PumpReadTask8bit(this.pumpType.getControlMode(), this.pumpType.getControlModeHeadClass(), getActualControlModeBits(), "Standard", Priority.HIGH),
-                new PumpReadTask8bit(81, 2, getActMode1Bits(), "Standard", Priority.HIGH),
-                new PumpReadTask8bit(this.pumpType.getWarnCode(), this.pumpType.getWarnCodeHeadClass(), getWarnCode(), "Standard", Priority.HIGH),
-                new PumpReadTask8bit(this.pumpType.getAlarmCode(), this.pumpType.getAlarmCodeHeadClass(), getAlarmCode(), "Standard", Priority.HIGH),
-                new PumpReadTask8bit(this.pumpType.getWarnBits1(), this.pumpType.getWarnBits1HeadClass(), getWarnBits_1(), "Standard", Priority.HIGH),
-                new PumpReadTask8bit(this.pumpType.getWarnBits2(), this.pumpType.getWarnBits2HeadClass(), getWarnBits_2(), "Standard", Priority.HIGH),
-                new PumpReadTask8bit(this.pumpType.getWarnBits3(), this.pumpType.getWarnBits3HeadClass(), getWarnBits_3(), "Standard", Priority.HIGH),
-                new PumpReadTask8bit(this.pumpType.getWarnBits4(), this.pumpType.getWarnBits4HeadClass(), getWarnBits_4(), "Standard", Priority.HIGH),
+                new PumpReadTask8bit(this.pumpType.getfActHeadClass(), this.pumpType.getfAct(), getMotorFrequency(), "Standard", Priority.HIGH, 0.5),
+                new PumpReadTask8bit(this.pumpType.getrMinHeadClass(), this.pumpType.getrMin(), getRmin(), "Standard", Priority.HIGH),
+                new PumpReadTask8bit(this.pumpType.getrMaxHeadClass(), this.pumpType.getrMax(), getRmax(), "Standard", Priority.HIGH),
+                new PumpReadTask8bit(this.pumpType.getControlModeHeadClass(), this.pumpType.getControlMode(), getActualControlModeBits(), "Standard", Priority.HIGH),
+                new PumpReadTask8bit(2, 81, getActMode1Bits(), "Standard", Priority.HIGH),
+                new PumpReadTask8bit(this.pumpType.getWarnCodeHeadClass(), this.pumpType.getWarnCode(), getWarnCode(), "Standard", Priority.HIGH),
+                new PumpReadTask8bit(this.pumpType.getAlarmCodeHeadClass(), this.pumpType.getAlarmCode(), getAlarmCode(), "Standard", Priority.HIGH),
+                new PumpReadTask8bit(this.pumpType.getWarnBits1HeadClass(), this.pumpType.getWarnBits1(), getWarnBits_1(), "Standard", Priority.HIGH),
+                new PumpReadTask8bit(this.pumpType.getWarnBits2HeadClass(), this.pumpType.getWarnBits2(), getWarnBits_2(), "Standard", Priority.HIGH),
+                new PumpReadTask8bit(this.pumpType.getWarnBits3HeadClass(), this.pumpType.getWarnBits3(), getWarnBits_3(), "Standard", Priority.HIGH),
+                new PumpReadTask8bit(this.pumpType.getWarnBits4HeadClass(), this.pumpType.getWarnBits4(), getWarnBits_4(), "Standard", Priority.HIGH),
 
                 // Read tasks priority low
-                new PumpReadTask8bit(this.pumpType.gethDiff(), this.pumpType.gethDiffHeadClass(), getDiffPressureHead(), "Standard", Priority.LOW),
-                new PumpReadTask8bit(this.pumpType.gettE(), this.pumpType.gettEheadClass(), getElectronicsTemperature(), "Standard", Priority.LOW),
-                new PumpReadTask8bit(this.pumpType.getiMo(), this.pumpType.getImoHeadClass(), getCurrentMotor(), "Standard", Priority.LOW),
+                new PumpReadTask8bit(this.pumpType.gethDiffHeadClass(), this.pumpType.gethDiff(), getDiffPressureHead(), "Standard", Priority.LOW),
+                new PumpReadTask8bit(this.pumpType.gettEheadClass(), this.pumpType.gettE(), getElectronicsTemperature(), "Standard", Priority.LOW),
+                new PumpReadTask8bit(this.pumpType.getImoHeadClass(), this.pumpType.getiMo(), getCurrentMotor(), "Standard", Priority.LOW),
                 new PumpReadTask8bit(2, 2, getTwinpumpStatus(), "Standard", Priority.LOW),
 
-                new PumpReadTask8bit(this.pumpType.getAlarmCodePump(), this.pumpType.getAlarmCodePumpHeadClass(), getAlarmCodePump(), "Standard", Priority.LOW),
-                new PumpReadTask8bit(163, 2, getAlarmLog1(), "Standard", Priority.LOW),
-                new PumpReadTask8bit(164, 2, getAlarmLog2(), "Standard", Priority.LOW),
-                new PumpReadTask8bit(165, 2, getAlarmLog3(), "Standard", Priority.LOW),
-                new PumpReadTask8bit(166, 2, getAlarmLog4(), "Standard", Priority.LOW),
-                new PumpReadTask8bit(167, 2, getAlarmLog5(), "Standard", Priority.LOW),
+                new PumpReadTask8bit(this.pumpType.getAlarmCodePumpHeadClass(), this.pumpType.getAlarmCodePump(), getAlarmCodePump(), "Standard", Priority.LOW),
+                new PumpReadTask8bit(2, 163, getAlarmLog1(), "Standard", Priority.LOW),
+                new PumpReadTask8bit(2, 164, getAlarmLog2(), "Standard", Priority.LOW),
+                new PumpReadTask8bit(2, 165, getAlarmLog3(), "Standard", Priority.LOW),
+                new PumpReadTask8bit(2, 166, getAlarmLog4(), "Standard", Priority.LOW),
+                new PumpReadTask8bit(2, 167, getAlarmLog5(), "Standard", Priority.LOW),
 
                 // Config parameters tasks.
                 // Class 4 tasks should always be priority high. They have special code to decide if they are sent or not.
                 // Since the values in them are static unless changed by the user, they are read once at the start and
                 // then only after a write. If a class 4 task is never written to, it essentially behaves like priority
                 // once. It should be priority high so any writes are executed immediately.
-                new PumpWriteTask8bit(this.pumpType.gethConstRefMax(), this.pumpType.gethConstRefMaxHeadClass(),
+                new PumpWriteTask8bit(this.pumpType.gethConstRefMaxHeadClass(), this.pumpType.gethConstRefMax(),
                         setConstRefMaxH(), "Standard", Priority.HIGH),
-                new PumpWriteTask8bit(this.pumpType.gethConstRefMin(), this.pumpType.gethConstRefMinHeadClass(),
+                new PumpWriteTask8bit(this.pumpType.gethConstRefMinHeadClass(), this.pumpType.gethConstRefMin(),
                         setConstRefMinH(), "Standard", Priority.HIGH),
                 // The channel multiplier is also available for write tasks. For a GET it is a multiplier, for a SET it
                 // is a divisor. Apparently all frequencies in the MAGNA3 are off by a factor of 2.
-                new PumpWriteTask8bit(30, 4, setFupper(), "Standard", Priority.HIGH, 0.5),
-                new PumpWriteTask8bit(34, 4, setFmin(), "Standard", Priority.HIGH),
-                new PumpWriteTask8bit(35, 4, setFmax(), "Standard", Priority.HIGH),
+                new PumpWriteTask8bit(4, 30, setFupper(), "Standard", Priority.HIGH, 0.5),
+                new PumpWriteTask8bit(4, 34, setFmin(), "Standard", Priority.HIGH),
+                new PumpWriteTask8bit(4, 35, setFmax(), "Standard", Priority.HIGH),
                 // Apparently all frequencies in the MAGNA3 are off by a factor of 2.
-                new PumpWriteTask8bit(31, 4, setFnom(), "Standard", Priority.HIGH, 0.5),
-                new PumpWriteTask16bitOrMore(2, this.pumpType.gethMaxHi(), this.pumpType.gethMaxHiHeadClass(),
+                new PumpWriteTask8bit(4, 31, setFnom(), "Standard", Priority.HIGH, 0.5),
+                new PumpWriteTask16bitOrMore(2, this.pumpType.gethMaxHiHeadClass(), this.pumpType.gethMaxHi(),
                         setMaxPressure(), "Standard", Priority.HIGH),
-                new PumpWriteTask16bitOrMore(2, this.pumpType.getqMaxHi(), this.pumpType.getqMaxHiHeadClass(),
+                new PumpWriteTask16bitOrMore(2, this.pumpType.getqMaxHiHeadClass(), this.pumpType.getqMaxHi(),
                         setPumpMaxFlow(), "Standard", Priority.HIGH),
-                new PumpWriteTask8bit(254, 4, setHrange(), "Standard", Priority.HIGH),
-                new PumpWriteTask8bit(this.pumpType.getDeltaH(), this.pumpType.getDeltaHheadClass(), setPressureDelta(), "Standard", Priority.HIGH),
-                new PumpWriteTask8bit(47, 4, setGroupAddr(), "Standard", Priority.HIGH),
-                new PumpWriteTask8bit(241, 4, setTpMode(), "Standard", Priority.HIGH),
+                new PumpWriteTask8bit(4, 254, setHrange(), "Standard", Priority.HIGH),
+                new PumpWriteTask8bit(this.pumpType.getDeltaHheadClass(), this.pumpType.getDeltaH(), setPressureDelta(), "Standard", Priority.HIGH),
+                new PumpWriteTask8bit(4, 47, setGroupAddr(), "Standard", Priority.HIGH),
+                new PumpWriteTask8bit(4, 241, setTpMode(), "Standard", Priority.HIGH),
 
                 // Sensor configuration
-                new PumpWriteTask8bit(229, 4, setSensor1Func(), "Standard", Priority.HIGH),
-                new PumpWriteTask8bit(226, 4, setSensor1Applic(), "Standard", Priority.HIGH),
-                new PumpWriteTask8bit(208, 4, setSensor1Unit(), "Standard", Priority.HIGH),
-                new PumpWriteTask16bitOrMore(2, 209, 4, setSensor1Min(), "Standard", Priority.HIGH),
-                new PumpWriteTask16bitOrMore(2, 211, 4, setSensor1Max(), "Standard", Priority.HIGH),
+                new PumpWriteTask8bit(4, 229, setSensor1Func(), "Standard", Priority.HIGH),
+                new PumpWriteTask8bit(4, 226, setSensor1Applic(), "Standard", Priority.HIGH),
+                new PumpWriteTask8bit(4, 208, setSensor1Unit(), "Standard", Priority.HIGH),
+                new PumpWriteTask16bitOrMore(2, 4, 209, setSensor1Min(), "Standard", Priority.HIGH),
+                new PumpWriteTask16bitOrMore(2, 4, 211, setSensor1Max(), "Standard", Priority.HIGH),
 
                 //new PumpReadTask8bit(127, 2, getSensorGsp(), "Standard", Priority.LOW),
                 //new PumpWriteTask8bit(238, 4, setSensorGspFunc(), "Standard", Priority.LOW),
 
                 // Reference values tasks
-                new PumpWriteTask8bit(this.pumpType.getRefRem(), this.pumpType.getRefRemHeadClass(),
+                new PumpWriteTask8bit(this.pumpType.getRefRemHeadClass(), this.pumpType.getRefRem(),
                         setRefRem(), "Standard", Priority.HIGH),
 
                 // Strings
-                new PumpReadTaskAscii(8, getProductNumber(), "Standard", Priority.ONCE),
-                new PumpReadTaskAscii(9, getSerialNumber(), "Standard", Priority.ONCE)
+                new PumpReadTaskAscii(8, getProductNumber(), Priority.ONCE),
+                new PumpReadTaskAscii(9, getSerialNumber(), Priority.ONCE)
 
                 /*
                 // Multipump commands
-                new PumpCommandsTask(92, 3, setMpStartMultipump()),
-                new PumpCommandsTask(93, 3, setMpEndMultipump()),
-                new PumpCommandsTask(40, 3, setMpMaster()),
-                new PumpCommandsTask(87, 3, setMpStartSearch()),
-                new PumpCommandsTask(88, 3, setMpJoinReqAccepted()),
+                new PumpCommandsTask(3, 92, setMpStartMultipump()),
+                new PumpCommandsTask(3, 93, setMpEndMultipump()),
+                new PumpCommandsTask(3, 40, setMpMaster()),
+                new PumpCommandsTask(3, 87, setMpStartSearch()),
+                new PumpCommandsTask(3, 88, setMpJoinReqAccepted()),
 
-                new PumpReadTask8bit(1, 2, getMultipumpMembers(), "Standard", Priority.HIGH),
+                new PumpReadTask8bit(3, 1, getMultipumpMembers(), "Standard", Priority.HIGH),
 
-                new PumpWriteTask8bit(45, 4, setMpMasterAddr(), "Standard", Priority.HIGH)
+                new PumpWriteTask8bit(4, 45, setMpMasterAddr(), "Standard", Priority.HIGH)
                 // setTpMode() is already in.
                 */
         );

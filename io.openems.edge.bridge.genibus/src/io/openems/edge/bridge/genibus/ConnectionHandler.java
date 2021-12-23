@@ -24,7 +24,7 @@ import com.fazecast.jSerialComm.SerialPort;
 import io.openems.edge.bridge.genibus.protocol.Telegram;
 
 /**
- * Handles the serial connection for communicating with the pumps.
+ * Handles the serial connection for communicating with Genibus devices.
  */
 public class ConnectionHandler {
 
@@ -39,13 +39,18 @@ public class ConnectionHandler {
     private final Logger log = LoggerFactory.getLogger(ConnectionHandler.class);
     protected final GenibusImpl parent;
 
+    /**
+     * Constructor.
+     *
+     * @param parent the GenibusImpl creating the ConnectionHandler.
+     */
     public ConnectionHandler(GenibusImpl parent) {
         this.errorTimestamp = LocalDateTime.now();
         this.parent = parent;
     }
 
     /**
-     * Start the serial connection to send and receive data to/from the pumps.
+     * Start the serial connection to send and receive data to/from the devices.
      * Will return false if nothing is plugged in at the specified port or the port does not exist.
      *
      * @param portName name of the serial port to use.
@@ -171,8 +176,8 @@ public class ConnectionHandler {
         if (this.os != null) {
             // os in not null when a connection was established at some point by the start() method.
             try {
-                // Test the connection by trying to write something to the output stream os. Writes a single 0, should
-                // not interfere with anything.
+                /* Test the connection by trying to write something to the output stream os. Writes a single 0, should
+                   not interfere with anything. */
                 this.os.write(0);
             } catch (IOException e) {
 
@@ -184,22 +189,14 @@ public class ConnectionHandler {
 
                 if (this.serialPort != null) {
                     this.serialPort.closePort();
-                    /*
-                    try {
-                        serialPort.close();
-                    } catch (IOException ex) {
-                        ex.printStackTrace();
-                    }
-                    */
                 }
                 return false;
-
             }
+            return true;
         } else {
             // If os is null, there has not been a connection yet.
             return false;
         }
-        return true;
     }
 
 
@@ -211,7 +208,7 @@ public class ConnectionHandler {
      * @return true if it is a complete telegram or false if not.
      */
     public boolean packageOK(byte[] bytesCurrentPackage, boolean verbose) {
-        //Look for Start Delimiter (SD)
+        // Look for Start Delimiter (SD).
         boolean sdOK = false;
         if (bytesCurrentPackage.length >= 1) {
             switch (bytesCurrentPackage[0]) {
@@ -224,24 +221,24 @@ public class ConnectionHandler {
                     sdOK = false;
             }
         }
-        if (!sdOK) { //wrong package start, reset
+        if (!sdOK) { // Wrong package start, reset.
             if (verbose) {
                 this.parent.logWarn(this.log, "SD not OK");
             }
             return false;
         }
-        //Look for Length (LE), Check package length match
+        // Look for Length (LE), Check package length match.
         boolean lengthOK = false;
         if (bytesCurrentPackage.length >= 2 && bytesCurrentPackage[1] == bytesCurrentPackage.length - 4) {
             lengthOK = true;
         }
-        if (!lengthOK) { //collect more data
+        if (!lengthOK) { // Collect more data.
             if (verbose) {
                 this.parent.logWarn(this.log, "Length not OK");
             }
             return false;
         }
-        //Check crc from relevant message part
+        // Check crc from relevant message part.
 
         ByteArrayOutputStream bytesCrcRelevant = new ByteArrayOutputStream();
         bytesCrcRelevant.write(bytesCurrentPackage, 1, bytesCurrentPackage.length - 3);
@@ -250,7 +247,7 @@ public class ConnectionHandler {
 
         if (bytesCurrentPackage[length - 2] != crc[0] || bytesCurrentPackage[length - 1] != crc[1]) {
             this.parent.logWarn(this.log, "CRC compare not OK");
-            return false; //cancel operation
+            return false; // Cancel operation.
         }
         return true;
     }
@@ -269,7 +266,7 @@ public class ConnectionHandler {
         this.os = null;
         this.is = null;
         if (this.serialPort == null) {
-            //this.parent.logError(this.log, "serialPort is null. This should never happen."); // Happens when no valid serial port was selected when starting the module.
+            // Happens when no valid serial port was selected when starting the module.
             return;
         }
 
@@ -277,24 +274,12 @@ public class ConnectionHandler {
             return;
         }
         this.serialPort.closePort();
-
-        /*
-        if (serialPort.isClosed()) {
-            //this.parent.logInfo(this.log, "serialPort is already closed.");
-            return;
-        }
-
-        try {
-            serialPort.close();
-        } catch (IOException e) {
-            this.parent.logError(this.log, "Error closing port: " + e.getMessage());
-        }
-        */
     }
 
 
     /**
      * Sends the telegram and returns the response telegram.
+     *
      * @param timeout how long to wait for the response telegram before aborting.
      * @param telegram the telegram to send.
      * @param debug print info to log or not.
@@ -302,19 +287,17 @@ public class ConnectionHandler {
      */
     public Telegram writeTelegram(long timeout, Telegram telegram, boolean debug) {
 
-        // Make sure the input is empty before sending a new telegram
+        // Make sure the input is empty before sending a new telegram.
         try {
             if (this.is.available() > 0) {
                 this.parent.logWarn(this.log, "Input buffer should be empty, but it is not. Trying to clear it.");
                 long startTime = System.currentTimeMillis();
                 int numRead;
                 byte[] readBuffer = new byte[1024];
-                while (this.is.available() > 0 || (System.currentTimeMillis() - startTime) < 60) {
-                    numRead = this.is.available();
-                    if (numRead > 1024) {
-                        numRead = 1024; // readBuffer is size 1024.
-                    }
-                    this.is.read(readBuffer, 0, numRead);
+                // Timeout here is not actually related to Genibus timeout at all. But the value fits the requirement.
+                while (this.is.available() > 0 || (System.currentTimeMillis() - startTime) < GenibusImpl.GENIBUS_TIMEOUT_MS) {
+                    numRead = Math.min(this.is.available(), 1024);  // readBuffer is size 1024.
+                    this.is.read(readBuffer, 0, numRead);   // Clear input stream.
                 }
                 if (this.is.available() > 0) {
                     this.parent.logError(this.log, "Can't send telegram, something is flooding the input buffer!");
@@ -325,58 +308,61 @@ public class ConnectionHandler {
             this.parent.logError(this.log, "Error while receiving data: " + e.getMessage());
             e.printStackTrace();
         }
-        /*
-         * Send data and save return handling telegram
-         */
-        try {
-            // Send Reqeust
 
+        // Send telegram and handle response.
+        try {
+            // Send request.
             byte[] bytes = telegram.getTelegramAsByteArray();
             this.os.write(bytes);
             if (debug) {
-                // Debug output data hex values
-                //this.parent.logInfo(this.log, "Bytes send: " + bytesToHex(bytes));
-                this.parent.logInfo(this.log, "Bytes send: " + bytesToInt(bytes));
+                //this.parent.logInfo(this.log, "Bytes send: " + bytesToHex(bytes));    // Hex values.
+                this.parent.logInfo(this.log, "Bytes send: " + bytesToInt(bytes));  // Int values.
             }
 
-            // Save return function/Task
+            // Method to handle response telegram.
             return this.handleResponse(timeout, debug, telegram.getPumpDevice());
-
         } catch (Exception e) {
             this.parent.logError(this.log, "Error while sending data: " + e.getMessage());
         }
         return null;
     }
 
+    /**
+     * Listens for a response telegram and returns it.
+     *
+     * @param timeout how long to wait for the response telegram before aborting.
+     * @param debug print info to log or not.
+     * @param pumpDevice the pumpDevice the telegram is coming from.
+     * @return the received telegram.
+     */
     private Telegram handleResponse(long timeout, boolean debug, PumpDevice pumpDevice) {
         try {
             long startTime = System.currentTimeMillis();
-            //timeout = 500;
 
-            // This "while" only tests for timeout as long as is.available() <= 0, since there is a break at the end.
-            // Timeout time is the estimated time it should take for a response to arrive. One would think that this is
-            // the time it takes to send the request telegram + some process time. However, testing revealed that the
-            // response is buffered and there is a delay between data arriving and "is.available() != 0".
-            // From the tests it was found that a practical timeout time is the estimated telegram execution time
-            // (request + answer). Add 60 ms to that, as that is the suggested GENIbus Master timeout duration.
-            while ((System.currentTimeMillis() - startTime) < timeout + 60) {
+            /* This "while" only tests for timeout as long as is.available() <= 0, since there is a break at the end.
+               Timeout time is the estimated time it should take for a response to arrive. One would think that this is
+               the time it takes to send the request telegram + some process time. However, testing revealed that the
+               response is buffered and there is a delay between data arriving and ’is.available() != 0’.
+               From the tests it was found that a practical timeout time is the estimated telegram execution time
+               (request + answer). Add 60 ms to that, as that is the suggested GENIbus Master timeout duration. */
+            while ((System.currentTimeMillis() - startTime) < timeout + GenibusImpl.GENIBUS_TIMEOUT_MS) {
                 if (this.is.available() <= 0) {
                     continue;
                 }
                 if (debug) {
                     this.parent.logInfo(this.log, "Telegram answer time: " + (System.currentTimeMillis() - startTime)
-                            + ", timeout: " + (timeout + 60));
+                            + ", timeout: " + (timeout + GenibusImpl.GENIBUS_TIMEOUT_MS));
                 }
                 int numRead;
                 byte[] readBuffer = new byte[1024];
                 List<Byte> completeInput = new ArrayList<>();
                 boolean transferOk = false;
-                // Reset timer. This timeout exits the loop in case the telegram is corrupted and transferOk will not
-                // become true. The timeout length should be greater than the expected telegram transfer time. Tests have
-                // shown that the received data is buffered, greatly reducing the time the code has to wait. For small
-                // telegrams the "answer transmit clock" will show 0 ms.
+                /* Reset timer. This timeout exits the loop in case the telegram is corrupted and transferOk will not
+                   become true. The timeout length should be greater than the expected telegram transfer time. Tests have
+                   shown that the received data is buffered, greatly reducing the time the code has to wait. For small
+                   telegrams the "answer transmit clock" will show 0 ms. */
                 startTime = System.currentTimeMillis();
-                while (transferOk == false && (System.currentTimeMillis() - startTime) < timeout + 60) {
+                while (transferOk == false && (System.currentTimeMillis() - startTime) < timeout + GenibusImpl.GENIBUS_TIMEOUT_MS) {
                     if (this.is.available() <= 0) {
                         continue;
                     }
@@ -397,7 +383,7 @@ public class ConnectionHandler {
                     transferOk = this.packageOK(receivedDataTemp, false);
                     if (debug && transferOk) {
                         this.parent.logInfo(this.log, "Telegram answer transmit time: " + (System.currentTimeMillis() - startTime)
-                                + ", timeout: " + (timeout + 60));
+                                + ", timeout: " + (timeout + GenibusImpl.GENIBUS_TIMEOUT_MS));
                     }
                 }
                 byte[] receivedData = new byte[completeInput.size()];
@@ -408,9 +394,8 @@ public class ConnectionHandler {
                 }
 
                 if (debug) {
-                    // Debug return data hex or int values
-                    //this.parent.logInfo(this.log, "Data received: " + bytesToHex(receivedData));
-                    this.parent.logInfo(this.log, "Data received: " + bytesToInt(receivedData));
+                    //this.parent.logInfo(this.log, "Data received: " + bytesToHex(receivedData));  // Hex values.
+                    this.parent.logInfo(this.log, "Data received: " + bytesToInt(receivedData));    // Int values.
                 }
 
                 if (this.packageOK(receivedData, true)) {
@@ -419,7 +404,7 @@ public class ConnectionHandler {
                     if (debug) {
                         this.parent.logInfo(this.log, "CRC Check ok.");
                     }
-                    // if all done, return the response telegram.
+                    // If all done, return the response telegram.
                     return Telegram.parseEventStream(receivedData);
                 }
                 break;
@@ -438,25 +423,32 @@ public class ConnectionHandler {
         return null;
     }
 
-    private static String bytesToHex(byte[] hashInBytes) {
-
+    /**
+     * Convert a byte array to a hex string, with a space between each byte.
+     *
+     * @param data the byte array.
+     * @return the hex string.
+     */
+    private static String bytesToHex(byte[] data) {
         StringBuilder sb = new StringBuilder();
-        for (byte b : hashInBytes) {
+        for (byte b : data) {
             sb.append(String.format("0x%02x ", b));
         }
         return sb.toString();
-
     }
 
-    private static String bytesToInt(byte[] hashInBytes) {
-
+    /**
+     * Convert a byte array to an int string, with a space between each byte.
+     *
+     * @param data the byte array.
+     * @return the int string.
+     */
+    private static String bytesToInt(byte[] data) {
         StringBuilder sb = new StringBuilder();
-        for (byte b : hashInBytes) {
+        for (byte b : data) {
             int convert = Byte.toUnsignedInt(b);
             sb.append(String.format("%d ", convert));
         }
         return sb.toString();
-
     }
-
 }

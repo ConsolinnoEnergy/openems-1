@@ -1,6 +1,5 @@
 package io.openems.edge.bridge.genibus;
 
-import io.openems.common.exceptions.OpenemsException;
 import io.openems.edge.bridge.genibus.api.Genibus;
 import io.openems.edge.bridge.genibus.api.PumpDevice;
 import io.openems.edge.bridge.genibus.api.task.GenibusTask;
@@ -45,6 +44,8 @@ public class GenibusImpl extends AbstractOpenemsComponent implements OpenemsComp
 
     protected String portName;
     protected boolean connectionOk = true;  // Start with true because this boolean is also used to track if an error message should be sent.
+    protected int timeoutIncreaseMs;
+    protected static final int GENIBUS_TIMEOUT_MS = 60;
 
     protected ConnectionHandler connectionHandler;
 
@@ -54,10 +55,12 @@ public class GenibusImpl extends AbstractOpenemsComponent implements OpenemsComp
     }
 
     @Activate
-    public void activate(ComponentContext context, Config config) throws OpenemsException {
+    public void activate(ComponentContext context, Config config) {
         super.activate(context, config.id(), config.alias(), config.enabled());
         this.debug = config.debug();
         this.portName = config.portName();
+        this.timeoutIncreaseMs = Math.min(config.timeoutIncreaseMs(), 400);
+        this.timeoutIncreaseMs = Math.max(this.timeoutIncreaseMs, 0);
         this.connectionOk = this.connectionHandler.startConnection(this.portName);
         if (this.isEnabled()) {
             this.worker.activate(config.id());
@@ -74,55 +77,46 @@ public class GenibusImpl extends AbstractOpenemsComponent implements OpenemsComp
 
     /**
      * Handles the telegram. This is called by the GenibusWorker forever() method.
-     * This method sends the telegram (request) and processes the response telegram. The request
-     * telegram is needed to identify the data in the response. The response has no addresses for the
-     * tasks. Instead, data in the response is transmitted in the exact same order as it was requested.
-     * The response data is then parsed by using the task list of the request telegram.
-     * The method also contains several checks to make sure the response telegram is actually the
-     * answer to the request telegram.
-     * The cycletimeLeft parameter is used to calculate how long to wait for the response telegram before
-     * timeout. This is important in a situation with multiple pumps where one or more pumps are not
-     * responding. The timeout can not be too large, or the not responding pumps block operation of the
-     * other pumps. If the timeout is too short, connection errors may happen during normal operation.
+     * This method sends the request telegram and processes the response telegram. The request telegram is needed to
+     * identify the data in the response. The response has no addresses for the tasks. Instead, data in the response is
+     * transmitted in the exact same order as it was requested. The response data is then parsed by using the task list
+     * of the request telegram. The method also contains several checks to make sure the response telegram is actually
+     * the answer to the request telegram.
+     * The cycletimeLeft parameter is used to calculate how long to wait for the response telegram before timeout. This
+     * is important in a situation with multiple devices where one or more devices are not responding. The timeout can
+     * not be too long, or the not responding device block operation of the other devices. If the timeout is too short,
+     * connection errors may happen during normal operation.
      *
-     * @param telegram   telegram created beforehand.
-     * @param cycletimeLeft     remaining time in ms of this OpenEMS cycle.
-     *
+     * @param telegram the telegram to send to the Genibus device.
+     * @param cycletimeLeft remaining time in ms of this OpenEMS cycle.
      */
     protected void handleTelegram(Telegram telegram, long cycletimeLeft) {
 
         int emptyTelegramTime = telegram.getPumpDevice().getEmptyTelegramTime();
 
-        /* For ’additionalBytesEstimate’ we want to calculate the additional bytes sent and received compared to an
-           exchange of empty telegrams. The value is an estimate, because the byte count of the response telegram can
-           only be assumed/estimated.
-           For an empty telegram, ’telegram.getLength()’ will return 2 because the value is PDU size + 2 bytes for
-           destination and source address. An empty telegram has a PDU of size 0, but still a destination and source
-           address. */
+        /* ’additionalBytesEstimate’ is the additional bytes sent and received compared to an exchange of empty
+           telegrams. The value is an estimate, because the byte count of the response telegram can vary.
+           ’telegram.getLength()’ returns 2 for an empty telegram. Subtract 2, because we want the additional bytes
+           compared to an empty telegram. */
         int additionalBytesEstimate = Byte.toUnsignedInt(telegram.getLength()) - 2
                 + telegram.getAnswerTelegramPduLengthEstimate();
 
-        // The time parameter in the "writeTelegram()" method is the timeout until the first bytes of a response, and
-        // then again the timeout for the transmission of the answer. Tests have shown that the time until the first byte
-        // of the answer is detected is much longer than the time from then to the end of the transmission, probably
-        // because of buffering. For example a 109 ms telegram had 94 ms on the answer time clock and 10 ms on the
-        // transmission time clock.
-        // Judging from these tests, it seems best just to take the whole estimated telegram time as the timeout for the
-        // answer time clock, + 60 ms (GENIbus timeout length, added in "handleResponse()" method). The same time is
-        // then also used as timeout for the transmission time clock. Not accurate, but good enough. Just to have a not
-        // too long timer that scales with the telegram length.
+        /* The time parameter in the "writeTelegram()" method is the timeout until the first bytes of a response, and
+           then again the timeout for the transmission of the answer. Tests have shown that the time until the first byte
+           of the answer is detected is much longer than the time from then to the end of the transmission, probably
+           because of buffering. For example a 109 ms telegram had 94 ms on the answer time clock and 10 ms on the
+           transmission time clock.
+           Judging from these tests, it seems best just to take the whole estimated telegram time as the timeout for the
+           answer time clock, + 60 ms (GENIbus timeout length, added in "handleResponse()" method). The same time is
+           then also used as timeout for the transmission time clock. Not accurate, but good enough. Just to have a not
+           too long timer that scales with the telegram length. */
         int telegramEstimatedTimeMillis = (int) (emptyTelegramTime + additionalBytesEstimate * telegram.getPumpDevice().getMillisecondsPerByte());
 
-        // When testing on the leaflet I saw weird random connection problems. I guess the leaflet has hangups that
-        // cause an execution delay. Adding more time to the timeout to counter this problem. Adding just 100 is not enough.
-        if (cycletimeLeft > telegramEstimatedTimeMillis + 180) {
-            telegramEstimatedTimeMillis += 100;
-        }
-        // Add even more time if there is enough time left in the cycle.
-        if (cycletimeLeft > telegramEstimatedTimeMillis + 180) {
-            telegramEstimatedTimeMillis += 100;
-        }
-        Telegram responseTelegram = this.connectionHandler.writeTelegram(telegramEstimatedTimeMillis, telegram, this.debug);
+        /* When testing on the leaflet I saw weird random connection problems. I guess the leaflet has occasional hangups
+           that cause an execution delay. Adding more time to the timeout solved this problem. Adding 100 ms helped, but
+           to eliminate the problem 100% adding 200 ms was needed. Running OpenEMS on a laptop did not have that issue.
+           Adjustable by config with parameter ’timeoutIncreaseMs’ */
+        Telegram responseTelegram = this.connectionHandler.writeTelegram(telegramEstimatedTimeMillis + this.timeoutIncreaseMs, telegram, this.debug);
 
         // No answer received -> error handling
         // This will happen if the pump is switched off. Assume that is the case. Reset the device, so once data is

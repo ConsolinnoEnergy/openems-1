@@ -20,6 +20,11 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     @AttributeDefinition(name = "Port-Name", description = "The name of the serial port - e.g. '/dev/ttyUSB0'")
     String portName() default "/dev/ttyUSB0";
 
+    @AttributeDefinition(name = "Increase telegram timeout time [ms]", description = "Increase the telegram timeout time, "
+            + "unit is milliseconds. Improves connection reliability, but decreases speed. This number needs to be adjusted "
+            + "to the computer on which you run OpenEMS. A laptop can work with 0 ms, while a leaflet needs 200 ms.")
+    int timeoutIncreaseMs() default 200;
+
     @AttributeDefinition(name = "Debug", description = "Enable debug mode.")
     boolean debug() default false;
 

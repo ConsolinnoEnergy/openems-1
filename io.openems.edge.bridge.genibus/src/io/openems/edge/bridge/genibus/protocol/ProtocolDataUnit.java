@@ -8,6 +8,9 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Class to represent the Protocol Data Unit (PDU) part of a Genibus telegram.
+ */
 public class ProtocolDataUnit {
     List<ApplicationProgramDataUnit> applicationProgramDataUnitList = new ArrayList<ApplicationProgramDataUnit>();
     char requestFromSlave;
@@ -20,14 +23,6 @@ public class ProtocolDataUnit {
      */
     public List<ApplicationProgramDataUnit> getApplicationProgramDataUnitList() {
         return this.applicationProgramDataUnitList;
-    }
-
-    /**
-     * Set the APDU list.
-     * @param applicationProgramDataUnitList the APDU list.
-     */
-    public void setApplicationProgramDataUnitList(List<ApplicationProgramDataUnit> applicationProgramDataUnitList) {
-        this.applicationProgramDataUnitList = applicationProgramDataUnitList;
     }
 
     /**
@@ -56,15 +51,6 @@ public class ProtocolDataUnit {
     }
 
     /**
-     * Remove an APDU from the APDU list.
-     * @param applicationProgramDataUnit the APDU.
-     */
-    public void pullApdu(ApplicationProgramDataUnit applicationProgramDataUnit) {
-        this.applicationProgramDataUnitList.remove(applicationProgramDataUnit);
-        this.updatePduLength();
-    }
-
-    /**
      * Update the PDU length parameter.
      */
     public void updatePduLength() {
@@ -88,6 +74,7 @@ public class ProtocolDataUnit {
 
     /**
      * Get the PDU as a byte array.
+     *
      * @return the PDU as a byte array.
      */
     public byte[] getPduAsByteArray() {
@@ -101,8 +88,7 @@ public class ProtocolDataUnit {
                 this.log.info(e.getMessage());
             }
         }
-        // Request from slave (rfs), optional, ignored for now, used in multi master
-        // networks
+        // Request from slave (rfs), optional, ignored for now, used in multi master networks
 
         return byteList.toByteArray();
     }
@@ -123,9 +109,8 @@ public class ProtocolDataUnit {
                 applicationProgramDataUnit.setHeadClass(bytes[apduStartIndex]);
                 byte osasklength = bytes[apduStartIndex + 1]; // prepare block os/ack and length for splitting
                 byte apduLength = (byte) (osasklength & 0x3F); // cast length
-                byte osack = (byte) ((osasklength >> 6) & 0x03); // shift last two bytes to right corner, cast other
-                // bytes
-                // away
+                byte osack = (byte) ((osasklength >> 6) & 0x03); // shift last two bytes to right corner, cast other bytes away
+
                 applicationProgramDataUnit.setHeadOsAck(osack);
 
                 ByteArrayOutputStream bytesStreamApduRelevant = new ByteArrayOutputStream();
