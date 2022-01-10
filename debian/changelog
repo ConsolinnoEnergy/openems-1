@@ -1,3 +1,9 @@
+openems-consolinno (0.1.16-1) unstable; urgency=medium
+
+  * Added MBus meter Heat and Gas to the build
+
+ -- Felix <felix@felix-ThinkPad-E15-Gen-2>  Mon, 10 Jan 2022 15:49:53 +0100
+
 openems-consolinno (0.1.15-1) unstable; urgency=medium
 
   * Reduced Time in MQTT Bridge - is 90 seconds had an error where it

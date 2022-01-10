@@ -4,7 +4,7 @@ import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
 @ObjectClassDefinition(
-        name = "HeatMeterMbus",
+        name = "Meter Heat MBus",
         description = "A HeatMeter Communicating via MBus."
 )
 @interface Config {
