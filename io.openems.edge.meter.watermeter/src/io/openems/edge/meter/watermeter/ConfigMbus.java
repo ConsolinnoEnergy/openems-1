@@ -5,7 +5,7 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 import org.osgi.service.metatype.annotations.Option;
 
 @ObjectClassDefinition(
-        name = "Meter Water M-Bus",
+        name = "Meter Water MBus",
         description = "Implements a water meter communicating via M-Bus.")
 @interface ConfigMbus {
 
