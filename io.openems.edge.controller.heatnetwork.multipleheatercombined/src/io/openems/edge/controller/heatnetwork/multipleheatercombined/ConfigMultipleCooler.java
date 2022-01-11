@@ -43,6 +43,13 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     @AttributeDefinition(name = "timerId", description = "Unique Id of the timer")
     String timerId() default "TimerByTime";
 
+
+    @AttributeDefinition(name = "Use Override", description = "If the Component is a Cluster -> do you want to use the Override")
+    boolean useOverrideValue() default true;
+
+    @AttributeDefinition(name = "Default Override For Cluster", description = "If the Component is a Cluster -> set to this Override Value")
+    int overrideValue() default 100;
+
     boolean enabled() default true;
 
     String webconsole_configurationFactory_nameHint() default "Controller Multiple Cooler Combined [{id}]";
