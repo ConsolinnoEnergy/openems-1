@@ -1,13 +1,10 @@
-package io.openems.edge.heater.cluster.api;
+package io.openems.edge.heater.api;
 
 import io.openems.common.channel.AccessMode;
-import io.openems.common.channel.Unit;
 import io.openems.common.types.OpenemsType;
 import io.openems.edge.common.channel.Channel;
 import io.openems.edge.common.channel.Doc;
 import io.openems.edge.common.channel.WriteChannel;
-import io.openems.edge.common.component.OpenemsComponent;
-import io.openems.edge.heater.api.Heater;
 
 /**
  * A HeaterCluster. Other Classes and Controller can set a recommended HeatingPower.

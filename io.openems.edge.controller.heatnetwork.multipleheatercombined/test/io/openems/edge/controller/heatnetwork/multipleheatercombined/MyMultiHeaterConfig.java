@@ -22,6 +22,9 @@ public class MyMultiHeaterConfig extends AbstractComponentConfig implements Conf
         private String[] activationThermometers;
         private String[] deactivationThermometers;
         private String servicePid;
+        private boolean useOverride;
+        private int overrideValue;
+
 
         private Builder() {
         }
@@ -69,6 +72,16 @@ public class MyMultiHeaterConfig extends AbstractComponentConfig implements Conf
 
         public Builder setTimerId(String timerId) {
             this.timerId = timerId;
+            return this;
+        }
+
+        public Builder setUseOverride(boolean useOverride) {
+            this.useOverride = useOverride;
+            return this;
+        }
+
+        public Builder setOverrideValue(int overrideValue) {
+            this.overrideValue = overrideValue;
             return this;
         }
 
@@ -142,6 +155,16 @@ public class MyMultiHeaterConfig extends AbstractComponentConfig implements Conf
     @Override
     public String timerId() {
         return this.builder.timerId;
+    }
+
+    @Override
+    public boolean useOverrideValue() {
+        return this.builder.useOverride;
+    }
+
+    @Override
+    public int overrideValue() {
+        return this.builder.overrideValue;
     }
 
     @Override
