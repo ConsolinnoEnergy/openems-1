@@ -260,7 +260,7 @@ public class MqttBridgeImpl extends AbstractOpenemsComponent implements OpenemsC
             try {
                 this.bridgePublisher.disconnect();
             } catch (MqttException e) {
-               this.log.warn("An error occurred while disconnecting the bridge Publisher: " + e.getMessage());
+                this.log.warn("An error occurred while disconnecting the bridge Publisher: " + e.getMessage());
             }
         }
         if (this.publishManager != null) {
@@ -282,9 +282,9 @@ public class MqttBridgeImpl extends AbstractOpenemsComponent implements OpenemsC
 
     @Deactivate
     protected void deactivate() {
-            //Disconnect every connection
-            this.disconnectPublishAndSubscriber();
-            super.deactivate();
+        //Disconnect every connection
+        this.disconnectPublishAndSubscriber();
+        super.deactivate();
     }
 
 
@@ -452,6 +452,13 @@ public class MqttBridgeImpl extends AbstractOpenemsComponent implements OpenemsC
                 } finally {
                     if (executorService.isTerminated() == false) {
                         this.log.error("Failed to establish connection, Trying again");
+                        if (this.publishManager != null) {
+                            this.publishManager.deactivate();
+                        }
+                        if (this.subscribeManager != null) {
+                            this.subscribeManager.deactivate();
+                        }
+
                         this.publishManager = null;
                         this.subscribeManager = null;
                         this.executorCurrent.getAndAdd(5);

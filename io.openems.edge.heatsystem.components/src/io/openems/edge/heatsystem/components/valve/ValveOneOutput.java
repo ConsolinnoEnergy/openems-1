@@ -374,9 +374,19 @@ public class ValveOneOutput extends AbstractValve implements OpenemsComponent, H
         this.forceClose();
     }
 
+    /**
+     * <p> The OneOutputValve works in a similar Way to the ValveTwoOutput.
+     * It has a "FuturePowerLevel" That needs to be reached.
+     * The Valve checks its output. If it is not reached -> adapt the value.
+     * <p>
+     * Otherwise the Parent will call the "ChangeByPercentage" Method and this allows the Valve to write a PowerLevel into the outPutAddress.
+     * </p>
+     *
+     * @param event the OpenEMS Event, either After_Process_Image, or After_Controllers
+     */
     @Override
     public void handleEvent(Event event) {
-        if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE)) {
+        if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE)) {
             if (this.configSuccess == false) {
                 try {
                     this.activationOrModifiedRoutine(this.config);
