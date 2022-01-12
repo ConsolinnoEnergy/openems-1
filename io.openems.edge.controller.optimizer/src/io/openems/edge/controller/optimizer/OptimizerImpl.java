@@ -68,6 +68,7 @@ public class OptimizerImpl extends AbstractOpenemsComponent implements OpenemsCo
     private MqttBridge mqttBridge;
     private boolean fallback;
     private boolean previousFallback;
+    private DateTime savedDate = new DateTime();
 
     public OptimizerImpl() {
         super(OpenemsComponent.ChannelId.values(),
@@ -76,7 +77,7 @@ public class OptimizerImpl extends AbstractOpenemsComponent implements OpenemsCo
 
     @Activate
     void activate(ComponentContext context, Config config) {
-        this.jsonPatchWorker = new JsonPatchWorker(getJsonChannel(), getFallbackChannel());
+        this.jsonPatchWorker = new JsonPatchWorker(new ChannelAddress(config.id(), getJsonChannel().channelId().id()), new ChannelAddress(config.id(), getFallbackChannel().channelId().id()), this.cpm);
         this.stopOnError = config.stop();
         this.lastMemberSeconds = config.lastMemberTime();
         try {
@@ -93,7 +94,6 @@ public class OptimizerImpl extends AbstractOpenemsComponent implements OpenemsCo
 
     @Modified
     void modified(ComponentContext context, Config config) {
-
         this.stopOnError = config.stop();
         try {
             this.mqttBridge = this.cpm.getComponent(config.bridgeId());
@@ -116,7 +116,6 @@ public class OptimizerImpl extends AbstractOpenemsComponent implements OpenemsCo
     @Override
     public void handleEvent(Event event) {
         this.pingMqtt(this.checkPingTime());
-
         try {
             this.jsonPatchWorker.work(this.jsonString);
         } catch (OpenemsError.OpenemsNamedException ignored) {
@@ -333,7 +332,7 @@ public class OptimizerImpl extends AbstractOpenemsComponent implements OpenemsCo
                                     if (values.size() == 2) {
                                         setEnable = !values.get(1).startsWith("0");
                                     }
-                                    if (setEnable && value.equals("true") || value.equals("1") ) {
+                                    if (setEnable && value.equals("true") || value.equals("1")) {
                                         ((WriteChannel<Boolean>) writeChannel).setNextWriteValue(true);
                                     }
                                 } else {
@@ -434,6 +433,11 @@ public class OptimizerImpl extends AbstractOpenemsComponent implements OpenemsCo
      */
     @Override
     public void handleNewSchedule(List<List<String>> schedule) {
+        DateTime current = new DateTime();
+        if (current.getDayOfMonth() != this.savedDate.getDayOfMonth()) {
+            this.savedDate = current;
+            this.jsonPatchWorker.deleteOldSchedules();
+        }
         this.jsonPatchWorker.addSchedule(schedule);
     }
 

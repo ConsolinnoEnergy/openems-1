@@ -135,9 +135,7 @@ public class BrokerJsonTranslatorImpl extends AbstractOpenemsComponent implement
 
                 //Periodically tells the Optimizer to reload the Schedule even if it is the same one.
                 //Mainly used to update after the Day changes at 00:00
-            } else if (this.now.plusMinutes(RELOAD_SCHEDULE_TIME).getMinuteOfDay() >= newTime.getMinuteOfDay()
-                    || this.now.getDayOfMonth() < newTime.getDayOfMonth() || this.now.getMonthOfYear() < newTime.getMonthOfYear()
-                    || this.now.getYear() < newTime.getYear()) {
+            } else if (this.now.getDayOfMonth() != newTime.getDayOfMonth()) {
                 this.optimizer.handleNewSchedule(newSchedule);
                 this.now = new DateTime();
             }
