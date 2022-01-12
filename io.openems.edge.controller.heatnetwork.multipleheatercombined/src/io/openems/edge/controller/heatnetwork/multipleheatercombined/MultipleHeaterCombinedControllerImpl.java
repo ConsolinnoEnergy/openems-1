@@ -55,15 +55,23 @@ public class MultipleHeaterCombinedControllerImpl extends AbstractMultiCombinedC
     @Activate
     void activate(ComponentContext context, ConfigMultipleHeater config) {
         this.config = config;
-        super.activate(context, config.id(), config.alias(), config.enabled(), config.useTimer(), config.timerId(), config.timeDelta(), ControlType.HEATER, config.heaterIds(),
-                config.activationThermometers(), config.activationTemperatures(), config.deactivationThermometers(), config.deactivationTemperatures(), this.cpm);
+        super.activate(context, config.id(), config.alias(), config.enabled(), config.useTimer(), config.timerId(),
+                config.timeDelta(), ControlType.HEATER, config.heaterIds(),
+                config.activationThermometers(), config.activationTemperatures(),
+                config.deactivationThermometers(),config.deactivationTemperatures(),
+                config.useOverrideValue(), config.overrideValue(),
+                this.cpm);
     }
 
     @Modified
     void modified(ComponentContext context, ConfigMultipleHeater config) {
         this.config = config;
-        super.modified(context, config.id(), config.alias(), config.enabled(), config.useTimer(), config.timerId(), config.timeDelta(), ControlType.HEATER, config.heaterIds(),
-                config.activationThermometers(), config.activationTemperatures(), config.deactivationThermometers(), config.deactivationTemperatures(), this.cpm);
+        super.modified(context, config.id(), config.alias(), config.enabled(), config.useTimer(), config.timerId(),
+                config.timeDelta(), ControlType.HEATER, config.heaterIds(),
+                config.activationThermometers(), config.activationTemperatures(),
+                config.deactivationThermometers(), config.deactivationTemperatures(),
+                config.useOverrideValue(), config.overrideValue(),
+                this.cpm);
     }
 
     /**
@@ -89,7 +97,7 @@ public class MultipleHeaterCombinedControllerImpl extends AbstractMultiCombinedC
         } else {
             try {
                 this.allocateConfig(ControlType.HEATER, this.config.timerId(), this.config.timeDelta(), this.config.heaterIds(), this.config.activationThermometers(), this.config.activationTemperatures(),
-                        this.config.deactivationThermometers(), this.config.deactivationTemperatures());
+                        this.config.deactivationThermometers(), this.config.deactivationTemperatures(), this.config.useOverrideValue(), this.config.overrideValue());
                 this.configurationSuccess = true;
                 this.setHasError(false);
             } catch (ConfigurationException | OpenemsError.OpenemsNamedException e) {

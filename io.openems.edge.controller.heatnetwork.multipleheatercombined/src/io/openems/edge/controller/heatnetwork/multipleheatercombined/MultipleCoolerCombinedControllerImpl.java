@@ -58,7 +58,9 @@ public class MultipleCoolerCombinedControllerImpl extends AbstractMultiCombinedC
         super.activate(context, config.id(), config.alias(), config.enabled(), config.useTimer(), config.timerId(),
                 config.timeDelta(), ControlType.COOLER, config.coolerIds(),
                 config.activationThermometers(), config.activationTemperatures(),
-                config.deactivationThermometers(), config.deactivationTemperatures(), this.cpm);
+                config.deactivationThermometers(), config.deactivationTemperatures(),
+                config.useOverrideValue(), config.overrideValue(),
+                this.cpm);
     }
 
     @Modified
@@ -67,7 +69,9 @@ public class MultipleCoolerCombinedControllerImpl extends AbstractMultiCombinedC
         super.modified(context, config.id(), config.alias(), config.enabled(), config.useTimer(), config.timerId(),
                 config.timeDelta(), ControlType.COOLER, config.coolerIds(),
                 config.activationThermometers(), config.activationTemperatures(),
-                config.deactivationThermometers(), config.deactivationTemperatures(), this.cpm);
+                config.deactivationThermometers(), config.deactivationTemperatures(),
+                config.useOverrideValue(), config.overrideValue(),
+                this.cpm);
     }
 
 
@@ -92,7 +96,7 @@ public class MultipleCoolerCombinedControllerImpl extends AbstractMultiCombinedC
         } else {
             try {
                 this.allocateConfig(ControlType.COOLER, this.config.timerId(), this.config.timeDelta(), this.config.coolerIds(), this.config.activationThermometers(), this.config.activationTemperatures(),
-                        this.config.deactivationThermometers(), this.config.deactivationTemperatures());
+                        this.config.deactivationThermometers(), this.config.deactivationTemperatures(), this.config.useOverrideValue(), this.config.overrideValue());
                 this.configurationSuccess = true;
                 this.setHasError(false);
             } catch (ConfigurationException | OpenemsError.OpenemsNamedException e) {

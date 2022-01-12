@@ -4,6 +4,7 @@ import io.openems.common.exceptions.OpenemsError;
 import io.openems.edge.common.component.AbstractOpenemsComponent;
 import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
+import io.openems.edge.heater.api.ClusteredHeater;
 import io.openems.edge.heater.api.Cooler;
 import io.openems.edge.heater.api.Heater;
 import io.openems.edge.heater.api.HeaterState;
@@ -16,7 +17,6 @@ import io.openems.edge.timer.api.TimerHandler;
 import io.openems.edge.timer.api.TimerHandlerImpl;
 import org.osgi.service.cm.ConfigurationException;
 import org.osgi.service.component.ComponentContext;
-import org.osgi.service.component.annotations.Reference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,6 +50,8 @@ public abstract class AbstractMultiCombinedController extends AbstractOpenemsCom
 
     private boolean useTimer;
     private TimerHandler timer;
+    private boolean useOverride;
+    private int overrideValue;
     private static final String RESTART_CYCLE_ID = "MULTI_COMBINED_IDENTIFIER";
     protected ControlType controlType = ControlType.HEATER;
     protected AtomicBoolean heaterError = new AtomicBoolean(false);
@@ -63,7 +65,9 @@ public abstract class AbstractMultiCombinedController extends AbstractOpenemsCom
     void activate(ComponentContext context, String id, String alias, boolean enabled, boolean useTimer, String timerId,
                   int deltaTime, ControlType controlType, String[] heaterIds,
                   String[] activationThermometers, String[] activationTemperatures,
-                  String[] deactivationThermometers, String[] deactivationTemperatures, ComponentManager cpm) {
+                  String[] deactivationThermometers, String[] deactivationTemperatures,
+                  boolean useOverride, int overrideValue,
+                  ComponentManager cpm) {
 
         super.activate(context, id, alias, enabled);
         this.cpm = cpm;
@@ -71,7 +75,7 @@ public abstract class AbstractMultiCombinedController extends AbstractOpenemsCom
         //----------------------ALLOCATE/ CONFIGURE HEATER/TemperatureSensor -----------------//
         try {
             this.allocateConfig(controlType, timerId, deltaTime, heaterIds, activationThermometers, activationTemperatures,
-                    deactivationThermometers, deactivationTemperatures);
+                    deactivationThermometers, deactivationTemperatures, useOverride, overrideValue);
             this.configurationSuccess = true;
         } catch (OpenemsError.OpenemsNamedException | ConfigurationException e) {
             this.configurationSuccess = false;
@@ -82,7 +86,9 @@ public abstract class AbstractMultiCombinedController extends AbstractOpenemsCom
     void modified(ComponentContext context, String id, String alias, boolean enabled, boolean useTimer, String timerId,
                   int deltaTime, ControlType controlType, String[] heaterIds,
                   String[] activationThermometers, String[] activationTemperatures,
-                  String[] deactivationThermometers, String[] deactivationTemperatures, ComponentManager cpm) {
+                  String[] deactivationThermometers, String[] deactivationTemperatures,
+                  boolean useOverride, int overrideValue,
+                  ComponentManager cpm) {
         super.modified(context, id, alias, enabled);
         this.cpm = cpm;
         this.configuredHeater.clear();
@@ -94,7 +100,7 @@ public abstract class AbstractMultiCombinedController extends AbstractOpenemsCom
         }
         try {
             this.allocateConfig(controlType, timerId, deltaTime, heaterIds, activationThermometers, activationTemperatures, deactivationThermometers,
-                    deactivationTemperatures);
+                    deactivationTemperatures, useOverride, overrideValue);
             this.configurationSuccess = true;
         } catch (OpenemsError.OpenemsNamedException | ConfigurationException e) {
             this.configurationSuccess = false;
@@ -114,12 +120,14 @@ public abstract class AbstractMultiCombinedController extends AbstractOpenemsCom
      * @param activationTemperatures   TemperatureValue for min Temp.
      * @param deactivationThermometer  TemperatureSensor for MaximumTemp.
      * @param deactivationTemperatures TemperatureValue max allowed.
+     * @param useOverride              if you control a Cluster -> use override to set an Override Value
+     * @param overrideValue            if you control a Cluster -> set the Override Value.
      * @throws OpenemsError.OpenemsNamedException if Id not found
      * @throws ConfigurationException             if instanceof is wrong.
      */
     protected void allocateConfig(ControlType controlType, String timerId, int deltaTime, String[] heater_id, String[] activationThermometer,
                                   String[] activationTemperatures, String[] deactivationThermometer,
-                                  String[] deactivationTemperatures) throws OpenemsError.OpenemsNamedException, ConfigurationException {
+                                  String[] deactivationTemperatures, boolean useOverride, int overrideValue) throws OpenemsError.OpenemsNamedException, ConfigurationException {
         if (this.configEntriesDifferentSize(heater_id.length, activationThermometer.length, activationTemperatures.length,
                 deactivationThermometer.length, deactivationTemperatures.length)) {
             throw new ConfigurationException("allocate Config of MultipleHeaterCombined: " + super.id(), "Check Config Size Entries!");
@@ -129,6 +137,8 @@ public abstract class AbstractMultiCombinedController extends AbstractOpenemsCom
             this.timer = new TimerHandlerImpl(this.id(), this.cpm);
             this.timer.addOneIdentifier(RESTART_CYCLE_ID, timerId, deltaTime);
         }
+        this.overrideValue = overrideValue;
+        this.useOverride = useOverride;
 
         List<String> heaterIds = Arrays.asList(heater_id);
         OpenemsError.OpenemsNamedException[] ex = {null};
@@ -298,6 +308,9 @@ public abstract class AbstractMultiCombinedController extends AbstractOpenemsCom
 
                     if (heaterActiveWrapper.isActive()) {
                         heater.getEnableSignalChannel().setNextWriteValue(heaterActiveWrapper.isActive());
+                        if (heater instanceof ClusteredHeater && this.useOverride) {
+                            ((ClusteredHeater) heater).getOverWriteSetPointHeatingPowerChannel().setNextWriteValueFromObject(this.overrideValue);
+                        }
                         this.isHeatingOrCooling.set(true);
                     }
 

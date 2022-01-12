@@ -1,4 +1,4 @@
-package io.openems.edge.heater.cluster.api;
+package io.openems.edge.heater.api;
 
 import io.openems.common.types.OptionsEnum;
 
