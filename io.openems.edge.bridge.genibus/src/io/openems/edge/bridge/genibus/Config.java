@@ -21,7 +21,7 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     String portName() default "/dev/ttyUSB0";
 
     @AttributeDefinition(name = "Increase telegram timeout time [ms]", description = "Increase the telegram timeout time, "
-            + "unit is milliseconds. Improves connection reliability, but decreases speed. This number needs to be adjusted "
+            + "unit is milliseconds. Improves connection reliability, but may decrease speed. This number needs to be adjusted "
             + "to the computer on which you run OpenEMS. A laptop can work with 0 ms, while a leaflet needs 200 ms.")
     int timeoutIncreaseMs() default 200;
 

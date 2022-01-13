@@ -41,6 +41,8 @@ public class GenibusImpl extends AbstractOpenemsComponent implements OpenemsComp
     private boolean debug;
 
     private final GenibusWorker worker = new GenibusWorker(this);
+    protected int workerStartDelay;
+    protected long timestampExecuteWrite;
 
     protected String portName;
     protected boolean connectionOk = true;  // Start with true because this boolean is also used to track if an error message should be sent.
@@ -76,53 +78,61 @@ public class GenibusImpl extends AbstractOpenemsComponent implements OpenemsComp
 
 
     /**
+     * Estimate the time in milliseconds it will take to send and receive the answer to the given telegram. This is
+     * used to adjust the Genibus timeout parameter based on the telegram size.
+     * ’emptyTelegramTime’ is the time to send and receive the answer to an empty telegram. If the telegram is not empty,
+     * we can assume that each byte more than an empty telegram (request and answer) increases the time by a fixed amount.
+     * This increase in time per byte is called ’millisecondsPerByte’. It is measured and stored in the Genibus device
+     * class.
+     * The amount of bytes for the request telegram is known. The bytes of the answer telegram however can vary, so only
+     * an upper estimate is possible. Because of that, the calculated time is also only an estimate.
+     *
+     * @param telegram the telegram.
+     * @return the time in milliseconds.
+     */
+    private int estimateTelegramAnswerTime(Telegram telegram) {
+        int emptyTelegramTime = telegram.getPumpDevice().getEmptyTelegramTime();
+        /* ’telegram.getLength()’ returns 2 for an empty telegram. Subtract 2, because we want the additional bytes
+           compared to an empty telegram. */
+        int additionalBytesEstimate = Byte.toUnsignedInt(telegram.getLength()) - 2
+                + telegram.getAnswerTelegramPduLengthEstimate();
+        return (int) (emptyTelegramTime + (additionalBytesEstimate * telegram.getPumpDevice().getMillisecondsPerByte()));
+    }
+
+    /**
      * Handles the telegram. This is called by the GenibusWorker forever() method.
      * This method sends the request telegram and processes the response telegram. The request telegram is needed to
      * identify the data in the response. The response has no addresses for the tasks. Instead, data in the response is
      * transmitted in the exact same order as it was requested. The response data is then parsed by using the task list
      * of the request telegram. The method also contains several checks to make sure the response telegram is actually
      * the answer to the request telegram.
-     * The cycletimeLeft parameter is used to calculate how long to wait for the response telegram before timeout. This
-     * is important in a situation with multiple devices where one or more devices are not responding. The timeout can
-     * not be too long, or the not responding device block operation of the other devices. If the timeout is too short,
-     * connection errors may happen during normal operation.
      *
      * @param telegram the telegram to send to the Genibus device.
-     * @param cycletimeLeft remaining time in ms of this OpenEMS cycle.
      */
-    protected void handleTelegram(Telegram telegram, long cycletimeLeft) {
-
-        int emptyTelegramTime = telegram.getPumpDevice().getEmptyTelegramTime();
-
-        /* ’additionalBytesEstimate’ is the additional bytes sent and received compared to an exchange of empty
-           telegrams. The value is an estimate, because the byte count of the response telegram can vary.
-           ’telegram.getLength()’ returns 2 for an empty telegram. Subtract 2, because we want the additional bytes
-           compared to an empty telegram. */
-        int additionalBytesEstimate = Byte.toUnsignedInt(telegram.getLength()) - 2
-                + telegram.getAnswerTelegramPduLengthEstimate();
-
-        /* The time parameter in the "writeTelegram()" method is the timeout until the first bytes of a response, and
-           then again the timeout for the transmission of the answer. Tests have shown that the time until the first byte
-           of the answer is detected is much longer than the time from then to the end of the transmission, probably
-           because of buffering. For example a 109 ms telegram had 94 ms on the answer time clock and 10 ms on the
-           transmission time clock.
-           Judging from these tests, it seems best just to take the whole estimated telegram time as the timeout for the
-           answer time clock, + 60 ms (GENIbus timeout length, added in "handleResponse()" method). The same time is
-           then also used as timeout for the transmission time clock. Not accurate, but good enough. Just to have a not
-           too long timer that scales with the telegram length. */
-        int telegramEstimatedTimeMillis = (int) (emptyTelegramTime + additionalBytesEstimate * telegram.getPumpDevice().getMillisecondsPerByte());
+    protected void handleTelegram(Telegram telegram) {
 
         /* When testing on the leaflet I saw weird random connection problems. I guess the leaflet has occasional hangups
            that cause an execution delay. Adding more time to the timeout solved this problem. Adding 100 ms helped, but
            to eliminate the problem 100% adding 200 ms was needed. Running OpenEMS on a laptop did not have that issue.
            Adjustable by config with parameter ’timeoutIncreaseMs’ */
-        Telegram responseTelegram = this.connectionHandler.writeTelegram(telegramEstimatedTimeMillis + this.timeoutIncreaseMs, telegram, this.debug);
+        int telegramEstimatedTimeMillis = this.estimateTelegramAnswerTime(telegram) + this.timeoutIncreaseMs;
 
-        // No answer received -> error handling
-        // This will happen if the pump is switched off. Assume that is the case. Reset the device, so once data is
-        // again received from this address, it is handled like a new pump (which might be the case).
-        // A reset means all priority once tasks are sent again and all INFO is requested again. So if any of these were
-        // in this failed telegram, they are not omitted.
+        /* The timeout parameter in the "writeTelegram()" method is the timeout until the first bytes of a response, and
+           then again the timeout for the transmission of the answer. Tests have shown that the time until the first byte
+           of the answer is detected is much longer than the time from then to the end of the transmission, probably
+           because of buffering. For example a 109 ms telegram had 94 ms on the answer time clock and 10 ms on the
+           transmission time clock.
+           Judging from these tests, it seems best just to take the whole estimated telegram time as the timeout for the
+           answer time clock, + the GENIbus timeout length (added in "handleResponse()" method). The same time is
+           then also used as timeout for the transmission time clock. Not accurate, but good enough. Just to have a not
+           too long timer that scales with the telegram length. */
+        Telegram responseTelegram = this.connectionHandler.writeTelegram(telegramEstimatedTimeMillis, telegram, this.debug);
+
+        /* No answer received -> error handling
+           This will happen if the pump is switched off. Assume that is the case. Reset the device, so once data is
+           again received from this address, it is handled like a new pump (which might be the case).
+           A reset means all priority once tasks are sent again and all INFO is requested again. So if any of these were
+           in this failed telegram, they are not omitted. */
         if (responseTelegram == null) {
             this.logWarn(this.log, "No answer on GENIbus from device " + telegram.getPumpDevice().getPumpDeviceId());
             telegram.getPumpDevice().setConnectionOk(false);
@@ -268,53 +278,95 @@ public class GenibusImpl extends AbstractOpenemsComponent implements OpenemsComp
                             break;
                         }
                     }
-
                 }
             }
             listCounter.getAndIncrement();
-
         });
-
     }
 
 
     @Override
     public void handleEvent(Event event) {
         if (this.isEnabled() && EdgeEventConstants.TOPIC_CYCLE_EXECUTE_WRITE.equals(event.getTopic())) {
+            this.timestampExecuteWrite = System.currentTimeMillis();
+            this.workerStartDelay = 0;
             this.worker.triggerNextRun();
+
+            /* The GenibusWorker extends the AbstractCycleWorker, and a new run will only start when the worker
+               has finished it's forever() method and triggerNextRun() is called. Calling triggerNextRun() while
+               forever() is not finished does nothing.
+               The execution of one iteration of the GenibusWorker's forever() method may take longer than one OpenEMS
+               cycle, especially if a Genibus device is not responding and the code has to wait for the answer timeout.
+               If the GenibusWorker is not finished on the first call of triggerNextRun(), later calls are added to
+               allow a delayed start and keep the worker from idling. Otherwise, if it barely missed triggerNextRun() it
+               would idle the rest of the cycle. */
+            int delayedStartLoopCounter = 4 + (this.timeoutIncreaseMs / 50);
+            for (int i = 0; i < delayedStartLoopCounter; i++) {
+                try {
+                    Thread.sleep(50);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                this.workerStartDelay += 50;
+                this.worker.triggerNextRun();
+            }
         }
     }
 
 
     /**
-     * Adds a pumpDevice to the GENIbus.
-     * @param pumpDevice the PumpDevice object.
+     * Add a device to the Genibus bridge.
+     * @param pumpDevice the device.
      */
     @Override
     public void addDevice(PumpDevice pumpDevice) {
         this.worker.addDevice(pumpDevice);
     }
 
+    /**
+     * Remove a device from the Genibus bridge.
+     * @param deviceId the device.
+     */
     @Override
     public void removeDevice(String deviceId) {
         this.worker.removeDevice(deviceId);
     }
 
+    /**
+     * Log a debug message to the Genibus bridge.
+     * @param log     the Logger instance.
+     * @param message the message.
+     */
     @Override
     public void logDebug(Logger log, String message) {
         super.logDebug(log, message);
     }
 
+    /**
+     * Log a info message to the Genibus bridge.
+     * @param log     the Logger instance.
+     * @param message the message.
+     */
     @Override
     public void logInfo(Logger log, String message) {
         super.logInfo(log, message);
     }
 
+    /**
+     * Log a warn message to the Genibus bridge.
+     * @param log     the Logger instance.
+     * @param message the message.
+     */
     @Override
     public void logWarn(Logger log, String message) {
         super.logWarn(log, message);
     }
 
+    /**
+     * Log an error message to the Genibus bridge.
+     * @param log     the Logger instance.
+     * @param message the message.
+     */
     @Override
     public void logError(Logger log, String message) {
         super.logError(log, message);

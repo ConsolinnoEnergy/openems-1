@@ -32,6 +32,11 @@ public class PumpDevice {
     private final List<GenibusTask> taskQueue = new ArrayList<>();
 
     /**
+     * The list of priority ’low’ tasks that are used as filler when all high tasks have already been executed that cycle.
+     */
+    private final List<GenibusTask> lowTasksFillQueue = new ArrayList<>();
+
+    /**
      * The list of all priority ’once’ Genibus tasks that can do ’INFO’. These tasks need to be executed two times, once
      * to do INFO and once to do GET.
      */
@@ -181,6 +186,16 @@ public class PumpDevice {
     }
 
     /**
+     * Gets the list of priority ’low’ tasks that have not yet been executed this cycle. Tasks from this list are used
+     * as filler if the telegram has not much other content.
+     *
+     * @return the task queue.
+     */
+    public List<GenibusTask> getLowTasksFillQueue() {
+        return this.lowTasksFillQueue;
+    }
+
+    /**
      * Get all priority ’once’ Genibus tasks that can do ’INFO’. These tasks need to be executed two times, once to do
      * INFO and once to do GET.
      *
@@ -263,8 +278,8 @@ public class PumpDevice {
      * Set a timestamp for this pump device. This is done once per cycle when the first telegram is sent to this device.
      * This information is used to track if a telegram has already been sent to this device this cycle.
      */
-    public void setTimestamp() {
-        this.timestamp = System.currentTimeMillis();
+    public void setTimestamp(long timestamp) {
+        this.timestamp = timestamp;
     }
 
     /**

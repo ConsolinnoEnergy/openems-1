@@ -329,8 +329,20 @@ public class ConnectionHandler {
 
     /**
      * Listens for a response telegram and returns it.
+     * The timeout parameter is the timeout until the first bytes of a response, and then again the timeout for the
+     * transmission of the answer. Tests have shown that the time until the first byte of the answer is detected is much
+     * longer than the time from then to the end of the transmission, probably because of buffering. For example a
+     * telegram where the handleTelegram() method took 109 ms took 94 ms until the first answer byte was detected
+     * (= answer time clock) and then 10 ms until the transmission was completed.
+     * The GenibusBridge measures the execution time of handleTelegram() and tries to estimate it (in the
+     * estimateTelegramAnswerTime() method). Since the answer time clock is about 90% of the handleTelegram() execution
+     * time, the handleTelegram() time estimate is used for the baseline timeout of the answer time clock. Added to that
+     * is the Genibus timeout (default 60 ms as per spec), and the configurable timeoutIncreaseMs.
+     * The same timeout value is then also used for the transmission time. Not accurate, but good enough. Just to have a
+     * not too long timer that scales with the telegram length. Transmission timeout is a very rare event, in contrast
+     * to answer timeout that happens whenever a device is switched off.
      *
-     * @param timeout how long to wait for the response telegram before aborting.
+     * @param timeout how long to wait for the response telegram before aborting, and for the transmission to finish before aborting.
      * @param debug print info to log or not.
      * @param pumpDevice the pumpDevice the telegram is coming from.
      * @return the received telegram.
@@ -338,14 +350,8 @@ public class ConnectionHandler {
     private Telegram handleResponse(long timeout, boolean debug, PumpDevice pumpDevice) {
         try {
             long startTime = System.currentTimeMillis();
-
-            /* This "while" only tests for timeout as long as is.available() <= 0, since there is a break at the end.
-               Timeout time is the estimated time it should take for a response to arrive. One would think that this is
-               the time it takes to send the request telegram + some process time. However, testing revealed that the
-               response is buffered and there is a delay between data arriving and ’is.available() != 0’.
-               From the tests it was found that a practical timeout time is the estimated telegram execution time
-               (request + answer). Add 60 ms to that, as that is the suggested GENIbus Master timeout duration. */
             while ((System.currentTimeMillis() - startTime) < timeout + GenibusImpl.GENIBUS_TIMEOUT_MS) {
+                // This "while" only tests for timeout as long as is.available() <= 0, since there is a break at the end.
                 if (this.is.available() <= 0) {
                     continue;
                 }
@@ -358,9 +364,7 @@ public class ConnectionHandler {
                 List<Byte> completeInput = new ArrayList<>();
                 boolean transferOk = false;
                 /* Reset timer. This timeout exits the loop in case the telegram is corrupted and transferOk will not
-                   become true. The timeout length should be greater than the expected telegram transfer time. Tests have
-                   shown that the received data is buffered, greatly reducing the time the code has to wait. For small
-                   telegrams the "answer transmit clock" will show 0 ms. */
+                   become true. */
                 startTime = System.currentTimeMillis();
                 while (transferOk == false && (System.currentTimeMillis() - startTime) < timeout + GenibusImpl.GENIBUS_TIMEOUT_MS) {
                     if (this.is.available() <= 0) {
