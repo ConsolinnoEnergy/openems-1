@@ -61,6 +61,9 @@ public class PumpReadTask16bitOrMore extends AbstractPumpTask {
      * Allocate a byte from a response telegram to this task. For multi byte tasks, call this method for each byte in
      * the order hi to lo. Once all bytes are allocated, the data is processed and the result put in ’nextValue’ of the
      * associated OpenEMS channel.
+     * This method handles the conversion of the value from Genibus into a number. If the channel associated with this
+     * task has a unit compatible with the one transmitted by Genibus, the method will attempt to scale the value to the
+     * unit of the channel.
      *
      * @param data the response byte from the Genibus device for this task.
      */
@@ -106,6 +109,7 @@ public class PumpReadTask16bitOrMore extends AbstractPumpTask {
             range = 255;
         }
 
+        // This part does the conversion of the Genibus value into a number.
         double tempValue;
         switch (super.sif) {
             case 2:
@@ -117,7 +121,7 @@ public class PumpReadTask16bitOrMore extends AbstractPumpTask {
                 // value w.o. considering units
                 tempValue = (super.zeroScaleFactor + sumValue);
 
-                /* 16bit formula
+                /* 16bit formula, as per genispec manual.
                    tempValue = (super.zeroScaleFactor + (actualDataArray[0] * ((double) super.rangeScaleFactor / (double) range))
                             + (actualDataArray[1] * ((double) super.rangeScaleFactor / ((double) range * 256)))); */
 
@@ -134,7 +138,7 @@ public class PumpReadTask16bitOrMore extends AbstractPumpTask {
                 tempValue = (Math.pow(256, exponent) * (256 * super.zeroScaleFactorHighOrder + super.zeroScaleFactorLowOrder)
                         + highPrecisionValue);
 
-                /* Extended precision, 8 bit formula.
+                /* Extended precision, 8 bit formula as per genispec manual.
                    tempValue = ((256 * super.scaleFactorHighOrder + super.scaleFactorLowOrder) + actualData); */
 
                 this.scaleValueToOpenEmsAndHandleError(tempValue);

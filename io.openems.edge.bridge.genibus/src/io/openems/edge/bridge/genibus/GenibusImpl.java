@@ -191,7 +191,7 @@ public class GenibusImpl extends AbstractOpenemsComponent implements OpenemsComp
                                 + ": Data Class unknown, reply APDU data field is empty");
                         break;
                     case 2:
-                        byte[] data = responseApdu.get(listCounter.get()).getCompleteApduAsByteArray();
+                        byte[] data = responseApdu.get(listCounter.get()).getCompleteApduAsByteArray(this.log);
                         this.logWarn(this.log, "Apdu error for Head Class " + answerHeadClass
                                 + ": Data Item ID unknown, reply APDU data field contains first unknown ID - "
                                 + Byte.toUnsignedInt(data[2]));
@@ -202,7 +202,7 @@ public class GenibusImpl extends AbstractOpenemsComponent implements OpenemsComp
                         break;
                 }
             } else {
-                byte[] data = responseApdu.get(listCounter.get()).getCompleteApduAsByteArray();
+                byte[] data = responseApdu.get(listCounter.get()).getCompleteApduAsByteArray(this.log);
 
                 //for the GenibusTask list --> index
                 int taskCounter = 0;

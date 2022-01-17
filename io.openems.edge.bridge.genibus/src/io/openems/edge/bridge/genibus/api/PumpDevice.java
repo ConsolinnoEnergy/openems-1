@@ -44,22 +44,38 @@ public class PumpDevice {
 
     /**
      * The read buffer size in bytes of the device. A request telegram cannot be larger than this.
-     * The value ’70’ is from a Magna3 pump. I assume this is the lower limit, since that doesn't even fit a full APDU.
-     * A telegram with one full APDU is 71 bytes (telegram header 4, CRC 2, APDU header 2, APDU max data 63).
      * The value can be requested over Genibus from the device, buf_len (0, 2). The OpenEMS module for the device should
      * read buf_len and then write that value to this class using ’setDeviceReadBufferLengthBytes()’.
      */
-    private int deviceReadBufferLengthBytes = 70;
+    private int deviceReadBufferLengthBytes = DEFAULT_MIN_SIZE_READ_BUFFER;
+
+    /**
+     * The minimum read buffer size. This lower limit is enforced to prevent rendering the Genibus inoperable by
+     * accidentally setting the read buffer size too low.
+     * The value ’70’ is the read buffer size from a Magna3 pump. I assume this is the lower limit, since that doesn't
+     * even fit a full APDU. A telegram with one full APDU is 71 bytes (telegram header 4, CRC 2, APDU header 2, APDU
+     * content maximum 63). If there is actually a device with a lower read buffer size, this value needs to be adjusted.
+     */
+    private static final int DEFAULT_MIN_SIZE_READ_BUFFER = 70;
 
     /**
      * The send buffer size in bytes of the device. A response telegram cannot be larger than this.
-     * The value ’102’ is from a Magna3 pump, found by trial and error. So far no Genibus data item exists to read this
-     * value from the device. Because of that there is no setter method to change this value. Instead, it is assumed
-     * that the send buffer will not be smaller than the read buffer, and not smaller than the 102 bytes of the Magna3.
-     * If the read buffer value is changed to a value bigger than 102, the send buffer will be increased to the same
-     * value.
+     * So far no Genibus data item exists to read this value from the device. Because of that, there is no setter method
+     * to change this value. Instead, it is assumed that the send buffer will not be smaller than the read buffer, and
+     * not smaller than DEFAULT_MIN_SIZE_SEND_BUFFER. The send buffer is then set to the read buffer size if the read
+     * buffer is set to a value bigger than DEFAULT_MIN_SIZE_SEND_BUFFER.
      */
-    private int deviceSendBufferLengthBytes = 102;
+    private int deviceSendBufferLengthBytes = DEFAULT_MIN_SIZE_SEND_BUFFER;
+
+    /**
+     * The minimum send buffer size. This lower limit is enforced to prevent rendering the Genibus inoperable by
+     * accidentally setting the send buffer size too low.
+     * The value ’102’ is the send buffer size from a Magna3 pump. There is no Genibus data item to actually read the
+     * value from the device, this number was found by trial and error. I assume this is the lower limit, since the
+     * Magna3 also has a read buffer size that is so low that lower does not make much sense. If there is actually a
+     * device with a lower send buffer size, this value needs to be adjusted.
+     */
+    private static final int DEFAULT_MIN_SIZE_SEND_BUFFER = 102;
 
     /**
      * The variable ’lowPrioTasksPerCycle’ lets you tune how fast the ’low’ priority tasks are executed, compared to the
@@ -91,20 +107,28 @@ public class PumpDevice {
      * + the estimated PDU size of the response telegram. ’emptyTelegramTime’ and ’millisecondsPerByte’ should be constant,
      * so the time of a telegram exchange can be calculated from the byte count in the PDUs.</p>
      *
-     * <p>This timing information is used for two things:
-     * - Adjusting the telegram response timeout to the telegram size. The timeout length cannot be too long, otherwise
-     *   one pump that is not responding (because of power outage, error, wrong address, etc.) will severely slow down
-     *   communication to other pumps on the same Genibus bridge.
-     * - Genibus & OpenEMS cycle synchronisation. Near the end of the OpenEMS cycle, the length of a telegram will be
-     *   limited so that the request/response exchange is done before the cycle ends.</p>
+     * <p>This timing information is used to adjust the telegram response timeout to the telegram size. The timeout length
+     * should not be too long, otherwise one pump that is not responding (because of power outage, error, wrong address,
+     * etc.) will slow down communication to other pumps on the same Genibus bridge.</p>
      */
-    private final double[] millisecondsPerByte = {2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0};    // Rough estimate as initial value. Exact value measured at runtime.
+    private final double[] millisecondsPerByte = {DEFAULT_MILLISECONDS_PER_BYTE, DEFAULT_MILLISECONDS_PER_BYTE,
+            DEFAULT_MILLISECONDS_PER_BYTE, DEFAULT_MILLISECONDS_PER_BYTE, DEFAULT_MILLISECONDS_PER_BYTE,
+            DEFAULT_MILLISECONDS_PER_BYTE, DEFAULT_MILLISECONDS_PER_BYTE};
     private int arrayTracker = 0;   // Used to track in which array position the last measurement was put.
+    private static final double DEFAULT_MILLISECONDS_PER_BYTE = 2.0;     // Rough estimate as initial value. Exact value measured at runtime.
+    private static final double MILLISECONDS_PER_BYTE_MAX = 10;     // upper limit
+    private static final double MILLISECONDS_PER_BYTE_MIN = 0.5;    // lower limit
+
+    private final int[] emptyTelegramTime = {DEFAULT_EMPTY_TELEGRAM_TIME, DEFAULT_EMPTY_TELEGRAM_TIME,
+            DEFAULT_EMPTY_TELEGRAM_TIME, DEFAULT_EMPTY_TELEGRAM_TIME, DEFAULT_EMPTY_TELEGRAM_TIME};
+    private int arrayTracker2 = 0;   // Used to track in which array position the last measurement was put.
 
     /* Value measured with a laptop is 33 ms. Leaflet timing seems to be slower, so setting a more conservative 40 ms as
        initial value. Exact value measured at runtime. */
-    private final int[] emptyTelegramTime = {40, 40, 40, 40, 40};
-    private int arrayTracker2 = 0;   // Used to track in which array position the last measurement was put.
+    private static final int DEFAULT_EMPTY_TELEGRAM_TIME = 40;
+
+    private static final int EMPTY_TELEGRAM_TIME_MAX = 100;     // upper limit
+    private static final int EMPTY_TELEGRAM_TIME_MIN = 10;    // lower limit
 
     /**
      * If the pump is in pressure set point mode, ref_rem is mapped to the pressure sensor range. ref_rem is a % value,
@@ -206,9 +230,9 @@ public class PumpDevice {
     }
 
     /**
-     * Set the device read buffer length. Can only set values above 70, which is assumed is the minimum value a device
-     * can have. The lower limit is a safeguard to not be able to kill Genibus communications by setting the buffer size
-     * too low.
+     * Set the device read buffer length. Can only set values above DEFAULT_MIN_BUFFER_LENGTH, which is assumed is the
+     * minimum value a device can have. The lower limit is a safeguard to not be able to kill Genibus communications by
+     * setting the buffer size too low.
      * This will also set the device send buffer length to the same value, if the value is above 102. It is reasonable
      * to assume the send buffer won't be smaller than the read buffer. The send buffer does not have it's own setter
      * method.
@@ -217,12 +241,11 @@ public class PumpDevice {
      * @param value the device read buffer length.
      */
     public void setDeviceReadBufferLengthBytes(int value) {
-        // 70 is assumed minimum buffer length.
-        if (value >= 70) {
+        if (value >= DEFAULT_MIN_SIZE_READ_BUFFER) {
             this.deviceReadBufferLengthBytes = value;
         }
         // Adjust send buffer as well.
-        this.deviceSendBufferLengthBytes = Math.max(value, 102);
+        this.deviceSendBufferLengthBytes = Math.max(value, DEFAULT_MIN_SIZE_SEND_BUFFER);
     }
 
     /**
@@ -277,6 +300,8 @@ public class PumpDevice {
     /**
      * Set a timestamp for this pump device. This is done once per cycle when the first telegram is sent to this device.
      * This information is used to track if a telegram has already been sent to this device this cycle.
+     *
+     * @param timestamp the timestamp.
      */
     public void setTimestamp(long timestamp) {
         this.timestamp = timestamp;
@@ -301,19 +326,16 @@ public class PumpDevice {
      * and ’millisecondsPerByte’ should be constant. If these are known, the time of a telegram exchange can be calculated
      * from the byte count in the PDUs.
      * Multiple measurements of ’millisecondsPerByte’ are stored in an array. Calling the value returns an average of
-     * these measurements, to smooth out erratic measurement data. The measurement data is also clamped to the [0.5, 10]
-     * interval, as a safeguard from runaway values rendering the Genibus bridge inoperable.
+     * these measurements, to smooth out erratic measurement data. The measurement data is also clamped, as a safeguard
+     * from runaway values rendering the Genibus bridge inoperable.
      *
      * @param millisecondsPerByte the number of milliseconds one byte adds to the telegram send and receive time.
      */
     public void setMillisecondsPerByte(double millisecondsPerByte) {
-        // Save seven values so we can average and the value won't jump that much.
-        if (millisecondsPerByte > 10) {
-            millisecondsPerByte = 10;   // Failsafe.
-        }
-        if (millisecondsPerByte < 0.5) {
-            millisecondsPerByte = 0.5;   // Failsafe.
-        }
+        // Clamp input, so extreme values can't kill communication.
+        millisecondsPerByte = Math.max(MILLISECONDS_PER_BYTE_MIN, millisecondsPerByte);
+        millisecondsPerByte = Math.min(millisecondsPerByte, MILLISECONDS_PER_BYTE_MAX);
+
         this.millisecondsPerByte[this.arrayTracker] = millisecondsPerByte;
         this.arrayTracker++;
         int arrayLength = this.millisecondsPerByte.length;
@@ -353,18 +375,16 @@ public class PumpDevice {
      * and ’millisecondsPerByte’ should be constant. If these are known, the time of a telegram exchange can be calculated
      * from the byte count in the PDUs.
      * Multiple measurements of ’emptyTelegramTime’ are stored in an array. Calling the value returns an average of
-     * these measurements, to smooth out erratic measurement data. The measurement data is also clamped to the [10, 100]
-     * interval, as a safeguard from runaway values rendering the Genibus bridge inoperable.
+     * these measurements, to smooth out erratic measurement data. The measurement data is also clamped, as a safeguard
+     * from runaway values rendering the Genibus bridge inoperable.
      *
      * @param emptyTelegramTime the time in milliseconds it takes to send and receive the response to an empty telegram.
      */
     public void setEmptyTelegramTime(int emptyTelegramTime) {
-        if (emptyTelegramTime > 100) {
-            emptyTelegramTime = 100;   // Failsafe.
-        }
-        if (emptyTelegramTime < 10) {
-            emptyTelegramTime = 10;   // Failsafe.
-        }
+        // Clamp input, so extreme values can't kill communication.
+        emptyTelegramTime = Math.max(EMPTY_TELEGRAM_TIME_MIN, emptyTelegramTime);
+        emptyTelegramTime = Math.min(emptyTelegramTime, EMPTY_TELEGRAM_TIME_MAX);
+
         this.emptyTelegramTime[this.arrayTracker2] = emptyTelegramTime;
         this.arrayTracker2++;
         int arrayLength = this.emptyTelegramTime.length;
@@ -548,17 +568,17 @@ public class PumpDevice {
         this.addAllOnceTasks = true;
         this.pressureSensorMin = 0;
         this.pressureSensorRange = 0;
-        this.deviceReadBufferLengthBytes = 70;
-        this.deviceSendBufferLengthBytes = 102;
+        this.deviceReadBufferLengthBytes = DEFAULT_MIN_SIZE_READ_BUFFER;
+        this.deviceSendBufferLengthBytes = DEFAULT_MIN_SIZE_SEND_BUFFER;
 
         int arrayLength1 = this.millisecondsPerByte.length;
         for (int i = 0; i < arrayLength1; i++) {
-            this.millisecondsPerByte[i] = 2.0;
+            this.millisecondsPerByte[i] = DEFAULT_MILLISECONDS_PER_BYTE;
         }
 
         int arrayLength2 = this.emptyTelegramTime.length;
         for (int i = 0; i < arrayLength2; i++) {
-            this.emptyTelegramTime[i] = 40;
+            this.emptyTelegramTime[i] = DEFAULT_EMPTY_TELEGRAM_TIME;
         }
     }
 

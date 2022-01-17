@@ -409,7 +409,7 @@ public class ConnectionHandler {
                         this.parent.logInfo(this.log, "CRC Check ok.");
                     }
                     // If all done, return the response telegram.
-                    return Telegram.parseEventStream(receivedData);
+                    return Telegram.parseEventStream(receivedData, this);
                 }
                 break;
             }
@@ -425,6 +425,15 @@ public class ConnectionHandler {
         }
         pumpDevice.setConnectionTimeoutCounter(timeoutCounter);
         return null;
+    }
+
+    /**
+     * Log a warning message.
+     *
+     * @param warningMessage the message.
+     */
+    public void logWarning(String warningMessage) {
+        this.parent.logWarn(this.log, warningMessage);
     }
 
     /**

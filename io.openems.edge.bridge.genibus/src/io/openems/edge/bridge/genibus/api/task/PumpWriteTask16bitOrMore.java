@@ -82,6 +82,8 @@ public class PumpWriteTask16bitOrMore extends PumpReadTask16bitOrMore implements
      */
     @Override
     public boolean isSetAvailable() {
+        /* informationDataAvailable() is a requirement, because INFO is needed to be able to convert the write value
+           into the correct format. */
         return super.informationDataAvailable() && this.channel.getNextWriteValue().isPresent();
     }
 
@@ -91,6 +93,9 @@ public class PumpWriteTask16bitOrMore extends PumpReadTask16bitOrMore implements
      * The return value is an int of value 0 to 255, or ’NO_SET_AVAILABLE’ if there is no SET available (or the
      * byteNumber is wrong). If a SET is available depends on the associated write channel. If ’nextWrite’ of the channel
      * is empty, then there is no SET available.
+     * This method does not clear the ’nextWrite’ of the channel, because the method only returns one byte and needs to
+     * be called multiple times for multi byte tasks. Instead, the calling code needs to clear the ’nextWrite’ manually
+     * using ’clearNextWriteAndUpdateChannel()’ once all bytes have been collected.
      *
      * @param byteNumber which byte of SET to return.
      * @return the byte value of the SET if available, ’NO_SET_AVAILABLE’ otherwise.

@@ -86,7 +86,7 @@ public interface GenibusTask extends ManagedTask {
     void resetInfo();
 
     /**
-     * Set the Genibus device this task belongs to.
+     * Sets the Genibus device this task belongs to.
      *
      * @param pumpDevice the Genibus device.
      */

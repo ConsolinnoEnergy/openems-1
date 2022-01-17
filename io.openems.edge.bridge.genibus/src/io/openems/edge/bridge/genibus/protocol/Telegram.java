@@ -6,6 +6,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
+import io.openems.edge.bridge.genibus.ConnectionHandler;
+import io.openems.edge.bridge.genibus.GenibusImpl;
 import io.openems.edge.bridge.genibus.api.PumpDevice;
 import io.openems.edge.bridge.genibus.api.task.GenibusTask;
 import org.slf4j.Logger;
@@ -270,19 +272,20 @@ public class Telegram {
      * Create a new telegram from a byte array assuming correct crc.
      *
      * @param bytes the byte array.
+     * @param caller the caller of the method.
      * @return the telegram.
      */
-    public static Telegram parseEventStream(byte[] bytes) {
+    public static Telegram parseEventStream(byte[] bytes, ConnectionHandler caller) {
         try {
             Telegram telegram = new Telegram();
             telegram.setStartDelimiter(bytes[0]);    //Start Delimiter (SD)
             telegram.setLength(bytes[1]);            //Length (LE)
             telegram.setDestinationAddress(bytes[2]);//Destination Address (DA)
             telegram.setSourceAddress(bytes[3]);    //Source Address (SA)
-            telegram.setProtocolDataUnit(ProtocolDataUnit.parseBytesToPdu(bytes));//Protocol Data Unit (PDU)
+            telegram.setProtocolDataUnit(ProtocolDataUnit.parseBytesToPdu(bytes, caller));//Protocol Data Unit (PDU)
             return telegram;
         } catch (Exception e) {
-            System.out.println("Error parsing bytes for telegram: " + e.getMessage());
+            caller.logWarning("Error parsing bytes for telegram: " + e.getMessage());
         }
         return null;
     }

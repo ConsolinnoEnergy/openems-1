@@ -1,5 +1,8 @@
 package io.openems.edge.bridge.genibus.protocol;
 
+import io.openems.edge.bridge.genibus.api.PumpDevice;
+import org.slf4j.Logger;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
@@ -96,9 +99,11 @@ public class ApplicationProgramDataUnit {
 
     /**
      * Get the complete APDU as a byte array.
+     *
+     * @param log logger to log an error.
      * @return the complete APDU as a byte array.
      */
-    public byte[] getCompleteApduAsByteArray() {
+    public byte[] getCompleteApduAsByteArray(Logger log) {
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
 
         // Head bytes
@@ -108,7 +113,7 @@ public class ApplicationProgramDataUnit {
         try {
             bytes.write(this.apduDataFields.toByteArray());
         } catch (IOException e) {
-            e.printStackTrace();
+            log.warn("Error writing bytes of APDU: " + e.getMessage());
         }
 
         return bytes.toByteArray();

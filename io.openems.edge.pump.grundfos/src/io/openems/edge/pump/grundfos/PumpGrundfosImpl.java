@@ -216,8 +216,8 @@ public class PumpGrundfosImpl extends AbstractOpenemsComponent implements Openem
         // Broadcast mode is just to find the address of a unit. Not suitable for sending commands.
         if (this.broadcast || this.changeAddress) {
             this.pumpDevice = new PumpDevice(deviceId, pumpAddress, 37, Unit.BAR, 4,
-                    new PumpReadTask8bit(0, 2, getBufferLength(), "Standard", Priority.ONCE),
-                    new PumpReadTask8bit(0, 3, getUnitBusMode(), "Standard", Priority.ONCE),
+                    new PumpReadTask8bit(0, 2, getBufferLengthChannel(), "Standard", Priority.ONCE),
+                    new PumpReadTask8bit(0, 3, getUnitBusModeChannel(), "Standard", Priority.ONCE),
 
                     new PumpReadTask8bit(2, 148, getUnitFamily(), "Standard", Priority.ONCE),
                     new PumpReadTask8bit(2, 149, getUnitType(), "Standard", Priority.ONCE),
@@ -293,25 +293,25 @@ public class PumpGrundfosImpl extends AbstractOpenemsComponent implements Openem
                 new PumpCommandsTask(122, setWinkOff()),
 
                 // Read tasks priority once
-                new PumpReadTask8bit(0, 2, getBufferLength(), "Standard", Priority.ONCE),
-                new PumpReadTask8bit(0, 3, getUnitBusMode(), "Standard", Priority.ONCE),
+                new PumpReadTask8bit(0, 2, getBufferLengthChannel(), "Standard", Priority.ONCE),
+                new PumpReadTask8bit(0, 3, getUnitBusModeChannel(), "Standard", Priority.ONCE),
                 new PumpReadTask8bit(2, 148, getUnitFamily(), "Standard", Priority.ONCE),
                 new PumpReadTask8bit(2, 149, getUnitType(), "Standard", Priority.ONCE),
                 new PumpReadTask8bit(2, 150, getUnitVersion(), "Standard", Priority.ONCE),
 
                 // Read tasks priority high
-                new PumpReadTask8bit(2, 48, getRefAct(), "Standard", Priority.HIGH),
-                new PumpReadTask8bit(2, 49, getRefNorm(), "Standard", Priority.HIGH),
+                new PumpReadTask8bit(2, 48, getRefActChannel(), "Standard", Priority.HIGH),
+                new PumpReadTask8bit(2, 49, getRefNormChannel(), "Standard", Priority.HIGH),
                 new PumpReadTask8bit(2, 90, getControlSourceBits(), "Standard", Priority.HIGH),
-                new PumpReadTask8bit(this.pumpType.getPloHeadClass(), this.pumpType.getPlo(), getPowerConsumption(), "Standard", Priority.HIGH),
-                new PumpReadTask8bit(this.pumpType.gethHeadClass(), this.pumpType.getH(), getCurrentPressure(), "Standard", Priority.HIGH),
-                new PumpReadTask8bit(this.pumpType.getqHeadClass(), this.pumpType.getQ(), getCurrentPumpFlow(), "Standard", Priority.HIGH),
-                new PumpReadTask8bit(this.pumpType.gettWHeadClass(), this.pumpType.gettW(), getPumpedWaterMediumTemperature(), "Standard", Priority.HIGH),
+                new PumpReadTask8bit(this.pumpType.getPloHeadClass(), this.pumpType.getPlo(), getPowerConsumptionChannel(), "Standard", Priority.HIGH),
+                new PumpReadTask8bit(this.pumpType.gethHeadClass(), this.pumpType.getH(), getPressureChannel(), "Standard", Priority.HIGH),
+                new PumpReadTask8bit(this.pumpType.getqHeadClass(), this.pumpType.getQ(), getPercolationChannel(), "Standard", Priority.HIGH),
+                new PumpReadTask8bit(this.pumpType.gettWHeadClass(), this.pumpType.gettW(), getPumpedFluidTemperatureChannel(), "Standard", Priority.HIGH),
                 // PumpReadTask has an optional channel multiplier. That is a double that is multiplied with the readout
                 // value just before it is put in the channel. Here is an example of how to use this feature:
                 // Apparently the unit returned by INFO is wrong. Unit type = 30 = 2*Hz, but the value is returned in Hz.
                 // Could also be that the error is in the documentation and unit 30 is Hz and not Hz*2.
-                new PumpReadTask8bit(this.pumpType.getfActHeadClass(), this.pumpType.getfAct(), getMotorFrequency(), "Standard", Priority.HIGH, 0.5),
+                new PumpReadTask8bit(this.pumpType.getfActHeadClass(), this.pumpType.getfAct(), getMotorFrequencyChannel(), "Standard", Priority.HIGH, 0.5),
                 new PumpReadTask8bit(this.pumpType.getrMinHeadClass(), this.pumpType.getrMin(), getRmin(), "Standard", Priority.HIGH),
                 new PumpReadTask8bit(this.pumpType.getrMaxHeadClass(), this.pumpType.getrMax(), getRmax(), "Standard", Priority.HIGH),
                 new PumpReadTask8bit(this.pumpType.getControlModeHeadClass(), this.pumpType.getControlMode(), getActualControlModeBits(), "Standard", Priority.HIGH),
@@ -324,10 +324,10 @@ public class PumpGrundfosImpl extends AbstractOpenemsComponent implements Openem
                 new PumpReadTask8bit(this.pumpType.getWarnBits4HeadClass(), this.pumpType.getWarnBits4(), getWarnBits_4(), "Standard", Priority.HIGH),
 
                 // Read tasks priority low
-                new PumpReadTask8bit(this.pumpType.gethDiffHeadClass(), this.pumpType.gethDiff(), getDiffPressureHead(), "Standard", Priority.LOW),
-                new PumpReadTask8bit(this.pumpType.gettEheadClass(), this.pumpType.gettE(), getElectronicsTemperature(), "Standard", Priority.LOW),
-                new PumpReadTask8bit(this.pumpType.getImoHeadClass(), this.pumpType.getiMo(), getCurrentMotor(), "Standard", Priority.LOW),
-                new PumpReadTask8bit(2, 2, getTwinpumpStatus(), "Standard", Priority.LOW),
+                new PumpReadTask8bit(this.pumpType.gethDiffHeadClass(), this.pumpType.gethDiff(), getDiffPressureHeadChannel(), "Standard", Priority.LOW),
+                new PumpReadTask8bit(this.pumpType.gettEheadClass(), this.pumpType.gettE(), getElectronicsTemperatureChannel(), "Standard", Priority.LOW),
+                new PumpReadTask8bit(this.pumpType.getImoHeadClass(), this.pumpType.getiMo(), getCurrentMotorChannel(), "Standard", Priority.LOW),
+                new PumpReadTask8bit(2, 2, getTwinpumpStatusChannel(), "Standard", Priority.LOW),
 
                 new PumpReadTask8bit(this.pumpType.getAlarmCodePumpHeadClass(), this.pumpType.getAlarmCodePump(), getAlarmCodePump(), "Standard", Priority.LOW),
                 new PumpReadTask8bit(2, 163, getAlarmLog1(), "Standard", Priority.LOW),
@@ -415,9 +415,9 @@ public class PumpGrundfosImpl extends AbstractOpenemsComponent implements Openem
         isConnectionOk().setNextValue(this.pumpDevice.isConnectionOk());
 
         // Update the read buffer length of the device.
-        if (this.doOnce == false && getBufferLength().value().isDefined()) {
+        if (this.doOnce == false && getBufferLengthChannel().value().isDefined()) {
             this.doOnce = true;
-            int bufferLength = (int)Math.round(getBufferLength().value().get());
+            int bufferLength = (int)Math.round(getBufferLengthChannel().value().get());
             this.pumpDevice.setDeviceReadBufferLengthBytes(bufferLength);
         }
 
@@ -636,8 +636,8 @@ public class PumpGrundfosImpl extends AbstractOpenemsComponent implements Openem
         }
 
         // Parse twinpump status value to a string.
-        if (getTwinpumpStatus().value().isDefined()) {
-            int twinpumpStatusValue = (int)Math.round(getTwinpumpStatus().value().get());
+        if (getTwinpumpStatusChannel().value().isDefined()) {
+            int twinpumpStatusValue = (int)Math.round(getTwinpumpStatusChannel().value().get());
             String twinpumpStatusString;
             switch (twinpumpStatusValue) {
                 case 0:
@@ -661,7 +661,7 @@ public class PumpGrundfosImpl extends AbstractOpenemsComponent implements Openem
                 default:
                     twinpumpStatusString = "unknown";
             }
-            getTwinpumpStatusString().setNextValue(twinpumpStatusString);
+            getTwinpumpStatusStringChannel().setNextValue(twinpumpStatusString);
         }
 
         // Parse twinpump/multipump mode value to a string.
@@ -752,12 +752,12 @@ public class PumpGrundfosImpl extends AbstractOpenemsComponent implements Openem
                     groupAddress = "" + Math.round(setGroupAddr().value().get());
                 }
                 String bufferLength = "null";
-                if (getBufferLength().value().isDefined()) {
-                    bufferLength = "" + Math.round(getBufferLength().value().get());
+                if (getBufferLengthChannel().value().isDefined()) {
+                    bufferLength = "" + Math.round(getBufferLengthChannel().value().get());
                 }
                 String busMode = "null";
-                if (getUnitBusMode().value().isDefined()) {
-                    busMode = "" + Math.round(getUnitBusMode().value().get());
+                if (getUnitBusModeChannel().value().isDefined()) {
+                    busMode = "" + Math.round(getUnitBusModeChannel().value().get());
                 }
 
                 this.logInfo(this.log, "Pump found - " + getUnitInfo().value().get());

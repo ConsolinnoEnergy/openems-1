@@ -246,11 +246,11 @@ public class PumpGrundfosControllerImpl extends AbstractOpenemsComponent impleme
 
                     // Compare pump status with controller settings. Send commands if there is a difference.
                     if (this.stopPump) {
-                        if (this.pumpChannels.getMotorFrequency().value().orElse(0.0) > 0) {
+                        if (this.pumpChannels.getMotorFrequencyChannel().value().orElse(0.0) > 0) {
                             this.startStopPump();
                         }
                     } else {
-                        if (this.pumpChannels.getMotorFrequency().value().orElse(0.0) <= 0) {
+                        if (this.pumpChannels.getMotorFrequencyChannel().value().orElse(0.0) <= 0) {
                             this.startStopPump();
                         }
                         switch (this.controlModeSetting) {
@@ -365,10 +365,10 @@ public class PumpGrundfosControllerImpl extends AbstractOpenemsComponent impleme
     private void channelOutput() {
         double motorSpeedPercent = 0;
         boolean motorSpeedValueAvailable = false;
-        if (this.pumpChannels.getMotorFrequency().value().isDefined() && this.pumpChannels.setFupper().value().isDefined()) {
+        if (this.pumpChannels.getMotorFrequencyChannel().value().isDefined() && this.pumpChannels.setFupper().value().isDefined()) {
             double maxFrequency = this.pumpChannels.setFupper().value().get();
             if (maxFrequency > 0) {
-                motorSpeedPercent = 100 * this.pumpChannels.getMotorFrequency().value().get() / maxFrequency;
+                motorSpeedPercent = 100 * this.pumpChannels.getMotorFrequencyChannel().value().get() / maxFrequency;
                 motorSpeedValueAvailable = true;
             }
         }
@@ -377,9 +377,9 @@ public class PumpGrundfosControllerImpl extends AbstractOpenemsComponent impleme
         this.logInfo(this.log, "GENIbus address: " + this.pumpChannels.getPumpDevice().getGenibusAddress()
                 + ", product number: " + this.pumpChannels.getProductNumber().value().get() + ", "
                 + "serial number: " + this.pumpChannels.getSerialNumber().value().get());
-        this.logInfo(this.log, "Twinpump Status: " + this.pumpChannels.getTwinpumpStatusString().value().get());
+        this.logInfo(this.log, "Twinpump Status: " + this.pumpChannels.getTwinpumpStatusStringChannel().value().get());
         this.logInfo(this.log, "Multipump Mode: " + this.pumpChannels.getTpModeString().value().get());
-        this.logInfo(this.log, "Power consumption: " + this.formatter2.format(this.pumpChannels.getPowerConsumption().value().orElse(0.0)) + " W");
+        this.logInfo(this.log, "Power consumption: " + this.formatter2.format(this.pumpChannels.getPowerConsumptionChannel().value().orElse(0.0)) + " W");
 
         if (motorSpeedValueAvailable) {
             this.logInfo(this.log, "Motor speed: " + this.formatter1.format(motorSpeedPercent) + " %.");
@@ -397,13 +397,13 @@ public class PumpGrundfosControllerImpl extends AbstractOpenemsComponent impleme
                 + formatter2.format(pumpChannels.setFupper().value().orElse(0.0) * 60) + " rpm");
         */
 
-        this.logInfo(this.log, "Pump pressure: " + this.formatter2.format(this.pumpChannels.getCurrentPressure().value().orElse(0.0)) + " bar or "
-                + this.formatter2.format(this.pumpChannels.getCurrentPressure().value().orElse(0.0) * 10) + " m");
+        this.logInfo(this.log, "Pump pressure: " + this.formatter2.format(this.pumpChannels.getPressureChannel().value().orElse(0.0)) + " bar or "
+                + this.formatter2.format(this.pumpChannels.getPressureChannel().value().orElse(0.0) * 10) + " m");
         this.logInfo(this.log, "Pump max pressure: " + this.formatter2.format(this.pumpChannels.setMaxPressure().value().orElse(0.0)) + " bar or "
                 + this.formatter2.format(this.pumpChannels.setMaxPressure().value().orElse(0.0) * 10) + " m");
-        this.logInfo(this.log, "Pump flow: " + this.formatter2.format(this.pumpChannels.getCurrentPumpFlow().value().orElse(0.0)) + " m³/h");
+        this.logInfo(this.log, "Pump flow: " + this.formatter2.format(this.pumpChannels.getPercolationChannel().value().orElse(0.0)) + " m³/h");
         this.logInfo(this.log, "Pump flow max: " + this.formatter2.format(this.pumpChannels.setPumpMaxFlow().value().orElse(0.0)) + " m³/h");
-        this.logInfo(this.log, "Pumped medium temperature: " + this.formatter1.format(this.pumpChannels.getPumpedWaterMediumTemperature().value().orElse(0.0) / 10) + "°C");
+        this.logInfo(this.log, "Pumped medium temperature: " + this.formatter1.format(this.pumpChannels.getPumpedFluidTemperatureChannel().value().orElse(0.0) / 10) + "°C");
         this.logInfo(this.log, "Control mode: " + this.pumpChannels.getActualControlMode().value().get());
         //this.logInfo(this.log, pumpChannels.getControlSource().value().orElse("Command source:"));
         ////this.logInfo(this.log, "Buffer length: " + pumpChannels.getBufferLength().value().get());

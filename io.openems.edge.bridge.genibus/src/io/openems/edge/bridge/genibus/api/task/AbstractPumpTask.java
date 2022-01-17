@@ -183,13 +183,23 @@ public abstract class AbstractPumpTask implements GenibusTask {
     }
 
     /**
-     * Set the Genibus device this task belongs to.
+     * Sets the Genibus device this task belongs to.
      *
      * @param pumpDevice the Genibus device.
      */
     @Override
     public void setGenibusDevice(PumpDevice pumpDevice) {
         this.pumpDevice = pumpDevice;
+    }
+
+    /**
+     * Gets the Genibus device this task belongs to.
+     *
+     * @return the pumpDevice.
+     */
+    @Override
+    public PumpDevice getGenibusDevice() {
+        return this.pumpDevice;
     }
 
     /**
