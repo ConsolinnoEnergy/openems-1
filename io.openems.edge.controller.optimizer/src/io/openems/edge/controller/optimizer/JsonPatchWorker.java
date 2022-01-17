@@ -23,7 +23,7 @@ import java.util.List;
 class JsonPatchWorker {
     private final ChannelAddress jsonChannel;
     private String jsonString;
-    private final JsonObject jsonObject = new JsonObject();
+    private JsonObject jsonObject = new JsonObject();
     private final ChannelAddress fallbackChannel;
     private String fallbackString;
     private final JsonObject fallbackObject = new JsonObject();
@@ -379,6 +379,7 @@ class JsonPatchWorker {
      */
     void deleteOldSchedules() {
         this.jsonString = null;
+        this.jsonObject = new JsonObject();
     }
 
     /**
