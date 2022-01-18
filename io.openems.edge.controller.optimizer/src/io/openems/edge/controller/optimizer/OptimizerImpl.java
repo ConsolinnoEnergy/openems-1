@@ -437,6 +437,10 @@ public class OptimizerImpl extends AbstractOpenemsComponent implements OpenemsCo
         if (current.getDayOfMonth() != this.savedDate.getDayOfMonth()) {
             this.savedDate = current;
             this.jsonPatchWorker.deleteOldSchedules();
+            this.minTime = DEFAULT;
+            this.activeTask = DEFAULT;
+            this.minDeltaTime = DEFAULT;
+            this.lastUpdate = null;
         }
         this.jsonPatchWorker.addSchedule(schedule);
     }
