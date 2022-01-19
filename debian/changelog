@@ -1,3 +1,13 @@
+openems-consolinno (0.1.17-1) unstable; urgency=medium
+
+  * Added an invalid Temperature by returning a null value of a Temperature as a -999
+  * Potential fix of Multiple MQTT Connections, when internet connection is bad
+  * Some Typos fixed in Valve, fixed a bug with a wrong EVENT, a new Static variable UNITIALIZED and added a new method for force close/opening
+  * Merged the Esslingen Develop Branch into Collapse -> Better Generic Modbus Handling as well as Optimzier, Translator and Patchworker fixes
+
+
+ -- Felix <felix@felix-ThinkPad-E15-Gen-2>  Wed, 19 Jan 2022 10:40:34 +0100
+
 openems-consolinno (0.1.16-1) unstable; urgency=medium
 
   * Added MBus meter Heat and Gas to the build
