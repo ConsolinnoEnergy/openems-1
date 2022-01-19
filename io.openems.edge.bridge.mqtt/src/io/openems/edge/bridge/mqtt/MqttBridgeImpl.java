@@ -259,7 +259,7 @@ public class MqttBridgeImpl extends AbstractOpenemsComponent implements OpenemsC
         if (this.bridgePublisher != null) {
             try {
                 this.bridgePublisher.disconnect();
-            } catch (MqttException e) {
+            } catch (MqttException | NullPointerException e) {
                 this.log.warn("An error occurred while disconnecting the bridge Publisher: " + e.getMessage());
             }
         }

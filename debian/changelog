@@ -1,3 +1,9 @@
+openems-consolinno (0.1.18-1) unstable; urgency=medium
+
+  * Added TLS Support in MQTT and fixed a Nullpointer Exception Bug
+
+ -- Felix <felix@felix-ThinkPad-E15-Gen-2>  Wed, 19 Jan 2022 12:20:08 +0100
+
 openems-consolinno (0.1.17-1) unstable; urgency=medium
 
   * Added an invalid Temperature by returning a null value of a Temperature as a -999
