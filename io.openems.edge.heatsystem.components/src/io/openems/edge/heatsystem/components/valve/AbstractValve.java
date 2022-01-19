@@ -5,7 +5,6 @@ import io.openems.edge.common.channel.Channel;
 import io.openems.edge.common.channel.value.Value;
 import io.openems.edge.common.component.AbstractOpenemsComponent;
 import io.openems.edge.common.component.ComponentManager;
-import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.common.cycle.Cycle;
 import io.openems.edge.exceptionalstate.api.ExceptionalState;
 import io.openems.edge.exceptionalstate.api.ExceptionalStateHandler;
@@ -23,7 +22,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * The Abstract Valve. It Provides basic Functions, such as updating the PowerLevel or if tthe powerLevel is reached.
+ * The Abstract Valve. It Provides basic Functions, such as updating the PowerLevel or if the powerLevel is reached.
  * Its the BaseClass for any Valve that is implemented.
  */
 public abstract class AbstractValve extends AbstractOpenemsComponent implements HydraulicComponent, ExceptionalState {
@@ -34,7 +33,7 @@ public abstract class AbstractValve extends AbstractOpenemsComponent implements 
 
     protected double secondsPerPercentage;
     protected long timeStampValveInitial;
-    protected long timeStampValveCurrent = -1;
+    protected long timeStampValveCurrent = UNINITIALIZED;
     //if true updatePowerlevel
     protected boolean isChanging = false;
     //if true --> subtraction in updatePowerLevel else add
@@ -52,6 +51,7 @@ public abstract class AbstractValve extends AbstractOpenemsComponent implements 
     protected boolean configSuccess;
 
     protected static final int MILLI_SECONDS_TO_SECONDS = 1000;
+    private static final int UNINITIALIZED = -1;
 
     protected Double lastMaximum;
     protected Double lastMinimum;
@@ -96,7 +96,7 @@ public abstract class AbstractValve extends AbstractOpenemsComponent implements 
             }
         }
         if (this.isChanging == false) {
-            this.timeStampValveCurrent = -1;
+            this.timeStampValveCurrent = UNINITIALIZED;
         }
         return true;
     }
@@ -128,7 +128,7 @@ public abstract class AbstractValve extends AbstractOpenemsComponent implements 
         if (this.isChanging()) {
             long elapsedTime = this.getMilliSecondTime();
             //If it's the first update of PowerLevel
-            if (this.timeStampValveCurrent == -1) {
+            if (this.timeStampValveCurrent == UNINITIALIZED) {
                 //only important for ForceClose/Open
                 this.timeStampValveInitial = elapsedTime;
                 //First time in change
@@ -187,7 +187,7 @@ public abstract class AbstractValve extends AbstractOpenemsComponent implements 
         reached = reached && this.readyToChange();
         if (reached) {
             this.isChanging = false;
-            this.timeStampValveCurrent = -1;
+            this.timeStampValveCurrent = UNINITIALIZED;
         }
         return reached;
     }
@@ -250,7 +250,7 @@ public abstract class AbstractValve extends AbstractOpenemsComponent implements 
     }
 
     /**
-     * Creates the Timer for: Missing Components check, and ExceptionalState support
+     * Creates the Timer for: Missing Components check, and ExceptionalState support.
      *
      * @param timerId             the timer Id
      * @param maxTime             the Maximum Time fpr the Missing Components check and ExceptionalState check
@@ -450,20 +450,7 @@ public abstract class AbstractValve extends AbstractOpenemsComponent implements 
 
     protected boolean parentForceClose() {
 
-        if (this.exceptionalStateActive == false) {
-            this.isForced = true;
-            this.isChanging = true;
-            this.isClosing = true;
-            this.futurePowerLevelChannel().setNextValue(DEFAULT_MIN_POWER_VALUE);
-            this.timeChannel().setNextValue(DEFAULT_MAX_POWER_VALUE * this.secondsPerPercentage);
-            this.getIsBusyChannel().setNextValue(true);
-            //Making sure to wait the correct time even if it is already closing.
-            this.timeStampValveInitial = -1;
-            this.updatePowerLevel();
-            return true;
-        }
-        this.log.info("Couldn't Force Close ExceptionalState is Active! " + super.id());
-        return false;
+        return this.parentForced(true);
     }
 
     /**
@@ -474,6 +461,17 @@ public abstract class AbstractValve extends AbstractOpenemsComponent implements 
      */
     protected boolean parentForceOpen() {
 
+        return this.parentForced(false);
+    }
+
+    /**
+     * A Method to help processing the Force Request.
+     * It applies the future PowerLevel, the Time needed to reach the powerLevel (100% time).
+     *
+     * @param closing is the valve closing?(true) else: False
+     * @return success
+     */
+    private boolean parentForced(boolean closing) {
         if (this.exceptionalStateActive == false) {
             this.isForced = true;
             this.futurePowerLevelChannel().setNextValue(DEFAULT_MAX_POWER_VALUE);
@@ -481,8 +479,8 @@ public abstract class AbstractValve extends AbstractOpenemsComponent implements 
 
             this.getIsBusyChannel().setNextValue(true);
             this.isChanging = true;
-            this.isClosing = false;
-            this.timeStampValveCurrent = -1;
+            this.isClosing = closing;
+            this.timeStampValveCurrent = UNINITIALIZED;
             this.updatePowerLevel();
             return true;
         }
@@ -500,7 +498,7 @@ public abstract class AbstractValve extends AbstractOpenemsComponent implements 
      */
 
     protected boolean changeInvalid(double percentage) {
-        boolean ableToAdapt = Math.abs(percentage) > this.percentPossiblePerCycle;
+        boolean ableToAdapt = Math.abs(percentage) >= this.percentPossiblePerCycle;
         double currentPowerValue = this.getPowerLevelValue();
         if (currentPowerValue + percentage >= DEFAULT_MAX_POWER_VALUE || currentPowerValue + percentage <= DEFAULT_MIN_POWER_VALUE) {
             ableToAdapt = true;

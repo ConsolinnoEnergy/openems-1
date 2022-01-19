@@ -165,7 +165,7 @@ public class ValveTwoOutput extends AbstractValve implements OpenemsComponent, H
     }
 
     /**
-     * Get the Current active {@link Cycle} and set as Reference
+     * Get the Current active {@link Cycle} and set as Reference.
      */
     private void getCycle() {
         Optional<OpenemsComponent> cycleOptional = this.cpm.getAllComponents().stream().filter(component -> component instanceof Cycle).findAny();
@@ -211,7 +211,25 @@ public class ValveTwoOutput extends AbstractValve implements OpenemsComponent, H
                 .equals(OpenemsType.BOOLEAN) && closeChannel.getType().equals(OpenemsType.BOOLEAN);
     }
 
-
+    /**
+     * This handles the basic Operation of a Valve, handled at 2 different events.
+     *
+     * <p>
+     *     The Valve checks if the Output is active as expected, by reading the CheckChannel, given via Configuration
+     *     (if Check is enabled).
+     *     After that update the PowerLevel depending on how much time has passed.
+     *     Check if the Valve is within the Min and Max Boundaries or else adapt.
+     *     If the PowerLevel is Reached -> adapt the Valve Value -> e.g. if 60% was the Goal, Valve was 50% before,
+     *     has 70% now - > adapt if possible (get as close to 60% as possible)
+     * </p>
+     *
+     * <p>
+     *     After Controllers -> check if a PowerLevel has been Set (Call Parent)
+     *     Otherwise if the Valve reached it's powerLevel -> deactivate both outputs.
+     *
+     * </p>
+     * @param event the Event, either After_Process_Image or After_Controllers
+     */
     @Override
     public void handleEvent(Event event) {
         if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE)) {
