@@ -5,6 +5,7 @@ import io.openems.edge.bridge.modbus.api.BridgeModbus;
 import io.openems.edge.bridge.modbus.api.generic.AbstractGenericModbusComponent;
 
 import io.openems.edge.common.channel.WriteChannel;
+import io.openems.edge.common.channel.value.Value;
 import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.common.event.EdgeEventConstants;
@@ -47,6 +48,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Optional;
 
 /**
  * A Generic Chp Modbus Implementation.
@@ -143,6 +145,8 @@ public class CombinedHeatPowerPlantImpl extends AbstractGenericModbusComponent i
         this.getDefaultActivePowerChannel().setNextValue(this.config.defaultRunPower());
         this.getDefaultActivePowerChannel().nextProcessImage();
         this.getDefaultActivePowerChannel().setNextWriteValueFromObject(this.config.defaultRunPower());
+        this.getEnableSignalChannel().setNextValue(false);
+        this.getEnableSignalChannel().nextProcessImage();
     }
 
 
@@ -232,21 +236,9 @@ public class CombinedHeatPowerPlantImpl extends AbstractGenericModbusComponent i
      * And the CHP will map the PercentValue and EnableSignal to the ModbusChannel.
      */
     private void updateWriteValueToModbus() {
-        if (this.getModbusConfig().containsKey(this._getEnableSignalBoolean().channelId())) {
-            this.handleChannelWriteFromOriginalToModbus(this._getEnableSignalBoolean(), this.getEnableSignalChannel());
-        } else if (this.getModbusConfig().containsKey(this._getEnableSignalLong().channelId())) {
-            boolean enabled = this.getEnableSignalChannel().getNextWriteValueAndReset().orElse(false);
-            try {
-                if (enabled) {
-                    this._getEnableSignalLong().setNextWriteValueFromObject((long) this.config.defaultEnableSignalValue());
-                } else {
-                    this._getEnableSignalLong().setNextWriteValueFromObject((long) this.config.defaultDisableSignalValue());
-                }
-            } catch (OpenemsError.OpenemsNamedException e) {
-                this.log.warn("Couldn't apply EnableSignal");
-            }
-        }
-        WriteChannel<?> choosenChannel = this.getDefaultActivePowerChannel();
+        WriteChannel<?> chosenChannel = this.getDefaultActivePowerChannel();
+        WriteChannel<?> writeToThis = null;
+        boolean enabled = true;
         try {
             this.getDefaultActivePowerChannel().setNextWriteValueFromObject((long) this.config.defaultRunPower());
         } catch (OpenemsError.OpenemsNamedException e) {
@@ -256,35 +248,115 @@ public class CombinedHeatPowerPlantImpl extends AbstractGenericModbusComponent i
             case KW:
                 //TODO IF BOTH CONTROLMODES: HEAT AND ELECTROLYZER -> WHAT TO DO -> PRIORITY ETC
                 if (this.getHeatingPowerSetpointChannel().getNextWriteValue().isPresent()) {
-                    choosenChannel = this.getHeatingPowerSetpointChannel();
+                    chosenChannel = this.getHeatingPowerSetpointChannel();
                 }
+                enabled = this.handleEnableSignal(chosenChannel);
                 if (this.getModbusConfig().containsKey(this._getSetPointPowerLevelKwLong().channelId())) {
-                    this.handleChannelWriteFromOriginalToModbus(this._getSetPointPowerLevelKwLong(), choosenChannel);
+                    writeToThis = this._getSetPointPowerLevelKwLong();
                 } else if (this.getModbusConfig().containsKey(this._getSetPointPowerLevelKwDouble().channelId())) {
-                    this.handleChannelWriteFromOriginalToModbus(this._getSetPointPowerLevelKwDouble(), choosenChannel);
+                    writeToThis = this._getSetPointPowerLevelKwDouble();
                 }
+
                 break;
             case PERCENT:
                 if (this.getHeatingPowerPercentSetpointChannel().getNextWriteValue().isPresent()) {
-                    choosenChannel = this.getHeatingPowerPercentSetpointChannel();
+                    chosenChannel = this.getHeatingPowerPercentSetpointChannel();
                 }
+                enabled = this.handleEnableSignal(chosenChannel);
                 if (this.getModbusConfig().containsKey(this._getSetPointPowerLevelPercentLong().channelId())) {
-                    this.handleChannelWriteFromOriginalToModbus(this._getSetPointPowerLevelPercentLong(), choosenChannel);
+                    writeToThis = this._getSetPointPowerLevelPercentLong();
                 } else if (this.getModbusConfig().containsKey(this._getSetPointPowerLevelPercentDouble().channelId())) {
-                    this.handleChannelWriteFromOriginalToModbus(this._getSetPointPowerLevelPercentDouble(), choosenChannel);
+                    writeToThis = this._getSetPointPowerLevelPercentDouble();
                 }
                 break;
             case TEMPERATURE:
                 if (this.getTemperatureSetpointChannel().getNextWriteValue().isPresent()) {
-                    choosenChannel = this.getTemperatureSetpointChannel();
+                    chosenChannel = this.getTemperatureSetpointChannel();
                 }
+                enabled = this.handleEnableSignal(chosenChannel);
                 if (this.getModbusConfig().containsKey(this._getSetPointTemperatureLong().channelId())) {
-                    this.handleChannelWriteFromOriginalToModbus(this._getSetPointTemperatureLong(), choosenChannel);
+                    writeToThis = this._getSetPointTemperatureLong();
                 } else if (this.getModbusConfig().containsKey(this._getSetPointTemperatureDouble().channelId())) {
-                    this.handleChannelWriteFromOriginalToModbus(this._getSetPointTemperatureDouble(), choosenChannel);
+                    writeToThis = this._getSetPointTemperatureDouble();
                 }
                 break;
         }
+        if (writeToThis != null) {
+            if (!enabled) {
+                try {
+                    chosenChannel.setNextWriteValueFromObject(0);
+                } catch (OpenemsError.OpenemsNamedException e) {
+                    this.log.warn("Couldn't set chosen Channel Value to 0");
+                }
+            }
+            if (chosenChannel.getNextWriteValue().isPresent()) {
+                chosenChannel.setNextValue(chosenChannel.getNextWriteValue().get());
+            }
+            this.handleChannelWriteFromOriginalToModbus(writeToThis, chosenChannel);
+        }
+    }
+
+    private boolean handleEnableSignal(WriteChannel<?> chosenChannel) {
+        Optional<?> chosenChannelOptional = chosenChannel.getNextWriteValue();
+        Object chosenChannelValue = null;
+        int value = 0;
+        if (chosenChannelOptional.isPresent()) {
+            chosenChannelValue = chosenChannelOptional.get();
+
+            switch (chosenChannel.getType()) {
+
+                case BOOLEAN:
+                    value = (Boolean) chosenChannelValue ? this.config.defaultEnableSignalValue() : this.config.defaultDisableSignalValue();
+                    break;
+                case SHORT:
+                    value = (Short) chosenChannelValue;
+                    break;
+                case INTEGER:
+                    value = (Integer) chosenChannelValue;
+                    break;
+                case LONG:
+                    value = ((Long) chosenChannelValue).intValue();
+                    break;
+                case FLOAT:
+                    value = ((Float) chosenChannelValue).intValue();
+                    break;
+                case DOUBLE:
+                    value = ((Double) chosenChannelValue).intValue();
+                    break;
+                case STRING:
+                    value = Integer.parseInt((String) chosenChannelValue);
+                    break;
+            }
+        }
+        boolean enabled = this.getEnableSignalChannel().getNextWriteValueAndReset().orElse(false)
+                && chosenChannelOptional.isPresent()
+                && value > 0;
+        if (this.getModbusConfig().containsKey(this._getEnableSignalBoolean().channelId())) {
+            try {
+                this._getEnableSignalBoolean().setNextWriteValueFromObject(enabled);
+                this._getEnableSignalBoolean().setNextValue(enabled);
+                this.getEnableSignalChannel().setNextValue(enabled);
+                this.getEnableSignalChannel().setNextWriteValueFromObject(enabled);
+            } catch (OpenemsError.OpenemsNamedException e) {
+                this.log.warn("Couldn't apply EnableSignal");
+            }
+        } else if (this.getModbusConfig().containsKey(this._getEnableSignalLong().channelId())) {
+
+            try {
+                if (enabled) {
+                    this._getEnableSignalLong().setNextWriteValueFromObject((long) this.config.defaultEnableSignalValue());
+                    this._getEnableSignalLong().setNextValue((long) this.config.defaultEnableSignalValue());
+                } else {
+                    this._getEnableSignalLong().setNextWriteValueFromObject((long) this.config.defaultDisableSignalValue());
+                    this._getEnableSignalLong().setNextValue((long) this.config.defaultDisableSignalValue());
+                }
+                this.getEnableSignalChannel().setNextValue(enabled);
+                this.getEnableSignalChannel().setNextWriteValueFromObject(enabled);
+            } catch (OpenemsError.OpenemsNamedException e) {
+                this.log.warn("Couldn't apply EnableSignal");
+            }
+        }
+        return enabled;
     }
 
     /**

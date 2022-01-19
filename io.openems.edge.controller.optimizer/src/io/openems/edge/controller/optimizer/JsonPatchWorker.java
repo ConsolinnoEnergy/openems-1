@@ -6,7 +6,9 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.openems.common.exceptions.OpenemsError;
+import io.openems.common.types.ChannelAddress;
 import io.openems.edge.common.channel.WriteChannel;
+import io.openems.edge.common.component.ComponentManager;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,29 +21,32 @@ import java.util.List;
  * Has to be called from Optimizer.
  **/
 class JsonPatchWorker {
-    private final WriteChannel<String> jsonChannel;
+    private final ChannelAddress jsonChannel;
     private String jsonString;
-    private final JsonObject jsonObject = new JsonObject();
-    private final WriteChannel<String> fallbackChannel;
+    private JsonObject jsonObject = new JsonObject();
+    private final ChannelAddress fallbackChannel;
     private String fallbackString;
     private final JsonObject fallbackObject = new JsonObject();
     private int taskPosition = 0;
     private List<String> lastTimestampArray;
     private final Logger log = LoggerFactory.getLogger(JsonPatchWorker.class);
+    ComponentManager cpm;
 
-    JsonPatchWorker(WriteChannel<String> jsonChannel, WriteChannel<String> fallbackChannel) {
+    JsonPatchWorker(ChannelAddress jsonChannel, ChannelAddress fallbackChannel, ComponentManager cpm) {
         this.jsonChannel = jsonChannel;
         this.fallbackChannel = fallbackChannel;
+        this.cpm = cpm;
     }
 
     /**
      * Writes new Schedule for the optimizer, if there were changes made to it.
+     *
      * @param jsonString The current schedule of the Optimizer.
      * @throws OpenemsError.OpenemsNamedException This should never happen.
      */
     void work(String jsonString) throws OpenemsError.OpenemsNamedException {
         if (this.jsonString != null && this.jsonString.equals(jsonString) == false) {
-            this.jsonChannel.setNextWriteValue(this.jsonString);
+            this.writeToJsonChannel();
         }
     }
 
@@ -65,7 +70,7 @@ class JsonPatchWorker {
             this.jsonString = this.jsonObject.toString();
 
             try {
-                this.jsonChannel.setNextWriteValue(this.jsonString);
+                this.writeToJsonChannel();
             } catch (OpenemsError.OpenemsNamedException ignored) {
                 this.log.error("Error in addSchedule. OpenemsNamedException!");
             }
@@ -111,7 +116,7 @@ class JsonPatchWorker {
             }
             if (old.toString().contains("\"" + time + "\"") == false) {
                 old.get("time").getAsJsonArray().add(now);
-                }
+            }
         }
         if (this.lastTimestampArray.size() < old.get("time").getAsJsonArray().size()) {
             int hitTime = -1;
@@ -220,7 +225,7 @@ class JsonPatchWorker {
      */
     private JsonArray splitList(List<List<String>> schedule) {
         this.lastTimestampArray = new ArrayList<>();
-        JsonElement component =  JsonParser.parseString(schedule.get(Index.COMPONENT_INDEX.getNumVal()).get(0));
+        JsonElement component = JsonParser.parseString(schedule.get(Index.COMPONENT_INDEX.getNumVal()).get(0));
         String channel = schedule.get(Index.CHANNEL_INDEX.getNumVal()).get(0);
         String enableChannel = null;
         if (schedule.size() == 4) {
@@ -337,6 +342,7 @@ class JsonPatchWorker {
 
     /**
      * Creates the Fallback Schedule for the Optimizer.
+     *
      * @param fallbackSchedulePart The Fallback Schedule parts of the translators
      */
     void addFallback(List<List<String>> fallbackSchedulePart) {
@@ -347,7 +353,7 @@ class JsonPatchWorker {
             JsonArray copy = newArray.deepCopy();
             String timestamp = copy.getAsJsonArray().get(0).getAsJsonObject().keySet().iterator().next();
             //Add Fallback to 00:00 so its always the value the Optimizer will take as the active value
-            fallbackObject.add("000",copy.getAsJsonArray().get(0).getAsJsonObject().get(timestamp));
+            fallbackObject.add("000", copy.getAsJsonArray().get(0).getAsJsonObject().get(timestamp));
             newFallback.add(fallbackObject);
             if (this.fallbackObject.size() > 0) {
                 this.addToExistingObject(newFallback, this.fallbackObject);
@@ -359,10 +365,41 @@ class JsonPatchWorker {
             this.fallbackString = this.fallbackObject.toString();
 
             try {
-                this.fallbackChannel.setNextWriteValue(this.fallbackString);
+                this.writeToFallbackChannel();
             } catch (OpenemsError.OpenemsNamedException ignored) {
                 this.log.error("Error in fallbackSchedule. OpenemsNamedException!");
             }
         }
     }
+
+    /**
+     * Called by Optimizer on a new Day.
+     * On a new Day the json String will be deleted.
+     * Therefore a new Schedule for the day can be added.
+     */
+    void deleteOldSchedules() {
+        this.jsonString = null;
+        this.jsonObject = new JsonObject();
+    }
+
+    /**
+     * Writes the jsonString to the JsonChannel of the Optimizer.
+     *
+     * @throws OpenemsError.OpenemsNamedException if the Channel cannot be found or written into.
+     */
+
+    private void writeToJsonChannel() throws OpenemsError.OpenemsNamedException {
+        ((WriteChannel<?>) this.cpm.getChannel(this.jsonChannel)).setNextWriteValueFromObject(this.jsonString);
+    }
+
+    /**
+     * Writes the fallbackString to the FallbackChannel of the Optimizer.
+     *
+     * @throws OpenemsError.OpenemsNamedException if the Channel cannot be found or written into.
+     */
+
+    private void writeToFallbackChannel() throws OpenemsError.OpenemsNamedException {
+        ((WriteChannel<?>) this.cpm.getChannel(this.fallbackChannel)).setNextWriteValueFromObject(this.fallbackString);
+    }
+
 }
