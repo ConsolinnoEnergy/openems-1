@@ -6,13 +6,16 @@ import io.openems.edge.bridge.genibus.api.task.GenibusTask;
 import io.openems.edge.bridge.genibus.protocol.ApplicationProgramDataUnit;
 import io.openems.edge.bridge.genibus.protocol.Telegram;
 import io.openems.edge.common.component.AbstractOpenemsComponent;
+import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
+import io.openems.edge.common.cycle.Cycle;
 import io.openems.edge.common.event.EdgeEventConstants;
 import org.osgi.service.component.ComponentContext;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.ConfigurationPolicy;
 import org.osgi.service.component.annotations.Deactivate;
+import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.event.Event;
 import org.osgi.service.event.EventConstants;
 import org.osgi.service.event.EventHandler;
@@ -36,6 +39,8 @@ import java.util.concurrent.atomic.AtomicInteger;
         })
 public class GenibusImpl extends AbstractOpenemsComponent implements OpenemsComponent, EventHandler, Genibus {
 
+    @Reference
+    ComponentManager cpm;
 
     private final Logger log = LoggerFactory.getLogger(GenibusImpl.class);
     private boolean debug;
@@ -48,6 +53,7 @@ public class GenibusImpl extends AbstractOpenemsComponent implements OpenemsComp
     protected boolean connectionOk = true;  // Start with true because this boolean is also used to track if an error message should be sent.
     protected int timeoutIncreaseMs;
     protected static final int GENIBUS_TIMEOUT_MS = 60;
+    private Cycle cycle;
 
     protected ConnectionHandler connectionHandler;
 
@@ -64,7 +70,17 @@ public class GenibusImpl extends AbstractOpenemsComponent implements OpenemsComp
         this.timeoutIncreaseMs = Math.min(config.timeoutIncreaseMs(), 400);
         this.timeoutIncreaseMs = Math.max(this.timeoutIncreaseMs, 0);
         this.connectionOk = this.connectionHandler.startConnection(this.portName);
+
+        int cycleTime = Cycle.DEFAULT_CYCLE_TIME;
+        this.cpm.getAllComponents().stream().filter(component -> component instanceof Cycle).findAny().ifPresent(component -> {
+                    this.cycle = (Cycle) component;
+                }
+        );
+        if (this.cycle != null) {
+            cycleTime = (this.cycle.getCycleTime());
+        }
         if (this.isEnabled()) {
+            this.worker.setCycleTime(cycleTime);
             this.worker.activate(config.id());
         }
     }
@@ -117,15 +133,7 @@ public class GenibusImpl extends AbstractOpenemsComponent implements OpenemsComp
            Adjustable by config with parameter ’timeoutIncreaseMs’ */
         int telegramEstimatedTimeMillis = this.estimateTelegramAnswerTime(telegram) + this.timeoutIncreaseMs;
 
-        /* The timeout parameter in the "writeTelegram()" method is the timeout until the first bytes of a response, and
-           then again the timeout for the transmission of the answer. Tests have shown that the time until the first byte
-           of the answer is detected is much longer than the time from then to the end of the transmission, probably
-           because of buffering. For example a 109 ms telegram had 94 ms on the answer time clock and 10 ms on the
-           transmission time clock.
-           Judging from these tests, it seems best just to take the whole estimated telegram time as the timeout for the
-           answer time clock, + the GENIbus timeout length (added in "handleResponse()" method). The same time is
-           then also used as timeout for the transmission time clock. Not accurate, but good enough. Just to have a not
-           too long timer that scales with the telegram length. */
+        // Send telegram, response is stored as responseTelegram.
         Telegram responseTelegram = this.connectionHandler.writeTelegram(telegramEstimatedTimeMillis, telegram, this.debug);
 
         /* No answer received -> error handling
@@ -140,6 +148,10 @@ public class GenibusImpl extends AbstractOpenemsComponent implements OpenemsComp
             return;
         }
 
+        /* Store the length of the response telegram in the request telegram. The value is stored in the request telegram,
+           because the GenibusWorker has access to that, but not the actual response telegram. Together with the
+           transmission time, the GenibusWorker can use that value to calculate ’millisecondsPerByte’ and store it in
+           PumpDevice.java.*/
         telegram.setAnswerTelegramPduLength(responseTelegram.getLength() - 2);
 
         int requestTelegramAddress = Byte.toUnsignedInt(telegram.getDestinationAddress());
@@ -184,7 +196,9 @@ public class GenibusImpl extends AbstractOpenemsComponent implements OpenemsComp
                 telegram.getPumpDevice().resetDevice();
                 return;
             }
+            // answerAck is an error code. answerAck == 0 means ’everything ok’.
             if (answerAck != 0) {
+                // Parse answerAck error code.
                 switch (answerAck) {
                     case 1:
                         this.logWarn(this.log, "Apdu error for Head Class " + answerHeadClass
@@ -204,10 +218,10 @@ public class GenibusImpl extends AbstractOpenemsComponent implements OpenemsComp
             } else {
                 byte[] data = responseApdu.get(listCounter.get()).getCompleteApduAsByteArray(this.log);
 
-                //for the GenibusTask list --> index
+                // For the GenibusTask list --> index
                 int taskCounter = 0;
 
-                // on correct position get the header.
+                // On correct position get the header.
                 List<ApplicationProgramDataUnit> requestApdu = telegram.getProtocolDataUnit().getApplicationProgramDataUnitList();
                 int requestOs = requestApdu.get(listCounter.get()).getHeadOsAckForRequest();
 

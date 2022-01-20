@@ -193,16 +193,6 @@ public abstract class AbstractPumpTask implements GenibusTask {
     }
 
     /**
-     * Gets the Genibus device this task belongs to.
-     *
-     * @return the pumpDevice.
-     */
-    @Override
-    public PumpDevice getGenibusDevice() {
-        return this.pumpDevice;
-    }
-
-    /**
      * Get the byte count of this task. An 8 bit task is 1 byte, a 16 bit task is 2 byte, etc.
      *
      * @return the number of bytes.

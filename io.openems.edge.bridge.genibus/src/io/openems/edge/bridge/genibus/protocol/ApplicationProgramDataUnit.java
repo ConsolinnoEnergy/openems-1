@@ -1,6 +1,5 @@
 package io.openems.edge.bridge.genibus.protocol;
 
-import io.openems.edge.bridge.genibus.api.PumpDevice;
 import org.slf4j.Logger;
 
 import java.io.ByteArrayOutputStream;

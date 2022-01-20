@@ -7,7 +7,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import io.openems.edge.bridge.genibus.ConnectionHandler;
-import io.openems.edge.bridge.genibus.GenibusImpl;
 import io.openems.edge.bridge.genibus.api.PumpDevice;
 import io.openems.edge.bridge.genibus.api.task.GenibusTask;
 import org.slf4j.Logger;
@@ -32,7 +31,8 @@ public class Telegram {
     private final Logger log = LoggerFactory.getLogger(Telegram.class);
 
     /**
-     * Set the answer telegram PDU length.
+     * Set the answer telegram PDU length. This value is used together with the transmission time to calculate
+     * ’millisecondsPerByte’ in PumpDevice.java.
      *
      * @param answerTelegramPduLength the answer telegram PDU length.
      */
@@ -41,7 +41,8 @@ public class Telegram {
     }
 
     /**
-     * Get the answer telegram PDU length.
+     * Get the answer telegram PDU length. This value is used together with the transmission time to calculate
+     * ’millisecondsPerByte’ in PumpDevice.java.
      *
      * @return the answer telegram PDU length.
      */
@@ -297,13 +298,7 @@ public class Telegram {
      * @return the CRC as a byte array.
      */
     public static byte[] getCrc(byte[] bytes) {
-        long crc = 0;
-
-        try {
-            crc = CRC.calculateCRC(CRC.Parameters.CCITT, bytes) ^ 0xFFFF;
-        } catch (Exception e) {
-            System.out.println("Error calculating CRC: " + e.getMessage());
-        }
+        long crc = CRC.calculateCRC(CRC.Parameters.CCITT, bytes) ^ 0xFFFF;
 
         byte[] ret = new byte[2];
         ret[1] = (byte) (crc & 0xff);

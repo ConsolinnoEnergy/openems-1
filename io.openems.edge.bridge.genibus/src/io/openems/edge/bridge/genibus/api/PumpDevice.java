@@ -233,18 +233,15 @@ public class PumpDevice {
      * Set the device read buffer length. Can only set values above DEFAULT_MIN_BUFFER_LENGTH, which is assumed is the
      * minimum value a device can have. The lower limit is a safeguard to not be able to kill Genibus communications by
      * setting the buffer size too low.
-     * This will also set the device send buffer length to the same value, if the value is above 102. It is reasonable
-     * to assume the send buffer won't be smaller than the read buffer. The send buffer does not have it's own setter
-     * method.
      *
+     * <p>This method will also set the device send buffer length to ’value’, if ’value’ is above DEFAULT_MIN_SIZE_SEND_BUFFER.
+     * Otherwise the send buffer length is set to DEFAULT_MIN_SIZE_SEND_BUFFER. It is reasonable to assume the send buffer
+     * won't be smaller than the read buffer. The send buffer does not have it's own setter method.</p>
      *
      * @param value the device read buffer length.
      */
     public void setDeviceReadBufferLengthBytes(int value) {
-        if (value >= DEFAULT_MIN_SIZE_READ_BUFFER) {
-            this.deviceReadBufferLengthBytes = value;
-        }
-        // Adjust send buffer as well.
+        this.deviceReadBufferLengthBytes = Math.max(value, DEFAULT_MIN_SIZE_READ_BUFFER);
         this.deviceSendBufferLengthBytes = Math.max(value, DEFAULT_MIN_SIZE_SEND_BUFFER);
     }
 
@@ -320,14 +317,17 @@ public class PumpDevice {
     /**
      * This method stores measured values for the ’millisecondsPerByte’ parameter, which is used to calculate telegram
      * request/response timing. The time it takes to send a telegram and receive the response is:
-     * 'emptyTelegramTime + PduBytes * millisecondsPerByte'
-     * ’emptyTelegramTime’ is the time in ms it takes to send and receive the response to an empty telegram (=PDU size 0
+     *
+     * <p>'emptyTelegramTime + PduBytes * millisecondsPerByte'</p>
+     *
+     * <p>’emptyTelegramTime’ is the time in ms it takes to send and receive the response to an empty telegram (=PDU size 0
      * bytes). 'PduBytes' is then the combined byte count of the request and response telegram PDUs. ’emptyTelegramTime’
      * and ’millisecondsPerByte’ should be constant. If these are known, the time of a telegram exchange can be calculated
-     * from the byte count in the PDUs.
-     * Multiple measurements of ’millisecondsPerByte’ are stored in an array. Calling the value returns an average of
+     * from the byte count in the PDUs.</p>
+     *
+     * <p>Multiple measurements of ’millisecondsPerByte’ are stored in an array. Calling the value returns an average of
      * these measurements, to smooth out erratic measurement data. The measurement data is also clamped, as a safeguard
-     * from runaway values rendering the Genibus bridge inoperable.
+     * from runaway values rendering the Genibus bridge inoperable.</p>
      *
      * @param millisecondsPerByte the number of milliseconds one byte adds to the telegram send and receive time.
      */
@@ -347,13 +347,16 @@ public class PumpDevice {
     /**
      * Gets the average value of measured values for the ’millisecondsPerByte’ parameter, which is used to calculate
      * telegram request/response timing. The time it takes to send a telegram and receive the response is:
-     * 'emptyTelegramTime + PduBytes * millisecondsPerByte'
-     * ’emptyTelegramTime’ is the time in ms it takes to send and receive the response to an empty telegram (=PDU size 0
+     *
+     * <p>'emptyTelegramTime + PduBytes * millisecondsPerByte'</p>
+     *
+     * <p>’emptyTelegramTime’ is the time in ms it takes to send and receive the response to an empty telegram (=PDU size 0
      * bytes). 'PduBytes' is then the combined byte count of the request and response telegram PDUs. ’emptyTelegramTime’
      * and ’millisecondsPerByte’ should be constant. If these are known, the time of a telegram exchange can be calculated
-     * from the byte count in the PDUs.
-     * Multiple measurements of ’millisecondsPerByte’ are stored in an array. Calling the value returns an average of
-     * these measurements, to smooth out erratic measurement data.
+     * from the byte count in the PDUs.</p>
+     *
+     * <p>Multiple measurements of ’millisecondsPerByte’ are stored in an array. Calling the value returns an average of
+     * these measurements, to smooth out erratic measurement data.</p>
      *
      * @return the number of milliseconds one byte adds to the telegram send and receive time.
      */
@@ -369,14 +372,17 @@ public class PumpDevice {
     /**
      * This method stores measured values for the ’emptyTelegramTime’ parameter, which is used to calculate telegram
      * request/response timing. The time it takes to send a telegram and receive the response is:
-     * 'emptyTelegramTime + PduBytes * millisecondsPerByte'
-     * ’emptyTelegramTime’ is the time in ms it takes to send and receive the response to an empty telegram (=PDU size 0
+     *
+     * <p>'emptyTelegramTime + PduBytes * millisecondsPerByte'</p>
+     *
+     * <p>’emptyTelegramTime’ is the time in ms it takes to send and receive the response to an empty telegram (=PDU size 0
      * bytes). 'PduBytes' is then the combined byte count of the request and response telegram PDUs. ’emptyTelegramTime’
      * and ’millisecondsPerByte’ should be constant. If these are known, the time of a telegram exchange can be calculated
-     * from the byte count in the PDUs.
-     * Multiple measurements of ’emptyTelegramTime’ are stored in an array. Calling the value returns an average of
+     * from the byte count in the PDUs.</p>
+     *
+     * <p>Multiple measurements of ’emptyTelegramTime’ are stored in an array. Calling the value returns an average of
      * these measurements, to smooth out erratic measurement data. The measurement data is also clamped, as a safeguard
-     * from runaway values rendering the Genibus bridge inoperable.
+     * from runaway values rendering the Genibus bridge inoperable.</p>
      *
      * @param emptyTelegramTime the time in milliseconds it takes to send and receive the response to an empty telegram.
      */
@@ -396,13 +402,16 @@ public class PumpDevice {
     /**
      * Gets the average value of measured values for the ’emptyTelegramTime’ parameter, which is used to calculate
      * telegram request/response timing. The time it takes to send a telegram and receive the response is:
-     * 'emptyTelegramTime + PduBytes * millisecondsPerByte'
-     * ’emptyTelegramTime’ is the time in ms it takes to send and receive the response to an empty telegram (=PDU size 0
+     *
+     * <p>'emptyTelegramTime + PduBytes * millisecondsPerByte'</p>
+     *
+     * <p>’emptyTelegramTime’ is the time in ms it takes to send and receive the response to an empty telegram (=PDU size 0
      * bytes). 'PduBytes' is then the combined byte count of the request and response telegram PDUs. ’emptyTelegramTime’
      * and ’millisecondsPerByte’ should be constant. If these are known, the time of a telegram exchange can be calculated
-     * from the byte count in the PDUs.
-     * Multiple measurements of ’emptyTelegramTime’ are stored in an array. Calling the value returns an average of
-     * these measurements, to smooth out erratic measurement data.
+     * from the byte count in the PDUs.</p>
+     *
+     * <p>Multiple measurements of ’emptyTelegramTime’ are stored in an array. Calling the value returns an average of
+     * these measurements, to smooth out erratic measurement data.</p>
      *
      * @return the time it takes to send and receive the response to an empty telegram.
      */

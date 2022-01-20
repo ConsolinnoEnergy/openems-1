@@ -30,10 +30,23 @@ class GenibusWorker extends AbstractCycleWorker {
     private final ArrayList<PumpDevice> deviceList = new ArrayList<>();
     private int currentDeviceCounter = 0;
     private final GenibusImpl parent;
-    private long cycleTimeMs = 1000;    // Initialize with 1000 ms, then measure the actual cycle time.
+    private long cycleTimeMs = 1000;   // Also measured at runtime.
     private long timeSinceLastTimestamp;
     private int delayCurrentRun;
     private int delayLastRun;
+
+    private static final int HEAD_CLASS_PROTOCOL_DATA = 0;
+    private static final int HEAD_CLASS_MEASURED_DATA = 2;
+    private static final int HEAD_CLASS_COMMANDS = 3;
+    private static final int HEAD_CLASS_CONFIGURATION_PARAMETERS = 4;
+    private static final int HEAD_CLASS_REFERENCE_VALUES = 5;
+    private static final int HEAD_CLASS_CHARACTER_STRINGS = 7;
+
+    // If a device is not responding, try that many times before deciding a device is unreachable.
+    private static final int RETRY_COUNTER = 3;
+
+    // If a device is unreachable, try connecting again in that interval.
+    private static final int RETRY_INTERVAL_MS = 5000;
 
     protected GenibusWorker(GenibusImpl parent) {
         this.parent = parent;
@@ -49,21 +62,24 @@ class GenibusWorker extends AbstractCycleWorker {
         super.deactivate();
     }
 
-    /* Creates a telegram for the current device (if possible) and increments ’currentDeviceCounter’. That means this
-       method iterates over ’deviceList’ with each call.
-       The telegram is built from a task list of priority high, low and once tasks. This list is created by the module
-       that implements the Genibus device.
-       Picking tasks for the telegram works as follows: from the list of tasks, all high tasks are added to taskQueue.
-       Then a number of low tasks is added to tasksQueue. How many low tasks are added is defined by the Genibus device
-       module. Then as many tasks as possible are taken from tasksQueue and added to the telegram. Tasks added to the
-       telegram are removed from tasksQueue. If there are still tasks in taskQueue once the telegram is full, they
-       remain there and will be processed next time a telegram is created for that device. The queue is refilled as
-       needed and checks are in place to prevent the queue from getting too big. All priority once tasks are added to
-       the queue on the first run after the high tasks.
-       All tasks are added to the taskQueue at most once per cycle. If this method is called multiple times in a cycle and
-       iterates over the same device multiple times, it may happen that the taskQueue will be empty because all possible
-       tasks have already been executed this cycle. In that case no telegram will be created, and the method just
-       increases ’currentDeviceCounter’ to switch to the next device. */
+    /**
+     * Creates a telegram for the current device (if possible) and increments ’currentDeviceCounter’. That means this
+     * method iterates over ’deviceList’ with each call. The telegram is built from a task list of priority high, low
+     * and once tasks. This list is created by the module that implements the Genibus device.
+     *
+     * <p>Picking tasks for the telegram works as follows: from the list of tasks, all high tasks are added to taskQueue.
+     * Then a number of low tasks is added to tasksQueue. How many low tasks are added is defined by the Genibus device
+     * module. Then as many tasks as possible are taken from tasksQueue and added to the telegram. Tasks added to the
+     * telegram are removed from tasksQueue. If there are still tasks in taskQueue once the telegram is full, they
+     * remain there and will be processed next time a telegram is created for that device. The queue is refilled as
+     * needed and checks are in place to prevent the queue from getting too big. All priority once tasks are added to
+     * the queue on the first run after the high tasks.</p>
+     *
+     * <p>All tasks are added to the taskQueue at most once per cycle. If this method is called multiple times in a cycle
+     * and iterates over the same device multiple times, it may happen that the taskQueue will be empty because all
+     * possible tasks have already been executed this cycle. In that case no telegram will be created, and the method
+     * just increases ’currentDeviceCounter’ to switch to the next device.</p>
+     */
     protected void createTelegram() {
         PumpDevice currentDevice;
         synchronized (this.deviceList) {
@@ -84,11 +100,11 @@ class GenibusWorker extends AbstractCycleWorker {
                 this.currentDeviceCounter++;
 
                 /* If a device is not responding, don't try every cycle to prevent clogging up the Genibus bridge.
-                   The timeoutCounter is 0 when the device is responding. If the device has not responded 3 times in a row,
-                   wait 5 seconds before trying again. Otherwise skip the device. */
-                if (currentDevice.getConnectionTimeoutCounter() > 2) {
+                   The timeoutCounter is 0 when the device is responding. If the device has not responded RETRY_COUNTER
+                   times in a row, wait RETRY_INTERVAL_MS milliseconds before trying again. Otherwise skip the device. */
+                if (currentDevice.getConnectionTimeoutCounter() >= RETRY_COUNTER) {
                     long timeSinceLastTry = System.currentTimeMillis() - currentDevice.getTimestamp();
-                    if (timeSinceLastTry > 5000 || timeSinceLastTry < 0) {  // < 0 for overflow protection.
+                    if (timeSinceLastTry > RETRY_INTERVAL_MS || timeSinceLastTry < 0) {  // < 0 for overflow protection.
                         break;
                     }
                     if (i + 1 == this.deviceList.size()) {  // Last loop iteration.
@@ -253,7 +269,7 @@ class GenibusWorker extends AbstractCycleWorker {
             /* You land here if the taskSendByteCount or taskAnswerByteCount of the task is too big to fit, but there is
                still space left in the telegram and there are still tasks in the queue. Check if the task that did not
                fit is ASCII. */
-            boolean currentTaskIsAscii = currentTask.getHeader() == 7;
+            boolean currentTaskIsAscii = currentTask.getHeader() == HEAD_CLASS_CHARACTER_STRINGS;
             if (currentTaskIsAscii) {
                 /* The task is ASCII. An ASCII task needs a full size APDU to itself, which is most likely the entire
                    telegram. So it is very likely that ’taskSendByteCount’ is too high for an ASCII task, but there is plenty
@@ -315,6 +331,10 @@ class GenibusWorker extends AbstractCycleWorker {
         this.telegramQueue.add(telegram);
     }
 
+    /**
+     * Create an empty telegram for the Genibus device ’currentDevice’.
+     * @param currentDevice the Genibus device.
+     */
     private void sendEmptyTelegram(PumpDevice currentDevice) {
         Telegram telegram = new Telegram();
         telegram.setStartDelimiterDataRequest();
@@ -331,6 +351,7 @@ class GenibusWorker extends AbstractCycleWorker {
      * Using a timestamp, the method recognizes if it was already called this cycle for this device. If it is not the
      * first call, no tasks are added to the queue if the queue is not empty. If the queue is empty, the remaining low
      * tasks are added. The logic of the method should prevent a task from being executed more than once per cycle.
+     *
      * @param currentDevice the pump device for which to prepare tasks.
      * @param telegramRemainingBytes remaining bytes in the telegram.
      */
@@ -382,9 +403,9 @@ class GenibusWorker extends AbstractCycleWorker {
                         tasksQueue.add(onceTask);
                         // Tasks with INFO need two executions. First to get INFO, second for GET and/or SET.
                         switch (onceTask.getHeader()) {
-                            case 2:
-                            case 4:
-                            case 5:
+                            case HEAD_CLASS_MEASURED_DATA:
+                            case HEAD_CLASS_CONFIGURATION_PARAMETERS:
+                            case HEAD_CLASS_REFERENCE_VALUES:
                                 currentDevice.getOnceTasksWithInfo().add(onceTask);
                         }
                     });
@@ -467,13 +488,15 @@ class GenibusWorker extends AbstractCycleWorker {
 
     /**
      * Removes the task at ’position’ from the tasksQueue.
-     * Exception: if the task is head class 4 or 5 GET, it is not removed. These tasks can do GET and SET in the same
-     * telegram, but there is just one instance of them in the task queue.
-     * The method to execute such a task two times then works like this: There is a flag for GET, and the task is
+     *
+     * <p>Exception: if the task is head class 4 or 5 GET, it is not removed. These tasks can do GET and SET in the same
+     * telegram, but there is just one instance of them in the task queue.</p>
+     *
+     * <p>The method to execute such a task two times then works like this: There is a flag for GET, and the task is
      * executed as GET if that flag is set (and INFO is already done). This method then checks if the task was added as
      * GET by examining its apduIdentifier. If a GET is detected, the ’GET flag’ is switched back to false and the task
      * left in the queue in the same position. The next loop iteration will then pick this task again, but it will
-     * execute it as SET because the ’GET flag’ is now false. If executed as SET, the task is removed from the queue.
+     * execute it as SET because the ’GET flag’ is now false. If executed as SET, the task is removed from the queue.</p>
      *
      * @param tasksQueue the task queue.
      * @param position the position in the task queue (first position is 0).
@@ -497,31 +520,37 @@ class GenibusWorker extends AbstractCycleWorker {
      * and then decides in which APDU the task is placed. A corresponding apduIdentifier is generated and saved to the
      * task object, for later retrieval. The apduIdentifier is saved even if the task is not executed, for debug purposes.
      *
-     * <p>How to decide between INFO, GET or SET:
-     * - Tasks of head class 3 can do INFO but don't need it. They only do SET.
-     * - Tasks of head class 7 and 0 only do GET.
-     * - Tasks of head class 2, 4 and 5 need the data from INFO to process the data of GET or SET. So INFO is done first,
-     *   and GET or SET only allowed after the data from INFO has been saved to the task object. Info does not change
-     *   (with a few exceptions) so only needs to be executed once.
-     * - Tasks of head class 2 do INFO and GET. After INFO is received they only do GET.
-     * - Tasks of head class 4 and 5 can do GET and SET. However, the GET data can be considered static, as it only
-     *   changes because of a SET. As a result, a GET only needs to be executed once at the beginning and then after
-     *   every SET. A flag is used to control if a GET should be executed.</p>
+     * <p>How to decide between INFO, GET or SET:</p>
+     * <ul>
+     * <li>Tasks of head class 3 can do INFO but don't need it. They only do SET.
+     * <li>Tasks of head class 7 and 0 only do GET.
+     * <li>Tasks of head class 2, 4 and 5 need the data from INFO to process the data of GET or SET. So INFO is done
+     *     first, and GET or SET only allowed after the data from INFO has been saved to the task object. Info does not
+     *     change (with a few exceptions) so only needs to be executed once.
+     * <li>Tasks of head class 2 do INFO and GET. After INFO is received they only do GET.
+     * <li>Tasks of head class 4 and 5 can do GET and SET. However, the GET data can be considered static, as it only
+     *     changes because of a SET. As a result, a GET only needs to be executed once at the beginning and then after
+     *     every SET. A flag is used to control if a GET should be executed.
+     * </ul>
      *
      * <p>The number of bytes a task adds to the telegram then depends on the type of the task and the byte size of the
      * task. Also, it is checked if an APDU needs to be created to place that task or not. Adding an APDU adds the 2
-     * bytes of its header to the telegram.
-     * GET tasks have a size equivalent to their dataByteSize. Tasks with more than one byte are segmented into one hi
-     * and one or more lo bytes. The hi byte is on the task address, the lo bytes are on the following addresses. Each
-     * address needs to be requested, and each address takes 1 byte in the APDU.
-     * INFO tasks are always just 1 byte, even for tasks with more than one byte. The relevant information is in INFO of
-     * the hi byte, so only the address of the hi byte needs to be put in the APDU.
-     * SET tasks depends on the head class. Commands (head class 3) have no value to set, you just put the address in the
-     * APDU (=1 byte). Configuration parameters (head class 4) and reference values (head class 5) have values to set.
+     * bytes of its header to the telegram.</p>
+     *
+     * <p>GET tasks have a size equivalent to their dataByteSize. Tasks with more than one byte are segmented into one
+     * hi and one or more lo bytes. The hi byte is on the task address, the lo bytes are on the following addresses. Each
+     * address needs to be requested, and each address takes 1 byte in the APDU.</p>
+     *
+     * <p>INFO tasks are always just 1 byte, even for tasks with more than one byte. The relevant information is in INFO
+     * of the hi byte, so only the address of the hi byte needs to be put in the APDU.</p>
+     *
+     * <p>SET tasks depends on the head class. Commands (head class 3) have no value to set, you just put the address in
+     * the APDU (=1 byte). Configuration parameters (head class 4) and reference values (head class 5) have values to set.
      * The byte pattern here is the address, followed by the value. Multi byte tasks do that for each byte. As a result,
      * they require dataByteSize*2 bytes in the APDU. As an example, a 16 bit SET task would need 4 bytes. The four bytes
-     * are: address hi byte, value hi byte, address lo byte, value lo byte.
-     * Furthermore, SET task are checked if there is actually a value that needs setting. If there is no value to set,
+     * are: address hi byte, value hi byte, address lo byte, value lo byte.</p>
+     *
+     * <p>Furthermore, SET task are checked if there is actually a value that needs setting. If there is no value to set,
      * this method returns 0, to indicate that this task should not be added to the telegram.</p>
      *
      * @param currentDevice the Genibus device the telegram will be sent to.
@@ -533,7 +562,7 @@ class GenibusWorker extends AbstractCycleWorker {
         int headClass = task.getHeader();
         int dataByteSize = task.getDataByteSize();
         switch (headClass) {
-            case 0:
+            case HEAD_CLASS_PROTOCOL_DATA:
                 task.setApduIdentifier(0);
                 /* HeadClass 0 only has three commands. No more than one HeadClass 0 APDU will ever exist, and it will
                    never be too full to fit the task. So only need to check if it already exists or not.
@@ -544,7 +573,7 @@ class GenibusWorker extends AbstractCycleWorker {
                     // APDU does not yet exist, needs to be created. Add 2 bytes to telegram because of headers of new APDU.
                     return 2 + dataByteSize;
                 }
-            case 2: // Measured Data
+            case HEAD_CLASS_MEASURED_DATA:
                 // Check if INFO has already been received. If yes, this task is GET. If not, this task is INFO.
                 if (task.informationDataAvailable()) {  // Task is GET
                     /* See if an APDU exists, check if task can fit in existing APDU.
@@ -556,7 +585,7 @@ class GenibusWorker extends AbstractCycleWorker {
                        apduIdentifier is (2*100 for HeadClass 2) + (3*10 for INFO) + (0 for first apdu). */
                     return 1 + this.getApduHeaderBytes(task, 230, 1, telegramApduList);
                 }
-            case 3: // Commands
+            case HEAD_CLASS_COMMANDS:
                 if (task instanceof GenibusWriteTask) {
                     /* No need to check INFO. HeadClass 3 does allow INFO, but it is not needed. So HeadClass 3 is SET
                        only. Check if task is executed or not. Commands are boolean where ’true’ means ’send the command’
@@ -573,8 +602,8 @@ class GenibusWorker extends AbstractCycleWorker {
                             + task.getHeader() + ", " + task.getAddress() + ". Can't execute.");
                     return 0;
                 }
-            case 4: // Configuration Parameters
-            case 5: // Reference Values
+            case HEAD_CLASS_CONFIGURATION_PARAMETERS:
+            case HEAD_CLASS_REFERENCE_VALUES:
                 if (task instanceof HeadClass4and5) {
                     // Check if INFO has already been received. If yes, this task can be GET or SET.
                     if (task.informationDataAvailable()) {
@@ -603,8 +632,8 @@ class GenibusWorker extends AbstractCycleWorker {
                             + task.getHeader() + ", " + task.getAddress() + ". Can't execute.");
                     return 0;
                 }
-            case 7:
-                /* HeadClass 7 is ASCII, which has only GET. Each ASCII task needs it's own APDU, to be save from
+            case HEAD_CLASS_CHARACTER_STRINGS:
+                /* HeadClass 7 is ASCII, which has only GET. Each ASCII task needs it's own APDU, to be safe from
                    buffer overflow. To achieve that, return maximum APDU byte count.
                    This is not as straight forward, as pumps with a read buffer size of 70 bytes exist.
                    The telegram header is 4 bytes, and the CRC is 2 bytes. This leaves 64 bytes for the APDU. This is
@@ -624,8 +653,9 @@ class GenibusWorker extends AbstractCycleWorker {
      * Helper method for ’decideApduAndGetTaskByteCount()’. Returns the number of bytes that are added because of APDU
      * requirements. Returns 0 if no extra APDU is needed, otherwise 2. If an additional APDU is needed in the telegram
      * to fit this task, the byte count increases by 2 because of the APDU header of the additional APDU.
-     * As this method checks in which APDU a task can be placed, the resulting apduIdentifier is saved to the task
-     * object so it can be used later when the task is actually added to an apdu.
+     *
+     * <p>As this method checks in which APDU a task can be placed, the resulting apduIdentifier is saved to the task
+     * object so it can be used later when the task is actually added to an apdu.</p>
      *
      * @param task the Genibus task for which to calculate the APDU header bytes.
      * @param apduIdentifier the apduIdentifier of the first APDU this task could be placed in.
@@ -655,7 +685,7 @@ class GenibusWorker extends AbstractCycleWorker {
                illegal. This code here limits INFO request APDUs to max 15 tasks (1 task = 1 byte, 15*4 = 60 < 63), so
                that the response APDU will not exceed its limit. */
             apduMaxBytes = 15;
-        } else if (task.getHeader() == 7) {
+        } else if (task.getHeader() == HEAD_CLASS_CHARACTER_STRINGS) {
             /* The response to an ASCII task can potentially fill the whole APDU with just one task. To account for this,
                restrict ASCII tasks to one task per APDU. */
             apduMaxBytes = 1;
@@ -672,17 +702,18 @@ class GenibusWorker extends AbstractCycleWorker {
     /**
      * Returns how many bytes this task would need in the response telegram if it were added to the request telegram. The
      * result is used to check telegram size limits and estimate the response time.
-     * This is an upper limit/estimate and not an accurate value. For example, INFO can be a 1 or 4 byte answer -> upper
-     * limit is 4 bytes.
-     * Additional bytes needed for an APDU header are calculated from ’sendByteSize’. If the request is in a new APDU,
-     * so is the response.
+     *
+     * <p>This is an upper limit/estimate and not an accurate value. For example, INFO can be a 1 or 4 byte answer -> upper
+     * limit is 4 bytes. Additional bytes needed for an APDU header are calculated from ’sendByteSize’. If the request
+     * is in a new APDU, so is the response.</p>
+     *
      * @param task the Genibus task for which to estimate the byte count in the response telegram.
      * @param sendByteSize the byte count of the Genibus task in the request telegram.
      * @return the number of bytes this task would add to the response telegram.
      */
     private int checkAnswerByteSize(GenibusTask task, int sendByteSize) {
         int operationSpecifier = (task.getApduIdentifier() % 100) / 10;
-        if (task.getHeader() == 7) {
+        if (task.getHeader() == HEAD_CLASS_CHARACTER_STRINGS) {
             /* Task is ASCII. Don't know how long that answer will be, 30 is a conservative guess. The number here
                is for timing purposes only. An ASCII task should be the only task in the telegram anyway, so you don't
                need to worry about response telegram buffer overflow. */
@@ -743,15 +774,16 @@ class GenibusWorker extends AbstractCycleWorker {
         // Write bytes in apdu. For tasks with more than 8 bit, put more than one byte in the apdu.
         int numberOfBytesInApdu = currentTask.getDataByteSize();
         if (operationSpecifier == 3) {
-            // INFO needs just one byte, even for multi byte tasks
+            /* Task is INFO, needs just one byte even for multi byte tasks. ’numberOfBytesInApdu’ would have been > 1 for
+               a multibyte task. */
             numberOfBytesInApdu = 1;
         }
         for (int i = 0; i < numberOfBytesInApdu; i++) {
             telegramApduList.get(apduIdentifier).putDataField(currentTask.getAddress() + i);
             // Add write value for write task.
             switch (currentTask.getHeader()) {
-                case 3:
-                    if (currentTask instanceof GenibusWriteTask) {
+                case HEAD_CLASS_COMMANDS:
+                    if (currentTask instanceof GenibusWriteTask) {  // Safety, should always be true.
                         if (i == 0) {   // Commands should always be just one byte
                             // Reset channel write value to send command just once.
                             ((GenibusWriteTask)currentTask).clearNextWriteAndUpdateChannel();
@@ -762,14 +794,14 @@ class GenibusWorker extends AbstractCycleWorker {
                                     + "but it is not!");
                         }
                     } else {
-                        // This is already checked in ’decideApduAndGetTaskByteCount()’. Should not trigger, but just in case.
+                        // Should not trigger, but just in case.
                         this.parent.logError(this.log, "GENIbus error. Wrong head class for task "
                                 + currentTask.getHeader() + ", " + currentTask.getAddress() + ". Can't execute.");
                     }
                     break;
-                case 4:
-                case 5:
-                    if (currentTask instanceof HeadClass4and5) {
+                case HEAD_CLASS_CONFIGURATION_PARAMETERS:
+                case HEAD_CLASS_REFERENCE_VALUES:
+                    if (currentTask instanceof HeadClass4and5) {  // Safety, should always be true.
                         boolean isSet = ((apduIdentifier % 100) / 10) == 2;
                         if (isSet) {
                             int unsignedByteForApdu = ((HeadClass4and5) currentTask).getByteIfSetAvailable(i);
@@ -788,7 +820,7 @@ class GenibusWorker extends AbstractCycleWorker {
                             }
                         }
                     } else {
-                        // This is already checked in ’decideApduAndGetTaskByteCount()’. Should not trigger, but just in case.
+                        // Should not trigger, but just in case.
                         this.parent.logError(this.log, "GENIbus error. Wrong head class for task "
                                 + currentTask.getHeader() + ", " + currentTask.getAddress() + ". Can't execute.");
                     }
@@ -918,24 +950,40 @@ class GenibusWorker extends AbstractCycleWorker {
         this.delayLastRun = this.delayCurrentRun;
     }
 
+    /**
+     * Add a device to the Genibus bridge.
+     * @param pumpDevice the device.
+     */
     public void addDevice(PumpDevice pumpDevice) {
         synchronized (this.deviceList) {
             this.deviceList.add(pumpDevice);
         }
     }
 
+    /**
+     * Remove a device from the Genibus bridge.
+     * @param deviceId the device.
+     */
     public void removeDevice(String deviceId) {
         synchronized (this.deviceList) {
             for (int counter = 0; counter < this.deviceList.size(); counter++) {
                 if (this.deviceList.get(counter).getPumpDeviceId().equals(deviceId)) {
                     this.deviceList.remove(counter);
                     /* There should be just one pumpDevice per deviceId. Could break here, since that pumpDevice has been
-                       found and removed. Just to be save, keep searching the deviceList for duplicates and remove them
+                       found and removed. Just to be safe, keep searching the deviceList for duplicates and remove them
                        as well. If somehow duplicate deviceIds exist, this will help expose that error.
                        Decrease counter to not skip an entry. */
                     counter--;
                 }
             }
         }
+    }
+
+    /**
+     * Set the OpenEMS cycle time, unit is milliseconds.
+     * @param cycleTime the cycle time.
+     */
+    public void setCycleTime(int cycleTime) {
+        this.cycleTimeMs = cycleTime;
     }
 }

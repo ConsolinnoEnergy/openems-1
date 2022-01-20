@@ -108,65 +108,6 @@ public class ConnectionHandler {
         }
     }
 
-    /* // Old serial port handling, uses jrxtx libraries
-    public boolean start(String portName) {
-        this.portName = portName;
-        String[] serialPortsOfSystem =  SerialPortBuilder.getSerialPortNames();
-        boolean portFound = false;
-        if (serialPortsOfSystem.length == 0) {
-            // So that error message is only sent once.
-            if (parent.connectionOk || ChronoUnit.SECONDS.between(errorTimestamp, LocalDateTime.now()) >= 5) {
-                errorTimestamp = LocalDateTime.now();
-                this.parent.logError(this.log, "Couldn't start serial connection. No serial ports found or nothing plugged in.");
-            }
-            return false;
-        }
-        StringBuilder portList = new StringBuilder();
-        for (String entry : serialPortsOfSystem) {
-            portList.append(entry).append(", ");
-            if (entry.contains(this.portName)) {
-                portFound = true;
-            }
-        }
-        // Delete ", " at end
-        if (portList.length() > 2) {
-            portList.delete(portList.length() - 2, portList.length());
-        }
-
-        if (portFound) {
-            this.parent.logInfo(this.log, "--Starting serial connection--");
-            this.parent.logInfo(this.log, "Ports found: " + portList);
-            try {
-                serialPort = SerialPortBuilder.newBuilder(portName).setBaudRate(9600)
-                        .setDataBits(DataBits.DATABITS_8).setParity(Parity.NONE).setStopBits(StopBits.STOPBITS_1).build();
-                is = serialPort.getInputStream();
-                os = serialPort.getOutputStream();
-            } catch (IOException e) {
-                // So that error message is only sent once.
-                if (parent.connectionOk || ChronoUnit.SECONDS.between(errorTimestamp, LocalDateTime.now()) >= 5) {
-                    errorTimestamp = LocalDateTime.now();
-                    this.parent.logError(this.log, "Failed to open connection on port " + portName);
-                }
-                e.printStackTrace();
-                return false;
-            }
-            this.parent.logInfo(this.log, "Connection opened on port " + portName);
-            return true;
-        } else {
-            if (parent.connectionOk || ChronoUnit.SECONDS.between(errorTimestamp, LocalDateTime.now()) >= 5) {
-                errorTimestamp = LocalDateTime.now();
-                this.parent.logError(this.log, "Configuration error: The specified serial port " + portName
-                        + " does not match any of the available ports or nothing is plugged in. " +
-                        "Please check configuration and/or make sure the connector is plugged in.");
-                this.parent.logError(this.log, "Ports found: " + portList);
-            }
-            return false;
-        }
-
-    }
-    */
-
-
     /**
      * Checks the status of the serial connection by testing if the outgoing stream still exists and can be used.
      *
@@ -199,7 +140,6 @@ public class ConnectionHandler {
         }
     }
 
-
     /**
      * Checks the received bytes to test if they form a complete telegram.
      *
@@ -208,13 +148,18 @@ public class ConnectionHandler {
      * @return true if it is a complete telegram or false if not.
      */
     public boolean packageOK(byte[] bytesCurrentPackage, boolean verbose) {
+        // There are three possible bytes at the start of a telegram. These are:
+        final byte dataRequest = 0x27;
+        final byte dataMessage = 0x26;
+        final byte dataReply = 0x24;
+
         // Look for Start Delimiter (SD).
         boolean sdOK = false;
         if (bytesCurrentPackage.length >= 1) {
             switch (bytesCurrentPackage[0]) {
-                case 0x27:
-                case 0x26:
-                case 0x24:
+                case dataRequest:
+                case dataMessage:
+                case dataReply:
                     sdOK = true;
                     break;
                 default:
@@ -223,7 +168,7 @@ public class ConnectionHandler {
         }
         if (!sdOK) { // Wrong package start, reset.
             if (verbose) {
-                this.parent.logWarn(this.log, "SD not OK");
+                this.parent.logWarn(this.log, "Received telegram data error: SD not OK");
             }
             return false;
         }
@@ -234,7 +179,7 @@ public class ConnectionHandler {
         }
         if (!lengthOK) { // Collect more data.
             if (verbose) {
-                this.parent.logWarn(this.log, "Length not OK");
+                this.parent.logWarn(this.log, "Received telegram data error: Length not OK");
             }
             return false;
         }
@@ -246,7 +191,7 @@ public class ConnectionHandler {
         int length = bytesCurrentPackage.length;
 
         if (bytesCurrentPackage[length - 2] != crc[0] || bytesCurrentPackage[length - 1] != crc[1]) {
-            this.parent.logWarn(this.log, "CRC compare not OK");
+            this.parent.logWarn(this.log, "Received telegram data error: CRC compare not OK");
             return false; // Cancel operation.
         }
         return true;
@@ -276,7 +221,6 @@ public class ConnectionHandler {
         this.serialPort.closePort();
     }
 
-
     /**
      * Sends the telegram and returns the response telegram.
      *
@@ -293,10 +237,11 @@ public class ConnectionHandler {
                 this.parent.logWarn(this.log, "Input buffer should be empty, but it is not. Trying to clear it.");
                 long startTime = System.currentTimeMillis();
                 int numRead;
-                byte[] readBuffer = new byte[1024];
+                final int readBufferSize = 1024;
+                byte[] readBuffer = new byte[readBufferSize];
                 // Timeout here is not actually related to Genibus timeout at all. But the value fits the requirement.
                 while (this.is.available() > 0 || (System.currentTimeMillis() - startTime) < GenibusImpl.GENIBUS_TIMEOUT_MS) {
-                    numRead = Math.min(this.is.available(), 1024);  // readBuffer is size 1024.
+                    numRead = Math.min(this.is.available(), readBufferSize);
                     this.is.read(readBuffer, 0, numRead);   // Clear input stream.
                 }
                 if (this.is.available() > 0) {
@@ -360,7 +305,8 @@ public class ConnectionHandler {
                             + ", timeout: " + (timeout + GenibusImpl.GENIBUS_TIMEOUT_MS));
                 }
                 int numRead;
-                byte[] readBuffer = new byte[1024];
+                final int readBufferSize = 1024;
+                byte[] readBuffer = new byte[readBufferSize];
                 List<Byte> completeInput = new ArrayList<>();
                 boolean transferOk = false;
                 /* Reset timer. This timeout exits the loop in case the telegram is corrupted and transferOk will not
@@ -370,10 +316,7 @@ public class ConnectionHandler {
                     if (this.is.available() <= 0) {
                         continue;
                     }
-                    numRead = this.is.available();
-                    if (numRead > 1024) {
-                        numRead = 1024; // readBuffer is size 1024.
-                    }
+                    numRead = Math.min(this.is.available(), readBufferSize);
                     this.is.read(readBuffer, 0, numRead);
                     for (int counter1 = 0; counter1 < numRead; counter1++) {
                         completeInput.add(readBuffer[counter1]);

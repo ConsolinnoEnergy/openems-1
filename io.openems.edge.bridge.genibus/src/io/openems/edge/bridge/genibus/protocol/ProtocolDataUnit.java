@@ -93,7 +93,7 @@ public class ProtocolDataUnit {
 
         return byteList.toByteArray();
     }
-    
+
     /**
      * Create a ProtocolDataUnit (PDU) from a telegram provided as a byte array.
      * Parses the bytes to build a ProtocolDataUnit object.
