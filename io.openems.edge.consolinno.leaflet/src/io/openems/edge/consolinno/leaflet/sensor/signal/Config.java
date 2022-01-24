@@ -1,5 +1,6 @@
 package io.openems.edge.consolinno.leaflet.sensor.signal;
 
+import io.openems.edge.consolinno.leaflet.sensor.signal.api.SignalType;
 import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 import org.osgi.service.metatype.annotations.Option;
@@ -15,18 +16,14 @@ import org.osgi.service.metatype.annotations.Option;
     @AttributeDefinition(name = "Module", description = "ModuleNumber where this Sensor is plugged in.")
     int module();
 
-    @AttributeDefinition(name = "Position", description = "Pinposition of this sensor.")
+    @AttributeDefinition(name = "Position", description = "PinPosition of this sensor.")
     int position();
 
-    @AttributeDefinition(name = "SignalType", description = "Is the Signal an Error/Status",
-            options = {
-                    @Option(label = "Status", value = "Status"),
-                    @Option(label = "Error", value = "Error")
-            })
-    String signalType() default "Status";
+    @AttributeDefinition(name = "SignalType", description = "Is the Signal an Error/Status")
+    SignalType signalType() default SignalType.STATUS;
 
 
-    @AttributeDefinition(name = "Inverted Logic", description = "Usually ON signal at T. >100°C--> inverted Logic : Signal on at < 100°C")
+    @AttributeDefinition(name = "Inverted Logic", description = "Usually Active signal at T. >100°C--> inverted Logic : Signal Active at < 100°C")
     boolean inverted() default false;
 
     @AttributeDefinition(name = "LeafletId", description = "Unique Id of the LeafletCore, this Module is attached to.")
@@ -40,5 +37,5 @@ import org.osgi.service.metatype.annotations.Option;
     @AttributeDefinition(name = "ModbusBridgeId", description = "ModbusBridgeId from Core.")
     String modbusBridgeId() default "modbus0";
 
-    String webconsole_configurationFactory_nameHint() default "Signalsensor [{id}]";
+    String webconsole_configurationFactory_nameHint() default "SignalSensor [{id}]";
 }
