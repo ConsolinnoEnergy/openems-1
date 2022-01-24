@@ -12,12 +12,12 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     String alias() default "";
 
     @AttributeDefinition(name = "Module", description = "ModuleNumber where this Relay is plugged in.")
-    int module();
+    int module() default 1;
 
-    @AttributeDefinition(name = "Position", description = "Pinposition of this Relay.")
-    int position();
+    @AttributeDefinition(name = "Position", description = "PinPosition of this Relay.")
+    int position() default 1;
 
-    @AttributeDefinition(name = "Inverse", description = "Tick if this Relay is Normaly Closed")
+    @AttributeDefinition(name = "Inverse", description = "Tick if this Relay is Normally Closed")
     boolean isInverse() default false;
 
     @AttributeDefinition(name = "LeafletId", description = "Unique Id of the LeafletCore, this Module is attached to.")

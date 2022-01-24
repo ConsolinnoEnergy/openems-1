@@ -36,7 +36,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Provides a Consolinno Signal sensor. When the Sensor detects a Temperature above 100°C it will output "Error".
+ * Provides a Consolinno Signal sensor. Connected to the Temperature Module.
+ * When the Sensor detects a Temperature above 100°C it will output "Error".
  * Can be inverted to below 100°C.
  */
 @Designate(ocd = Config.class, factory = true)
@@ -80,7 +81,7 @@ public class SignalSensorImpl extends AbstractOpenemsModbusComponent implements 
         this.signalModule = config.module();
         this.position = config.position();
         this.isInverted = config.inverted();
-        this.getSignalType().setNextValue(config.signalType());
+        this.getSignalType().setNextValue(config.signalType().name());
         //Check if the Module is physically present, else throws ConfigurationException.
         if (this.lc.modbusModuleCheckout(LeafletCore.ModuleType.TMP, config.module(), config.position(), config.id())
                 && (this.lc.getFunctionAddress(LeafletCore.ModuleType.TMP, this.signalModule, this.position) != Error.ERROR.getValue())) {
@@ -115,35 +116,22 @@ public class SignalSensorImpl extends AbstractOpenemsModbusComponent implements 
 
     @Override
     public String debugLog() {
-        String temperature = getTemperature().isDefined() ? getTemperature().get().toString() : "Not Defined";
-        return "Temperature " + temperature + " Signal: " + getSignalType().value();
+        return "SignalStatus: " + signalActive().value().orElse(false) + " SignalType: " + getSignalType().value();
     }
 
     @Override
     public void handleEvent(Event event) {
         Value<Integer> currentTemperature = getTemperature();
         boolean currentTempDefined = currentTemperature.isDefined();
-        if (getSignalType().value().isDefined()) {
+        boolean signalActive = false;
+        if (currentTempDefined) {
             if (this.isInverted) {
-                if (currentTempDefined && currentTemperature.get() < maxTemperature) {
-                    getSignalType().setNextValue("Error");
-                    signalActive().setNextValue(true);
-                    getSignalMessage().setNextValue("Error");
-                    return;
-                }
+                signalActive = currentTemperature.get() < maxTemperature;
             } else {
-                if (currentTempDefined && currentTemperature.get() > maxTemperature) {
-                    getSignalType().setNextValue("Error");
-                    signalActive().setNextValue(true);
-                    getSignalMessage().setNextValue("Error");
-                    return;
-                }
-            }
-            if (!getSignalType().value().get().equals("Status")) {
-                getSignalType().setNextValue("Status");
-                signalActive().setNextValue(false);
-                getSignalMessage().setNextValue("Status");
+                signalActive = currentTemperature.get() > maxTemperature;
             }
         }
+        this.signalActive().setNextValue(signalActive);
     }
+
 }
