@@ -34,16 +34,16 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     @AttributeDefinition(name = "Force Cooling", description = "On CoolerEnabled Signal -> Force Cooling no matter if the Response/Callback says ok or not")
     boolean forceCooling() default false;
 
-    @AttributeDefinition(name = "Timer for NeedCoolResponse", description = "Timer Id either TimerByTime or TimerByCycles")
-    String timerNeedCoolResponse() default "TimerByCycles";
+    @AttributeDefinition(name = "Timer Id for NeedCoolResponse", description = "Timer Id either TimerByTime or TimerByCycles")
+    String timerIdNeedCoolResponse() default "TimerByCycles";
 
     @AttributeDefinition(name = "Cycles to wait when Need Cool Enable Signal (Central Controller) isn't present", description = "How many Cycles do you wait for the Central Communication Controller if Communication is lost")
     int timeNeedCoolResponse() default 8;
 
     boolean enableExceptionalStateHandling() default true;
 
-    @AttributeDefinition(name = "Timer for ExceptionalState", description = "Timer Id for ExceptionalState Handling, either TimerByTimer or TimerByCycles")
-    String timerExceptionalState() default "TimerByCycles";
+    @AttributeDefinition(name = "Timer Id for ExceptionalState", description = "Timer Id for ExceptionalState Handling, either TimerByTimer or TimerByCycles")
+    String timerIdExceptionalState() default "TimerByCycles";
 
     @AttributeDefinition(name = "Wait Time/Cycles for ExceptionalState", description = "How long do you await a new Exceptional State enable Signal.")
     int timeToWaitExceptionalState() default 60;
