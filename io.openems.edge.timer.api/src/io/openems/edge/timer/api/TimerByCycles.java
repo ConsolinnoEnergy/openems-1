@@ -11,11 +11,14 @@ import org.osgi.service.metatype.annotations.Designate;
 
 
 /**
- * This Timer is one of the concrete Implementations of the {@link AbstractTimer} and the {@link Timer}.
+ * This Timer is one of the child Implementations of the {@link AbstractTimer} and the {@link Timer}.
  * It gets the {@link ValueInitializedWrapper} and checks if the the current Counter is above or equals to the maximum.
  * Remember on init -> the counter will initialized and set to 1.
  * Call the {@link Timer#reset(String id, String identifier)} method,
  * if you wish to reset (this will do: {@link ValueInitializedWrapper#setInitialized(boolean)} (false)}
+ * Usually you call this Timer via the TimerHandler and only once per Cycle (Therefore TimerByCycles)
+ * However, you may call this timer more Frequently if you want. Becoming more of a Timer that counts "Calls" and returns
+ * true, when X amount of calls are done.
  */
 @Designate(ocd = TimerByCyclesConfig.class, factory = true)
 @Component(name = "Timer.TimerByCycles",

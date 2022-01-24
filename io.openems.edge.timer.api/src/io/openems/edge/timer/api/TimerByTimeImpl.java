@@ -12,7 +12,7 @@ import org.osgi.service.component.annotations.Modified;
 import org.osgi.service.metatype.annotations.Designate;
 
 /**
- * This Timer is one of the concrete Implementations of the {@link AbstractTimer} and the {@link Timer}.
+ * This Timer is one of the child Implementations of the {@link AbstractTimer} and the {@link Timer}.
  * It gets the {@link ValueInitializedWrapper} and checks if the the current Time is after the initTime+MaxTimeInSeconds.
  * Remember on init -> Timer will be initialized and sets the Time.
  * If you wish to Reset: {@link Timer#reset(String id, String identifier)}
