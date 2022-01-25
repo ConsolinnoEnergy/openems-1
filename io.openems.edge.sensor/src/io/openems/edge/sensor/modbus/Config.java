@@ -31,14 +31,6 @@ import org.osgi.service.metatype.annotations.Option;
     @AttributeDefinition(name = "Inverted Logic", description = "Usually ON signal at T. >100°C--> inverted Logic : Signal on at < 100°C")
     boolean inverted() default true;
 
-    boolean useActiveMessage() default true;
-
-    String messageActive() default "Error Occurred!";
-
-    boolean useIdleMessage() default false;
-
-    String messageIdle() default "Everything's ok";
-
     boolean enabled() default true;
 
 
