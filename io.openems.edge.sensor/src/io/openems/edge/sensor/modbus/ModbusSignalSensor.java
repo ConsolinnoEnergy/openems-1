@@ -106,13 +106,6 @@ public class ModbusSignalSensor extends AbstractOpenemsModbusComponent implement
         if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE)) {
             if (this.getSignalActiveModbusChannel().value().isDefined()) {
                 boolean signalActive = this.config.inverted() != this.getSignalActiveModbusChannel().value().get();
-                if (signalActive) {
-                    if (this.config.useActiveMessage()) {
-                        this.getSignalMessage().setNextValue(this.config.messageActive());
-                    }
-                } else if (this.config.useIdleMessage()) {
-                    this.getSignalMessage().setNextValue(this.config.messageIdle());
-                }
                 this.signalActive().setNextValue(signalActive);
             }
         }
