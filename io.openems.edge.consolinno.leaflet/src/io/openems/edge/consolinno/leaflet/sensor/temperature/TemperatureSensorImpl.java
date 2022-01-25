@@ -5,6 +5,7 @@ import io.openems.edge.bridge.modbus.api.AbstractOpenemsModbusComponent;
 import io.openems.edge.bridge.modbus.api.BridgeModbus;
 import io.openems.edge.bridge.modbus.api.ElementToChannelConverter;
 import io.openems.edge.bridge.modbus.api.ModbusProtocol;
+import io.openems.edge.bridge.modbus.api.element.SignedWordElement;
 import io.openems.edge.bridge.modbus.api.element.UnsignedWordElement;
 import io.openems.edge.bridge.modbus.api.task.FC4ReadInputRegistersTask;
 import io.openems.edge.common.component.ComponentManager;
@@ -93,7 +94,7 @@ public class TemperatureSensorImpl extends AbstractOpenemsModbusComponent implem
         if (this.lc.checkFirmwareCompatibility()) {
             return new ModbusProtocol(this,
                     new FC4ReadInputRegistersTask(this.temperatureAnalogInput, Priority.HIGH,
-                            m(Thermometer.ChannelId.TEMPERATURE, new UnsignedWordElement(this.temperatureAnalogInput),
+                            m(Thermometer.ChannelId.TEMPERATURE, new SignedWordElement(this.temperatureAnalogInput),
                                     ElementToChannelConverter.DIRECT_1_TO_1)));
         } else {
             this.deactivate();
