@@ -135,8 +135,7 @@ public class ThermometerThresholdImpl extends AbstractOpenemsComponent implement
                         } catch (OpenemsError.OpenemsNamedException e) {
                             this.log.warn("Couldn't find the ReferenceThermometer!");
                         }
-                        if (this.referenceThermometer.getTemperatureChannel().value().isDefined()
-                                && this.referenceThermometer.getTemperatureValue() != Integer.MIN_VALUE) {
+                        if (this.referenceThermometer.getTemperatureValue() != Thermometer.MISSING_TEMPERATURE) {
                             this.calculateTemperatureValue();
                         }
                     }
@@ -201,7 +200,7 @@ public class ThermometerThresholdImpl extends AbstractOpenemsComponent implement
 
     @Override
     public String debugLog() {
-        return "Temperature: " + (this.getTemperatureValue() == Integer.MIN_VALUE ? "NotDefined" : this.getTemperatureValue())
+        return "Temperature: " + (this.getTemperatureValue() == Thermometer.MISSING_TEMPERATURE ? "NotDefined" : this.getTemperatureValue())
                 + this.getTemperatureChannel().channelDoc().getUnit().getSymbol();
     }
 }

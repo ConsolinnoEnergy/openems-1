@@ -55,8 +55,8 @@ public class DecentralizedCoolerImpl extends AbstractDecentralizedComponent impl
         super.activate(context, config.id(), config.alias(), config.enabled(), config.componentOrController(),
                 config.componentOrControllerId(), config.thresholdThermometerId(), config.setPointTemperature(),
                 config.forceCooling(), config.enableExceptionalStateHandling(),
-                config.timerNeedCoolResponse(), config.timeNeedCoolResponse(),
-                config.timerExceptionalState(), config.timeToWaitExceptionalState(),
+                config.timerIdNeedCoolResponse(), config.timeNeedCoolResponse(),
+                config.timerIdExceptionalState(), config.timeToWaitExceptionalState(),
                 this.getForceCoolChannel(), this.getNeedCoolEnableSignalChannel(), this.cpm);
 
         this.getNeedCoolChannel().setNextValue(false);
@@ -71,8 +71,8 @@ public class DecentralizedCoolerImpl extends AbstractDecentralizedComponent impl
         super.modified(context, config.id(), config.alias(), config.enabled(), config.componentOrController(), config.componentOrControllerId(),
                 config.thresholdThermometerId(), config.setPointTemperature(),
                 config.forceCooling(), config.enableExceptionalStateHandling(),
-                config.timerNeedCoolResponse(), config.timeToWaitExceptionalState(),
-                config.timerExceptionalState(), config.timeToWaitExceptionalState(),
+                config.timerIdNeedCoolResponse(), config.timeToWaitExceptionalState(),
+                config.timerIdExceptionalState(), config.timeToWaitExceptionalState(),
                 this.getForceCoolChannel(), this.getNeedCoolEnableSignalChannel(), this.cpm);
     }
 
@@ -111,8 +111,8 @@ public class DecentralizedCoolerImpl extends AbstractDecentralizedComponent impl
                         super.activationOrModifiedRoutine(this.config.componentOrController(), this.config.componentOrControllerId(),
                                 this.config.thresholdThermometerId(), this.config.setPointTemperature(),
                                 this.config.forceCooling(), this.config.enableExceptionalStateHandling(),
-                                this.config.timerNeedCoolResponse(), this.config.timeToWaitExceptionalState(),
-                                this.config.timerExceptionalState(), this.config.timeToWaitExceptionalState(),
+                                this.config.timerIdNeedCoolResponse(), this.config.timeToWaitExceptionalState(),
+                                this.config.timerIdExceptionalState(), this.config.timeToWaitExceptionalState(),
                                 this.getForceCoolChannel(), this.getNeedCoolEnableSignalChannel());
 
                     } catch (OpenemsError.OpenemsNamedException | ConfigurationException e) {

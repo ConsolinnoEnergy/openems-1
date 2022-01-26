@@ -63,8 +63,8 @@ public abstract class AbstractDecentralizedComponent extends AbstractOpenemsComp
 
     void activate(ComponentContext context, String id, String alias, boolean enabled, ComponentType componentType,
                   String componentId, String thresholdId, int tempSetPoint, boolean forceHeatingOrCooling,
-                  boolean useExceptionalState, String timerResponse, int waitTimeResponse,
-                  String timerExceptionalState, int timeToWaitExceptionalState,
+                  boolean useExceptionalState, String timerIdResponse, int waitTimeResponse,
+                  String timerIdExceptionalState, int timeToWaitExceptionalState,
                   WriteChannel<Boolean> forced, WriteChannel<Boolean> response, ComponentManager cpm) {
         super.activate(context, id, alias, enabled);
         this.cpm = cpm;
@@ -74,8 +74,8 @@ public abstract class AbstractDecentralizedComponent extends AbstractOpenemsComp
         try {
             this.activationOrModifiedRoutine(componentType, componentId, thresholdId, tempSetPoint,
                     forceHeatingOrCooling, useExceptionalState,
-                    timerResponse, waitTimeResponse,
-                    timerExceptionalState, timeToWaitExceptionalState, forced, response);
+                    timerIdResponse, waitTimeResponse,
+                    timerIdExceptionalState, timeToWaitExceptionalState, forced, response);
         } catch (OpenemsError.OpenemsNamedException | ConfigurationException e) {
             this.log.warn("Couldn't apply Config. Try again later");
             this.configurationSuccess = false;
@@ -91,9 +91,9 @@ public abstract class AbstractDecentralizedComponent extends AbstractOpenemsComp
      * @param tempSetPoint               the SetPoint for the DecentralizedComponent. Reach this at least/most depending if it's a cooler or heater.
      * @param forceHeatingOrCooling      should this heater be allowed to use force heating.
      * @param useExceptionalState        should this heater use an exceptionalState.
-     * @param timerResponse              Timer Id for the EnableSignalResponse
+     * @param timerIdResponse            Timer Id for the EnableSignalResponse
      * @param waitTimeResponse           waitTime for EnableSignalResponse. (How long to wait for Center to answer)
-     * @param timerExceptionalState      Timer Id for the ExceptionalState
+     * @param timerIdExceptionalState    Timer Id for the ExceptionalState
      * @param timeToWaitExceptionalState waitTime for ExceptionalState.
      * @param forced                     the Channel where the forcedConfiguration will be stored in.
      * @param response                   the Channel where the EnableSignal from the Center is expected.
@@ -102,8 +102,8 @@ public abstract class AbstractDecentralizedComponent extends AbstractOpenemsComp
      */
     protected void activationOrModifiedRoutine(ComponentType componentType, String componentId, String thresholdId, int tempSetPoint,
                                                boolean forceHeatingOrCooling, boolean useExceptionalState,
-                                               String timerResponse, int waitTimeResponse,
-                                               String timerExceptionalState, int timeToWaitExceptionalState,
+                                               String timerIdResponse, int waitTimeResponse,
+                                               String timerIdExceptionalState, int timeToWaitExceptionalState,
                                                WriteChannel<Boolean> forced, WriteChannel<Boolean> response)
             throws ConfigurationException, OpenemsError.OpenemsNamedException {
         OpenemsComponent componentFetchedByComponentManager;
@@ -133,7 +133,7 @@ public abstract class AbstractDecentralizedComponent extends AbstractOpenemsComp
             this.thresholdThermometer.setSetPointTemperature(tempSetPoint, super.id());
         } else {
             throw new ConfigurationException("activate",
-                    "Component with ID: " + tempSetPoint + " not an instance of Threshold");
+                    "Component with ID: " + thresholdId + " not an instance of Threshold");
         }
         this._setTemperatureSetpoint(tempSetPoint);
         this.getTemperatureSetpointChannel().nextProcessImage();
@@ -143,7 +143,7 @@ public abstract class AbstractDecentralizedComponent extends AbstractOpenemsComp
         this.forced.nextProcessImage();
         this._setHeaterState(HeaterState.OFF.getValue());
         this.useExceptionalState = useExceptionalState;
-        this.initializeTimer(timerResponse, waitTimeResponse, timerExceptionalState, timeToWaitExceptionalState);
+        this.initializeTimer(timerIdResponse, waitTimeResponse, timerIdExceptionalState, timeToWaitExceptionalState);
         this.configurationSuccess = true;
     }
 
@@ -151,8 +151,8 @@ public abstract class AbstractDecentralizedComponent extends AbstractOpenemsComp
     @Modified
     void modified(ComponentContext context, String id, String alias, boolean enabled, ComponentType componentType, String componentId, String thresholdId, int tempSetPoint,
                   boolean forceHeating, boolean useExceptionalState,
-                  String timerNeedHeatResponse, int waitTimeNeedHeatResponse,
-                  String timerExceptionalState, int timeToWaitExceptionalState,
+                  String timerIdResponse, int waitTimeResponse,
+                  String timerIdExceptionalState, int timeToWaitExceptionalState,
                   WriteChannel<Boolean> forced, WriteChannel<Boolean> needResponse, ComponentManager cpm) {
         super.modified(context, id, alias, enabled);
         this.cpm = cpm;
@@ -160,8 +160,8 @@ public abstract class AbstractDecentralizedComponent extends AbstractOpenemsComp
         try {
             this.activationOrModifiedRoutine(componentType, componentId, thresholdId, tempSetPoint,
                     forceHeating, useExceptionalState,
-                    timerNeedHeatResponse, waitTimeNeedHeatResponse,
-                    timerExceptionalState, timeToWaitExceptionalState,
+                    timerIdResponse, waitTimeResponse,
+                    timerIdExceptionalState, timeToWaitExceptionalState,
                     forced, needResponse);
         } catch (OpenemsError.OpenemsNamedException | ConfigurationException e) {
             this.log.warn("Couldn't apply Config. Try again later");
@@ -229,7 +229,7 @@ public abstract class AbstractDecentralizedComponent extends AbstractOpenemsComp
         }
         if (thresholdTempMet) {
             if (this.componentType.equals(ComponentType.COMPONENT)) {
-                this.hydraulicComponent.setPointPowerLevelChannel().setNextValue(HydraulicComponent.DEFAULT_MAX_POWER_VALUE);
+                this.hydraulicComponent.setPowerLevel(HydraulicComponent.DEFAULT_MAX_POWER_VALUE);
             }
         } else {
             if (this.componentType.equals(ComponentType.COMPONENT)) {
@@ -274,24 +274,25 @@ public abstract class AbstractDecentralizedComponent extends AbstractOpenemsComp
             switch (this.componentType) {
 
                 case COMPONENT:
-                    if (this.hydraulicComponent.isEnabled() == false) {
-                        componentFetchedByCpm = this.cpm.getComponent(this.hydraulicComponent.id());
+                    componentFetchedByCpm = this.cpm.getComponent(this.hydraulicComponent.id());
+
+                    if (this.hydraulicComponent.equals(componentFetchedByCpm) == false) {
                         if (componentFetchedByCpm instanceof HydraulicComponent) {
                             this.hydraulicComponent = (HydraulicComponent) componentFetchedByCpm;
                         }
                     }
                     break;
                 case CONTROLLER:
-                    if (this.configuredHydraulicController.isEnabled() == false) {
-                        componentFetchedByCpm = this.cpm.getComponent(this.configuredHydraulicController.id());
+                    componentFetchedByCpm = this.cpm.getComponent(this.configuredHydraulicController.id());
+                    if (this.configuredHydraulicController.equals(componentFetchedByCpm) == false) {
                         if (componentFetchedByCpm instanceof HydraulicController) {
                             this.configuredHydraulicController = (HydraulicController) componentFetchedByCpm;
                         }
                     }
                     break;
             }
-            if (this.thresholdThermometer.isEnabled() == false) {
-                componentFetchedByCpm = this.cpm.getComponent(this.thresholdThermometer.id());
+            componentFetchedByCpm = this.cpm.getComponent(this.thresholdThermometer.id());
+            if (this.thresholdThermometer.equals(componentFetchedByCpm) == false) {
                 if (componentFetchedByCpm instanceof ThermometerThreshold) {
                     this.thresholdThermometer = (ThermometerThreshold) componentFetchedByCpm;
                 }
@@ -303,13 +304,11 @@ public abstract class AbstractDecentralizedComponent extends AbstractOpenemsComp
     }
 
     /**
-     * "deactivate" logic e.g. if heat is not needed anymore.
+     * Deactivate Controlled Components if no EnableSignal/force open was set.
      * Channel Request -> false;
      * Release thresholdThermometer
-     * if valve --> close (OR force close? @Pauli)
-     * if ValveController --> force close or close?
+     * and disable Components.
      */
-    //SET NEED HEAT OR COOLING -> DECENTRALIZED HEATER/ COOLER
     void deactivateControlledComponents() {
         this._setHeaterState(HeaterState.OFF);
         this.thresholdThermometer.releaseSetPointTemperatureId(super.id());
@@ -324,7 +323,7 @@ public abstract class AbstractDecentralizedComponent extends AbstractOpenemsComp
         try {
             switch (this.componentType) {
                 case COMPONENT:
-                    this.hydraulicComponent.setPointPowerLevelChannel().setNextValue(HydraulicComponent.DEFAULT_MIN_POWER_VALUE);
+                    this.hydraulicComponent.setPowerLevel(HydraulicComponent.DEFAULT_MIN_POWER_VALUE);
                     break;
                 case CONTROLLER:
                     this.configuredHydraulicController.getEnableSignalChannel().setNextWriteValueFromObject(false);

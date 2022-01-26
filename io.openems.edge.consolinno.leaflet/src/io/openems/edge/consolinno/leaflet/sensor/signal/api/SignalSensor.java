@@ -23,15 +23,6 @@ public interface SignalSensor extends OpenemsComponent {
         SIGNAL_ACTIVE(Doc.of(OpenemsType.BOOLEAN)),
 
         /**
-         * Error Message String.
-         * <ul>
-         *     <li> Interface: SignalSensor
-         *     <li> Type: String
-         * </ul>>
-         */
-        SIGNAL_MESSAGE(Doc.of(OpenemsType.STRING)),
-
-        /**
          * SignalType Stored As String.
          * <ul>
          * <li>Interface: SignalSensor
@@ -59,18 +50,6 @@ public interface SignalSensor extends OpenemsComponent {
      */
     default Channel<Boolean> signalActive() {
         return this.channel(ChannelId.SIGNAL_ACTIVE);
-    }
-
-    /**
-     * Gets the Error Message.
-     * Status
-     * Error
-     * Fault Message
-     *
-     * @return the Channel
-     */
-    default Channel<String> getSignalMessage() {
-        return this.channel(ChannelId.SIGNAL_MESSAGE);
     }
 
 
