@@ -1,3 +1,10 @@
+openems-consolinno (0.1.19-1) UNRELEASED; urgency=medium
+
+  * Added Support for fully Remote Control Alpha Innotech Pumps and is
+    optional as a Configuration Point
+
+ -- Felix <felix@felix-ThinkPad-E15-Gen-2>  Wed, 26 Jan 2022 18:28:48 +0100
+
 openems-consolinno (0.1.18-1) unstable; urgency=medium
 
   * Added TLS Support in MQTT and fixed a Nullpointer Exception Bug
