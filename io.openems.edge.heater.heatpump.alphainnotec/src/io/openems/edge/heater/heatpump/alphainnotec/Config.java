@@ -83,6 +83,10 @@ import org.osgi.service.metatype.annotations.Option;
 	@AttributeDefinition(name = "Print info to log", description = "Print status info to the log.")
 	boolean printInfoToLog() default false;
 
+	@AttributeDefinition(name = "Full remote mode", description = "Full remote mode. Only relevant for sending commands, "
+			+ "irrelevant in read only mode.")
+	boolean fullRemoteMode() default false;
+
 	@AttributeDefinition(name = "Is enabled?", description = "Is this Component enabled?")
 	boolean enabled() default true;
 
