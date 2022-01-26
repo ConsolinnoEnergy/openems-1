@@ -68,10 +68,14 @@ import java.util.Optional;
  */
 
 @Designate(ocd = Config.class, factory = true)
-@Component(name = "Heater.HeatPump.AlphaInnotec",
+@Component(
+		name = "Heater.HeatPump.AlphaInnotec",
 		immediate = true,
 		configurationPolicy = ConfigurationPolicy.REQUIRE,
-		property = EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE)
+		property = {
+				EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE,
+				EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS
+		})
 public class HeatPumpAlphaInnotecImpl extends AbstractOpenemsModbusComponent implements OpenemsComponent, EventHandler,
 		ExceptionalState, HeatpumpAlphaInnotec {
 
@@ -84,7 +88,9 @@ public class HeatPumpAlphaInnotecImpl extends AbstractOpenemsModbusComponent imp
 	private final Logger log = LoggerFactory.getLogger(HeatPumpAlphaInnotecImpl.class);
 	private boolean printInfoToLog;
 	private boolean readOnly;
+	private boolean startupStateChecked = false;
 	private boolean readyForCommands;
+	private boolean fullRemoteMode;
 
 	private HeatingMode heatingModeSetting;
 	private HeatingMode domesticHotWaterModeSetting;
@@ -122,6 +128,8 @@ public class HeatPumpAlphaInnotecImpl extends AbstractOpenemsModbusComponent imp
 
 		this.printInfoToLog = config.printInfoToLog();
 		this.readOnly = config.readOnly();
+		this.fullRemoteMode = config.fullRemoteMode();
+		this._setClearError(false);
 		if (this.isEnabled() == false) {
 			this._setHeaterState(HeaterState.OFF.getValue());
 		}
@@ -131,6 +139,7 @@ public class HeatPumpAlphaInnotecImpl extends AbstractOpenemsModbusComponent imp
 			this._setUseSmartGridState(config.openEmsControlMode() == HeatpumpControlMode.SMART_GRID_STATE);
 			this.getUseSmartGridStateChannel().nextProcessImage();
 
+			this.startupStateChecked = false;
 			this.heatingModeSetting = config.defaultHeatingMode();
 			this.domesticHotWaterModeSetting = config.defaultDomesticHotWaterMode();
 			this.mixingCircuit2ModeSetting = config.defaultMixingCircuit2Mode();
@@ -452,13 +461,26 @@ public class HeatPumpAlphaInnotecImpl extends AbstractOpenemsModbusComponent imp
 		if (this.isEnabled() == false) {
 			return;
 		}
-		if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE)) {
-			this.channelmapping();
-			if (this.printInfoToLog) {
-				this.printInfo();
-			}
-		} else if (this.readOnly == false && this.readyForCommands && event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS)) {
-			this.writeCommands();
+		switch (event.getTopic()) {
+			case EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE:
+				this.channelmapping();
+				if (this.printInfoToLog) {
+					if (this.fullRemoteMode) {
+						this.printInfoRemote();
+					} else {
+						this.printInfo();
+					}
+				}
+				break;
+			case EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS:
+				if (this.readOnly == false && this.readyForCommands) {
+					if (this.fullRemoteMode) {
+						this.writeCommandsRemote();
+					} else {
+						this.writeCommands();
+					}
+				}
+				break;
 		}
 	}
 
@@ -679,6 +701,36 @@ public class HeatPumpAlphaInnotecImpl extends AbstractOpenemsModbusComponent imp
 				}
 			}
 
+			/* At startup, check if the heater is already running. If yes, keep it running by sending 'EnableSignal = true'
+               to itself once. This avoids the heater always switching off when OpenEMS restarts, because the EnableSignal
+               has the initial value ’false’.
+               By sending the EnableSignal to itself, the heater will stay on until the EnableSignal timer runs out. This
+               should give any controllers enough time to send that signal themselves and allow heater operation without
+               unnecessary disruptions. */
+			if (this.startupStateChecked == false) {
+				this.startupStateChecked = true;
+				turnOnHeatpump = (HeaterState.valueOf(this.getHeaterState().orElse(-1)) == HeaterState.RUNNING);
+				if (turnOnHeatpump) {
+					try {
+						// Try to get currently used settings from heat pump, to keep those and not go back to default values.
+						this.heatingModeSetting = getHeatingOperationMode().asEnum();
+						this.domesticHotWaterModeSetting = getDomesticHotWaterOperationMode().asEnum();
+						this.mixingCircuit2ModeSetting = getCircuit2OperationMode().asEnum();
+						this.mixingCircuit3ModeSetting = getCircuit3OperationMode().asEnum();
+						this.coolingModeSetting = getCoolingOperationMode().asEnum();
+						this.poolModeSetting = getPoolHeatingOperationMode().asEnum();
+						this.ventilationModeSetting = getVentilationOperationMode().asEnum();
+					} catch (IllegalArgumentException e) {
+						this.log.warn("Couldn't get heat pump operation mode " + e.getMessage());
+					}
+					try {
+						this.getEnableSignalChannel().setNextWriteValue(true);
+					} catch (OpenemsError.OpenemsNamedException e) {
+						this.log.warn("Couldn't write in Channel " + e.getMessage());
+					}
+				}
+			}
+
 			if (turnOnHeatpump) {
 
 				// Make sure heat pump is not blocked or partially blocked.
@@ -700,7 +752,7 @@ public class HeatPumpAlphaInnotecImpl extends AbstractOpenemsModbusComponent imp
 					}
 				}
 
-				// Set values for ’heat pump = on’
+				// Set values for ’heat pump = on’. Note: All these values can be ’off’ and the heatpump won't switch on.
 				heatingModeToModbus = this.heatingModeSetting.getValue();
 				domesticHotWaterModeToModbus = this.domesticHotWaterModeSetting.getValue();
 				mixingCircuit2ModeToModbus = this.mixingCircuit2ModeSetting.getValue();
@@ -763,6 +815,20 @@ public class HeatPumpAlphaInnotecImpl extends AbstractOpenemsModbusComponent imp
 			this.logError(this.log, "Could not write to pool mode channel. "
 					+ "Reason: " + e.getMessage());
 		}
+
+		// Forward error reset write to modbus.
+		Optional<Boolean> errorResetOptional = this.getClearErrorChannel().getNextWriteValueAndReset();
+		if (errorResetOptional.isPresent()) {
+			boolean errorResetWrite = errorResetOptional.get();
+			if (errorResetWrite) {
+				try {
+					// Send ’clear error’ once to Modbus.
+					this.getCoil0ModbusChannel().setNextWriteValue(true);
+				} catch (OpenemsError.OpenemsNamedException e) {
+					e.printStackTrace();
+				}
+			}
+		}
 	}
 
 	/**
@@ -788,6 +854,71 @@ public class HeatPumpAlphaInnotecImpl extends AbstractOpenemsModbusComponent imp
 	}
 
 	/**
+	 * Information that is printed to the log if ’print info to log’ option is enabled. For full remote mode.
+	 */
+	protected void printInfoRemote() {
+		this.logInfo(this.log, "--Heat pump Alpha Innotec, Soest mode--");
+		this.logInfo(this.log, "HR_6_BLOCK_RELEASE: " + this.getBlockRelease().asEnum().getName());
+		this.logInfo(this.log, "DI_0_DMS_BLOCK: " + getDmsBlockActive());
+		this.logInfo(this.log, "DI_1_DMS_BLOCK_SG: " + getEvu2Active());
+		this.logInfo(this.log, "DI_3_COMPRESSOR1: " + getVD1active());
+		this.logInfo(this.log, "DI_4_COMPRESSOR2: " + getVD1active());
+		this.logInfo(this.log, "DI_5_AUX1: " + getZwe1Active());
+		this.logInfo(this.log, "DI_6_AUX2: " + getZwe2Active());
+		this.logInfo(this.log, "COIL_2_HUP: " + getForceOnHup());
+		this.logInfo(this.log, "COIL_4_ZUP: " + getForceOnZup());
+		this.logInfo(this.log, "COIL_7_ZIP: " + getForceOnZip());
+		this.logInfo(this.log, "COIL_8_FUP2: " + getForceOnFup2());
+		this.logInfo(this.log, "COIL_9_FUP3: " + getForceOnFup3());
+		this.logInfo(this.log, "COIL_13_FRH: " + getForceOnFrh());
+		this.logInfo(this.log, "HR_7_CIRCUIT_HEATING_OPERATION_MODE: " + this.getHeatingOperationMode().asEnum().getName());
+		this.logInfo(this.log, "HR_8_WATER_OPERATION_MODE: " + this.getDomesticHotWaterOperationMode().asEnum().getName());
+		this.logInfo(this.log, "HR_11_COOLING_OPERATION_MODE: " + this.getCoolingOperationMode().asEnum().getName());
+		this.logInfo(this.log, "HR_14_SMART_GRID: " + this.getSmartGridFromModbus());
+		this.logInfo(this.log, "FLOW_TEMPERATURE: " + this.getFlowTemperature());
+		this.logInfo(this.log, "HR_0_OUTSIDETEMP: " + this.getOutsideTemp());
+		this.logInfo(this.log, "IR_5_FLOW_TEMP_MC1: " + this.getCircuit1FlowTemp());
+		this.logInfo(this.log, "HR_2_FLOW_TEMP_SETPOINT_MC1: " + this.getCircuit1FlowTempSetpoint());
+		this.logInfo(this.log, "IR_6_FLOW_TEMP_MC2: " + this.getCircuit2FlowTemp());
+		this.logInfo(this.log, "HR_3_FLOW_TEMP_SETPOINT_MC2: " + this.getCircuit2FlowTempSetpoint());
+		this.logInfo(this.log, "IR_7_FLOW_TEMP_MC3: " + this.getCircuit3FlowTemp());
+		this.logInfo(this.log, "HR_4_FLOW_TEMP_SETPOINT_MC3: " + this.getCircuit3FlowTempSetpoint());
+		this.logInfo(this.log, "IR_18_EXTRACT_AIR_TEMP: " + getExtractAirTemp());
+		this.logInfo(this.log, "IR_0_AVERAGE_TEMP: " + getAverageTemp());
+		this.logInfo(this.log, "HR_23_TEMP_PM: " + getTempPlusMinus());
+		this.logInfo(this.log, "RETURN_TEMPERATURE: " + this.getReturnTemperature());
+		this.logInfo(this.log, "HR_1_RETURN_TEMP_SETPOINT: " + this.getReturnTempSetpoint());
+		this.logInfo(this.log, "IR_9_HEAT_SOURCE_INLET_TEMP: " + getHeatSourceInletTemp());
+		this.logInfo(this.log, "IR_10_HEAT_SOURCE_OUTLET_TEMP: " + getHeatSourceOutletTemp());
+		this.logInfo(this.log, "IR_4_WATER_TEMP: " + getDomesticHotWaterTemp());
+		this.logInfo(this.log, "HR_5_WATER_TEMP_SETPOINT: " + getDomesticHotWaterTempSetpoint());
+		this.logInfo(this.log, "IR_24_RBE_ROOM_TEMP: " + getRbeRoomTempActual());
+		this.logInfo(this.log, "IR_25_RBE_ROOM_TEMP_SETPOINT: " + getRbeRoomTempSetpoint());
+		this.logInfo(this.log, "IR_44_ENERGY_TOTAL: " + getHeatAmountAll());
+		this.logInfo(this.log, "IR_40_ENERGY_WATER: " + getHeatAmountDomesticHotWater());
+		this.logInfo(this.log, "IR_38_ENERGY_CIRCUIT_HEATING: " + getHeatAmountHeating());
+		this.logInfo(this.log, "IR_33_HOURS_HEAT_PUMP: " + getHoursHeatPump());
+		this.logInfo(this.log, "IR_34_HOURS_CIRCUIT_HEATING: " + getHoursHeating());
+		this.logInfo(this.log, "IR_35_HOURS_WATER_HEATING: " + getHoursDomesticHotWater());
+		this.logInfo(this.log, "IR_28_HOURS_COMP1: " + getHoursVD1());
+		this.logInfo(this.log, "IR_29_HOURS_COMP2: " + getHoursVD2());
+		this.logInfo(this.log, "IR_30_HOURS_AUX1: " + getHoursZwe1());
+		this.logInfo(this.log, "IR_31_HOURS_AUX2: " + getHoursZwe2());
+		this.logInfo(this.log, "HR_15_CURVE_CIRCUIT_HEATING_END_POINT: " + getHeatingCurveEndPoint());
+		this.logInfo(this.log, "HR_16_CURVE_CIRCUIT_HEATING_SHIFT: " + getHeatingCurveParallelShift());
+		this.logInfo(this.log, "HR_17_CURVE_MC1_END_POINT: " + getHeatingCurveCircuit1EndPoint());
+		this.logInfo(this.log, "HR_18_CURVE_MC1_SHIFT: " + getHeatingCurveCircuit1ParallelShift());
+		this.logInfo(this.log, "HR_19_CURVE_MC2_END_POINT: " + getHeatingCurveCircuit2EndPoint());
+		this.logInfo(this.log, "HR_20_CURVE_MC2_SHIFT: " + getHeatingCurveCircuit2ParallelShift());
+		this.logInfo(this.log, "HR_21_CURVE_MC3_END_POINT: " + getHeatingCurveCircuit3EndPoint());
+		this.logInfo(this.log, "HR_22_CURVE_MC3_SHIFT: " + getHeatingCurveCircuit3ParallelShift());
+		this.logInfo(this.log, "IR_46_ERROR: " + this.getErrorCode());
+		this.logInfo(this.log, "COIL_0_ERRORRESET: " + this.getClearError());
+		this.logInfo(this.log, "Error message: " + this.getErrorMessage());
+		this.logInfo(this.log, "");
+	}
+
+	/**
 	 * Returns the debug message.
 	 *
 	 * @return the debug message.
@@ -800,6 +931,122 @@ public class HeatPumpAlphaInnotecImpl extends AbstractOpenemsModbusComponent imp
 			debugMessage = debugMessage + "|Error";
 		}
 		return debugMessage;
+	}
+
+	protected void writeCommandsRemote() {
+		// Error reset special treatment:
+		// If channel COIL_0_ERRORRESET contains ’false’, you can write ’true’ in nextWrite to execute an error reset.
+		// The value of channel COIL_0_ERRORRESET will then switch to ’true’, to indicate the error reset was executed.
+		// To do another error reset, you first have to write ’false’ in nextWrite of COIL_0_ERRORRESET which changes
+		// the channel value back to ’false’.
+		// In short: an error reset is executed when the channel value changes from ’false’ to ’true’. The channel value
+		// does not change back to ’false’ by itself.
+		Optional<Boolean> errorResetOptional = this.getClearErrorChannel().getNextWriteValueAndReset();
+		if (errorResetOptional.isPresent()) {
+			boolean errorResetWrite = errorResetOptional.get();
+			boolean currentChannelValue = this.getClearError().get();
+			if (currentChannelValue == false && errorResetWrite) {
+				try {
+					// Send ’clear error’ once to Modbus.
+					this.getCoil0ModbusChannel().setNextWriteValue(true);
+					this._setClearError(true);
+				} catch (OpenemsError.OpenemsNamedException e) {
+					this.logError(this.log, "Could not write to channel COIL_0_MODBUS. Reason: " + e.getMessage());
+				}
+			} else if (errorResetWrite == false) {
+				this._setClearError(false);
+			}
+		}
+
+		// Collect operating mode channels ’nextWrite’.
+		Optional<Integer> heatingModeOptional = this.getHeatingOperationModeChannel().getNextWriteValueAndReset();
+		if (heatingModeOptional.isPresent()) {
+			int writeToModbus = heatingModeOptional.get();
+			// Restrict to valid write values
+			if (writeToModbus >= 0 && writeToModbus <= 4) {
+				try {
+					this.getHr7ModbusChannel().setNextWriteValue(writeToModbus);
+				} catch (OpenemsError.OpenemsNamedException e) {
+					this.logError(this.log, "Could not write to heating mode channel. Reason: " + e.getMessage());
+				}
+			}
+		}
+		Optional<Integer> domesticHotWaterModeOptional = this.getDomesticHotWaterOperationModeChannel().getNextWriteValueAndReset();
+		if (domesticHotWaterModeOptional.isPresent()) {
+			int writeToModbus = domesticHotWaterModeOptional.get();
+			// Restrict to valid write values
+			if (writeToModbus >= 0 && writeToModbus <= 4) {
+				try {
+					this.getHr8ModbusChannel().setNextWriteValue(writeToModbus);
+				} catch (OpenemsError.OpenemsNamedException e) {
+					this.logError(this.log, "Could not write to domestic hot water mode channel. "
+							+ "Reason: " + e.getMessage());
+				}
+			}
+		}
+		Optional<Integer> mixingCircuit2ModeOptional = this.getCircuit2OperationModeChannel().getNextWriteValueAndReset();
+		if (mixingCircuit2ModeOptional.isPresent()) {
+			int writeToModbus = mixingCircuit2ModeOptional.get();
+			// Restrict to valid write values
+			if (writeToModbus >= 0 && writeToModbus <= 4) {
+				try {
+					this.getHr9ModbusChannel().setNextWriteValue(writeToModbus);
+				} catch (OpenemsError.OpenemsNamedException e) {
+					this.logError(this.log, "Could not write to mixing circuit 2 mode channel. "
+							+ "Reason: " + e.getMessage());
+				}
+			}
+		}
+		Optional<Integer> mixingCircuit3ModeOptional = this.getCircuit3OperationModeChannel().getNextWriteValueAndReset();
+		if (mixingCircuit3ModeOptional.isPresent()) {
+			int writeToModbus = mixingCircuit3ModeOptional.get();
+			// Restrict to valid write values
+			if (writeToModbus >= 0 && writeToModbus <= 4) {
+				try {
+					this.getHr10ModbusChannel().setNextWriteValue(writeToModbus);
+				} catch (OpenemsError.OpenemsNamedException e) {
+					this.logError(this.log, "Could not write to mixing circuit 3 mode channel. "
+							+ "Reason: " + e.getMessage());
+				}
+			}
+		}
+		Optional<Integer> coolingModeOptional = this.getCoolingOperationModeChannel().getNextWriteValueAndReset();
+		if (coolingModeOptional.isPresent()) {
+			int writeToModbus = coolingModeOptional.get();
+			// Restrict to valid write values
+			if (writeToModbus >= 0 && writeToModbus <= 1) {
+				try {
+					this.getHr11ModbusChannel().setNextWriteValue(writeToModbus);
+				} catch (OpenemsError.OpenemsNamedException e) {
+					this.logError(this.log, "Could not write to cooling mode channel. Reason: " + e.getMessage());
+				}
+			}
+		}
+		Optional<Integer> poolModeOptional = this.getPoolHeatingOperationModeChannel().getNextWriteValueAndReset();
+		if (poolModeOptional.isPresent()) {
+			int writeToModbus = poolModeOptional.get();
+			// Restrict to valid write values
+			if (writeToModbus >= 0 && writeToModbus <= 4 && writeToModbus != 1) {
+				try {
+					this.getHr12ModbusChannel().setNextWriteValue(writeToModbus);
+				} catch (OpenemsError.OpenemsNamedException e) {
+					this.logError(this.log, "Could not write to ventilation mode channel. "
+							+ "Reason: " + e.getMessage());
+				}
+			}
+		}
+		Optional<Integer> ventilationModeOptional = this.getVentilationOperationModeChannel().getNextWriteValueAndReset();
+		if (ventilationModeOptional.isPresent()) {
+			int writeToModbus = ventilationModeOptional.get();
+			// Restrict to valid write values
+			if (writeToModbus >= 0 && writeToModbus <= 3) {
+				try {
+					this.getHr13ModbusChannel().setNextWriteValue(writeToModbus);
+				} catch (OpenemsError.OpenemsNamedException e) {
+					this.logError(this.log, "Could not write to pool mode channel. Reason: " + e.getMessage());
+				}
+			}
+		}
 	}
 
 	// Just for testing. Needs to be added to handleEvent() to work.
