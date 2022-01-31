@@ -5,7 +5,7 @@ import io.openems.edge.bridge.modbus.api.AbstractOpenemsModbusComponent;
 import io.openems.edge.bridge.modbus.api.BridgeModbus;
 import io.openems.edge.bridge.modbus.api.ElementToChannelConverter;
 import io.openems.edge.bridge.modbus.api.ModbusProtocol;
-import io.openems.edge.bridge.modbus.api.element.UnsignedWordElement;
+import io.openems.edge.bridge.modbus.api.element.SignedWordElement;
 import io.openems.edge.bridge.modbus.api.task.FC4ReadInputRegistersTask;
 import io.openems.edge.common.channel.value.Value;
 import io.openems.edge.common.component.ComponentManager;
@@ -14,7 +14,6 @@ import io.openems.edge.common.event.EdgeEventConstants;
 import io.openems.edge.common.taskmanager.Priority;
 import io.openems.edge.consolinno.leaflet.core.api.LeafletCore;
 import io.openems.edge.consolinno.leaflet.sensor.signal.api.SignalSensor;
-import io.openems.edge.consolinno.leaflet.sensor.temperature.TemperatureSensorImpl;
 import io.openems.edge.thermometer.api.Thermometer;
 import io.openems.edge.consolinno.leaflet.core.api.Error;
 import org.osgi.service.cm.ConfigurationAdmin;
@@ -107,7 +106,7 @@ public class SignalSensorImpl extends AbstractOpenemsModbusComponent implements 
         if (this.lc.checkFirmwareCompatibility()) {
             return new ModbusProtocol(this,
                     new FC4ReadInputRegistersTask(this.temperatureAnalogInput, Priority.HIGH,
-                            m(Thermometer.ChannelId.TEMPERATURE, new UnsignedWordElement(this.temperatureAnalogInput),
+                            m(Thermometer.ChannelId.TEMPERATURE, new SignedWordElement(this.temperatureAnalogInput),
                                     ElementToChannelConverter.DIRECT_1_TO_1)));
         } else {
             return null;
