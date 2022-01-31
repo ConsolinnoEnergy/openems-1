@@ -264,7 +264,7 @@ public abstract class AbstractMqttComponent {
         if (!currentPayload.contains(":")) {
             return channelMapForTask;
         }
-        //PAYLOADconfig is: ID:CHANNELID:ID:CHANNELID....
+        //PAYLOAD config is: ID:CHANNEL_ID:ID:CHANNEL_ID....
         //ID == Name available in Broker
         List<String> ids = new ArrayList<>();
         //ChannelID --> Used to identify value the pub tasks get / value to put for sub task

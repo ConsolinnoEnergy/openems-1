@@ -54,6 +54,7 @@ public interface MqttComponent extends OpenemsComponent {
     /**
      * Called By Mqtt Bridge. Component has to implement what to do with Events (Either a event happened internally and
      * tells the broker or vice versa).
+     *
      */
     void reactToEvent();
 

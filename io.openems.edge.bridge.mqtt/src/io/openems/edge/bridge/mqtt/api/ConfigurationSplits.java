@@ -2,6 +2,19 @@ package io.openems.edge.bridge.mqtt.api;
 
 /**
  * This Enum provides Values for the AbstractMqttComponent and Connection to use -> easier maintenance.
+ * If you find the "!" or the ":" to hard to read , Change the Enum here, and you can Use another Symbol to split the Configuration.
+ * <p>
+ * E.g. Basic Config looks like this:
+ * String[] subscriptionList() default {
+ * "LOW!telemetry/FooTopic!0!true!false!0!10"
+ * };
+ * The "!" splits each entry withing one line. Starting with the Priority, followed by the Topic, the QoS Position,
+ * if it should be "retained", if a timestamp should be added to the Payload (usually true for Publish but false for sub),
+ * followed by the Payload Entry number and at last: the "Refresh" time aka -> Interval to publish or refresh the sub entries.
+ * </p>
+ * <p>
+ * If you find it hard to read or want to change the order of Config -> just change the Enum-values.
+ * </p>
  */
 public enum ConfigurationSplits {
 

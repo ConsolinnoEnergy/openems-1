@@ -3,7 +3,7 @@ package io.openems.edge.bridge.mqtt.api;
 /**
  * Payload-Styles.
  * <p>
- * "STANDARD" Payloadstyle for publish (Telemetry) is:
+ * "STANDARD" PayloadStyle for publish (Telemetry) is:
  * {
  * TimeStamp : TIME ,
  * ID : Id -Of-The-Component,

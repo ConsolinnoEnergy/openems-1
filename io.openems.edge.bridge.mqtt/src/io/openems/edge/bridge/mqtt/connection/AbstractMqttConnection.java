@@ -21,6 +21,7 @@ import static io.openems.edge.bridge.mqtt.api.ConfigurationSplits.PAYLOAD_MAPPIN
 
 /**
  * A Mqtt Connection Created by either the MqttBridge, subscribe or publish-manager.
+ * This Component handles the MqttConnection and stores the config params in its {@link #mqttConnectOptions}.
  */
 public abstract class AbstractMqttConnection implements MqttConnection, MqttCallbackExtended {
 

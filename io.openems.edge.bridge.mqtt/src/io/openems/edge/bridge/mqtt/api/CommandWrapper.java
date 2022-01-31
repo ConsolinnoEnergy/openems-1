@@ -13,9 +13,22 @@ package io.openems.edge.bridge.mqtt.api;
  * {@link MqttCommands}.
  * The {@link io.openems.edge.bridge.mqtt.handler.MqttCommandComponent} handles the Commands and Expiration.
  * An OpenEMSComponent using Commands, needs only to implement the MqttCommands interface and react to the Values within the MqttCommands Channel.
- *
+ * </p>
+ * <p>
  * E.g.:
+ * {
+ * "time": "2020-11-28T18:50:22.016751+00:00",
+ * "method": "setPower",
+ * "device": "chp-1",
+ * "value": 15,
+ * "expires": 900
+ * }
+ * </p>
  *
+ * <p>
+ * Here a Message was send / received at 18:50. The Method is called "setPower" with a value of 15 and expiration time of 900.
+ * <p>
+ * The SubscribeTask will Map the Command to the CommandWrapper and sets the value of 15 and the expiration of 900.
  *
  * </p>
  */

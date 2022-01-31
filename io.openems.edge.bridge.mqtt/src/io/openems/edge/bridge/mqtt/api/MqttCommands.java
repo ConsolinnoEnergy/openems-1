@@ -10,8 +10,11 @@ import io.openems.edge.common.component.OpenemsComponent;
 /**
  * This Nature allows the CommandComponent to write the CommandValues into corresponding channel.
  * Any Device that should react to commands, can implement this nature and react if any channel has anything written into.
- * Note: If you want more commands, simply expand the MqttCommandType, Integrate the Channel here and tell the
- * CommandComponent to write the Value into the corresponding channel. (Can be improved tho)
+ * Note: If you want more commands, simply expand the Enum {@link MqttCommandType} and integrate the Channel here and tell the
+ * CommandComponent to write the Value into the corresponding channel.
+ * An OpenEMS Component should check the Channel, and react to those values.
+ * If you want to map certain values to OpenEMS Channel, use the telemetry component and subscribe to a payload.
+ * And map the Keys from the payload to certain channel.
  */
 public interface MqttCommands extends OpenemsComponent {
 
