@@ -3,7 +3,7 @@ package io.openems.edge.consolinno.leaflet.core.pwm.configurator;
 import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
-@ObjectClassDefinition(name = "Consolinno Leaflet Modbus Pwm Frequency Configurator", description = "Configurator for the Frequency of a Modbus Pwm Module.")
+@ObjectClassDefinition(name = "Consolinno Leaflet Modbus Pwm Frequency Configurator", description = "Configurator for the Frequency of a Modbus Pwm Module. Each Leaflet PWM Module can have a custom Frequency. This will affect all Pwm Devices connected to this module.")
 @interface Config {
     @AttributeDefinition(name = "Id", description = "Unique Id for this Pwm Frequency Configurator.")
     String id() default "PwmFrequencyConfigurator";
@@ -17,10 +17,10 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     String leafletId() default "LeafletCore";
 
     @AttributeDefinition(name = "Pwm Module Module Number", description = "Module Number for the Pwm Module that has to be configured.")
-    int moduleNumber();
+    int moduleNumber() default 1;
 
     @AttributeDefinition(name = "Frequency", description = "Frequency of the Pwm Module.")
     int frequency() default 24;
 
-    String webconsole_configurationFactory_nameHint() default "{id}";
+    String webconsole_configurationFactory_nameHint() default "PwmFrequencyConfigurator {id}";
 }

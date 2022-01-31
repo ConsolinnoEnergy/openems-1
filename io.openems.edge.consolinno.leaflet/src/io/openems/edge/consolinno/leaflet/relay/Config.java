@@ -3,7 +3,7 @@ package io.openems.edge.consolinno.leaflet.relay;
 import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
-@ObjectClassDefinition(name = "Consolinno Leaflet Modbus Relay", description = "Relay that communicates over Modbus.")
+@ObjectClassDefinition(name = "Consolinno Leaflet Modbus Relay", description = "One Relay on a Leaflet Relays Module that communicates over Modbus.")
 @interface Config {
     @AttributeDefinition(name = "Id", description = "Unique Id for this Relay.")
     String id() default "Relay0";

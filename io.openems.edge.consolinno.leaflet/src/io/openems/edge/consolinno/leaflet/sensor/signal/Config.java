@@ -5,7 +5,7 @@ import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 import org.osgi.service.metatype.annotations.Option;
 
-@ObjectClassDefinition(name = "Consolinno Leaflet Modbus Signal Sensor", description = "Signal Sensor that communicates over Modbus.")
+@ObjectClassDefinition(name = "Consolinno Leaflet Modbus Signal Sensor", description = "Signal Sensor, connected to the TemperatureModule, that communicates over Modbus.")
 @interface Config {
     @AttributeDefinition(name = "Id", description = "Unique Id for this Signal Sensor.")
     String id() default "SignalSensor0";
@@ -23,7 +23,7 @@ import org.osgi.service.metatype.annotations.Option;
     SignalType signalType() default SignalType.STATUS;
 
 
-    @AttributeDefinition(name = "Inverted Logic", description = "Usually Active signal at T. >100°C--> inverted Logic : Signal Active at < 100°C")
+    @AttributeDefinition(name = "Inverted Logic", description = "A SignalSensor uses an inverted Logic (SignalActive==true) when the Analogue Signal is Missing!")
     boolean inverted() default false;
 
     @AttributeDefinition(name = "LeafletId", description = "Unique Id of the LeafletCore, this Module is attached to.")

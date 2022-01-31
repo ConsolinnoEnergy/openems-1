@@ -50,5 +50,5 @@ import org.osgi.service.metatype.annotations.Option;
     @AttributeDefinition(name = "ModbusBridgeId", description = "ModbusBridgeId from Configurator.")
     String modbusBridgeId() default "modbus0";
 
-    String webconsole_configurationFactory_nameHint() default "Aio [{id}]";
+    String webconsole_configurationFactory_nameHint() default "Aio Device [{id}]";
 }

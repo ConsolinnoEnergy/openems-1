@@ -40,6 +40,6 @@ public class AnalogueHeaterOrCoolerPwm extends AbstractAnalogueHeaterOrCoolerCom
 
     @Override
     public int getCurrentPowerApplied() throws OpenemsError.OpenemsNamedException {
-        return Math.max(Math.round(((Pwm) super.cpm.getComponent(this.componentId)).getPowerLevelValue()), 0);
+        return Math.max(Math.round(((Pwm) super.cpm.getComponent(this.componentId)).getPowerLevelPercentValue()), 0);
     }
 }
