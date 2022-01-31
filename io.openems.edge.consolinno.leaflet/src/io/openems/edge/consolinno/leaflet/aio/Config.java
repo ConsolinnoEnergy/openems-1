@@ -5,7 +5,7 @@ import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 import org.osgi.service.metatype.annotations.Option;
 
-@ObjectClassDefinition(name = "Consolinno Leaflet Modbus Aio", description = "Aio module that communicates over Modbus.")
+@ObjectClassDefinition(name = "Consolinno Leaflet Modbus Aio", description = "Implementation of the Aio module that communicates over Modbus.")
 @interface Config {
     @AttributeDefinition(name = "Id", description = "Unique Id for this Aio module.")
     String id() default "Aio0";
@@ -16,16 +16,16 @@ import org.osgi.service.metatype.annotations.Option;
     @AttributeDefinition(name = "Module", description = "ModuleNumber where this Sensor is plugged in.")
     int module() default 1;
 
-    @AttributeDefinition(name = "Position", description = "Pinposition of this Aio.")
+    @AttributeDefinition(name = "Position", description = "PinPosition of this Aio.")
     int position() default 1;
 
-    @AttributeDefinition(name = "debugValue", description = "Check to activate the debug value.")
-    boolean debugValue() default true;
+    @AttributeDefinition(name = "debugValue", description = "If set to true, write the Value below to the AIO Module to check if it's working.")
+    boolean debugValue() default false;
 
     @AttributeDefinition(name = "Value", description = "Output Value for the specified Configuration.")
-    int value();
+    int value() default 1000;
 
-    @AttributeDefinition(name = "Type", description = "If this Module is supposed to be 20mA or 10V",
+    @AttributeDefinition(name = "Type", description = "What should the AIO do at this specific Connection",
             options = {
                     @Option(label = "10V OUT", value = "10V_out"),
                     @Option(label = "10V IN", value = "10V_in"),
@@ -37,7 +37,7 @@ import org.osgi.service.metatype.annotations.Option;
                     @Option(label = "Digital IN", value = "Digital_in"),
 
             })
-    String type();
+    String type() default "10V_out";
 
     @AttributeDefinition(name = "LeafletId", description = "Unique Id of the LeafletCore, this Module is attached to.")
     String leafletId() default "LeafletCore";

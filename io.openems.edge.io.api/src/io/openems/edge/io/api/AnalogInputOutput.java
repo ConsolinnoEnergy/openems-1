@@ -22,6 +22,10 @@ import io.openems.edge.common.component.OpenemsComponent;
  */
 
 public interface AnalogInputOutput extends OpenemsComponent {
+
+    int AIO_MINIMUM_THOUSANDTH = 0;
+    int AIO_MAXIMUM_THOUSANDTH = 1000;
+
     enum ChannelId implements io.openems.edge.common.channel.ChannelId {
 
         /**
@@ -32,9 +36,9 @@ public interface AnalogInputOutput extends OpenemsComponent {
          * <li>Type: Integer
          * </ul>
          */
-        AIO_READ(Doc.of(OpenemsType.INTEGER)),
+        AIO_INPUT(Doc.of(OpenemsType.INTEGER)),
         /**
-         * Set Status of Aio in percent.
+         * Set Status of Aio in thousandth.
          *
          * <ul>
          * <li>Interface: AioChannel
@@ -43,18 +47,18 @@ public interface AnalogInputOutput extends OpenemsComponent {
          * <li>Range: 0..100
          * </ul>
          */
-        AIO_PERCENT_WRITE(Doc.of(OpenemsType.INTEGER).unit(Unit.THOUSANDTH)),
+        AIO_THOUSANDTH_WRITE(Doc.of(OpenemsType.INTEGER).unit(Unit.THOUSANDTH)),
         /**
-         * Status of Aio in percent.
+         * Status of Aio in thousandth.
          *
          * <ul>
          * <li>Interface: AioChannel
          * <li>Type: Integer
          * <li>Unit: %
-         * <li>Range: 0..100
+         * <li>Range: 0..1000
          * </ul>
          */
-        AIO_CHECK_PERCENT(Doc.of(OpenemsType.INTEGER).unit(Unit.THOUSANDTH)),
+        AIO_CHECK_THOUSANDTH(Doc.of(OpenemsType.INTEGER).unit(Unit.THOUSANDTH)),
         /**
          * Set Value that is being written to Aio.
          *
@@ -87,47 +91,47 @@ public interface AnalogInputOutput extends OpenemsComponent {
     }
 
     /**
-     * Get the Channel for {@link ChannelId#AIO_READ}.
+     * Get the Channel for {@link ChannelId#AIO_INPUT}.
      *
      * @return the channel.
      */
-    default Channel<Integer> getReadChannel() {
-        return this.channel(ChannelId.AIO_READ);
+    default Channel<Integer> getInputChannel() {
+        return this.channel(ChannelId.AIO_INPUT);
     }
 
     /**
-     * Get the Value of the {@link ChannelId#AIO_READ} or else -1.
+     * Get the Value of the {@link ChannelId#AIO_INPUT} or else -1.
      *
      * @return the Value.
      */
-    default int getReadValue() {
-        if (this.getReadChannel().value().isDefined()) {
-            return this.getReadChannel().value().get();
-        } else if (this.getReadChannel().getNextValue().isDefined()) {
-            return this.getReadChannel().getNextValue().get();
+    default int getInputValue() {
+        if (this.getInputChannel().value().isDefined()) {
+            return this.getInputChannel().value().get();
+        } else if (this.getInputChannel().getNextValue().isDefined()) {
+            return this.getInputChannel().getNextValue().get();
         }
         return -1;
     }
 
     /**
-     * Get the Channel for {@link ChannelId#AIO_CHECK_PERCENT}.
+     * Get the Channel for {@link ChannelId#AIO_CHECK_THOUSANDTH}.
      *
      * @return the channel.
      */
-    default Channel<Integer> getPercentChannel() {
-        return this.channel(ChannelId.AIO_CHECK_PERCENT);
+    default Channel<Integer> getThousandthCheckChannel() {
+        return this.channel(ChannelId.AIO_CHECK_THOUSANDTH);
     }
 
     /**
-     * Get the Value of the {@link ChannelId#AIO_CHECK_PERCENT} in Percent or else -1.
+     * Get the Value of the {@link ChannelId#AIO_CHECK_THOUSANDTH} in Percent or else -1.
      *
      * @return the Value in Percent.
      */
     default float getPercentValue() {
-        if (this.getPercentChannel().value().isDefined()) {
-            return this.getPercentChannel().value().get().floatValue() / 10;
-        } else if (this.getPercentChannel().getNextValue().isDefined()) {
-            return this.getPercentChannel().getNextValue().get().floatValue() / 10;
+        if (this.getThousandthCheckChannel().value().isDefined()) {
+            return this.getThousandthCheckChannel().value().get().floatValue() / 10;
+        } else if (this.getThousandthCheckChannel().getNextValue().isDefined()) {
+            return this.getThousandthCheckChannel().getNextValue().get().floatValue() / 10;
         }
         return -1;
     }
@@ -178,8 +182,8 @@ public interface AnalogInputOutput extends OpenemsComponent {
      *
      * @return the Channel
      */
-    default WriteChannel<Integer> setPercentChannel() {
-        return this.channel(ChannelId.AIO_PERCENT_WRITE);
+    default WriteChannel<Integer> setWriteThousandthChannel() {
+        return this.channel(ChannelId.AIO_THOUSANDTH_WRITE);
     }
 
     /**
@@ -187,11 +191,11 @@ public interface AnalogInputOutput extends OpenemsComponent {
      *
      * @return the Value
      */
-    default int getSetPercentValue() {
-        if (this.setPercentChannel().value().isDefined()) {
-            return this.setPercentChannel().value().get();
-        } else if (this.setPercentChannel().getNextValue().isDefined()) {
-            return this.setPercentChannel().getNextValue().get();
+    default int getWriteThousandthValue() {
+        if (this.setWriteThousandthChannel().value().isDefined()) {
+            return this.setWriteThousandthChannel().value().get();
+        } else if (this.setWriteThousandthChannel().getNextValue().isDefined()) {
+            return this.setWriteThousandthChannel().getNextValue().get();
         }
         return -1;
     }
@@ -199,10 +203,30 @@ public interface AnalogInputOutput extends OpenemsComponent {
     /**
      * Sets the Value of the Percent Channel.
      *
-     * @param percent the value that has to be set
+     * @param thousandth the value that has to be set
      */
-    default void setPercent(int percent) throws OpenemsError.OpenemsNamedException {
-        this.setPercentChannel().setNextWriteValue(percent);
+    default void setWriteThousandth(int thousandth) throws OpenemsError.OpenemsNamedException {
+        this.setWriteThousandthChannel().setNextWriteValue(Math.max(AIO_MINIMUM_THOUSANDTH, Math.min(thousandth, AIO_MAXIMUM_THOUSANDTH)));
+    }
+
+    /**
+     * Sets the Value for the Output Channel in Percent.
+     *
+     * @param percent the percentage value
+     * @throws OpenemsError.OpenemsNamedException is thrown on an internal error.
+     */
+    default void setWritePercent(int percent) throws OpenemsError.OpenemsNamedException {
+        this.setWriteThousandth(percent * 10);
+    }
+
+    /**
+     * Sets the Value for the Output Channel in Percent.
+     *
+     * @param percent the percentage value
+     * @throws OpenemsError.OpenemsNamedException is thrown on an internal error.
+     */
+    default void setWritePercent(double percent) throws OpenemsError.OpenemsNamedException {
+        this.setWriteThousandth((int) (percent * 10));
     }
 
 

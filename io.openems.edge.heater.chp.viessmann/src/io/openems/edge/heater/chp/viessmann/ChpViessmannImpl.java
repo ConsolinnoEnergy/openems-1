@@ -512,7 +512,7 @@ public class ChpViessmannImpl extends AbstractOpenemsModbusComponent implements 
 
             // Use AiO to send commands to chp.
             try {
-                this.aioChannel.setPercentChannel().setNextWriteValue(writeToAioValue);
+                this.aioChannel.setWriteThousandthChannel().setNextWriteValue(writeToAioValue);
             } catch (OpenemsError.OpenemsNamedException e) {
                 this.log.warn("Couldn't write in Channel " + e.getMessage());
             }
