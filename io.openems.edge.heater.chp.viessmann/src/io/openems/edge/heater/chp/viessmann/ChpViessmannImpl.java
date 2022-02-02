@@ -60,8 +60,8 @@ import java.util.Optional;
  * The module is written to be used with the Heater interface methods.
  * When setEnableSignal() from the Heater interface is set to true with no other parameters like setPointPowerPercent()
  * specified, the CHP will turn on with default settings. The default settings are configurable in the config.
- * The CHP can be controlled with setHeatingPowerSetpoint() or setElectricPowerSetpoint(). However, both are mapped to
- * the same AiO output, so a hierarchy is needed. setHeatingPowerSetpoint() overwrites setElectricPowerSetpoint(), if
+ * The CHP can be controlled with setHeatingPowerSetPoint() or setElectricPowerSetPoint(). However, both are mapped to
+ * the same AiO output, so a hierarchy is needed. setHeatingPowerSetPoint() overwrites setElectricPowerSetPoint(), if
  * both are used.
  * setTemperatureSetpoint() and related methods are not supported by this CHP.
  */
@@ -172,7 +172,7 @@ public class ChpViessmannImpl extends AbstractOpenemsModbusComponent implements 
     }
 
     @Deactivate
-    public void deactivate() {
+    protected void deactivate() {
         super.deactivate();
     }
 
@@ -512,7 +512,7 @@ public class ChpViessmannImpl extends AbstractOpenemsModbusComponent implements 
 
             // Use AiO to send commands to chp.
             try {
-                this.aioChannel.setWriteThousandthChannel().setNextWriteValue(writeToAioValue);
+                this.aioChannel.setWritePercent(writeToAioValue);
             } catch (OpenemsError.OpenemsNamedException e) {
                 this.log.warn("Couldn't write in Channel " + e.getMessage());
             }
