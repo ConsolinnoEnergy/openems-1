@@ -1,0 +1,26 @@
+Bundle-Name: OpenEMS Edge Meter Electricity
+Bundle-Vendor: Consolinno Energy GmbH
+Bundle-License: https://opensource.org/licenses/EPL-2.0
+Bundle-Version: 1.0.0.${tstamp}
+Bundle-Description: \
+    This Bundle provides electricity Meter (Communicating via Mbus)
+
+
+Export-Package:  \
+	io.openems.edge.meter.mbus.electricity;-provide=true
+
+Private-Package:  \
+
+-includeresource: {readme.md}
+
+-buildpath:  \
+    ${buildpath},\
+    io.openems.common;version=latest,\
+    io.openems.edge.common;version=latest,\
+	io.openems.edge.meter.api;version=latest,\
+	io.openems.edge.bridge.mbus;version=latest,\
+	org.openmuc.jmbus;version=3.3.0,\
+
+-testpath: \
+	${testpath},\
+
