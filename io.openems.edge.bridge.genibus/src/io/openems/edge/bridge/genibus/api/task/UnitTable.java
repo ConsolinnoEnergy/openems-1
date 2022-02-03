@@ -194,7 +194,7 @@ public enum UnitTable {
                         case "Fahrenheit":
                             return OptionalDouble.of((((genibusUnitFactor * value) - 32) * (5.d / 9.d)) * Math.pow(10, -channelUnitScaleFactor));
                     }
-                case DEGREE_KELVIN: // Assume this unit is used for temperature differences, not absolute temperatures.
+                case KELVIN: // Assume this unit is used for temperature differences, not absolute temperatures.
                     switch (unitString) {
                         case "diff-Kelvin/100":
                         case "diff-Kelvin":
@@ -331,7 +331,7 @@ public enum UnitTable {
                         case "Fahrenheit":
                             return OptionalDouble.of(((value * Math.pow(10, channelUnitScaleFactor) * (9.d / 5.d)) + 32) / genibusUnitFactor);
                     }
-                case DEGREE_KELVIN: // Assume this unit is used for temperature differences, not absolute temperatures.
+                case KELVIN: // Assume this unit is used for temperature differences, not absolute temperatures.
                     switch (unitString) {
                         case "diff-Kelvin/100":
                         case "diff-Kelvin":
