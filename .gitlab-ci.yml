@@ -2,11 +2,8 @@ stages:
   - Build
   - Deploy
 
-before_script:
-  - apt update
-  - apt install -y git
-  - git submodule sync
-  - git submodule update --init
+variables:
+  GIT_SUBMODULE_STRATEGY: recursive
 
 
 Build oEMS Edge:
