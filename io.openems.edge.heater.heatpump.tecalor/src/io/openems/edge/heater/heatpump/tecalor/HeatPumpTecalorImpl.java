@@ -77,7 +77,7 @@ public class HeatPumpTecalorImpl extends AbstractOpenemsModbusComponent implemen
 	protected ComponentManager cpm;
 
 	private final Logger log = LoggerFactory.getLogger(HeatPumpTecalorImpl.class);
-	private boolean debug;
+	private boolean printInfoToLog;
 	private boolean readOnly;
 	private boolean connectionAlive;
 
@@ -107,8 +107,7 @@ public class HeatPumpTecalorImpl extends AbstractOpenemsModbusComponent implemen
 	void activate(ComponentContext context, Config config) throws OpenemsError.OpenemsNamedException, ConfigurationException {
 		super.activate(context, config.id(), config.alias(), config.enabled(), config.modbusUnitId(), this.cm,
 				"Modbus", config.modbus_id());
-		this.debug = config.debug();
-		this.componentEnabled = config.enabled();
+		this.printInfoToLog = config.printInfoToLog();
 		this.readOnly = config.readOnly();
 		if (this.isEnabled() == false) {
 			this._setHeaterState(HeaterState.OFF.getValue());
