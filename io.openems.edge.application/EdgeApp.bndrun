@@ -147,6 +147,7 @@
 	bnd.identity;id='io.openems.edge.goodwe',\
 	bnd.identity;id='io.openems.edge.heater.analogue',\
 	bnd.identity;id='io.openems.edge.heater.api',\
+	bnd.identity;id='io.openems.edge.heater.biomassheater.gilles',\
 	bnd.identity;id='io.openems.edge.heater.chp.dachs',\
 	bnd.identity;id='io.openems.edge.heater.chp.kwenergy',\
 	bnd.identity;id='io.openems.edge.heater.chp.viessmann',\
@@ -339,6 +340,7 @@
 	io.openems.edge.goodwe;version=snapshot,\
 	io.openems.edge.heater.analogue;version=snapshot,\
 	io.openems.edge.heater.api;version=snapshot,\
+	io.openems.edge.heater.biomassheater.gilles;version=snapshot,\
 	io.openems.edge.heater.chp.dachs;version=snapshot,\
 	io.openems.edge.heater.chp.kwenergy;version=snapshot,\
 	io.openems.edge.heater.chp.viessmann;version=snapshot,\
