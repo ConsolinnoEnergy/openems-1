@@ -39,6 +39,10 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
             + "activated: prevents in flight status due to crashes or restarts etc")
     boolean shouldCloseOnActivation() default true;
 
+    @AttributeDefinition(name = "Should Open on Activation", description = "Should the Valve Close completely if it's "
+            + "activated: prevents in flight status due to crashes or restarts etc")
+    boolean shouldOpenOnActivation() default false;
+
     boolean useExceptionalState() default false;
 
     @AttributeDefinition(name = "TimerId", description = "The Timer used for the ExceptionalState and/or Check for missing Components")

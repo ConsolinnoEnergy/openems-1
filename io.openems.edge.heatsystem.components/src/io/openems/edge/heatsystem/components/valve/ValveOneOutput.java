@@ -91,6 +91,10 @@ public class ValveOneOutput extends AbstractValve implements OpenemsComponent, H
                 this.getPowerLevelChannel().setNextValue(0);
                 this.setPointPowerLevelChannel().setNextWriteValueFromObject(0);
                 this.forceClose();
+            } else if (config.shouldOpenOnActivation()) {
+                this.getPowerLevelChannel().setNextValue(100);
+                this.setPointPowerLevelChannel().setNextWriteValueFromObject(100);
+                this.forceOpen();
             }
         } catch (OpenemsError.OpenemsNamedException | ConfigurationException e) {
             this.configSuccess = false;
