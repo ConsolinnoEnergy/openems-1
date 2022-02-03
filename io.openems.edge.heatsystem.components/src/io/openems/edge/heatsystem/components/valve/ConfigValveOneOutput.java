@@ -39,7 +39,7 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
             + "activated: prevents in flight status due to crashes or restarts etc")
     boolean shouldCloseOnActivation() default true;
 
-    @AttributeDefinition(name = "Should Open on Activation", description = "Should the Valve Close completely if it's "
+    @AttributeDefinition(name = "Should Open on Activation", description = "Should the Valve Open completely if it's "
             + "activated: prevents in flight status due to crashes or restarts etc")
     boolean shouldOpenOnActivation() default false;
 
