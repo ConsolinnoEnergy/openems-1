@@ -98,7 +98,7 @@ public interface PumpGrundfos extends OpenemsComponent {
          *      <li> Magna3: 8 bit Measured Data, (2, 28) t_e
          * </ul>
          * */
-        ELECTRONICS_TEMPERATURE(Doc.of(OpenemsType.DOUBLE).unit(Unit.DEZIDEGREE_CELSIUS)),
+        ELECTRONICS_TEMPERATURE(Doc.of(OpenemsType.DOUBLE).unit(Unit.DECIDEGREE_CELSIUS)),
 
         /**
          * Current motor.
@@ -186,7 +186,7 @@ public interface PumpGrundfos extends OpenemsComponent {
          *      <li> Magna3: 8 bit Measured Data, (2, 58) t_w
          * </ul>
          * */
-        PUMPED_FLUID_TEMPERATURE(Doc.of(OpenemsType.DOUBLE).unit(Unit.DEZIDEGREE_CELSIUS)),
+        PUMPED_FLUID_TEMPERATURE(Doc.of(OpenemsType.DOUBLE).unit(Unit.DECIDEGREE_CELSIUS)),
 
         /**
          * Minimum allowed reference setting.
