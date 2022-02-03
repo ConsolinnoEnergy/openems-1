@@ -5,16 +5,20 @@ import io.openems.common.exceptions.OpenemsException;
 import io.openems.edge.apartmentmodule.api.ApartmentModule;
 import io.openems.edge.apartmentmodule.api.CommunicationCheck;
 import io.openems.edge.apartmentmodule.api.OnOff;
+import io.openems.edge.apartmentmodule.api.ValveDirection;
 import io.openems.edge.apartmentmodule.api.ValveStatus;
+import io.openems.edge.apartmentmodule.api.ValveType;
 import io.openems.edge.bridge.modbus.api.AbstractOpenemsModbusComponent;
 import io.openems.edge.bridge.modbus.api.BridgeModbus;
 import io.openems.edge.bridge.modbus.api.ElementToChannelConverter;
 import io.openems.edge.bridge.modbus.api.ModbusProtocol;
+import io.openems.edge.bridge.modbus.api.element.DummyRegisterElement;
 import io.openems.edge.bridge.modbus.api.element.SignedWordElement;
 import io.openems.edge.bridge.modbus.api.element.UnsignedWordElement;
 import io.openems.edge.bridge.modbus.api.task.FC16WriteRegistersTask;
 import io.openems.edge.bridge.modbus.api.task.FC3ReadRegistersTask;
 import io.openems.edge.bridge.modbus.api.task.FC4ReadInputRegistersTask;
+import io.openems.edge.common.channel.value.Value;
 import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.common.event.EdgeEventConstants;
 import io.openems.edge.common.taskmanager.Priority;
@@ -26,6 +30,7 @@ import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.ConfigurationPolicy;
 import org.osgi.service.component.annotations.Deactivate;
+import org.osgi.service.component.annotations.Modified;
 import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.component.annotations.ReferenceCardinality;
 import org.osgi.service.component.annotations.ReferencePolicy;
@@ -39,49 +44,48 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Optional;
 
+/**
+ * This module reads all variables available via Modbus from an  Apartment Module and maps them to OpenEMS
+ * channels. Monitor an ApartmentLine / Cord Temperature as well as HeatRequest and additionally if configured as a TopAM
+ * Control 2 Relays.
+ */
 @Designate(ocd = Config.class, factory = true)
-@Component(name = "ApartmentModule",
+@Component(name = "Miscellaneous.Apartment.Module",
         immediate = true,
         configurationPolicy = ConfigurationPolicy.REQUIRE,
         property = {EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE,
-                EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_EXECUTE_WRITE})
-
-/**
- * This module reads all variables available via Modbus from a Consolinno Apartment Module and maps them to OpenEMS
- * channels. WriteChannels can be used to send commands to the Apartment Module via "setNextWriteValue" method.
- */
-
+                EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS})
 public class ApartmentModuleImpl extends AbstractOpenemsModbusComponent implements OpenemsComponent, EventHandler, ApartmentModule {
 
     private final Logger log = LoggerFactory.getLogger(ApartmentModuleImpl.class);
 
-    private int testcounter = 0;
     private int temperatureCalibration;
-    private boolean debugOn;
-    private OnOff switchRelay1;
-    private OnOff switchRelay2;
-    private int relayTime;
-    private boolean resetExtReq;
     private boolean topAM;
-    private boolean doOnce;
-    private int relaysForOpeningHydraulicMixer;
+    private int relaysForOpeningOrDirectionHydraulicMixer;
     private static final int DEFAULT_VALVE_PERMANENT = 0;
-    private static final int DEFAULT_VALVE_MAX_SECONDS = 100;
-    private static final int DEFAULT_VALVE_TIME_FOR_RELAY = DEFAULT_VALVE_MAX_SECONDS * 110;
+    private static final int DEFAULT_VALVE_MAX_SECONDS = 110;
+    private static final int DEFAULT_VALVE_ONE_DIRECTION = 15;
     private boolean wasDeactivatedBefore = false;
     private boolean wasActivatedBefore = false;
-    private boolean relaysShutDownHappened = true;
     private boolean isOpen = false;
     private boolean isClosed = false;
-    private static final int MAX_CYCLES_TO_WAIT = 5;
-    private int relayUndefinedCounter = 0;
+    private boolean manuallyControlled;
+    private ValveType valveType;
+    private ValveDirection valveDirection;
+    private int maxTemperature;
+    private boolean useMaxTemp;
+    private int minTemperature;
+    private boolean useMinTemp;
+    private boolean useReferenceTemperature;
 
     @Reference
     protected ConfigurationAdmin cm;
 
     private DateTime initialDeactivationTime;
+    private int referenceMinTemperature;
 
-    // This is essential for Modbus to work, but the compiler does not warn you when it is missing!
+    Config config;
+
     @Reference(policy = ReferencePolicy.STATIC, policyOption = ReferencePolicyOption.GREEDY, cardinality = ReferenceCardinality.MANDATORY)
     protected void setModbus(BridgeModbus modbus) {
         super.setModbus(modbus);
@@ -94,8 +98,45 @@ public class ApartmentModuleImpl extends AbstractOpenemsModbusComponent implemen
 
 
     @Activate
-    public void activate(ComponentContext context, Config config) throws ConfigurationException, OpenemsException {
-        switch (config.modbusUnitId()) {
+    void activate(ComponentContext context, Config config) throws ConfigurationException, OpenemsError.OpenemsNamedException {
+        this.config = config;
+        this.setUpIfTopAm(config.modbusUnitId());
+        super.activate(context, config.id(), config.alias(), config.enabled(), config.modbusUnitId().getValue(), this.cm,
+                "Modbus", config.modbusBridgeId());
+        if (config.turnOnOrDirectionRelay() != 1 && config.turnOnOrDirectionRelay() != 2) {
+            throw new ConfigurationException("Activate of ApartmentModule " + super.id(), "Wrong turnOnRelay: Expected 1 or 2, Received: " + config.turnOnOrDirectionRelay());
+        }
+        this.activationOrModifiedRoutine(config);
+    }
+
+    /**
+     * This applies the basic Configuration of the Component either on activation or modification.
+     *
+     * @param config the config of this component.
+     */
+    private void activationOrModifiedRoutine(Config config) {
+        this.relaysForOpeningOrDirectionHydraulicMixer = config.turnOnOrDirectionRelay();
+        this.temperatureCalibration = config.tempCal();
+        this.manuallyControlled = config.manuallyControlled();
+        this.valveDirection = config.valveDirection();
+        this.valveType = config.valveType();
+        this.maxTemperature = config.maxTemperature();
+        this.useMaxTemp = config.useMaxTemperature();
+        this.minTemperature = config.minTemperature();
+        this.useMinTemp = config.useMinTemperature();
+        this.useReferenceTemperature = config.useReferenceTemperature();
+        if (this.useReferenceTemperature) {
+            this.referenceMinTemperature = config.minTemperatureThermometer();
+        }
+    }
+
+    /**
+     * Called before super.activate/modified to tell the ModbusProtocol what Protocol to define.
+     *
+     * @param modbusUnitId the unitId, usually from config.
+     */
+    private void setUpIfTopAm(ModbusId modbusUnitId) {
+        switch (modbusUnitId) {
             case ID_1:
             case ID_4:
             case ID_5:
@@ -106,25 +147,20 @@ public class ApartmentModuleImpl extends AbstractOpenemsModbusComponent implemen
                 this.topAM = true;
                 break;
         }
-        super.activate(context, config.id(), config.alias(), config.enabled(), config.modbusUnitId().getValue(), this.cm,
-                "Modbus", config.modbusBridgeId());
-        debugOn = config.debug();
-        doOnce = true;
-        resetExtReq = config.resetRequestFlag();
-        switchRelay1 = OnOff.OFF;
-        switchRelay2 = OnOff.OFF;
-        relayTime = config.relayTime();
-        if (config.turnOnRelay() != 1 && config.turnOnRelay() != 2) {
-            throw new ConfigurationException("Activate of ApartmentModule " + super.id(), "Wrong turnOnRelay: Expected 1 or 2, Received: " + config.turnOnRelay());
-        }
-        this.relaysForOpeningHydraulicMixer = config.turnOnRelay();
-        temperatureCalibration = config.tempCal();
+    }
 
+    @Modified
+    void modified(ComponentContext context, Config config) throws OpenemsException {
+        this.config = config;
+        this.setUpIfTopAm(config.modbusUnitId());
+        super.modified(context, config.id(), config.alias(), config.enabled(), config.modbusUnitId().getValue(), this.cm,
+                "Modbus", config.modbusBridgeId());
+        this.activationOrModifiedRoutine(config);
     }
 
 
     @Deactivate
-    public void deactivate() {
+    protected void deactivate() {
         super.deactivate();
     }
 
@@ -132,346 +168,415 @@ public class ApartmentModuleImpl extends AbstractOpenemsModbusComponent implemen
     @Override
     protected ModbusProtocol defineModbusProtocol() throws OpenemsException {
 
-        // Select Modbus mapping based on Apartment Module configuration.
-        if (topAM) {
-            return new ModbusProtocol(this,
-                    new FC4ReadInputRegistersTask(0, Priority.HIGH,
-                            m(ApartmentModule.ChannelId.IR_0_VERSION, new UnsignedWordElement(0),
-                                    ElementToChannelConverter.DIRECT_1_TO_1),
-                            m(ApartmentModule.ChannelId.IR_1_APARTMENT_MODULE_CONFIGURATION, new UnsignedWordElement(1),
-                                    ElementToChannelConverter.DIRECT_1_TO_1),
-                            m(ApartmentModule.ChannelId.IR_2_ERROR, new UnsignedWordElement(2),
-                                    ElementToChannelConverter.DIRECT_1_TO_1),
-                            m(ApartmentModule.ChannelId.IR_3_LOOP_TIME, new UnsignedWordElement(3),
-                                    ElementToChannelConverter.DIRECT_1_TO_1),
-                            m(ApartmentModule.ChannelId.IR_4_EXTERNAL_REQUEST_ACTIVE, new UnsignedWordElement(4),
-                                    ElementToChannelConverter.DIRECT_1_TO_1),
-                            m(ApartmentModule.ChannelId.IR_5_REQUEST_SIGNAL_TIME, new UnsignedWordElement(5),
-                                    ElementToChannelConverter.DIRECT_1_TO_1),
-                            m(ApartmentModule.ChannelId.IR_6_TEMPERATURE, new SignedWordElement(6),
-                                    ElementToChannelConverter.DIRECT_1_TO_1)
-                    ),
-                    new FC4ReadInputRegistersTask(10, Priority.HIGH,
-                            m(ApartmentModule.ChannelId.IR_10_STATE_RELAY1, new UnsignedWordElement(10),
-                                    ElementToChannelConverter.DIRECT_1_TO_1),
-                            m(ApartmentModule.ChannelId.IR_11_RELAY1_REMAINING_TIME, new UnsignedWordElement(11),
-                                    ElementToChannelConverter.DIRECT_1_TO_1)
-                    ),
-                    new FC4ReadInputRegistersTask(20, Priority.HIGH,
-                            m(ApartmentModule.ChannelId.IR_20_STATE_RELAY2, new UnsignedWordElement(20),
-                                    ElementToChannelConverter.DIRECT_1_TO_1),
-                            m(ApartmentModule.ChannelId.IR_21_RELAY2_REMAINING_TIME, new UnsignedWordElement(21),
-                                    ElementToChannelConverter.DIRECT_1_TO_1)
-                    ),
-
-                    new FC3ReadRegistersTask(0, Priority.HIGH,
-                            m(ApartmentModule.ChannelId.HR_0_COMMUNICATION_CHECK, new UnsignedWordElement(0),
-                                    ElementToChannelConverter.DIRECT_1_TO_1),
-                            m(ApartmentModule.ChannelId.HR_1_EXTERNAL_REQUEST_FLAG, new UnsignedWordElement(1),
-                                    ElementToChannelConverter.DIRECT_1_TO_1),
-                            m(ApartmentModule.ChannelId.HR_2_TEMPERATURE_CALIBRATION, new UnsignedWordElement(2),
-                                    ElementToChannelConverter.DIRECT_1_TO_1)
-                    ),
-                    new FC3ReadRegistersTask(10, Priority.LOW,
-                            m(ApartmentModule.ChannelId.HR_10_COMMAND_RELAY1, new SignedWordElement(10),
-                                    ElementToChannelConverter.DIRECT_1_TO_1),
-                            m(ApartmentModule.ChannelId.HR_11_TIMING_RELAY1, new SignedWordElement(11),
-                                    ElementToChannelConverter.DIRECT_1_TO_1)
-                    ),
-                    new FC3ReadRegistersTask(20, Priority.LOW,
-                            m(ApartmentModule.ChannelId.HR_20_COMMAND_RELAY2, new SignedWordElement(20),
-                                    ElementToChannelConverter.DIRECT_1_TO_1),
-                            m(ApartmentModule.ChannelId.HR_21_TIMING_RELAY2, new SignedWordElement(21),
-                                    ElementToChannelConverter.DIRECT_1_TO_1)
-                    ),
-
-                    // Modbus write tasks take the "setNextWriteValue" value of a channel and send them to the device.
-                    // Modbus read tasks put values in the "setNextValue" field, which get automatically transferred to the
-                    // "value" field of the channel. By default, the "setNextWriteValue" field is NOT copied to the
-                    // "setNextValue" and "value" field. In essence, this makes "setNextWriteValue" and "setNextValue"/"value"
-                    // two separate channels.
-                    // That means: Modbus read tasks will not overwrite any "setNextWriteValue" values. You do not have to
-                    // watch the order in which you call read and write tasks.
-                    // Also: if you do not add a Modbus read task for a write channel, any "setNextWriteValue" values will
-                    // not be transferred to the "value" field of the channel, unless you add code that does that.
-                    new FC16WriteRegistersTask(0,
-                            m(ApartmentModule.ChannelId.HR_0_COMMUNICATION_CHECK, new UnsignedWordElement(0),
-                                    ElementToChannelConverter.DIRECT_1_TO_1),
-                            m(ApartmentModule.ChannelId.HR_1_EXTERNAL_REQUEST_FLAG, new UnsignedWordElement(1),
-                                    ElementToChannelConverter.DIRECT_1_TO_1),
-                            m(ApartmentModule.ChannelId.HR_2_TEMPERATURE_CALIBRATION, new UnsignedWordElement(2),
-                                    ElementToChannelConverter.DIRECT_1_TO_1)
-                    ),
-                    new FC16WriteRegistersTask(10,
-                            m(ApartmentModule.ChannelId.HR_10_COMMAND_RELAY1, new UnsignedWordElement(10),
-                                    ElementToChannelConverter.DIRECT_1_TO_1),
-                            m(ApartmentModule.ChannelId.HR_11_TIMING_RELAY1, new UnsignedWordElement(11),
-                                    ElementToChannelConverter.DIRECT_1_TO_1)
-                    ),
-                    new FC16WriteRegistersTask(20,
-                            m(ApartmentModule.ChannelId.HR_20_COMMAND_RELAY2, new UnsignedWordElement(20),
-                                    ElementToChannelConverter.DIRECT_1_TO_1),
-                            m(ApartmentModule.ChannelId.HR_21_TIMING_RELAY2, new UnsignedWordElement(21),
-                                    ElementToChannelConverter.DIRECT_1_TO_1)
-                    )
-            );
-
+        if (this.topAM) {
+            return this.getTopAmModbusProtocol();
         } else {
-            return new ModbusProtocol(this,
-                    new FC4ReadInputRegistersTask(0, Priority.HIGH,
-                            m(ApartmentModule.ChannelId.IR_0_VERSION, new UnsignedWordElement(0),
-                                    ElementToChannelConverter.DIRECT_1_TO_1),
-                            m(ApartmentModule.ChannelId.IR_1_APARTMENT_MODULE_CONFIGURATION, new UnsignedWordElement(1),
-                                    ElementToChannelConverter.DIRECT_1_TO_1),
-                            m(ApartmentModule.ChannelId.IR_2_ERROR, new UnsignedWordElement(2),
-                                    ElementToChannelConverter.DIRECT_1_TO_1),
-                            m(ApartmentModule.ChannelId.IR_3_LOOP_TIME, new UnsignedWordElement(3),
-                                    ElementToChannelConverter.DIRECT_1_TO_1),
-                            m(ApartmentModule.ChannelId.IR_4_EXTERNAL_REQUEST_ACTIVE, new UnsignedWordElement(4),
-                                    ElementToChannelConverter.DIRECT_1_TO_1),
-                            m(ApartmentModule.ChannelId.IR_5_REQUEST_SIGNAL_TIME, new UnsignedWordElement(5),
-                                    ElementToChannelConverter.DIRECT_1_TO_1)
-                    ),
-
-                    new FC3ReadRegistersTask(0, Priority.HIGH,
-                            m(ApartmentModule.ChannelId.HR_0_COMMUNICATION_CHECK, new UnsignedWordElement(0),
-                                    ElementToChannelConverter.DIRECT_1_TO_1),
-                            m(ApartmentModule.ChannelId.HR_1_EXTERNAL_REQUEST_FLAG, new UnsignedWordElement(1),
-                                    ElementToChannelConverter.DIRECT_1_TO_1)
-                    ),
-
-                    new FC16WriteRegistersTask(0,
-                            m(ApartmentModule.ChannelId.HR_0_COMMUNICATION_CHECK, new UnsignedWordElement(0),
-                                    ElementToChannelConverter.DIRECT_1_TO_1),
-                            m(ApartmentModule.ChannelId.HR_1_EXTERNAL_REQUEST_FLAG, new UnsignedWordElement(1),
-                                    ElementToChannelConverter.DIRECT_1_TO_1)
-                    )
-            );
+            return this.getAmModbusProtocol();
         }
+    }
+
+    /**
+     * The ApartmentModule Configuration for NONE TopAMs (not controlling Relays).
+     *
+     * @return the ModbusProtocol
+     * @throws OpenemsException on Error.
+     */
+    private ModbusProtocol getAmModbusProtocol() throws OpenemsException {
+
+        return new ModbusProtocol(this,
+                new FC4ReadInputRegistersTask(4, Priority.HIGH,
+                        m(ApartmentModule.ChannelId.IR_4_EXTERNAL_REQUEST_ACTIVE, new UnsignedWordElement(4),
+                                ElementToChannelConverter.DIRECT_1_TO_1)
+                ),
+                new FC3ReadRegistersTask(0, Priority.HIGH,
+                        m(ApartmentModule.ChannelId.HR_0_COMMUNICATION_CHECK, new UnsignedWordElement(0),
+                                ElementToChannelConverter.DIRECT_1_TO_1),
+                        m(ApartmentModule.ChannelId.HR_1_EXTERNAL_REQUEST_FLAG, new UnsignedWordElement(1),
+                                ElementToChannelConverter.DIRECT_1_TO_1),
+                        m(ApartmentModule.ChannelId.HR_2_TEMPERATURE_CALIBRATION, new UnsignedWordElement(2),
+                                ElementToChannelConverter.DIRECT_1_TO_1)
+                ),
+                new FC16WriteRegistersTask(0,
+                        m(ApartmentModule.ChannelId.HR_0_COMMUNICATION_CHECK, new UnsignedWordElement(0),
+                                ElementToChannelConverter.DIRECT_1_TO_1),
+                        m(ApartmentModule.ChannelId.HR_1_EXTERNAL_REQUEST_FLAG, new UnsignedWordElement(1),
+                                ElementToChannelConverter.DIRECT_1_TO_1),
+                        m(ApartmentModule.ChannelId.HR_2_TEMPERATURE_CALIBRATION, new UnsignedWordElement(2),
+                                ElementToChannelConverter.DIRECT_1_TO_1)
+                )
+        );
+    }
+
+
+    /**
+     * The ApartmentModule Configuration for TopAMs (controlling Relays).
+     *
+     * @return the ModbusProtocol
+     * @throws OpenemsException on Error.
+     */
+    private ModbusProtocol getTopAmModbusProtocol() throws OpenemsException {
+        return new ModbusProtocol(this,
+                new FC4ReadInputRegistersTask(4, Priority.HIGH,
+                        m(ApartmentModule.ChannelId.IR_4_EXTERNAL_REQUEST_ACTIVE, new UnsignedWordElement(4),
+                                ElementToChannelConverter.DIRECT_1_TO_1),
+                        new DummyRegisterElement(5),
+                        m(ApartmentModule.ChannelId.IR_6_TEMPERATURE, new SignedWordElement(6),
+                                ElementToChannelConverter.DIRECT_1_TO_1)
+                ),
+                new FC4ReadInputRegistersTask(10, Priority.HIGH,
+                        m(ApartmentModule.ChannelId.IR_10_STATE_RELAY1, new UnsignedWordElement(10),
+                                ElementToChannelConverter.DIRECT_1_TO_1)
+                ),
+                new FC4ReadInputRegistersTask(20, Priority.HIGH,
+                        m(ApartmentModule.ChannelId.IR_20_STATE_RELAY2, new UnsignedWordElement(20),
+                                ElementToChannelConverter.DIRECT_1_TO_1)
+                ),
+                new FC3ReadRegistersTask(0, Priority.HIGH,
+                        m(ApartmentModule.ChannelId.HR_0_COMMUNICATION_CHECK, new UnsignedWordElement(0),
+                                ElementToChannelConverter.DIRECT_1_TO_1),
+                        m(ApartmentModule.ChannelId.HR_1_EXTERNAL_REQUEST_FLAG, new UnsignedWordElement(1),
+                                ElementToChannelConverter.DIRECT_1_TO_1),
+                        m(ApartmentModule.ChannelId.HR_2_TEMPERATURE_CALIBRATION, new UnsignedWordElement(2),
+                                ElementToChannelConverter.DIRECT_1_TO_1)
+                ),
+                new FC16WriteRegistersTask(0,
+                        m(ApartmentModule.ChannelId.HR_0_COMMUNICATION_CHECK, new UnsignedWordElement(0),
+                                ElementToChannelConverter.DIRECT_1_TO_1),
+                        m(ApartmentModule.ChannelId.HR_1_EXTERNAL_REQUEST_FLAG, new UnsignedWordElement(1),
+                                ElementToChannelConverter.DIRECT_1_TO_1),
+                        m(ApartmentModule.ChannelId.HR_2_TEMPERATURE_CALIBRATION, new UnsignedWordElement(2),
+                                ElementToChannelConverter.DIRECT_1_TO_1)
+                ),
+                new FC16WriteRegistersTask(10,
+                        m(ApartmentModule.ChannelId.HR_10_COMMAND_RELAY1, new UnsignedWordElement(10),
+                                ElementToChannelConverter.DIRECT_1_TO_1),
+                        m(ApartmentModule.ChannelId.HR_11_TIMING_RELAY1, new UnsignedWordElement(11),
+                                ElementToChannelConverter.DIRECT_1_TO_1)
+                ),
+                new FC16WriteRegistersTask(20,
+                        m(ApartmentModule.ChannelId.HR_20_COMMAND_RELAY2, new UnsignedWordElement(20),
+                                ElementToChannelConverter.DIRECT_1_TO_1),
+                        m(ApartmentModule.ChannelId.HR_21_TIMING_RELAY2, new UnsignedWordElement(21),
+                                ElementToChannelConverter.DIRECT_1_TO_1)
+                )
+        );
+
     }
 
     @Override
     public void handleEvent(Event event) {
         switch (event.getTopic()) {
             case EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE:
-                if (debugOn) {
-                    channeltest();    // Just for testing
+                if (this.topAM) {
+                    this.valveUpdate();
+                    this.temperatureUpdate();
                 }
-                if (topAM) {
-                    if (this.getStateRelay1().equals(OnOff.UNDEFINED) == false && this.getStateRelay2().equals(OnOff.UNDEFINED) == false) {
-                        this.relayUndefinedCounter = 0;
-                        updateValveStatus();
-                    } else if (this.relayUndefinedCounter++ < MAX_CYCLES_TO_WAIT) {
-                        this.getValveStatusChannel().setNextValue(ValveStatus.UNDEFINED);
-                    }
-                    if (this.getTemperatureChannel().value().isDefined()) {
-                        this.getLastKnowTemperatureChannel().setNextValue(this.getTemperatureChannel().value().get());
-                    }
-                }
-                if (getSetCommunicationCheckChannel().value().asEnum() != CommunicationCheck.RECEIVED) {
-                    if (debugOn) {
-                        this.logInfo(this.log, "Sending CommunicationCheck");
-                    }
                     try {
-                        this.getSetCommunicationCheckChannel().setNextWriteValue(CommunicationCheck.RECEIVED);
+                        if (this.setTemperatureCalibrationChannel().value().orElse(TEMP_CALIBRATION_ALTERNATE_VALUE) != this.temperatureCalibration) {
+                            this.setTemperatureCalibrationChannel().setNextWriteValueFromObject(this.temperatureCalibration);
+                        }
                     } catch (OpenemsError.OpenemsNamedException e) {
-                        this.logError(this.log, "Modbus connection to Apartment module failed.");
+                        this.log.warn("Couldn't write into TemperatureCalibrationChannel");
                     }
-                    //TODO Check if still active after x Time
-                }
-                Optional<Boolean> externalHeatFlag = this.getSetExternalRequestFlagChannel().getNextWriteValueAndReset();
-                try {
-                    this.getSetExternalRequestFlagChannel().setNextWriteValue(false);
-                } catch (OpenemsError.OpenemsNamedException ignored) {
-                }
-                boolean externalRequestPresent = this.getExternalRequestCurrent().isDefined();
-                boolean externalRequest = externalRequestPresent ? this.getExternalRequestCurrent().get() : false;
-                boolean applyHeat = externalHeatFlag.orElse(false) || externalRequest;
-                if (this.getLastKnownRequestStatusChannel().value().isDefined() && this.getLastKnownRequestStatusChannel().value().get()) {
-                    if (externalHeatFlag.isPresent() && externalRequestPresent) {
-                        this.getLastKnownRequestStatusChannel().setNextValue(applyHeat);
-                    }
-                } else if (externalHeatFlag.isPresent() || externalRequestPresent) {
-                    this.getLastKnownRequestStatusChannel().setNextValue(applyHeat);
-                }
-                if (externalRequest || externalHeatFlag.isPresent() && externalHeatFlag.get()) {
-                    log.info("HeatRequest for AM : " + super.id());
-                }
-
-                this.isHeatRequestFlagChannel().setNextValue(externalHeatFlag.orElse(false));
-
-                // Set temperature calibration
-                if (doOnce) {
-                    if (topAM) {
-                        try {
-                            this.setTemperatureCalibrationChannel().setNextWriteValue(temperatureCalibration);
-                        } catch (OpenemsError.OpenemsNamedException e) {
-                            this.logError(this.log, "Failed to set temperature calibration value.");
-                        }
-                    }
-                    doOnce = false;
-
-                    if (debugOn) {
-                        if (resetExtReq) {
-                            try {
-                                this.getSetExternalRequestFlagChannel().setNextWriteValue(false);
-                            } catch (OpenemsError.OpenemsNamedException e) {
-                                this.logError(this.log, "Failed to reset External Request Flag.");
-                            }
-                        }
-                    }
-                }
+                this.communicationUpdate();
+                this.requestUpdate();
                 break;
-            case EdgeEventConstants.TOPIC_CYCLE_EXECUTE_WRITE:
-                if (topAM) {
-                    listenToActivation();
+            case EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS:
+                if (this.topAM && this.manuallyControlled == false) {
+                    if (this.useMaxTemp
+                            && this.getLastKnowTemperatureChannel().value().orElse(0) >= this.maxTemperature
+                            || this.isReferenceTemperatureTooLow()) {
+                        this.closeHydraulicMixer();
+                    } else if (this.useMinTemp
+                            && this.getLastKnowTemperatureChannel().value().orElse(0) <= this.minTemperature
+                            && this.isActivationRequestChannel().getNextWriteValue().orElse(false)) {
+                        this.turnOnHydraulicMixer();
+                    } else {
+                        this.listenToActivation();
+                    }
                 }
 
         }
     }
 
+    /**
+     * Check if the referenceTemperature is too low. The Reference Temperature will be set by a (ApartmentModule)Controller.
+     *
+     * @return a boolean.
+     */
+    private boolean isReferenceTemperatureTooLow() {
+        if (this.useReferenceTemperature) {
+            return this.getReferenceTemperatureChannel().getNextWriteValueAndReset().orElse(DEFAULT_REFERENCE_TEMPERATURE) < this.referenceMinTemperature
+                    && this.getLastKnowTemperatureChannel().value().orElse(DEFAULT_LAST_KNOWN_TEMPERATURE) >= this.minTemperature
+                    && this.heatRequestInApartmentCord().getNextWriteValueAndReset().orElse(false);
+        }
+        return false;
+    }
+
+    /**
+     * Check if an external Request was set.
+     * Determined by a short Incoming heatRequest is active or a permanent HeatRequest.
+     */
+    private void requestUpdate() {
+        Value<Boolean> externalHeatFlag = this.getSetExternalRequestFlagChannel().value();
+        if (externalHeatFlag.isDefined() && externalHeatFlag.get()) {
+            try {
+                this.getSetExternalRequestFlagChannel().setNextWriteValue(false);
+            } catch (OpenemsError.OpenemsNamedException ignored) {
+                this.log.warn("Couldn't write in own Channel of HoldingRegister "
+                        + this.getSetExternalRequestFlagChannel().channelId() + " of AM:" + super.id());
+            }
+        }
+        boolean externalRequestPresent = this.getExternalRequestCurrent().isDefined();
+        boolean externalRequest = externalRequestPresent ? this.getExternalRequestCurrent().get() : false;
+        boolean applyHeat = externalHeatFlag.orElse(false) || externalRequest;
+        if (this.getLastKnownRequestStatusChannel().value().isDefined() && this.getLastKnownRequestStatusChannel().value().get()) {
+            if (externalHeatFlag.isDefined() && externalRequestPresent) {
+                this.getLastKnownRequestStatusChannel().setNextValue(applyHeat);
+            }
+        } else if (externalHeatFlag.isDefined() || externalRequestPresent) {
+            this.getLastKnownRequestStatusChannel().setNextValue(applyHeat);
+        }
+    }
+
+    /**
+     * Writes {@link CommunicationCheck#RECEIVED} to the CommunicationCheckChannel.
+     */
+    private void communicationUpdate() {
+        if (getSetCommunicationCheckChannel().value().asEnum() != CommunicationCheck.RECEIVED) {
+            try {
+                this.getSetCommunicationCheckChannel().setNextWriteValue(CommunicationCheck.RECEIVED);
+            } catch (OpenemsError.OpenemsNamedException e) {
+                this.logError(this.log, "Couldn't set Next Write Value of CommunicationCheck Channel");
+            }
+        }
+    }
+
+    /**
+     * Updates the TemperatureValue.
+     */
+    private void temperatureUpdate() {
+        if (this.getTemperatureChannel().value().isDefined()) {
+            this.getLastKnowTemperatureChannel().setNextValue(this.getTemperatureChannel().value().get());
+        }
+    }
+
+    /**
+     * Initiates the Valveupdate if State of Relay1 and 2 is defined.
+     */
+    private void valveUpdate() {
+        if (this.getStateRelay1().equals(OnOff.UNDEFINED) == false
+                && this.getStateRelay2().equals(OnOff.UNDEFINED) == false) {
+            this.updateValveStatus();
+        }
+    }
+
+    /**
+     * Updates the Valve status depending on: ValveType, what Relay is configured for opening/closing/direction/motor.
+     */
     private void updateValveStatus() {
         boolean relay1 = getStateRelay1().getValue() == 1;
         boolean relay2 = getStateRelay2().getValue() == 1;
-        boolean relay1IsActivation = this.relaysForOpeningHydraulicMixer == 1;
-        if (relay1 && relay2) {
-            this.getValveStatusChannel().setNextValue(ValveStatus.ERROR);
-        } else if (relay1) {
-            if (relay1IsActivation) {
-                this.getValveStatusChannel().setNextValue(ValveStatus.OPENING);
-            } else {
-                this.getValveStatusChannel().setNextValue(ValveStatus.CLOSING);
-            }
-        } else if (relay2) {
-            if (relay1IsActivation) {
-                this.getValveStatusChannel().setNextValue(ValveStatus.CLOSING);
-            } else {
-                this.getValveStatusChannel().setNextValue(ValveStatus.OPENING);
-            }
-        } else {
-            //both off:
-            if (this.isOpen) {
-                this.getValveStatusChannel().setNextValue(ValveStatus.OPEN);
-            } else if (this.isClosed) {
-                this.getValveStatusChannel().setNextValue(ValveStatus.CLOSED);
-            }
+        switch (this.valveType) {
 
+            case ONE_OPEN_ONE_CLOSE:
+                boolean relay1IsActivation = this.relaysForOpeningOrDirectionHydraulicMixer == 1;
+                if (relay1 && relay2) {
+                    this.getValveStatusChannel().setNextValue(ValveStatus.ERROR);
+                } else if (relay1) {
+                    if (relay1IsActivation) {
+                        this.getValveStatusChannel().setNextValue(ValveStatus.OPENING);
+                    } else {
+                        this.getValveStatusChannel().setNextValue(ValveStatus.CLOSING);
+                    }
+                } else if (relay2) {
+                    if (relay1IsActivation) {
+                        this.getValveStatusChannel().setNextValue(ValveStatus.CLOSING);
+                    } else {
+                        this.getValveStatusChannel().setNextValue(ValveStatus.OPENING);
+                    }
+                } else {
+                    //both off:
+                    if (this.isOpen || this.getValveStatusChannel().value().isDefined()
+                            && this.getValveStatusChannel().value().asEnum().equals(ValveStatus.OPENING)) {
+                        this.getValveStatusChannel().setNextValue(ValveStatus.OPEN);
+                    } else if (this.isClosed || this.getValveStatusChannel().value().isDefined()
+                            && this.getValveStatusChannel().value().asEnum().equals(ValveStatus.CLOSING)) {
+                        this.getValveStatusChannel().setNextValue(ValveStatus.CLOSED);
+                    }
+
+                }
+                break;
+
+            case ONE_MOTOR_ONE_DIRECTION:
+                boolean relay1IsDirection = this.relaysForOpeningOrDirectionHydraulicMixer == 1;
+                boolean relay2IsDirection = this.relaysForOpeningOrDirectionHydraulicMixer == 2;
+                //Both on -> it only matters what it means to activate the direction Relay
+                if (relay1 && relay2) {
+                    if (this.valveDirection.equals(ValveDirection.ACTIVATION_DIRECTIONAL_EQUALS_CLOSING)) {
+                        this.getValveStatusChannel().setNextValue(ValveStatus.CLOSING);
+                    } else if (this.valveDirection.equals(ValveDirection.ACTIVATION_DIRECTIONAL_EQUALS_OPENING)) {
+                        this.getValveStatusChannel().setNextValue(ValveStatus.OPENING);
+                    }
+                    // ONLY ONE Relay is active an either one is for direction
+                } else if ((relay1IsDirection && !relay1 && relay2) || (relay2IsDirection && relay1)) {
+                    if (this.valveDirection.equals(ValveDirection.ACTIVATION_DIRECTIONAL_EQUALS_OPENING)) {
+                        this.getValveStatusChannel().setNextValue(ValveStatus.CLOSING);
+                    } else if (this.valveDirection.equals(ValveDirection.ACTIVATION_DIRECTIONAL_EQUALS_CLOSING)) {
+                        this.getValveStatusChannel().setNextValue(ValveStatus.OPENING);
+                    }
+                    //error case where only Direction relay is on but not the other
+                } else if ((relay1IsDirection && relay1) || (relay2IsDirection && relay2)) {
+                    this.getValveStatusChannel().setNextValue(ValveStatus.ERROR);
+                } else if (!relay1 && !relay2) {
+                    if (this.isOpen || this.getValveStatusChannel().value().isDefined()
+                            && this.getValveStatusChannel().value().asEnum().equals(ValveStatus.OPENING)) {
+                        this.getValveStatusChannel().setNextValue(ValveStatus.OPEN);
+                    } else if (this.isClosed || this.getValveStatusChannel().value().isDefined()
+                            && this.getValveStatusChannel().value().asEnum().equals(ValveStatus.CLOSING)) {
+                        this.getValveStatusChannel().setNextValue(ValveStatus.CLOSED);
+                    }
+                }
+                break;
         }
     }
 
+    /**
+     * Depending if the TopAM should start to heat up the Cord or not -> open/close valve for a certain amount of time.
+     */
     private void listenToActivation() {
-        Optional<Boolean> activation = this.isActivationRequest().getNextWriteValueAndReset();
+        Optional<Boolean> activation = this.isActivationRequestChannel().getNextWriteValue();
         boolean hydraulicMixerActivation = activation.orElse(false);
+        this.isActivationRequestChannel().setNextValue(hydraulicMixerActivation);
         ValveStatus valveStatus = this.getValveStatusChannel().value().isDefined() ? this.getValveStatusChannel().value().asEnum() : ValveStatus.UNDEFINED;
-        boolean valveShouldOpen = this.wasActivatedBefore == false || valveStatus.equals(ValveStatus.CLOSED)
-                || valveStatus.equals(ValveStatus.UNDEFINED) || valveStatus.equals(ValveStatus.CLOSING);
-        boolean valveShouldClose = this.wasDeactivatedBefore == false || valveStatus.equals(ValveStatus.UNDEFINED)
-                || valveStatus.equals(ValveStatus.OPEN) || valveStatus.equals(ValveStatus.OPENING);
+        boolean valveShouldOpen = this.wasActivatedBefore == false
+                || valveStatus.equals(ValveStatus.CLOSED) || valveStatus.equals(ValveStatus.CLOSING) || valveStatus.equals(ValveStatus.ERROR);
+        boolean valveShouldClose = this.wasDeactivatedBefore == false
+                || valveStatus.equals(ValveStatus.OPEN) || valveStatus.equals(ValveStatus.OPENING) || valveStatus.equals(ValveStatus.ERROR);
         if (hydraulicMixerActivation) {
             if (valveShouldOpen) {
-                turnOnHydraulicMixer();
-                this.wasActivatedBefore = true;
+                this.turnOnHydraulicMixer();
                 this.wasDeactivatedBefore = false;
-                this.relaysShutDownHappened = false;
-                this.initialDeactivationTime = new DateTime();
-            } else if (this.relaysShutDownHappened == false) {
+                if (valveStatus.equals(ValveStatus.OPENING)) {
+                    this.wasActivatedBefore = true;
+                    this.initialDeactivationTime = new DateTime();
+                }
+            } else if (!valveStatus.equals(ValveStatus.OPEN)) {
                 this.shutDownRelays();
             }
         } else {
             if (valveShouldClose) {
-                turnOffHydraulicMixer();
+                this.closeHydraulicMixer();
                 this.wasActivatedBefore = false;
-                this.wasDeactivatedBefore = true;
-                this.relaysShutDownHappened = false;
-                this.initialDeactivationTime = new DateTime();
-            } else if (this.relaysShutDownHappened == false) {
+                if (valveStatus.equals(ValveStatus.CLOSING)) {
+                    this.wasDeactivatedBefore = true;
+                    this.initialDeactivationTime = new DateTime();
+                }
+            } else if (!valveStatus.equals(ValveStatus.CLOSED)) {
                 this.shutDownRelays();
             }
         }
     }
 
+    /**
+     * Shuts down the Relays permanently e.g. stopping the Opening/Closing progress.
+     */
     private void shutDownRelays() {
         DateTime now = new DateTime();
         DateTime compare = new DateTime(this.initialDeactivationTime).plusSeconds((DEFAULT_VALVE_MAX_SECONDS));
+        if (this.valveType.equals(ValveType.ONE_MOTOR_ONE_DIRECTION)) {
+            compare = new DateTime(this.initialDeactivationTime).plusSeconds((DEFAULT_VALVE_ONE_DIRECTION));
+        }
         if (now.isAfter(compare)) {
-            this.setRelay1(OnOff.OFF, DEFAULT_VALVE_PERMANENT);
-            this.setRelay2(OnOff.OFF, DEFAULT_VALVE_PERMANENT);
-            this.relaysShutDownHappened = true;
+            this._setRelay1(OnOff.OFF, DEFAULT_VALVE_PERMANENT);
+            this._setRelay2(OnOff.OFF, DEFAULT_VALVE_PERMANENT);
         }
     }
 
-    private void turnOffHydraulicMixer() {
-        boolean deactivation = this.relaysForOpeningHydraulicMixer == 1;
-        this.setRelay1((deactivation ? OnOff.OFF : OnOff.ON), DEFAULT_VALVE_PERMANENT);
-        this.setRelay2((deactivation ? OnOff.ON : OnOff.OFF), DEFAULT_VALVE_PERMANENT);
-        this.isClosed = true;
-        this.isOpen = false;
+    /**
+     * Closes the Valve connected to the AM, depending on the Configuration.
+     */
+    private void closeHydraulicMixer() {
+        boolean closingOrActivationForOneDirection = this.relaysForOpeningOrDirectionHydraulicMixer == 1;
+        switch (this.valveType) {
+
+            case ONE_OPEN_ONE_CLOSE:
+
+                this._setRelay1((closingOrActivationForOneDirection ? OnOff.OFF : OnOff.ON), DEFAULT_VALVE_PERMANENT);
+                this._setRelay2((closingOrActivationForOneDirection ? OnOff.ON : OnOff.OFF), DEFAULT_VALVE_PERMANENT);
+                this.isClosed = true;
+                this.isOpen = false;
+                break;
+            case ONE_MOTOR_ONE_DIRECTION:
+                if (this.valveDirection.equals(ValveDirection.ACTIVATION_DIRECTIONAL_EQUALS_CLOSING)) {
+                    this._setRelay1(OnOff.ON, DEFAULT_VALVE_PERMANENT);
+                    this._setRelay2(OnOff.ON, DEFAULT_VALVE_PERMANENT);
+                } else {
+                    this._setRelay1((closingOrActivationForOneDirection ? OnOff.OFF : OnOff.ON), DEFAULT_VALVE_PERMANENT);
+                    this._setRelay2((closingOrActivationForOneDirection ? OnOff.ON : OnOff.OFF), DEFAULT_VALVE_PERMANENT);
+                    this.isClosed = true;
+                    this.isOpen = false;
+                    break;
+                }
+                break;
+        }
+
     }
 
+    /**
+     * Opens the Valve connected to the TopAM. The way the valve is controlled, depends on the Configuration.
+     */
     private void turnOnHydraulicMixer() {
-        boolean activation = this.relaysForOpeningHydraulicMixer == 1;
-        this.setRelay1((activation ? OnOff.ON : OnOff.OFF), DEFAULT_VALVE_PERMANENT);
-        this.setRelay2((activation ? OnOff.OFF : OnOff.ON), DEFAULT_VALVE_PERMANENT);
+        boolean activation = this.relaysForOpeningOrDirectionHydraulicMixer == 1;
+        switch (this.valveType) {
+
+            case ONE_OPEN_ONE_CLOSE:
+                this._setRelay1((activation ? OnOff.ON : OnOff.OFF), DEFAULT_VALVE_PERMANENT);
+                this._setRelay2((activation ? OnOff.OFF : OnOff.ON), DEFAULT_VALVE_PERMANENT);
+                break;
+            case ONE_MOTOR_ONE_DIRECTION:
+                if (this.valveDirection.equals(ValveDirection.ACTIVATION_DIRECTIONAL_EQUALS_OPENING)) {
+                    this._setRelay1(OnOff.ON, DEFAULT_VALVE_PERMANENT);
+                    this._setRelay2(OnOff.ON, DEFAULT_VALVE_PERMANENT);
+                } else {
+                    this._setRelay1((activation ? OnOff.OFF : OnOff.ON), DEFAULT_VALVE_PERMANENT);
+                    this._setRelay2((activation ? OnOff.ON : OnOff.OFF), DEFAULT_VALVE_PERMANENT);
+                }
+                break;
+        }
+
         this.isOpen = true;
         this.isClosed = false;
     }
 
-    // Just for testing. Also, example code with some explanations.
-    protected void channeltest() {
-        if (topAM) {
-            this.logInfo(this.log, "--Testing Channels--");
-            this.logInfo(this.log, "Input Registers");
-            this.logInfo(this.log, "0 Version Number: " + getVersionNumber().get());
-            this.logInfo(this.log, "1 Configuration: " + getAmConfiguration().getName()); // Gets the "name" field of the Enum.
-            this.logInfo(this.log, "2 Error: " + getError().getName());
-            this.logInfo(this.log, "3 Loop Time: " + getLoopTime().get() + " ms");
-            this.logInfo(this.log, "4 External Request Active: " + getExternalRequestCurrent().get());
-            this.logInfo(this.log, "5 Request Signal Time: " + getRequestSignalTime().get() + " ms");
-            this.logInfo(this.log, "6 Temperature: " + getTemperature().orElse(0) / 10.0 + "°C");
-            this.logInfo(this.log, "10 State Relay1: " + getStateRelay1().getName());
-            this.logInfo(this.log, "11 Relay1 Remaining Time: " + getRelay1RemainingTime().orElse(0) / 100.0 + " s");
-            this.logInfo(this.log, "20 State Relay2: " + getStateRelay2().getName());
-            this.logInfo(this.log, "21 Relay2 Remaining Time: " + getRelay2RemainingTime().orElse(0) / 100.0 + " s");
-            this.logInfo(this.log, "");
-            this.logInfo(this.log, "Holding Registers");
-            this.logInfo(this.log, "0 Modbus Communication Check: " + getSetCommunicationCheckChannel().value().asEnum().getName()); // Gets the "name" field of the Enum.
-            this.logInfo(this.log, "1 External Request Flag: " + getSetExternalRequestFlagChannel().value().get());
-            this.logInfo(this.log, "2 Temperature Calibration: " + setTemperatureCalibrationChannel().value().get());
-            this.logInfo(this.log, "10 Command for Relay1: " + setCommandRelay1Channel().value().asEnum().getValue());
-            this.logInfo(this.log, "11 Timing for Relay1: " + setTimeRelay1Channel().value().get());
-            this.logInfo(this.log, "20 Command for Relay2: " + setCommandRelay2Channel().value().asEnum().getValue());
-            this.logInfo(this.log, "21 Timing for Relay2: " + setTimeRelay2Channel().value().get());
-            this.logInfo(this.log, "");
+    @Override
+    public String debugLog() {
+        String debug =
+                "Input Register"
+                        + "4 External Request Active: " + getExternalRequestCurrent().orElse(false)
+                        + "\nHolding Registers\n"
+                        + " 0 Modbus Communication Check: " + getSetCommunicationCheckChannel().value().asEnum().getName()
+                        + " 1 External Request Flag: " + getSetExternalRequestFlagChannel().value().orElse(false);
 
-
-            // Test Modbus write.
-          /*  if (testcounter == 2) {
-                this.logInfo(this.log, "Setting Relay1 to " + switchRelay1.getName() + ".");
-                this.logInfo(this.log, "Setting Relay2 to " + switchRelay2.getName() + ".");
-                this.setRelay1(switchRelay1, relayTime);
-                this.setRelay2(switchRelay2, relayTime);
-            }
-
-            testcounter++;*/
-        } else {
-            this.logInfo(this.log, "--Testing Channels--");
-            this.logInfo(this.log, "Input Registers");
-            this.logInfo(this.log, "0 Version Number: " + getVersionNumber().get());
-            this.logInfo(this.log, "1 Configuration: " + getAmConfiguration().getName()); // Gets the "name" field of the Enum.
-            this.logInfo(this.log, "2 Error: " + getError().getName());
-            this.logInfo(this.log, "3 Loop Time: " + getLoopTime().get() + " ms");
-            this.logInfo(this.log, "4 External Request Active: " + getExternalRequestCurrent().get());
-            this.logInfo(this.log, "5 Request Signal Time: " + getRequestSignalTime().get() + " ms");
-            this.logInfo(this.log, "");
-            this.logInfo(this.log, "Holding Registers");
-            this.logInfo(this.log, "0 Modbus Communication Check: " + getSetCommunicationCheckChannel().value().asEnum().getName()); // Gets the "name" field of the Enum.
-            this.logInfo(this.log, "1 External Request Flag: " + getSetExternalRequestFlagChannel().value().asEnum().getValue());
-            this.logInfo(this.log, "");
+        if (this.topAM) {
+            debug +=
+                    "\n--- TOP AM ---\n"
+                            + "Input Register\n"
+                            + "6 Temperature: " + getLastKnowTemperatureChannel().value().orElse(0) / 10.0 + "°C"
+                            + " 10 State Relay1: " + getStateRelay1().getName()
+                            + " 20 State Relay2: " + getStateRelay2().getName()
+                            + "\nHolding Registers\n"
+                            + " 2 Temperature Calibration: " + this.setTemperatureCalibrationChannel().value().orElse(TEMP_CALIBRATION_ALTERNATE_VALUE)
+                            + " ValveStatus: " + this.getValveStatusChannel().value().asEnum().getName();
         }
-
-
+        return debug;
     }
 
+    /**
+     * Tells calling Component if this AM is a TOP ApartmentModule.
+     *
+     * @return true if this is a TopAM.
+     */
     @Override
     public boolean isTopAm() {
         return this.topAM;

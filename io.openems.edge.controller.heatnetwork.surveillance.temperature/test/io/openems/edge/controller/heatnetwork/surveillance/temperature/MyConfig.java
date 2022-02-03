@@ -5,7 +5,7 @@ import io.openems.edge.common.test.AbstractComponentConfig;
 
 @SuppressWarnings("all")
 
-public class MyConfig extends AbstractComponentConfig implements Config {
+public class MyConfig extends AbstractComponentConfig implements ConfigTempSurveillanceHeating {
 
 
     protected static class Builder {
@@ -24,7 +24,8 @@ public class MyConfig extends AbstractComponentConfig implements Config {
         private String timerId;
         private int timeToWaitValveOpen;
         private String service_pid;
-        private TemperatureSurveillanceType surveillanceType;
+        private SurveillanceType surveillanceType;
+        private boolean disableLogicIfHeaterOffline;
 
         private Builder() {
         }
@@ -70,7 +71,7 @@ public class MyConfig extends AbstractComponentConfig implements Config {
             return this;
         }
 
-        public Builder setSurveillanceType(TemperatureSurveillanceType type){
+        public Builder setSurveillanceType(SurveillanceType type) {
             this.surveillanceType = type;
             return this;
         }
@@ -99,6 +100,11 @@ public class MyConfig extends AbstractComponentConfig implements Config {
             this.service_pid = service_pid;
             return this;
         }
+
+        public Builder setDisableLogicIfHeaterOffline(boolean disableLogicIfHeaterOffline) {
+            this.disableLogicIfHeaterOffline = disableLogicIfHeaterOffline;
+            return this;
+        }
     }
 
     /**
@@ -113,7 +119,7 @@ public class MyConfig extends AbstractComponentConfig implements Config {
     private final Builder builder;
 
     private MyConfig(Builder builder) {
-        super(Config.class, builder.id);
+        super(ConfigTempSurveillanceHeating.class, builder.id);
         this.builder = builder;
     }
 
@@ -150,12 +156,12 @@ public class MyConfig extends AbstractComponentConfig implements Config {
 
 
     @Override
-    public String valveControllerId() {
+    public String hydraulicControllerId() {
         return this.builder.valveControllerId;
     }
 
     @Override
-    public TemperatureSurveillanceType surveillanceType() {
+    public SurveillanceType surveillanceType() {
         return this.builder.surveillanceType;
     }
 
@@ -170,8 +176,13 @@ public class MyConfig extends AbstractComponentConfig implements Config {
     }
 
     @Override
-    public int timeToWaitValveOpen() {
+    public int deltaTimeDelay() {
         return this.builder.timeToWaitValveOpen;
+    }
+
+    @Override
+    public boolean disableLogicIfHeaterOffline() {
+        return this.builder.disableLogicIfHeaterOffline;
     }
 
     @Override

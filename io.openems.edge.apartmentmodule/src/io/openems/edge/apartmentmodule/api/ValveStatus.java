@@ -2,6 +2,10 @@ package io.openems.edge.apartmentmodule.api;
 
 import io.openems.common.types.OptionsEnum;
 
+/**
+ * The Valve Status of the TopAm Valve.
+ * This will be set by the AM Implementation.
+ */
 public enum ValveStatus implements OptionsEnum {
     CLOSED(0, "Closed"),
     OPEN(1, "Open"),
@@ -10,8 +14,8 @@ public enum ValveStatus implements OptionsEnum {
     ERROR(4, "Error Both Relays are Active"),
     UNDEFINED(-1, "Undefined");
 
-    private int value;
-    private String name;
+    private final int value;
+    private final String name;
 
     ValveStatus(int value, String name) {
         this.value = value;
@@ -20,12 +24,12 @@ public enum ValveStatus implements OptionsEnum {
 
     @Override
     public int getValue() {
-        return value;
+        return this.value;
     }
 
     @Override
     public String getName() {
-        return name;
+        return this.name;
     }
 
     @Override

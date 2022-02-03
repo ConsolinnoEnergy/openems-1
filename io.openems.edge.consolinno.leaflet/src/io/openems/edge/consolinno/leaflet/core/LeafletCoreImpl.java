@@ -97,6 +97,13 @@ public class LeafletCoreImpl extends AbstractOpenemsModbusComponent implements O
     private int aioConfigFive = 0;
     private int aioConfigSix = 0;
     private int aioConfigSeven = 0;
+    private int aioConfigRegisterOne;
+    private int aioConfigRegisterTwo;
+    private int aioConfigRegisterThree;
+    private int aioConfigRegisterFour;
+    private int aioConfigRegisterFive;
+    private int aioConfigRegisterSix;
+    private int aioConfigRegisterSeven;
     //leafletModule_x are Binary Representations of the Decimal ModuleNumber
     private static final int LEAFLET_MODULE_ONE = 1;
     private static final int LEAFLET_MODULE_TWO = 2;
@@ -134,16 +141,20 @@ public class LeafletCoreImpl extends AbstractOpenemsModbusComponent implements O
     void activate(ComponentContext context, Config config) throws OpenemsException, ConfigurationException {
         //Reads Source file CSV with the Register information
         this.source = this.sourceReader.readCsv(config.source());
-        //Splits the big CSV Output into the different Modbus Types(OutputCoil,...)
-        this.splitArrayIntoType();
-        //Sets the Register variables for the Configuration
-        this.createRelayInverseRegisterArray();
-        this.setPwmConfigurationAddresses();
+        if (this.source.size() == 1) {
+            throw new ConfigurationException("The Source file could not be found! Check Config!");
+        }
         if (this.checkFirmwareCompatibility()) {
+            //Splits the big CSV Output into the different Modbus Types(OutputCoil,...)
+            this.splitArrayIntoType();
+            //Sets the Register variables for the Configuration
+            this.createRelayInverseRegisterArray();
+            this.setPwmConfigurationAddresses();
+            this.setAioConfigurationAddresses();
             super.activate(context, config.id(), config.alias(), config.enabled(), config.modbusUnitId(), this.cm,
                     "Modbus", config.modbusBridgeId());
         } else {
-            this.log.error("Firmware incompatible or not Running!");
+                this.log.error("Firmware incompatible or not Running!");
             this.log.info("The Configurator will now deactivate itself.");
             this.deactivate();
         }
@@ -352,6 +363,35 @@ public class LeafletCoreImpl extends AbstractOpenemsModbusComponent implements O
                             m(LeafletCore.ChannelId.WRITE_PWM_FREQUENCY_EIGHT,
                                     new UnsignedWordElement(this.pwmConfigRegisterEight),
                                     ElementToChannelConverter.DIRECT_1_TO_1)),
+                    //AIO Configuration
+                    new FC6WriteRegisterTask(this.aioConfigRegisterOne,
+                            m(LeafletCore.ChannelId.WRITE_AIO_CONFIG_ONE,
+                                    new SignedWordElement(this.aioConfigRegisterOne),
+                                    ElementToChannelConverter.DIRECT_1_TO_1)),
+                    new FC6WriteRegisterTask(this.aioConfigRegisterTwo,
+                            m(LeafletCore.ChannelId.WRITE_AIO_CONFIG_TWO,
+                                    new UnsignedWordElement(this.aioConfigRegisterTwo),
+                                    ElementToChannelConverter.DIRECT_1_TO_1)),
+                    new FC6WriteRegisterTask(this.aioConfigRegisterThree,
+                            m(LeafletCore.ChannelId.WRITE_AIO_CONFIG_THREE,
+                                    new UnsignedWordElement(this.aioConfigRegisterThree),
+                                    ElementToChannelConverter.DIRECT_1_TO_1)),
+                    new FC6WriteRegisterTask(this.aioConfigRegisterFour,
+                            m(LeafletCore.ChannelId.WRITE_AIO_CONFIG_FOUR,
+                                    new UnsignedWordElement(this.aioConfigRegisterFour),
+                                    ElementToChannelConverter.DIRECT_1_TO_1)),
+                    new FC6WriteRegisterTask(this.aioConfigRegisterFive,
+                            m(LeafletCore.ChannelId.WRITE_AIO_CONFIG_FIVE,
+                                    new SignedWordElement(this.aioConfigRegisterFive),
+                                    ElementToChannelConverter.DIRECT_1_TO_1)),
+                    new FC6WriteRegisterTask(this.aioConfigRegisterSix,
+                            m(LeafletCore.ChannelId.WRITE_AIO_CONFIG_SIX,
+                                    new UnsignedWordElement(this.aioConfigRegisterSix),
+                                    ElementToChannelConverter.DIRECT_1_TO_1)),
+                    new FC6WriteRegisterTask(this.aioConfigRegisterSeven,
+                            m(LeafletCore.ChannelId.WRITE_AIO_CONFIG_SEVEN,
+                                    new UnsignedWordElement(this.aioConfigRegisterSeven),
+                                    ElementToChannelConverter.DIRECT_1_TO_1)),
 
                     new FC3ReadRegistersTask(this.pwmConfigRegisterOne, Priority.LOW,
                             m(LeafletCore.ChannelId.READ_PWM_FREQUENCY_ONE,
@@ -386,6 +426,34 @@ public class LeafletCoreImpl extends AbstractOpenemsModbusComponent implements O
                                     new UnsignedWordElement(this.pwmConfigRegisterEight),
                                     ElementToChannelConverter.DIRECT_1_TO_1)),
 
+                    new FC3ReadRegistersTask(this.aioConfigRegisterOne, Priority.LOW,
+                            m(LeafletCore.ChannelId.READ_AIO_CONFIG_ONE,
+                                    new SignedWordElement(this.aioConfigRegisterOne),
+                                    ElementToChannelConverter.DIRECT_1_TO_1)),
+                    new FC3ReadRegistersTask(this.aioConfigRegisterTwo, Priority.LOW,
+                            m(LeafletCore.ChannelId.READ_AIO_CONFIG_TWO,
+                                    new UnsignedWordElement(this.aioConfigRegisterTwo),
+                                    ElementToChannelConverter.DIRECT_1_TO_1)),
+                    new FC3ReadRegistersTask(this.aioConfigRegisterThree, Priority.LOW,
+                            m(LeafletCore.ChannelId.READ_AIO_CONFIG_THREE,
+                                    new UnsignedWordElement(this.aioConfigRegisterThree),
+                                    ElementToChannelConverter.DIRECT_1_TO_1)),
+                    new FC3ReadRegistersTask(this.aioConfigRegisterFour, Priority.LOW,
+                            m(LeafletCore.ChannelId.READ_AIO_CONFIG_FOUR,
+                                    new UnsignedWordElement(this.aioConfigRegisterFour),
+                                    ElementToChannelConverter.DIRECT_1_TO_1)),
+                    new FC3ReadRegistersTask(this.aioConfigRegisterFive, Priority.LOW,
+                            m(LeafletCore.ChannelId.READ_AIO_CONFIG_FIVE,
+                                    new SignedWordElement(this.aioConfigRegisterFive),
+                                    ElementToChannelConverter.DIRECT_1_TO_1)),
+                    new FC3ReadRegistersTask(this.aioConfigRegisterSix, Priority.LOW,
+                            m(LeafletCore.ChannelId.READ_AIO_CONFIG_SIX,
+                                    new UnsignedWordElement(this.aioConfigRegisterSix),
+                                    ElementToChannelConverter.DIRECT_1_TO_1)),
+                    new FC3ReadRegistersTask(this.aioConfigRegisterSeven, Priority.LOW,
+                            m(LeafletCore.ChannelId.READ_AIO_CONFIG_SEVEN,
+                                    new UnsignedWordElement(this.aioConfigRegisterSeven),
+                                    ElementToChannelConverter.DIRECT_1_TO_1)),
 
                     new FC3ReadRegistersTask(this.relayInverseRegisters[0], Priority.LOW,
                             m(LeafletCore.ChannelId.READ_RELAY_ONE_INVERT_STATUS,
@@ -708,7 +776,11 @@ public class LeafletCoreImpl extends AbstractOpenemsModbusComponent implements O
             this.ownerMap.put(id, firstRun);
             return true;
         } else {
-            return this.ownerMap.get(id).equals(new PinOwner(type, moduleNumber, position));
+            if (this.ownerMap.containsKey(id)) {
+                return this.ownerMap.get(id).equals(new PinOwner(type, moduleNumber, position));
+            } else {
+                return false;
+            }
         }
     }
 
@@ -887,31 +959,31 @@ public class LeafletCoreImpl extends AbstractOpenemsModbusComponent implements O
         try {
             switch (moduleNumber) {
                 case 1:
-                    this.aioConfigOne = this.aioConfigOne | (position + configInt);
+                    this.aioConfigOne = this.aioConfigOne | (configInt << 4 * (position - 1));
                     getAioConfigOne().setNextWriteValue(this.aioConfigOne);
                     break;
                 case 2:
-                    this.aioConfigTwo = this.aioConfigTwo | (position + configInt);
+                    this.aioConfigTwo = this.aioConfigTwo | (configInt << 4 * (position - 1));
                     getAioConfigTwo().setNextWriteValue(this.aioConfigTwo);
                     break;
                 case 3:
-                    this.aioConfigThree = this.aioConfigThree | (position + configInt);
+                    this.aioConfigThree = this.aioConfigThree | (configInt << 4 * (position - 1));
                     getAioConfigThree().setNextWriteValue(this.aioConfigThree);
                     break;
                 case 4:
-                    this.aioConfigFour = this.aioConfigFour | (position + configInt);
+                    this.aioConfigFour = this.aioConfigFour | (configInt << 4 * (position - 1));
                     getAioConfigFour().setNextWriteValue(this.aioConfigFour);
                     break;
                 case 5:
-                    this.aioConfigFive = this.aioConfigFive | (position + configInt);
+                    this.aioConfigFive = this.aioConfigFive | (configInt << 4 * (position - 1));
                     getAioConfigFive().setNextWriteValue(this.aioConfigFive);
                     break;
                 case 6:
-                    this.aioConfigSix = this.aioConfigSix | (position + configInt);
+                    this.aioConfigSix = this.aioConfigSix | (configInt << 4 * (position - 1));
                     getAioConfigSix().setNextWriteValue(this.aioConfigSix);
                     break;
                 case 7:
-                    this.aioConfigSeven = this.aioConfigSeven | (position + configInt);
+                    this.aioConfigSeven = this.aioConfigSeven | (configInt << 4 * (position - 1));
                     getAioConfigSeven().setNextWriteValue(this.aioConfigSeven);
                     break;
                 default:
@@ -1016,7 +1088,7 @@ public class LeafletCoreImpl extends AbstractOpenemsModbusComponent implements O
      */
     private void enterConfigMode() {
         try {
-            getWriteLeafletConfigChannel().setNextWriteValue(7331);
+            getWriteLeafletConfigChannel().setNextWriteValue(1337);
             this.configFlag = true;
         } catch (OpenemsError.OpenemsNamedException ignored) {
             this.log.error("Error in enterConfigMode");
@@ -1039,6 +1111,19 @@ public class LeafletCoreImpl extends AbstractOpenemsModbusComponent implements O
     }
 
     /**
+     * Stores the aioConfig Register in a local variable.
+     */
+    private void setAioConfigurationAddresses() {
+        this.aioConfigRegisterOne = this.getConfigurationAddress(ModuleType.AIO, 1);
+        this.aioConfigRegisterTwo = this.getConfigurationAddress(ModuleType.AIO, 2);
+        this.aioConfigRegisterThree = this.getConfigurationAddress(ModuleType.AIO, 3);
+        this.aioConfigRegisterFour = this.getConfigurationAddress(ModuleType.AIO, 4);
+        this.aioConfigRegisterFive = this.getConfigurationAddress(ModuleType.AIO, 5);
+        this.aioConfigRegisterSix = this.getConfigurationAddress(ModuleType.AIO, 6);
+        this.aioConfigRegisterSeven = this.getConfigurationAddress(ModuleType.AIO, 7);
+    }
+
+    /**
      * Checks if we are still in Config mode and the Configuration has already taken place.
      *
      * @param event BEFORE_PROCESS_IMAGE
@@ -1047,7 +1132,7 @@ public class LeafletCoreImpl extends AbstractOpenemsModbusComponent implements O
     public void handleEvent(Event event) {
         if (this.configFlag && (getReadAioConfig() == (this.aioConfigOne | this.aioConfigTwo | this.aioConfigThree
                 | this.aioConfigFour | this.aioConfigFive | this.aioConfigSix | this.aioConfigSeven))) {
-            this.exitConfigMode();
+  //          this.exitConfigMode();
         }
 
     }
@@ -1057,7 +1142,7 @@ public class LeafletCoreImpl extends AbstractOpenemsModbusComponent implements O
      */
     private void exitConfigMode() {
         try {
-            getWriteLeafletConfigChannel().setNextWriteValue(1337);
+            getWriteLeafletConfigChannel().setNextWriteValue(7331);
             this.configFlag = false;
         } catch (OpenemsError.OpenemsNamedException ignored) {
             this.log.error("Error in exitConfigMode");

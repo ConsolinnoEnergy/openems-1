@@ -25,74 +25,74 @@ public enum ViessmannChpType {
 
 
     //tolerance in Percent
-    private int warmingPerformanceTolerance;
+    private final int heatOutputTolerance;
     //values in kW
-    private float electricalOutput;
-    private float thermalOutput;
-    private float fuelUse;
+    private final float electricOutput;
+    private final float thermalOutput;
+    private final float fuelUse;
     //in kW and only high temperature natural gas
-    private float warmingPerformance100Percent;
-    private float warmingPerformance75Percent;
-    private float warmingPerformance50Percent;
+    private final float heatOutputAt100Percent;
+    private final float heatOutputAt75Percent;
+    private final float heatOutputAt50Percent;
 
     //values in °C
-    private int maxFlowTemperature;
-    private int maxReturnTemperature;
+    private final int maxFlowTemperature;
+    private final int maxReturnTemperature;
 
-    private String name;
+    private final String name;
 
     /*For Later Usage at some point in dev.*/
-    ViessmannChpType(float electricalOutput, float thermalOutput, float fuelUse, int maxFlowTemperature, int maxReturnTemperature, int warmingPerformanceTolerance, float warmingPerformance100Percent, float warmingPerformance75Percent, float warmingPerformance50Percent, String name) {
-        this.electricalOutput = electricalOutput;
+    ViessmannChpType(float electricOutput, float thermalOutput, float fuelUse, int maxFlowTemperature, int maxReturnTemperature, int heatOutputTolerance, float heatOutputAt100Percent, float heatOutputAt75Percent, float heatOutputAt50Percent, String name) {
+        this.electricOutput = electricOutput;
         this.thermalOutput = thermalOutput;
         this.fuelUse = fuelUse;
         this.maxFlowTemperature = maxFlowTemperature;
         this.maxReturnTemperature = maxReturnTemperature;
-        this.warmingPerformanceTolerance = warmingPerformanceTolerance;
-        this.warmingPerformance50Percent = warmingPerformance50Percent;
-        this.warmingPerformance75Percent = warmingPerformance75Percent;
-        this.warmingPerformance100Percent = warmingPerformance100Percent;
+        this.heatOutputTolerance = heatOutputTolerance;
+        this.heatOutputAt50Percent = heatOutputAt50Percent;
+        this.heatOutputAt75Percent = heatOutputAt75Percent;
+        this.heatOutputAt100Percent = heatOutputAt100Percent;
         this.name = name;
 
     }
 
-    public float getElectricalOutput() {
-        return electricalOutput;
+    public float getElectricOutput() {
+        return this.electricOutput;
     }
 
     public float getThermalOutput() {
-        return thermalOutput;
+        return this.thermalOutput;
     }
 
     public float getFuelUse() {
-        return fuelUse;
+        return this.fuelUse;
     }
 
-    public int getWarmingPerformanceTolerance() {
-        return warmingPerformanceTolerance;
+    public int getHeatOutputTolerance() {
+        return this.heatOutputTolerance;
     }
 
-    public float getWarmingPerformance100Percent() {
-        return warmingPerformance100Percent;
+    public float getHeatOutputAt100Percent() {
+        return this.heatOutputAt100Percent;
     }
 
-    public float getWarmingPerformance75Percent() {
-        return warmingPerformance75Percent;
+    public float getHeatOutputAt75Percent() {
+        return this.heatOutputAt75Percent;
     }
 
-    public float getWarmingPerformance50Percent() {
-        return warmingPerformance50Percent;
+    public float getHeatOutputAt50Percent() {
+        return this.heatOutputAt50Percent;
     }
 
     public int getMaxFlowTemperature() {
-        return maxFlowTemperature;
+        return this.maxFlowTemperature;
     }
 
     public int getMaxReturnTemperature() {
-        return maxReturnTemperature;
+        return this.maxReturnTemperature;
     }
 
     public String getName() {
-        return name;
+        return this.name;
     }
 }

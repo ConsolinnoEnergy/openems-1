@@ -1,6 +1,10 @@
 package io.openems.edge.controller.heatnetwork.communication;
 
 
+import io.openems.common.exceptions.OpenemsError;
+import io.openems.edge.bridge.rest.api.RestRemoteDevice;
+import io.openems.edge.common.component.ComponentManager;
+import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.controller.heatnetwork.communication.api.RestLeafletCommunicationController;
 import io.openems.edge.controller.heatnetwork.communication.api.ManageType;
 import io.openems.edge.controller.heatnetwork.communication.api.RequestManager;
@@ -224,6 +228,42 @@ public class RestLeafletCommunicationControllerImpl implements RestLeafletCommun
     public void setMaxRequests(int maxAllowedRequests) {
         this.requestManager.setMaxManagedRequests(maxAllowedRequests);
     }
+
+    /**
+     * This will check each Containing Component -> is the reference still ok? otherwise tell the Comm.Master
+     *
+     * @param cpm the ComponentManager
+     * @return true if a Component Reference is old / not the same
+     */
+
+    @Override
+    public boolean shouldRefreshReferences(ComponentManager cpm) {
+        AtomicBoolean oldReferencesFound = new AtomicBoolean(false);
+        this.allRequests.forEach((integer, listOfRestRequests) -> {
+            if (!oldReferencesFound.get()) {
+                listOfRestRequests.forEach(entry -> {
+                    if (!oldReferencesFound.get()) {
+                        try {
+                            OpenemsComponent component = cpm.getComponent(entry.getRequest().id());
+                            if (component instanceof RestRemoteDevice && !component.equals(entry.getRequest())) {
+                                oldReferencesFound.set(true);
+                            }
+                            if (!oldReferencesFound.get()) {
+                                component = cpm.getComponent(entry.getCallbackRequest().id());
+                                if (component instanceof RestRemoteDevice && !component.equals(entry.getCallbackRequest())) {
+                                    oldReferencesFound.set(true);
+                                }
+                            }
+                        } catch (OpenemsError.OpenemsNamedException e) {
+                            oldReferencesFound.set(true);
+                        }
+                    }
+                });
+            }
+        });
+        return oldReferencesFound.get();
+    }
+
     /**
      * Gets the {@link RestRequestManager} of this CommunicationController.
      * @return the {@link RestRequestManager}.

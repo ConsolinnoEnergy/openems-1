@@ -1,0 +1,118 @@
+openems-consolinno (0.1.19-2) unstable; urgency=medium
+
+  * Added Support for fully Remote Control Alpha Innotech Pumps and is
+    optional as a Configuration Point
+  * Repaired Package install scripts, changed service destination to
+    /lib/system/sytemd/openems.service
+
+ -- Felix <felix@felix-ThinkPad-E15-Gen-2>  Thu, 03 Feb 2022 10:45:25 +0100
+
+openems-consolinno (0.1.18-1) unstable; urgency=medium
+
+  * Added TLS Support in MQTT and fixed a Nullpointer Exception Bug
+
+ -- Felix <felix@felix-ThinkPad-E15-Gen-2>  Wed, 19 Jan 2022 12:20:08 +0100
+
+openems-consolinno (0.1.17-1) unstable; urgency=medium
+
+  * Added an invalid Temperature by returning a null value of a Temperature as a -999
+  * Potential fix of Multiple MQTT Connections, when internet connection is bad
+  * Some Typos fixed in Valve, fixed a bug with a wrong EVENT, a new Static variable UNITIALIZED and added a new method for force close/opening
+  * Merged the Esslingen Develop Branch into Collapse -> Better Generic Modbus Handling as well as Optimzier, Translator and Patchworker fixes
+
+
+ -- Felix <felix@felix-ThinkPad-E15-Gen-2>  Wed, 19 Jan 2022 10:40:34 +0100
+
+openems-consolinno (0.1.16-1) unstable; urgency=medium
+
+  * Added MBus meter Heat and Gas to the build
+
+ -- Felix <felix@felix-ThinkPad-E15-Gen-2>  Mon, 10 Jan 2022 15:49:53 +0100
+
+openems-consolinno (0.1.15-1) unstable; urgency=medium
+
+  * Reduced Time in MQTT Bridge - is 90 seconds had an error where it
+    could be infinite
+
+ -- Felix <felix@felix-ThinkPad-E15-Gen-2>  Wed, 15 Dec 2021 15:09:17 +0100
+
+openems-consolinno (0.1.14-1) unstable; urgency=medium
+
+  * Added newest version of log4j, fixes from apache
+
+ -- Felix <felix@felix-ThinkPad-E15-Gen-2>  Mon, 13 Dec 2021 14:53:27 +0100
+
+openems-consolinno (0.1.12-1) unstable; urgency=medium
+
+  * Added Newest Version of EVCS Limiter
+  * Added Feature, where Surveillance Controller checks Heater for ERROR (and offline Mode)
+  * Added CommMaster -> References Check -> static every 5 min
+
+ -- Felix <felix@felix-ThinkPad-E15-Gen-2>  Wed, 08 Dec 2021 19:05:19 +0100
+
+openems-consolinno (0.1.11-1) unstable; urgency=medium
+
+  * Added a FileWriter to add OpenEmsComponentChannel Values to a
+    existing File. only one should exist since multiple controller
+    accessing the same file might create problems
+
+ -- Felix <felix@felix-ThinkPad-E15-Gen-2>  Thu, 25 Nov 2021 17:38:54 +0100
+
+openems-consolinno (0.1.10-1) unstable; urgency=medium
+
+  * Added a not tested Heater Cluster
+  * ModbusConnectionCheck was added by Sebastian
+  * Adapted Config Entries for ClusteredHeater and fixed a potential bug
+    in activationOrModifiedRoutine
+
+ -- Felix <felix@felix-ThinkPad-E15-Gen-2>  Wed, 24 Nov 2021 18:28:31 +0100
+
+openems-consolinno (0.1.7-1) unstable; urgency=medium
+
+  * Found Problem why Package does not exist was in gradle
+  * Changed from package of build.gradle -> should work now
+
+ -- Felix <felix@felix-ThinkPad-E15-Gen-2>  Fri, 19 Nov 2021 13:48:06 +0100
+
+openems-consolinno (0.1.6-1) unstable; urgency=medium
+
+  * Perhaps a fix for debian postInstall
+
+ -- Felix <felix@felix-ThinkPad-E15-Gen-2>  Fri, 19 Nov 2021 12:56:12 +0100
+
+openems-consolinno (0.1.5-1) unstable; urgency=medium
+
+  * Updated Heater and EVCS Limiter
+
+ -- Felix <felix@felix-ThinkPad-E15-Gen-2>  Thu, 18 Nov 2021 11:09:05 +0100
+
+openems-consolinno (0.1.4-1) unstable; urgency=medium
+
+  * Added support of HR for Modbus Thermometer
+
+ -- Felix <felix@felix-ThinkPad-E15-Gen-2>  Tue, 26 Oct 2021 14:57:23 +0200
+
+openems-consolinno (0.1.3-1) unstable; urgency=medium
+
+  * Fixed a Bug in Virtual Channel where Default Value was not applied
+
+ -- Felix <felix@felix-ThinkPad-E15-Gen-2>  Tue, 26 Oct 2021 13:11:34 +0200
+
+openems-consolinno (0.1.2-1) unstable; urgency=medium
+
+  * Added a configurable constant to ModbusThermometer
+  * Added the support of HoldingRegister for Read and Write in Generic Modbus Components(untested)
+
+ -- Felix <felix@felix-ThinkPad-E15-Gen-2>  Tue, 26 Oct 2021 11:54:59 +0200
+
+openems-consolinno (0.1.1-1) unstable; urgency=medium
+
+  * Added a new Utility Class for ChannelMapping 1:1
+
+ -- Felix <felix@felix-ThinkPad-E15-Gen-2>  Tue, 26 Oct 2021 10:39:26 +0200
+
+openems-consolinno (0.1.0-1) unstable; urgency=medium
+
+  * Fixed ConditionApplierProblem where old ConfigurationData was not reset/cleared
+
+ -- Felix <felix@felix-ThinkPad-E15-Gen-2>  Mon, 25 Oct 2021 21:40:24 +0200

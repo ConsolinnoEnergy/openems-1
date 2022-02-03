@@ -95,7 +95,9 @@ public class AioImpl extends AbstractOpenemsModbusComponent implements OpenemsCo
         this.position = config.position();
         this.type = config.type();
         this.debug = config.debugValue();
-        this.value = config.value();
+        if (this.debug) {
+            this.value = config.value();
+        }
 
         switch (this.type) {
             case ("0-20mA_in"):
@@ -143,6 +145,11 @@ public class AioImpl extends AbstractOpenemsModbusComponent implements OpenemsCo
 
         } else {
             throw new ConfigurationException("Aio not configured properly. Please check the Config", "This device doesn't exist");
+        }
+        try {
+            this.getWriteChannel().setNextWriteValue(0);
+        } catch (OpenemsError.OpenemsNamedException ignored) {
+
         }
 
     }

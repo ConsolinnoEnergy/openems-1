@@ -16,7 +16,7 @@ import java.util.Optional;
  */
 public interface ThermometerVirtual extends Thermometer {
     enum ChannelId implements io.openems.edge.common.channel.ChannelId {
-        VIRTUAL_TEMPERATURE(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE));
+        VIRTUAL_TEMPERATURE(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE));
 
 
         private final Doc doc;
@@ -32,7 +32,7 @@ public interface ThermometerVirtual extends Thermometer {
     }
 
     /**
-     * Gets the Virutal Temperature Channel.
+     * Gets the Virtual Temperature Channel.
      *
      * @return the Channel.
      */
@@ -51,7 +51,7 @@ public interface ThermometerVirtual extends Thermometer {
     }
 
     /**
-     * Sets the Virutal Temperature. Can be called by other Components.
+     * Sets the Virtual Temperature. Can be called by other Components.
      *
      * @param virtualTemperature the virtual Temperature that will be applied.
      * @throws OpenemsError.OpenemsNamedException if Channel cannot be found. (Shouldn't occur)

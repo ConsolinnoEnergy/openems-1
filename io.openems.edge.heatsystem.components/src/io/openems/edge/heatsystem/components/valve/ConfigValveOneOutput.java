@@ -4,7 +4,7 @@ import io.openems.edge.heatsystem.components.ConfigurationType;
 import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
-@ObjectClassDefinition(name = "Valve One Input", description = "A Valve that write a percent Value into another Output(Channel)")
+@ObjectClassDefinition(name = "Valve One Output", description = "A Valve that write a percent Value into another Output(Channel)")
 @interface ConfigValveOneOutput {
 
     String service_pid();
@@ -41,7 +41,7 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
     boolean useExceptionalState() default false;
 
-    @AttributeDefinition(name = "TimerId", description = "The Timer used for the ExceptionalState")
+    @AttributeDefinition(name = "TimerId", description = "The Timer used for the ExceptionalState and/or Check for missing Components")
     String timerId() default "TimerByCycles";
 
     @AttributeDefinition(name = "Timeout ExceptionalState", description = "Time exceptionalState Value stays active after it's enable Signal is missing")

@@ -22,16 +22,16 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     @AttributeDefinition(name = "Alias", description = "Human readable Name.")
     String alias() default "";
 
-    @AttributeDefinition(name = "ConnectionType", description = "ConnectionTypes, that are supported by the Communicationmaster")
+    @AttributeDefinition(name = "ConnectionType", description = "ConnectionTypes, that are supported by the CommunicationMaster")
     ConnectionType connectionType() default ConnectionType.REST;
 
     @AttributeDefinition(name = "Maximum Requests", description = "Maximum requests handled at once, mapped to Connection type")
-    int maxRequestAllowedAtOnce() default 3;
+    int maxDecentralizedSystemsAllowedAtOnce() default 3;
 
     @AttributeDefinition(name = "TimerType for Manager", description = "Should the Manager use Cycles or Time")
     TimerType timerForManager() default TimerType.TIME;
 
-    @AttributeDefinition(name = "Maximum Waiting Time", description = "Maximum Time in Minutes an element is Allowed to wait "
+    @AttributeDefinition(name = "Maximum Waiting Time", description = "Maximum Time in MINUTES an element is Allowed to wait "
             + "before it gets swapped by a member of the ActiveList. Or the number of cycles.")
     int maxWaitTimeAllowed() default 30;
 
@@ -50,7 +50,7 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
     @AttributeDefinition(name = "RequestMapper", description = "Type in RequestComponent:CallbackComponent:Position:RequestType"
             + "Available RequestTypes will be listed below")
-    String[] requestMap() default "RestRemoteComponent0:RestRemoteComponent1:1:HEAT";
+    String[] requestMap() default "RemoteDevice0:RemoteDevice1:1:HEAT";
 
     String[] requestTypes() default {};
 
@@ -64,7 +64,7 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
             + "The order is: RequestType:ChannelAddressOrMethod:ActualMethodNameOrChannelAddress:ValueIfPresent:ValueIfNotPresent")
     String[] requestTypeToResponse() default {
             "HEAT:CHANNEL_ADDRESS:Pump0/SetPowerLevel:100:0",
-            "HEAT:CHANNEL_ADDRESS:VirtualThermometer0/VirtualTemperature:70:0",
+            "HEAT:CHANNEL_ADDRESS:VirtualThermometer0/VirtualTemperature:700:0",
             "MORE_HEAT:METHOD:ACTIVATE_LINEHEATER:true:null",
             "GENERIC:METHOD:LOG_INFO:GenericRequest:NoGenericRequest"
     };

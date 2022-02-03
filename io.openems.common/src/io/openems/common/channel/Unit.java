@@ -218,24 +218,38 @@ public enum Unit {
 	// ##########
 
 	/**
-	 * Unit of Temperature [C]
+	 * Unit of Temperature [°C]
 	 */
-	DEGREE_CELSIUS("C"),
+	DEGREE_CELSIUS("°C"),
 
 	/**
-	 * Unit of Temperature [dC]
+	 * Unit of Temperature [d°C]
 	 */
-	DEZIDEGREE_CELSIUS("dC", DEGREE_CELSIUS, -1),
+	DECIDEGREE_CELSIUS("d°C", DEGREE_CELSIUS, -1),
 
 	/**
 	 * Unit of Temperature [K]
 	 */
-	DEGREE_KELVIN("K"),
+	KELVIN("K"),
 
 	/**
 	 * Unit of Temperature [dK]
 	 */
-	DEZIDEGREE_KELVIN("dK", DEGREE_KELVIN, -1),
+	DECI_KELVIN("dK", KELVIN, -1),
+
+	// ##########
+	// Temperature change
+	// ##########
+
+	/**
+	 * Unit of Temperature Change [K/min]
+	 */
+	KELVIN_PER_MINUTE("K/min"),
+
+	/**
+	 * Unit of Temperature Change [dK]
+	 */
+	DECI_KELVIN_PER_MINUTE("dK/min", KELVIN_PER_MINUTE, -1),
 
 	// ##########
 	// Time
@@ -445,9 +459,11 @@ public enum Unit {
 			case HERTZ:
 			case MILLIHERTZ:
 			case DEGREE_CELSIUS:
-			case DEZIDEGREE_CELSIUS:
-			case DEGREE_KELVIN:
-			case DEZIDEGREE_KELVIN:
+			case DECIDEGREE_CELSIUS:
+			case KELVIN:
+			case DECI_KELVIN:
+			case KELVIN_PER_MINUTE:
+			case DECI_KELVIN_PER_MINUTE:
 			case SECONDS:
 			case CENTISECONDS:
 			case MILLISECONDS:

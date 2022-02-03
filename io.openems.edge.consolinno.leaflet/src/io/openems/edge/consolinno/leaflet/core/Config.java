@@ -13,7 +13,7 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     String alias() default "";
 
     @AttributeDefinition(name = "Source", description = "Path of the SourceFile")
-    String source() default "/usr/include/leaflet/modbusregmap.csv";
+    String source() default "/usr/include/leafletbs/modbusregmap.csv";
 
     boolean enabled() default true;
 

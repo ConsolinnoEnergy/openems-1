@@ -13,6 +13,7 @@ import io.openems.edge.common.component.AbstractOpenemsComponent;
 import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
 import org.eclipse.paho.client.mqttv3.MqttException;
+import org.joda.time.DateTime;
 import org.osgi.service.cm.ConfigurationAdmin;
 import org.osgi.service.cm.ConfigurationException;
 import org.osgi.service.component.ComponentContext;
@@ -35,6 +36,10 @@ public abstract class MqttOpenemsComponentConnector extends AbstractOpenemsCompo
 
     AtomicReference<MqttBridge> mqttBridge = new AtomicReference<>();
     OpenemsComponent otherComponent;
+    String mqttBridgeId;
+    DateTime initTime;
+    private static final int WAIT_SECONDS = 10;
+    private boolean initialized = false;
 
     MqttConfigurationComponent mqttConfigurationComponent;
 
@@ -43,11 +48,12 @@ public abstract class MqttOpenemsComponentConnector extends AbstractOpenemsCompo
         super(firstInitialChannelIds, furtherInitialChannelIds);
     }
 
-    protected boolean activate(ComponentContext context, String id, String alias, boolean enabled, ComponentManager cpm, String mqttId)
+    protected boolean activate(ComponentContext context, String id, String alias, boolean enabled, ComponentManager cpm, String mqttBridgeId)
             throws OpenemsError.OpenemsNamedException {
         super.activate(context, id, alias, enabled);
-        if (cpm.getComponent(mqttId) instanceof MqttBridge) {
-            this.mqttBridge.set(cpm.getComponent(mqttId));
+        this.mqttBridgeId = mqttBridgeId;
+        if (cpm.getComponent(this.mqttBridgeId) instanceof MqttBridge) {
+            this.mqttBridge.set(cpm.getComponent(this.mqttBridgeId));
             MqttBridge mqtt = this.mqttBridge.get();
             if (this.isEnabled() && mqtt != null && mqtt.isEnabled()) {
                 this.mqttBridge.get().addMqttComponent(super.id(), this);
@@ -64,6 +70,7 @@ public abstract class MqttOpenemsComponentConnector extends AbstractOpenemsCompo
                                boolean enabled, ComponentManager cpm, String mqttBridgeId) throws OpenemsError.OpenemsNamedException {
         super.modified(context, id, alias, enabled);
         if (cpm.getComponent(mqttBridgeId) instanceof MqttBridge) {
+            this.mqttBridgeId = mqttBridgeId;
             this.mqttBridge.set(cpm.getComponent(mqttBridgeId));
             MqttBridge mqtt = this.mqttBridge.get();
             if (this.isEnabled() && mqtt != null && mqtt.isEnabled()) {
@@ -171,10 +178,8 @@ public abstract class MqttOpenemsComponentConnector extends AbstractOpenemsCompo
      */
     void connectorDeactivate() {
         super.deactivate();
-        if (this.mqttConfigurationComponent != null) {
             if (this.mqttBridge.get() != null) {
                 this.mqttBridge.get().removeMqttComponent(super.id());
-            }
         }
     }
 
@@ -219,5 +224,45 @@ public abstract class MqttOpenemsComponentConnector extends AbstractOpenemsCompo
             return true;
         }
         return false;
+    }
+
+    protected OpenemsComponent getOtherComponent() {
+        return this.otherComponent;
+    }
+
+    /**
+     * Checks if the mapped Component isEnabled or not.
+     * If it is not enabled, it has probably an old reference -> renew Reference.
+     *
+     * @param cpm the ComponentManager.
+     */
+    protected void renewReferenceAndMqttConfigurationComponent(ComponentManager cpm) {
+        if (this.initialized) {
+            if (this.initTime != null && new DateTime().isAfter(this.initTime.plusSeconds(WAIT_SECONDS))) {
+                this.initialized = false;
+                try {
+                    if (this.otherComponent != null && (this.otherComponent.isEnabled() == false || this.componentIsSame(cpm, this.otherComponent) == false)) {
+                        this.otherComponent = cpm.getComponent(this.getOtherComponent().id());
+                        this.mqttConfigurationComponent = null;
+                    }
+                    if (this.mqttBridge.get() == null || (this.mqttBridge.get().isEnabled() == false || this.componentIsSame(cpm, this.mqttBridge.get()) == false)) {
+                        OpenemsComponent refreshedMqttBridge = cpm.getComponent(this.mqttBridgeId);
+                        if (refreshedMqttBridge instanceof MqttBridge) {
+                            this.mqttBridge.set((MqttBridge) refreshedMqttBridge);
+                        }
+                    }
+                } catch (OpenemsError.OpenemsNamedException e) {
+                    this.log.warn("OpenEMS component with id: " + this.getOtherComponent().id() + " Cannot be found!");
+                }
+            }
+        } else {
+            this.initialized = true;
+            this.initTime = new DateTime();
+        }
+    }
+
+    protected boolean componentIsSame(ComponentManager cpm, OpenemsComponent compareComponent) throws OpenemsError.OpenemsNamedException {
+        OpenemsComponent registeredComponent = cpm.getComponent(compareComponent.id());
+        return compareComponent.equals(registeredComponent);
     }
 }

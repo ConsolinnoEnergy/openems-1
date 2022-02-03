@@ -6,10 +6,10 @@ Bundle-Version: 1.0.0.${tstamp}
 -buildpath:  \
 	${buildpath},\
 	io.openems.common,\
-	io.openems.edge.bridge.genibus,\
+	io.openems.edge.bridge.genibus;version=latest,\
 	io.openems.edge.controller.api,\
 	io.openems.edge.common,\
-	io.openems.edge.pump.grundfos,\
+	io.openems.edge.pump.grundfos;version=latest,\
 
 -testpath: \
 	${testpath}

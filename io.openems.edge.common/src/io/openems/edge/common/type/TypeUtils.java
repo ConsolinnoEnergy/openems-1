@@ -171,7 +171,14 @@ public class TypeUtils {
 					return null;
 				}
 				return (T) Integer.valueOf(Integer.parseInt(stringValue));
+
+		} else if (value instanceof int[]) {
+				int sum = 0;
+			for (int n =0; n<((int[]) value).length;n++){
+				sum += ((int[])value)[n];
 			}
+			return (T) Integer.valueOf(sum);
+		}
 			break;
 
 		case LONG:
@@ -234,7 +241,7 @@ public class TypeUtils {
 
 			} else if (value instanceof Double) {
 				double doubleValue = (Double) value;
-				if (doubleValue >= Float.MIN_VALUE && doubleValue <= Float.MAX_VALUE) {
+				if ((doubleValue >= Float.MIN_VALUE && doubleValue <= Float.MAX_VALUE) || doubleValue == 0.0d) {
 					return (T) (Float) Float.valueOf((float) doubleValue);
 				} else {
 					throw new IllegalArgumentException(

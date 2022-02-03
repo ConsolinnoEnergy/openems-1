@@ -1,6 +1,7 @@
 package io.openems.edge.controller.heatnetwork.communication;
 
 import io.openems.common.exceptions.OpenemsError;
+import io.openems.edge.bridge.rest.api.RestRemoteDevice;
 import io.openems.edge.common.component.AbstractOpenemsComponent;
 import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
@@ -22,12 +23,11 @@ import io.openems.edge.controller.heatnetwork.communication.responsewrapper.Chan
 import io.openems.edge.controller.heatnetwork.communication.responsewrapper.MethodResponse;
 import io.openems.edge.controller.heatnetwork.communication.responsewrapper.MethodResponseImpl;
 import io.openems.edge.controller.heatnetwork.communication.responsewrapper.ResponseWrapper;
-import io.openems.edge.controller.heatnetwork.hydraulic.lineheater.api.HydraulicLineHeater;
+import io.openems.edge.controller.heatnetwork.hydraulic.lineheater.api.HydraulicLineController;
 import io.openems.edge.exceptionalstate.api.ExceptionalState;
 import io.openems.edge.exceptionalstate.api.ExceptionalStateHandler;
 import io.openems.edge.exceptionalstate.api.ExceptionalStateHandlerImpl;
-import io.openems.edge.heatsystem.components.Pump;
-import io.openems.edge.remote.rest.device.api.RestRemoteDevice;
+import io.openems.edge.heatsystem.components.HydraulicComponent;
 import io.openems.edge.timer.api.TimerHandler;
 import io.openems.edge.timer.api.TimerHandlerImpl;
 import org.osgi.service.cm.Configuration;
@@ -84,9 +84,9 @@ public class CommunicationMasterControllerImpl extends AbstractOpenemsComponent 
     //Configured communicationController handling one remoteCommunication
     CommunicationController communicationController;
     //The Optional HydraulicLineHeater
-    private HydraulicLineHeater hydraulicLineHeater;
+    private HydraulicLineController hydraulicLineController;
     //The Optional HeatPump
-    private Pump heatPump;
+    private HydraulicComponent heatPump;
     //For Subclasses -> CommunicationController and manager
     private boolean forcing;
     private int maxAllowedRequests;
@@ -103,6 +103,9 @@ public class CommunicationMasterControllerImpl extends AbstractOpenemsComponent 
     private ExceptionalStateHandler exceptionalStateHandler;
     private static final String KEEP_ALIVE_IDENTIFIER = "COMMUNICATION_MASTER_CONTROLLER_KEEP_ALIVE_IDENTIFIER";
     private static final String EXCEPTIONAL_STATE_IDENTIFIER = "COMMUNICATION_MASTER_CONTROLLER_EXCEPTIONAL_STATE_IDENTIFIER";
+    private static final String CHECK_OWN_REFERENCES_IDENTIFIER = "COMMUNICATION_MASTER_CONTROLLER_OWN_REFERENCES";
+    private static final String CHECK_REMOTE_REFERENCES_IDENTIFIER = "COMMUNICATION_MASTER_CONTROLLER_REMOTE_REFERENCES";
+    private static final int MAX_WAIT_TIME_REFERENCES_CHECK_SECONDS = 300;
     private final Map<RequestType, List<ResponseWrapper>> requestTypeAndResponses = new HashMap<>();
     private final Map<RequestType, AtomicBoolean> requestTypeIsSet = new HashMap<>();
 
@@ -131,6 +134,8 @@ public class CommunicationMasterControllerImpl extends AbstractOpenemsComponent 
             this.configureController(config);
             if (this.communicationController != null) {
                 this.communicationController.enable();
+            } else {
+                this.configSucceed = false;
             }
         } catch (ConfigurationException | OpenemsError.OpenemsNamedException e) {
             this.log.warn("Couldn't apply config, try again later " + super.id());
@@ -147,6 +152,11 @@ public class CommunicationMasterControllerImpl extends AbstractOpenemsComponent 
         this.clearReferences();
         try {
             this.configureController(config);
+            if (this.communicationController != null) {
+                this.communicationController.enable();
+            } else {
+                this.configSucceed = false;
+            }
         } catch (OpenemsError.OpenemsNamedException | ConfigurationException e) {
             this.log.warn("Couldn't apply modified Configuration : " + super.id());
             this.configSucceed = false;
@@ -165,7 +175,7 @@ public class CommunicationMasterControllerImpl extends AbstractOpenemsComponent 
         this.configurationDone = config.configurationDone();
         if (this.configurationDone) {
             this.setForceHeating(config.forceHeating());
-            this.setMaximumRequests(config.maxRequestAllowedAtOnce());
+            this.setMaximumRequests(config.maxDecentralizedSystemsAllowedAtOnce());
             this.forcing = this.getForceHeating();
             this.maxAllowedRequests = this.getMaximumRequests();
             this.communicationController = HELPER.createCommunicationControllerWithRequests(config, this.cpm);
@@ -177,16 +187,16 @@ public class CommunicationMasterControllerImpl extends AbstractOpenemsComponent 
 
             if (config.usePump()) {
                 optionalComponent = this.cpm.getComponent(config.pumpId());
-                if (optionalComponent instanceof Pump) {
-                    this.heatPump = (Pump) optionalComponent;
+                if (optionalComponent instanceof HydraulicComponent) {
+                    this.heatPump = (HydraulicComponent) optionalComponent;
                 } else {
                     throw new ConfigurationException("CommunicationMaster - Activate - Pump", "PumpId Component - Not an instance of Pump; PumpId: " + config.pumpId());
                 }
             }
             if (config.useHydraulicLineHeater()) {
                 optionalComponent = this.cpm.getComponent(config.hydraulicLineHeaterId());
-                if (optionalComponent instanceof HydraulicLineHeater) {
-                    this.hydraulicLineHeater = (HydraulicLineHeater) optionalComponent;
+                if (optionalComponent instanceof HydraulicLineController) {
+                    this.hydraulicLineController = (HydraulicLineController) optionalComponent;
                 } else {
                     throw new ConfigurationException("CommunicationMaster - Activate - HydraulicLineHeater",
                             "HydraulicLineHeaterId Component - Not an Instance of HydraulicLineHeater : " + config.hydraulicLineHeaterId());
@@ -198,6 +208,8 @@ public class CommunicationMasterControllerImpl extends AbstractOpenemsComponent 
             this.setForceHeating(config.forceHeating());
             this.timer = new TimerHandlerImpl(this.id(), this.cpm);
             this.timer.addOneIdentifier(KEEP_ALIVE_IDENTIFIER, config.timerId(), config.keepAlive());
+            this.timer.addOneIdentifier(CHECK_REMOTE_REFERENCES_IDENTIFIER, config.timerId(), MAX_WAIT_TIME_REFERENCES_CHECK_SECONDS);
+            this.timer.addOneIdentifier(CHECK_OWN_REFERENCES_IDENTIFIER, config.timerId(), MAX_WAIT_TIME_REFERENCES_CHECK_SECONDS);
             this.useExceptionalStateHandling = config.useExceptionalStateHandling();
             if (this.useExceptionalStateHandling) {
                 this.timer.addOneIdentifier(EXCEPTIONAL_STATE_IDENTIFIER, config.timerIdExceptionalState(), config.exceptionalStateTime());
@@ -207,7 +219,7 @@ public class CommunicationMasterControllerImpl extends AbstractOpenemsComponent 
             FallbackHandling fallback = config.fallback();
 
             this.setFallbackLogic(fallback);
-            this.maxAllowedRequests = config.maxRequestAllowedAtOnce();
+            this.maxAllowedRequests = config.maxDecentralizedSystemsAllowedAtOnce();
             this.getMaximumRequestChannel().setNextValue(this.maxAllowedRequests);
             this.configSucceed = true;
         }
@@ -334,6 +346,19 @@ public class CommunicationMasterControllerImpl extends AbstractOpenemsComponent 
     public void run() {
         if (this.configSucceed) {
             if (this.configurationDone) {
+                if (this.timer.checkTimeIsUp(CHECK_REMOTE_REFERENCES_IDENTIFIER)) {
+                    this.timer.resetTimer(CHECK_REMOTE_REFERENCES_IDENTIFIER);
+                    if (this.communicationController.shouldRefreshReferences(this.cpm)) {
+                        this.configSucceed = false;
+                        return;
+                    }
+                }
+                if (this.timer.checkTimeIsUp(CHECK_OWN_REFERENCES_IDENTIFIER)) {
+                    if (this.checkOwnOptionalReferences()) {
+                        this.timer.resetTimer(CHECK_OWN_REFERENCES_IDENTIFIER);
+                    }
+                }
+
                 //Check if Requests have to be added/removed and if components are still enabled
                 this.checkChangesAndApply();
                 //Connections ok?
@@ -364,7 +389,13 @@ public class CommunicationMasterControllerImpl extends AbstractOpenemsComponent 
             }
         } else {
             try {
+                this.clearReferences();
                 this.configureController(this.config);
+                if (this.communicationController != null) {
+                    this.communicationController.enable();
+                } else {
+                    this.configSucceed = false;
+                }
             } catch (ConfigurationException | OpenemsError.OpenemsNamedException e) {
                 this.clearReferences();
                 if (this.configFailCounter.get() >= MAX_FAIL_COUNTER) {
@@ -376,6 +407,52 @@ public class CommunicationMasterControllerImpl extends AbstractOpenemsComponent 
         }
     }
 
+    /**
+     * Check if the configured OpenEMS Components are still up to date / references are correct.
+     * Otherwise they will be replaced.
+     *
+     * @return true on success. On Error -> return false.
+     */
+    private boolean checkOwnOptionalReferences() {
+
+
+        try {
+            OpenemsComponent component;
+            String idOfComponent;
+            if (this.config.usePump()) {
+                idOfComponent = this.config.pumpId();
+                component = this.cpm.getComponent(idOfComponent);
+                if (component instanceof HydraulicComponent) {
+                    HydraulicComponent hydraulic = (HydraulicComponent) component;
+                    if (this.heatPump == null) {
+                        this.heatPump = hydraulic;
+                    } else {
+                        if (hydraulic.equals(this.heatPump) == false) {
+                            this.heatPump = hydraulic;
+                        }
+                    }
+                }
+            }
+            if (this.config.useHydraulicLineHeater()) {
+                idOfComponent = this.config.hydraulicLineHeaterId();
+                component = this.cpm.getComponent(idOfComponent);
+                if (component instanceof HydraulicLineController) {
+                    HydraulicLineController newHydraulicLineHeater = (HydraulicLineController) component;
+                    if (this.hydraulicLineController == null) {
+                        this.hydraulicLineController = newHydraulicLineHeater;
+                    } else {
+                        if (newHydraulicLineHeater.equals(this.hydraulicLineController) == false) {
+                            this.hydraulicLineController = newHydraulicLineHeater;
+                        }
+                    }
+                }
+            }
+            return true;
+        } catch (OpenemsError.OpenemsNamedException e) {
+            return false;
+        }
+
+    }
 
     /**
      * Fallback Logic of this controller, depending on the set FallbackLogic.
@@ -511,12 +588,12 @@ public class CommunicationMasterControllerImpl extends AbstractOpenemsComponent 
                 }
                 break;
             case ACTIVATE_LINE_HEATER:
-                if (this.hydraulicLineHeater != null) {
+                if (this.hydraulicLineController != null) {
                     Boolean lineHeaterActivation = null;
                     if (value != null || value.equals("null") == false) {
                         lineHeaterActivation = Boolean.valueOf(value);
                     }
-                    this.hydraulicLineHeater.enableSignal().setNextWriteValueFromObject(lineHeaterActivation);
+                    this.hydraulicLineController.enableSignalChannel().setNextWriteValueFromObject(lineHeaterActivation);
                 } else {
                     this.log.warn("Wanted to set HydraulicLineHeater to : " + value + " But it is not instantiated! " + super.id());
                 }
@@ -529,7 +606,7 @@ public class CommunicationMasterControllerImpl extends AbstractOpenemsComponent 
      */
     private void clearReferences() {
         this.communicationController = null;
-        this.hydraulicLineHeater = null;
+        this.hydraulicLineController = null;
         this.heatPump = null;
         this.requestTypeAndResponses.clear();
         this.requestTypeIsSet.clear();
@@ -541,13 +618,13 @@ public class CommunicationMasterControllerImpl extends AbstractOpenemsComponent 
     private void checkChangesAndApply() {
         //Check if Components are still enabled
         try {
-            if (this.hydraulicLineHeater != null && this.hydraulicLineHeater.isEnabled() == false) {
-                if (this.cpm.getComponent(this.hydraulicLineHeater.id()) instanceof HydraulicLineHeater) {
-                    this.hydraulicLineHeater = this.cpm.getComponent(this.hydraulicLineHeater.id());
+            if (this.hydraulicLineController != null && this.hydraulicLineController.isEnabled() == false) {
+                if (this.cpm.getComponent(this.hydraulicLineController.id()) instanceof HydraulicLineController) {
+                    this.hydraulicLineController = this.cpm.getComponent(this.hydraulicLineController.id());
                 }
             }
             if (this.heatPump != null && this.heatPump.isEnabled() == false) {
-                if (this.cpm.getComponent(this.heatPump.id()) instanceof Pump) {
+                if (this.cpm.getComponent(this.heatPump.id()) instanceof HydraulicComponent) {
                     this.heatPump = this.cpm.getComponent(this.heatPump.id());
                 }
             }
@@ -598,7 +675,7 @@ public class CommunicationMasterControllerImpl extends AbstractOpenemsComponent 
             CommunicationController controller;
             if (config.connectionType() == ConnectionType.REST) {
                 controller = new RestLeafletCommunicationControllerImpl(config.connectionType(),
-                        config.manageType(), config.maxRequestAllowedAtOnce(),
+                        config.manageType(), config.maxDecentralizedSystemsAllowedAtOnce(),
                         config.forceHeating());
                 controller.setMaxWaitTime(config.maxWaitTimeAllowed());
             } else {

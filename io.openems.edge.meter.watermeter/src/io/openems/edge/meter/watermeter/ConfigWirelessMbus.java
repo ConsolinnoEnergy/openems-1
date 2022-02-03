@@ -6,7 +6,7 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 import org.osgi.service.metatype.annotations.Option;
 
 @ObjectClassDefinition(
-        name = "Meter Water Wireless M-Bus",
+        name = "Meter Water Wireless MBus",
         description = "Implements a water meter communicating via Wireless M-Bus.")
 @interface ConfigWirelessMbus {
 
@@ -22,8 +22,8 @@ import org.osgi.service.metatype.annotations.Option;
     @AttributeDefinition(name = "Wireless M-Bus radio address", description = "Radio address of the WM-Bus device.")
     String radioAddress() default "";
 
-    @AttributeDefinition(name = "Model", description = "Choose the meter model. This selects at which record positions to " +
-            "look for the data in the transmission. \"Autosearch record position\" should work for most models.",
+    @AttributeDefinition(name = "Model", description = "Choose the meter model. This selects at which record positions to "
+            + "look for the data in the transmission. \"Autosearch record position\" should work for most models.",
             options = {
                     @Option(label = "Autosearch record position", value = "Autosearch"),
                     @Option(label = "Relay PadPuls M2W Channel 1", value = "Relay PadPuls M2W Channel 1"),

@@ -5,12 +5,11 @@ import io.openems.edge.bridge.modbus.api.AbstractOpenemsModbusComponent;
 import io.openems.edge.bridge.modbus.api.BridgeModbus;
 import io.openems.edge.bridge.modbus.api.ElementToChannelConverter;
 import io.openems.edge.bridge.modbus.api.ModbusProtocol;
-import io.openems.edge.bridge.modbus.api.element.UnsignedWordElement;
+import io.openems.edge.bridge.modbus.api.element.SignedWordElement;
 import io.openems.edge.bridge.modbus.api.task.FC4ReadInputRegistersTask;
 import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.common.taskmanager.Priority;
-import io.openems.edge.consolinno.leaflet.aio.AioImpl;
 import io.openems.edge.consolinno.leaflet.core.api.LeafletCore;
 import io.openems.edge.thermometer.api.Thermometer;
 import org.osgi.service.cm.ConfigurationAdmin;
@@ -28,9 +27,12 @@ import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
+/**
+ * Provides a Consolinno Temperature sensor. It communicates via Modbus with the TemperatureModule, gets it's addresses
+ * via the LeafletCore and sets it's Temperature into the Thermometer Nature.
+ */
 @Designate(ocd = Config.class, factory = true)
-@Component(name = "Consolinno.Leaflet.Temperature", immediate = true,
+@Component(name = "Thermometer.Consolinno.Leaflet.Temperature", immediate = true,
         configurationPolicy = ConfigurationPolicy.REQUIRE)
 public class TemperatureSensorImpl extends AbstractOpenemsModbusComponent implements OpenemsComponent, Thermometer {
 
@@ -90,7 +92,7 @@ public class TemperatureSensorImpl extends AbstractOpenemsModbusComponent implem
         if (this.lc.checkFirmwareCompatibility()) {
             return new ModbusProtocol(this,
                     new FC4ReadInputRegistersTask(this.temperatureAnalogInput, Priority.HIGH,
-                            m(Thermometer.ChannelId.TEMPERATURE, new UnsignedWordElement(this.temperatureAnalogInput),
+                            m(Thermometer.ChannelId.TEMPERATURE, new SignedWordElement(this.temperatureAnalogInput),
                                     ElementToChannelConverter.DIRECT_1_TO_1)));
         } else {
             this.deactivate();
@@ -100,8 +102,8 @@ public class TemperatureSensorImpl extends AbstractOpenemsModbusComponent implem
 
     @Override
     public String debugLog() {
-        String temperature = getTemperature().isDefined() ? getTemperature().get().toString() : "Not Defined";
-        return "Temperature " + temperature;
+        String temperature = getTemperature().isDefined() ? getTemperature().get().toString() + getTemperatureChannel().channelDoc().getUnit().getSymbol() : "Not Defined";
+        return "Temperature: " + temperature;
     }
 
 }

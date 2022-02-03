@@ -6,8 +6,8 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
 
 @ObjectClassDefinition(
-        name = "Valve Two Input ",
-        description = "A valve controlled by two inputs."
+        name = "Valve Two Output",
+        description = "A valve controlled by two outputs."
 )
 @interface ConfigValveTwoOutput {
 
@@ -51,12 +51,11 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
     boolean useExceptionalState() default false;
 
-    @AttributeDefinition(name = "TimerId", description = "The Timer used for the ExceptionalState")
+    @AttributeDefinition(name = "TimerId", description = "The Timer used for the ExceptionalState and/or check for missing Components")
     String timerId() default "TimerByCycles";
 
     @AttributeDefinition(name = "Timeout ExceptionalState", description = "Time exceptionalState Value stays active after it's enable Signal is missing")
     int maxTime() default 10;
-
 
     boolean enabled() default true;
 

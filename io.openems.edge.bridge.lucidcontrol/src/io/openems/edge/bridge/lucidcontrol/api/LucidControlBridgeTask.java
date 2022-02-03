@@ -1,5 +1,7 @@
 package io.openems.edge.bridge.lucidcontrol.api;
 
+import io.openems.edge.bridge.lucidcontrol.bridge.LucidControlBridgeImpl;
+
 /**
  * The LucidControlBridgeTask. This is implemented by the Input and Output tasks holding ChannelAddresses as well as
  * Request Strings to Read and Write to/from LucidControlDevices using a shell command + the LucidControl Software.
@@ -21,7 +23,7 @@ public interface LucidControlBridgeTask {
 
     /**
      * Gets the Path of the LucidControl Module. Used for CommandLine in
-     * {@link io.openems.edge.bridge.lucidcontrol.LucidControlBridgeImpl} Method of Bridge.
+     * {@link LucidControlBridgeImpl} Method of Bridge.
      *
      * @return the Path where the Module is connected to (usually dev/ttyACM0...x)
      */

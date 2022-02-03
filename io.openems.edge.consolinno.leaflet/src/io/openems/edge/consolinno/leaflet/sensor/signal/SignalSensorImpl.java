@@ -5,7 +5,7 @@ import io.openems.edge.bridge.modbus.api.AbstractOpenemsModbusComponent;
 import io.openems.edge.bridge.modbus.api.BridgeModbus;
 import io.openems.edge.bridge.modbus.api.ElementToChannelConverter;
 import io.openems.edge.bridge.modbus.api.ModbusProtocol;
-import io.openems.edge.bridge.modbus.api.element.UnsignedWordElement;
+import io.openems.edge.bridge.modbus.api.element.SignedWordElement;
 import io.openems.edge.bridge.modbus.api.task.FC4ReadInputRegistersTask;
 import io.openems.edge.common.channel.value.Value;
 import io.openems.edge.common.component.ComponentManager;
@@ -14,7 +14,6 @@ import io.openems.edge.common.event.EdgeEventConstants;
 import io.openems.edge.common.taskmanager.Priority;
 import io.openems.edge.consolinno.leaflet.core.api.LeafletCore;
 import io.openems.edge.consolinno.leaflet.sensor.signal.api.SignalSensor;
-import io.openems.edge.consolinno.leaflet.sensor.temperature.TemperatureSensorImpl;
 import io.openems.edge.thermometer.api.Thermometer;
 import io.openems.edge.consolinno.leaflet.core.api.Error;
 import org.osgi.service.cm.ConfigurationAdmin;
@@ -36,7 +35,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Provides a Consolinno Signal sensor. When the Sensor detects a Temperature above 100°C it will output "Error".
+ * Provides a Consolinno Signal sensor. Connected to the Temperature Module.
+ * When the Sensor detects a Temperature above 100°C it will output "Error".
  * Can be inverted to below 100°C.
  */
 @Designate(ocd = Config.class, factory = true)
@@ -80,7 +80,7 @@ public class SignalSensorImpl extends AbstractOpenemsModbusComponent implements 
         this.signalModule = config.module();
         this.position = config.position();
         this.isInverted = config.inverted();
-        this.getSignalType().setNextValue(config.signalType());
+        this.getSignalType().setNextValue(config.signalType().name());
         //Check if the Module is physically present, else throws ConfigurationException.
         if (this.lc.modbusModuleCheckout(LeafletCore.ModuleType.TMP, config.module(), config.position(), config.id())
                 && (this.lc.getFunctionAddress(LeafletCore.ModuleType.TMP, this.signalModule, this.position) != Error.ERROR.getValue())) {
@@ -106,7 +106,7 @@ public class SignalSensorImpl extends AbstractOpenemsModbusComponent implements 
         if (this.lc.checkFirmwareCompatibility()) {
             return new ModbusProtocol(this,
                     new FC4ReadInputRegistersTask(this.temperatureAnalogInput, Priority.HIGH,
-                            m(Thermometer.ChannelId.TEMPERATURE, new UnsignedWordElement(this.temperatureAnalogInput),
+                            m(Thermometer.ChannelId.TEMPERATURE, new SignedWordElement(this.temperatureAnalogInput),
                                     ElementToChannelConverter.DIRECT_1_TO_1)));
         } else {
             return null;
@@ -115,35 +115,22 @@ public class SignalSensorImpl extends AbstractOpenemsModbusComponent implements 
 
     @Override
     public String debugLog() {
-        String temperature = getTemperature().isDefined() ? getTemperature().get().toString() : "Not Defined";
-        return "Temperature " + temperature + " Signal: " + getSignalType().value();
+        return "SignalStatus: " + signalActive().value().orElse(false) + " SignalType: " + getSignalType().value();
     }
 
     @Override
     public void handleEvent(Event event) {
         Value<Integer> currentTemperature = getTemperature();
         boolean currentTempDefined = currentTemperature.isDefined();
-        if (getSignalType().value().isDefined()) {
+        boolean signalActive = false;
+        if (currentTempDefined) {
             if (this.isInverted) {
-                if (currentTempDefined && currentTemperature.get() < maxTemperature) {
-                    getSignalType().setNextValue("Error");
-                    signalActive().setNextValue(true);
-                    getSignalMessage().setNextValue("Error");
-                    return;
-                }
+                signalActive = currentTemperature.get() < maxTemperature;
             } else {
-                if (currentTempDefined && currentTemperature.get() > maxTemperature) {
-                    getSignalType().setNextValue("Error");
-                    signalActive().setNextValue(true);
-                    getSignalMessage().setNextValue("Error");
-                    return;
-                }
-            }
-            if (!getSignalType().value().get().equals("Status")) {
-                getSignalType().setNextValue("Status");
-                signalActive().setNextValue(false);
-                getSignalMessage().setNextValue("Status");
+                signalActive = currentTemperature.get() > maxTemperature;
             }
         }
+        this.signalActive().setNextValue(signalActive);
     }
+
 }

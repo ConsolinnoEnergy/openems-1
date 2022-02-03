@@ -1,0 +1,24 @@
+= Decentralized Heater
+
+The Implementation of a Decentralized Heater.
+A Decentralized Heater is more or less a HeatStorage, without any primary HeaterSource.
+It depends on a centralized ControlUnit / HeaterUnit and has to ask for heat.
+A local Controller, may set an EnableSignal to this Heater, if a HeatDemand is available (e.g. ThermometerTemperatures are too low, Inverse for DecentralizedCooler).
+After that it writes into its own Channel NeedHeat (NeedCool for DecentralizedCooler).
+It awaits an NeedHeatEnableSignal (from the centralized Control Unit/awaits true in NeedHeatEnableSignal)
+NOTE: This NeedHeatEnableSignal is an exception to the normal "EnableSignal" where a true / false value is expected, since only 1 instance/Controller should "allow to heat" this heater.
+Background: the Centralized System needs to manage itself, and watch 'n' decentralized Components and therefore knows when to allow a decentralized Component to heat/not heat up.
+
+Should the Centralized Component allow to heat up, the decentralized Component checks its minimum temperature if this is not exceeded(heater) or fall below(cooler) a SetPoint the Heater/Cooler asks for more Heat/Cooling (NeedMoreHeat XOR NeedMoreCool) The Centralized System should react accordingly by providing more Heat/Cooling, when resources are available.
+
+After the NeedHeatEnableSignal XOR NeedCoolEnableSignal was set, the decentralizedHeater/Cooler enables an HydraulicController e.g. HydraulicPositionController.
+This will open a Valve / activate a Pump to enable a HeatFlow and therefore the DecentralizedHeater(Remember it's a HeatStorage IRL) gets warm.
+(Reverse for a Cooling System -> Stores low Temperatures etc.)
+
+Since the Component has an integrated FallBack if neither false nor true is written into the NeedHeatEnableSignal.
+Same goes for the "ForceCooling"/"ForceHeating" Channel, where when this is set to true -> execute the Logic of the Component whenever an EnableSignal (Of Heater Nature) was set.
+You can also use this DecentralizedHeater as a Passing Station within a local HeatSystem.
+On EnableSignal -> Check for a missing NeedHeatEnableSignal (which should always be the case) and enable the allocated HydraulicComponent.
+
+
+

@@ -36,7 +36,7 @@ import org.osgi.service.metatype.annotations.Option;
     @AttributeDefinition(name = "Connection Type", description = "Tcp or TLS",
             options = {
                     @Option(label = "Tcp", value = "Tcp"),
-                    @Option(label = "TLS", value = "TLS"),
+                    @Option(label = "TLS", value = "ssl"),
                     @Option(label = "Websocket", value = "Wss")
             })
     String connection() default "Tcp";

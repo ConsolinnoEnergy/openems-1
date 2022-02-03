@@ -1,0 +1,42 @@
+= Rest Remote Communication
+
+This Bundle allows the communication with Remote Components/Channels of another OpenEMS via REST.
+You can read from those Channels, store them internally and react to them as well as write into those Channels.
+You need to activate this Bridge with Configurations and then activate a Component as a Rest Remote device read/write.
+Atm it only provides the ability to read and write to ONE Channel per configured rest remote device.
+Additionally you can only use Base Authentication.
+
+== Example
+
+=== Configuration
+
+Start by configuring the REST Bridge.
+This lets you communicate with another OpenEMS Edge System.
+Configure the IP Address, the Power, username and Password. NOTE: Only Base Authentication will be used.
+The KeepAlive determines how long to wait for a connection check.
+
+After that you can already start to activate Rest Remote Devices.
+The Rest Remote Device, will represent a RealDevice Id, or rather it's OpenEmsChannel.
+Therefore, you have to Type in the "RealDeviceId" in the Config and the "DeviceChannel"
+After that, you will tell te device, if this is a read or write DeviceImpl (e.g. if it should get the Value of a Channel == GET method) or if it should Write a WriteValue, stored within the VALUE_WRITE Nature, to the RemoteDevice (== POST Method).
+
+=== Example
+
+Let's say you have a main Edge Device 'A' and a decentralized Edge Device 'B'. Each iterating through their own logic. However Device 'A' Needs to listen to a Certain Device, let's call it B-n, which is of a Thermometer Nature and we want to monitor the Temperature Channel of 'B', while 'B' awaits an EnableSignal in B-z(from where ever.)
+Furthermore, let's say 'A' is also responsible for setting the EnableSignal in B-z when "a condition" applies.
+
+This is how you would do it:
+1. Enable the REST/JSON Api Worker in Edge Device 'B'.
+2. Enable the REST/BRIDGE and configure it as previously described.
+3. Create the Rest Remote Device Impl for B-n. The realDeviceId would be B-n. Since we want to monitor the Temperature we configure the deviceChannel with Temperature. The OperatingMode should be set to READ
+Now the TemperatureValue will be written into the VALUE_READ of the RestRemoteDeviceImpl and can be monitored within the Edge system.
+4. For B-z create a Rest Remote Device Impl with the realDeviceId of B-n, the ChannelId EnableSignal and the operatingMode to WRITE. Whenever something within Edge Device 'A' stores a value in VALUE_WRITE. This Value will be written to the EnableSignal of EdgeDevice 'B'.
+
+This can be a Powerful tool. Since a centralized Edge Device can Monitor "Demands" of decentralized Edge Devices and react to them accordingly, while also setting commands to those decentralized Edge Devices.
+
+
+
+
+
+
+
