@@ -50,8 +50,6 @@ public class MeterEltakoDsz15DM extends AbstractOpenemsMbusComponent
         TOTAL_CONSUMED_ENERGY(Doc.of(OpenemsType.INTEGER) //
                 .unit(Unit.KILOWATT_HOURS)), //
         TOTAL_CONSUMED_ENERGY_2(Doc.of(OpenemsType.INTEGER).unit(Unit.KILOWATT_HOURS)),
-        ACTIVE_POWER(Doc.of(OpenemsType.INTEGER).unit(Unit.WATT)),
-        REACTIVE_POWER(Doc.of(OpenemsType.INTEGER).unit(Unit.WATT)),
         MANUFACTURER_ID(Doc.of(OpenemsType.STRING) //
                 .unit(Unit.NONE)), //
         AMPERAGE_L1(Doc.of(OpenemsType.INTEGER).unit(Unit.AMPERE)),
