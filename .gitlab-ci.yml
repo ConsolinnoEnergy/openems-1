@@ -3,6 +3,8 @@ stages:
   - Deploy
 
 before_script:
+  - apt update
+  - apt install git
   - git submodule sync
   - git submodule update --init
 
@@ -11,7 +13,7 @@ Build oEMS Edge:
   stage: Build
   script:
     - apt update
-    - apt install -y openjdk-8-jdk git
+    - apt install -y openjdk-8-jdk
     - ./gradlew build
     - ./gradlew buildComponents
     - ./gradlew buildEdge
