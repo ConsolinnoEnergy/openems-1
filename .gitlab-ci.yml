@@ -2,6 +2,9 @@ stages:
   - Build
   - Deploy
 
+before_script:
+  - git submodule sync
+  - git submodule update --init
 
 
 Build oEMS Edge:
@@ -33,7 +36,8 @@ Deploy:
     - ./gradlew build
     - ./gradlew buildEdge
     - ./gradlew buildEdgeDeb
-    - ./release.sh upload
+    #- ./release.sh upload
+    - ./package-upload/debupload.sh testing $PWD/build/distributions/$(ls build/distributions/ | grep .*.deb)
   only:
     - /^[a-z]*\/release\/[0-9]{1,2}.[0-9]{1,2}.[0-9]{1,2}-[0-9]{1,2}$/
   artifacts:
