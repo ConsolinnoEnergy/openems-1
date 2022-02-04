@@ -8,6 +8,7 @@ import io.openems.edge.heater.analogue.component.AbstractAnalogueHeaterOrCoolerC
 import io.openems.edge.heater.api.Cooler;
 import io.openems.edge.heater.api.Heater;
 import io.openems.edge.io.api.Relay;
+import io.openems.edge.lucidcontrol.api.LucidControlDeviceOutput;
 import org.osgi.service.cm.ConfigurationAdmin;
 import org.osgi.service.cm.ConfigurationException;
 import org.osgi.service.component.ComponentContext;
@@ -29,7 +30,7 @@ import org.osgi.service.metatype.annotations.Designate;
  * <p>
  *     <ul>
  * <li>{@link io.openems.edge.io.api.AnalogInputOutput}</li>
- * <li>{@link io.openems.edge.bridge.lucidcontrol.api.LucidControlDeviceOutput}</li>
+ * <li>{@link LucidControlDeviceOutput}</li>
  * <li>{@link io.openems.edge.io.api.Pwm} </li>
  * <li>{@link Relay}</li>
  * </ul>
