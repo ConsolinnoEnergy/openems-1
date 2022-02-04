@@ -1,0 +1,3 @@
+[submodule "package-upload"]
+	path = package-upload
+	url = https://download:vZA9Z-DFVXGf3y2yqmr4@gitlab.consolinno-it.de/leafletfirmware/package-upload.git

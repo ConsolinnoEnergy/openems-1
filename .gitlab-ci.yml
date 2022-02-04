@@ -2,13 +2,15 @@ stages:
   - Build
   - Deploy
 
+variables:
+  GIT_SUBMODULE_STRATEGY: recursive
 
 
 Build oEMS Edge:
   stage: Build
   script:
     - apt update
-    - apt install -y openjdk-8-jdk git
+    - apt install -y openjdk-8-jdk
     - ./gradlew build
     - ./gradlew buildComponents
     - ./gradlew buildEdge
@@ -33,7 +35,8 @@ Deploy:
     - ./gradlew build
     - ./gradlew buildEdge
     - ./gradlew buildEdgeDeb
-    - ./release.sh upload
+    #- ./release.sh upload
+    - ./package-upload/debupload.sh testing $PWD/build/distributions/$(ls build/distributions/ | grep .*.deb)
   only:
     - /^[a-z]*\/release\/[0-9]{1,2}.[0-9]{1,2}.[0-9]{1,2}-[0-9]{1,2}$/
   artifacts:

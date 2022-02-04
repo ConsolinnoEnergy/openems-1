@@ -54,6 +54,9 @@ import org.osgi.service.metatype.annotations.Option;
     @AttributeDefinition(name = "Print info to log", description = "Print status info to the log.")
     boolean printInfoToLog() default false;
 
+    @AttributeDefinition(name = "Only Activate the Heater", description = "Only start the heater, no SetPoint.")
+    boolean onlyEnableBioMassHeater() default true;
+
     boolean enabled() default true;
 
     String webconsole_configurationFactory_nameHint() default "Heater Woodchips Gilles [{id}]";

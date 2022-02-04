@@ -1,9 +1,24 @@
-openems-consolinno (0.1.19-1) UNRELEASED; urgency=medium
+openems-consolinno (0.1.20-2) unstable; urgency=medium
+
+  * added new link to gitmodules should be working now
+
+ -- Felix <felix@felix-ThinkPad-E15-Gen-2>  Thu, 03 Feb 2022 14:19:45 +0100
+
+openems-consolinno (0.1.20-1) unstable; urgency=medium
+
+  * Fixed Genibus Issues and added an electric Meter Eltako plus fixed
+    gitlab yml
+
+ -- Felix <felix@felix-ThinkPad-E15-Gen-2>  Thu, 03 Feb 2022 14:13:04 +0100
+
+openems-consolinno (0.1.19-2) unstable; urgency=medium
 
   * Added Support for fully Remote Control Alpha Innotech Pumps and is
     optional as a Configuration Point
+  * Repaired Package install scripts, changed service destination to
+    /lib/system/sytemd/openems.service
 
- -- Felix <felix@felix-ThinkPad-E15-Gen-2>  Wed, 26 Jan 2022 18:28:48 +0100
+ -- Felix <felix@felix-ThinkPad-E15-Gen-2>  Thu, 03 Feb 2022 10:45:25 +0100
 
 openems-consolinno (0.1.18-1) unstable; urgency=medium
 

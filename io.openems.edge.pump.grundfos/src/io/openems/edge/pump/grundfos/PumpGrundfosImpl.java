@@ -1,11 +1,15 @@
 package io.openems.edge.pump.grundfos;
 
+import io.openems.common.channel.Unit;
 import io.openems.common.exceptions.OpenemsError;
 import io.openems.edge.bridge.genibus.api.Genibus;
 import io.openems.edge.bridge.genibus.api.PumpDevice;
-import io.openems.edge.bridge.genibus.api.task.*;
+import io.openems.edge.bridge.genibus.api.task.PumpCommandsTask;
+import io.openems.edge.bridge.genibus.api.task.PumpReadTask8bit;
+import io.openems.edge.bridge.genibus.api.task.PumpReadTaskAscii;
+import io.openems.edge.bridge.genibus.api.task.PumpWriteTask16bitOrMore;
+import io.openems.edge.bridge.genibus.api.task.PumpWriteTask8bit;
 import io.openems.edge.common.component.AbstractOpenemsComponent;
-import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.common.event.EdgeEventConstants;
 import io.openems.edge.common.taskmanager.Priority;
@@ -15,7 +19,14 @@ import io.openems.edge.pump.grundfos.api.WarnBits;
 import org.osgi.service.cm.ConfigurationAdmin;
 import org.osgi.service.cm.ConfigurationException;
 import org.osgi.service.component.ComponentContext;
-import org.osgi.service.component.annotations.*;
+import org.osgi.service.component.annotations.Activate;
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.ConfigurationPolicy;
+import org.osgi.service.component.annotations.Deactivate;
+import org.osgi.service.component.annotations.Reference;
+import org.osgi.service.component.annotations.ReferenceCardinality;
+import org.osgi.service.component.annotations.ReferencePolicy;
+import org.osgi.service.component.annotations.ReferencePolicyOption;
 import org.osgi.service.event.Event;
 import org.osgi.service.event.EventConstants;
 import org.osgi.service.event.EventHandler;
@@ -28,7 +39,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 
 @Designate(ocd = Config.class, factory = true)
-@Component(name = "PumpGrundfos",
+@Component(name = "Pump.Grundfos",
         immediate = true, //
         configurationPolicy = ConfigurationPolicy.REQUIRE, //
         property = { //
@@ -36,20 +47,8 @@ import java.util.concurrent.atomic.AtomicReference;
         })
 public class PumpGrundfosImpl extends AbstractOpenemsComponent implements OpenemsComponent, PumpGrundfos, EventHandler {
 
-
-
     private AtomicReference<Genibus> genibusId = new AtomicReference<Genibus>(null);
-
     private Genibus genibus;
-
-    /*
-    @Reference(policy = ReferencePolicy.STATIC,
-            policyOption = ReferencePolicyOption.GREEDY, cardinality = ReferenceCardinality.MANDATORY)
-    Genibus genibus;
-    */
-
-    @Reference
-    ComponentManager cpm;
 
     @Reference
     protected ConfigurationAdmin cm;
@@ -62,12 +61,15 @@ public class PumpGrundfosImpl extends AbstractOpenemsComponent implements Openem
     private boolean changeAddress;
     private double newAddress;
     private boolean isMagna3;
+    private boolean doOnce = false;
 
+    /* Setup of a multipump system is not possible with genibus.
     private boolean mpSetup;
     private boolean mpEnd;
     private boolean mpMaster;
     private int mpMasterAddr;
     private TpModeSetting tpMode;
+    */
 
     private final Logger log = LoggerFactory.getLogger(PumpGrundfosImpl.class);
 
@@ -80,8 +82,8 @@ public class PumpGrundfosImpl extends AbstractOpenemsComponent implements Openem
     public void activate(ComponentContext context, Config config) throws OpenemsError.OpenemsNamedException, ConfigurationException {
         super.activate(context, config.id(), config.alias(), config.enabled());
 
-        if (OpenemsComponent.updateReferenceFilter(cm, this.servicePid(), "Genibus", config.genibusBridgeId()) == false) {
-            genibus = this.genibusId.get();
+        if (OpenemsComponent.updateReferenceFilter(this.cm, this.servicePid(), "Genibus", config.genibusBridgeId()) == false) {
+            this.genibus = this.genibusId.get();
         }
 
         /*
@@ -94,25 +96,29 @@ public class PumpGrundfosImpl extends AbstractOpenemsComponent implements Openem
         }
         */
 
-        isMagna3 = config.isMagna3();
+        this.isMagna3 = config.isMagna3();
         //allocatePumpType(config.pumpType());
-        allocatePumpType("Magna3");
-        pumpWink = config.pumpWink();
+        this.allocatePumpType("Magna3");
+        this.pumpWink = config.pumpWink();
         this.broadcast = config.broadcast();
-        changeAddress = config.changeAddress();
-        newAddress = config.newAddress();
+        this.changeAddress = config.changeAddress();
+        this.newAddress = config.newAddress();
+        doOnce = false;
 
+        /* Setup of a multipump system is not possible with genibus.
         mpSetup = config.mpSetup();
         mpEnd = config.mpEnd();
         mpMaster = config.mpMaster();
         mpMasterAddr = config.mpMasterAddress();
         tpMode = config.tpMode();
-        if (broadcast) {
-            createTaskList(super.id(), 254);
+        */
+
+        if (this.broadcast) {
+            this.createTaskList(super.id(), 254);
         } else {
-            createTaskList(super.id(), config.pumpAddress());
+            this.createTaskList(super.id(), config.pumpAddress());
         }
-        pumpFlashLed();
+        this.pumpFlashLed();
     }
 
     private void allocatePumpType(String pumpType) {
@@ -146,7 +152,7 @@ public class PumpGrundfosImpl extends AbstractOpenemsComponent implements Openem
     }
 
     private void pumpFlashLed() throws OpenemsError.OpenemsNamedException {
-        if (pumpWink) {
+        if (this.pumpWink) {
             this.setWinkOn().setNextWriteValue(true);
         } else {
             this.setWinkOff().setNextWriteValue(true);
@@ -156,7 +162,7 @@ public class PumpGrundfosImpl extends AbstractOpenemsComponent implements Openem
     /** Creates a PumpDevice object containing all the tasks the GENIbus should send to this device. The PumpDevice is
      * then added to the GENIbus bridge.
      *
-     * Tasks automatically decide if they are GET, SET or INFO. (If you don't know what that means, read the GENIbus specs.)
+     * <p>Tasks automatically decide if they are GET, SET or INFO. (If you don't know what that means, read the GENIbus specs.)
      * Right now only headclasses 0, 2, 3, 4, 5 and 7 are supported. Assuming a task is priority high:
      * - INFO is done when needed before any GET or SET.
      * - GET is done every cycle for all "Measured Data" tasks (= headclass 2), "Protocol Data" tasks (= headclass 0)
@@ -169,69 +175,79 @@ public class PumpGrundfosImpl extends AbstractOpenemsComponent implements Openem
      *   value. The result of the GET is written in the "nextValue" of the channel.
      * If the connection to a device is lost (pump switched off, serial connection unplugged), the controller will
      * attempt to reestablish the connection. If that succeeds, the device is treated as if it is a new device, meaning
-     * all INFO is requested again, all once tasks done again etc.
+     * all INFO is requested again, all once tasks done again etc.</p>
      *
-     * Suggestions for priority settings.
+     * <p>Suggestions for priority settings.
      * - Headclass 0 and 7:     once.
      * - Headclass 2:           high or low.
-     * - Headclass 3, 4 and 5:  high.
+     * - Headclass 3, 4 and 5:  high.</p>
      *
-     * Tasks with more than 8 bit are handled as one task using "PumpReadTask16bitOrMore()" and "PumpWriteTask16bitOrMore()".
-     * The address to put is the one of the "hi" value. The "low" values are always on the consecutive addresses. You also
-     * need to specify how many bytes the task has (16 bit = 2 bytes, 24 bit = 3 bytes, 32 bit = 4 bytes). The byte
-     * number is equivalent to the number of addresses a task has (two addresses = one hi, one low; means 16 bit = 2 bytes).
-     * You can also use "PumpReadTask16bitOrMore()" and "PumpWriteTask16bitOrMore()" for 8 bit tasks by setting the byte
-     * number to 1. "PumpReadTask8bit()" and "PumpWriteTask8bit()" function in that way, they map to the "16bitOrMore"
-     * tasks.
+     * <p>Tasks with more than 8 bit are handled as one task using 'PumpReadTask16bitOrMore()' and 'PumpWriteTask16bitOrMore()'.
+     * The address to put is the one of the 'hi' value. The 'low' values are always on the consecutive addresses. You also
+     * need to specify how many bytes the task has (16 bit = 2 bytes, 24 bit = 3 bytes, 32 bit = 4 bytes). The number of
+     * bytes is equivalent to the number of addresses a task has (two addresses = one hi, one low; means 16 bit = 2 bytes).
+     * Using 'PumpReadTask16bitOrMore()' and 'PumpWriteTask16bitOrMore()' with ’number of bytes = 1’ (=8 bit) is equivalent
+     * to using 'PumpReadTask8bit()' and 'PumpWriteTask8bit()'.</p>
      *
-     * Data of a task is automatically converted according to the INFO of the task, but also according to OpenEMS
+     * <p>If the data of a task (read/write) has a unit, the data is automatically converted to the unit of the associated
+     * OpenEMS channel, if one is give. If the channel does not have a unit or the channel unit is incompatible with the
+     * unit transmitted by Genibus, the fallback code is to convert the data to the base unit (bar, °Celsius, watt, etc.)
+     * of the one transmitted by Genibus. There is, however, currently no way to display that unit or an error message.
+     *
+     * representation (bar, °Celsius, watt, etc.). The unit can not be communicated, so it is not advised to
+     * of the associated channel. Data conversion (if applicable) can then only be done correctly if the channel has a unit
+     *      * conventions.
+     *
+     * <p>Data of a task is automatically converted according to the INFO of the task, but also according to OpenEMS
      * conventions. A pressure reading with unit "m" will be converted to "bar" in the OpenEMS channel. Temperature
      * readings will be converted to dC° in the channel. The channel unit is set accordingly.
      * For write tasks that are not boolean (headclass 4 and 5), the unit of INFO is used for the write as well.
      * Example: ref_rem (5, 1)
      * The unit of INFO is %, the range is 0% to 100%. The channel than has values between 0 and 1.0, and for sending a
-     * SET with value 100%, write in the "nextWrite" of the channel "1.0".
+     * SET with value 100%, write in the "nextWrite" of the channel "1.0".</p>
      *
-     * The tasks also allow for an optional "channel multiplier" as the last argument. This is a fixed value that is
-     * used as a multiplier when reading a GET and as a divisor when writing a SET.
+     * <p>The tasks also allow for an optional "channel multiplier" as the last argument. This is a fixed value that is
+     * used as a multiplier when reading a GET and as a divisor when writing a SET.</p>
      *
-     * @param deviceId
-     * @param pumpAddress
+     * @param deviceId the OpenEMS device id.
+     * @param pumpAddress the pump address.
      */
     private void createTaskList(String deviceId, int pumpAddress) {
         // Broadcast mode is just to find the address of a unit. Not suitable for sending commands.
-        if (broadcast || changeAddress) {
-            pumpDevice = new PumpDevice(deviceId, pumpAddress, 4,
-                    new PumpReadTask8bit(2, 0, getBufferLength(), "Standard", Priority.ONCE),
-                    new PumpReadTask8bit(3, 0, getUnitBusMode(), "Standard", Priority.ONCE),
+        if (this.broadcast || this.changeAddress) {
+            this.pumpDevice = new PumpDevice(deviceId, pumpAddress, 37, Unit.BAR, 4,
+                    new PumpReadTask8bit(0, 2, getBufferLengthChannel(), "Standard", Priority.ONCE),
+                    new PumpReadTask8bit(0, 3, getUnitBusModeChannel(), "Standard", Priority.ONCE),
 
-                    new PumpReadTask8bit(148, 2, getUnitFamily(), "Standard", Priority.ONCE),
-                    new PumpReadTask8bit(149, 2, getUnitType(), "Standard", Priority.ONCE),
-                    new PumpReadTask8bit(150, 2, getUnitVersion(), "Standard", Priority.ONCE),
+                    new PumpReadTask8bit(2, 148, getUnitFamily(), "Standard", Priority.ONCE),
+                    new PumpReadTask8bit(2, 149, getUnitType(), "Standard", Priority.ONCE),
+                    new PumpReadTask8bit(2, 150, getUnitVersion(), "Standard", Priority.ONCE),
 
-                    new PumpWriteTask8bit(46, 4, setUnitAddr(), "Standard", Priority.HIGH),
-                    new PumpWriteTask8bit(47, 4, setGroupAddr(), "Standard", Priority.ONCE)
+                    new PumpWriteTask8bit(4, 46, setUnitAddr(), "Standard", Priority.HIGH),
+                    new PumpWriteTask8bit(4, 47, setGroupAddr(), "Standard", Priority.ONCE)
             );
-            genibus.addDevice(pumpDevice);
+            this.genibus.addDevice(this.pumpDevice);
             return;
         }
 
+        /* Setup of a multipump system is not possible with genibus.
         if (mpSetup) {
             pumpDevice = new PumpDevice(deviceId, pumpAddress, 4,
-                    new PumpCommandsTask(92, 3, setMpStartMultipump()),
-                    new PumpCommandsTask(93, 3, setMpEndMultipump()),
-                    new PumpCommandsTask(40, 3, setMpMaster()),
-                    new PumpCommandsTask(87, 3, setMpStartSearch()),
-                    new PumpCommandsTask(88, 3, setMpJoinReqAccepted()),
+                    new PumpCommandsTask(3, 92, setMpStartMultipump()),
+                    new PumpCommandsTask(3, 93, setMpEndMultipump()),
+                    new PumpCommandsTask(3, 40, setMpMaster()),
+                    new PumpCommandsTask(3, 87, setMpStartSearch()),
+                    new PumpCommandsTask(3, 88, setMpJoinReqAccepted()),
 
-                    new PumpReadTask8bit(1, 2, getMultipumpMembers(), "Standard", Priority.HIGH),
+                    new PumpReadTask8bit(2, 1, getMultipumpMembers(), "Standard", Priority.HIGH),
 
-                    new PumpWriteTask8bit(45, 4, setMpMasterAddr(), "Standard", Priority.HIGH),
-                    new PumpWriteTask8bit(241, 4, setTpMode(), "Standard", Priority.HIGH)
+                    new PumpWriteTask8bit(4, 45, setMpMasterAddr(), "Standard", Priority.HIGH),
+                    new PumpWriteTask8bit(4, 241, setTpMode(), "Standard", Priority.HIGH)
             );
             genibus.addDevice(pumpDevice);
             return;
         }
+        */
 
         // The variable "lowPrioTasksPerCycle" lets you tune how fast the low priority tasks are executed. A higher
         // number means faster execution, up to the same execution speed as high priority tasks.
@@ -250,7 +266,7 @@ public class PumpGrundfosImpl extends AbstractOpenemsComponent implements Openem
         // So if there are 10 low tasks and lowPrioTasksPerCycle=10, the low tasks behave like high tasks.
         // If in the same situation lowPrioTasksPerCycle=5, a priority low task is executed at half the rate of a
         // priority high task.
-        pumpDevice = new PumpDevice(deviceId, pumpAddress, 4,
+        this.pumpDevice = new PumpDevice(deviceId, pumpAddress, 37, Unit.BAR, 4,
 
 
                 // Commands.
@@ -258,137 +274,137 @@ public class PumpGrundfosImpl extends AbstractOpenemsComponent implements Openem
                 // device will act on the command that was sent first. The command list is executed from top to bottom
                 // in the order they are listed here.
                 new PumpCommandsTask(this.pumpType.getRemote(),
-                        this.pumpType.getRemoteHeadClass(), setRemote()),
+                        setRemote()),
                 new PumpCommandsTask(this.pumpType.getStart(),
-                        this.pumpType.getStartHeadClass(), this.setStart()),
+                        this.setStart()),
                 new PumpCommandsTask(this.pumpType.getStop(),
-                        this.pumpType.getStopHeadClass(), this.setStop()),
+                        this.setStop()),
                 new PumpCommandsTask(this.pumpType.getMinMotorCurve(),
-                        this.pumpType.getMinMotorCurveHeadClass(), setMinMotorCurve()),
+                        setMinMotorCurve()),
                 new PumpCommandsTask(this.pumpType.getMaxMotorCurve(),
-                        this.pumpType.getMaxMotorCurveHeadClass(), setMaxMotorCurve()),
+                        setMaxMotorCurve()),
                 new PumpCommandsTask(this.pumpType.getConstFrequency(),
-                        this.pumpType.getConstFrequencyHeadClass(), setConstFrequency()),
+                        setConstFrequency()),
                 new PumpCommandsTask(this.pumpType.getConstPressure(),
-                        this.pumpType.getConstPressureHeadClass(), setConstPressure()),
+                        setConstPressure()),
                 new PumpCommandsTask(this.pumpType.getAutoAdapt(),
-                        this.pumpType.getAutoAdaptHeadClass(), setAutoAdapt()),
-                new PumpCommandsTask(121, 3, setWinkOn()),
-                new PumpCommandsTask(122, 3, setWinkOff()),
+                        setAutoAdapt()),
+                new PumpCommandsTask(121, setWinkOn()),
+                new PumpCommandsTask(122, setWinkOff()),
 
                 // Read tasks priority once
-                new PumpReadTask8bit(2, 0, getBufferLength(), "Standard", Priority.ONCE),
-                new PumpReadTask8bit(3, 0, getUnitBusMode(), "Standard", Priority.ONCE),
-                new PumpReadTask8bit(148, 2, getUnitFamily(), "Standard", Priority.ONCE),
-                new PumpReadTask8bit(149, 2, getUnitType(), "Standard", Priority.ONCE),
-                new PumpReadTask8bit(150, 2, getUnitVersion(), "Standard", Priority.ONCE),
+                new PumpReadTask8bit(0, 2, getBufferLengthChannel(), "Standard", Priority.ONCE),
+                new PumpReadTask8bit(0, 3, getUnitBusModeChannel(), "Standard", Priority.ONCE),
+                new PumpReadTask8bit(2, 148, getUnitFamily(), "Standard", Priority.ONCE),
+                new PumpReadTask8bit(2, 149, getUnitType(), "Standard", Priority.ONCE),
+                new PumpReadTask8bit(2, 150, getUnitVersion(), "Standard", Priority.ONCE),
 
                 // Read tasks priority high
-                new PumpReadTask8bit(48, 2, getRefAct(), "Standard", Priority.HIGH),
-                new PumpReadTask8bit(49, 2, getRefNorm(), "Standard", Priority.HIGH),
-                new PumpReadTask8bit(90, 2, getControlSourceBits(), "Standard", Priority.HIGH),
-                new PumpReadTask8bit(this.pumpType.getPlo(), this.pumpType.getPloHeadClass(), getPowerConsumption(), "Standard", Priority.HIGH),
-                new PumpReadTask8bit(this.pumpType.getH(), this.pumpType.gethHeadClass(), getCurrentPressure(), "Standard", Priority.HIGH),
-                new PumpReadTask8bit(this.pumpType.getQ(), this.pumpType.getqHeadClass(), getCurrentPumpFlow(), "Standard", Priority.HIGH),
-                new PumpReadTask8bit(this.pumpType.gettW(), this.pumpType.gettWHeadClass(), getPumpedWaterMediumTemperature(), "Standard", Priority.HIGH),
+                new PumpReadTask8bit(2, 48, getRefActChannel(), "Standard", Priority.HIGH),
+                new PumpReadTask8bit(2, 49, getRefNormChannel(), "Standard", Priority.HIGH),
+                new PumpReadTask8bit(2, 90, getControlSourceBits(), "Standard", Priority.HIGH),
+                new PumpReadTask8bit(this.pumpType.getPloHeadClass(), this.pumpType.getPlo(), getPowerConsumptionChannel(), "Standard", Priority.HIGH),
+                new PumpReadTask8bit(this.pumpType.gethHeadClass(), this.pumpType.getH(), getPressureChannel(), "Standard", Priority.HIGH),
+                new PumpReadTask8bit(this.pumpType.getqHeadClass(), this.pumpType.getQ(), getPercolationChannel(), "Standard", Priority.HIGH),
+                new PumpReadTask8bit(this.pumpType.gettWHeadClass(), this.pumpType.gettW(), getPumpedFluidTemperatureChannel(), "Standard", Priority.HIGH),
                 // PumpReadTask has an optional channel multiplier. That is a double that is multiplied with the readout
                 // value just before it is put in the channel. Here is an example of how to use this feature:
                 // Apparently the unit returned by INFO is wrong. Unit type = 30 = 2*Hz, but the value is returned in Hz.
                 // Could also be that the error is in the documentation and unit 30 is Hz and not Hz*2.
-                new PumpReadTask8bit(this.pumpType.getfAct(), this.pumpType.getfActHeadClass(), getMotorFrequency(), "Standard", Priority.HIGH, 0.5),
-                new PumpReadTask8bit(this.pumpType.getrMin(), this.pumpType.getrMinHeadClass(), getRmin(), "Standard", Priority.HIGH),
-                new PumpReadTask8bit(this.pumpType.getrMax(), this.pumpType.getrMaxHeadClass(), getRmax(), "Standard", Priority.HIGH),
-                new PumpReadTask8bit(this.pumpType.getControlMode(), this.pumpType.getControlModeHeadClass(), getActualControlModeBits(), "Standard", Priority.HIGH),
-                new PumpReadTask8bit(81, 2, getActMode1Bits(), "Standard", Priority.HIGH),
-                new PumpReadTask8bit(this.pumpType.getWarnCode(), this.pumpType.getWarnCodeHeadClass(), getWarnCode(), "Standard", Priority.HIGH),
-                new PumpReadTask8bit(this.pumpType.getAlarmCode(), this.pumpType.getAlarmCodeHeadClass(), getAlarmCode(), "Standard", Priority.HIGH),
-                new PumpReadTask8bit(this.pumpType.getWarnBits1(), this.pumpType.getWarnBits1HeadClass(), getWarnBits_1(), "Standard", Priority.HIGH),
-                new PumpReadTask8bit(this.pumpType.getWarnBits2(), this.pumpType.getWarnBits2HeadClass(), getWarnBits_2(), "Standard", Priority.HIGH),
-                new PumpReadTask8bit(this.pumpType.getWarnBits3(), this.pumpType.getWarnBits3HeadClass(), getWarnBits_3(), "Standard", Priority.HIGH),
-                new PumpReadTask8bit(this.pumpType.getWarnBits4(), this.pumpType.getWarnBits4HeadClass(), getWarnBits_4(), "Standard", Priority.HIGH),
+                new PumpReadTask8bit(this.pumpType.getfActHeadClass(), this.pumpType.getfAct(), getMotorFrequencyChannel(), "Standard", Priority.HIGH, 0.5),
+                new PumpReadTask8bit(this.pumpType.getrMinHeadClass(), this.pumpType.getrMin(), getRmin(), "Standard", Priority.HIGH),
+                new PumpReadTask8bit(this.pumpType.getrMaxHeadClass(), this.pumpType.getrMax(), getRmax(), "Standard", Priority.HIGH),
+                new PumpReadTask8bit(this.pumpType.getControlModeHeadClass(), this.pumpType.getControlMode(), getActualControlModeBits(), "Standard", Priority.HIGH),
+                new PumpReadTask8bit(2, 81, getActMode1Bits(), "Standard", Priority.HIGH),
+                new PumpReadTask8bit(this.pumpType.getWarnCodeHeadClass(), this.pumpType.getWarnCode(), getWarnCode(), "Standard", Priority.HIGH),
+                new PumpReadTask8bit(this.pumpType.getAlarmCodeHeadClass(), this.pumpType.getAlarmCode(), getAlarmCode(), "Standard", Priority.HIGH),
+                new PumpReadTask8bit(this.pumpType.getWarnBits1HeadClass(), this.pumpType.getWarnBits1(), getWarnBits_1(), "Standard", Priority.HIGH),
+                new PumpReadTask8bit(this.pumpType.getWarnBits2HeadClass(), this.pumpType.getWarnBits2(), getWarnBits_2(), "Standard", Priority.HIGH),
+                new PumpReadTask8bit(this.pumpType.getWarnBits3HeadClass(), this.pumpType.getWarnBits3(), getWarnBits_3(), "Standard", Priority.HIGH),
+                new PumpReadTask8bit(this.pumpType.getWarnBits4HeadClass(), this.pumpType.getWarnBits4(), getWarnBits_4(), "Standard", Priority.HIGH),
 
                 // Read tasks priority low
-                new PumpReadTask8bit(this.pumpType.gethDiff(), this.pumpType.gethDiffHeadClass(), getDiffPressureHead(), "Standard", Priority.LOW),
-                new PumpReadTask8bit(this.pumpType.gettE(), this.pumpType.gettEheadClass(), getElectronicsTemperature(), "Standard", Priority.LOW),
-                new PumpReadTask8bit(this.pumpType.getiMo(), this.pumpType.getImoHeadClass(), getCurrentMotor(), "Standard", Priority.LOW),
-                new PumpReadTask8bit(2, 2, getTwinpumpStatus(), "Standard", Priority.LOW),
+                new PumpReadTask8bit(this.pumpType.gethDiffHeadClass(), this.pumpType.gethDiff(), getDiffPressureHeadChannel(), "Standard", Priority.LOW),
+                new PumpReadTask8bit(this.pumpType.gettEheadClass(), this.pumpType.gettE(), getElectronicsTemperatureChannel(), "Standard", Priority.LOW),
+                new PumpReadTask8bit(this.pumpType.getImoHeadClass(), this.pumpType.getiMo(), getCurrentMotorChannel(), "Standard", Priority.LOW),
+                new PumpReadTask8bit(2, 2, getTwinpumpStatusChannel(), "Standard", Priority.LOW),
 
-                new PumpReadTask8bit(this.pumpType.getAlarmCodePump(), this.pumpType.getAlarmCodePumpHeadClass(), getAlarmCodePump(), "Standard", Priority.LOW),
-                new PumpReadTask8bit(163, 2, getAlarmLog1(), "Standard", Priority.LOW),
-                new PumpReadTask8bit(164, 2, getAlarmLog2(), "Standard", Priority.LOW),
-                new PumpReadTask8bit(165, 2, getAlarmLog3(), "Standard", Priority.LOW),
-                new PumpReadTask8bit(166, 2, getAlarmLog4(), "Standard", Priority.LOW),
-                new PumpReadTask8bit(167, 2, getAlarmLog5(), "Standard", Priority.LOW),
+                new PumpReadTask8bit(this.pumpType.getAlarmCodePumpHeadClass(), this.pumpType.getAlarmCodePump(), getAlarmCodePump(), "Standard", Priority.LOW),
+                new PumpReadTask8bit(2, 163, getAlarmLog1(), "Standard", Priority.LOW),
+                new PumpReadTask8bit(2, 164, getAlarmLog2(), "Standard", Priority.LOW),
+                new PumpReadTask8bit(2, 165, getAlarmLog3(), "Standard", Priority.LOW),
+                new PumpReadTask8bit(2, 166, getAlarmLog4(), "Standard", Priority.LOW),
+                new PumpReadTask8bit(2, 167, getAlarmLog5(), "Standard", Priority.LOW),
 
                 // Config parameters tasks.
                 // Class 4 tasks should always be priority high. They have special code to decide if they are sent or not.
                 // Since the values in them are static unless changed by the user, they are read once at the start and
                 // then only after a write. If a class 4 task is never written to, it essentially behaves like priority
                 // once. It should be priority high so any writes are executed immediately.
-                new PumpWriteTask8bit(this.pumpType.gethConstRefMax(), this.pumpType.gethConstRefMaxHeadClass(),
+                new PumpWriteTask8bit(this.pumpType.gethConstRefMaxHeadClass(), this.pumpType.gethConstRefMax(),
                         setConstRefMaxH(), "Standard", Priority.HIGH),
-                new PumpWriteTask8bit(this.pumpType.gethConstRefMin(), this.pumpType.gethConstRefMinHeadClass(),
+                new PumpWriteTask8bit(this.pumpType.gethConstRefMinHeadClass(), this.pumpType.gethConstRefMin(),
                         setConstRefMinH(), "Standard", Priority.HIGH),
                 // The channel multiplier is also available for write tasks. For a GET it is a multiplier, for a SET it
                 // is a divisor. Apparently all frequencies in the MAGNA3 are off by a factor of 2.
-                new PumpWriteTask8bit(30, 4, setFupper(), "Standard", Priority.HIGH, 0.5),
-                new PumpWriteTask8bit(34, 4, setFmin(), "Standard", Priority.HIGH),
-                new PumpWriteTask8bit(35, 4, setFmax(), "Standard", Priority.HIGH),
+                new PumpWriteTask8bit(4, 30, setFupper(), "Standard", Priority.HIGH, 0.5),
+                new PumpWriteTask8bit(4, 34, setFmin(), "Standard", Priority.HIGH),
+                new PumpWriteTask8bit(4, 35, setFmax(), "Standard", Priority.HIGH),
                 // Apparently all frequencies in the MAGNA3 are off by a factor of 2.
-                new PumpWriteTask8bit(31, 4, setFnom(), "Standard", Priority.HIGH, 0.5),
-                new PumpWriteTask16bitOrMore(2, this.pumpType.gethMaxHi(), this.pumpType.gethMaxHiHeadClass(),
+                new PumpWriteTask8bit(4, 31, setFnom(), "Standard", Priority.HIGH, 0.5),
+                new PumpWriteTask16bitOrMore(2, this.pumpType.gethMaxHiHeadClass(), this.pumpType.gethMaxHi(),
                         setMaxPressure(), "Standard", Priority.HIGH),
-                new PumpWriteTask16bitOrMore(2, this.pumpType.getqMaxHi(), this.pumpType.getqMaxHiHeadClass(),
+                new PumpWriteTask16bitOrMore(2, this.pumpType.getqMaxHiHeadClass(), this.pumpType.getqMaxHi(),
                         setPumpMaxFlow(), "Standard", Priority.HIGH),
-                new PumpWriteTask8bit(254, 4, setHrange(), "Standard", Priority.HIGH),
-                new PumpWriteTask8bit(this.pumpType.getDeltaH(), this.pumpType.getDeltaHheadClass(), setPressureDelta(), "Standard", Priority.HIGH),
-                new PumpWriteTask8bit(47, 4, setGroupAddr(), "Standard", Priority.HIGH),
-                new PumpWriteTask8bit(241, 4, setTpMode(), "Standard", Priority.HIGH),
+                new PumpWriteTask8bit(4, 254, setHrange(), "Standard", Priority.HIGH),
+                new PumpWriteTask8bit(this.pumpType.getDeltaHheadClass(), this.pumpType.getDeltaH(), setPressureDelta(), "Standard", Priority.HIGH),
+                new PumpWriteTask8bit(4, 47, setGroupAddr(), "Standard", Priority.HIGH),
+                new PumpWriteTask8bit(4, 241, setTpMode(), "Standard", Priority.HIGH),
 
                 // Sensor configuration
-                new PumpWriteTask8bit(229, 4, setSensor1Func(), "Standard", Priority.HIGH),
-                new PumpWriteTask8bit(226, 4, setSensor1Applic(), "Standard", Priority.HIGH),
-                new PumpWriteTask8bit(208, 4, setSensor1Unit(), "Standard", Priority.HIGH),
-                new PumpWriteTask16bitOrMore(2, 209, 4, setSensor1Min(), "Standard", Priority.HIGH),
-                new PumpWriteTask16bitOrMore(2, 211, 4, setSensor1Max(), "Standard", Priority.HIGH),
+                new PumpWriteTask8bit(4, 229, setSensor1Func(), "Standard", Priority.HIGH),
+                new PumpWriteTask8bit(4, 226, setSensor1Applic(), "Standard", Priority.HIGH),
+                new PumpWriteTask8bit(4, 208, setSensor1Unit(), "Standard", Priority.HIGH),
+                new PumpWriteTask16bitOrMore(2, 4, 209, setSensor1Min(), "Standard", Priority.HIGH),
+                new PumpWriteTask16bitOrMore(2, 4, 211, setSensor1Max(), "Standard", Priority.HIGH),
 
                 //new PumpReadTask8bit(127, 2, getSensorGsp(), "Standard", Priority.LOW),
                 //new PumpWriteTask8bit(238, 4, setSensorGspFunc(), "Standard", Priority.LOW),
 
                 // Reference values tasks
-                new PumpWriteTask8bit(this.pumpType.getRefRem(), this.pumpType.getRefRemHeadClass(),
+                new PumpWriteTask8bit(this.pumpType.getRefRemHeadClass(), this.pumpType.getRefRem(),
                         setRefRem(), "Standard", Priority.HIGH),
 
                 // Strings
-                new PumpReadTaskASCII(8, 7, getProductNumber(), "Standard", Priority.ONCE),
-                new PumpReadTaskASCII(9, 7, getSerialNumber(), "Standard", Priority.ONCE),
+                new PumpReadTaskAscii(8, getProductNumber(), Priority.ONCE),
+                new PumpReadTaskAscii(9, getSerialNumber(), Priority.ONCE)
 
+                /*
                 // Multipump commands
-                new PumpCommandsTask(92, 3, setMpStartMultipump()),
-                new PumpCommandsTask(93, 3, setMpEndMultipump()),
-                new PumpCommandsTask(40, 3, setMpMaster()),
-                new PumpCommandsTask(87, 3, setMpStartSearch()),
-                new PumpCommandsTask(88, 3, setMpJoinReqAccepted()),
+                new PumpCommandsTask(3, 92, setMpStartMultipump()),
+                new PumpCommandsTask(3, 93, setMpEndMultipump()),
+                new PumpCommandsTask(3, 40, setMpMaster()),
+                new PumpCommandsTask(3, 87, setMpStartSearch()),
+                new PumpCommandsTask(3, 88, setMpJoinReqAccepted()),
 
-                new PumpReadTask8bit(1, 2, getMultipumpMembers(), "Standard", Priority.HIGH),
+                new PumpReadTask8bit(3, 1, getMultipumpMembers(), "Standard", Priority.HIGH),
 
-                new PumpWriteTask8bit(45, 4, setMpMasterAddr(), "Standard", Priority.HIGH)
+                new PumpWriteTask8bit(4, 45, setMpMasterAddr(), "Standard", Priority.HIGH)
                 // setTpMode() is already in.
+                */
         );
-        genibus.addDevice(pumpDevice);
+        this.genibus.addDevice(this.pumpDevice);
     }
 
     @Override
     public PumpDevice getPumpDevice() {
-        return pumpDevice;
+        return this.pumpDevice;
     }
 
     @Override
     public void handleEvent(Event event) {
-        switch (event.getTopic()) {
-            case EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE:
-                this.updateChannels();
-                break;
+        if (this.isEnabled() && EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE.equals(event.getTopic())) {
+            this.updateChannels();
         }
     }
 
@@ -396,7 +412,14 @@ public class PumpGrundfosImpl extends AbstractOpenemsComponent implements Openem
     private void updateChannels() {
 
         // Get connection status from pump, put it in the channel.
-        isConnectionOk().setNextValue(pumpDevice.isConnectionOk());
+        isConnectionOk().setNextValue(this.pumpDevice.isConnectionOk());
+
+        // Update the read buffer length of the device.
+        if (this.doOnce == false && getBufferLengthChannel().value().isDefined()) {
+            this.doOnce = true;
+            int bufferLength = (int)Math.round(getBufferLengthChannel().value().get());
+            this.pumpDevice.setDeviceReadBufferLengthBytes(bufferLength);
+        }
 
         // Parse ControlSource value to a string.
         if (getControlSourceBits().value().isDefined()) {
@@ -427,7 +450,7 @@ public class PumpGrundfosImpl extends AbstractOpenemsComponent implements Openem
 
 
             String mode = "unknown";
-            if (isMagna3) {
+            if (this.isMagna3) {
                 // The following code was tested to work with a Magna3 pump, but did not Work with an MGE pump.
                 // The MGE has different priority values. At const. press. the Magna3 has priority 10 while the MGE has
                 // priority 6. Also, getActualControlModeBits() does not work on the MGE.
@@ -613,8 +636,8 @@ public class PumpGrundfosImpl extends AbstractOpenemsComponent implements Openem
         }
 
         // Parse twinpump status value to a string.
-        if (getTwinpumpStatus().value().isDefined()) {
-            int twinpumpStatusValue = (int)Math.round(getTwinpumpStatus().value().get());
+        if (getTwinpumpStatusChannel().value().isDefined()) {
+            int twinpumpStatusValue = (int)Math.round(getTwinpumpStatusChannel().value().get());
             String twinpumpStatusString;
             switch (twinpumpStatusValue) {
                 case 0:
@@ -638,7 +661,7 @@ public class PumpGrundfosImpl extends AbstractOpenemsComponent implements Openem
                 default:
                     twinpumpStatusString = "unknown";
             }
-            getTwinpumpStatusString().setNextValue(twinpumpStatusString);
+            getTwinpumpStatusStringChannel().setNextValue(twinpumpStatusString);
         }
 
         // Parse twinpump/multipump mode value to a string.
@@ -708,11 +731,17 @@ public class PumpGrundfosImpl extends AbstractOpenemsComponent implements Openem
         }
         getWarnMessage().setNextValue(allErrors);
 
-        if (broadcast) {
+        // Get warning messages related to genibus.
+        String genibusWarningMessage = this.pumpDevice.getAndClearWarningMessage();
+        if (genibusWarningMessage.equals("") == false) {
+            this.logWarn(this.log, genibusWarningMessage);
+        }
+
+        if (this.broadcast) {
             boolean signalReceived = isConnectionOk().value().isDefined() && isConnectionOk().value().get();
-            //this.logInfo(this.log, "--GENIbus broadcast--");
+            this.logInfo(this.log, "--GENIbus broadcast--");
             if (signalReceived == false) {
-                //this.logInfo(this.log, "No signal received so far.");
+                this.logInfo(this.log, "No signal received so far.");
             } else {
                 String genibusAddress = "null";
                 if (setUnitAddr().value().isDefined()) {
@@ -723,35 +752,38 @@ public class PumpGrundfosImpl extends AbstractOpenemsComponent implements Openem
                     groupAddress = "" + Math.round(setGroupAddr().value().get());
                 }
                 String bufferLength = "null";
-                if (getBufferLength().value().isDefined()) {
-                    bufferLength = "" + Math.round(getBufferLength().value().get());
+                if (getBufferLengthChannel().value().isDefined()) {
+                    bufferLength = "" + Math.round(getBufferLengthChannel().value().get());
                 }
                 String busMode = "null";
-                if (getUnitBusMode().value().isDefined()) {
-                    busMode = "" + Math.round(getUnitBusMode().value().get());
+                if (getUnitBusModeChannel().value().isDefined()) {
+                    busMode = "" + Math.round(getUnitBusModeChannel().value().get());
                 }
 
-                //this.logInfo(this.log, "Pump found - " + getUnitInfo().value().get());
-                //this.logInfo(this.log, "GENIbus address: " + genibusAddress);
-                //this.logInfo(this.log, "Group address: " + groupAddress);
-                //this.logInfo(this.log, "Buffer length: " + bufferLength);
-                //this.logInfo(this.log, "Bus mode: " + busMode);
+                this.logInfo(this.log, "Pump found - " + getUnitInfo().value().get());
+                this.logInfo(this.log, "GENIbus address: " + genibusAddress);
+                this.logInfo(this.log, "Group address: " + groupAddress);
+                this.logInfo(this.log, "Buffer length: " + bufferLength);
+                this.logInfo(this.log, "Bus mode: " + busMode);
             }
-        } else if (changeAddress) {
-            if (newAddress > 31 && newAddress < 232) {
+        } else if (this.changeAddress) {
+            if (this.newAddress > 31 && this.newAddress < 232) {
                 try {
-                    setUnitAddr().setNextWriteValue(newAddress);
-                    //this.logInfo(this.log, "Pump address changed. New address = " + (Math.round(newAddress)) + ".");
+                    setUnitAddr().setNextWriteValue(this.newAddress);
+                    this.logInfo(this.log, "Pump address changed. New address = " + (Math.round(this.newAddress)) + ".");
                 } catch (OpenemsError.OpenemsNamedException e) {
                     this.logError(this.log, "Address change failed!");
                     e.printStackTrace();
                 }
             } else {
-                this.logError(this.log, "Value for new address = " + (Math.round(newAddress)) + " is not in the valid range (32 - 231). "
+                this.logError(this.log, "Value for new address = " + (Math.round(this.newAddress)) + " is not in the valid range (32 - 231). "
                         + "Not executing address change!");
             }
-            changeAddress = false;
-        } else if (mpSetup) {
+            this.changeAddress = false;
+        }
+
+        /* Setup of a multipump system is not possible with genibus.
+        else if (mpSetup) {
             if (mpEnd) {
                 try {
                     setMpEndMultipump().setNextWriteValue(true);
@@ -800,7 +832,7 @@ public class PumpGrundfosImpl extends AbstractOpenemsComponent implements Openem
             this.logInfo(this.log, "Multipump members: " + pumpCounter);
             this.logInfo(this.log, "Multipump mode: " + getTpModeString().value().get());
         }
+        */
 
     }
-
 }

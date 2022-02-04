@@ -31,7 +31,7 @@ task buildEdge() {
         copy {
             from file("io.openems.edge.application/generated/distributions/executable/EdgeApp.jar")
             into file("${buildDir}")
-            rename ("EdgeApp.jar", "openems-edge.jar")
+            rename("EdgeApp.jar", "openems-edge.jar")
         }
 
     }
@@ -68,11 +68,11 @@ task buildEdgeDeb(dependsOn: buildEdge, type: Deb) {
 
     from("${buildDir}/openems-edge.jar") {
         into "/usr/lib/openems"
-        rename ("openems-edge.jar", "openems.jar")
+        rename("openems-edge.jar", "openems.jar")
     }
 
     from("openems.service") {
-        into "/etc/systemd/system"
+        into "/lib/systemd/system"
     }
 
     /* Install changelog */
@@ -81,7 +81,9 @@ task buildEdgeDeb(dependsOn: buildEdge, type: Deb) {
         into "/usr/share/doc/${packageName}"
 
     }
+    preUninstall file('debian/prerm')
     postInstall file('debian/postinst')
+    postUninstall file('debian/postrm')
 
 }
 
@@ -95,7 +97,7 @@ task buildBackend() {
         copy {
             from file("io.openems.backend.application/generated/distributions/executable/BackendApp.jar")
             into file("${buildDir}")
-            rename ("BackendApp.jar", "openems-backend.jar")
+            rename("BackendApp.jar", "openems-backend.jar")
         }
     }
 }
@@ -154,38 +156,38 @@ task copyBundleReadmes() {
             // in each subproject (= bundle)...
             proj.file(".").listFiles().each { sourceFile ->
                 // find the 'readme.adoc' file
-                if(sourceFile.getName().equalsIgnoreCase("readme.adoc")) {
+                if (sourceFile.getName().equalsIgnoreCase("readme.adoc")) {
                     def bundle = sourceFile.getParentFile().getName()
                     def target = null
                     // evaluate the OpenEMS Component ('Backend' or 'Edge')
-                    if(bundle.startsWith("io.openems.edge.")) {
+                    if (bundle.startsWith("io.openems.edge.")) {
                         // evaluate the bundle type (e.g. 'Controller')
                         def edgeBundle = bundle.substring("io.openems.edge.".length())
-                        if(edgeBundle.endsWith(".api")) {
+                        if (edgeBundle.endsWith(".api")) {
                             target = targetNature
-                        } else if(edgeBundle.startsWith("controller.")) {
+                        } else if (edgeBundle.startsWith("controller.")) {
                             target = targetController
-                        } else if(edgeBundle.startsWith("scheduler.")) {
+                        } else if (edgeBundle.startsWith("scheduler.")) {
                             target = targetScheduler
-                        } else if(edgeBundle.startsWith("bridge.")) {
+                        } else if (edgeBundle.startsWith("bridge.")) {
                             target = targetBridge
                         } else {
                             target = targetDeviceService
                         }
-                    } else if(bundle.startsWith("io.openems.wrapper")) {
+                    } else if (bundle.startsWith("io.openems.wrapper")) {
                         // ignore
                         return
                     }
 
                     // could we exactly evaluate the bundle type and set the targetFile?
-                    if(target == null) {
+                    if (target == null) {
                         throw new Exception("Bundle type is unknown for " + bundle)
                     }
 
                     // copy the readme file to "target.d" folder
                     copy {
-                        from (sourceFile.toPath())
-                        into (target)
+                        from(sourceFile.toPath())
+                        into(target)
                         rename { fileName ->
                             return bundle + ".adoc"
                         }

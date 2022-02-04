@@ -22,7 +22,7 @@ public enum Unit {
 	/**
 	 * Thousandth [‰], 0-1000
 	 */
-	THOUSANDTH("‰"),
+	THOUSANDTH("‰", PERCENT, -1),
 
 	/**
 	 * On or Off
@@ -325,7 +325,7 @@ public enum Unit {
 	/**
 	 * Unit of Pressure[hPa].
 	 */
-	HECTO_PASCAL("hPa", PASCAL, 100),
+	HECTO_PASCAL("hPa", PASCAL, 2),
 
 	/**
 	 * Unit of Pressure [bar].

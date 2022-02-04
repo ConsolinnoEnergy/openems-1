@@ -137,7 +137,7 @@
 	bnd.identity;id='io.openems.edge.evcs.ocpp.ies.keywatt.singleccs',\
 	bnd.identity;id='io.openems.edge.evcs.ocpp.server',\
 	bnd.identity;id='io.openems.edge.evcs.simulator',\
-	bnd.identity;id='io.openems.edge.exceptionalstate.api,\
+	bnd.identity;id='io.openems.edge.exceptionalstate.api',\
 	bnd.identity;id='io.openems.edge.evcs.schneider',\
 	bnd.identity;id='io.openems.edge.evcs.wallbe',\
 	bnd.identity;id='io.openems.edge.exceptionalstate.api',\
@@ -147,6 +147,7 @@
 	bnd.identity;id='io.openems.edge.goodwe',\
 	bnd.identity;id='io.openems.edge.heater.analogue',\
 	bnd.identity;id='io.openems.edge.heater.api',\
+	bnd.identity;id='io.openems.edge.heater.biomassheater.gilles',\
 	bnd.identity;id='io.openems.edge.heater.chp.dachs',\
 	bnd.identity;id='io.openems.edge.heater.chp.kwenergy',\
 	bnd.identity;id='io.openems.edge.heater.chp.viessmann',\
@@ -174,6 +175,7 @@
 	bnd.identity;id='io.openems.edge.meter.bcontrol.em300',\
 	bnd.identity;id='io.openems.edge.meter.carlo.gavazzi.em300',\
 	bnd.identity;id='io.openems.edge.meter.discovergy',\
+	bnd.identity;id='io.openems.edge.meter.eltako',\
 	bnd.identity;id='io.openems.edge.meter.gasmeter',\
 	bnd.identity;id='io.openems.edge.meter.heatmeter',\
 	bnd.identity;id='io.openems.edge.meter.janitza',\
@@ -339,6 +341,7 @@
 	io.openems.edge.goodwe;version=snapshot,\
 	io.openems.edge.heater.analogue;version=snapshot,\
 	io.openems.edge.heater.api;version=snapshot,\
+	io.openems.edge.heater.biomassheater.gilles;version=snapshot,\
 	io.openems.edge.heater.chp.dachs;version=snapshot,\
 	io.openems.edge.heater.chp.kwenergy;version=snapshot,\
 	io.openems.edge.heater.chp.viessmann;version=snapshot,\
@@ -367,6 +370,7 @@
 	io.openems.edge.meter.bcontrol.em300;version=snapshot,\
 	io.openems.edge.meter.carlo.gavazzi.em300;version=snapshot,\
 	io.openems.edge.meter.discovergy;version=snapshot,\
+	io.openems.edge.meter.eltako;version=snapshot,\
 	io.openems.edge.meter.gasmeter;version=snapshot,\
 	io.openems.edge.meter.heatmeter;version=snapshot,\
 	io.openems.edge.meter.janitza;version=snapshot,\

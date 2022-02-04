@@ -21,100 +21,100 @@ public enum PumpType {
 
     //////read Measured Data////////
     //diff pressure head
-    private int hDiff;
-    private int hDiffHeadClass;
+    private final int hDiff;
+    private final int hDiffHeadClass;
     //temperature Electronics
-    private int tE;
-    private int tEheadClass;
+    private final int tE;
+    private final int tEheadClass;
     //current motor
-    private int iMo;
-    private int imoHeadClass;
+    private final int iMo;
+    private final int imoHeadClass;
     //powerConsumption
-    private int plo;
-    private int ploHeadClass;
+    private final int plo;
+    private final int ploHeadClass;
     //pressure
-    private int h;
-    private int hHeadClass;
+    private final int h;
+    private final int hHeadClass;
     //pump flow
-    private int q;
-    private int qHeadClass;
+    private final int q;
+    private final int qHeadClass;
     //pumped Water medium temperature
-    private int tW;
-    private int tWHeadClass;
+    private final int tW;
+    private final int tWHeadClass;
     //motor frequency
-    private int fAct;
-    private int fActHeadClass;
+    private final int fAct;
+    private final int fActHeadClass;
     //control Mode
-    private int controlMode;
-    private int controlModeHeadClass;
+    private final int controlMode;
+    private final int controlModeHeadClass;
     //alarm code
-    private int alarmCodePump;
-    private int alarmCodePumpHeadClass;
+    private final int alarmCodePump;
+    private final int alarmCodePumpHeadClass;
     //warnCode
-    private int warnCode;
-    private int warnCodeHeadClass;
+    private final int warnCode;
+    private final int warnCodeHeadClass;
     //alarmCode
-    private int alarmCode;
-    private int alarmCodeHeadClass;
+    private final int alarmCode;
+    private final int alarmCodeHeadClass;
     //warnBits
 
-    private int warnBits1;
-    private int warnBits1HeadClass;
-    private int warnBits2;
-    private int warnBits2HeadClass;
-    private int warnBits3;
-    private int warnBits3HeadClass;
-    private int warnBits4;
-    private int warnBits4HeadClass;
+    private final int warnBits1;
+    private final int warnBits1HeadClass;
+    private final int warnBits2;
+    private final int warnBits2HeadClass;
+    private final int warnBits3;
+    private final int warnBits3HeadClass;
+    private final int warnBits4;
+    private final int warnBits4HeadClass;
 
 
     //reference setting range
-    private int rMin;
-    private int rMinHeadClass;
-    private int rMax;
-    private int rMaxHeadClass;
+    private final int rMin;
+    private final int rMinHeadClass;
+    private final int rMax;
+    private final int rMaxHeadClass;
     ///////Write/////////////
     //Pump flow Config Params
-    private int qMaxHi;
-    private int qMaxHiHeadClass;
-    private int qMaxLo;
-    private int qMaxLowClass;
+    private final int qMaxHi;
+    private final int qMaxHiHeadClass;
+    private final int qMaxLo;
+    private final int qMaxLowClass;
 
     //pressure Config Params
-    private int deltaH;
-    private int deltaHheadClass;
-    private int hMaxHi;
-    private int hMaxHiHeadClass;
-    private int hMaxLo;
-    private int hMaxLoHeadClass;
+    private final int deltaH;
+    private final int deltaHheadClass;
+    private final int hMaxHi;
+    private final int hMaxHiHeadClass;
+    private final int hMaxLo;
+    private final int hMaxLoHeadClass;
 
 
     //Commands
-    private int remote;
-    private int remoteHeadClass;
-    private int start;
-    private int startHeadClass;
-    private int stop;
-    private int stopHeadClass;
-    private int minMotorCurve;
-    private int minMotorCurveHeadClass;
-    private int maxMotorCurve;
-    private int maxMotorCurveHeadClass;
-    private int constFrequency;
-    private int constFrequencyHeadClass;
-    private int constPressure;
-    private int constPressureHeadClass;
-    private int hConstRefMin;
-    private int hConstRefMinHeadClass;
-    private int hConstRefMax;
-    private int hConstRefMaxHeadClass;
-    private int autoAdapt;
-    private int autoAdaptHeadClass;
+    private final int remote;
+    private final int remoteHeadClass;
+    private final int start;
+    private final int startHeadClass;
+    private final int stop;
+    private final int stopHeadClass;
+    private final int minMotorCurve;
+    private final int minMotorCurveHeadClass;
+    private final int maxMotorCurve;
+    private final int maxMotorCurveHeadClass;
+    private final int constFrequency;
+    private final int constFrequencyHeadClass;
+    private final int constPressure;
+    private final int constPressureHeadClass;
+    private final int hConstRefMin;
+    private final int hConstRefMinHeadClass;
+    private final int hConstRefMax;
+    private final int hConstRefMaxHeadClass;
+    private final int autoAdapt;
+    private final int autoAdaptHeadClass;
 
 
     //Reference Value
-    private int refRem;
-    private int refRemHeadClass;
+    private final int refRem;
+    private final int refRemHeadClass;
 
 
     PumpType(int hDiff, int hDiffHeadClass, int tE, int tEheadClass, int iMo, int imoHeadClass, int plo,
@@ -201,276 +201,276 @@ public enum PumpType {
     }
 
     public int gethDiff() {
-        return hDiff;
+        return this.hDiff;
     }
 
     public int gethDiffHeadClass() {
-        return hDiffHeadClass;
+        return this.hDiffHeadClass;
     }
 
     public int gettE() {
-        return tE;
+        return this.tE;
     }
 
     public int gettEheadClass() {
-        return tEheadClass;
+        return this.tEheadClass;
     }
 
     public int getiMo() {
-        return iMo;
+        return this.iMo;
     }
 
     public int getImoHeadClass() {
-        return imoHeadClass;
+        return this.imoHeadClass;
     }
 
     public int getPlo() {
-        return plo;
+        return this.plo;
     }
 
     public int getPloHeadClass() {
-        return ploHeadClass;
+        return this.ploHeadClass;
     }
 
     public int getH() {
-        return h;
+        return this.h;
     }
 
     public int gethHeadClass() {
-        return hHeadClass;
+        return this.hHeadClass;
     }
 
     public int getQ() {
-        return q;
+        return this.q;
     }
 
     public int getqHeadClass() {
-        return qHeadClass;
+        return this.qHeadClass;
     }
 
     public int gettW() {
-        return tW;
+        return this.tW;
     }
 
     public int gettWHeadClass() {
-        return tWHeadClass;
+        return this.tWHeadClass;
     }
 
-    public int getfAct() { return fAct; }
+    public int getfAct() { return this.fAct; }
 
-    public int getfActHeadClass() { return fActHeadClass; }
+    public int getfActHeadClass() { return this.fActHeadClass; }
 
     public int getControlMode() {
-        return controlMode;
+        return this.controlMode;
     }
 
     public int getControlModeHeadClass() {
-        return controlModeHeadClass;
+        return this.controlModeHeadClass;
     }
 
     public int getAlarmCodePump() {
-        return alarmCodePump;
+        return this.alarmCodePump;
     }
 
     public int getAlarmCodePumpHeadClass() {
-        return alarmCodePumpHeadClass;
+        return this.alarmCodePumpHeadClass;
     }
 
     public int getWarnCode() {
-        return warnCode;
+        return this.warnCode;
     }
 
     public int getWarnCodeHeadClass() {
-        return warnCodeHeadClass;
+        return this.warnCodeHeadClass;
     }
 
     public int getAlarmCode() {
-        return alarmCode;
+        return this.alarmCode;
     }
 
     public int getAlarmCodeHeadClass() {
-        return alarmCodeHeadClass;
+        return this.alarmCodeHeadClass;
     }
 
     public int getWarnBits1() {
-        return warnBits1;
+        return this.warnBits1;
     }
 
     public int getWarnBits1HeadClass() {
-        return warnBits1HeadClass;
+        return this.warnBits1HeadClass;
     }
 
     public int getWarnBits2() {
-        return warnBits2;
+        return this.warnBits2;
     }
 
     public int getWarnBits2HeadClass() {
-        return warnBits2HeadClass;
+        return this.warnBits2HeadClass;
     }
 
     public int getWarnBits3() {
-        return warnBits3;
+        return this.warnBits3;
     }
 
     public int getWarnBits3HeadClass() {
-        return warnBits3HeadClass;
+        return this.warnBits3HeadClass;
     }
 
     public int getWarnBits4() {
-        return warnBits4;
+        return this.warnBits4;
     }
 
     public int getWarnBits4HeadClass() {
-        return warnBits4HeadClass;
+        return this.warnBits4HeadClass;
     }
 
 
     public int getrMin() {
-        return rMin;
+        return this.rMin;
     }
 
     public int getrMinHeadClass() {
-        return rMinHeadClass;
+        return this.rMinHeadClass;
     }
 
     public int getrMax() {
-        return rMax;
+        return this.rMax;
     }
 
     public int getrMaxHeadClass() {
-        return rMaxHeadClass;
+        return this.rMaxHeadClass;
     }
 
     public int getqMaxHi() {
-        return qMaxHi;
+        return this.qMaxHi;
     }
 
     public int getqMaxHiHeadClass() {
-        return qMaxHiHeadClass;
+        return this.qMaxHiHeadClass;
     }
 
     public int getqMaxLo() {
-        return qMaxLo;
+        return this.qMaxLo;
     }
 
     public int getqMaxLowClass() {
-        return qMaxLowClass;
+        return this.qMaxLowClass;
     }
 
 
     public int getDeltaH() {
-        return deltaH;
+        return this.deltaH;
     }
 
     public int getDeltaHheadClass() {
-        return deltaHheadClass;
+        return this.deltaHheadClass;
     }
 
     public int gethMaxHi() {
-        return hMaxHi;
+        return this.hMaxHi;
     }
 
     public int gethMaxHiHeadClass() {
-        return hMaxHiHeadClass;
+        return this.hMaxHiHeadClass;
     }
 
     public int gethMaxLo() {
-        return hMaxLo;
+        return this.hMaxLo;
     }
 
     public int gethMaxLoHeadClass() {
-        return hMaxLoHeadClass;
+        return this.hMaxLoHeadClass;
     }
 
 
     //commands
 
     public int getRemote() {
-        return remote;
+        return this.remote;
     }
 
     public int getRemoteHeadClass() {
-        return remoteHeadClass;
+        return this.remoteHeadClass;
     }
 
     public int getStart() {
-        return start;
+        return this.start;
     }
 
     public int getStartHeadClass() {
-        return startHeadClass;
+        return this.startHeadClass;
     }
 
     public int getStop() {
-        return stop;
+        return this.stop;
     }
 
     public int getStopHeadClass() {
-        return stopHeadClass;
+        return this.stopHeadClass;
     }
 
     public int getMinMotorCurve() {
-        return minMotorCurve;
+        return this.minMotorCurve;
     }
 
     public int getMinMotorCurveHeadClass() {
-        return minMotorCurveHeadClass;
+        return this.minMotorCurveHeadClass;
     }
 
     public int getMaxMotorCurve() {
-        return maxMotorCurve;
+        return this.maxMotorCurve;
     }
 
     public int getMaxMotorCurveHeadClass() {
-        return maxMotorCurveHeadClass;
+        return this.maxMotorCurveHeadClass;
     }
 
     public int getConstFrequency() {
-        return constFrequency;
+        return this.constFrequency;
     }
 
     public int getConstFrequencyHeadClass() {
-        return constFrequencyHeadClass;
+        return this.constFrequencyHeadClass;
     }
 
     public int getConstPressure() {
-        return constPressure;
+        return this.constPressure;
     }
 
     public int getConstPressureHeadClass() {
-        return constPressureHeadClass;
+        return this.constPressureHeadClass;
     }
 
     public int getAutoAdapt() {
-        return autoAdapt;
+        return this.autoAdapt;
     }
 
     public int getAutoAdaptHeadClass() {
-        return autoAdaptHeadClass;
+        return this.autoAdaptHeadClass;
     }
 
     public int gethConstRefMin() {
-        return hConstRefMin;
+        return this.hConstRefMin;
     }
 
     public int gethConstRefMinHeadClass() {
-        return hConstRefMinHeadClass;
+        return this.hConstRefMinHeadClass;
     }
 
     public int gethConstRefMax() {
-        return hConstRefMax;
+        return this.hConstRefMax;
     }
 
     public int gethConstRefMaxHeadClass() {
-        return hConstRefMaxHeadClass;
+        return this.hConstRefMaxHeadClass;
     }
 
 
     public int getRefRem() {
-        return refRem;
+        return this.refRem;
     }
 
     public int getRefRemHeadClass() {
-        return refRemHeadClass;
+        return this.refRemHeadClass;
     }
 }

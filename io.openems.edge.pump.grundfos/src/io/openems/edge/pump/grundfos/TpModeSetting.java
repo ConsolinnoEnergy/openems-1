@@ -15,11 +15,19 @@ public enum TpModeSetting {
 		this.name = name;
 	}
 
+	/**
+	 * Get the value.
+	 * @return the value.
+	 */
 	public int getValue() {
-		return value;
+		return this.value;
 	}
 
+	/**
+	 * Get the name.
+	 * @return the name.
+	 */
 	public String getName() {
-		return name;
+		return this.name;
 	}
 }

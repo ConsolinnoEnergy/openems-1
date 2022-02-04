@@ -857,7 +857,7 @@ public class HeatPumpAlphaInnotecImpl extends AbstractOpenemsModbusComponent imp
 	 * Information that is printed to the log if ’print info to log’ option is enabled. For full remote mode.
 	 */
 	protected void printInfoRemote() {
-		this.logInfo(this.log, "--Heat pump Alpha Innotec, Soest mode--");
+		this.logInfo(this.log, "--Heat pump Alpha Innotec, Full Remote mode--");
 		this.logInfo(this.log, "HR_6_BLOCK_RELEASE: " + this.getBlockRelease().asEnum().getName());
 		this.logInfo(this.log, "DI_0_DMS_BLOCK: " + getDmsBlockActive());
 		this.logInfo(this.log, "DI_1_DMS_BLOCK_SG: " + getEvu2Active());
