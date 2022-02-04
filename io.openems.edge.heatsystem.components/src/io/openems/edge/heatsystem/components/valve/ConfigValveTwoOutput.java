@@ -37,6 +37,11 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
             + "activated: prevents in flight status due to crashes or restarts etc")
     boolean shouldCloseOnActivation() default true;
 
+    @AttributeDefinition(name = "Should Open on Activation", description = "Should the Valve Open completely if it's "
+            + "activated: prevents in flight status due to crashes or restarts etc")
+    boolean shouldOpenOnActivation() default false;
+
+
     @AttributeDefinition(name = "Self check if Output to Valve is written",
             description = "If the Box is ticked, the Valve will check if it's output is written into devices. "
                     + "If the ConfigurationType is Channel, please type the inputChannelAddresses")

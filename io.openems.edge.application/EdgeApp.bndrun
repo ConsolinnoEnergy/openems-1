@@ -137,7 +137,7 @@
 	bnd.identity;id='io.openems.edge.evcs.ocpp.ies.keywatt.singleccs',\
 	bnd.identity;id='io.openems.edge.evcs.ocpp.server',\
 	bnd.identity;id='io.openems.edge.evcs.simulator',\
-	bnd.identity;id='io.openems.edge.exceptionalstate.api,\
+	bnd.identity;id='io.openems.edge.exceptionalstate.api',\
 	bnd.identity;id='io.openems.edge.evcs.schneider',\
 	bnd.identity;id='io.openems.edge.evcs.wallbe',\
 	bnd.identity;id='io.openems.edge.exceptionalstate.api',\
