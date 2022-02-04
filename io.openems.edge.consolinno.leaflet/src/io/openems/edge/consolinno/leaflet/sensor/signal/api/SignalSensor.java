@@ -13,7 +13,7 @@ public interface SignalSensor extends OpenemsComponent {
 
     public enum ChannelId implements io.openems.edge.common.channel.ChannelId {
         /**
-         * Has an Error occurred.
+         * Has a Signal active (true) or not (false).
          *
          * <ul>
          * <li>Interface: SignalSensor
@@ -44,7 +44,7 @@ public interface SignalSensor extends OpenemsComponent {
     }
 
     /**
-     * Gets if Error Occurred or not.
+     * Gets if Error/Signal is (in)active.
      *
      * @return the Channel
      */
@@ -54,7 +54,7 @@ public interface SignalSensor extends OpenemsComponent {
 
 
     /**
-     * Gets the Type of Error.
+     * Gets the Type of Signal (e.g. Signal or Error).
      *
      * @return the Channel
      */

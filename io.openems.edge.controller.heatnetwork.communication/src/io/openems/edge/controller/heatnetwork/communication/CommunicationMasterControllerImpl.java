@@ -674,7 +674,7 @@ public class CommunicationMasterControllerImpl extends AbstractOpenemsComponent 
                 throws ConfigurationException, OpenemsError.OpenemsNamedException {
             CommunicationController controller;
             if (config.connectionType() == ConnectionType.REST) {
-                controller = new RestLeafletCommunicationControllerImpl(config.connectionType(),
+                controller = new RestCommunicationControllerImpl(config.connectionType(),
                         config.manageType(), config.maxDecentralizedSystemsAllowedAtOnce(),
                         config.forceHeating());
                 controller.setMaxWaitTime(config.maxWaitTimeAllowed());

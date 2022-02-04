@@ -21,7 +21,7 @@ public interface LeafletCore extends OpenemsComponent {
      *
      * @param moduleType   TMP,RELAY,PWM
      * @param moduleNumber Internal Number of the module
-     * @param mReg     Pin position of the Module
+     * @param mReg         Pin position of the Module
      * @param id           Unique Id of the Device
      * @return boolean true if present
      */
@@ -791,36 +791,36 @@ public interface LeafletCore extends OpenemsComponent {
     default String getReadPwmFrequency() {
 
         String returnString = "";
-        if (this.getReadPwmFrequencyOne().value().isDefined() && this.getReadPwmFrequencyOne().value().get() != -1
-                && this.getReadPwmFrequencyOne().value().get() != 65535) {
+        if (this.getReadPwmFrequencyOne().value().isDefined() && this.getReadPwmFrequencyOne().value().get() != Error.NOT_CONNECTED.getValue()
+                && this.getReadPwmFrequencyOne().value().get() != Error.ERROR.getValue()) {
             returnString = returnString + this.getReadPwmFrequencyOne().value();
         }
-        if (this.getReadPwmFrequencyTwo().value().isDefined() && this.getReadPwmFrequencyTwo().value().get() != -1
-                && this.getReadPwmFrequencyTwo().value().get() != 65535) {
+        if (this.getReadPwmFrequencyTwo().value().isDefined() && this.getReadPwmFrequencyTwo().value().get() != Error.NOT_CONNECTED.getValue()
+                && this.getReadPwmFrequencyTwo().value().get() != Error.ERROR.getValue()) {
             returnString = returnString + this.getReadPwmFrequencyTwo().value();
         }
-        if (this.getReadPwmFrequencyThree().value().isDefined() && this.getReadPwmFrequencyThree().value().get() != -1
-                && this.getReadPwmFrequencyThree().value().get() != 65535) {
+        if (this.getReadPwmFrequencyThree().value().isDefined() && this.getReadPwmFrequencyThree().value().get() != Error.NOT_CONNECTED.getValue()
+                && this.getReadPwmFrequencyThree().value().get() != Error.ERROR.getValue()) {
             returnString = returnString + this.getReadPwmFrequencyThree().value();
         }
-        if (this.getReadPwmFrequencyFour().value().isDefined() && this.getReadPwmFrequencyFour().value().get() != -1
-                && this.getReadPwmFrequencyFour().value().get() != 65535) {
+        if (this.getReadPwmFrequencyFour().value().isDefined() && this.getReadPwmFrequencyFour().value().get() != Error.NOT_CONNECTED.getValue()
+                && this.getReadPwmFrequencyFour().value().get() != Error.ERROR.getValue()) {
             returnString = returnString + this.getReadPwmFrequencyFour().value();
         }
-        if (this.getReadPwmFrequencyFive().value().isDefined() && this.getReadPwmFrequencyFive().value().get() != -1
-                && this.getReadPwmFrequencyFive().value().get() != 65535) {
+        if (this.getReadPwmFrequencyFive().value().isDefined() && this.getReadPwmFrequencyFive().value().get() != Error.NOT_CONNECTED.getValue()
+                && this.getReadPwmFrequencyFive().value().get() != Error.ERROR.getValue()) {
             returnString = returnString + this.getReadPwmFrequencyFive().value();
         }
-        if (this.getReadPwmFrequencySix().value().isDefined() && this.getReadPwmFrequencySix().value().get() != -1
-                && this.getReadPwmFrequencySix().value().get() != 65535) {
+        if (this.getReadPwmFrequencySix().value().isDefined() && this.getReadPwmFrequencySix().value().get() != Error.NOT_CONNECTED.getValue()
+                && this.getReadPwmFrequencySix().value().get() != Error.ERROR.getValue()) {
             returnString = returnString + this.getReadPwmFrequencySix().value();
         }
-        if (this.getReadPwmFrequencySeven().value().isDefined() && this.getReadPwmFrequencySeven().value().get() != -1
-                && this.getReadPwmFrequencySeven().value().get() != 65535) {
+        if (this.getReadPwmFrequencySeven().value().isDefined() && this.getReadPwmFrequencySeven().value().get() != Error.NOT_CONNECTED.getValue()
+                && this.getReadPwmFrequencySeven().value().get() != Error.ERROR.getValue()) {
             returnString = returnString + this.getReadPwmFrequencySeven().value();
         }
-        if (this.getReadPwmFrequencyEight().value().isDefined() && this.getReadPwmFrequencyEight().value().get() != -1
-                && this.getReadPwmFrequencyEight().value().get() != 65535) {
+        if (this.getReadPwmFrequencyEight().value().isDefined() && this.getReadPwmFrequencyEight().value().get() != Error.NOT_CONNECTED.getValue()
+                && this.getReadPwmFrequencyEight().value().get() != Error.ERROR.getValue()) {
             returnString = returnString + this.getReadPwmFrequencyEight().value();
         }
         return returnString;

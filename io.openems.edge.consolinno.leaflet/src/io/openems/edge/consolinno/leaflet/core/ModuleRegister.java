@@ -2,7 +2,9 @@ package io.openems.edge.consolinno.leaflet.core;
 
 import io.openems.edge.consolinno.leaflet.core.api.LeafletCore;
 
-
+/**
+ * A ModuleRegister. Saves the Leaflet-Module Type, Module Number and mReg.
+ */
 class ModuleRegister {
 
 

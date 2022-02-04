@@ -39,7 +39,7 @@ import java.util.concurrent.atomic.AtomicReference;
  * It either works with 1 Aio/Pwm or 1 ChannelAddresses.
  * It can update it's opening/closing state and shows up the percentage value of itself.
  * To check if the output is correct, you can configure the CheckUp.
- * E.g. The Consolinno Leaflet reads the MCP and it's status, this will be send into the {@link AnalogInputOutput#getPercentChannel()}
+ * E.g. The Consolinno Leaflet reads the MCP and it's status, this will be send into the {@link AnalogInputOutput#getThousandthCheckChannel()}
  * If the value you read is the expected value, everything is ok, otherwise the Components tries to set the expected values again.
  */
 @Designate(ocd = ConfigValveOneOutput.class, factory = true)
@@ -256,7 +256,7 @@ public class ValveOneOutput extends AbstractValve implements OpenemsComponent, H
                 channelToWrite = this.cpm.getChannel(this.outputChannel);
             } else {
                 if (this.deviceType.equals(DeviceType.AIO)) {
-                    channelToWrite = this.valveAio.setPercentChannel();
+                    channelToWrite = this.valveAio.setWriteThousandthChannel();
                 } else {
                     channelToWrite = this.valvePwm.getWritePwmPowerLevelChannel();
                 }
@@ -350,7 +350,7 @@ public class ValveOneOutput extends AbstractValve implements OpenemsComponent, H
                         return this.valvePwm.getReadPwmPowerLevelChannel();
 
                     case AIO:
-                        return this.valveAio.getPercentChannel();
+                        return this.valveAio.getThousandthCheckChannel();
                 }
                 break;
             case CHANNEL:

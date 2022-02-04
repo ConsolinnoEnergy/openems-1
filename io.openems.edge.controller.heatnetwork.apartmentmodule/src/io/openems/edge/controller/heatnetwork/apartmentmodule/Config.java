@@ -51,7 +51,7 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     String heatBoosterId() default "HeatBooster0";
 
     @AttributeDefinition(name = "TimerId", description = "Timer to use for checking Missing Components")
-    String timerId() default "TimerByCycles";
+    String timerId() default "TimerByCounting";
 
     boolean enabled() default true;
 

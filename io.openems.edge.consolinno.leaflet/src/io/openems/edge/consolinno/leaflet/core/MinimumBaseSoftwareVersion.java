@@ -1,10 +1,13 @@
 package io.openems.edge.consolinno.leaflet.core;
 
-public enum MinimumFirmwareVersion {
+/**
+ * This Enums tells the minimum required LeafletBaseSoftware Version.
+ */
+public enum MinimumBaseSoftwareVersion {
     VERSION(78);
     private final int value;
 
-    private MinimumFirmwareVersion(int value) {
+    private MinimumBaseSoftwareVersion(int value) {
         this.value = value;
 
     }

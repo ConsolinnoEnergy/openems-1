@@ -20,7 +20,7 @@ import org.slf4j.LoggerFactory;
 
 
 /**
- * The Concrete Implementation of the AbstractMqttTask. The SubscribeTaskImpl allows to subscribe to the MqttBroker
+ * One of the implementations of the AbstractMqttTask. The SubscribeTaskImpl allows to subscribe to the MqttBroker
  * and either: map the value of the payload to certain Channel (Depends on Config) or get Commands and store them.
  * They will be handled later by the MqttCommandComponent.
  */

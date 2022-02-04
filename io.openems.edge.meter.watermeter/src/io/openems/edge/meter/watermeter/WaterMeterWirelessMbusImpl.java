@@ -8,7 +8,8 @@ import io.openems.edge.bridge.mbus.api.ChannelRecord;
 import io.openems.edge.bridge.mbus.api.WMbusProtocol;
 import io.openems.edge.common.channel.Doc;
 import io.openems.edge.common.component.OpenemsComponent;
-import io.openems.edge.meter.watermeter.api.WaterMeter;
+import io.openems.edge.meter.api.Meter;
+import io.openems.edge.meter.api.WaterMeter;
 import org.openmuc.jmbus.DataRecord;
 import org.openmuc.jmbus.VariableDataStructure;
 import org.osgi.service.cm.ConfigurationAdmin;
@@ -45,6 +46,7 @@ public class WaterMeterWirelessMbusImpl extends AbstractOpenemsWMbusComponent im
     public WaterMeterWirelessMbusImpl() {
         super(OpenemsComponent.ChannelId.values(),
                 WaterMeter.ChannelId.values(),
+                Meter.ChannelId.values(),
                 ChannelId.values());
     }
 
@@ -74,7 +76,7 @@ public class WaterMeterWirelessMbusImpl extends AbstractOpenemsWMbusComponent im
     }
 
     @Activate
-    public void activate(ComponentContext context, ConfigWirelessMbus config) {
+    void activate(ComponentContext context, ConfigWirelessMbus config) {
         if (config.radioAddress().length() != 8) {
             this.logError(this.log, "The radio address needs to be 8 characters long. The entered radio address "
                     + config.radioAddress() + " is " + config.radioAddress().length() + " characters long. Cannot activate.");
@@ -98,21 +100,21 @@ public class WaterMeterWirelessMbusImpl extends AbstractOpenemsWMbusComponent im
 
     }
 
-    private void allocateAddressViaMeterModel(String meterModel) {
+    private void allocateAddressViaMeterModel(WaterMeterModelWirelessMbus meterModel) {
         switch (meterModel) {
-            case "Relay PadPuls M2W Channel 1":
+            case RELAY_PADPULS_M2W_CHANNEL1:
                 this.waterMeterModelWirelessMbus = WaterMeterModelWirelessMbus.RELAY_PADPULS_M2W_CHANNEL1;
                 break;
-            case "Relay PadPuls M2W Channel 2":
+            case RELAY_PADPULS_M2W_CHANNEL2:
                 this.waterMeterModelWirelessMbus = WaterMeterModelWirelessMbus.RELAY_PADPULS_M2W_CHANNEL2;
                 break;
-            case "Engelmann Waterstar M":
+            case ENGELMANN_WATERSTAR_M:
                 this.waterMeterModelWirelessMbus = WaterMeterModelWirelessMbus.ENGELMANN_WATERSTAR_M;
                 // The Waterstar transmits stored records before the current data. The number of stored records can vary,
                 // so the address of the data after the stored records can change as well.
                 super.dynamicDataAddress = true;
                 break;
-            case "Autosearch":
+            case AUTOSEARCH:
             default:
                 this.waterMeterModelWirelessMbus = WaterMeterModelWirelessMbus.AUTOSEARCH;
                 // Use findRecordPositions() to find the right data record positions. Should work for most meter types.
@@ -129,22 +131,22 @@ public class WaterMeterWirelessMbusImpl extends AbstractOpenemsWMbusComponent im
     @SuppressWarnings("incomplete-switch")
 	@Override
     protected WMbusProtocol defineWMbusProtocol(String key) {
-        WMbusProtocol protocol = new WMbusProtocol(this, key, this.getErrorChannel(),
+        WMbusProtocol protocol = new WMbusProtocol(this, key, this.getErrorMessageChannel(),
                 // The total_consumed_water channelRecord needs to be in the first position of this list, otherwise findRecordPositions()
                 // for the data records won't work correctly.
                 new ChannelRecord(this.channel(WaterMeter.ChannelId.TOTAL_CONSUMED_WATER), this.volAddress),
 
                 // The timestamp_seconds channelRecord needs to be in the second position of this list, otherwise findRecordPositions()
                 // for the data records won't work correctly.
-                new ChannelRecord(this.channel(WaterMeter.ChannelId.TIMESTAMP_SECONDS), this.timeStampAddress),
+                new ChannelRecord(this.channel(Meter.ChannelId.TIMESTAMP_SECONDS), this.timeStampAddress),
 
                 // TimestampString is always on address -2, since it's an internal method. This channel needs to be
                 // called after the TimestampSeconds Channel, as it takes it's value from that channel.
-                new ChannelRecord(this.channel(WaterMeter.ChannelId.TIMESTAMP_STRING), -2),
+                new ChannelRecord(this.channel(Meter.ChannelId.TIMESTAMP_STRING), -2),
                 new ChannelRecord(this.channel(ChannelId.MANUFACTURER_ID), ChannelRecord.DataType.Manufacturer),
                 new ChannelRecord(this.channel(ChannelId.DEVICE_ID), ChannelRecord.DataType.DeviceId)
         );
-        switch (waterMeterModelWirelessMbus) {
+        switch (this.waterMeterModelWirelessMbus) {
             case RELAY_PADPULS_M2W_CHANNEL1:
                 String meterNumber1 = super.getRadioAddress().substring(2,8) + "01";
                 protocol.setMeterNumber(meterNumber1);

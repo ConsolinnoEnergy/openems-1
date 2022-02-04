@@ -29,7 +29,7 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     int expiration() default 60;
 
     @AttributeDefinition(name = "Timer Id", description = "Timer to use")
-    String timerId() default "TimerByCycles";
+    String timerId() default "TimerByCounting";
 
     boolean enabled() default true;
 

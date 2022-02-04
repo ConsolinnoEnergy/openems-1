@@ -22,6 +22,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * This Configurator sets the Frequency of the Consolinno Pwm Module.
+ * This will affect the Devices connected to the PWM Module.
  */
 
 @Designate(ocd = Config.class, factory = true)

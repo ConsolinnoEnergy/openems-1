@@ -62,7 +62,7 @@ public class HeatSystemComponentTester extends AbstractOpenemsComponent implemen
         if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE)) {
             this.getRelaysWriteChannel().getNextWriteValueAndReset().ifPresent(bool -> this.getRelaysReadChannel().setNextValue(bool));
             this.getWritePwmPowerLevelChannel().getNextWriteValueAndReset().ifPresent(entry -> this.getReadPwmPowerLevelChannel().setNextValue(entry));
-            this.getWriteChannel().getNextWriteValueAndReset().ifPresent(entry -> this.getPercentChannel().setNextValue(entry));
+            this.getWriteChannel().getNextWriteValueAndReset().ifPresent(entry -> this.getThousandthCheckChannel().setNextValue(entry));
         }
     }
 }

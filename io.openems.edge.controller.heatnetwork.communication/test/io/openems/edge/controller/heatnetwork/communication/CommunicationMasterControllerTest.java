@@ -41,7 +41,7 @@ public class CommunicationMasterControllerTest {
     private final boolean enabled = true;
     private final ConnectionType connectionType = ConnectionType.REST;
     private final int maxRequestsAllowedAtOnce = 2;
-    private final TimerType timerForManager = TimerType.CYCLES;
+    private final TimerType timerForManager = TimerType.COUNTING;
     private final int maxWaitTimeAllowed = 2;
     private final ManageType manageType = ManageType.FIFO;
     private final int keepAlive = 1;
@@ -101,7 +101,7 @@ public class CommunicationMasterControllerTest {
 
     @Before
     public void setup() {
-        this.timer = new DummyTimer(TIMER_ID, TimerType.CYCLES);
+        this.timer = new DummyTimer(TIMER_ID, TimerType.COUNTING);
         this.dummyThermometer = new DummyVirtualThermometer(THERMOMETER_ID);
         this.pump = new DummyPump(HEAT_PUMP_ID, PumpType.RELAY);
         this.cpm = new DummyComponentManager(clock);

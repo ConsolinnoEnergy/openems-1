@@ -221,15 +221,15 @@ public class MqttBridgeImpl extends AbstractOpenemsComponent implements OpenemsC
         //ClientID will be automatically altered by Managers depending on what they're doing
         this.mqttClientId = config.clientId();
         //BridgePublish set LastWill if configured
-        this.bridgePublisher.createMqttPublishSession(this.mqttBroker, this.mqttClientId, config.keepAlive(),
-                this.mqttUsername, this.mqttPassword, config.cleanSessionFlag());
         if (config.lastWillSet()) {
+            this.bridgePublisher.createMqttPublishSession(this.mqttBroker, this.mqttClientId, config.keepAlive(),
+                    this.mqttUsername, this.mqttPassword, config.cleanSessionFlag());
             this.bridgePublisher.addLastWill(config.topicLastWill(),
                     config.payloadLastWill(), config.qosLastWill(), config.timeStampEnabled(), config.retainedFlag(),
                     DateTime.now(this.timeZone).toString("yyyy-MM-dd'T'HH:mm:ss.SSSZZ"));
+            //External Call bc Last will can be set
+            this.bridgePublisher.connect();
         }
-        //External Call bc Last will can be set
-        this.bridgePublisher.connect();
 
     }
 
@@ -251,8 +251,6 @@ public class MqttBridgeImpl extends AbstractOpenemsComponent implements OpenemsC
 
     /**
      * Disconnects the Manager, if not null.
-     *
-     * @throws MqttException thrown if deactivate/disconnect fails bc of Mqtt reasons.
      */
 
     private void disconnectPublishAndSubscriber() {
@@ -452,6 +450,7 @@ public class MqttBridgeImpl extends AbstractOpenemsComponent implements OpenemsC
                 } finally {
                     if (executorService.isTerminated() == false) {
                         this.log.error("Failed to establish connection, Trying again");
+
                         if (this.publishManager != null) {
                             this.publishManager.deactivate();
                         }
@@ -461,6 +460,7 @@ public class MqttBridgeImpl extends AbstractOpenemsComponent implements OpenemsC
 
                         this.publishManager = null;
                         this.subscribeManager = null;
+                        this.bridgePublisher = null;
                         this.executorCurrent.getAndAdd(5);
                     } else {
                         this.executorCurrent.set(20);
@@ -546,13 +546,13 @@ public class MqttBridgeImpl extends AbstractOpenemsComponent implements OpenemsC
      * Or the Broker actively disconnects the Client (KeepAlive or something).
      */
     Runnable createNewMqttSession = () -> {
+        if (this.publishManager != null) {
+            this.publishManager.deactivate();
+        }
+        if (this.subscribeManager != null) {
+            this.subscribeManager.deactivate();
+        }
         try {
-            if (this.publishManager != null) {
-                this.publishManager.deactivate();
-            }
-            if (this.subscribeManager != null) {
-                this.subscribeManager.deactivate();
-            }
 
             this.publishManager = new MqttPublishManager(this.publishTasks, this.mqttBroker, this.mqttUsername,
                     this.mqttPassword, this.keepAlive, this.mqttClientId, this.timeZone);
@@ -573,7 +573,8 @@ public class MqttBridgeImpl extends AbstractOpenemsComponent implements OpenemsC
                     }
                 }
             }));
-        } catch (MqttException e) {
+        } catch (
+                MqttException e) {
             this.log.warn("Couldn't connect to Broker, somethings wrong!");
         }
     };

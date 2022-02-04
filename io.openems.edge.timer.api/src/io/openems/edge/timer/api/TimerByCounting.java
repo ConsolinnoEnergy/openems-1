@@ -1,8 +1,6 @@
 package io.openems.edge.timer.api;
 
-
 import io.openems.edge.common.component.OpenemsComponent;
-import org.joda.time.DateTime;
 import org.osgi.service.component.ComponentContext;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
@@ -11,21 +9,26 @@ import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Modified;
 import org.osgi.service.metatype.annotations.Designate;
 
+
 /**
  * This Timer is one of the child Implementations of the {@link AbstractTimer} and the {@link Timer}.
- * It gets the {@link ValueInitializedWrapper} and checks if the the current Time is after the initTime+MaxTimeInSeconds.
- * Remember on init -> Timer will be initialized and sets the Time.
- * If you wish to Reset: {@link Timer#reset(String id, String identifier)}
- * (this will do: {@link ValueInitializedWrapper#setInitialized(boolean)} (false)}
+ * It gets the {@link ValueInitializedWrapper} and checks if the the current Counter is above or equals to the maximum.
+ * Remember on init -> the counter will initialized and set to 1.
+ * Call the {@link Timer#reset(String id, String identifier)} method,
+ * if you wish to reset (this will do: {@link ValueInitializedWrapper#setInitialized(boolean)} (false)}
+ * Usually you call this Timer via the TimerHandler and only once per Cycle to count only once each cycle (Therefore TimerByCounting)
+ * However, you may call this timer more Frequently if you want.
+ * true, when X amount of calls are done.
  */
-@Designate(ocd = TimerByTimeConfig.class, factory = true)
-@Component(name = "Timer.TimerByTime",
+@Designate(ocd = TimerByCountingConfig.class, factory = true)
+@Component(name = "Timer.TimerByCounting",
         configurationPolicy = ConfigurationPolicy.REQUIRE,
         immediate = true
 )
-public class TimerByTimeImpl extends AbstractTimer implements OpenemsComponent {
+public class TimerByCounting extends AbstractTimer implements OpenemsComponent {
 
-    public TimerByTimeImpl() {
+
+    public TimerByCounting() {
         super(OpenemsComponent.ChannelId.values());
     }
 
@@ -40,13 +43,15 @@ public class TimerByTimeImpl extends AbstractTimer implements OpenemsComponent {
     }
 
     @Modified
-    void modified(ComponentContext context, TimerByTimeConfig config) {
+    void modified(ComponentContext context, TimerByCountingConfig config) {
         super.modified(context, config.id(), config.alias(), config.enabled());
     }
 
     /**
      * Check if the Time for this Component is up.
-     *
+     * Get the current Counter of the {@link ValueInitializedWrapper#getCounter()} increment,
+     * and check if the maxValue is reached.
+     * Note: After Init the return value will always be false.
      * @param id         the OpenemsComponent Id.
      * @param identifier the identifier the component uses.
      * @return true if Time is up.
@@ -55,12 +60,11 @@ public class TimerByTimeImpl extends AbstractTimer implements OpenemsComponent {
     public boolean checkIsTimeUp(String id, String identifier) {
         ValueInitializedWrapper wrapper = super.getWrapper(id, identifier);
         if (wrapper.isInitialized()) {
-            return DateTime.now().isAfter(wrapper.getInitialDateTime().get().plusSeconds(wrapper.getMaxValue()));
+            return wrapper.getCounter().getAndIncrement() >= wrapper.getMaxValue();
         } else {
             wrapper.setInitialized(true);
-            wrapper.getInitialDateTime().set(new DateTime());
+            wrapper.getCounter().set(1);
         }
         return false;
     }
-
 }

@@ -28,7 +28,7 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     int defaultRunPower() default 100;
 
     @AttributeDefinition(name = "Timer for NeedHeatResponse", description = "Timer Id either TimerByTime or TimerByCycles")
-    String timerNeedHeatResponse() default "TimerByCycles";
+    String timerNeedHeatResponse() default "TimerByCounting";
 
     @AttributeDefinition(name = "Cycles to wait when Need Heat Enable Signal (Central Controller) isn't present", description = "How many Cycles do you wait for the Central Communication Controller if Communication is lost")
     int timeNeedHeatResponse() default 8;
@@ -36,7 +36,7 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     boolean enableExceptionalStateHandling() default true;
 
     @AttributeDefinition(name = "Timer for ExceptionalState", description = "Timer Id for ExceptionalState Handling, either TimerByTimer or TimerByCycles")
-    String timerExceptionalState() default "TimerByCycles";
+    String timerExceptionalState() default "TimerByCounting";
 
     @AttributeDefinition(name = "Wait Time/Cycles for ExceptionalState", description = "How long do you await a new Exceptional State enable Signal.")
     int timeToWaitExceptionalState() default 60;

@@ -21,7 +21,7 @@ public class AnalogueHeaterOrCoolerAio extends AbstractAnalogueHeaterOrCoolerCom
     public AnalogueHeaterOrCoolerAio(ComponentManager cpm, String analogueId, int maxPowerKw, ControlType controlType, int defaultMinPower) throws OpenemsError.OpenemsNamedException, ConfigurationException {
         OpenemsComponent component = cpm.getComponent(analogueId);
         if (component instanceof AnalogInputOutput) {
-            ChannelAddress address = new ChannelAddress(analogueId, ((AnalogInputOutput) component).setPercentChannel().channelId().id());
+            ChannelAddress address = new ChannelAddress(analogueId, ((AnalogInputOutput) component).setWriteThousandthChannel().channelId().id());
             super.initialize(cpm, address, controlType, maxPowerKw, defaultMinPower);
         } else {
             throw new ConfigurationException("AnalogueHeaterAIO", "The Component is not an instance of AIO, please check the id: " + analogueId);

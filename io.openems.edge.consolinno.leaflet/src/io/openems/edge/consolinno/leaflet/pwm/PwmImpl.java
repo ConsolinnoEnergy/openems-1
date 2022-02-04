@@ -35,7 +35,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Provides a Consolinno Pwm Output.
+ * Provides a Consolinno Pwm Device output.
+ * If a PWM Module is connected to the Base Module. You can communicate with each output, by configuring for each
+ * output this Component. The LeafletCore and an existing modbusBridge is needed to communicate with the device.
  */
 @Designate(ocd = Config.class, factory = true)
 @Component(name = "Consolinno.Leaflet.Pwm", immediate = true,
@@ -88,10 +90,12 @@ public class PwmImpl extends AbstractOpenemsModbusComponent implements OpenemsCo
         } else {
             throw new ConfigurationException("Pwm not configured properly. Please check the Config", "This Device doesn't Exist");
         }
-        try {
-            getWritePwmPowerLevelChannel().setNextWriteValue(config.percent());
-        } catch (OpenemsError.OpenemsNamedException ignored) {
-            this.log.error("Error in getWritePwmPowerChannel.setNextWriteValue");
+        if (config.useDefaultPercent()) {
+            try {
+                this.setPowerLevelPercent(config.percent());
+            } catch (OpenemsError.OpenemsNamedException ignored) {
+                this.log.error("Error in getWritePwmPowerChannel.setNextWriteValue");
+            }
         }
         try {
             getInvertedStatus().setNextWriteValue(config.isInverted());
@@ -116,14 +120,14 @@ public class PwmImpl extends AbstractOpenemsModbusComponent implements OpenemsCo
         if (this.lc.checkFirmwareCompatibility()) {
             return new ModbusProtocol(this,
                     new FC3ReadRegistersTask(this.pwmAnalogOutput, Priority.HIGH,
-                            m(Pwm.ChannelId.READ_POWER_LEVEL, new UnsignedWordElement(this.pwmAnalogOutput),
+                            m(Pwm.ChannelId.READ_POWER_LEVEL_THOUSANDTH, new UnsignedWordElement(this.pwmAnalogOutput),
                                     ElementToChannelConverter.DIRECT_1_TO_1)),
                     new FC6WriteRegisterTask(this.pwmAnalogOutput,
-                            m(Pwm.ChannelId.WRITE_POWER_LEVEL,
+                            m(Pwm.ChannelId.WRITE_POWER_LEVEL_THOUSANDTH,
                                     new SignedWordElement(this.pwmAnalogOutput),
                                     ElementToChannelConverter.DIRECT_1_TO_1)),
                     new FC5WriteCoilTask(this.pwmDiscreteOutput,
-                            (ModbusCoilElement) m(Pwm.ChannelId.INVERTED,
+                            m(Pwm.ChannelId.INVERTED,
                                     new CoilElement(this.pwmDiscreteOutput),
                                     ElementToChannelConverter.DIRECT_1_TO_1)));
         } else {
@@ -134,6 +138,6 @@ public class PwmImpl extends AbstractOpenemsModbusComponent implements OpenemsCo
 
     @Override
     public String debugLog() {
-        return "Power Level: " + getPowerLevelValue() + "%";
+        return "Power Level: " + this.getPowerLevelPercentValue() + "%";
     }
 }

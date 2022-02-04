@@ -74,7 +74,7 @@ public class MyControllerTest {
             this.dummyHydraulicLineControllerMap.put(entry, new DummyHydraulicLineController(entry));
         });
 
-        this.cpm.addComponent(new DummyTimer(timerId, TimerType.CYCLES));
+        this.cpm.addComponent(new DummyTimer(timerId, TimerType.COUNTING));
         this.cpm.addComponent(dummyPump);
         this.cpm.addComponent(new DummyHydraulicBooster(correctHeatBoosterId));
         this.dummyThermometerMap.forEach((key, value) -> {
