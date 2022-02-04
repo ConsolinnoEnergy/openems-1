@@ -27,11 +27,11 @@ The default path ist /dev/ttyACM0 where following devices, login with ttyACM'X' 
 3. Last but not Least configure the device.
 The Device connected to a Module.
 The Devices are Split into In and Output devices.
-Both Devices need a ModuleId and a PinPosition (starting with 0) The Input Devices need a "MaxPressure".
+Both Devices need a ModuleId, and a PinPosition (starting with 0) The Input Devices need a "MaxPressure".
 Allowing the mapping of Max Voltage to the max pressure -> and therefore the Pressure can be calculated.
 The Output device needs a more detailed configuration.
 Where a  Threshold maps a Value.
-When Writing from a Device to another some lost Voltage can be measrued e.g. 50% != 50% but 45% -> A Threshold Value (in Volt) will be added to the calculated value.
+When Writing from a Device to another some lost Voltage can be measured e.g. 50% != 50% but 45% -> A Threshold Value (in Volt) will be added to the calculated value.
 
 == References
 

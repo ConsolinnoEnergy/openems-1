@@ -53,10 +53,10 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     boolean useExceptionalState() default false;
 
     @AttributeDefinition(name = "TimerId", description = "Timer to check for missing Components")
-    String timerIdMissingComponents() default "TimerByCycles";
+    String timerIdMissingComponents() default "TimerByCounting";
 
     @AttributeDefinition(name = "TimerId", description = "The Timer used for the ExceptionalState")
-    String timerId() default "TimerByCycles";
+    String timerId() default "TimerByCounting";
 
     @AttributeDefinition(name = "Timeout ExceptionalState", description = "Time exceptionalState Value stays active after it's enable Signal is missing")
     int maxTime() default 10;

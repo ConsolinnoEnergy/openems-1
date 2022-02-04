@@ -36,7 +36,7 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     int upperLimit() default 200;
 
     @AttributeDefinition(name = "TimerId", description = "Timer where the WaitTime will be handled.")
-    String timerId() default "TimerByCycles";
+    String timerId() default "TimerByCounting";
 
     @AttributeDefinition(name = "WaitTime", description = "Time to wait, until PID controller calculates a Value again.")
     int waitTime() default 10;
@@ -47,7 +47,7 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     @AttributeDefinition(name = "Turn off Percentage", description = "If PID is off position of controlled device")
     int offPercentage() default 0;
 
-    @AttributeDefinition(name = "TemperatureSensor", description = "The Temperaturesensor allocated to this controller")
+    @AttributeDefinition(name = "TemperatureSensor", description = "The TemperatureSensor allocated to this controller")
     String temperatureSensorId() default "TemperatureSensor4";
 
     boolean morePercentEqualsCooling() default false;

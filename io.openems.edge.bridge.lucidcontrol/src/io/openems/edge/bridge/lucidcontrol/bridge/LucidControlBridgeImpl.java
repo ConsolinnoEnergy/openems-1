@@ -33,8 +33,10 @@ import java.util.concurrent.ConcurrentHashMap;
  * Note: This Bridge only works if you install the Software from LucidControl here:
  *
  * @see <a href="https://www.lucid-control.com/downloads/">https://www.lucid-control.com/downloads/</a> <br>
+ * <p>
  * The Bridge will open up the shell and reads/writes from/to the lucidcontrol devices.
  * Further Note: This Bridge only works with the Linux OS NOT Windows.
+ * </p>
  */
 @Designate(ocd = Config.class, factory = true)
 @Component(name = "Bridge.Lucid.Control",
@@ -84,7 +86,7 @@ public class LucidControlBridgeImpl extends AbstractOpenemsComponent implements 
     void modified(ComponentContext context, Config config) {
         super.modified(context, config.id(), config.alias(), config.enabled());
         this.lucidIoPath = config.lucidIoPath();
-
+        this.worker.deactivate();
         if (config.enabled()) {
             this.worker.activate(super.id());
         }

@@ -168,9 +168,9 @@ public class DefaultConfigurationWorker extends ComponentManagerWorker {
                         new Property("debugMode", true)
                 ));
             }
-            if (existingConfigs.stream().noneMatch(c -> "Timer.TimerByCycles".equals(c.factoryPid))) {
-                this.createConfiguration(defaultConfigurationFailed, "Timer.TimerByCycles", Arrays.asList(//
-                        new Property("id", "TimerByCycles"), //
+            if (existingConfigs.stream().noneMatch(c -> "Timer.TimerByCounting".equals(c.factoryPid))) {
+                this.createConfiguration(defaultConfigurationFailed, "Timer.TimerByCounting", Arrays.asList(//
+                        new Property("id", "TimerByCounting"), //
                         new Property("alias", ""), //
                         new Property("enabled", true) //
                 ));

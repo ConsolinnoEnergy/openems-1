@@ -20,20 +20,20 @@ import org.osgi.service.metatype.annotations.Designate;
  * However, you may call this timer more Frequently if you want. Becoming more of a Timer that counts "Calls" and returns
  * true, when X amount of calls are done.
  */
-@Designate(ocd = TimerByCyclesConfig.class, factory = true)
-@Component(name = "Timer.TimerByCycles",
+@Designate(ocd = TimerByCountingConfig.class, factory = true)
+@Component(name = "Timer.TimerByCounting",
         configurationPolicy = ConfigurationPolicy.REQUIRE,
         immediate = true
 )
-public class TimerByCycles extends AbstractTimer implements OpenemsComponent {
+public class TimerByCounting extends AbstractTimer implements OpenemsComponent {
 
 
-    public TimerByCycles() {
+    public TimerByCounting() {
         super(OpenemsComponent.ChannelId.values());
     }
 
     @Activate
-    void activate(ComponentContext context, TimerByCyclesConfig config) {
+    void activate(ComponentContext context, TimerByCountingConfig config) {
         super.activate(context, config.id(), config.alias(), config.enabled());
     }
 
@@ -43,7 +43,7 @@ public class TimerByCycles extends AbstractTimer implements OpenemsComponent {
     }
 
     @Modified
-    void modified(ComponentContext context, TimerByTimeConfig config) {
+    void modified(ComponentContext context, TimerByCountingConfig config) {
         super.modified(context, config.id(), config.alias(), config.enabled());
     }
 

@@ -44,7 +44,7 @@ import org.osgi.service.metatype.annotations.Option;
     int defaultPosition() default 100;
 
     @AttributeDefinition(name = "TimerId for Running Time", description = "Do you want to count Cycles or Time for the \"Running Time\"")
-    String timerForRunning() default "TimerByCycles";
+    String timerForRunning() default "TimerByCounting";
 
     @AttributeDefinition(name = "Running Time or Cycles after Enable and missing signal", description = "Run this amount of Cycles/Time if the controller was activated before AND EnableSignal is missing.")
     int waitForSignalAfterActivation() default 10;

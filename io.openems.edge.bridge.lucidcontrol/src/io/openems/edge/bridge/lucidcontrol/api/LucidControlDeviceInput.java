@@ -8,7 +8,8 @@ import io.openems.edge.common.channel.value.Value;
 import io.openems.edge.common.component.OpenemsComponent;
 
 /**
- * The Nature for a LucidControlInput. IRL it's attached to a LucidControlModule and gets the Voltage or Pressure.
+ * The Nature for a LucidControlInput. IRL it's attached to a LucidControlModule and gets the Voltage
+ * and calculates the corresponding Pressure.
  */
 public interface LucidControlDeviceInput extends OpenemsComponent {
 

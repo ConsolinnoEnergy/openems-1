@@ -66,7 +66,7 @@ public class TestCoolerTemperatureSurveillanceController {
             } else if (entry.contains("Timer")) {
                 TimerType type = TimerType.TIME;
                 if (entry.contains("Cycles")) {
-                    type = TimerType.CYCLES;
+                    type = TimerType.COUNTING;
                 }
                 this.cpm.addComponent(new DummyTimer(entry, type));
             }

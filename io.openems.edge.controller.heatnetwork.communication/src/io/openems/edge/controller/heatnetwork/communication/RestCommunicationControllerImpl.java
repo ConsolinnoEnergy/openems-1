@@ -29,7 +29,7 @@ import java.util.concurrent.atomic.AtomicReference;
  * By executing Logic ---> Handle Manager --> Sort Requests etc.
  * Available: AllRequests/Current Requests
  */
-public class RestLeafletCommunicationControllerImpl implements RestLeafletCommunicationController {
+public class RestCommunicationControllerImpl implements RestLeafletCommunicationController {
 
     private boolean enable;
 
@@ -37,8 +37,8 @@ public class RestLeafletCommunicationControllerImpl implements RestLeafletCommun
     private RestRequestManager requestManager;
     private final ConnectionType connectionType;
 
-    public RestLeafletCommunicationControllerImpl(ConnectionType connectionType, ManageType manageType,
-                                                  int maximumAllowedRequests, boolean forceHeating) throws ConfigurationException {
+    public RestCommunicationControllerImpl(ConnectionType connectionType, ManageType manageType,
+                                           int maximumAllowedRequests, boolean forceHeating) throws ConfigurationException {
         this.connectionType = connectionType;
         if (connectionType.equals(ConnectionType.REST)) {
             this.requestManager = new RestRequestManagerImpl();
