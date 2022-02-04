@@ -40,6 +40,7 @@ public class DummyTimer extends AbstractOpenemsComponent implements OpenemsCompo
         switch (this.type) {
 
             case COUNTING:
+            case CYCLES:
                wrapper = this.getWrapper(identifier);
                 if (wrapper.isInitialized()) {
                     return wrapper.getCounter().getAndIncrement() >= wrapper.getMaxValue();

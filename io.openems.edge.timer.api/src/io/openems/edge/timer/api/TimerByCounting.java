@@ -16,8 +16,8 @@ import org.osgi.service.metatype.annotations.Designate;
  * Remember on init -> the counter will initialized and set to 1.
  * Call the {@link Timer#reset(String id, String identifier)} method,
  * if you wish to reset (this will do: {@link ValueInitializedWrapper#setInitialized(boolean)} (false)}
- * Usually you call this Timer via the TimerHandler and only once per Cycle (Therefore TimerByCycles)
- * However, you may call this timer more Frequently if you want. Becoming more of a Timer that counts "Calls" and returns
+ * Usually you call this Timer via the TimerHandler and only once per Cycle to count only once each cycle (Therefore TimerByCounting)
+ * However, you may call this timer more Frequently if you want.
  * true, when X amount of calls are done.
  */
 @Designate(ocd = TimerByCountingConfig.class, factory = true)

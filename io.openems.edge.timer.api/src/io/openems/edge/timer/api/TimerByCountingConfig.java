@@ -3,7 +3,7 @@ package io.openems.edge.timer.api;
 import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
-@ObjectClassDefinition(name = "Timer By Count Down ", description = "This Timer is used to Count. "
+@ObjectClassDefinition(name = "Timer By Count Down", description = "This Timer is used to Count. "
         + " Each time an OpenEMS Component calls this Timer a mapped counter is started. "
         + "When the Counter reached  it's configured Maximum -> The Time is up.")
 @interface TimerByCountingConfig {
