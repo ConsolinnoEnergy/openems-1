@@ -22,8 +22,10 @@ import org.osgi.service.metatype.annotations.Designate;
  * Usually you call this Timer via the TimerHandler and only once per Cycle
  * However, you may call this timer more Frequently if you want.
  * true, when X amount of calls are done.
- * Everytime a new OpenEMS Cycle is started, this Timer Counts each {@link ValueInitializedWrapper} up by one, except if it
- * is not initialized. Then it will be initialized, and counted later.
+ * Everytime a new OpenEMS Cycle is started, this Timer Counts each {@link ValueInitializedWrapper} up by one,
+ * except if it is not initialized.
+ * If the Wrapper is not initialized, wait for the first {@link #checkIsTimeUp(String, String)}
+ * call and then start to count the cycles.
  */
 @Designate(ocd = TimerByCyclesConfig.class, factory = true)
 @Component(name = "Timer.TimerByCycles", immediate = true,
@@ -69,6 +71,7 @@ public class TimerByCycles extends AbstractTimer implements OpenemsComponent, Ev
         if (wrapper.isInitialized()) {
             return wrapper.getCounter().get() >= wrapper.getMaxValue();
         } else {
+            wrapper.setInitialized(true);
             return false;
         }
     }
@@ -76,15 +79,15 @@ public class TimerByCycles extends AbstractTimer implements OpenemsComponent, Ev
     @Override
     public void handleEvent(Event event) {
         if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE)) {
-            componentToIdentifierValueAndInitializedMap.forEach((component, internalMap) -> {
-                internalMap.forEach((entry, initializedWrapper) -> {
-                    if (initializedWrapper.isInitialized()) {
-                        initializedWrapper.getCounter().getAndIncrement();
-                    } else {
-                        initializedWrapper.setInitialized(true);
-                    }
+            if (componentToIdentifierValueAndInitializedMap.size() > 0) {
+                componentToIdentifierValueAndInitializedMap.forEach((component, internalMap) -> {
+                    internalMap.forEach((entry, initializedWrapper) -> {
+                        if (initializedWrapper.isInitialized()) {
+                            initializedWrapper.getCounter().getAndIncrement();
+                        }
+                    });
                 });
-            });
+            }
         }
     }
 }
