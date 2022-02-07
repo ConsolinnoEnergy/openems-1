@@ -128,6 +128,29 @@ public class DefaultConfigurationWorker extends ComponentManagerWorker {
         if (existingConfigs.stream().noneMatch(c -> "Scheduler.FixedOrder".equals(c.factoryPid))) {
             schedulersPresent.set(1, false);
         }
+
+        if (existingConfigs.stream().noneMatch(c -> "Timer.TimerByCounting".equals(c.factoryPid))) {
+            this.createConfiguration(defaultConfigurationFailed, "Timer.TimerByCounting", Arrays.asList(//
+                    new Property("id", "TimerByCounting"), //
+                    new Property("alias", ""), //
+                    new Property("enabled", true) //
+            ));
+        }
+        if (existingConfigs.stream().noneMatch(c -> "Timer.TimerByCycles".equals(c.factoryPid))) {
+            this.createConfiguration(defaultConfigurationFailed, "Timer.TimerByCycles", Arrays.asList(//
+                    new Property("id", "TimerByCycles"), //
+                    new Property("alias", ""), //
+                    new Property("enabled", true) //
+            ));
+        }
+        if (existingConfigs.stream().noneMatch(c -> "Timer.TimerByTime".equals(c.factoryPid))) {
+            this.createConfiguration(defaultConfigurationFailed, "Timer.TimerByTime", Arrays.asList(//
+                    new Property("id", "TimerByTime"), //
+                    new Property("alias", ""), //
+                    new Property("enabled", true) //
+            ));
+        }
+
         if (existingConfigs.stream().noneMatch(c -> "Scheduler.AllAlphabetically".equals(c.factoryPid)) && !schedulersPresent.get(0) && !schedulersPresent.get(1)) {
             this.createConfiguration(defaultConfigurationFailed, "Scheduler.AllAlphabetically", Arrays.asList(//
                     new Property("id", "scheduler0"), //
@@ -166,27 +189,6 @@ public class DefaultConfigurationWorker extends ComponentManagerWorker {
                         new Property("connectionlimit", 5),
                         new Property("apiTimeout", 1),
                         new Property("debugMode", true)
-                ));
-            }
-            if (existingConfigs.stream().noneMatch(c -> "Timer.TimerByCounting".equals(c.factoryPid))) {
-                this.createConfiguration(defaultConfigurationFailed, "Timer.TimerByCounting", Arrays.asList(//
-                        new Property("id", "TimerByCounting"), //
-                        new Property("alias", ""), //
-                        new Property("enabled", true) //
-                ));
-            }
-            if (existingConfigs.stream().noneMatch(c -> "Timer.TimerByCycles".equals(c.factoryPid))) {
-                this.createConfiguration(defaultConfigurationFailed, "Timer.TimerByCycles", Arrays.asList(//
-                        new Property("id", "TimerByCycles"), //
-                        new Property("alias", ""), //
-                        new Property("enabled", true) //
-                ));
-            }
-            if (existingConfigs.stream().noneMatch(c -> "Timer.TimerByTime".equals(c.factoryPid))) {
-                this.createConfiguration(defaultConfigurationFailed, "Timer.TimerByTime", Arrays.asList(//
-                        new Property("id", "TimerByTime"), //
-                        new Property("alias", ""), //
-                        new Property("enabled", true) //
                 ));
             }
         }
