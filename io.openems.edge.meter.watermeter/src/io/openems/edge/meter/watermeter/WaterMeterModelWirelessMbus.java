@@ -20,5 +20,8 @@ public enum WaterMeterModelWirelessMbus {
     public int getVolumeCounterPosition() {
         return volumeCounterPosition;
     }
-    public int getTimeStampPosition() { return timeStampPosition; }
+
+    public int getTimeStampPosition() {
+        return timeStampPosition;
+    }
 }

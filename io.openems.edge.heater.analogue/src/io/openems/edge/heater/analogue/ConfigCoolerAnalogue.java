@@ -36,7 +36,7 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     int defaultMinPower() default 0;
 
     @AttributeDefinition(name = "TimerId", description = "This Timer will be used for the following 2 Configurations.")
-    String timerId() default "TimerByCycles";
+    String timerId() default "TimerByCounting";
 
     @AttributeDefinition(name = "Max Time Enable Signal", description = "How Long to Wait after EnableSignal is Missing"
             + "and Cooler was Active until it sets itself inactive")

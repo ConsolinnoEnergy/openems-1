@@ -39,10 +39,14 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
             + "activated: prevents in flight status due to crashes or restarts etc")
     boolean shouldCloseOnActivation() default true;
 
+    @AttributeDefinition(name = "Should Open on Activation", description = "Should the Valve Open completely if it's "
+            + "activated: prevents in flight status due to crashes or restarts etc")
+    boolean shouldOpenOnActivation() default false;
+
     boolean useExceptionalState() default false;
 
     @AttributeDefinition(name = "TimerId", description = "The Timer used for the ExceptionalState and/or Check for missing Components")
-    String timerId() default "TimerByCycles";
+    String timerId() default "TimerByCounting";
 
     @AttributeDefinition(name = "Timeout ExceptionalState", description = "Time exceptionalState Value stays active after it's enable Signal is missing")
     int maxTime() default 10;

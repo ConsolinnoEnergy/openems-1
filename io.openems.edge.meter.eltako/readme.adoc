@@ -1,0 +1,7 @@
+= Eltako ELTAKO_DSZ15DM
+
+Implemented Natures::
+- SymmetricMeter
+- AsymmetricMeter
+
+https://github.com/OpenEMS/openems/tree/develop/io.openems.edge.meter.eltako[Source Code icon:github[]]

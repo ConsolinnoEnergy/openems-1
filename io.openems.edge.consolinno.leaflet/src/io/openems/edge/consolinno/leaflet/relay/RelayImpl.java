@@ -54,7 +54,8 @@ public class RelayImpl extends AbstractOpenemsModbusComponent implements Openems
     private int position;
     private int relayDiscreteOutput;
     private boolean inverted;
-    //Relay 5 to 8 are able to be set as inverse. But internally they need the MReg Number 1 to 4 so they need to be shifted by 4.
+    //Relay 5 to 8 are able to be set as inverse.
+    // But internally they need the MReg Number 1 to 4 so they need to be shifted by 4.
     private static final int RELAY_INVERSION_OFFSET = 4;
     private static final int FIRST_INVERTIBLE_RELAY = 5;
 
@@ -75,9 +76,9 @@ public class RelayImpl extends AbstractOpenemsModbusComponent implements Openems
         this.inverted = config.isInverse();
         //Check if the Module is physically present, else throws ConfigurationException.
         if (this.lc.modbusModuleCheckout(LeafletCore.ModuleType.REL, config.module(), config.position(), config.id())
-                //Position is not the Correct Mreg Number, because Output coils start at 0 and not 1 like Analog Input
+                // Position is not the Correct Mreg Number, because Output coils start at 0 and not 1 like Analog Input
                 && (this.lc.getFunctionAddress(LeafletCore.ModuleType.REL, this.relayModule, (this.position - 1)) != Error.ERROR.getValue())) {
-            /* Inverts Relay, if it is Configured and able to do so. */
+            // Inverts Relay, if it is Configured and able to do so.
             this.relayDiscreteOutput = this.lc.getFunctionAddress(LeafletCore.ModuleType.REL, this.relayModule, (this.position - 1));
             if (this.position >= FIRST_INVERTIBLE_RELAY && this.inverted) {
                 this.lc.invertRelay(this.relayModule, (this.position - RELAY_INVERSION_OFFSET));
@@ -124,7 +125,8 @@ public class RelayImpl extends AbstractOpenemsModbusComponent implements Openems
     public String debugLog() {
         if (this.getRelaysWriteChannel().getNextWriteValue().isPresent()) {
             if (this.getRelaysReadChannel().value().isDefined()) {
-                return "Write: " + this.getRelaysWriteChannel().getNextWriteValue().get().toString() + " Read: " + this.getRelaysReadChannel().getNextValue().get().toString();
+                return "Write: " + this.getRelaysWriteChannel().getNextWriteValue().get().toString()
+                        + " Read: " + this.getRelaysReadChannel().getNextValue().get().toString();
             }
             return this.getRelaysWriteChannel().getNextWriteValue().get().toString();
         }

@@ -209,7 +209,7 @@ public class PumpImpl extends AbstractOpenemsComponent implements OpenemsCompone
                 } else if (openemsComponent instanceof AnalogInputOutput) {
                     this.aio = (AnalogInputOutput) openemsComponent;
                     this.deviceType = DeviceType.AIO;
-                    this.aio.setPercentChannel().setNextWriteValueFromObject(HydraulicComponent.DEFAULT_MIN_POWER_VALUE);
+                    this.aio.setWriteThousandthChannel().setNextWriteValueFromObject(HydraulicComponent.DEFAULT_MIN_POWER_VALUE);
                 } else {
                     throw new ConfigurationException("ConfigurePwmOrAio in " + super.id(), "Component instance is not an "
                             + "expected device. Make sure to configure a Pwm or Aio Device.");
@@ -390,7 +390,7 @@ public class PumpImpl extends AbstractOpenemsComponent implements OpenemsCompone
                     break;
                 case AIO:
                 default:
-                    unit = this.aio.setPercentChannel().channelDoc().getUnit();
+                    unit = this.aio.setWriteThousandthChannel().channelDoc().getUnit();
                     break;
             }
         }
@@ -422,7 +422,7 @@ public class PumpImpl extends AbstractOpenemsComponent implements OpenemsCompone
                             this.pwm.getWritePwmPowerLevelChannel().setNextWriteValueFromObject(percentToApply);
                             break;
                         case AIO:
-                            this.aio.setPercentChannel().setNextWriteValueFromObject(percentToApply);
+                            this.aio.setWriteThousandthChannel().setNextWriteValueFromObject(percentToApply);
                             break;
                     }
 
@@ -692,7 +692,7 @@ public class PumpImpl extends AbstractOpenemsComponent implements OpenemsCompone
                     case PWM:
                         return this.pwm.getReadPwmPowerLevelChannel();
                     case AIO:
-                        return this.aio.getPercentChannel();
+                        return this.aio.getThousandthCheckChannel();
                     case RELAY:
                         return this.relay.getRelaysReadChannel();
                 }

@@ -46,7 +46,7 @@
 	bnd.identity;id='io.openems.edge.battery.soltaro',\
 	bnd.identity;id='io.openems.edge.bridge.rest',\
 	bnd.identity;id='io.openems.edge.bridge.genibus',\
-	bnd.identity;id='io.openems.edge.bridge.lucidcontrol',\
+	bnd.identity;id='io.openems.edge.lucidcontrol',\
 	bnd.identity;id='io.openems.edge.bridge.mbus',\
 	bnd.identity;id='io.openems.edge.bridge.modbus',\
 	bnd.identity;id='io.openems.edge.bridge.mqtt',\
@@ -175,6 +175,7 @@
 	bnd.identity;id='io.openems.edge.meter.bcontrol.em300',\
 	bnd.identity;id='io.openems.edge.meter.carlo.gavazzi.em300',\
 	bnd.identity;id='io.openems.edge.meter.discovergy',\
+	bnd.identity;id='io.openems.edge.meter.eltako',\
 	bnd.identity;id='io.openems.edge.meter.gasmeter',\
 	bnd.identity;id='io.openems.edge.meter.heatmeter',\
 	bnd.identity;id='io.openems.edge.meter.janitza',\
@@ -236,7 +237,7 @@
 	io.openems.edge.batteryinverter.sunspec;version=snapshot,\
 	io.openems.edge.bridge.rest;version=snapshot,\
 	io.openems.edge.bridge.genibus;version=snapshot,\
-	io.openems.edge.bridge.lucidcontrol;version=snapshot,\
+	io.openems.edge.lucidcontrol;version=snapshot,\
 	io.openems.edge.bridge.mbus;version=snapshot,\
 	io.openems.edge.bridge.modbus;version=snapshot,\
 	io.openems.edge.bridge.mqtt;version=snapshot,\
@@ -369,6 +370,7 @@
 	io.openems.edge.meter.bcontrol.em300;version=snapshot,\
 	io.openems.edge.meter.carlo.gavazzi.em300;version=snapshot,\
 	io.openems.edge.meter.discovergy;version=snapshot,\
+	io.openems.edge.meter.eltako;version=snapshot,\
 	io.openems.edge.meter.gasmeter;version=snapshot,\
 	io.openems.edge.meter.heatmeter;version=snapshot,\
 	io.openems.edge.meter.janitza;version=snapshot,\
@@ -417,6 +419,7 @@
 	io.openems.wrapper.opczip;version=snapshot,\
 	io.openems.wrapper.paho-mqttv5;version=snapshot,\
 	io.openems.wrapper.sdnotify;version=snapshot,\
+	io.openems.wrapper.snksoft;version=snapshot,\
 	joda-time;version='[2.10.8,2.10.10)',\
 	org.eclipse.paho.client.mqttv3;version='[1.2.4,1.2.5)',\
 	org.apache.commons.commons-fileupload;version='[1.4.0,1.4.1)',\

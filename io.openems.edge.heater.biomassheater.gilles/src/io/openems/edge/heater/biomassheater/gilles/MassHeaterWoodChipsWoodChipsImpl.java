@@ -71,7 +71,7 @@ import java.util.Optional;
  * the heater will turn on with default settings. The default settings are configurable in the config.
  * The heater can be controlled with setHeatingPowerPercentSetpoint() (set power in %) or setTemperatureSetpoint().
  * setHeatingPowerSetpoint() (set power in kW) and related methods are currently not supported by this heater.
- *
+ * <p>
  * ToDo:
  * Heater can do setTemperatureSetpoint(), but unclear how this works together with setHeatingPowerPercentSetpoint() and
  * EnableSignal. Common sense would suggest that if setTemperatureSetpoint() is used, the heater turns itself on and off
@@ -96,13 +96,14 @@ public class MassHeaterWoodChipsWoodChipsImpl extends AbstractOpenemsModbusCompo
 
     private boolean printInfoToLog;
     private boolean readOnly;
-    private double powerPercentSetpoint;
+    private double powerPercentSetpoint = 0.d;
 
     private EnableSignalHandler enableSignalHandler;
     private static final String ENABLE_SIGNAL_IDENTIFIER = "GILLES_WOODCHIPS_HEATER_ENABLE_SIGNAL_IDENTIFIER";
     private boolean useExceptionalState;
     private ExceptionalStateHandler exceptionalStateHandler;
     private static final String EXCEPTIONAL_STATE_IDENTIFIER = "GILLES_WOODCHIPS_HEATER_EXCEPTIONAL_STATE_IDENTIFIER";
+    private boolean onlyOnOff;
 
     @Reference(policy = ReferencePolicy.STATIC, policyOption = ReferencePolicyOption.GREEDY, cardinality = ReferenceCardinality.MANDATORY)
     protected void setModbus(BridgeModbus modbus) {
@@ -118,10 +119,11 @@ public class MassHeaterWoodChipsWoodChipsImpl extends AbstractOpenemsModbusCompo
 
     @Activate
     void activate(ComponentContext context, Config config) throws OpenemsError.OpenemsNamedException, ConfigurationException {
+        this.readOnly = config.readOnly();
+        this.printInfoToLog = config.printInfoToLog();
+        this.onlyOnOff = config.onlyEnableBioMassHeater();
         super.activate(context, config.id(), config.alias(), config.enabled(), config.modBusUnitId(), this.cm, "Modbus", config.modBusBridgeId());
 
-        this.printInfoToLog = config.printInfoToLog();
-        this.readOnly = config.readOnly();
         if (this.isEnabled() == false) {
             this._setHeaterState(HeaterState.OFF.getValue());
         }
@@ -280,29 +282,31 @@ public class MassHeaterWoodChipsWoodChipsImpl extends AbstractOpenemsModbusCompo
                         m(MassHeaterWoodChips.ChannelId.DO_16387_ON_OFF_SWITCH, new CoilElement(16387)))
         );
         if (this.readOnly == false) {
-            protocol.addTasks(
-                    new FC16WriteRegistersTask(24576,
-                            m(Heater.ChannelId.SET_POINT_TEMPERATURE, new UnsignedWordElement(24576),
-                                    ElementToChannelConverter.DIRECT_1_TO_1),
-                            m(MassHeaterWoodChips.ChannelId.HR_24577_MINIMUM_FLOW_TEMPERATURE_SET_POINT, new UnsignedWordElement(24577),
-                                    ElementToChannelConverter.DIRECT_1_TO_1),
-                            m(MassHeaterWoodChips.ChannelId.HR_24578_SLIDE_IN_PERCENTAGE_VALUE_SET_POINT, new UnsignedWordElement(24578),
-                                    ElementToChannelConverter.DIRECT_1_TO_1),
-                            m(MassHeaterWoodChips.ChannelId.HR_24579_EXHAUST_TEMPERATURE_MIN_SET_POINT, new UnsignedWordElement(24579),
-                                    ElementToChannelConverter.DIRECT_1_TO_1),
-                            m(MassHeaterWoodChips.ChannelId.HR_24580_EXHAUST_TEMPERATURE_MAX_SET_POINT, new UnsignedWordElement(24580),
-                                    ElementToChannelConverter.DIRECT_1_TO_1),
-                            m(MassHeaterWoodChips.ChannelId.HR_24581_OXYGEN_PERCENT_MIN_SET_POINT, new UnsignedWordElement(24581),
-                                    ElementToChannelConverter.DIRECT_1_TO_1),
-                            m(MassHeaterWoodChips.ChannelId.HR_24582_OXYGEN_PERCENT_MAX_SET_POINT, new UnsignedWordElement(24582),
-                                    ElementToChannelConverter.DIRECT_1_TO_1),
-                            m(MassHeaterWoodChips.ChannelId.HR_24583_SLIDE_IN_MIN_SET_POINT, new UnsignedWordElement(24583),
-                                    ElementToChannelConverter.DIRECT_1_TO_1),
-                            m(MassHeaterWoodChips.ChannelId.HR_24584_SLIDE_IN_MAX_SET_POINT, new UnsignedWordElement(24584),
-                                    ElementToChannelConverter.DIRECT_1_TO_1)
-                    ),
-                    new FC5WriteCoilTask(16387,
-                            m(MassHeaterWoodChips.ChannelId.DO_16387_ON_OFF_SWITCH, new CoilElement(16387)))
+            if (this.onlyOnOff == false) {
+                protocol.addTasks(
+                        new FC16WriteRegistersTask(24576,
+                                m(Heater.ChannelId.SET_POINT_TEMPERATURE, new UnsignedWordElement(24576),
+                                        ElementToChannelConverter.DIRECT_1_TO_1),
+                                m(MassHeaterWoodChips.ChannelId.HR_24577_MINIMUM_FLOW_TEMPERATURE_SET_POINT, new UnsignedWordElement(24577),
+                                        ElementToChannelConverter.DIRECT_1_TO_1),
+                                m(MassHeaterWoodChips.ChannelId.HR_24578_SLIDE_IN_PERCENTAGE_VALUE_SET_POINT, new UnsignedWordElement(24578),
+                                        ElementToChannelConverter.DIRECT_1_TO_1),
+                                m(MassHeaterWoodChips.ChannelId.HR_24579_EXHAUST_TEMPERATURE_MIN_SET_POINT, new UnsignedWordElement(24579),
+                                        ElementToChannelConverter.DIRECT_1_TO_1),
+                                m(MassHeaterWoodChips.ChannelId.HR_24580_EXHAUST_TEMPERATURE_MAX_SET_POINT, new UnsignedWordElement(24580),
+                                        ElementToChannelConverter.DIRECT_1_TO_1),
+                                m(MassHeaterWoodChips.ChannelId.HR_24581_OXYGEN_PERCENT_MIN_SET_POINT, new UnsignedWordElement(24581),
+                                        ElementToChannelConverter.DIRECT_1_TO_1),
+                                m(MassHeaterWoodChips.ChannelId.HR_24582_OXYGEN_PERCENT_MAX_SET_POINT, new UnsignedWordElement(24582),
+                                        ElementToChannelConverter.DIRECT_1_TO_1),
+                                m(MassHeaterWoodChips.ChannelId.HR_24583_SLIDE_IN_MIN_SET_POINT, new UnsignedWordElement(24583),
+                                        ElementToChannelConverter.DIRECT_1_TO_1),
+                                m(MassHeaterWoodChips.ChannelId.HR_24584_SLIDE_IN_MAX_SET_POINT, new UnsignedWordElement(24584),
+                                        ElementToChannelConverter.DIRECT_1_TO_1)
+                        ));
+            }
+            protocol.addTask(new FC5WriteCoilTask(16387,
+                    m(MassHeaterWoodChips.ChannelId.DO_16387_ON_OFF_SWITCH, new CoilElement(16387)))
             );
         }
         return protocol;
@@ -347,7 +351,7 @@ public class MassHeaterWoodChipsWoodChipsImpl extends AbstractOpenemsModbusCompo
 
         if (this.getOnOffSwitch().isDefined() && this.getEffectiveHeatingPowerPercent().isDefined()) {
             if (this.getOnOffSwitch().get()) {
-                int powerPercentRead = (int)Math.round(this.getEffectiveHeatingPowerPercent().get());
+                int powerPercentRead = (int) Math.round(this.getEffectiveHeatingPowerPercent().get());
                 if (powerPercentRead > 0) {
                     this._setHeaterState(HeaterState.RUNNING.getValue());
                 } else {
@@ -385,7 +389,7 @@ public class MassHeaterWoodChipsWoodChipsImpl extends AbstractOpenemsModbusCompo
             int slideInMinValue = this.getSlideInMinSetPointRead().get();
             this.powerPercentSetpoint = Math.max(this.powerPercentSetpoint, slideInMinValue);
             this._setHeatingPowerPercentSetpoint(this.powerPercentSetpoint);
-            slideInSetpoint = (int)Math.round(this.powerPercentSetpoint);
+            slideInSetpoint = (int) Math.round(this.powerPercentSetpoint);
         }
 
         // Handle EnableSignal.
@@ -417,21 +421,13 @@ public class MassHeaterWoodChipsWoodChipsImpl extends AbstractOpenemsModbusCompo
         }
 
         if (connectionAlive) {
-            if (turnOnHeater) {
-                try {
-                    this.setOnOffSwitch(true);
-                    if (slideInSetpoint > 0) {
-                        this.setSlideInMaxSetPoint(slideInSetpoint);
-                    }
-                } catch (OpenemsError.OpenemsNamedException e) {
-                    this.log.warn("Couldn't write in Channel " + e.getMessage());
+            try {
+                this.setOnOffSwitch(turnOnHeater);
+                if (this.onlyOnOff == false && slideInSetpoint > 0) {
+                    this.setSlideInMaxSetPoint(slideInSetpoint);
                 }
-            } else {
-                try {
-                    this.setOnOffSwitch(false);
-                } catch (OpenemsError.OpenemsNamedException e) {
-                    this.log.warn("Couldn't write in Channel " + e.getMessage());
-                }
+            } catch (OpenemsError.OpenemsNamedException e) {
+                this.log.warn("Couldn't write in Channel " + e.getMessage());
             }
         }
     }
@@ -441,17 +437,17 @@ public class MassHeaterWoodChipsWoodChipsImpl extends AbstractOpenemsModbusCompo
      */
     protected void printInfo() {
         this.logInfo(this.log, "--Heater Gilles Woodchip--");
-        this.logInfo(this.log, "Power percent set point (=slide in max): " + this.getHeatingPowerPercentSetpoint());
-        this.logInfo(this.log, "Power percent actual (=slide in): " + this.getEffectiveHeatingPowerPercent());
-        this.logInfo(this.log, "Slide in min set point: " + this.getSlideInMinSetPointRead());
-        this.logInfo(this.log, "Slide in max set point: " + this.getSlideInMaxSetPointRead());
-        this.logInfo(this.log, "Heating power actual: " + this.getEffectiveHeatingPower());
-        this.logInfo(this.log, "Boiler temperature: " + this.getFlowTemperature());
-        this.logInfo(this.log, "Boiler temperature set point: " + this.getBoilerTemperatureSetPointRead());
-        this.logInfo(this.log, "Return temperature: " + this.getReturnTemperature());
-        this.logInfo(this.log, "Heater state: " + this.getHeaterState());
-        this.logInfo(this.log, "Warning message: " + this.getWarningMessage().get());
-        this.logInfo(this.log, "Error message: " + this.getErrorMessage().get());
+        this.logInfo(this.log, "Power percent set point (=slide in max): " + this.getHeatingPowerPercentSetpoint().orElse(-1.d));
+        this.logInfo(this.log, "Power percent actual (=slide in): " + this.getEffectiveHeatingPowerPercent().orElse(-1.d));
+        this.logInfo(this.log, "Slide in min set point: " + this.getSlideInMinSetPointRead().orElse(-1));
+        this.logInfo(this.log, "Slide in max set point: " + this.getSlideInMaxSetPointRead().orElse(-1));
+        this.logInfo(this.log, "Heating power actual: " + this.getEffectiveHeatingPower().orElse(-1.d));
+        this.logInfo(this.log, "Boiler temperature: " + this.getFlowTemperature().orElse(-1));
+        this.logInfo(this.log, "Boiler temperature set point: " + this.getBoilerTemperatureSetPointRead().orElse(-1));
+        this.logInfo(this.log, "Return temperature: " + this.getReturnTemperature().orElse(-1));
+        this.logInfo(this.log, "Heater state: " + this.getHeaterState().asEnum());
+        this.logInfo(this.log, "Warning message: " + this.getWarningMessage().orElse("no Warnings"));
+        this.logInfo(this.log, "Error message: " + this.getErrorMessage().orElse("No Errors"));
         this.logInfo(this.log, "");
     }
 

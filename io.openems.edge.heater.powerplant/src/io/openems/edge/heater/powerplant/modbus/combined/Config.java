@@ -39,7 +39,7 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     boolean enableExceptionalStateHandling() default true;
 
     @AttributeDefinition(name = "Timer for ExceptionalState", description = "Timer Id for ExceptionalState Handling, either TimerByTimer or TimerByCycles")
-    String timerExceptionalState() default "TimerByCycles";
+    String timerExceptionalState() default "TimerByCounting";
 
     @AttributeDefinition(name = "Wait Time/Cycles for ExceptionalState", description = "How long do you await a new Exceptional State enable Signal.")
     int timeToWaitExceptionalState() default 60;

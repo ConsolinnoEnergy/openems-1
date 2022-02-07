@@ -47,6 +47,7 @@ import javax.naming.ConfigurationException;
 /**
  * Configurator for Consolinno Modbus modules. Reads the CSV Register source file, sets the general Modbus Protocol and configures
  * module specific values (e.g Relay inversion status).
+ * This must be configured, otherwise Leaflet-Modules/Devices within OpenEMS won't work.
  */
 
 @Designate(ocd = Config.class, factory = true)
@@ -493,9 +494,11 @@ public class LeafletCoreImpl extends AbstractOpenemsModbusComponent implements O
                         new BufferedReader(new InputStreamReader(p.getInputStream()));
 
                 String line = "";
+                StringBuilder responseBuilder = new StringBuilder();
                 while ((line = reader.readLine()) != null) {
-                    response += line;
+                    responseBuilder.append(line);
                 }
+                response = responseBuilder.toString();
             } catch (IOException e) {
                 this.log.error("The Firmware is not Running!");
             }
@@ -1132,7 +1135,7 @@ public class LeafletCoreImpl extends AbstractOpenemsModbusComponent implements O
     public void handleEvent(Event event) {
         if (this.configFlag && (getReadAioConfig() == (this.aioConfigOne | this.aioConfigTwo | this.aioConfigThree
                 | this.aioConfigFour | this.aioConfigFive | this.aioConfigSix | this.aioConfigSeven))) {
-  //          this.exitConfigMode();
+            this.exitConfigMode();
         }
 
     }

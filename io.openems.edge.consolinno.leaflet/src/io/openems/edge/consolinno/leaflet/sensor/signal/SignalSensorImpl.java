@@ -36,8 +36,8 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Provides a Consolinno Signal sensor. Connected to the Temperature Module.
- * When the Sensor detects a Temperature above 100°C it will output "Error".
- * Can be inverted to below 100°C.
+ * When the Sensor detects a Temperature above 100°C (Analogue Signal can be read) it will output an SignalActive (true).
+ * If the Logic is inverted by the config. It showcases an SignalActive(true) when the AnalogueSignal is missing e.g. Temperature <100°C.
  */
 @Designate(ocd = Config.class, factory = true)
 @Component(name = "Consolinno.Leaflet.Sensor.Signal", immediate = true,
@@ -57,7 +57,7 @@ public class SignalSensorImpl extends AbstractOpenemsModbusComponent implements 
     }
 
     //Decimal Degrees
-    private static final int maxTemperature = 1000;
+    private static final int MAX_TEMPERATURE = 1000;
     private LeafletCore lc;
     private final Logger log = LoggerFactory.getLogger(SignalSensorImpl.class);
     private int signalModule;
@@ -124,11 +124,7 @@ public class SignalSensorImpl extends AbstractOpenemsModbusComponent implements 
         boolean currentTempDefined = currentTemperature.isDefined();
         boolean signalActive = false;
         if (currentTempDefined) {
-            if (this.isInverted) {
-                signalActive = currentTemperature.get() < maxTemperature;
-            } else {
-                signalActive = currentTemperature.get() > maxTemperature;
-            }
+            signalActive = this.isInverted == (currentTemperature.get() < MAX_TEMPERATURE);
         }
         this.signalActive().setNextValue(signalActive);
     }

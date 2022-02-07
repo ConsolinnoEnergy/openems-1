@@ -6,7 +6,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * The Abstract Timer. It provides basic methods that both Timer {@link TimerByTimeImpl} and {@link TimerByCycles} use.
+ * The Abstract Timer. It provides basic methods that both Timer {@link TimerByTimeImpl} and {@link TimerByCounting} use.
  */
 public abstract class AbstractTimer extends AbstractOpenemsComponent implements Timer {
 

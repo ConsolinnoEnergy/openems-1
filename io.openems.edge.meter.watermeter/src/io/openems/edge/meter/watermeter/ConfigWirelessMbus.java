@@ -23,15 +23,8 @@ import org.osgi.service.metatype.annotations.Option;
     String radioAddress() default "";
 
     @AttributeDefinition(name = "Model", description = "Choose the meter model. This selects at which record positions to "
-            + "look for the data in the transmission. \"Autosearch record position\" should work for most models.",
-            options = {
-                    @Option(label = "Autosearch record position", value = "Autosearch"),
-                    @Option(label = "Relay PadPuls M2W Channel 1", value = "Relay PadPuls M2W Channel 1"),
-                    @Option(label = "Relay PadPuls M2W Channel 2", value = "Relay PadPuls M2W Channel 2"),
-                    @Option(label = "Engelmann Waterstar M", value = "Engelmann Waterstar M"),
-                    @Option(label = "Manual record position", value = "Manual"),
-            })
-    String model() default "Autosearch";
+            + "look for the data in the transmission. \"Autosearch record position\" should work for most models.")
+    WaterMeterModelWirelessMbus model() default WaterMeterModelWirelessMbus.AUTOSEARCH;
 
     @AttributeDefinition(name = "Manual record position: Volume", description = "If \"Manual record position\" is selected: Record position of metered volume in WM-Bus Telegram.")
     int volAddress() default 0;

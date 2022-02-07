@@ -40,7 +40,7 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     ManageType manageType() default ManageType.FIFO;
 
     @AttributeDefinition(name = "Timer Id", description = "Timer by Cycles or Timer by Time for keepAlive Count till fallback activates")
-    String timerId() default "TimerByCycles";
+    String timerId() default "TimerByCounting";
 
     @AttributeDefinition(name = "KeepAlive Time", description = "Time needs to past till fallback activates")
     int keepAlive() default 300;

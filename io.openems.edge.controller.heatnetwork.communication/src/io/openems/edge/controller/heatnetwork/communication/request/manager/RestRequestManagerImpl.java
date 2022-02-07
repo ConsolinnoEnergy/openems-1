@@ -51,7 +51,7 @@ public class RestRequestManagerImpl implements RestRequestManager {
     @Override
     public void manageRequests(Map<Integer, List<RestRequest>> allRequests) {
         this.allRequests = allRequests;
-        if (this.timerType.equals(TimerType.CYCLES)) {
+        if (this.timerType.equals(TimerType.COUNTING)) {
             this.workCycles.forEach((key, value) -> value.getAndIncrement());
         }
         this.manageByManageType();
@@ -155,7 +155,7 @@ public class RestRequestManagerImpl implements RestRequestManager {
         boolean isTimeUp = false;
         switch (this.timerType) {
 
-            case CYCLES:
+            case COUNTING:
                 isTimeUp = this.waitCycles.get(key).getAndIncrement() >= this.maxWaitTime;
 
                 break;
@@ -183,7 +183,7 @@ public class RestRequestManagerImpl implements RestRequestManager {
         this.managedRequests.remove(workKey);
         this.managedRequests.put(waitKey, this.allRequests.get(waitKey));
         switch (this.timerType) {
-            case CYCLES:
+            case COUNTING:
                 this.workCycles.remove(workKey);
                 this.waitCycles.remove(waitKey);
 
@@ -216,7 +216,7 @@ public class RestRequestManagerImpl implements RestRequestManager {
         AtomicInteger maxWorkTimeKey = new AtomicInteger(0);
         switch (this.timerType) {
 
-            case CYCLES:
+            case COUNTING:
                 AtomicInteger maxCounter = new AtomicInteger(Integer.MIN_VALUE);
                 this.workCycles.forEach((key, value) -> {
                     if (value.get() > maxCounter.get()) {

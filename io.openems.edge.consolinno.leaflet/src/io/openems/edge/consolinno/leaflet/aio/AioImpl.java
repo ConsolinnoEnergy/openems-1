@@ -17,7 +17,6 @@ import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.common.event.EdgeEventConstants;
 import io.openems.edge.common.taskmanager.Priority;
 import io.openems.edge.consolinno.leaflet.core.api.LeafletCore;
-import io.openems.edge.consolinno.leaflet.pwm.PwmImpl;
 import io.openems.edge.io.api.AnalogInputOutput;
 import org.osgi.service.cm.ConfigurationAdmin;
 import org.osgi.service.cm.ConfigurationException;
@@ -38,7 +37,17 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
+ * <p>
  * Provides a Consolinno Aio Out/Input.
+ * The AIO Module provides the ability to write or read from connections.
+ * Setup the Configuration once and you can control devices by sending a Volt or mA value.
+ * As well as monitor them by reading the input.
+ * Usually you will write a Percent-Value, the BaseSoftware of the Leaflet converts the Percent value to an analogue Signal.
+ * </p>
+ * <p>
+ * NOTE: Since you can damage peripheral devices check your config twice. That's the reason why you cannot "modify" this component,
+ * but activate/Deactivate only.
+ * </p>
  */
 @Designate(ocd = Config.class, factory = true)
 @Component(name = "Consolinno.Leaflet.Aio", immediate = true,
@@ -149,7 +158,7 @@ public class AioImpl extends AbstractOpenemsModbusComponent implements OpenemsCo
         try {
             this.getWriteChannel().setNextWriteValue(0);
         } catch (OpenemsError.OpenemsNamedException ignored) {
-
+            this.log.warn(this.id() + ": Couldn't write into own Channel");
         }
 
     }
@@ -176,18 +185,18 @@ public class AioImpl extends AbstractOpenemsModbusComponent implements OpenemsCo
         if (this.type.equals("Digital_in")) {
             return new ModbusProtocol(this,
                     new FC1ReadCoilsTask(this.aioRegister, Priority.HIGH,
-                            m(AnalogInputOutput.ChannelId.AIO_READ, new CoilElement(this.aioRegister),
+                            m(AnalogInputOutput.ChannelId.AIO_INPUT, new CoilElement(this.aioRegister),
                                     ElementToChannelConverter.REPLACE_WITH_MINUS_ZERO_IF_0XFFFF)),
                     new FC3ReadRegistersTask(this.percentRegister, Priority.HIGH,
-                            m(AnalogInputOutput.ChannelId.AIO_CHECK_PERCENT, new UnsignedWordElement(this.percentRegister),
+                            m(AnalogInputOutput.ChannelId.AIO_CHECK_THOUSANDTH, new UnsignedWordElement(this.percentRegister),
                                     ElementToChannelConverter.REPLACE_WITH_MINUS_ZERO_IF_0XFFFF)));
         } else if (this.type.contains("in")) {
             return new ModbusProtocol(this,
                     new FC4ReadInputRegistersTask(this.aioRegister, Priority.HIGH,
-                            m(AnalogInputOutput.ChannelId.AIO_READ, new UnsignedWordElement(this.aioRegister),
+                            m(AnalogInputOutput.ChannelId.AIO_INPUT, new UnsignedWordElement(this.aioRegister),
                                     ElementToChannelConverter.REPLACE_WITH_MINUS_ZERO_IF_0XFFFF)),
                     new FC4ReadInputRegistersTask(this.percentRegister, Priority.HIGH,
-                            m(AnalogInputOutput.ChannelId.AIO_CHECK_PERCENT, new UnsignedWordElement(this.percentRegister),
+                            m(AnalogInputOutput.ChannelId.AIO_CHECK_THOUSANDTH, new UnsignedWordElement(this.percentRegister),
                                     ElementToChannelConverter.REPLACE_WITH_MINUS_ZERO_IF_0XFFFF)));
         } else if (this.type.contains("out")) {
             return new ModbusProtocol(this,
@@ -199,10 +208,10 @@ public class AioImpl extends AbstractOpenemsModbusComponent implements OpenemsCo
                             m(AnalogInputOutput.ChannelId.AIO_CHECK_WRITE, new UnsignedWordElement(this.aioRegister),
                                     ElementToChannelConverter.REPLACE_WITH_MINUS_ZERO_IF_0XFFFF)),
                     new FC3ReadRegistersTask(this.percentRegister, Priority.HIGH,
-                            m(AnalogInputOutput.ChannelId.AIO_CHECK_PERCENT, new UnsignedWordElement(this.percentRegister),
+                            m(AnalogInputOutput.ChannelId.AIO_CHECK_THOUSANDTH, new UnsignedWordElement(this.percentRegister),
                                     ElementToChannelConverter.REPLACE_WITH_MINUS_ZERO_IF_0XFFFF)),
                     new FC6WriteRegisterTask(this.percentRegister,
-                            m(AnalogInputOutput.ChannelId.AIO_PERCENT_WRITE,
+                            m(AnalogInputOutput.ChannelId.AIO_THOUSANDTH_WRITE,
                                     new UnsignedWordElement(this.percentRegister),
                                     ElementToChannelConverter.REPLACE_WITH_MINUS_ZERO_IF_0XFFFF)));
 
@@ -214,9 +223,9 @@ public class AioImpl extends AbstractOpenemsModbusComponent implements OpenemsCo
     @Override
     public String debugLog() {
         if (this.type.contains("Temperature_in")) {
-            return this.type + " :" + getReadValue();
+            return this.type + " :" + getInputValue();
         } else if (this.type.contains("in")) {
-            return this.type + " :" + getReadValue() + " " + getPercentValue() + "%";
+            return this.type + " :" + getInputValue() + " " + getPercentValue() + "%";
         } else {
             return this.type + " :" + getWriteValue() + " " + getPercentValue() + "%";
         }
@@ -226,9 +235,9 @@ public class AioImpl extends AbstractOpenemsModbusComponent implements OpenemsCo
     public void handleEvent(Event event) {
         if (this.debug) {
             try {
-                this.getWriteChannel().setNextWriteValue(this.value);
+                this.setWriteThousandth(this.value);
             } catch (OpenemsError.OpenemsNamedException ignored) {
-                this.log.error("Unable to write to WriteChannel.");
+                this.log.error(this.id() + ": Unable to own write to OutputChannel.");
             }
         }
     }

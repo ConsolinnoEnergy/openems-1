@@ -11,6 +11,7 @@ import io.openems.edge.common.component.OpenemsComponent;
  * This interface provides the Nature for a Schedule.
  * This Nature is for a more complex schedule of Components (Not just a simple method: SetSchedule value: foo expiration: bar Schedule)
  * The Schedule needs to be extracted manually.
+ * Here a complex Schedule can be stored and validated by another component.
  */
 public interface Schedule extends OpenemsComponent {
     enum ChannelId implements io.openems.edge.common.channel.ChannelId {

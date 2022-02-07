@@ -8,7 +8,8 @@ import io.openems.edge.bridge.mbus.api.ChannelRecord;
 import io.openems.edge.bridge.mbus.api.ChannelRecord.DataType;
 import io.openems.edge.common.channel.Doc;
 import io.openems.edge.common.component.OpenemsComponent;
-import io.openems.edge.meter.watermeter.api.WaterMeter;
+import io.openems.edge.meter.api.Meter;
+import io.openems.edge.meter.api.WaterMeter;
 import org.openmuc.jmbus.DataRecord;
 import org.openmuc.jmbus.VariableDataStructure;
 import org.osgi.service.cm.ConfigurationAdmin;
@@ -67,6 +68,7 @@ public class WaterMeterMbusImpl extends AbstractOpenemsMbusComponent
     public WaterMeterMbusImpl() {
         super(OpenemsComponent.ChannelId.values(), //
                 WaterMeter.ChannelId.values(),
+                Meter.ChannelId.values(),
                 ChannelId.values());
     }
 
@@ -87,22 +89,22 @@ public class WaterMeterMbusImpl extends AbstractOpenemsMbusComponent
         }
         if (config.usePollingInterval()) {
             super.activate(context, config.id(), config.alias(), config.enabled(), config.primaryAddress(), this.cm, "mbus",
-                    config.mbusBridgeId(), config.pollingIntervalSeconds(), this.getErrorChannel());     // If you want to use the polling interval, put the time as the last argument in super.activate().
+                    config.mbusBridgeId(), config.pollingIntervalSeconds(), this.getErrorMessageChannel());     // If you want to use the polling interval, put the time as the last argument in super.activate().
         } else {
             super.activate(context, config.id(), config.alias(), config.enabled(), config.primaryAddress(), this.cm, "mbus",
-                    config.mbusBridgeId(), 0, this.getErrorChannel());  // If you don't want to use the polling interval, use super.activate() without the last argument.
+                    config.mbusBridgeId(), 0, this.getErrorMessageChannel());  // If you don't want to use the polling interval, use super.activate() without the last argument.
         }
     }
 
-    private void allocateAddressViaMeterModel(String meterModel) {
+    private void allocateAddressViaMeterModel(WaterMeterModelMbus meterModel) {
         switch (meterModel) {
-            case "PAD_PULS_M2":
+            case PAD_PULS_M2:
                 this.waterMeterModelMbus = WaterMeterModelMbus.PAD_PULS_M2;
                 break;
-            case "ITRON_BM_M":
+            case ITRON_BM_M:
                 this.waterMeterModelMbus = WaterMeterModelMbus.ITRON_BM_M;
                 break;
-            case "Autosearch":
+            case AUTOSEARCH:
             default:
                 this.waterMeterModelMbus = WaterMeterModelMbus.AUTOSEARCH;
                 // Use findRecordPositions() to find the right data record positions. Should work for most meter types.
@@ -124,11 +126,11 @@ public class WaterMeterMbusImpl extends AbstractOpenemsMbusComponent
 
         // The timestamp_seconds channelRecord needs to be in the second position of this list, otherwise findRecordPositions()
         // for the data records won't work correctly.
-        this.channelDataRecordsList.add(new ChannelRecord(this.channel(WaterMeter.ChannelId.TIMESTAMP_SECONDS), this.timeStampAddress));
+        this.channelDataRecordsList.add(new ChannelRecord(this.channel(Meter.ChannelId.TIMESTAMP_SECONDS), this.timeStampAddress));
 
         // TimestampString is always on address -2, since it's an internal method. This channel needs to be
         // called after the TimestampSeconds Channel, as it takes it's value from that channel.
-        this.channelDataRecordsList.add(new ChannelRecord(this.channel(WaterMeter.ChannelId.TIMESTAMP_STRING), -2));
+        this.channelDataRecordsList.add(new ChannelRecord(this.channel(Meter.ChannelId.TIMESTAMP_STRING), -2));
         this.channelDataRecordsList.add(new ChannelRecord(this.channel(ChannelId.MANUFACTURER_ID), DataType.Manufacturer));
         this.channelDataRecordsList.add(new ChannelRecord(this.channel(ChannelId.DEVICE_ID), DataType.DeviceId));
     }

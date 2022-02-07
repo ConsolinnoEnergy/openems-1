@@ -2,7 +2,7 @@ package io.openems.edge.heater.analogue.component;
 
 import io.openems.common.exceptions.OpenemsError;
 import io.openems.common.types.ChannelAddress;
-import io.openems.edge.bridge.lucidcontrol.api.LucidControlDeviceOutput;
+import io.openems.edge.lucidcontrol.api.LucidControlDeviceOutput;
 import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.heater.analogue.ControlType;

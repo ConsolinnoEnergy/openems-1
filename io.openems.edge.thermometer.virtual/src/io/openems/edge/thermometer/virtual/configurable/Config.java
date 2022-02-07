@@ -28,7 +28,7 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     int inactiveTemperature() default 0;
 
     @AttributeDefinition(name = "TimerId", description = "The Timer to use")
-    String timerID() default "TimerByCycles";
+    String timerID() default "TimerByCounting";
 
     @AttributeDefinition(name = "Max WaitTime", description = "How long to wait after enableSignal is Missing till Thermometer deactivates")
     int waitTime() default 1;

@@ -69,7 +69,7 @@ public class MyHydraulicLineCoolerControllerTest {
         this.cpm.addComponent(dummyDecentralizedHeater);
         this.cpm.addComponent(correctDummyApartmentModule);
         this.cpm.addComponent(correctDummyValve);
-        this.cpm.addComponent(new DummyTimer(timerId, TimerType.CYCLES));
+        this.cpm.addComponent(new DummyTimer(timerId, TimerType.COUNTING));
     }
 
 

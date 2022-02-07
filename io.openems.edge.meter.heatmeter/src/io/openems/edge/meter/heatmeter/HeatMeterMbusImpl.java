@@ -60,10 +60,16 @@ public class HeatMeterMbusImpl extends AbstractOpenemsMbusComponent implements O
                 this.getFlowRate().setNextValue(this.getFlowRateToMbus().value().get());
             }
             if (this.getPowerToMbus().value().isDefined()) {
-               this.getReadingPowerChannel().setNextValue(this.getPowerToMbus().value().get());
+                this.getReadingPowerChannel().setNextValue(this.getPowerToMbus().value().get());
             }
             if (this.getTotalConsumedEnergyToMbus().value().isDefined()) {
                 this.getReadingEnergyChannel().setNextValue(this.getTotalConsumedEnergyToMbus().value().get());
+            }
+            if (this.getFlowTempToMbus().value().isDefined()) {
+                this.getFlowTempChannel().setNextValue(this.getFlowTempToMbus().value().get());
+            }
+            if (this.getReturnTempToMbus().value().isDefined()) {
+                this.getReturnTempChannel().setNextValue(this.getReturnTempToMbus().value().get());
             }
         }
     }
@@ -76,7 +82,8 @@ public class HeatMeterMbusImpl extends AbstractOpenemsMbusComponent implements O
         READING_TO_MBUS(Doc.of(OpenemsType.INTEGER).unit(Unit.KILOWATT)),
         FLOW_RATE_TO_MBUS(Doc.of(OpenemsType.DOUBLE).unit(Unit.CUBICMETER_PER_HOUR)),
         TOTAL_CONSUMED_ENERGY_TO_MBUS(Doc.of(OpenemsType.INTEGER).unit(Unit.KILOWATT_HOURS)),
-        FLOW_TEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS)),
+        FLOW_TEMP_TO_MBUS(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS)),
+        RETURN_TEMP_TO_MBUS(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS)),
         FLOW_RATE(Doc.of(OpenemsType.DOUBLE).unit(Unit.CUBICMETER_PER_HOUR)),
         ;
 
@@ -103,8 +110,12 @@ public class HeatMeterMbusImpl extends AbstractOpenemsMbusComponent implements O
         return this.channel(ChannelId.TOTAL_CONSUMED_ENERGY_TO_MBUS);
     }
 
-    Channel<Integer> getFlowTemp() {
-        return this.channel(ChannelId.FLOW_TEMP);
+    Channel<Integer> getFlowTempToMbus() {
+        return this.channel(ChannelId.FLOW_TEMP_TO_MBUS);
+    }
+
+    Channel<Integer> getReturnTempToMbus() {
+        return this.channel(ChannelId.RETURN_TEMP_TO_MBUS);
     }
 
     Channel<Double> getFlowRate() {
@@ -135,8 +146,8 @@ public class HeatMeterMbusImpl extends AbstractOpenemsMbusComponent implements O
     @Override
     protected void addChannelDataRecords() {
         this.channelDataRecordsList.add(new ChannelRecord(channel(ChannelId.TOTAL_CONSUMED_ENERGY_TO_MBUS), this.heatMeterModel.totalConsumptionEnergyAddress));
-        this.channelDataRecordsList.add(new ChannelRecord(channel(ChannelId.FLOW_TEMP), this.heatMeterModel.flowTempAddress));
-        this.channelDataRecordsList.add(new ChannelRecord(channel(HeatMeter.ChannelId.RETURN_TEMP), this.heatMeterModel.returnTempAddress));
+        this.channelDataRecordsList.add(new ChannelRecord(channel(ChannelId.FLOW_TEMP_TO_MBUS), this.heatMeterModel.flowTempAddress));
+        this.channelDataRecordsList.add(new ChannelRecord(channel(ChannelId.RETURN_TEMP_TO_MBUS), this.heatMeterModel.returnTempAddress));
         this.channelDataRecordsList.add(new ChannelRecord(channel(ChannelId.READING_TO_MBUS), this.heatMeterModel.powerAddress));
         this.channelDataRecordsList.add(new ChannelRecord(channel(ChannelId.FLOW_RATE_TO_MBUS), this.heatMeterModel.flowRateAddress));
         this.channelDataRecordsList.add(new ChannelRecord(channel(ChannelId.MANUFACTURER_ID), ChannelRecord.DataType.Manufacturer));

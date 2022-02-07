@@ -12,7 +12,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 
 /**
- * The concrete Implementation of the AbstractMqttTask. This component handles it's payload by getting a map of
+ * One of the Implementations of the AbstractMqttTask. This component handles it's payload by getting a map of
  * the Channels it has to publish.
  * See Code for details.
  */
@@ -44,7 +44,18 @@ public class MqttPublishTaskImpl extends AbstractMqttTask implements MqttPublish
     }
 
     /**
+     * <p>
      * Creates the StandardPayload from a Config.
+     * Start by adding the time in UTC.
+     * Then add "device" and add the mqttId.
+     * After that continue to add a key:value pair, the way it was configured before.
+     * foo=ChannelValue,
+     * bar=AnotherChannelValue.
+     * </p>
+     * <p>
+     * Since an Influx may have trouble to determine Booleans. Here the boolean will be converted to an integer.
+     * 1 for true and 0 for false.
+     * </p>
      *
      * @param now if Time should be added, now is added to the Payload.
      */

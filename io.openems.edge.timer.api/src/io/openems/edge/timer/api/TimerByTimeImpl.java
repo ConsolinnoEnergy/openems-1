@@ -30,7 +30,7 @@ public class TimerByTimeImpl extends AbstractTimer implements OpenemsComponent {
     }
 
     @Activate
-    void activate(ComponentContext context, TimerByCyclesConfig config) {
+    void activate(ComponentContext context, TimerByCountingConfig config) {
         super.activate(context, config.id(), config.alias(), config.enabled());
     }
 

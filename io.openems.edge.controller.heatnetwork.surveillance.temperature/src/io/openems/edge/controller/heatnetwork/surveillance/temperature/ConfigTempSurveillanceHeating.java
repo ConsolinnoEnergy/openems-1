@@ -39,7 +39,7 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     String heaterId() default "Heater0";
 
     @AttributeDefinition(name = "Timer for Valve", description = "Timer Id to check For Missing Components and if SurveillanceType is Heater And Valve -> Delay HydraulicController")
-    String timerId() default "TimerByCycles";
+    String timerId() default "TimerByCounting";
 
     @AttributeDefinition(name = "Delta Time Delay HydraulicController Enable", description = "How long to wait unit HydraulicController activates")
     int deltaTimeDelay() default 120;

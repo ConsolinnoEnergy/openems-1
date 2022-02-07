@@ -6,7 +6,7 @@ import java.util.Map;
 
 /**
  * The Abstract MqttTask.
- * This Class contains most Data that a Task need. Specific Impl. Is found in the MqttSubscribeTaskImpl/MqttPublishTaskImpl
+ * This Class contains most Data that a Task need. Specific Impl. Is found in the MqttSubscribeTaskImpl/MqttPublishTaskImpl.
  */
 public abstract class AbstractMqttTask implements MqttTask {
     private final String topic;

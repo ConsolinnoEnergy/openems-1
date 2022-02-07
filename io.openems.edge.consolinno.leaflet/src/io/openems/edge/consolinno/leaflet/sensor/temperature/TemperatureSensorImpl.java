@@ -28,7 +28,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Provides a Consolinno Temperature sensor. It communicates via Modbus with the TemperatureModule, gets it's addresses
+ * Provides a Consolinno Temperature sensor. It communicates via Modbus with the Temperature Module, gets it's addresses
  * via the LeafletCore and sets it's Temperature into the Thermometer Nature.
  */
 @Designate(ocd = Config.class, factory = true)
@@ -102,7 +102,8 @@ public class TemperatureSensorImpl extends AbstractOpenemsModbusComponent implem
 
     @Override
     public String debugLog() {
-        String temperature = getTemperature().isDefined() ? getTemperature().get().toString() + getTemperatureChannel().channelDoc().getUnit().getSymbol() : "Not Defined";
+        String temperature = getTemperature().isDefined() ? getTemperature().get().toString()
+                + getTemperatureChannel().channelDoc().getUnit().getSymbol() : "Not Defined";
         return "Temperature: " + temperature;
     }
 
