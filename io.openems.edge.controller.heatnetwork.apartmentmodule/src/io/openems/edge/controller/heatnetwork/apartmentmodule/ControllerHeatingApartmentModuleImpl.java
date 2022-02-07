@@ -460,7 +460,8 @@ public class ControllerHeatingApartmentModuleImpl extends AbstractOpenemsCompone
             value.forEach(thermometer -> thermometerChannelList.add(thermometer.getTemperature().orElse(Integer.MAX_VALUE)));
             this.apartmentCords.get(key).stream().filter(ApartmentModule::isTopAm).findFirst().ifPresent(topAm -> {
                 try {
-                    topAm.getReferenceTemperatureChannel().setNextWriteValueFromObject(TypeUtils.max((Integer[]) thermometerChannelList.toArray()));
+                    Integer[] integers = thermometerChannelList.toArray(new Integer[0]);
+                    topAm.getReferenceTemperatureChannel().setNextWriteValueFromObject(TypeUtils.min(integers));
                 } catch (OpenemsError.OpenemsNamedException e) {
                     this.log.warn("Couldn't apply min value to TopAm of cord " + key);
                 }

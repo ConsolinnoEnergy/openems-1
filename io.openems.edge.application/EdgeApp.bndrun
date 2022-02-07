@@ -85,7 +85,6 @@
 	bnd.identity;id='io.openems.edge.controller.ess.selltogridlimit',\
 	bnd.identity;id='io.openems.edge.controller.evcs',\
 	bnd.identity;id='io.openems.edge.controller.evcs.fixactivepower',\
-	bnd.identity;id='io.openems.edge.controller.filewriter',\
 	bnd.identity;id='io.openems.edge.controller.generic.jsonlogic',\
 	bnd.identity;id='io.openems.edge.controller.heatnetwork.apartmentmodule',\
 	bnd.identity;id='io.openems.edge.controller.heatnetwork.communication',\
@@ -277,7 +276,6 @@
 	io.openems.edge.controller.ess.selltogridlimit;version=snapshot,\
 	io.openems.edge.controller.evcs;version=snapshot,\
 	io.openems.edge.controller.evcs.fixactivepower;version=snapshot,\
-	io.openems.edge.controller.filewriter;version=snapshot,\
 	io.openems.edge.exceptionalstate.api;version=snapshot,\
 	io.openems.edge.controller.generic.jsonlogic;version=snapshot,\
 	io.openems.edge.controller.heatnetwork.apartmentmodule;version=snapshot,\

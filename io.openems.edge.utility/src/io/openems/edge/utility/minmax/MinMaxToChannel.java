@@ -127,8 +127,7 @@ public class MinMaxToChannel extends AbstractOpenemsComponent implements Openems
         if (this.isEnabled()) {
             if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS)) {
                 try {
-                    List<Integer> values = this.getIntegerValuesFromAddresses();
-                    Integer[] arrayValues = (Integer[]) this.getIntegerValuesFromAddresses().toArray();
+                    Integer[] arrayValues = this.getIntegerValuesFromAddresses().toArray(new Integer[0]);
                     int minMaxToWrite = 0;
                     switch (this.minMax) {
                         case MIN:
