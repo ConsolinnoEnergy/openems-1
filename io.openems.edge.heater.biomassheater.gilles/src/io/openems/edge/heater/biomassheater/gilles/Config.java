@@ -2,15 +2,12 @@ package io.openems.edge.heater.biomassheater.gilles;
 
 import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
-import org.osgi.service.metatype.annotations.Option;
 
 @ObjectClassDefinition(
-        name = "MassHeaterWoodChips Gilles",
+        name = "Heater Woodchips Gilles",
         description = "A Massheater by Gilles, using Woodchips. Communicating via Modbus."
 )
 @interface Config {
-
-    String service_pid();
 
     @AttributeDefinition(name = "MassHeater-Device ID", description = "Unique Id of the MassHeater.")
     String id() default "WoodChipHeater0";

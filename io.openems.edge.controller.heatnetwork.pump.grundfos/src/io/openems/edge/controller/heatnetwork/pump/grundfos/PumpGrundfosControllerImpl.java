@@ -131,8 +131,8 @@ public class PumpGrundfosControllerImpl extends AbstractOpenemsComponent impleme
                     this.pumpChannels.setConstFrequency().setNextWriteValue(true);
                     // Set interval to maximum. Change this if more precision is needed. Fmin minimum is 52% for MAGNA3.
                     // You can set Fmin lower than that, but this will have no effect. Motor can't run slower than 52%.
-                    this.pumpChannels.setFmin().setNextWriteValue(0.52);
-                    this.pumpChannels.setFmax().setNextWriteValue(1.0);
+                    this.pumpChannels.getFminChannel().setNextWriteValue(0.52);
+                    this.pumpChannels.getFmaxChannel().setNextWriteValue(1.0);
                     break;
                 case CONST_PRESSURE:
                     this.pumpChannels.setConstPressure().setNextWriteValue(true);
@@ -255,27 +255,27 @@ public class PumpGrundfosControllerImpl extends AbstractOpenemsComponent impleme
                         }
                         switch (this.controlModeSetting) {
                             case CONST_PRESSURE:
-                                if (this.pumpChannels.getActualControlMode().value().orElse("").equals("Constant pressure") == false) {
+                                if (this.pumpChannels.getControlModeStringChannel().value().orElse("").equals("Constant pressure") == false) {
                                     this.changeControlMode();
                                 }
                                 break;
                             case CONST_FREQUENCY:
-                                if (this.pumpChannels.getActualControlMode().value().orElse("").equals("Constant frequency") == false) {
+                                if (this.pumpChannels.getControlModeStringChannel().value().orElse("").equals("Constant frequency") == false) {
                                     this.changeControlMode();
                                 }
                                 break;
                             case MIN_MOTOR_CURVE:
-                                if (this.pumpChannels.getActualControlMode().value().orElse("").equals("Constant frequency - Min") == false) {
+                                if (this.pumpChannels.getControlModeStringChannel().value().orElse("").equals("Constant frequency - Min") == false) {
                                     this.changeControlMode();
                                 }
                                 break;
                             case MAX_MOTOR_CURVE:
-                                if (this.pumpChannels.getActualControlMode().value().orElse("").equals("Constant frequency - Max") == false) {
+                                if (this.pumpChannels.getControlModeStringChannel().value().orElse("").equals("Constant frequency - Max") == false) {
                                     this.changeControlMode();
                                 }
                                 break;
                             case AUTO_ADAPT:
-                                if (this.pumpChannels.getActualControlMode().value().orElse("").equals("AutoAdapt or FlowAdapt") == false) {
+                                if (this.pumpChannels.getControlModeStringChannel().value().orElse("").equals("AutoAdapt or FlowAdapt") == false) {
                                     this.changeControlMode();
                                 }
                                 break;
@@ -288,7 +288,7 @@ public class PumpGrundfosControllerImpl extends AbstractOpenemsComponent impleme
                             case AUTO_ADAPT:
                                 break;
                             case CONST_FREQUENCY:
-                                double minFrequencySetpoint = this.pumpChannels.setFmin().value().orElse(0.0);
+                                double minFrequencySetpoint = this.pumpChannels.getFminChannel().value().orElse(0.0);
                                 ;
                                 if (this.frequencySetpoint < minFrequencySetpoint) {
                                     this.frequencySetpoint = minFrequencySetpoint;
@@ -365,8 +365,8 @@ public class PumpGrundfosControllerImpl extends AbstractOpenemsComponent impleme
     private void channelOutput() {
         double motorSpeedPercent = 0;
         boolean motorSpeedValueAvailable = false;
-        if (this.pumpChannels.getMotorFrequencyChannel().value().isDefined() && this.pumpChannels.setFupper().value().isDefined()) {
-            double maxFrequency = this.pumpChannels.setFupper().value().get();
+        if (this.pumpChannels.getMotorFrequencyChannel().value().isDefined() && this.pumpChannels.getFupperChannel().value().isDefined()) {
+            double maxFrequency = this.pumpChannels.getFupperChannel().value().get();
             if (maxFrequency > 0) {
                 motorSpeedPercent = 100 * this.pumpChannels.getMotorFrequencyChannel().value().get() / maxFrequency;
                 motorSpeedValueAvailable = true;
@@ -402,9 +402,9 @@ public class PumpGrundfosControllerImpl extends AbstractOpenemsComponent impleme
         this.logInfo(this.log, "Pump max pressure: " + this.formatter2.format(this.pumpChannels.setMaxPressure().value().orElse(0.0)) + " bar or "
                 + this.formatter2.format(this.pumpChannels.setMaxPressure().value().orElse(0.0) * 10) + " m");
         this.logInfo(this.log, "Pump flow: " + this.formatter2.format(this.pumpChannels.getPercolationChannel().value().orElse(0.0)) + " m³/h");
-        this.logInfo(this.log, "Pump flow max: " + this.formatter2.format(this.pumpChannels.setPumpMaxFlow().value().orElse(0.0)) + " m³/h");
+        this.logInfo(this.log, "Pump flow max: " + this.formatter2.format(this.pumpChannels.getPumpMaxFlowChannel().value().orElse(0.0)) + " m³/h");
         this.logInfo(this.log, "Pumped medium temperature: " + this.formatter1.format(this.pumpChannels.getPumpedFluidTemperatureChannel().value().orElse(0.0) / 10) + "°C");
-        this.logInfo(this.log, "Control mode: " + this.pumpChannels.getActualControlMode().value().get());
+        this.logInfo(this.log, "Control mode: " + this.pumpChannels.getControlModeStringChannel().value().get());
         //this.logInfo(this.log, pumpChannels.getControlSource().value().orElse("Command source:"));
         ////this.logInfo(this.log, "Buffer length: " + pumpChannels.getBufferLength().value().get());
         //this.logInfo(this.log, "AlarmCode: " + pumpChannels.getAlarmCode().value().get());

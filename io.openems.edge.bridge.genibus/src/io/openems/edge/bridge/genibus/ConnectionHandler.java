@@ -12,13 +12,6 @@ import java.util.List;
 import io.openems.edge.bridge.genibus.api.PumpDevice;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-/*
-import org.openmuc.jrxtx.DataBits;
-import org.openmuc.jrxtx.Parity;
-import org.openmuc.jrxtx.SerialPort;
-import org.openmuc.jrxtx.SerialPortBuilder;
-import org.openmuc.jrxtx.StopBits;
-*/
 import com.fazecast.jSerialComm.SerialPort;
 
 import io.openems.edge.bridge.genibus.protocol.Telegram;

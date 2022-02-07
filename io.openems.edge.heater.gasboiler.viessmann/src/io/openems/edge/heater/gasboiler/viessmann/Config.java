@@ -2,15 +2,12 @@ package io.openems.edge.heater.gasboiler.viessmann;
 
 import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
-import org.osgi.service.metatype.annotations.Option;
 
 @ObjectClassDefinition(
-        name = "GasBoiler Viessmann",
+        name = "Heater Gasboiler Viessmann",
         description = "A Gasboiler provided by Viessmann, communicating via ModbusTCP."
 )
 @interface Config {
-
-    String service_pid();
 
     @AttributeDefinition(name = "GasBoiler-Device ID", description = "Unique Id of the GasBoiler.")
     String id() default "GasBoiler0";
@@ -55,7 +52,6 @@ import org.osgi.service.metatype.annotations.Option;
     boolean printInfoToLog() default false;
 
     boolean enabled() default true;
-
 
     String webconsole_configurationFactory_nameHint() default "Heater Gas Boiler Viessmann [{id}]";
 
