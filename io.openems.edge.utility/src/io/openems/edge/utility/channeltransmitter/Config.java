@@ -1,5 +1,6 @@
 package io.openems.edge.utility.channeltransmitter;
 
+import io.openems.edge.utility.api.InputOutputType;
 import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
