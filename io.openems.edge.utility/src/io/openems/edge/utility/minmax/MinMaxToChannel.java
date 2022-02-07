@@ -8,10 +8,8 @@ import io.openems.edge.common.component.AbstractOpenemsComponent;
 import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.common.event.EdgeEventConstants;
-import io.openems.edge.utility.api.MaxRoutine;
+import io.openems.edge.common.type.TypeUtils;
 import io.openems.edge.utility.api.MinMax;
-import io.openems.edge.utility.api.MinMaxRoutine;
-import io.openems.edge.utility.api.MinRoutine;
 import org.osgi.service.component.ComponentContext;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
@@ -57,9 +55,10 @@ public class MinMaxToChannel extends AbstractOpenemsComponent implements Openems
     @Reference
     ComponentManager cpm;
 
-    private MinMaxRoutine minMax;
     private List<ChannelAddress> channelAddresses;
     private List<ChannelAddress> response;
+    private MinMax minMax;
+    private int minMaxToWrite;
 
     public MinMaxToChannel() {
         super(ChannelId.values());
@@ -70,15 +69,7 @@ public class MinMaxToChannel extends AbstractOpenemsComponent implements Openems
         super.activate(context, config.id(), config.alias(), config.enabled());
         this.channelAddresses = this.channelStringsToAddress(Arrays.asList(config.inputChannel()));
         this.response = this.channelStringsToAddress(Arrays.asList(config.responseChannel()));
-
-        switch (config.minOrMax()) {
-            case MIN:
-                this.minMax = new MinRoutine();
-                break;
-            case MAX:
-                this.minMax = new MaxRoutine();
-                break;
-        }
+        this.minMax = config.minOrMax();
 
     }
 
@@ -117,15 +108,8 @@ public class MinMaxToChannel extends AbstractOpenemsComponent implements Openems
         this.response.clear();
         this.channelAddresses = this.channelStringsToAddress(Arrays.asList(config.inputChannel()));
         this.response = this.channelStringsToAddress(Arrays.asList(config.responseChannel()));
+        this.minMax = config.minOrMax();
 
-        switch (config.minOrMax()) {
-            case MIN:
-                this.minMax = new MinRoutine();
-                break;
-            case MAX:
-                this.minMax = new MaxRoutine();
-                break;
-        }
     }
 
     @Deactivate
@@ -144,7 +128,17 @@ public class MinMaxToChannel extends AbstractOpenemsComponent implements Openems
             if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS)) {
                 try {
                     List<Integer> values = this.getIntegerValuesFromAddresses();
-                    int minMaxToWrite = this.minMax.executeRoutine(values);
+                    Integer[] arrayValues = (Integer[]) this.getIntegerValuesFromAddresses().toArray();
+                    int minMaxToWrite = 0;
+                    switch (this.minMax) {
+                        case MIN:
+                            minMaxToWrite = TypeUtils.max(arrayValues);
+                            break;
+                        default:
+                        case MAX:
+                            minMaxToWrite = TypeUtils.min(arrayValues);
+                            break;
+                    }
                     this.writeValueToResponseChannel(minMaxToWrite);
                 } catch (OpenemsError.OpenemsNamedException e) {
                     this.logger.warn("Couldn't access Channel in " + super.id());
@@ -156,10 +150,11 @@ public class MinMaxToChannel extends AbstractOpenemsComponent implements Openems
     /**
      * This will be called in the handleEvent method and writes the Min/Max Value into the responseChannel.
      *
-     * @param minMaxToWrite the value determined by the {@link MinMaxRoutine}
+     * @param minMaxToWrite the value determined by the {@link TypeUtils#min(Integer...)} or {@link TypeUtils#max(Integer...)}.
      * @throws OpenemsError.OpenemsNamedException if write fails
      */
     private void writeValueToResponseChannel(int minMaxToWrite) throws OpenemsError.OpenemsNamedException {
+        this.minMaxToWrite = minMaxToWrite;
         OpenemsError.OpenemsNamedException[] ex = {null};
         this.response.forEach(entry -> {
             if (ex[0] == null) {

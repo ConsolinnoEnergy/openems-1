@@ -9,6 +9,7 @@ import io.openems.edge.common.channel.WriteChannel;
 import io.openems.edge.common.component.AbstractOpenemsComponent;
 import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
+import io.openems.edge.common.type.TypeUtils;
 import io.openems.edge.controller.api.Controller;
 import io.openems.edge.controller.heatnetwork.apartmentmodule.api.ControllerHeatingApartmentModule;
 import io.openems.edge.controller.heatnetwork.apartmentmodule.api.ApartmentModuleControllerState;
@@ -19,8 +20,6 @@ import io.openems.edge.thermometer.api.Thermometer;
 import io.openems.edge.thermometer.api.ThermometerThreshold;
 import io.openems.edge.timer.api.TimerHandler;
 import io.openems.edge.timer.api.TimerHandlerImpl;
-import io.openems.edge.utility.api.MinMaxRoutine;
-import io.openems.edge.utility.api.MinRoutine;
 import org.osgi.service.cm.ConfigurationException;
 import org.osgi.service.component.ComponentContext;
 import org.osgi.service.component.annotations.Activate;
@@ -71,7 +70,6 @@ public class ControllerHeatingApartmentModuleImpl extends AbstractOpenemsCompone
     private static final String THRESHOLD = "THRESHOLD";
     private static final String HEAT_BOOSTER = "HEAT_BOOSTER";
     private final Logger log = LoggerFactory.getLogger(ControllerHeatingApartmentModuleImpl.class);
-    private final MinMaxRoutine minMaxRoutine = new MinRoutine();
 
     private static final String CONFIGURATION_SPLITTER = ":";
 
@@ -462,8 +460,7 @@ public class ControllerHeatingApartmentModuleImpl extends AbstractOpenemsCompone
             value.forEach(thermometer -> thermometerChannelList.add(thermometer.getTemperature().orElse(Integer.MAX_VALUE)));
             this.apartmentCords.get(key).stream().filter(ApartmentModule::isTopAm).findFirst().ifPresent(topAm -> {
                 try {
-                    topAm.getReferenceTemperatureChannel().setNextWriteValueFromObject(this.minMaxRoutine.executeRoutine(thermometerChannelList));
-                    ;
+                    topAm.getReferenceTemperatureChannel().setNextWriteValueFromObject(TypeUtils.max((Integer[]) thermometerChannelList.toArray()));
                 } catch (OpenemsError.OpenemsNamedException e) {
                     this.log.warn("Couldn't apply min value to TopAm of cord " + key);
                 }

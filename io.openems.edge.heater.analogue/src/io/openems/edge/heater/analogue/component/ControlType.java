@@ -1,4 +1,4 @@
-package io.openems.edge.heater.analogue;
+package io.openems.edge.heater.analogue.component;
 
 /**
  * The ControlType. Determines which Channel for a new SetPoint PowerValue will be checked, as well as

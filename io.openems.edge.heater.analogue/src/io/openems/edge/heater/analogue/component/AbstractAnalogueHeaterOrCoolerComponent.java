@@ -5,7 +5,6 @@ import io.openems.common.types.ChannelAddress;
 import io.openems.edge.common.channel.Channel;
 import io.openems.edge.common.channel.WriteChannel;
 import io.openems.edge.common.component.ComponentManager;
-import io.openems.edge.heater.analogue.ControlType;
 
 /**
  * The AbstractAnalogueHeaterComponent. This Component is a HelperClass for the {@link io.openems.edge.heater.analogue.AnalogueHeater}
@@ -46,7 +45,7 @@ public abstract class AbstractAnalogueHeaterOrCoolerComponent implements Analogu
 
     /**
      * Starts the Heating Process with a given PowerValue. This can either be percent or a KW value depending on the
-     * {@link io.openems.edge.heater.analogue.ControlType}.
+     * {@link ControlType}.
      *
      * @param powerToApply the powerValue that will be applied
      * @throws OpenemsError.OpenemsNamedException if the ChannelAddress couldn't be found
