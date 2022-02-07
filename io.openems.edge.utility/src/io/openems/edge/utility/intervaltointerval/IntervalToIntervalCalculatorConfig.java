@@ -1,52 +1,50 @@
 package io.openems.edge.utility.intervaltointerval;
 
-import io.openems.edge.utility.api.CalculationType;
+import io.openems.edge.utility.api.InputOutputType;
+import io.openems.edge.utility.api.RepresentationType;
 import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
-@ObjectClassDefinition(name = "Utility Calculator IntervalToInterval", description = "A Calculator used to Map an Interval [a;b] to another Interval [c;d]."
-        + " This Calculator gets an input Channel, a Range of the input Values for Interval [a;b] as well as [c;d]"
-        + "and calculates depending on the needed OutputValue an adapted OutputValue to another [a;b] [c;d]")
+@ObjectClassDefinition(name = "Utility Calculator IntervalToInterval", description = "A Calculator used to map a Value from an Interval A"
+        + " to another Interval B. Or Vice Versa depending on Configuration -> RepresentationType")
 @interface IntervalToIntervalCalculatorConfig {
 
     String service_pid();
 
-    @AttributeDefinition(name = "Id", description = "Unique Id for the .")
-    String id() default "";
+    @AttributeDefinition(name = "Id", description = "Unique Id for the Component.")
+    String id() default "IntervalToIntervalCalculator";
 
-    @AttributeDefinition(name = "Alias", description = "Human readable name of this Configurator.")
+    @AttributeDefinition(name = "Alias", description = "Human readable name of this Component.")
     String alias() default "";
 
-    @AttributeDefinition(name = "Input Channel", description = "The Input Channel Address.")
-    String inputChannelAddress() default "VirtualChannel0/VirtualDouble";
+    @AttributeDefinition(name = "Input Channel Address", description = "The Input Channel Address.")
+    String inputChannelAddress() default "Aio0/AioInput";
 
-    @AttributeDefinition(name = "Input Min Value", description = "The Minimum Value of Interval A.")
+    @AttributeDefinition(name = "InputType", description = "Get the Value, nextValue or nextWriteValue")
+    InputOutputType inputType() default InputOutputType.VALUE;
+
+    @AttributeDefinition(name = "Interval A Min Value", description = "The Minimum Value of Interval A.")
     double inputMinIntervalA() default 4;
 
-    @AttributeDefinition(name = "Input Max Value", description = "The Maximum Value of Interval A.")
+    @AttributeDefinition(name = "Interval A Max Value", description = "The Maximum Value of Interval A")
     double inputMaxIntervalA() default 20;
 
-    @AttributeDefinition(name = "Input Min Percent", description = "The Minimum Value of Interval B")
-    double inputMinIntervalB() default 50;
-    @AttributeDefinition(name = "Input Min Percent", description = "The Maximum Value of Interval B")
-    double inputMaxIntervalB() default 50;
+    @AttributeDefinition(name = "Interval B Min Value", description = "The Minimum Value of Interval B")
+    double inputMinIntervalB() default -5;
 
-    @AttributeDefinition(name = "Input Calculation Type", description = "Is the Input a Value or a Percentage Value.")
-    CalculationType inputCalculationType() default CalculationType.VALUE_FROM_INTERVAL_B;
+    @AttributeDefinition(name = "Interval B Max Value", description = "The Maximum Value of Interval B")
+    double inputMaxIntervalB() default 5;
 
-    @AttributeDefinition(name = "Output Channel", description = "The Output Channel Address.")
+    @AttributeDefinition(name = "Output Channel Address", description = "The Output Channel Address where the Result of the Calculation will be stored.")
     String outputChannelAddress() default "VirtualChannel0/VirtualDouble";
 
-    double outputMin();
+    @AttributeDefinition(name = "InputType", description = "Get the Value, nextValue or nextWriteValue")
+    InputOutputType outputType() default InputOutputType.NEXT_WRITE_VALUE;
 
-    double outputMax();
-
-    double outputMinPercent();
-
-    CalculationType outputCalculationType() default CalculationType.VALUE_FROM_INTERVAL_B;
-
+    @AttributeDefinition(name = "InputValue belongs to Interval A_Or_B", description = "Is the InputValue from Interval A or B.")
+    RepresentationType representationType() default RepresentationType.VALUE_FROM_INTERVAL_A;
 
     boolean enabled() default true;
 
-    String webconsole_configurationFactory_nameHint() default "Calculator RuleOfThree {id}";
+    String webconsole_configurationFactory_nameHint() default "Calculator IntervalToInterval {id}";
 }

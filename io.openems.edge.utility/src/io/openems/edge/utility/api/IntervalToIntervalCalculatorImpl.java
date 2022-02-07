@@ -2,52 +2,73 @@ package io.openems.edge.utility.api;
 
 
 /**
- * The Implementation of an advanced RuleOfThree Calculator,
- * that can calculate a RuleOfThree by having different min and Max values as well as another minPercentage.
- * Use this if you want to calculate RuleOfThrees by yourself.
- * This class uses {@link IntervalToIntervalHelperCalculator}'s to calculate adapted Percentage values or "V" Values (V/P = G / 100)
+ * The Implementation of an IntervalToIntervalCalculator.
+ * Use this if you want to calculate a Mapping of an Interval to another Interval.
  */
 public class IntervalToIntervalCalculatorImpl implements IntervalToIntervalCalculator {
 
-    private final IntervalToIntervalHelperCalculator valueCalculator = new IntervalToIntervalHelperCalculatorImpl();
 
     /**
      * Calculates a Value depending on the CalculationType.
      *
-     * @param calculationType   the CalculationType (is incoming input a Percent Value or a "V" Value.
-     * @param minValueIntervalA the min Value in this Value Range.
-     * @param maxValueIntervalA the max Value in this Value Range.
-     * @param minValueIntervalB the minimum Percentage Value.
-     * @param maxValueIntervalB the maximum Percentage Value.
-     * @param input             the input, either Percent or a "V" Value depending on the calculation type.
-     * @return the adapted calculated Value.
+     * @param representationType the CalculationType (is incoming input from Interval A or B)
+     * @param minValueIntervalA  the min Value of Interval A
+     * @param maxValueIntervalA  the max Value of Interval A.
+     * @param minValueIntervalB  the minimum Value of Interval B.
+     * @param maxValueIntervalB  the maximum Value of Interval B.
+     * @param input              the input, either from Interval A or B.
+     * @return the adapted calculated Value corresponding to the other Interval (different to Input)
      */
 
     @Override
-    public double calculateDoubleByCalculationType(CalculationType calculationType, double minValueIntervalA, double maxValueIntervalA, double minValueIntervalB, double maxValueIntervalB, double input) {
-        switch (calculationType) {
+    public double calculateDoubleByCalculationType(RepresentationType representationType, double minValueIntervalA, double maxValueIntervalA, double minValueIntervalB, double maxValueIntervalB, double input) {
+        switch (representationType) {
             case VALUE_FROM_INTERVAL_A:
-                return this.valueCalculator.calculateIntervalValueDouble(minValueIntervalA, maxValueIntervalA, minValueIntervalB, maxValueIntervalB, input);
+                return this.calculateIntervalValueDouble(minValueIntervalA, maxValueIntervalA, minValueIntervalB, maxValueIntervalB, input);
             case VALUE_FROM_INTERVAL_B:
             default:
-                return this.valueCalculator.calculateIntervalValueDouble(minValueIntervalB, maxValueIntervalB, minValueIntervalA, maxValueIntervalA, input);
+                return this.calculateIntervalValueDouble(minValueIntervalB, maxValueIntervalB, minValueIntervalA, maxValueIntervalA, input);
         }
     }
 
     /**
      * Calculates a Value depending on the CalculationType.
      *
-     * @param calculationType the CalculationType (is incoming input a Percent Value or a "V" Value.
-     * @param minValue        the min Value in this Value Range.
-     * @param maxValue        the max Value in this Value Range.
-     * @param minPercentage   the minimum Percentage Value.
-     * @param maxPercentage   the maximum Percentage Value.
-     * @param input           the input, either Percent or a "V" Value depending on the calculation type.
-     * @return the adapted calculated Value.
+     * @param representationType the CalculationType (is incoming input from Interval A or B)
+     * @param minValueIntervalA  the min Value of Interval A
+     * @param maxValueIntervalA  the max Value of Interval A.
+     * @param minValueIntervalB  the minimum Value of Interval B.
+     * @param maxValueIntervalB  the maximum Value of Interval B.
+     * @param input              the input, either from Interval A or B.
+     * @return the adapted calculated Value corresponding to the other Interval (different to Input)
      */
 
     @Override
-    public int calculateIntByCalculationType(CalculationType calculationType, int minValue, int maxValue, int minPercentage, int maxPercentage, int input) {
-        return (int) Math.round(this.calculateDoubleByCalculationType(calculationType, minValue, maxValue, minPercentage, maxPercentage, input));
+    public int calculateIntByCalculationType(RepresentationType representationType, int minValueIntervalA, int maxValueIntervalA, int minValueIntervalB, int maxValueIntervalB, int input) {
+        return (int) Math.round(this.calculateDoubleByCalculationType(representationType, minValueIntervalA, maxValueIntervalA, minValueIntervalB, maxValueIntervalB, input));
     }
+
+    /**
+     * Calculates the function Value, depending on the Intervals A [a;b]and B[a;b].
+     * Formula: y = mx + h
+     * m = [d-c/b-a] = slope
+     * h = (bc-ad)/(b-a) = constant
+     * a = minValue
+     * b = maxValue
+     * c = minPercentage
+     * d = maxPercentage
+     *
+     * @param minValueIntervalA the minimum of the interval A.
+     * @param maxValueIntervalA the maximum of the interval A.
+     * @param minValueIntervalB the minimum of the interval B.
+     * @param maxValueIntervalB the maximum of the interval B.
+     * @param input             the Value of X.
+     * @return the function Value Y.
+     */
+    private double calculateIntervalValueDouble(double minValueIntervalA, double maxValueIntervalA, double minValueIntervalB, double maxValueIntervalB, double input) {
+        double slope = (maxValueIntervalB - minValueIntervalB) / (maxValueIntervalA - minValueIntervalA);
+        double constant = (maxValueIntervalA * minValueIntervalB - minValueIntervalA * maxValueIntervalB) / (maxValueIntervalA - minValueIntervalA);
+        return input * slope + constant;
+    }
+
 }
