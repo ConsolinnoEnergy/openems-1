@@ -11,6 +11,7 @@ import io.openems.edge.heater.analogue.component.AnalogueHeaterOrCoolerComponent
 import io.openems.edge.heater.analogue.component.AnalogueHeaterOrCoolerLucidControl;
 import io.openems.edge.heater.analogue.component.AnalogueHeaterOrCoolerPwm;
 import io.openems.edge.heater.analogue.component.AnalogueHeaterOrCoolerRelay;
+import io.openems.edge.heater.analogue.component.ControlType;
 import io.openems.edge.heater.api.Heater;
 import io.openems.edge.timer.api.TimerHandler;
 import io.openems.edge.timer.api.TimerHandlerImpl;
@@ -18,7 +19,6 @@ import org.osgi.service.cm.Configuration;
 import org.osgi.service.cm.ConfigurationAdmin;
 import org.osgi.service.cm.ConfigurationException;
 import org.osgi.service.component.ComponentContext;
-import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.event.Event;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

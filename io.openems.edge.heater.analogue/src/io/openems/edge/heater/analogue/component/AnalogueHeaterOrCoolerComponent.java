@@ -10,7 +10,7 @@ import io.openems.common.exceptions.OpenemsError;
 public interface AnalogueHeaterOrCoolerComponent {
     /**
      * Starts the Heating Process with a given PowerValue which either can be percent or a KW value depending on the
-     * {@link io.openems.edge.heater.analogue.ControlType}
+     * {@link ControlType}
      * @param powerToApply the powerValue that will be applied
      * @throws OpenemsError.OpenemsNamedException if the ChannelAddress couldn't be found
      */
