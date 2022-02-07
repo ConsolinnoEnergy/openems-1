@@ -419,6 +419,7 @@
 	io.openems.wrapper.opczip;version=snapshot,\
 	io.openems.wrapper.paho-mqttv5;version=snapshot,\
 	io.openems.wrapper.sdnotify;version=snapshot,\
+	io.openems.wrapper.snksoft;version=snapshot,\
 	joda-time;version='[2.10.8,2.10.10)',\
 	org.eclipse.paho.client.mqttv3;version='[1.2.4,1.2.5)',\
 	org.apache.commons.commons-fileupload;version='[1.4.0,1.4.1)',\
