@@ -8,7 +8,7 @@ Bundle-Version: 1.0.0.${tstamp}
 	io.openems.edge.common,\
 	io.openems.common,\
 	io.openems.wrapper.snksoft,\
-	com.fazecast.jSerialComm,\
+	com.fazecast.jSerialComm
 
 -testpath: \
 	${testpath}

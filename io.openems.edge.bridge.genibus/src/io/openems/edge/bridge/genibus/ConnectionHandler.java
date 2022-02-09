@@ -340,7 +340,11 @@ public class ConnectionHandler {
 
                 if (this.packageOK(receivedData, true)) {
                     // GENIbus requirement: wait 3 ms after reception of a telegram before sending the next one.
-                    Thread.sleep(3);
+                    try {
+                        Thread.sleep(3);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
                     if (debug) {
                         this.parent.logInfo(this.log, "CRC Check ok.");
                     }

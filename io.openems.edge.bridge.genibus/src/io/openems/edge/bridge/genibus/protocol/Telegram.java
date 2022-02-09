@@ -11,7 +11,7 @@ import io.openems.edge.bridge.genibus.api.PumpDevice;
 import io.openems.edge.bridge.genibus.api.task.GenibusTask;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-//import com.github.snksoft.crc.CRC;
+import com.github.snksoft.crc.CRC;
 
 /**
  * Class to represent a Genibus telegram.
@@ -297,11 +297,11 @@ public class Telegram {
      * @return the CRC as a byte array.
      */
     public static byte[] getCrc(byte[] bytes) {
-        //long crc = CRC.calculateCRC(CRC.Parameters.CCITT, bytes) ^ 0xFFFF;
+        long crc = CRC.calculateCRC(CRC.Parameters.CCITT, bytes) ^ 0xFFFF;
 
         byte[] ret = new byte[2];
-        //ret[1] = (byte) (crc & 0xff);
-        //ret[0] = (byte) ((crc >> 8) & 0xff);
+        ret[1] = (byte) (crc & 0xff);
+        ret[0] = (byte) ((crc >> 8) & 0xff);
 
         return ret;
     }
