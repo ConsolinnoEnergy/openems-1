@@ -1,4 +1,4 @@
-package io.openems.edge.utility.intervaltointerval;
+package io.openems.edge.utility.calculator;
 
 import io.openems.edge.utility.api.InputOutputType;
 import io.openems.edge.utility.api.RepresentationType;

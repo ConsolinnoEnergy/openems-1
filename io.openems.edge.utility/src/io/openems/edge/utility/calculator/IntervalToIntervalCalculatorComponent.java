@@ -1,4 +1,4 @@
-package io.openems.edge.utility.intervaltointerval;
+package io.openems.edge.utility.calculator;
 
 import io.openems.common.exceptions.OpenemsError;
 import io.openems.common.types.ChannelAddress;
@@ -12,7 +12,6 @@ import io.openems.edge.common.event.EdgeEventConstants;
 import io.openems.edge.common.type.TypeUtils;
 import io.openems.edge.utility.api.IntervalToIntervalCalculator;
 import io.openems.edge.utility.api.IntervalToIntervalCalculatorImpl;
-import org.osgi.service.cm.ConfigurationException;
 import org.osgi.service.component.ComponentContext;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
