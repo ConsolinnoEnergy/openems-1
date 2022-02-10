@@ -9,28 +9,16 @@ import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.utility.api.ContainsOnlyNumbers;
 import io.openems.edge.utility.api.InputOutputType;
-import org.osgi.service.cm.ConfigurationException;
 import org.osgi.service.component.ComponentContext;
 import org.osgi.service.component.annotations.Activate;
-import org.osgi.service.component.annotations.Component;
-import org.osgi.service.component.annotations.ConfigurationPolicy;
 import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Modified;
-import org.osgi.service.component.annotations.Reference;
-import org.osgi.service.component.annotations.ReferenceCardinality;
-import org.osgi.service.component.annotations.ReferencePolicy;
-import org.osgi.service.component.annotations.ReferencePolicyOption;
-import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * This abstract Class is the Parent of Calculator implementations.
@@ -39,7 +27,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * to Add either Channel or static Values to the List.
  * On Events, the children get the List of the ValueWrapper and run their calculation routine.
  * After running the Routine, they call the parent to write the result to the output channel.
- * This is done in {@link #writeToOutput(String, ComponentManager)}.
+ * This is done in {@link #writeToOutput(double, ComponentManager)}.
  */
 public abstract class AbstractCalculator extends AbstractOpenemsComponent implements OpenemsComponent {
 
@@ -89,12 +77,12 @@ public abstract class AbstractCalculator extends AbstractOpenemsComponent implem
                     boolean isSpecial = false;
                     ValueWrapper.ValueOrChannel valueOrChannel = ValueWrapper.ValueOrChannel.CHANNEL;
 
-                    if (ContainsOnlyNumbers.containsOnlyValidNumbers(valueToAdd)) {
-                        valueOrChannel = ValueWrapper.ValueOrChannel.VALUE;
-                    }
                     if (valueToAdd.startsWith(specialCharacter) && valueToAdd.length() > 1) {
                         valueToAdd = valueToAdd.substring(1);
                         isSpecial = true;
+                    }
+                    if (ContainsOnlyNumbers.containsOnlyValidNumbers(valueToAdd)) {
+                        valueOrChannel = ValueWrapper.ValueOrChannel.VALUE;
                     }
                     if (valueOrChannel.equals(ValueWrapper.ValueOrChannel.CHANNEL)) {
                         ChannelAddress address = ChannelAddress.fromString(valueToAdd);
@@ -129,7 +117,7 @@ public abstract class AbstractCalculator extends AbstractOpenemsComponent implem
      * @return true on success. False when an error occurred or when the configured NEXT_WRITE_VALUE cannot be written
      * into the output because it is not an instance of a WriteChannel
      */
-    protected boolean writeToOutput(String output, ComponentManager cpm) {
+    protected boolean writeToOutput(double output, ComponentManager cpm) {
         try {
             Channel<?> channelToWriteInto = cpm.getChannel(this.output);
             switch (this.inputOutputType) {

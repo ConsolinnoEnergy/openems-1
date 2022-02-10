@@ -3,12 +3,10 @@ package io.openems.edge.utility.calculator;
 import com.google.common.util.concurrent.AtomicDouble;
 import io.openems.common.exceptions.OpenemsError;
 import io.openems.common.types.OpenemsType;
-import io.openems.edge.common.component.AbstractOpenemsComponent;
 import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.common.event.EdgeEventConstants;
 import io.openems.edge.common.type.TypeUtils;
-import org.osgi.service.cm.ConfigurationException;
 import org.osgi.service.component.ComponentContext;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
@@ -20,8 +18,6 @@ import org.osgi.service.event.Event;
 import org.osgi.service.event.EventConstants;
 import org.osgi.service.event.EventHandler;
 import org.osgi.service.metatype.annotations.Designate;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -78,7 +74,7 @@ public class CalculatorMultiplierImpl extends AbstractCalculator implements Open
      * After the Process image -> get all existing Values from the parent.
      * If the Value is a Channel -> get the Value.
      * If the Value is a special Value -> Divide it by 1.
-     * Multiply all values up and call the parent {@link #writeToOutput(String, ComponentManager)} Method.
+     * Multiply all values up and call the parent {@link AbstractCalculator#writeToOutput(double, ComponentManager)} Method.
      *
      * @param event the OpenEMS Event. Usually {@link EdgeEventConstants#TOPIC_CYCLE_AFTER_PROCESS_IMAGE}
      */
@@ -108,13 +104,13 @@ public class CalculatorMultiplierImpl extends AbstractCalculator implements Open
                 }
                 values.add(value);
             });
-            AtomicDouble atomicDouble = new AtomicDouble(0);
+            AtomicDouble atomicDouble = new AtomicDouble(1);
             values.forEach(entry -> {
                 if (entry != null) {
                     atomicDouble.set(atomicDouble.get() * entry);
                 }
             });
-            super.writeToOutput(String.valueOf(atomicDouble.get()), this.cpm);
+            super.writeToOutput(atomicDouble.get(), this.cpm);
         }
     }
 }
