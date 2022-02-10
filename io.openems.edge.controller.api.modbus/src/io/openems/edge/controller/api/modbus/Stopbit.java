@@ -1,0 +1,24 @@
+package io.openems.edge.controller.api.modbus;
+
+import com.ghgande.j2mod.modbus.net.AbstractSerialConnection;
+
+public enum Stopbit {
+	ONE(AbstractSerialConnection.ONE_STOP_BIT), //
+	ONE_POINT_FIVE(AbstractSerialConnection.ONE_POINT_FIVE_STOP_BITS), //
+	TWO(AbstractSerialConnection.TWO_STOP_BITS); //
+
+	Stopbit(int value) {
+		this.value = value;
+	}
+
+	private int value;
+
+	/**
+	 * Gets the stop bit setting.
+	 *
+	 * @return the stop bit setting.
+	 */
+	public int getValue() {
+		return this.value;
+	}
+}

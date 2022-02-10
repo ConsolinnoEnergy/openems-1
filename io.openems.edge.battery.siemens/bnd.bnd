@@ -1,0 +1,16 @@
+Bundle-Name: OpenEMS Edge Modbus Signalsensor
+Bundle-Vendor: Consolinno Energy GmbH
+Bundle-License: https://opensource.org/licenses/EPL-2.0
+Bundle-Version: 1.0.0.${tstamp}
+Bundle-Description: \
+    This Bundle provides a Manager for a Siemens Battery.
+
+-buildpath:  \
+	${buildpath},\
+	io.openems.edge.common;version=latest,\
+    io.openems.common;version=latest,\
+    com.google.gson;version=latest,\
+    io.openems.edge.ess.api;version=latest
+
+-testpath: \
+    ${testpath}

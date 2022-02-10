@@ -1,0 +1,8 @@
+= Genibus
+
+GENIbus, the Grundfos Electronics Network Intercommunications bus is a fieldbus developed by Grundfos to
+meet the need for data transfer in all typical Grundfos motor/pump applications. In the field of Building
+Management, control of Water Purifying Plants, Water Works and Industry applications etc. Grundfos devices
+with GENIbus can be wired together in networks and integrated in automation systems.
+
+This module provides a service for connecting to, querying and writing to a Genibus pump device.

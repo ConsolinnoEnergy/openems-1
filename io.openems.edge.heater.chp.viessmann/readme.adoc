@@ -1,0 +1,10 @@
+= Chp Viessmann
+
+This module reads the most important variables available via Modbus from a Viessmann chp and maps them to OpenEMS channels. This chp does not support sending commands via Modbus. Instead, an AiO module and a relay (depending on chp model) is needed to control the chp. Just reading the chp values available from Modbus does not need these modules.
+
+The module is written to be used with the Heater interface methods. When setEnableSignal() from the Heater interface is set to true with no other parameters like setPointPowerPercent() specified, the CHP will turn on with default settings. The default settings are configurable in the config.
+
+The CHP can be controlled with setHeatingPowerSetpoint() or setElectricPowerSetpoint(). However, both are mapped to the same AiO output, so a hierarchy is needed. setHeatingPowerSetpoint() overwrites setElectricPowerSetpoint(), if both are used.
+
+setTemperatureSetpoint() and related methods are not supported by this CHP.
+

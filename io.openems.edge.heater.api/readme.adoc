@@ -1,0 +1,17 @@
+= Heater
+
+A standardized api for all devices that generate heat.
+https://github.com/OpenEMS/openems/tree/develop/io.openems.edge.heater.api[Source Code icon:github[]]
+
+
+This Nature enables the usage of a generalized Heater. You can Enable/Disable them, Set Power Level (kW or %) and get,
+depending on the Device, Information.
+Additionally, controller who are responsible for Heat/CoolingNetworks are using the heater interface to enable them.
+
+Important Note:
+The EnableSignal should only be set to true if you want to activate a Heater, and Implementations of a Heater should always
+get the NextWriteValue and reset the enableSignal. Internally (setNextValue) can be set to true/false by the heater itself.
+
+Reason: Decentralized Edge System/Local Edge Systems/ AI controlling the Edge System may want to stop a Heater, while others
+want to start it. To Prevent a priority handling, and a collision of true/false value -> only write true if you want to
+Enable the Heater otherwise write NOTHING! not even null.

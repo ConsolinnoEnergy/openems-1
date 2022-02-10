@@ -1,0 +1,4 @@
+= Apartment HuF Modbus
+
+This module maps Modbus calls to OpenEMS channels for a Apartment HuF. To Read Apartment Temperatures, Humidity and Pressure.
+

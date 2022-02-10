@@ -1,0 +1,29 @@
+= Heatnetwork Surveillance Controller
+
+This Bundle Provides a Temperature SurveillanceController, that can Control a HydraulicController and/or a Heater as a Fallback.
+
+In a Heatnetwork it may happen, that the Main Heater cannot sustain enough heat supply.
+Therefore, a FlowTemperature needs to be surveillance and compared to a reference Temperature.
+After that a Fallback solution (e.g. Fallback Heater, Fallback - Hydraulic -Line) may be enabled, it heats up the FlowTemperature and stays active until the main Heat Supply could regenerate (deactivation Temperature should be a Thermometer within a HeatStorage) The ReferenceTemperature is a Thermometer and is usually a VirtualThermometer and is set by a MinMaxComponent.
+
+By Using a ThermometerWrapper the activation and deactivation Conditions are evaluated and applied.
+The Temperature Surveillance Controller can be used for Heating or Cooling (Controller Temperature Surveillance Cooling and Controller Temperature Surveillance Heating).
+
+== Example
+
+You have a Heatsystem.
+The Heatsystem is primarily supplied by Biomassheater.
+Occasionally those Biomassheater do not supply enough heat because a lot of people need warm Water.
+Therefore, a Backup heater is installed, and should only Heat, if the FlowTemp falls below a certain SetPoint.
+however, after enabling, it should run as long as the Biomassheater could heat up the Main Heatstorage again.
+
+Disabling the Fallback Heater.
+
+For that we need 3 Thermometers, and a Heater.
+As well as some offsets.
+
+The ReferenceThermometer will be set externally e.g. a "minimum Temperature" a FlowTemperature should reach/the Storage should reach.
+The ActivationThermometer will be the Sensor for the Flow Temperature, and the Deactivation Thermometer will be any Sensor you want (preferably the top one) of the HeatStorage.
+Since the Reference Thermometer for the Activation and Deactivation are the same, you can adapt the Value with an offset.
+
+

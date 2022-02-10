@@ -1,0 +1,24 @@
+= Controller Heatnetwork HydraulicLineHeater
+
+A controller for energy optimization.
+Controller checks if a hydraulic line is warm enough if for example the decentralizedHeater wants to heat a buffer.
+There can also be a remote Signal for controlling it.
+
+== Example
+
+1. MinMax and Valve
+- You want to control a Valve within a line.
+By controlling the min and Max value.
+- Configure maxValveValue and minValveValue (You can adapt them with a controller later on)
+- set lineHeaterType to OneChannel
+- set onlyMaxMin to true
+- set valveBypass
+
+2. OneChannel
+- You want to write into any Channel
+- set LineHeaterType to OneChannel
+- set channelAddress
+
+3. Valve
+- Same as MinMax and Valve, without ticking "only MinMax"
+

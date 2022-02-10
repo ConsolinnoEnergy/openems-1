@@ -1,0 +1,25 @@
+Bundle-Name: OpenEMS Edge Simulator
+Bundle-Vendor: Consolinno Energy GmbH
+Bundle-License: https://opensource.org/licenses/EPL-2.0
+Bundle-Version: 1.0.0.${tstamp}
+Bundle-Description: \
+    This Bundle provides a lot of simulators for complex heatsystems.\
+    Containing: Thermometer, DecentralHeater, RelaysHeater, CommunicationMaster etc etc.
+
+
+-buildpath:  \
+	${buildpath},\
+	io.openems.common,\
+	io.openems.edge.common,\
+	io.openems.edge.thermometer.api,\
+	io.openems.edge.heater.api,\
+	io.openems.edge.heater.decentralized,\
+	io.openems.edge.controller.heatnetwork.multipleheatercombined,\
+	io.openems.edge.bridge.rest,\
+	io.openems.edge.controller.api,\
+	io.openems.edge.controller.heatnetwork.hydraulic.lineheater,\
+	joda-time;version=2.8.10,\
+
+-testpath: \
+	${testpath}
+

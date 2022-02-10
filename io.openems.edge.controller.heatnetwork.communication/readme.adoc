@@ -1,0 +1,88 @@
+= Communication Master
+
+The CommunicationMaster within a decentralized HeatNetwork, where one Centralized System is the main Component for communicating and reacting to HeatRequests from decentralized Systems.
+At the moment, the communication master only Supports the Communication via Rest.
+Using the RestBridge and Rest Remote Devices.
+
+== Purpose of the Controller
+
+In a Decentralized Heatnetwork, some systems asks for Heat, MoreHeat, or anything, and the Centralized system should react accordingly, depending on the Type of Request.
+Since each system is differently, you want to react dynamically.
+This goal can be reached, by having a slightly more complex configuration.
+By having this, you can set up a Complex Heatsystem where the Centralized Component can react according to any RequestType.
+The RequestTypes are stored within an Enum and can be expanded dynamically.
+
+== How to Configure the Controller
+
+Like Mentioned before, the configuration is slightly more complex.
+
+- ConnectionType: This controller only supports REST at the moment.
+- Maximum DecentralizedSystems -> how many decentralized Systems can you handle at once
+- Maximum Wait Time: Should the Maximum Decentralized Systems request should be exceeded -> they should only wait this Time amount. (e.g. after a waitTime of 30 minutes -> the Decentralized System on the waitingList should be supplied / reacted to)
+- Keep Alive: If the RestBridge shouldn't be connected / something is wrong -> enable Fallback Control after this set amount of time
+
+- RequestMap In the Request map you configure every request a certain DecentralizedComponent may have.
+This is done by Configuring RestRemoteDevices.
+One RestRemoteDevice READS the Request Channel (e.g. NeedHeat of a decentralized Heater) amd One RestRemoteDevice WRITES into a response Channel (NeedHeatEnableSignal).
+After that you need to set up an Integer.
+This Integer represents the Decentralized System!
+Meaning same Integer = Same System = All Requests from this Decentralized System count as 1 for the Maximum DecentralizedSystem.
+The Last configurationPoint is the RequestType. e.g. HEAT or MORE_HEAT.
+(Example is listed below)
+- After setting up a Request Map.
+You can setup the RequestTypeResponse.
+This means-> if a link:src/io/openems/edge/controller/heatnetwork/communication/request/api/RequestType.java[RequestType]
+was set to true of ANY decentralized System -> react in way XYZ e.g. On Request HEAT write into a ChannelAddress (CHANNEL_ADDRESS) followed by the ChannelAddress and an active, as well as an inactive value. if the inactive Value is set to null -> do nothing.
+If you want to write into a Method: type METHOD, followed by the Method Name and again an active/inactive Value. A Preset Config is set at link:src/io/openems/edge/controller/heatnetwork/communication/Config.java[here].
+Note For using methods the Components need to be configured as well!
+
+- To List at runtime what link:src/io/openems/edge/controller/heatnetwork/communication/request/api/RequestType.java[RequestType] link:src/io/openems/edge/controller/heatnetwork/communication/request/api/MethodTypes.java[MethodTypes] and link:src/io/openems/edge/controller/heatnetwork/communication/request/api/MasterResponseType.java[MasterResponseTypes] are available hit save and click the activated Controller again. The available Types should be listed in the corresponding Configuration slots.
+
+
+== EXAMPLE
+
+=== Setup
+
+You
+
+- have a Centralized System,
+and 2 Decentralized Systems. You can only supply 1 Decentralized System at once.
+- configured the Controller REST/JSON Api in the decentralized Systems and know their IP and port.
+- set up a REST Bridge for each decentralized System within the Centralized Edge System.
+- set up For Each Request and response a RestRemoteDeviceImpl
+- You have a Pump set up, a Virtual Thermometer, as well as a LineHeater active.
+- After a timeout of 100 seconds -> enable Fallback
+- A Member on the Waitinglist will be swapped after 30 minutes
+- TimerByTime is activated
+
+=== Configuration
+
+- *maxDecentralizedSystemsAllowedAtOnce* will be set to 1 since we can only supply 1 decentralized system at once
+- *timerForManager* will be set to TIME since we want to swap waiting members after 30 minutes
+- *maxWaitTimeAllowed* will be set to 30
+- *keepAlive* is set to 100, since we want to fallback after 100 seconds
+- *timerId* TimerByTime
+- *requestMap*
+RestRemoteComponent0:RestRemoteComponent1:1:HEAT
+RestRemoteComponent2:RestRemoteComponent3:1:MORE_HEAT
+RestRemoteComponent4:RestRemoteComponent5:2:HEAT
+RestRemoteComponent6:RestRemoteComponent7:2:MORE_HEAT
+
+The RestRemoteComponent 0 and 4 will monitor if the Decentralized Systems NeedHeat, 1 and 5 will set the NeedHeatEnableSignal.
+2 and 6 will monitor if the systems need MoreHeat.
+and 3 and 7 will set the NeedMoreHeatEnableSignal.
+Rest Remote Components 0-3 are used for Decentralized System 1, and Rest Remote Components 4-7 are used for Decentralized System 2.
+
+- *requestTypeToResponse* Whenever a HEAT request appears we want to enable the pump, and set a Virtual Thermometer. If MORE_HEAT is requested a LineHEater will be activated.
+
+This can be achieved by this:
+"HEAT:CHANNEL_ADDRESS:Pump0/SetPowerLevel:100:0", <- enables Pump and set the PowerLevel when a HEAT request is available via ChannelAddress
+"HEAT:CHANNEL_ADDRESS:VirtualThermometer0/VirtualTemperature:700:0", <- set a Virtual Temperature on activation via ChannelAddress
+"MORE_HEAT:METHOD:ACTIVATE_LINEHEATER:true:null",<- Enable the LineHeater via METHOD
+
+- When using a Method we need to configure the Component in this case:
+
+- *useHydraulicLineHeater* -> true
+- *hydraulicLineHeaterId* -> Id of the HydraulicLineHeater
+
+

@@ -1,0 +1,46 @@
+stages:
+  - Build
+  - Deploy
+
+variables:
+  GIT_SUBMODULE_STRATEGY: recursive
+
+
+Build oEMS Edge:
+  stage: Build
+  script:
+    - apt update
+    - apt install -y openjdk-8-jdk
+    - ./gradlew build
+    - ./gradlew buildComponents
+    - ./gradlew buildEdge
+
+
+  except:
+    - /^[a-z]*\/release\/[0-9]{1,2}.[0-9]{1,2}.[0-9]{1,2}-[0-9]{1,2}$/
+  artifacts:
+    paths:
+      - build/
+    expire_in: 1 day
+
+
+
+Deploy:
+  stage: Deploy
+  script:
+    - echo Uploading software to repo
+    - apt update
+    - apt install -y openjdk-8-jdk git
+    - apt install curl
+    - ./gradlew build
+    - ./gradlew buildEdge
+    - ./gradlew buildEdgeDeb
+    #- ./release.sh upload
+    - ./package-upload/debupload.sh testing $PWD/build/distributions/$(ls build/distributions/ | grep .*.deb)
+  only:
+    - /^[a-z]*\/release\/[0-9]{1,2}.[0-9]{1,2}.[0-9]{1,2}-[0-9]{1,2}$/
+  artifacts:
+    paths:
+      - build/
+    expire_in: 1 day
+

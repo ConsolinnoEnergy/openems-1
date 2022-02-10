@@ -1,0 +1,36 @@
+Bundle-Name: OpenEMS Edge Controller Heating Apartmentmodule
+Bundle-Vendor: Consolinno Energy GmbH
+Bundle-License: https://opensource.org/licenses/EPL-2.0
+Bundle-Version: 1.0.0.${tstamp}
+
+-buildpath:  \
+	${buildpath},\
+	io.openems.edge.common,\
+	io.openems.common,\
+	io.openems.edge.controller.api,\
+	io.openems.edge.apartmentmodule;version=latest,\
+	io.openems.edge.thermometer.api;version=latest,\
+	io.openems.edge.hydraulic;version=latest,\
+	io.openems.edge.heatsystem.components;version=latest,\
+	io.openems.edge.timer.api;version=latest,\
+	io.openems.edge.exceptionalstate.api;version=latest,\
+	io.openems.edge.utility;version=latest,\
+	joda-time,\
+
+-testpath: \
+	${testpath},\
+    io.openems.edge.apartmentmodule;version=latest,\
+	io.openems.edge.thermometer.api;version=latest,\
+	io.openems.edge.hydraulic;version=latest,\
+	io.openems.edge.heatsystem.components;version=latest,\
+	io.openems.edge.timer.api;version=latest,\
+	io.openems.edge.exceptionalstate.api;version=latest,\
+	io.openems.edge.utility;version=latest,\
+	io.openems.edge.controller.heatnetwork.hydraulic.lineheater;version=latest,\
+	io.openems.edge.io.api;version=latest,\
+    io.openems.edge.consolinno.leaflet;version=latest,\
+    joda-time,\
+
+
+
+

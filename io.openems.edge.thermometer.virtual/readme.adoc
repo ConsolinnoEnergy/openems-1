@@ -1,0 +1,12 @@
+= Thermometer Virtual
+
+This is a virtual Thermometer.
+You can set "Virtual" Thermometer Values in here and other components will see it as a normal Thermometer.
+
+You can also set up a configurable Virtual Thermometer. Where you can set up an active/Inactive Temperature.
+You can set this Thermometer to be permanent active and use a permanent active Value.
+This is useful in complex HeatSystems where some Parts should react to certain Temperatures.
+
+Implemented Natures::
+- ThermometerVirtual
+- Thermometer

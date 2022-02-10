@@ -12,67 +12,85 @@ import io.openems.edge.common.component.OpenemsComponent;
 @ProviderType
 public interface Thermometer extends OpenemsComponent {
 
-	public enum ChannelId implements io.openems.edge.common.channel.ChannelId {
-		/**
-		 * Temperature.
-		 * 
-		 * <ul>
-		 * <li>Interface: Thermometer
-		 * <li>Type: Integer
-		 * <li>Unit: degree celsius
-		 * </ul>
-		 */
-		TEMPERATURE(Doc.of(OpenemsType.INTEGER) //
-				.unit(Unit.DEZIDEGREE_CELSIUS));
+    int MISSING_TEMPERATURE = -999;
 
-		private final Doc doc;
+    public enum ChannelId implements io.openems.edge.common.channel.ChannelId {
+        /**
+         * Temperature.
+         *
+         * <ul>
+         * <li>Interface: Thermometer
+         * <li>Type: Integer
+         * <li>Unit: dezidegree celsius
+         * </ul>
+         */
+        TEMPERATURE(Doc.of(OpenemsType.INTEGER) //
+                .unit(Unit.DECIDEGREE_CELSIUS));
 
-		private ChannelId(Doc doc) {
-			this.doc = doc;
-		}
+        private final Doc doc;
 
-		@Override
-		public Doc doc() {
-			return this.doc;
-		}
-	}
+        private ChannelId(Doc doc) {
+            this.doc = doc;
+        }
 
-	/**
-	 * Gets the Channel for {@link ChannelId#TEMPERATURE}.
-	 *
-	 * @return the Channel
-	 */
-	public default IntegerReadChannel getTemperatureChannel() {
-		return this.channel(ChannelId.TEMPERATURE);
-	}
+        @Override
+        public Doc doc() {
+            return this.doc;
+        }
+    }
 
-	/**
-	 * Gets the Temperature in [deci degC]. See {@link ChannelId#TEMPERATURE}.
-	 *
-	 * @return the Channel {@link Value}
-	 */
-	public default Value<Integer> getTemperature() {
-		return this.getTemperatureChannel().value();
-	}
+    /**
+     * Gets the Channel for {@link ChannelId#TEMPERATURE}.
+     *
+     * @return the Channel
+     */
+    public default IntegerReadChannel getTemperatureChannel() {
+        return this.channel(ChannelId.TEMPERATURE);
+    }
 
-	/**
-	 * Internal method to set the 'nextValue' on {@link ChannelId#TEMPERATURE}
-	 * Channel.
-	 *
-	 * @param value the next value
-	 */
-	public default void _setTemperature(Integer value) {
-		this.getTemperatureChannel().setNextValue(value);
-	}
+    /**
+     * Gets the Temperature in [deci degC]. See {@link ChannelId#TEMPERATURE}.
+     *
+     * @return the Channel {@link Value}
+     */
+    public default Value<Integer> getTemperature() {
+        return this.getTemperatureChannel().value();
+    }
 
-	/**
-	 * Internal method to set the 'nextValue' on {@link ChannelId#TEMPERATURE}
-	 * Channel.
-	 *
-	 * @param value the next value
-	 */
-	public default void _setTemperature(int value) {
-		this.getTemperatureChannel().setNextValue(value);
-	}
+
+    /**
+     * Internal method to set the 'nextValue' on {@link ChannelId#TEMPERATURE}
+     * Channel.
+     *
+     * @param value the next value
+     */
+    public default void _setTemperature(Integer value) {
+        this.getTemperatureChannel().setNextValue(value);
+    }
+
+    /**
+     * Internal method to set the 'nextValue' on {@link ChannelId#TEMPERATURE}
+     * Channel.
+     *
+     * @param value the next value
+     */
+    public default void _setTemperature(int value) {
+        this.getTemperatureChannel().setNextValue(value);
+    }
+
+    /**
+     * Get Temperature Value as Int or return a MissingTemperature instead.
+     *
+     * @return a Temperature
+     */
+    default int getTemperatureValue() {
+        if (this.getTemperature().isDefined() && this.getTemperature().get() != MISSING_TEMPERATURE) {
+            return this.getTemperature().get();
+        } else if (this.getTemperatureChannel().getNextValue().isDefined()) {
+            return this.getTemperatureChannel().getNextValue().get();
+        } else {
+            return MISSING_TEMPERATURE;
+        }
+    }
 
 }

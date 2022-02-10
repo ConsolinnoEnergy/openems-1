@@ -41,6 +41,20 @@ public class ElementToChannelConverter {
 	public static final ElementToChannelConverter SCALE_FACTOR_MINUS_3 = new ElementToChannelScaleFactorConverter(-3);
 
 	/**
+	 * Applies a scale factor of -4. Converts value [1] to [0.0001].
+	 *
+	 * @see ElementToChannelScaleFactorConverter
+	 */
+	public static final ElementToChannelConverter SCALE_FACTOR_MINUS_4 = new ElementToChannelScaleFactorConverter(-4);
+
+	/**
+	 * Applies a scale factor of -5. Converts value [1] to [0.00001].
+	 *
+	 * @see ElementToChannelScaleFactorConverter
+	 */
+	public static final ElementToChannelConverter SCALE_FACTOR_MINUS_5 = new ElementToChannelScaleFactorConverter(-5);
+
+	/**
 	 * Applies a scale factor of 1. Converts value [1] to [10].
 	 * 
 	 * @see ElementToChannelScaleFactorConverter
@@ -60,6 +74,25 @@ public class ElementToChannelConverter {
 	 * @see ElementToChannelScaleFactorConverter
 	 */
 	public static final ElementToChannelConverter SCALE_FACTOR_3 = new ElementToChannelScaleFactorConverter(3);
+
+	/**
+	 * Applies a scale factor of 4. Converts value [1] to [10000].
+	 *
+	 * @see ElementToChannelScaleFactorConverter
+	 */
+	public static final ElementToChannelConverter SCALE_FACTOR_4 = new ElementToChannelScaleFactorConverter(4);
+
+	/**
+	 * Applies a scale factor of 5. Converts value [1] to [100000].
+	 *
+	 * @see ElementToChannelScaleFactorConverter
+	 */
+	public static final ElementToChannelConverter SCALE_FACTOR_5 = new ElementToChannelScaleFactorConverter(5);
+
+	/**
+	 * If the value of the element is 0XFFFF, writes null in the channel.
+	 */
+	public static final ElementToChannelConverter REPLACE_WITH_MINUS_ZERO_IF_0XFFFF = new ElementToChannelValueReplacer(65535, -1);
 
 	/**
 	 * Converts only positive values from Element to Channel.
@@ -203,6 +236,12 @@ public class ElementToChannelConverter {
 		return new ElementToChannelConverterChain(SCALE_FACTOR_MINUS_1, INVERT_IF_TRUE(invert));
 	}
 
+	/**
+	 * If the value of the element is 0X8000H, writes null in the channel.
+	 */
+	public static final ElementToChannelConverter REPLACE_WITH_NULL_IF_0X8000H = new ElementToChannelValueReplacer(-32768);
+	
+	
 	private final Function<Object, Object> elementToChannel;
 	private final Function<Object, Object> channelToElement;
 

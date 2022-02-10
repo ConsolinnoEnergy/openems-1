@@ -1,0 +1,26 @@
+Bundle-Name: Controller Heatnetwork Hydraulic Line Heater
+Bundle-Vendor: Consolinno Energy GmbH
+Bundle-License: https://opensource.org/licenses/EPL-2.0
+Bundle-Version: 1.0.0.${tstamp}
+
+-buildpath:  \
+	${buildpath},\
+	io.openems.common,\
+	io.openems.edge.common,\
+	io.openems.edge.controller.api,\
+	io.openems.edge.controller.debug.log,\
+	io.openems.edge.heater.api,\
+	io.openems.edge.heater.decentralized,\
+	io.openems.edge.heatsystem.components,\
+	io.openems.edge.thermometer.api,\
+	joda-time;version=latest,\
+	io.openems.edge.timer.api,\
+	io.openems.edge.exceptionalstate.api,\
+
+
+-testpath: \
+	${testpath},\
+	io.openems.edge.apartmentmodule,\
+	io.openems.edge.heater.decentralized,\
+	io.openems.edge.io.api,\
+

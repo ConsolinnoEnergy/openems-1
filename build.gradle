@@ -1,9 +1,13 @@
 plugins {
     id "com.github.node-gradle.node" version "2.2.3"
+    id "nebula.ospackage" version "8.5.0"
+    id 'com.palantir.git-version' version '0.12.3'
 }
 
-tasks.named('wrapper') {
-  jarFile = rootProject.file('.gradle-wrapper/gradle-wrapper.jar')
+apply plugin: 'nebula.deb'
+
+wrapper {
+    jarFile = rootProject.file('.gradle-wrapper/gradle-wrapper.jar')
 }
 
 /*
@@ -27,9 +31,60 @@ task buildEdge() {
         copy {
             from file("io.openems.edge.application/generated/distributions/executable/EdgeApp.jar")
             into file("${buildDir}")
-            rename ("EdgeApp.jar", "openems-edge.jar")
+            rename("EdgeApp.jar", "openems-edge.jar")
         }
+
     }
+}
+
+/*
+ * Build OpenEMS Edge fat-jar into deb
+ */
+task buildEdgeDeb(dependsOn: buildEdge, type: Deb) {
+
+    def details = versionDetails()
+    def gitTag = details.lastTag
+    println(gitTag.contains("release"))
+    if (gitTag.contains("release") && gitTag.contains("/") && gitTag.split("/").length >= 3) {
+
+        gitTag = gitTag.split("/")
+
+        println("Releasing Oems Package ${gitTag[2]}")
+
+        /* UPDATE VERSIONS HERE: */
+        version = gitTag[2].split("-")[0]
+        release = gitTag[2].split("-")[1]
+
+        packageName = "openems-${gitTag[0]}"
+        packageDescription = "Open EMS for Consolinno Leaflet"
+
+
+    } else {
+        println("No release tag found!")
+        packageName = 'openems-dev'
+        packageDescription = "DEV VERSION: Open EMS for Consolinno Leaflet"
+    }
+    requires('openjdk-8-jre')
+
+    from("${buildDir}/openems-edge.jar") {
+        into "/usr/lib/openems"
+        rename("openems-edge.jar", "openems.jar")
+    }
+
+    from("openems.service") {
+        into "/lib/systemd/system"
+    }
+
+    /* Install changelog */
+    println("Adding changelog")
+    from("debian/changelog.gz") {
+        into "/usr/share/doc/${packageName}"
+
+    }
+    preUninstall file('debian/prerm')
+    postInstall file('debian/postinst')
+    postUninstall file('debian/postrm')
+
 }
 
 /*
@@ -42,7 +97,7 @@ task buildBackend() {
         copy {
             from file("io.openems.backend.application/generated/distributions/executable/BackendApp.jar")
             into file("${buildDir}")
-            rename ("BackendApp.jar", "openems-backend.jar")
+            rename("BackendApp.jar", "openems-backend.jar")
         }
     }
 }
@@ -65,7 +120,7 @@ task buildUiForEdge() {
  * Javadoc
  */
 task buildAggregatedJavadocs(type: Javadoc, description: 'Generate javadocs from all child projects as if it was a single project', group: 'Documentation') {
-        destinationDir = file("$buildDir/www/javadoc")
+    destinationDir = file("$buildDir/www/javadoc")
     title = "OpenEMS Javadoc"
     subprojects.each { proj ->
         proj.tasks.withType(Javadoc).each { javadocTask ->
@@ -93,7 +148,7 @@ task copyBundleReadmes() {
 
         // initialize target files and directories
         [targetController, targetScheduler, targetNature, targetBridge, targetDeviceService].each { target ->
-            delete fileTree(dir: target, include: '**/*.adoc') 
+            delete fileTree(dir: target, include: '**/*.adoc')
             new File(target + "/_include.adoc").write('')
         }
 
@@ -101,40 +156,40 @@ task copyBundleReadmes() {
             // in each subproject (= bundle)...
             proj.file(".").listFiles().each { sourceFile ->
                 // find the 'readme.adoc' file
-                if(sourceFile.getName().equalsIgnoreCase("readme.adoc")) {
+                if (sourceFile.getName().equalsIgnoreCase("readme.adoc")) {
                     def bundle = sourceFile.getParentFile().getName()
                     def target = null
                     // evaluate the OpenEMS Component ('Backend' or 'Edge')
-                    if(bundle.startsWith("io.openems.edge.")) {
+                    if (bundle.startsWith("io.openems.edge.")) {
                         // evaluate the bundle type (e.g. 'Controller')
                         def edgeBundle = bundle.substring("io.openems.edge.".length())
-                        if(edgeBundle.endsWith(".api")) {
+                        if (edgeBundle.endsWith(".api")) {
                             target = targetNature
-                        } else if(edgeBundle.startsWith("controller.")) {
+                        } else if (edgeBundle.startsWith("controller.")) {
                             target = targetController
-                        } else if(edgeBundle.startsWith("scheduler.")) {
+                        } else if (edgeBundle.startsWith("scheduler.")) {
                             target = targetScheduler
-                        } else if(edgeBundle.startsWith("bridge.")) {
+                        } else if (edgeBundle.startsWith("bridge.")) {
                             target = targetBridge
                         } else {
                             target = targetDeviceService
                         }
-                    } else if(bundle.startsWith("io.openems.wrapper")) {
+                    } else if (bundle.startsWith("io.openems.wrapper")) {
                         // ignore
                         return
                     }
 
                     // could we exactly evaluate the bundle type and set the targetFile?
-                    if(target == null) {
+                    if (target == null) {
                         throw new Exception("Bundle type is unknown for " + bundle)
                     }
 
                     // copy the readme file to "target.d" folder
                     copy {
-                        from (sourceFile.toPath())
-                        into (target)
+                        from(sourceFile.toPath())
+                        into(target)
                         rename { fileName ->
-                           return bundle + ".adoc"
+                            return bundle + ".adoc"
                         }
                     }
 
