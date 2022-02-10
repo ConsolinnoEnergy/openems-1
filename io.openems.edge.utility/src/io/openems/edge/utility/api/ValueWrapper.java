@@ -1,6 +1,7 @@
-package io.openems.edge.utility.calculator;
+package io.openems.edge.utility.api;
 
 import io.openems.common.types.ChannelAddress;
+import io.openems.edge.utility.calculator.AbstractCalculator;
 
 /**
  * This class stores a Value or a ChannelAddress, depending on the {@link ValueOrChannel}.
@@ -19,7 +20,7 @@ public class ValueWrapper {
 
     private final boolean isSpecialValue;
 
-    protected static enum ValueOrChannel {
+    public enum ValueOrChannel {
         VALUE, CHANNEL
     }
 
