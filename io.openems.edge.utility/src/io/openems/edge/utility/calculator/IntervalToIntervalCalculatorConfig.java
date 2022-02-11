@@ -1,7 +1,7 @@
 package io.openems.edge.utility.calculator;
 
 import io.openems.edge.utility.api.InputOutputType;
-import io.openems.edge.utility.api.RepresentationType;
+import io.openems.edge.utility.api.IntervalToIntervalCalculator;
 import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
@@ -42,7 +42,7 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     InputOutputType outputType() default InputOutputType.NEXT_WRITE_VALUE;
 
     @AttributeDefinition(name = "InputValue belongs to Interval A_Or_B", description = "Is the InputValue from Interval A or B.")
-    RepresentationType representationType() default RepresentationType.VALUE_FROM_INTERVAL_A;
+    IntervalToIntervalCalculator.RepresentationType representationType() default IntervalToIntervalCalculator.RepresentationType.VALUE_FROM_INTERVAL_A;
 
     boolean enabled() default true;
 

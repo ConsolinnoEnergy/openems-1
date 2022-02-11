@@ -34,8 +34,13 @@ import java.util.List;
         property = EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE)
 
 public class CalculatorMultiplierImpl extends AbstractCalculator implements OpenemsComponent, EventHandler {
-
+    // A Special Character signifies, that the previous Calculation should be divided by the next incoming value.
     private static final String SPECIAL_CHARACTER = "/";
+
+    private static final double FORBIDDEN_DIVISOR = 0.d;
+
+    private static final Double INIT_VALUE = 1.d;
+
 
     @Reference
     ComponentManager cpm;
@@ -83,7 +88,7 @@ public class CalculatorMultiplierImpl extends AbstractCalculator implements Open
         if (this.isEnabled() && event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE)) {
             List<Double> values = new ArrayList<>();
             super.values.forEach(entry -> {
-                Double value = 1.d;
+                Double value = INIT_VALUE;
                 switch (entry.getType()) {
                     case VALUE:
                         value = TypeUtils.getAsType(OpenemsType.DOUBLE, entry.getValue());
@@ -99,12 +104,12 @@ public class CalculatorMultiplierImpl extends AbstractCalculator implements Open
                         }
                         break;
                 }
-                if (entry.isSpecialValue() && value != null && value != 0.d) {
+                if (entry.isSpecialValue() && value != null && value != FORBIDDEN_DIVISOR) {
                     value = 1 / value;
                 }
                 values.add(value);
             });
-            AtomicDouble atomicDouble = new AtomicDouble(1);
+            AtomicDouble atomicDouble = new AtomicDouble(INIT_VALUE);
             values.forEach(entry -> {
                 if (entry != null) {
                     atomicDouble.set(atomicDouble.get() * entry);

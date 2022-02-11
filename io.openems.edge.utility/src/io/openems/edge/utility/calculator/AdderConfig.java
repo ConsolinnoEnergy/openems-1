@@ -4,8 +4,9 @@ import io.openems.edge.utility.api.InputOutputType;
 import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
-@ObjectClassDefinition(name = "Utility Calculator Adder ", description = "This Component adds Input. Either static Values or Channel Input."
-        + "Write the Sum to a Channel Output.")
+@ObjectClassDefinition(name = "Utility Calculator Adder", description = "This Component adds up and \"x\" amount of inputs."
+        + " Either static numeric Values or Channel Inputs."
+        + " Write the result of the adding to a Channel Output.")
 @interface AdderConfig {
 
     String service_pid();
@@ -17,13 +18,14 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     String alias() default "";
 
     @AttributeDefinition(name = "Input Values", description = "Add static values or ChannelAddresses you want to sum up."
-            + "If you want to subtract a Value simply put a \"-\" in front of the input")
+            + "If you want to subtract a Value simply put a \"-\" in front of the input.")
     String[] values() default {"750", "-200", "VirtualChannel/VirtualInteger", "-VirtualChannel1/VirtualInteger"};
 
-    @AttributeDefinition(name = "Output ChannelAddress", description = "Write the Value into this Channel")
+    @AttributeDefinition(name = "Output ChannelAddress", description = "Write the result of the calculation into this Channel.")
     String outputChannel() default "VirtualChannel/VirtualDouble";
 
-    @AttributeDefinition(name = "OutputType", description = "Write the Value the nextWrite, nextValue or value (nextValue and next ProcessImage)")
+    @AttributeDefinition(name = "OutputType", description = "Set the result to: the nextWrite, nextValue or value "
+            + "(nextValue and next ProcessImage)")
     InputOutputType inputOutputType() default InputOutputType.NEXT_VALUE;
 
     boolean enabled() default true;
