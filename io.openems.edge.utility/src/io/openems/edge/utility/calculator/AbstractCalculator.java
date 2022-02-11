@@ -9,6 +9,7 @@ import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.utility.api.ContainsOnlyNumbers;
 import io.openems.edge.utility.api.InputOutputType;
+import io.openems.edge.utility.api.ValueWrapper;
 import org.osgi.service.component.ComponentContext;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Deactivate;
