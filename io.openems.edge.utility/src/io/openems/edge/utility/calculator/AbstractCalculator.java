@@ -23,7 +23,8 @@ import java.util.List;
 
 /**
  * This abstract Class is the Parent of Calculator implementations.
- * It stores a List of {@link ValueWrapper}.
+ * It stores a List of {@link ValueWrapper}. Which allow the Calculator to hold Values with certain Properties.
+ * Those Values are either ChannelAddresses or static numeric values.
  * Children call on activation or modification the {@link #addValues(String[], String, ComponentManager)} Method
  * to Add either Channel or static Values to the List.
  * On Events, the children get the List of the ValueWrapper and run their calculation routine.
@@ -62,6 +63,7 @@ public abstract class AbstractCalculator extends AbstractOpenemsComponent implem
 
     /**
      * Add the Values to the Parent Value List.
+     * If a given Value within the values Array is neither a number nor a ChannelAddress, an error will be thrown.
      *
      * @param values           the values to add. Usually from the child Config.
      * @param specialCharacter the "SpecialCharacter" is unique for the children. Children know what to do when the value is unique.
@@ -142,7 +144,7 @@ public abstract class AbstractCalculator extends AbstractOpenemsComponent implem
                     return true;
             }
         } catch (OpenemsError.OpenemsNamedException e) {
-            this.log.warn("An error occurred: " + e.getError());
+            this.log.warn(this.id() + ": An error occurred: " + e.getError());
             return false;
         }
     }

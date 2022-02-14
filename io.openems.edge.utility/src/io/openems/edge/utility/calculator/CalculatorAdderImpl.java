@@ -36,8 +36,12 @@ import java.util.List;
         property = {EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE})
 
 public class CalculatorAdderImpl extends AbstractCalculator implements OpenemsComponent, EventHandler {
-
+    // A Special Character signifies, that the Value should be subtracted, instead of added.
     private static final String SPECIAL_CHARACTER = "-";
+
+    private static final int NEGATE = -1;
+
+    private static final double INIT_VALUE = 0.d;
 
     @Reference
     ComponentManager cpm;
@@ -49,14 +53,16 @@ public class CalculatorAdderImpl extends AbstractCalculator implements OpenemsCo
 
     @Activate
     void activate(ComponentContext context, AdderConfig config) throws OpenemsError.OpenemsNamedException {
-        super.activate(context, config.id(), config.alias(), config.enabled(), config.outputChannel(), config.inputOutputType());
+        super.activate(context, config.id(), config.alias(), config.enabled(), config.outputChannel(),
+                config.inputOutputType());
         this.activationOrModifiedRoutine(config);
     }
 
 
     @Modified
     void modified(ComponentContext context, AdderConfig config) throws OpenemsError.OpenemsNamedException {
-        super.modified(context, config.id(), config.alias(), config.enabled(), config.outputChannel(), config.inputOutputType());
+        super.modified(context, config.id(), config.alias(), config.enabled(), config.outputChannel(),
+                config.inputOutputType());
         this.activationOrModifiedRoutine(config);
 
     }
@@ -74,10 +80,10 @@ public class CalculatorAdderImpl extends AbstractCalculator implements OpenemsCo
 
     /**
      * After the Process image -> get all existing Values from the parent.
-     * If the Value is a Channel -> get the Value.
+     * If the Value is a Channel -> get the Value of this channel.
      * If the Value is a special Value -> Multiply it by -1.
      * Add all values up and call the parent {@link AbstractCalculator#writeToOutput(double, ComponentManager)} Method.
-     *
+     * This will write the calculated Value to the configured output Channel.
      * @param event the OpenEMS Event. Usually {@link EdgeEventConstants#TOPIC_CYCLE_AFTER_PROCESS_IMAGE}
      */
     @Override
@@ -85,7 +91,7 @@ public class CalculatorAdderImpl extends AbstractCalculator implements OpenemsCo
         if (this.isEnabled() && event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE)) {
             List<Double> values = new ArrayList<>();
             super.values.forEach(entry -> {
-                Double value = 0.d;
+                Double value = INIT_VALUE;
                 switch (entry.getType()) {
                     case VALUE:
                         value = TypeUtils.getAsType(OpenemsType.DOUBLE, entry.getValue());
@@ -102,11 +108,11 @@ public class CalculatorAdderImpl extends AbstractCalculator implements OpenemsCo
                         break;
                 }
                 if (entry.isSpecialValue()) {
-                    value *= -1;
+                    value *= NEGATE;
                 }
                 values.add(value);
             });
-            AtomicDouble atomicDouble = new AtomicDouble(0);
+            AtomicDouble atomicDouble = new AtomicDouble(INIT_VALUE);
             values.forEach(entry -> {
                 if (entry != null) {
                     atomicDouble.getAndAdd(entry);
