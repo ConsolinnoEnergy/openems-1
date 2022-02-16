@@ -177,6 +177,7 @@ public class OptimizerImpl extends AbstractOpenemsComponent implements OpenemsCo
                 }
                 if (now.hourOfDay().get() == 0) {
                     timestamp = Integer.parseInt("0" + timestamp);
+                    this.minTime = 0;
                 }
                 timeArray[i] = Integer.parseInt(this.jsonArray.get(i).getAsJsonObject().entrySet().iterator().next().getKey());
                 if (this.minTime != DEFAULT) {
