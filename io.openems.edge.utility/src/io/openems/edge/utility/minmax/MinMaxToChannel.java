@@ -2,8 +2,10 @@ package io.openems.edge.utility.minmax;
 
 import io.openems.common.exceptions.OpenemsError;
 import io.openems.common.types.ChannelAddress;
+import io.openems.common.types.OpenemsType;
 import io.openems.edge.common.channel.Channel;
 import io.openems.edge.common.channel.WriteChannel;
+import io.openems.edge.common.channel.value.Value;
 import io.openems.edge.common.component.AbstractOpenemsComponent;
 import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
@@ -58,7 +60,6 @@ public class MinMaxToChannel extends AbstractOpenemsComponent implements Openems
     private List<ChannelAddress> channelAddresses;
     private List<ChannelAddress> response;
     private MinMax minMax;
-    private int minMaxToWrite;
 
     public MinMaxToChannel() {
         super(ChannelId.values());
@@ -153,7 +154,6 @@ public class MinMaxToChannel extends AbstractOpenemsComponent implements Openems
      * @throws OpenemsError.OpenemsNamedException if write fails
      */
     private void writeValueToResponseChannel(int minMaxToWrite) throws OpenemsError.OpenemsNamedException {
-        this.minMaxToWrite = minMaxToWrite;
         OpenemsError.OpenemsNamedException[] ex = {null};
         this.response.forEach(entry -> {
             if (ex[0] == null) {
@@ -202,7 +202,7 @@ public class MinMaxToChannel extends AbstractOpenemsComponent implements Openems
                 try {
                     Channel<?> channel = this.getChannelFromAddress(entry);
                     if (channel.value().isDefined()) {
-                        values.add((Integer) channel.value().get());
+                        values.add(TypeUtils.getAsType(OpenemsType.INTEGER,channel.value().get()));
                     }
                 } catch (OpenemsError.OpenemsNamedException e) {
                     ex[0] = e;
