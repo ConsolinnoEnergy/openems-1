@@ -14,6 +14,7 @@ import io.openems.edge.bridge.mqtt.manager.MqttSubscribeManager;
 import io.openems.edge.common.component.AbstractOpenemsComponent;
 import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
+import io.openems.edge.common.configupdate.ConfigurationUpdate;
 import io.openems.edge.common.event.EdgeEventConstants;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.joda.time.DateTime;
@@ -163,22 +164,25 @@ public class MqttBridgeImpl extends AbstractOpenemsComponent implements OpenemsC
      * Updates Config --> MqttTypes and Priorities.
      */
     private void updateConfig() {
-        Configuration c;
 
+        Map<String, Object> properties = new HashMap<>();
+        String propertyInput = Arrays.toString(MqttType.values());
+        properties.put("mqttTypes", this.propertyInput(propertyInput));
+        this.setMqttTypes().setNextValue(MqttType.values());
+        propertyInput = Arrays.toString(MqttPriority.values());
+        properties.put("mqttPriorities", this.propertyInput(propertyInput));
         try {
-            c = this.ca.getConfiguration(this.servicePid(), "?");
-            Dictionary<String, Object> properties = c.getProperties();
-            String propertyInput = Arrays.toString(MqttType.values());
-
-            properties.put("mqttTypes", this.propertyInput(propertyInput));
-            this.setMqttTypes().setNextValue(MqttType.values());
-            propertyInput = Arrays.toString(MqttPriority.values());
-            properties.put("mqttPriorities", this.propertyInput(propertyInput));
-            c.update(properties);
-
+            ConfigurationUpdate.updateConfig(this.ca, this.servicePid(), properties);
         } catch (IOException e) {
             this.log.warn("Couldn't update config, reason: " + e.getMessage());
         }
+       /* Configuration c;
+        try {
+            c = this.ca.getConfiguration(this.servicePid(), "?");
+            Dictionary<String, Object> properties = c.getProperties();
+            c.update(properties);
+
+        } */
     }
 
     /**
