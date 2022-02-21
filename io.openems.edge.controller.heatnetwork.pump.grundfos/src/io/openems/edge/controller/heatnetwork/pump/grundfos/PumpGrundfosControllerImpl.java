@@ -9,6 +9,7 @@ import io.openems.edge.controller.api.Controller;
 import io.openems.edge.controller.heatnetwork.pump.grundfos.api.ControlModeSetting;
 import io.openems.edge.controller.heatnetwork.pump.grundfos.api.PumpGrundfosController;
 import io.openems.edge.pump.grundfos.api.PumpGrundfos;
+import io.openems.edge.pump.grundfos.api.PumpMode;
 import org.osgi.service.cm.Configuration;
 import org.osgi.service.cm.ConfigurationAdmin;
 import org.osgi.service.cm.ConfigurationException;
@@ -27,37 +28,44 @@ import java.text.DecimalFormat;
 import java.util.Dictionary;
 import java.util.Optional;
 
-
 /**
- * A controller to operate a Grundfos pump via GENIbus in constant pressure mode or constant frequency mode.
- * A note on the channels: The [write] value of the channels is intended for REST/JSON writes. Doing so will copy the
- * written value into the config (so it is not reset when the software restarts) and restart the module.
- * If you want another module to send values to the pump, you can write into [next] of the channels. This will not
- * restart the module and will work just as well. Values written in that way are not saved in the config though.
- *
+ * A controller to operate a Grundfos pump via GENIbus.
+ * Changing the values of the write channels by using the setters or REST/JSON will save the new values to the appropriate
+ * config value. Updating the config will trigger a restart of the module.
  */
 @Designate(ocd = Config.class, factory = true)
 @Component(name = "Controller.Pump.Grundfos", immediate = true, configurationPolicy = ConfigurationPolicy.REQUIRE)
 public class PumpGrundfosControllerImpl extends AbstractOpenemsComponent implements Controller, OpenemsComponent, PumpGrundfosController {
 
-    private PumpGrundfos pumpChannels;
-    private Config config;
-
     @Reference
     ComponentManager cpm;
+
+    @Reference
+    ConfigurationAdmin ca;
+
+    private PumpGrundfos pumpChannels;
+    private Config config;
 
     private final Logger log = LoggerFactory.getLogger(PumpGrundfosControllerImpl.class);
     private final DecimalFormat formatter2 = new DecimalFormat("#0.00");
     private final DecimalFormat formatter1 = new DecimalFormat("#0.0");
 
-    private double setpoint = 0;
-    double pressureSetpoint;
-    double frequencySetpoint;
+    /* The pump has a setting for the min motor speed. To prevent a wonky setting disrupting pump operation, write this
+       value to the pump to ensure the range is what the code expects. You can write a value that is lower than the
+       actual minimum, but sending set points to the pump below it's actual minimum will just result in the pump running
+       at it's actual minimum speed.
+       Value 52% is from a Magna3, could be that other pumps have a different minimum speed. */
+    private static final double MIN_MOTOR_SPEED = 52.0;
+
+    private double pressureSetpointToRefRem = 0;
+    double pressureSetpoint;    // Unit of this variable is assumed to be that of channel PRESSURE_SETPOINT.
+    double motorSpeedSetpoint;  // Unit is %. So 60 means 60%.
     private ControlModeSetting controlModeSetting;
     private boolean stopPump;
-    private boolean verbose;
+    private boolean printInfoToLog;
     private boolean onlyRead;
-    private int testCounter = 0;
+    private boolean pressureSetpointCalculationDone;
+    private boolean motorSpeedClampDone;
 
     public PumpGrundfosControllerImpl() {
         super(OpenemsComponent.ChannelId.values(),
@@ -66,7 +74,7 @@ public class PumpGrundfosControllerImpl extends AbstractOpenemsComponent impleme
     }
 
     @Activate
-    public void activate(ComponentContext context, Config config) throws OpenemsError.OpenemsNamedException, ConfigurationException {
+    void activate(ComponentContext context, Config config) throws OpenemsError.OpenemsNamedException, ConfigurationException {
         super.activate(context, config.id(), config.alias(), config.enabled());
 
         this.config = config;
@@ -79,79 +87,68 @@ public class PumpGrundfosControllerImpl extends AbstractOpenemsComponent impleme
         }
 
         this.controlModeSetting = config.controlMode();
+        if (this.controlModeSetting == ControlModeSetting.UNDEFINED) {
+            this.controlModeSetting = ControlModeSetting.AUTO_ADAPT;
+            this.updateConfig();
+        }
         this.stopPump = config.stopPump();
         this.pressureSetpoint = config.pressureSetpoint();
-        this.frequencySetpoint = config.frequencySetpoint();
+        this.pressureSetpointCalculationDone = false;
+        this.motorSpeedSetpoint = config.motorSpeedSetpoint();
+        this.motorSpeedClampDone = false;
         this.onlyRead = config.onlyRead();
-        try {
-            // Fill all containers of the channels with values. This is needed since "run()" takes the "value" container
-            // of the channels.
-            setControlMode().setNextValue(this.controlModeSetting.getValue());
-            setControlMode().nextProcessImage();
-            setStopPump().setNextValue(this.stopPump);
-            setStopPump().nextProcessImage();
-            setPressureSetpoint().setNextValue(this.pressureSetpoint);
-            setPressureSetpoint().nextProcessImage();
-            setFrequencySetpoint().setNextValue(this.frequencySetpoint);
-            setFrequencySetpoint().nextProcessImage();
-            setOnlyRead().setNextValue(this.onlyRead);
-            setOnlyRead().nextProcessImage();
 
-            if (this.onlyRead == false) {
-                this.changeControlMode();
-                this.startStopPump();
-            }
+        // Set channel values.
+        _setControlMode(this.controlModeSetting);
+        _setStopPump(this.stopPump);
+        _setReadOnlySetting(this.onlyRead);
 
-        } catch (OpenemsError.OpenemsNamedException e) {
-            e.printStackTrace();
-        }
-
-        this.verbose = config.printPumpStatus();
-
+        this.printInfoToLog = config.printPumpStatus();
     }
 
     @Deactivate
-    public void deactivate() {
+    protected void deactivate() {
         super.deactivate();
     }
 
+    /**
+     * Checks the ’controlModeSetting’ variable and then sends the required commands to set the pump to this control mode.
+     *
+     * @throws OpenemsError.OpenemsNamedException on error
+     */
     private void changeControlMode() throws OpenemsError.OpenemsNamedException {
         if (this.stopPump == false) {
             switch (this.controlModeSetting) {
                 case MIN_MOTOR_CURVE:
-                    this.pumpChannels.setMinMotorCurve().setNextWriteValue(true);
+                    this.pumpChannels.setMinMotorCurve(true);
                     break;
                 case MAX_MOTOR_CURVE:
-                    this.pumpChannels.setMaxMotorCurve().setNextWriteValue(true);
+                    this.pumpChannels.setMaxMotorCurve(true);
                     break;
                 case AUTO_ADAPT:
-                    this.pumpChannels.setAutoAdapt().setNextWriteValue(true);
+                    this.pumpChannels.setAutoAdapt(true);
                     break;
                 case CONST_FREQUENCY:
-                    this.pumpChannels.setConstFrequency().setNextWriteValue(true);
-                    // Set interval to maximum. Change this if more precision is needed. Fmin minimum is 52% for MAGNA3.
-                    // You can set Fmin lower than that, but this will have no effect. Motor can't run slower than 52%.
-                    this.pumpChannels.getFminChannel().setNextWriteValue(0.52);
-                    this.pumpChannels.getFmaxChannel().setNextWriteValue(1.0);
+                    this.pumpChannels.setConstFrequency(true);
+                    // Set interval to maximum. Change this if more precision is needed.
+                    this.pumpChannels.setFmin(MIN_MOTOR_SPEED);
+                    this.pumpChannels.setFmax(100.0);
                     break;
                 case CONST_PRESSURE:
-                    this.pumpChannels.setConstPressure().setNextWriteValue(true);
-                    // Set interval to sensor interval. Change this if more precision is needed.
-                    this.pumpChannels.setConstRefMinH().setNextWriteValue(0.0);
-                    this.pumpChannels.setConstRefMaxH().setNextWriteValue(1.0);
+                    this.pumpChannels.setConstPressure(true);
+                    // Set interval to maximum. Change this if more precision is needed.
+                    this.pumpChannels.setHconstRefMin(0.0);
+                    this.pumpChannels.setHconstRefMax(100.0);
                     break;
             }
         }
     }
 
-    private void startStopPump() throws OpenemsError.OpenemsNamedException {
-        if (this.stopPump) {
-            this.pumpChannels.setStop().setNextWriteValue(true);
-        } else {
-            this.pumpChannels.setStart().setNextWriteValue(true);
-        }
-    }
-
+    /**
+     * Check if the configured pump module is enabled. If not, tries to reallocate the component.
+     *
+     * @return true if not found. False otherwise.
+     */
     private boolean componentIsMissing() {
         try {
             if (this.pumpChannels.isEnabled() == false) {
@@ -164,44 +161,27 @@ public class PumpGrundfosControllerImpl extends AbstractOpenemsComponent impleme
         }
     }
 
-    @Reference
-    ConfigurationAdmin ca;
-
+    /**
+     * Updates config values to current values.
+     */
     private void updateConfig() {
         Configuration c;
-
         try {
             c = this.ca.getConfiguration(this.servicePid(), "?");
             Dictionary<String, Object> properties = c.getProperties();
-            Optional t = this.setControlMode().getNextWriteValueAndReset();
-            if (t.isPresent()) {
-                properties.put("controlMode", t.get());
-            }
-            t = this.setStopPump().getNextWriteValueAndReset();
-            if (t.isPresent()) {
-                properties.put("stopPump", t.get());
-            }
-            t = this.setPressureSetpoint().getNextWriteValueAndReset();
-            if (t.isPresent()) {
-                properties.put("pressureSetpoint", t.get());
-            }
-            t = this.setFrequencySetpoint().getNextWriteValueAndReset();
-            if (t.isPresent()) {
-                properties.put("frequencySetpoint", t.get());
-            }
-            t = this.setOnlyRead().getNextWriteValueAndReset();
-            if (t.isPresent()) {
-                properties.put("onlyRead", t.get());
-            }
+            properties.put("controlMode", this.controlModeSetting);
+            properties.put("stopPump", this.stopPump);
+            properties.put("pressureSetpoint", this.pressureSetpoint);
+            properties.put("motorSpeedSetpoint", this.motorSpeedSetpoint);
+            properties.put("onlyRead", this.onlyRead);
             c.update(properties);
-
         } catch (IOException e) {
-            this.log.warn("Couldn't update config: " + e);
+            this.log.warn("Couldn't save new settings to config. " + e.getMessage());
         }
     }
 
     /**
-     * Gets the Commands usually from config; or REST/JSON Request and writes ReferenceValues in channels.
+     * React to writes in the channels and set the pump mode and set point.
      */
     @Override
     public void run() throws OpenemsError.OpenemsNamedException {
@@ -211,319 +191,225 @@ public class PumpGrundfosControllerImpl extends AbstractOpenemsComponent impleme
             return;
         }
 
-        // Check if something was written by REST.
-        boolean restchange = this.setControlMode().getNextWriteValue().isPresent();
-        restchange |= this.setStopPump().getNextWriteValue().isPresent();
-        restchange |= this.setPressureSetpoint().getNextWriteValue().isPresent();
-        restchange |= this.setFrequencySetpoint().getNextWriteValue().isPresent();
-        restchange |= this.setOnlyRead().getNextWriteValue().isPresent();
-        if (restchange) {
-            this.updateConfig();
-        }
+        boolean pumpOnline = this.pumpChannels.getConnectionOk().isDefined() && this.pumpChannels.getConnectionOk().get();
+        if (pumpOnline) {
 
+            if (this.onlyRead == false) {
 
-        if (this.onlyRead == false) {
-            // Puts the pump in remote mode. Send every second.
-            this.pumpChannels.setRemote().setNextWriteValue(true);
-
-            boolean channelsHaveValues = setControlMode().value().isDefined()
-                    && setStopPump().value().isDefined()
-                    && setPressureSetpoint().value().isDefined()
-                    && setFrequencySetpoint().value().isDefined()
-                    && this.pumpChannels.isConnectionOk().value().isDefined();
-            if (channelsHaveValues) {
-
-                // Copy values from channels
-                this.controlModeSetting = setControlMode().value().asEnum();
-                this.stopPump = setStopPump().value().get();
-                this.pressureSetpoint = setPressureSetpoint().value().get();
-                this.frequencySetpoint = setFrequencySetpoint().value().get();
-
-                // In case of a connection loss, all commands and configuration values need to be sent again.
-                // Because connection loss can also mean pump was turned off and restarted, or it may even be a different
-                // pump at this address.
-                if (this.pumpChannels.isConnectionOk().value().get()) {
-
-                    // Compare pump status with controller settings. Send commands if there is a difference.
-                    if (this.stopPump) {
-                        if (this.pumpChannels.getMotorFrequencyChannel().value().orElse(0.0) > 0) {
-                            this.startStopPump();
-                        }
-                    } else {
-                        if (this.pumpChannels.getMotorFrequencyChannel().value().orElse(0.0) <= 0) {
-                            this.startStopPump();
-                        }
-                        switch (this.controlModeSetting) {
-                            case CONST_PRESSURE:
-                                if (this.pumpChannels.getControlModeStringChannel().value().orElse("").equals("Constant pressure") == false) {
-                                    this.changeControlMode();
-                                }
-                                break;
-                            case CONST_FREQUENCY:
-                                if (this.pumpChannels.getControlModeStringChannel().value().orElse("").equals("Constant frequency") == false) {
-                                    this.changeControlMode();
-                                }
-                                break;
-                            case MIN_MOTOR_CURVE:
-                                if (this.pumpChannels.getControlModeStringChannel().value().orElse("").equals("Constant frequency - Min") == false) {
-                                    this.changeControlMode();
-                                }
-                                break;
-                            case MAX_MOTOR_CURVE:
-                                if (this.pumpChannels.getControlModeStringChannel().value().orElse("").equals("Constant frequency - Max") == false) {
-                                    this.changeControlMode();
-                                }
-                                break;
-                            case AUTO_ADAPT:
-                                if (this.pumpChannels.getControlModeStringChannel().value().orElse("").equals("AutoAdapt or FlowAdapt") == false) {
-                                    this.changeControlMode();
-                                }
-                                break;
-                        }
-
-                        // Send setpoint to pump, depending on control mode. Do this every cycle.
-                        switch (this.controlModeSetting) {
-                            case MIN_MOTOR_CURVE:
-                            case MAX_MOTOR_CURVE:
-                            case AUTO_ADAPT:
-                                break;
-                            case CONST_FREQUENCY:
-                                double minFrequencySetpoint = this.pumpChannels.getFminChannel().value().orElse(0.0);
-                                ;
-                                if (this.frequencySetpoint < minFrequencySetpoint) {
-                                    this.frequencySetpoint = minFrequencySetpoint;
-                                    setFrequencySetpoint().setNextWriteValue(this.frequencySetpoint);  // Update both containers to have correct values next cycle.
-                                    setFrequencySetpoint().setNextValue(this.frequencySetpoint);
-                                }
-                                if (this.frequencySetpoint > 100) {
-                                    this.frequencySetpoint = 100;
-                                    setFrequencySetpoint().setNextWriteValue(100.0);
-                                    setFrequencySetpoint().setNextValue(100.0);
-                                }
-                                this.setpoint = this.frequencySetpoint;
-                                this.pumpChannels.setRefRem().setNextWriteValue(this.setpoint);
-                                break;
-                            case CONST_PRESSURE:
-                                Unit channelUnit = setPressureSetpoint().channelDoc().getUnit();
-                                Unit sensorUnit = this.pumpChannels.getPumpDevice().getSensorUnit();
-                                int scaleFactor = channelUnit.getScaleFactor() - sensorUnit.getScaleFactor();
-                                double intervalHrange = this.pumpChannels.getPumpDevice().getPressureSensorRange() * Math.pow(10, -scaleFactor);
-                                double intervalHmin = this.pumpChannels.getPumpDevice().getPressureSensorMin() * Math.pow(10, -scaleFactor);
-
-                                // Test if INFO of pressure sensor is available. If yes, range is not 0.
-                                if (intervalHrange > 0) {
-                                    if (this.pressureSetpoint > intervalHrange + intervalHmin) {
-                                        this.logWarn(this.log, "Value for pressure setpoint = " + this.pressureSetpoint + " bar is above the interval range. "
-                                                + "Resetting to maximum valid value " + intervalHrange + intervalHmin + " bar.");
-                                        this.pressureSetpoint = intervalHrange + intervalHmin;
-                                        setPressureSetpoint().setNextWriteValue(this.pressureSetpoint);
-                                        setPressureSetpoint().setNextValue(this.pressureSetpoint);   // Need to set this, otherwise warn message is displayed twice.
-                                    }
-                                    if (this.pressureSetpoint < intervalHmin) {
-                                        this.logWarn(this.log, "Value for pressure setpoint = " + this.pressureSetpoint + " bar is below the interval range. "
-                                                + "Resetting to minimum valid value " + intervalHmin + " bar.");
-                                        this.pressureSetpoint = intervalHmin;
-                                        setPressureSetpoint().setNextWriteValue(this.pressureSetpoint);
-                                        setPressureSetpoint().setNextValue(this.pressureSetpoint);
-                                    }
-
-                                    // Don't need to convert to 0-254. The GENIbus bridge does that.
-                                    // ref_rem is a percentage value and you write the percentage in the channel. To send 100%, write 100
-                                    // to the channel.
-                                    this.setpoint = 100 * (this.pressureSetpoint - intervalHmin) / intervalHrange;
-                                    this.pumpChannels.setRefRem().setNextWriteValue(this.setpoint);
-                                } else {
-                                    this.logWarn(this.log, "Can't send pressure setpoint to pump. INFO of pressure "
-                                            + "sensor not yet available, but needed to calculate setpoint.");
-                                }
-                                break;
+                /* Collect write values. Compare with value in config and update if it is different. Updating the config
+                   restarts the module, channels are filled with new values in activate(). Call update() when all
+                   nextWrites have been collected, as module restart also means channels are initialized again, deleting
+                   all values. */
+                boolean updateConfig = false;
+                Optional<Integer> controlModeOptional = this.getControlModeChannel().getNextWriteValueAndReset();
+                if (controlModeOptional.isPresent()) {
+                    int enumAsInt = controlModeOptional.get();
+                    // Restrict to valid write values
+                    if (enumAsInt >= 0 && enumAsInt <= 4) {
+                        this.controlModeSetting = ControlModeSetting.valueOf(enumAsInt);
+                        if (this.controlModeSetting != this.config.controlMode()) {
+                            updateConfig = true;
                         }
                     }
+                }
+                Optional<Boolean> stopPumpOptional = this.getStopPumpChannel().getNextWriteValueAndReset();
+                if (stopPumpOptional.isPresent()) {
+                    this.stopPump = stopPumpOptional.get();
+                    if (this.stopPump != this.config.stopPump()) {
+                        updateConfig = true;
+                    }
+                }
+                Optional<Double> motorSpeedSetpointOptional = this.getMotorSpeedSetpointChannel().getNextWriteValueAndReset();
+                if (motorSpeedSetpointOptional.isPresent()) {
+                    this.motorSpeedSetpoint = motorSpeedSetpointOptional.get();
+                    this.motorSpeedClampDone = false;
+                }
+                if (motorSpeedClampDone == false) {
+                    this.motorSpeedClampDone = true;
+                    this.motorSpeedSetpoint = Math.max(this.motorSpeedSetpoint, MIN_MOTOR_SPEED);
+                    this.motorSpeedSetpoint = Math.min(this.motorSpeedSetpoint, 100.0);
+                    _setMotorSpeedSetpoint(this.motorSpeedSetpoint);
 
-                    if (this.verbose) {
-                        this.channelOutput();
+                    /* Compare new set point with config, to see if config value is different and needs to be updated.
+                       Set point is a double, so for comparison it should be rounded. Multiply by 1000 before rounding
+                       to keep three digits after the decimal point. Then round to a long for comparison. */
+                    long newSetpoint = Math.round(this.motorSpeedSetpoint * 1000);
+                    long oldSetpoint = Math.round(this.config.motorSpeedSetpoint() * 1000);
+                    if (newSetpoint != oldSetpoint) {
+                        updateConfig = true;
+                    }
+                }
+                Optional<Boolean> readOnlyOptional = this.getReadOnlySettingChannel().getNextWriteValueAndReset();
+                if (readOnlyOptional.isPresent()) {
+                    this.onlyRead = readOnlyOptional.get();
+                    if (this.onlyRead != this.config.onlyRead()) {
+                        updateConfig = true;
+                    }
+                }
+                Optional<Double> pressureSetpointOptional = this.getPressureSetpointChannel().getNextWriteValueAndReset();
+                if (pressureSetpointOptional.isPresent()) {
+                    this.pressureSetpoint = pressureSetpointOptional.get();
+                    this.pressureSetpointCalculationDone = false;
+                }
+
+                /* The pressure set point cannot simply be sent to Genibus. The set point value that is sent to Genibus
+                   is ref_rem, which is a percentage value [0;100]. Depending on the operating mode, ref_rem is mapped to
+                   different things. In constant pressure mode, the ref_rem is mapped to the pressure sensor range.
+                   As an example, if that pressure sensor range is [0;2] bar, the mapping would be:
+                   - ref_rem = 0 is 0 bar
+                   - ref_rem = 50 is 1 bar
+                   - ref_rem = 100 is 2 bar
+                   To convert the pressure set point from a pressure unit to a ref_rem value, you first need to read the
+                   pressure sensor range from the pump. */
+                if (this.pressureSetpointCalculationDone == false) {
+                    Unit channelUnit = getPressureSetpointChannel().channelDoc().getUnit(); // Unit of pressureSetpoint is this unit.
+                    Unit sensorUnit = this.pumpChannels.getPumpDevice().getSensorUnit();
+                    int scaleFactor = channelUnit.getScaleFactor() - sensorUnit.getScaleFactor();
+
+                    // Calculate range in unit of pressureSetpoint. Range is [intervalHmin;intervalHmin+intervalHrange].
+                    double intervalHrange = this.pumpChannels.getPumpDevice().getPressureSensorRange() * Math.pow(10, -scaleFactor);
+                    double intervalHmin = this.pumpChannels.getPumpDevice().getPressureSensorMin() * Math.pow(10, -scaleFactor);
+
+                    // Test if sensor range was received from the pump. If yes, range is bigger than 0.
+                    if (intervalHrange > 0) {
+                        this.pressureSetpointCalculationDone = true;
+
+                        if (this.pressureSetpoint > intervalHrange + intervalHmin) {
+                            this.logWarn(this.log, "Value for pressure setpoint = " + this.pressureSetpoint + " bar is above the interval range. "
+                                    + "Resetting to maximum valid value " + intervalHrange + intervalHmin + " bar.");
+                            this.pressureSetpoint = intervalHrange + intervalHmin;
+                        }
+                        if (this.pressureSetpoint < intervalHmin) {
+                            this.logWarn(this.log, "Value for pressure setpoint = " + this.pressureSetpoint + " bar is below the interval range. "
+                                    + "Resetting to minimum valid value " + intervalHmin + " bar.");
+                            this.pressureSetpoint = intervalHmin;
+                        }
+                        _setPressureSetpoint(this.pressureSetpoint);
+
+                        // ref_rem is a percentage value. To send 100%, write 100 to the channel.
+                        this.pressureSetpointToRefRem = 100 * (this.pressureSetpoint - intervalHmin) / intervalHrange;
+
+                        /* Compare new set point with config, to see if config value is different and needs to be
+                           updated. Set point is a double, so for comparison it should be rounded. Multiply by 1000
+                           before rounding to keep three digits after the decimal point. Then round to a long for
+                           comparison. */
+                        long newSetpoint = Math.round(this.pressureSetpoint * 1000);
+                        long oldSetpoint = Math.round(this.config.pressureSetpoint() * 1000);
+                        if (newSetpoint != oldSetpoint) {
+                            updateConfig = true;
+                        }
+                    }
+                }
+
+                // Puts the pump in remote mode. Send every second.
+                this.pumpChannels.setRemote(true);
+
+                // Compare pump status with controller settings. Send commands if there is a difference.
+                if (this.stopPump) {
+                    if (this.pumpChannels.getMotorFrequency().orElse(0.0) > 0) {
+                        this.pumpChannels.setStop(true);    // Stop pump.
                     }
                 } else {
-                    this.logWarn(this.log, "Warning: Pump " + this.pumpChannels.getPumpDevice().getPumpDeviceId()
-                            + " at GENIbus address " + this.pumpChannels.getPumpDevice().getGenibusAddress() + " has no connection.");
+                    if (this.pumpChannels.getMotorFrequencyChannel().value().orElse(0.0) <= 0) {
+                        this.pumpChannels.setStart(true);   // Start pump.
+                    }
+                    switch (this.controlModeSetting) {
+                        case MIN_MOTOR_CURVE:
+                            if (this.pumpChannels.getControlModeString().orElse("").equals(PumpMode.CONST_FREQU_MIN.getName()) == false) {
+                                this.changeControlMode();
+                            }
+                            break;
+                        case MAX_MOTOR_CURVE:
+                            if (this.pumpChannels.getControlModeString().orElse("").equals(PumpMode.CONST_FREQU_MAX.getName()) == false) {
+                                this.changeControlMode();
+                            }
+                            break;
+                        case AUTO_ADAPT:
+                            if (this.pumpChannels.getControlModeString().orElse("").equals(PumpMode.AUTO_ADAPT_OR_FLOW_ADAPT.getName()) == false
+                                    && this.pumpChannels.getControlModeString().orElse("").equals(PumpMode.AUTO_ADAPT.getName()) == false) {
+                                this.changeControlMode();
+                            }
+                            break;
+                        case CONST_FREQUENCY:
+                            if (this.pumpChannels.getControlModeString().orElse("").equals(PumpMode.CONST_FREQU.getName()) == false) {
+                                this.changeControlMode();
+                            }
+                            this.pumpChannels.setRefRem(this.motorSpeedSetpoint);
+                            break;
+                        case CONST_PRESSURE:
+                            if (this.pumpChannels.getControlModeString().orElse("").equals(PumpMode.CONST_PRESSURE.getName()) == false) {
+                                this.changeControlMode();
+                            }
+                            if (this.pressureSetpointCalculationDone) {
+                                this.pumpChannels.setRefRem(this.pressureSetpointToRefRem);
+                            } else {
+                                this.logWarn(this.log, "Can't send pressure set point to pump. INFO of pressure "
+                                        + "sensor not yet available, but needed to calculate set point.");
+                            }
+                            break;
+                    }
                 }
+                if (updateConfig) {
+                    this.updateConfig();
+                }
+            }
+            if (this.printInfoToLog) {
+                this.printInfo();
             }
         } else {
-            boolean pumpOnline = this.pumpChannels.isConnectionOk().value().isDefined() && this.pumpChannels.isConnectionOk().value().get();
-            if (pumpOnline) {
-                if (this.verbose) {
-                    this.channelOutput();
-                }
-            } else {
-                this.logWarn(this.log, "Warning: Pump " + this.pumpChannels.getPumpDevice().getPumpDeviceId()
-                        + " at GENIbus address " + this.pumpChannels.getPumpDevice().getGenibusAddress() + " has no connection.");
-            }
+            this.logWarn(this.log, "Warning: Pump " + this.pumpChannels.getPumpDevice().getPumpDeviceId()
+                    + " at GENIbus address " + this.pumpChannels.getPumpDevice().getGenibusAddress() + " has no connection.");
         }
-
     }
 
-    private void channelOutput() {
-        double motorSpeedPercent = 0;
-        boolean motorSpeedValueAvailable = false;
-        if (this.pumpChannels.getMotorFrequencyChannel().value().isDefined() && this.pumpChannels.getFupperChannel().value().isDefined()) {
-            double maxFrequency = this.pumpChannels.getFupperChannel().value().get();
-            if (maxFrequency > 0) {
-                motorSpeedPercent = 100 * this.pumpChannels.getMotorFrequencyChannel().value().get() / maxFrequency;
-                motorSpeedValueAvailable = true;
-            }
-        }
-
-        //this.logInfo(this.log, "--Status of pump " + pumpChannels.getPumpDevice().getPumpDeviceId() + "--");
+    /**
+     * Information that is printed to the log if ’Write pump status to log’ option is enabled.
+     * The method uses formatting because most genibus channels are of type double.
+     */
+    private void printInfo() {
+        this.logInfo(this.log, "--Status of pump " + this.pumpChannels.getPumpDevice().getPumpDeviceId() + "--");
         this.logInfo(this.log, "GENIbus address: " + this.pumpChannels.getPumpDevice().getGenibusAddress()
-                + ", product number: " + this.pumpChannels.getProductNumber().value().get() + ", "
-                + "serial number: " + this.pumpChannels.getSerialNumber().value().get());
-        this.logInfo(this.log, "Twinpump Status: " + this.pumpChannels.getTwinpumpStatusStringChannel().value().get());
-        this.logInfo(this.log, "Multipump Mode: " + this.pumpChannels.getTpModeString().value().get());
-        this.logInfo(this.log, "Power consumption: " + this.formatter2.format(this.pumpChannels.getPowerConsumptionChannel().value().orElse(0.0)) + " W");
-
-        if (motorSpeedValueAvailable) {
-            this.logInfo(this.log, "Motor speed: " + this.formatter1.format(motorSpeedPercent) + " %.");
+                + ", product number: " + this.pumpChannels.getProductNumber().get() + ", "
+                + "serial number: " + this.pumpChannels.getSerialNumber().get());
+        this.logInfo(this.log, "Power consumption: "
+                + this.formatter2.format(this.pumpChannels.getPowerConsumption().orElse(0.0))
+                + " " + this.pumpChannels.getPowerConsumptionChannel().channelDoc().getUnit().toString());
+        if (this.pumpChannels.getMotorFrequency().isDefined() && this.pumpChannels.getFupper().isDefined()) {
+            double maxFrequency = this.pumpChannels.getFupper().get();
+            if (maxFrequency > 0) {
+                double motorSpeedPercent = 100 * this.pumpChannels.getMotorFrequency().get() / maxFrequency;
+                this.logInfo(this.log, "Motor speed: " + this.formatter1.format(motorSpeedPercent) + "%");
+            }
         } else {
             this.logInfo(this.log, "Motor speed: not available");
         }
-
-        // Frequency values are probably not correct, so rather give speed %, which should be correct. Frequency values
-        // are not correct because there seems to be an error involved with their unit. Wrong frequency readout was seen
-        // on two pumps so far.
-        /*
-        //this.logInfo(this.log, "Motor frequency: " + formatter2.format(pumpChannels.getMotorFrequency().value().orElse(0.0)) + " Hz or "
-                + formatter2.format(pumpChannels.getMotorFrequency().value().orElse(0.0) * 60) + " rpm");
-        //this.logInfo(this.log, "Maximum motor frequency: " + formatter2.format(pumpChannels.setFupper().value().orElse(0.0)) + " Hz or "
-                + formatter2.format(pumpChannels.setFupper().value().orElse(0.0) * 60) + " rpm");
-        */
-
-        this.logInfo(this.log, "Pump pressure: " + this.formatter2.format(this.pumpChannels.getPressureChannel().value().orElse(0.0)) + " bar or "
-                + this.formatter2.format(this.pumpChannels.getPressureChannel().value().orElse(0.0) * 10) + " m");
-        this.logInfo(this.log, "Pump max pressure: " + this.formatter2.format(this.pumpChannels.setMaxPressure().value().orElse(0.0)) + " bar or "
-                + this.formatter2.format(this.pumpChannels.setMaxPressure().value().orElse(0.0) * 10) + " m");
-        this.logInfo(this.log, "Pump flow: " + this.formatter2.format(this.pumpChannels.getPercolationChannel().value().orElse(0.0)) + " m³/h");
-        this.logInfo(this.log, "Pump flow max: " + this.formatter2.format(this.pumpChannels.getPumpMaxFlowChannel().value().orElse(0.0)) + " m³/h");
-        this.logInfo(this.log, "Pumped medium temperature: " + this.formatter1.format(this.pumpChannels.getPumpedFluidTemperatureChannel().value().orElse(0.0) / 10) + "°C");
-        this.logInfo(this.log, "Control mode: " + this.pumpChannels.getControlModeStringChannel().value().get());
-        //this.logInfo(this.log, pumpChannels.getControlSource().value().orElse("Command source:"));
-        ////this.logInfo(this.log, "Buffer length: " + pumpChannels.getBufferLength().value().get());
-        //this.logInfo(this.log, "AlarmCode: " + pumpChannels.getAlarmCode().value().get());
-        //this.logInfo(this.log, "WarnCode: " + pumpChannels.getWarnCode().value().get());
-        //this.logInfo(this.log, "Warn message: " + pumpChannels.getWarnMessage().value().get());
-        //this.logInfo(this.log, "Alarm log1: " + pumpChannels.getAlarmLog1().value().get());
-        //this.logInfo(this.log, "Alarm log2: " + pumpChannels.getAlarmLog2().value().get());
-        //this.logInfo(this.log, "Alarm log3: " + pumpChannels.getAlarmLog3().value().get());
-        //this.logInfo(this.log, "Alarm log4: " + pumpChannels.getAlarmLog4().value().get());
-        //this.logInfo(this.log, "Alarm log5: " + pumpChannels.getAlarmLog5().value().get());
+        this.logInfo(this.log, "Pump pressure: "
+                + this.formatter2.format(this.pumpChannels.getPressure().orElse(0.0))
+                + " " + this.pumpChannels.getPressureChannel().channelDoc().getUnit().toString());
+        this.logInfo(this.log, "Pump max pressure: "
+                + this.formatter2.format(this.pumpChannels.getMaxPressure().orElse(0.0))
+                + " " + this.pumpChannels.getMaxPressureChannel().channelDoc().getUnit().toString());
+        this.logInfo(this.log, "Pump flow: "
+                + this.formatter2.format(this.pumpChannels.getPercolation().orElse(0.0))
+                + " " + this.pumpChannels.getPercolationChannel().channelDoc().getUnit().toString());
+        this.logInfo(this.log, "Pump flow max: "
+                + this.formatter2.format(this.pumpChannels.getPumpMaxFlow().orElse(0.0))
+                + " " + this.pumpChannels.getPumpMaxFlowChannel().channelDoc().getUnit().toString());
+        this.logInfo(this.log, "Pumped medium temperature: "
+                + this.formatter1.format(this.pumpChannels.getPumpedFluidTemperature().orElse(0.0))
+                + " " + this.pumpChannels.getPumpedFluidTemperatureChannel().channelDoc().getUnit().toString());
+        this.logInfo(this.log, "Control mode: " + this.pumpChannels.getControlModeString().get());
         switch (this.controlModeSetting) {
-            case MIN_MOTOR_CURVE:
-                //this.logInfo(this.log, "");
-                //this.logInfo(this.log, "Controller setpoint: min motor curve = "
-                //    + formatter2.format(pumpChannels.setFnom().value().orElse(0.0)
-                //  * pumpChannels.setFmin().value().orElse(0.0)) + " Hz or "
-                // + formatter2.format(pumpChannels.setFnom().value().orElse(0.0)
-                //* pumpChannels.setFmin().value().orElse(0.0) * 60) + " rpm.");
-                //this.logInfo(this.log, "");
-                break;
-            case MAX_MOTOR_CURVE:
-                //this.logInfo(this.log, "");
-                //this.logInfo(this.log, "Controller setpoint: max motor curve = "
-                //+ formatter2.format(pumpChannels.setFnom().value().orElse(0.0)) + " Hz or "
-                //   + formatter2.format(pumpChannels.setFnom().value().orElse(0.0) * 60) + " rpm.");
-                //this.logInfo(this.log, "");
-                break;
-            case AUTO_ADAPT:
-                //this.logInfo(this.log, "");
-                //this.logInfo(this.log, "Controller setpoint: auto adapt");
-                //this.logInfo(this.log, "");
-                break;
             case CONST_FREQUENCY:
-                //this.logInfo(this.log, "Actual setpoint (pump internal): " + formatter2.format(pumpChannels.getRefAct().value().orElse(0.0) * 100) + "% of interval range.");
-                //this.logInfo(this.log, "Motor frequency setpoint maximum: " + formatter2.format(pumpChannels.setFnom().value().orElse(0.0)) + " Hz or "
-                // + formatter2.format(pumpChannels.setFnom().value().orElse(0.0) * 60) + " rpm");
-                //this.logInfo(this.log, "Minimum pump speed: " + formatter2.format(pumpChannels.getRmin().value().orElse(0.0) * 100) + "% of maximum.");
-                //this.logInfo(this.log, "");
-                //this.logInfo(this.log, "Controller setpoint: " + frequencySetpoint + "% of " + formatter2.format(pumpChannels.setFnom().value().orElse(0.0)) + " Hz.");
-                //this.logInfo(this.log, "");
+                this.logInfo(this.log, "Pump speed set point: " + this.formatter2.format(this.motorSpeedSetpoint) + "%");
+                this.logInfo(this.log, "Minimum pump speed: "
+                        + this.formatter2.format(this.pumpChannels.getRmin().orElse(0.0)) + "%");
                 break;
             case CONST_PRESSURE:
-                //this.logInfo(this.log, "Actual setpoint (pump internal): " + formatter2.format(pumpChannels.getRefAct().value().orElse(0.0) * 100) + "% of interval range.");
-                ////this.logInfo(this.log, "Interval min (internal): " + formatter2.format(pumpChannels.getRmin().value().orElse(0.0) * 100) + "% of maximum pumping head (Förderhöhe).");
-                ////this.logInfo(this.log, "Interval max (internal): " + formatter2.format(pumpChannels.getRmax().value().orElse(0.0) * 100) + "% of maximum pumping head (Förderhöhe).");
-                //this.logInfo(this.log, "Maximum pressure setpoint: " + (pumpChannels.getPumpDevice().getPressureSensorMinBar()
-                // + pumpChannels.getPumpDevice().getPressureSensorRangeBar()) + " bar / "
-                // + (pumpChannels.getPumpDevice().getPressureSensorMinBar() + pumpChannels.getPumpDevice().getPressureSensorRangeBar()) * 10 + " m.");
-                //this.logInfo(this.log, "Minimum pressure setpoint: " + pumpChannels.getPumpDevice().getPressureSensorMinBar()
-                // + " bar / " + pumpChannels.getPumpDevice().getPressureSensorMinBar() * 10 + " m.");
-                //this.logInfo(this.log, "");
-                //this.logInfo(this.log, "Controller setpoint: " + pressureSetpoint + " bar / " + pressureSetpoint * 10 + " m or "
-                // + formatter2.format(pumpChannels.setRefRem().value().orElse(0.0) * 100) + "% of interval range.");
-                //this.logInfo(this.log, "");
+                this.logInfo(this.log, "Pressure set point: " + this.pressureSetpoint
+                        + " " + this.getPressureSetpointChannel().channelDoc().getUnit().toString());
                 break;
         }
-        ////this.logInfo(this.log, "ActMode1Bits: " + pumpChannels.getActMode1Bits().value().get());
-        ////this.logInfo(this.log, "ref_norm: " + pumpChannels.getRefNorm().value().get());
-
-
-        /*
-        //this.logInfo(this.log, "Sensor:");
-        //this.logInfo(this.log, "ana_in_1_func: " + pumpChannels.setSensor1Func().value().get());
-        //this.logInfo(this.log, "ana_in_1_applic: " + pumpChannels.setSensor1Applic().value().get());
-        //this.logInfo(this.log, "ana_in_1_unit: " + pumpChannels.setSensor1Unit().value().get());
-        //this.logInfo(this.log, "ana_in_1_min: " + pumpChannels.setSensor1Min().value().get());
-        //this.logInfo(this.log, "ana_in_1_max: " + pumpChannels.setSensor1Max().value().get());
-
-
-
-        //this.logInfo(this.log, "ref_norm: " + pumpChannels.getRefNorm().value().get());
-        //this.logInfo(this.log, "Motor frequency: " + formatter2.format(pumpChannels.getMotorFrequency().value().orElse(0.0)) + " Hz or "
-                + formatter2.format(pumpChannels.getMotorFrequency().value().orElse(0.0) * 60) + " rpm");
-        //this.logInfo(this.log, "Maximum motor frequency: " + formatter2.format(pumpChannels.setFupper().value().orElse(0.0)) + " Hz or "
-                + formatter2.format(pumpChannels.setFupper().value().orElse(0.0) * 60) + " rpm");
-        //this.logInfo(this.log, "f_upper: " + pumpChannels.setFupper().value().get());
-        //this.logInfo(this.log, "f_nom: " + pumpChannels.setFnom().value().get());
-        //this.logInfo(this.log, "f_min: " + pumpChannels.setFmin().value().get());
-        //this.logInfo(this.log, "f_max: " + pumpChannels.setFmax().value().get());
-        //this.logInfo(this.log, "h_const_ref_min: " + pumpChannels.setConstRefMinH().value().get());
-        //this.logInfo(this.log, "h_const_ref_max: " + pumpChannels.setConstRefMaxH().value().get());
-        //this.logInfo(this.log, "h_range: " + pumpChannels.setHrange().value().get());
-        //this.logInfo(this.log, "ref_rem: " + pumpChannels.setRefRem().value().get());
-        ////this.logInfo(this.log, "ref_rem write: " + pumpChannels.setRefRem().getNextWriteValue().get());
-        */
-
-
-        // Motor übertakten.
-        /*
-        try {
-            pumpChannels.setFupper().setNextWriteValue(48.0);   // Motor max Frequenz
-            pumpChannels.setFnom().setNextWriteValue(48.0);
-        } catch (OpenemsError.OpenemsNamedException e) {
-            e.printStackTrace();
-        }
-
-         */
-
-
-        // Just for testing
-        /*
-        if (testCounter == 10) {
-            try {
-                pumpChannels.setFnom().setNextWriteValue(40.0);
-            } catch (OpenemsError.OpenemsNamedException e) {
-                e.printStackTrace();
-            }
-        }
-
-        if (testCounter == 20) {
-            try {
-                pumpChannels.setFnom().setNextWriteValue(48.0);
-            } catch (OpenemsError.OpenemsNamedException e) {
-                e.printStackTrace();
-            }
-        }
-
-        testCounter++;
-        */
-
+        this.logInfo(this.log, "Warn message: " + this.pumpChannels.getWarnMessage().get());
     }
 }

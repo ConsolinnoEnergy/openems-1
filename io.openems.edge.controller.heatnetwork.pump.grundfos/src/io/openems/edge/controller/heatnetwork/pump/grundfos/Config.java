@@ -22,17 +22,17 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     @AttributeDefinition(name = "PumpId", description = "Unique Id of the Pump.")
     String pumpId() default "Pump0";
 
-    @AttributeDefinition(name = "Control mode", description = "Control mode - 'constant pressure' or 'constant frequency'")
+    @AttributeDefinition(name = "Control mode", description = "Set the pump control mode.")
     ControlModeSetting controlMode() default ControlModeSetting.CONST_PRESSURE;
 
-    @AttributeDefinition(name = "Pressure setpoint (pumping head, Förderhöhe)",
-            description = "Unit is bar. Conversion for pumping head (Förderhöhe): 1 m = 0.1 Bar. Only used when in constant pressure mode.")
+    @AttributeDefinition(name = "Pressure set point [bar]",
+            description = "Pressure setting for constant pressure mode. Only applied when pump is in constant pressure mode.")
     double pressureSetpoint() default 0.2;
 
-    @AttributeDefinition(name = "Frequency setpoint",
-            description = "Unit is percent of maximum. E.g. 100 for full speed. Can't go below minimum frequency (52%). "
-                    + "Only used when in constant frequency mode.")
-    double frequencySetpoint() default 50;
+    @AttributeDefinition(name = "Motor speed set point [%]",
+            description = "Motor speed setting for constant frequency mode. Unit is percent, so 100 means 100%. Can't go "
+                    + "below minimum speed (52%). Only used when in constant frequency mode.")
+    double motorSpeedSetpoint() default 60;
 
     @AttributeDefinition(name = "Stop the pump", description = "Stops the pump")
     boolean stopPump() default false;
