@@ -12,13 +12,6 @@ import java.util.List;
 import io.openems.edge.bridge.genibus.api.PumpDevice;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-/*
-import org.openmuc.jrxtx.DataBits;
-import org.openmuc.jrxtx.Parity;
-import org.openmuc.jrxtx.SerialPort;
-import org.openmuc.jrxtx.SerialPortBuilder;
-import org.openmuc.jrxtx.StopBits;
-*/
 import com.fazecast.jSerialComm.SerialPort;
 
 import io.openems.edge.bridge.genibus.protocol.Telegram;
@@ -347,7 +340,11 @@ public class ConnectionHandler {
 
                 if (this.packageOK(receivedData, true)) {
                     // GENIbus requirement: wait 3 ms after reception of a telegram before sending the next one.
-                    Thread.sleep(3);
+                    try {
+                        Thread.sleep(3);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
                     if (debug) {
                         this.parent.logInfo(this.log, "CRC Check ok.");
                     }

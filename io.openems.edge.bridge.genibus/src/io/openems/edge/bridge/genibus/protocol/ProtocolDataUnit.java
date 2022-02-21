@@ -120,9 +120,9 @@ public class ProtocolDataUnit {
 
                 /* The second byte of the header contains two things, APDU length and osack. Store the byte, then use
                    bitwise operators to separate the two things. */
-                byte osasklength = bytes[apduStartIndex + 1];
-                byte apduLength = (byte) (osasklength & 0x3F); // This part of the 2nd header byte is the APDU length.
-                byte osack = (byte) ((osasklength >> 6) & 0x03); // This part of the 2nd header byte is the osack.
+                byte osackAndLength = bytes[apduStartIndex + 1];
+                byte apduLength = (byte) (osackAndLength & 0x3F); // This part of the 2nd header byte is the APDU length.
+                byte osack = (byte) ((osackAndLength >> 6) & 0x03); // This part of the 2nd header byte is the osack.
 
                 applicationProgramDataUnit.setHeadOsAck(osack);
 

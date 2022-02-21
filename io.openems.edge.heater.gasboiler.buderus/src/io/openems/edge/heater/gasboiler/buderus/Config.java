@@ -10,8 +10,6 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 )
 @interface Config {
 
-    String service_pid();
-
     @AttributeDefinition(name = "Heater-Device ID", description = "Unique Id of the heater.")
     String id() default "Heater0";
 
@@ -64,7 +62,6 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     boolean printInfoToLog() default false;
 
     boolean enabled() default true;
-
 
     String webconsole_configurationFactory_nameHint() default "Heater Gas Boiler Buderus [{id}]";
 
