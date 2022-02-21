@@ -2,9 +2,11 @@ package io.openems.edge.controller.heatnetwork.pump.grundfos;
 
 import io.openems.common.channel.Unit;
 import io.openems.common.exceptions.OpenemsError;
+import io.openems.edge.common.channel.WriteChannel;
 import io.openems.edge.common.component.AbstractOpenemsComponent;
 import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
+import io.openems.edge.common.configupdate.ConfigurationUpdate;
 import io.openems.edge.controller.api.Controller;
 import io.openems.edge.controller.heatnetwork.pump.grundfos.api.ControlModeSetting;
 import io.openems.edge.controller.heatnetwork.pump.grundfos.api.PumpGrundfosController;
@@ -25,6 +27,8 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.text.DecimalFormat;
 import java.util.Dictionary;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 
 
@@ -34,13 +38,12 @@ import java.util.Optional;
  * written value into the config (so it is not reset when the software restarts) and restart the module.
  * If you want another module to send values to the pump, you can write into [next] of the channels. This will not
  * restart the module and will work just as well. Values written in that way are not saved in the config though.
- *
  */
 @Designate(ocd = Config.class, factory = true)
 @Component(name = "Controller.Pump.Grundfos", immediate = true, configurationPolicy = ConfigurationPolicy.REQUIRE)
 public class PumpGrundfosControllerImpl extends AbstractOpenemsComponent implements Controller, OpenemsComponent, PumpGrundfosController {
 
-    private PumpGrundfos pumpChannels;
+    private PumpGrundfos pumpGrundfos;
     private Config config;
 
     @Reference
@@ -58,6 +61,7 @@ public class PumpGrundfosControllerImpl extends AbstractOpenemsComponent impleme
     private boolean verbose;
     private boolean onlyRead;
     private int testCounter = 0;
+    private boolean updateDefaultConfig;
 
     public PumpGrundfosControllerImpl() {
         super(OpenemsComponent.ChannelId.values(),
@@ -73,7 +77,7 @@ public class PumpGrundfosControllerImpl extends AbstractOpenemsComponent impleme
 
         // Allocate components.
         if (this.cpm.getComponent(config.pumpId()) instanceof PumpGrundfos) {
-            this.pumpChannels = this.cpm.getComponent(config.pumpId());
+            this.pumpGrundfos = this.cpm.getComponent(config.pumpId());
         } else {
             throw new ConfigurationException("Pump not correct instance, check Id!", "Incorrect Id in Config");
         }
@@ -83,6 +87,7 @@ public class PumpGrundfosControllerImpl extends AbstractOpenemsComponent impleme
         this.pressureSetpoint = config.pressureSetpoint();
         this.frequencySetpoint = config.frequencySetpoint();
         this.onlyRead = config.onlyRead();
+        this.updateDefaultConfig = config.updateDefaultConfig();
         try {
             // Fill all containers of the channels with values. This is needed since "run()" takes the "value" container
             // of the channels.
@@ -119,26 +124,26 @@ public class PumpGrundfosControllerImpl extends AbstractOpenemsComponent impleme
         if (this.stopPump == false) {
             switch (this.controlModeSetting) {
                 case MIN_MOTOR_CURVE:
-                    this.pumpChannels.setMinMotorCurve().setNextWriteValue(true);
+                    this.pumpGrundfos.setMinMotorCurve().setNextWriteValue(true);
                     break;
                 case MAX_MOTOR_CURVE:
-                    this.pumpChannels.setMaxMotorCurve().setNextWriteValue(true);
+                    this.pumpGrundfos.setMaxMotorCurve().setNextWriteValue(true);
                     break;
                 case AUTO_ADAPT:
-                    this.pumpChannels.setAutoAdapt().setNextWriteValue(true);
+                    this.pumpGrundfos.setAutoAdapt().setNextWriteValue(true);
                     break;
                 case CONST_FREQUENCY:
-                    this.pumpChannels.setConstFrequency().setNextWriteValue(true);
+                    this.pumpGrundfos.setConstFrequency().setNextWriteValue(true);
                     // Set interval to maximum. Change this if more precision is needed. Fmin minimum is 52% for MAGNA3.
                     // You can set Fmin lower than that, but this will have no effect. Motor can't run slower than 52%.
-                    this.pumpChannels.getFminChannel().setNextWriteValue(0.52);
-                    this.pumpChannels.getFmaxChannel().setNextWriteValue(1.0);
+                    this.pumpGrundfos.getFminChannel().setNextWriteValue(0.52);
+                    this.pumpGrundfos.getFmaxChannel().setNextWriteValue(1.0);
                     break;
                 case CONST_PRESSURE:
-                    this.pumpChannels.setConstPressure().setNextWriteValue(true);
+                    this.pumpGrundfos.setConstPressure().setNextWriteValue(true);
                     // Set interval to sensor interval. Change this if more precision is needed.
-                    this.pumpChannels.setConstRefMinH().setNextWriteValue(0.0);
-                    this.pumpChannels.setConstRefMaxH().setNextWriteValue(1.0);
+                    this.pumpGrundfos.setConstRefMinH().setNextWriteValue(0.0);
+                    this.pumpGrundfos.setConstRefMaxH().setNextWriteValue(1.0);
                     break;
             }
         }
@@ -146,16 +151,16 @@ public class PumpGrundfosControllerImpl extends AbstractOpenemsComponent impleme
 
     private void startStopPump() throws OpenemsError.OpenemsNamedException {
         if (this.stopPump) {
-            this.pumpChannels.setStop().setNextWriteValue(true);
+            this.pumpGrundfos.setStop().setNextWriteValue(true);
         } else {
-            this.pumpChannels.setStart().setNextWriteValue(true);
+            this.pumpGrundfos.setStart().setNextWriteValue(true);
         }
     }
 
     private boolean componentIsMissing() {
         try {
-            if (this.pumpChannels.isEnabled() == false) {
-                this.pumpChannels = this.cpm.getComponent(this.config.pumpId());
+            if (this.pumpGrundfos.isEnabled() == false) {
+                this.pumpGrundfos = this.cpm.getComponent(this.config.pumpId());
             }
             return false;
         } catch (OpenemsError.OpenemsNamedException e) {
@@ -168,35 +173,21 @@ public class PumpGrundfosControllerImpl extends AbstractOpenemsComponent impleme
     ConfigurationAdmin ca;
 
     private void updateConfig() {
-        Configuration c;
+        Map<String, Object> valuesForConfig = new HashMap<>();
+        this.checkForDifferencesAndAddToMap("stopPump", this.stopPump, this.setStopPump(), valuesForConfig);
+        if (this.updateDefaultConfig) {
+            this.checkForDifferencesAndAddToMap("controlMode", this.controlModeSetting.getValue(), this.setControlMode(), valuesForConfig);
+            this.checkForDifferencesAndAddToMap("pressureSetpoint", this.pressureSetpoint, this.setPressureSetpoint(), valuesForConfig);
+            this.checkForDifferencesAndAddToMap("frequencySetpoint", this.frequencySetpoint, this.setFrequencySetpoint(), valuesForConfig);
+            this.checkForDifferencesAndAddToMap("onlyRead", this.onlyRead, this.setOnlyRead(), valuesForConfig);
+        }
 
-        try {
-            c = this.ca.getConfiguration(this.servicePid(), "?");
-            Dictionary<String, Object> properties = c.getProperties();
-            Optional t = this.setControlMode().getNextWriteValueAndReset();
-            if (t.isPresent()) {
-                properties.put("controlMode", t.get());
+        if (!valuesForConfig.isEmpty()) {
+            try {
+                ConfigurationUpdate.updateConfig(this.ca, this.servicePid(), valuesForConfig);
+            } catch (IOException e) {
+                this.log.warn("Couldn't update Config in: " + this.id() + " Reason: " + e.getMessage());
             }
-            t = this.setStopPump().getNextWriteValueAndReset();
-            if (t.isPresent()) {
-                properties.put("stopPump", t.get());
-            }
-            t = this.setPressureSetpoint().getNextWriteValueAndReset();
-            if (t.isPresent()) {
-                properties.put("pressureSetpoint", t.get());
-            }
-            t = this.setFrequencySetpoint().getNextWriteValueAndReset();
-            if (t.isPresent()) {
-                properties.put("frequencySetpoint", t.get());
-            }
-            t = this.setOnlyRead().getNextWriteValueAndReset();
-            if (t.isPresent()) {
-                properties.put("onlyRead", t.get());
-            }
-            c.update(properties);
-
-        } catch (IOException e) {
-            this.log.warn("Couldn't update config: " + e);
         }
     }
 
@@ -210,7 +201,6 @@ public class PumpGrundfosControllerImpl extends AbstractOpenemsComponent impleme
             this.log.warn("Missing component in: " + super.id());
             return;
         }
-
         // Check if something was written by REST.
         boolean restchange = this.setControlMode().getNextWriteValue().isPresent();
         restchange |= this.setStopPump().getNextWriteValue().isPresent();
@@ -224,13 +214,13 @@ public class PumpGrundfosControllerImpl extends AbstractOpenemsComponent impleme
 
         if (this.onlyRead == false) {
             // Puts the pump in remote mode. Send every second.
-            this.pumpChannels.setRemote().setNextWriteValue(true);
+            this.pumpGrundfos.setRemote().setNextWriteValue(true);
 
             boolean channelsHaveValues = setControlMode().value().isDefined()
                     && setStopPump().value().isDefined()
                     && setPressureSetpoint().value().isDefined()
                     && setFrequencySetpoint().value().isDefined()
-                    && this.pumpChannels.isConnectionOk().value().isDefined();
+                    && this.pumpGrundfos.isConnectionOk().value().isDefined();
             if (channelsHaveValues) {
 
                 // Copy values from channels
@@ -242,40 +232,40 @@ public class PumpGrundfosControllerImpl extends AbstractOpenemsComponent impleme
                 // In case of a connection loss, all commands and configuration values need to be sent again.
                 // Because connection loss can also mean pump was turned off and restarted, or it may even be a different
                 // pump at this address.
-                if (this.pumpChannels.isConnectionOk().value().get()) {
+                if (this.pumpGrundfos.isConnectionOk().value().get()) {
 
                     // Compare pump status with controller settings. Send commands if there is a difference.
                     if (this.stopPump) {
-                        if (this.pumpChannels.getMotorFrequencyChannel().value().orElse(0.0) > 0) {
+                        if (this.pumpGrundfos.getMotorFrequencyChannel().value().orElse(0.0) > 0) {
                             this.startStopPump();
                         }
                     } else {
-                        if (this.pumpChannels.getMotorFrequencyChannel().value().orElse(0.0) <= 0) {
+                        if (this.pumpGrundfos.getMotorFrequencyChannel().value().orElse(0.0) <= 0) {
                             this.startStopPump();
                         }
                         switch (this.controlModeSetting) {
                             case CONST_PRESSURE:
-                                if (this.pumpChannels.getControlModeStringChannel().value().orElse("").equals("Constant pressure") == false) {
+                                if (this.pumpGrundfos.getControlModeStringChannel().value().orElse("").equals("Constant pressure") == false) {
                                     this.changeControlMode();
                                 }
                                 break;
                             case CONST_FREQUENCY:
-                                if (this.pumpChannels.getControlModeStringChannel().value().orElse("").equals("Constant frequency") == false) {
+                                if (this.pumpGrundfos.getControlModeStringChannel().value().orElse("").equals("Constant frequency") == false) {
                                     this.changeControlMode();
                                 }
                                 break;
                             case MIN_MOTOR_CURVE:
-                                if (this.pumpChannels.getControlModeStringChannel().value().orElse("").equals("Constant frequency - Min") == false) {
+                                if (this.pumpGrundfos.getControlModeStringChannel().value().orElse("").equals("Constant frequency - Min") == false) {
                                     this.changeControlMode();
                                 }
                                 break;
                             case MAX_MOTOR_CURVE:
-                                if (this.pumpChannels.getControlModeStringChannel().value().orElse("").equals("Constant frequency - Max") == false) {
+                                if (this.pumpGrundfos.getControlModeStringChannel().value().orElse("").equals("Constant frequency - Max") == false) {
                                     this.changeControlMode();
                                 }
                                 break;
                             case AUTO_ADAPT:
-                                if (this.pumpChannels.getControlModeStringChannel().value().orElse("").equals("AutoAdapt or FlowAdapt") == false) {
+                                if (this.pumpGrundfos.getControlModeStringChannel().value().orElse("").equals("AutoAdapt or FlowAdapt") == false) {
                                     this.changeControlMode();
                                 }
                                 break;
@@ -288,7 +278,7 @@ public class PumpGrundfosControllerImpl extends AbstractOpenemsComponent impleme
                             case AUTO_ADAPT:
                                 break;
                             case CONST_FREQUENCY:
-                                double minFrequencySetpoint = this.pumpChannels.getFminChannel().value().orElse(0.0);
+                                double minFrequencySetpoint = this.pumpGrundfos.getFminChannel().value().orElse(0.0);
                                 ;
                                 if (this.frequencySetpoint < minFrequencySetpoint) {
                                     this.frequencySetpoint = minFrequencySetpoint;
@@ -301,14 +291,14 @@ public class PumpGrundfosControllerImpl extends AbstractOpenemsComponent impleme
                                     setFrequencySetpoint().setNextValue(100.0);
                                 }
                                 this.setpoint = this.frequencySetpoint;
-                                this.pumpChannels.setRefRem().setNextWriteValue(this.setpoint);
+                                this.pumpGrundfos.setRefRem().setNextWriteValue(this.setpoint);
                                 break;
                             case CONST_PRESSURE:
                                 Unit channelUnit = setPressureSetpoint().channelDoc().getUnit();
-                                Unit sensorUnit = this.pumpChannels.getPumpDevice().getSensorUnit();
+                                Unit sensorUnit = this.pumpGrundfos.getPumpDevice().getSensorUnit();
                                 int scaleFactor = channelUnit.getScaleFactor() - sensorUnit.getScaleFactor();
-                                double intervalHrange = this.pumpChannels.getPumpDevice().getPressureSensorRange() * Math.pow(10, -scaleFactor);
-                                double intervalHmin = this.pumpChannels.getPumpDevice().getPressureSensorMin() * Math.pow(10, -scaleFactor);
+                                double intervalHrange = this.pumpGrundfos.getPumpDevice().getPressureSensorRange() * Math.pow(10, -scaleFactor);
+                                double intervalHmin = this.pumpGrundfos.getPumpDevice().getPressureSensorMin() * Math.pow(10, -scaleFactor);
 
                                 // Test if INFO of pressure sensor is available. If yes, range is not 0.
                                 if (intervalHrange > 0) {
@@ -331,7 +321,7 @@ public class PumpGrundfosControllerImpl extends AbstractOpenemsComponent impleme
                                     // ref_rem is a percentage value and you write the percentage in the channel. To send 100%, write 100
                                     // to the channel.
                                     this.setpoint = 100 * (this.pressureSetpoint - intervalHmin) / intervalHrange;
-                                    this.pumpChannels.setRefRem().setNextWriteValue(this.setpoint);
+                                    this.pumpGrundfos.setRefRem().setNextWriteValue(this.setpoint);
                                 } else {
                                     this.logWarn(this.log, "Can't send pressure setpoint to pump. INFO of pressure "
                                             + "sensor not yet available, but needed to calculate setpoint.");
@@ -344,42 +334,75 @@ public class PumpGrundfosControllerImpl extends AbstractOpenemsComponent impleme
                         this.channelOutput();
                     }
                 } else {
-                    this.logWarn(this.log, "Warning: Pump " + this.pumpChannels.getPumpDevice().getPumpDeviceId()
-                            + " at GENIbus address " + this.pumpChannels.getPumpDevice().getGenibusAddress() + " has no connection.");
+                    this.logWarn(this.log, "Warning: Pump " + this.pumpGrundfos.getPumpDevice().getPumpDeviceId()
+                            + " at GENIbus address " + this.pumpGrundfos.getPumpDevice().getGenibusAddress() + " has no connection.");
                 }
             }
         } else {
-            boolean pumpOnline = this.pumpChannels.isConnectionOk().value().isDefined() && this.pumpChannels.isConnectionOk().value().get();
+            boolean pumpOnline = this.pumpGrundfos.isConnectionOk().value().isDefined() && this.pumpGrundfos.isConnectionOk().value().get();
             if (pumpOnline) {
                 if (this.verbose) {
                     this.channelOutput();
                 }
             } else {
-                this.logWarn(this.log, "Warning: Pump " + this.pumpChannels.getPumpDevice().getPumpDeviceId()
-                        + " at GENIbus address " + this.pumpChannels.getPumpDevice().getGenibusAddress() + " has no connection.");
+                this.logWarn(this.log, "Warning: Pump " + this.pumpGrundfos.getPumpDevice().getPumpDeviceId()
+                        + " at GENIbus address " + this.pumpGrundfos.getPumpDevice().getGenibusAddress() + " has no connection.");
             }
         }
 
     }
 
+    private boolean checkForDifferencesAndAddToMap(String key, Double defaultValue, WriteChannel<Double> channel, Map<String, Object> valuesForConfig) {
+        Optional<?> optionalValue = channel.getNextWriteValueAndReset();
+        if (optionalValue.isPresent()) {
+            if (!optionalValue.get().equals(defaultValue)) {
+                valuesForConfig.put(key, optionalValue.get());
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean checkForDifferencesAndAddToMap(String key, Integer defaultValue, WriteChannel<Integer> channel, Map<String, Object> valuesForConfig) {
+        Optional<?> optionalValue = channel.getNextWriteValueAndReset();
+        if (optionalValue.isPresent()) {
+            if (!optionalValue.get().equals(defaultValue)) {
+                valuesForConfig.put(key, optionalValue.get());
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean checkForDifferencesAndAddToMap(String key, Boolean defaultValue, WriteChannel<Boolean> channel, Map<String, Object> valuesForConfig) {
+        Optional<?> optionalValue = channel.getNextWriteValueAndReset();
+        if (optionalValue.isPresent()) {
+            if (!optionalValue.get().equals(defaultValue)) {
+                valuesForConfig.put(key, optionalValue.get());
+                return true;
+            }
+        }
+        return false;
+    }
+
     private void channelOutput() {
         double motorSpeedPercent = 0;
         boolean motorSpeedValueAvailable = false;
-        if (this.pumpChannels.getMotorFrequencyChannel().value().isDefined() && this.pumpChannels.getFupperChannel().value().isDefined()) {
-            double maxFrequency = this.pumpChannels.getFupperChannel().value().get();
+        if (this.pumpGrundfos.getMotorFrequencyChannel().value().isDefined() && this.pumpGrundfos.getFupperChannel().value().isDefined()) {
+            double maxFrequency = this.pumpGrundfos.getFupperChannel().value().get();
             if (maxFrequency > 0) {
-                motorSpeedPercent = 100 * this.pumpChannels.getMotorFrequencyChannel().value().get() / maxFrequency;
+                motorSpeedPercent = 100 * this.pumpGrundfos.getMotorFrequencyChannel().value().get() / maxFrequency;
                 motorSpeedValueAvailable = true;
             }
         }
 
         //this.logInfo(this.log, "--Status of pump " + pumpChannels.getPumpDevice().getPumpDeviceId() + "--");
-        this.logInfo(this.log, "GENIbus address: " + this.pumpChannels.getPumpDevice().getGenibusAddress()
-                + ", product number: " + this.pumpChannels.getProductNumber().value().get() + ", "
-                + "serial number: " + this.pumpChannels.getSerialNumber().value().get());
-        this.logInfo(this.log, "Twinpump Status: " + this.pumpChannels.getTwinpumpStatusStringChannel().value().get());
-        this.logInfo(this.log, "Multipump Mode: " + this.pumpChannels.getTpModeString().value().get());
-        this.logInfo(this.log, "Power consumption: " + this.formatter2.format(this.pumpChannels.getPowerConsumptionChannel().value().orElse(0.0)) + " W");
+        this.logInfo(this.log, "GENIbus address: " + this.pumpGrundfos.getPumpDevice().getGenibusAddress()
+                + ", product number: " + this.pumpGrundfos.getProductNumber().value().get() + ", "
+                + "serial number: " + this.pumpGrundfos.getSerialNumber().value().get());
+        this.logInfo(this.log, "Twinpump Status: " + this.pumpGrundfos.getTwinpumpStatusStringChannel().value().get());
+        this.logInfo(this.log, "Multipump Mode: " + this.pumpGrundfos.getTpModeString().value().get());
+        this.logInfo(this.log, "Power consumption: " + this.formatter2.format(this.pumpGrundfos.getPowerConsumptionChannel().value().orElse(0.0)) + " W");
 
         if (motorSpeedValueAvailable) {
             this.logInfo(this.log, "Motor speed: " + this.formatter1.format(motorSpeedPercent) + " %.");
@@ -397,14 +420,14 @@ public class PumpGrundfosControllerImpl extends AbstractOpenemsComponent impleme
                 + formatter2.format(pumpChannels.setFupper().value().orElse(0.0) * 60) + " rpm");
         */
 
-        this.logInfo(this.log, "Pump pressure: " + this.formatter2.format(this.pumpChannels.getPressureChannel().value().orElse(0.0)) + " bar or "
-                + this.formatter2.format(this.pumpChannels.getPressureChannel().value().orElse(0.0) * 10) + " m");
-        this.logInfo(this.log, "Pump max pressure: " + this.formatter2.format(this.pumpChannels.setMaxPressure().value().orElse(0.0)) + " bar or "
-                + this.formatter2.format(this.pumpChannels.setMaxPressure().value().orElse(0.0) * 10) + " m");
-        this.logInfo(this.log, "Pump flow: " + this.formatter2.format(this.pumpChannels.getPercolationChannel().value().orElse(0.0)) + " m³/h");
-        this.logInfo(this.log, "Pump flow max: " + this.formatter2.format(this.pumpChannels.getPumpMaxFlowChannel().value().orElse(0.0)) + " m³/h");
-        this.logInfo(this.log, "Pumped medium temperature: " + this.formatter1.format(this.pumpChannels.getPumpedFluidTemperatureChannel().value().orElse(0.0) / 10) + "°C");
-        this.logInfo(this.log, "Control mode: " + this.pumpChannels.getControlModeStringChannel().value().get());
+        this.logInfo(this.log, "Pump pressure: " + this.formatter2.format(this.pumpGrundfos.getPressureChannel().value().orElse(0.0)) + " bar or "
+                + this.formatter2.format(this.pumpGrundfos.getPressureChannel().value().orElse(0.0) * 10) + " m");
+        this.logInfo(this.log, "Pump max pressure: " + this.formatter2.format(this.pumpGrundfos.setMaxPressure().value().orElse(0.0)) + " bar or "
+                + this.formatter2.format(this.pumpGrundfos.setMaxPressure().value().orElse(0.0) * 10) + " m");
+        this.logInfo(this.log, "Pump flow: " + this.formatter2.format(this.pumpGrundfos.getPercolationChannel().value().orElse(0.0)) + " m³/h");
+        this.logInfo(this.log, "Pump flow max: " + this.formatter2.format(this.pumpGrundfos.getPumpMaxFlowChannel().value().orElse(0.0)) + " m³/h");
+        this.logInfo(this.log, "Pumped medium temperature: " + this.formatter1.format(this.pumpGrundfos.getPumpedFluidTemperatureChannel().value().orElse(0.0) / 10) + "°C");
+        this.logInfo(this.log, "Control mode: " + this.pumpGrundfos.getControlModeStringChannel().value().get());
         //this.logInfo(this.log, pumpChannels.getControlSource().value().orElse("Command source:"));
         ////this.logInfo(this.log, "Buffer length: " + pumpChannels.getBufferLength().value().get());
         //this.logInfo(this.log, "AlarmCode: " + pumpChannels.getAlarmCode().value().get());
