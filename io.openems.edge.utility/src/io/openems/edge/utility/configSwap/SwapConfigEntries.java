@@ -279,7 +279,7 @@ public class SwapConfigEntries extends AbstractOpenemsComponent implements Opene
                     }
                     this.componentStrings.stream().filter(entry -> !entry.equals(this.activeComponent)).forEach(entry -> {
                         try {
-                            ConfigurationUpdate.updateConfig(this.ca, this.cpm.getComponent(entry), this.inactiveValues);
+                            ConfigurationUpdate.updateConfig(this.ca, this.cpm.getComponent(entry).servicePid(), this.inactiveValues);
                         } catch (IOException | OpenemsError.OpenemsNamedException e) {
                             swapFail.set(true);
                         }
