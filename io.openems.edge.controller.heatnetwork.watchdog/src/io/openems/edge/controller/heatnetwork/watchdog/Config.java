@@ -35,13 +35,16 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     @AttributeDefinition(name = "Allocated Thermometer 2", description = "Unique ID of the \"target\" Thermometer.")
     String targetThermometer() default "TemperatureSensor1";
 
+    @AttributeDefinition(name = "Use Absolute Value in Calculation", description = "Should the watchdog use A-B or the absolute value of A-B")
+    boolean useAbsoluteValue() default true;
+
     @AttributeDefinition(name = "TargetComponentId", description = "Unique Id of the Component who has to enter the ExceptionalState in case of an Error.")
     String targetComponentId() default "Heater0";
 
     @AttributeDefinition(name = "ErrorDelta", description = "Temperature difference between the Thermometers that shouldn't be exceeded.")
     int errorDelta() default 50;
 
-    @AttributeDefinition(name = "Invert", description = "Invert the logic of the Watchdog (the Temperature difference has to be greater then the delta).")
+    @AttributeDefinition(name = "Invert", description = "Instead of A-B >= errorDelta (inverse false), check if A-B <= delta(inverse true)")
     boolean invert() default true;
 
     @AttributeDefinition(name = "TestPeriod", description = "Time (in s) for how long the test has to run.")
