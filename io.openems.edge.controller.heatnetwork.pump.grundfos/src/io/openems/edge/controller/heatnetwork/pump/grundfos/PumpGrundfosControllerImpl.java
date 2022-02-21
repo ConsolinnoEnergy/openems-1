@@ -375,7 +375,7 @@ public class PumpGrundfosControllerImpl extends AbstractOpenemsComponent impleme
     }
 
     private boolean checkForDifferencesAndAddToMap(String key, Boolean defaultValue, WriteChannel<Boolean> channel, Map<String, Object> valuesForConfig) {
-        Optional<?> optionalValue = channel.getNextWriteValueAndReset();
+        Optional<Boolean> optionalValue = channel.getNextWriteValueAndReset();
         if (optionalValue.isPresent()) {
             if (!optionalValue.get().equals(defaultValue)) {
                 valuesForConfig.put(key, optionalValue.get());
@@ -410,16 +410,6 @@ public class PumpGrundfosControllerImpl extends AbstractOpenemsComponent impleme
             this.logInfo(this.log, "Motor speed: not available");
         }
 
-        // Frequency values are probably not correct, so rather give speed %, which should be correct. Frequency values
-        // are not correct because there seems to be an error involved with their unit. Wrong frequency readout was seen
-        // on two pumps so far.
-        /*
-        //this.logInfo(this.log, "Motor frequency: " + formatter2.format(pumpChannels.getMotorFrequency().value().orElse(0.0)) + " Hz or "
-                + formatter2.format(pumpChannels.getMotorFrequency().value().orElse(0.0) * 60) + " rpm");
-        //this.logInfo(this.log, "Maximum motor frequency: " + formatter2.format(pumpChannels.setFupper().value().orElse(0.0)) + " Hz or "
-                + formatter2.format(pumpChannels.setFupper().value().orElse(0.0) * 60) + " rpm");
-        */
-
         this.logInfo(this.log, "Pump pressure: " + this.formatter2.format(this.pumpGrundfos.getPressureChannel().value().orElse(0.0)) + " bar or "
                 + this.formatter2.format(this.pumpGrundfos.getPressureChannel().value().orElse(0.0) * 10) + " m");
         this.logInfo(this.log, "Pump max pressure: " + this.formatter2.format(this.pumpGrundfos.setMaxPressure().value().orElse(0.0)) + " bar or "
@@ -428,125 +418,6 @@ public class PumpGrundfosControllerImpl extends AbstractOpenemsComponent impleme
         this.logInfo(this.log, "Pump flow max: " + this.formatter2.format(this.pumpGrundfos.getPumpMaxFlowChannel().value().orElse(0.0)) + " m³/h");
         this.logInfo(this.log, "Pumped medium temperature: " + this.formatter1.format(this.pumpGrundfos.getPumpedFluidTemperatureChannel().value().orElse(0.0) / 10) + "°C");
         this.logInfo(this.log, "Control mode: " + this.pumpGrundfos.getControlModeStringChannel().value().get());
-        //this.logInfo(this.log, pumpChannels.getControlSource().value().orElse("Command source:"));
-        ////this.logInfo(this.log, "Buffer length: " + pumpChannels.getBufferLength().value().get());
-        //this.logInfo(this.log, "AlarmCode: " + pumpChannels.getAlarmCode().value().get());
-        //this.logInfo(this.log, "WarnCode: " + pumpChannels.getWarnCode().value().get());
-        //this.logInfo(this.log, "Warn message: " + pumpChannels.getWarnMessage().value().get());
-        //this.logInfo(this.log, "Alarm log1: " + pumpChannels.getAlarmLog1().value().get());
-        //this.logInfo(this.log, "Alarm log2: " + pumpChannels.getAlarmLog2().value().get());
-        //this.logInfo(this.log, "Alarm log3: " + pumpChannels.getAlarmLog3().value().get());
-        //this.logInfo(this.log, "Alarm log4: " + pumpChannels.getAlarmLog4().value().get());
-        //this.logInfo(this.log, "Alarm log5: " + pumpChannels.getAlarmLog5().value().get());
-        switch (this.controlModeSetting) {
-            case MIN_MOTOR_CURVE:
-                //this.logInfo(this.log, "");
-                //this.logInfo(this.log, "Controller setpoint: min motor curve = "
-                //    + formatter2.format(pumpChannels.setFnom().value().orElse(0.0)
-                //  * pumpChannels.setFmin().value().orElse(0.0)) + " Hz or "
-                // + formatter2.format(pumpChannels.setFnom().value().orElse(0.0)
-                //* pumpChannels.setFmin().value().orElse(0.0) * 60) + " rpm.");
-                //this.logInfo(this.log, "");
-                break;
-            case MAX_MOTOR_CURVE:
-                //this.logInfo(this.log, "");
-                //this.logInfo(this.log, "Controller setpoint: max motor curve = "
-                //+ formatter2.format(pumpChannels.setFnom().value().orElse(0.0)) + " Hz or "
-                //   + formatter2.format(pumpChannels.setFnom().value().orElse(0.0) * 60) + " rpm.");
-                //this.logInfo(this.log, "");
-                break;
-            case AUTO_ADAPT:
-                //this.logInfo(this.log, "");
-                //this.logInfo(this.log, "Controller setpoint: auto adapt");
-                //this.logInfo(this.log, "");
-                break;
-            case CONST_FREQUENCY:
-                //this.logInfo(this.log, "Actual setpoint (pump internal): " + formatter2.format(pumpChannels.getRefAct().value().orElse(0.0) * 100) + "% of interval range.");
-                //this.logInfo(this.log, "Motor frequency setpoint maximum: " + formatter2.format(pumpChannels.setFnom().value().orElse(0.0)) + " Hz or "
-                // + formatter2.format(pumpChannels.setFnom().value().orElse(0.0) * 60) + " rpm");
-                //this.logInfo(this.log, "Minimum pump speed: " + formatter2.format(pumpChannels.getRmin().value().orElse(0.0) * 100) + "% of maximum.");
-                //this.logInfo(this.log, "");
-                //this.logInfo(this.log, "Controller setpoint: " + frequencySetpoint + "% of " + formatter2.format(pumpChannels.setFnom().value().orElse(0.0)) + " Hz.");
-                //this.logInfo(this.log, "");
-                break;
-            case CONST_PRESSURE:
-                //this.logInfo(this.log, "Actual setpoint (pump internal): " + formatter2.format(pumpChannels.getRefAct().value().orElse(0.0) * 100) + "% of interval range.");
-                ////this.logInfo(this.log, "Interval min (internal): " + formatter2.format(pumpChannels.getRmin().value().orElse(0.0) * 100) + "% of maximum pumping head (Förderhöhe).");
-                ////this.logInfo(this.log, "Interval max (internal): " + formatter2.format(pumpChannels.getRmax().value().orElse(0.0) * 100) + "% of maximum pumping head (Förderhöhe).");
-                //this.logInfo(this.log, "Maximum pressure setpoint: " + (pumpChannels.getPumpDevice().getPressureSensorMinBar()
-                // + pumpChannels.getPumpDevice().getPressureSensorRangeBar()) + " bar / "
-                // + (pumpChannels.getPumpDevice().getPressureSensorMinBar() + pumpChannels.getPumpDevice().getPressureSensorRangeBar()) * 10 + " m.");
-                //this.logInfo(this.log, "Minimum pressure setpoint: " + pumpChannels.getPumpDevice().getPressureSensorMinBar()
-                // + " bar / " + pumpChannels.getPumpDevice().getPressureSensorMinBar() * 10 + " m.");
-                //this.logInfo(this.log, "");
-                //this.logInfo(this.log, "Controller setpoint: " + pressureSetpoint + " bar / " + pressureSetpoint * 10 + " m or "
-                // + formatter2.format(pumpChannels.setRefRem().value().orElse(0.0) * 100) + "% of interval range.");
-                //this.logInfo(this.log, "");
-                break;
-        }
-        ////this.logInfo(this.log, "ActMode1Bits: " + pumpChannels.getActMode1Bits().value().get());
-        ////this.logInfo(this.log, "ref_norm: " + pumpChannels.getRefNorm().value().get());
-
-
-        /*
-        //this.logInfo(this.log, "Sensor:");
-        //this.logInfo(this.log, "ana_in_1_func: " + pumpChannels.setSensor1Func().value().get());
-        //this.logInfo(this.log, "ana_in_1_applic: " + pumpChannels.setSensor1Applic().value().get());
-        //this.logInfo(this.log, "ana_in_1_unit: " + pumpChannels.setSensor1Unit().value().get());
-        //this.logInfo(this.log, "ana_in_1_min: " + pumpChannels.setSensor1Min().value().get());
-        //this.logInfo(this.log, "ana_in_1_max: " + pumpChannels.setSensor1Max().value().get());
-
-
-
-        //this.logInfo(this.log, "ref_norm: " + pumpChannels.getRefNorm().value().get());
-        //this.logInfo(this.log, "Motor frequency: " + formatter2.format(pumpChannels.getMotorFrequency().value().orElse(0.0)) + " Hz or "
-                + formatter2.format(pumpChannels.getMotorFrequency().value().orElse(0.0) * 60) + " rpm");
-        //this.logInfo(this.log, "Maximum motor frequency: " + formatter2.format(pumpChannels.setFupper().value().orElse(0.0)) + " Hz or "
-                + formatter2.format(pumpChannels.setFupper().value().orElse(0.0) * 60) + " rpm");
-        //this.logInfo(this.log, "f_upper: " + pumpChannels.setFupper().value().get());
-        //this.logInfo(this.log, "f_nom: " + pumpChannels.setFnom().value().get());
-        //this.logInfo(this.log, "f_min: " + pumpChannels.setFmin().value().get());
-        //this.logInfo(this.log, "f_max: " + pumpChannels.setFmax().value().get());
-        //this.logInfo(this.log, "h_const_ref_min: " + pumpChannels.setConstRefMinH().value().get());
-        //this.logInfo(this.log, "h_const_ref_max: " + pumpChannels.setConstRefMaxH().value().get());
-        //this.logInfo(this.log, "h_range: " + pumpChannels.setHrange().value().get());
-        //this.logInfo(this.log, "ref_rem: " + pumpChannels.setRefRem().value().get());
-        ////this.logInfo(this.log, "ref_rem write: " + pumpChannels.setRefRem().getNextWriteValue().get());
-        */
-
-
-        // Motor übertakten.
-        /*
-        try {
-            pumpChannels.setFupper().setNextWriteValue(48.0);   // Motor max Frequenz
-            pumpChannels.setFnom().setNextWriteValue(48.0);
-        } catch (OpenemsError.OpenemsNamedException e) {
-            e.printStackTrace();
         }
 
-         */
-
-
-        // Just for testing
-        /*
-        if (testCounter == 10) {
-            try {
-                pumpChannels.setFnom().setNextWriteValue(40.0);
-            } catch (OpenemsError.OpenemsNamedException e) {
-                e.printStackTrace();
-            }
-        }
-
-        if (testCounter == 20) {
-            try {
-                pumpChannels.setFnom().setNextWriteValue(48.0);
-            } catch (OpenemsError.OpenemsNamedException e) {
-                e.printStackTrace();
-            }
-        }
-
-        testCounter++;
-        */
-
-    }
 }

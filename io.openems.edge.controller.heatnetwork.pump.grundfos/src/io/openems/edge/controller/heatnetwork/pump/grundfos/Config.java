@@ -43,6 +43,7 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     @AttributeDefinition(name = "Read only", description = "Only reads values from the pump, do not send commands.")
     boolean onlyRead() default false;
 
+    @AttributeDefinition(name = "Update Default Config", description = "Rewrite the default config when updated via REST. Start, Stop of Pump is always updated.")
     boolean updateDefaultConfig() default false;
 
     String webconsole_configurationFactory_nameHint() default "Controller Pump Grundfos [{id}]";
