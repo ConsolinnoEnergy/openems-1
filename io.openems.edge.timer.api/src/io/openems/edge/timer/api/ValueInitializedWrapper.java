@@ -53,4 +53,11 @@ class ValueInitializedWrapper {
     AtomicReference<DateTime> getInitialDateTime() {
         return this.initialDateTime;
     }
+
+    void setInitialDateTime(DateTime time){
+        this.initialDateTime.set(time);
+    }
+    void setCounter(int value){
+        this.counter.set(value);
+    }
 }

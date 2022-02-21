@@ -3,6 +3,7 @@ package io.openems.edge.timer.api;
 import io.openems.common.exceptions.OpenemsError;
 import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
+import org.joda.time.DateTime;
 import org.osgi.service.cm.ConfigurationException;
 
 import java.util.HashMap;
@@ -117,5 +118,16 @@ public class TimerHandlerImpl implements TimerHandler {
     public boolean checkTimeIsUp(String identifier) {
         return this.identifierToTimerMap.get(identifier).checkIsTimeUp(this.id, identifier);
     }
+
+    @Override
+    public void setInitialTime(DateTime dateTime, String identifierSwap) {
+        this.identifierToTimerMap.get(identifierSwap).setInitTime(this.id, identifierSwap, dateTime);
+    }
+
+    @Override
+    public void setInitialTime(Integer count, String identifierSwap) {
+        this.identifierToTimerMap.get(identifierSwap).setInitTime(this.id, identifierSwap, count);
+    }
+
 
 }

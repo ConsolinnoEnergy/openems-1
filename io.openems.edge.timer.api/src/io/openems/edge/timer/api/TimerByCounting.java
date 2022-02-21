@@ -1,6 +1,7 @@
 package io.openems.edge.timer.api;
 
 import io.openems.edge.common.component.OpenemsComponent;
+import org.joda.time.DateTime;
 import org.osgi.service.component.ComponentContext;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
@@ -66,5 +67,15 @@ public class TimerByCounting extends AbstractTimer implements OpenemsComponent {
             wrapper.getCounter().set(1);
         }
         return false;
+    }
+
+    @Override
+    public void setInitTime(String id, String identifierSwap, Integer count) {
+        super.setInitTime(id, identifierSwap, count);
+    }
+
+    @Override
+    public void setInitTime(String id, String identifierSwap, DateTime dateTime) {
+
     }
 }

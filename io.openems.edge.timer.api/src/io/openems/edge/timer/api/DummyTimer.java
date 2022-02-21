@@ -41,7 +41,7 @@ public class DummyTimer extends AbstractOpenemsComponent implements OpenemsCompo
 
             case COUNTING:
             case CYCLES:
-               wrapper = this.getWrapper(identifier);
+                wrapper = this.getWrapper(identifier);
                 if (wrapper.isInitialized()) {
                     return wrapper.getCounter().getAndIncrement() >= wrapper.getMaxValue();
                 } else {
@@ -84,7 +84,7 @@ public class DummyTimer extends AbstractOpenemsComponent implements OpenemsCompo
     }
 
     ValueInitializedWrapper getWrapper(String identifier) {
-            return this.identifierToValueWrapper.get(identifier);
+        return this.identifierToValueWrapper.get(identifier);
     }
 
     /**
@@ -98,6 +98,22 @@ public class DummyTimer extends AbstractOpenemsComponent implements OpenemsCompo
 
     @Override
     public void addIdentifierToTimer(String id, String identifier, int maxValue) {
-            this.identifierToValueWrapper.put(identifier, new ValueInitializedWrapper(maxValue));
+        this.identifierToValueWrapper.put(identifier, new ValueInitializedWrapper(maxValue));
+    }
+
+    @Override
+    public void setInitTime(String id, String identifierSwap, DateTime dateTime) {
+        if (this.type.equals(TimerType.TIME)) {
+            this.identifierToValueWrapper.get(identifierSwap).setInitialized(true);
+            this.identifierToValueWrapper.get(identifierSwap).setInitialDateTime(dateTime);
         }
+    }
+
+    @Override
+    public void setInitTime(String id, String identifierSwap, Integer count) {
+        if (!this.type.equals(TimerType.TIME)) {
+            this.identifierToValueWrapper.get(identifierSwap).setInitialized(true);
+            this.identifierToValueWrapper.get(identifierSwap).setCounter(count);
+        }
+    }
 }
