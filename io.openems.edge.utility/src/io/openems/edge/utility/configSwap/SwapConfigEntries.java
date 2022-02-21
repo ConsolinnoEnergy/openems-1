@@ -111,12 +111,11 @@ public class SwapConfigEntries extends AbstractOpenemsComponent implements Opene
      * After that fill the active and inactive ConfigurationMap, followed by adding the active Component and the initial
      * DateTime. And set the initial DateTime.
      *
-     * 
+     *
      * @param config the component-config.
      */
     private void activationOrModifiedRoutine(Config config) {
         this.config = config;
-        this.componentStrings.clear();
         this.errorAddresses.clear();
         this.activeValues.clear();
         this.inactiveValues.clear();
