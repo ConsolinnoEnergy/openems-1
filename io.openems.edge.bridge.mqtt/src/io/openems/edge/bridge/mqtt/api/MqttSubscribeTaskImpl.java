@@ -181,11 +181,16 @@ public class MqttSubscribeTaskImpl extends AbstractMqttTask implements MqttSubsc
         tokens.keySet().stream().filter(entry -> !entry.toUpperCase().equals("METRICS") && !entry.toUpperCase().contains("TIME") && !entry.toUpperCase().equals("ID"))
                 .collect(Collectors.toList()).forEach(key -> {
             try {
-                String value = tokens.get(key).getAsString();
+                String value;
+                if(tokens.get(key).isJsonNull()){
+                    value = "null";
+                } else {
+                    value = tokens.get(key).getAsString();
+                }
 
                 //Check own ChannelId Map if key is in Map and Value
                 if (this.nameIdAndChannelIdMap.containsKey(key)) {
-                    if (!value.equals("Not Defined Yet")) {
+                    if (!value.equals("Not Defined Yet") && !value.equals("null")) {
                         String channelId = this.nameIdAndChannelIdMap.get(key);
                         Channel<?> channel = super.channels.get(channelId);
                         if (channel instanceof WriteChannel<?>) {
