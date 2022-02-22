@@ -99,9 +99,9 @@ public class PumpGrundfosControllerImpl extends AbstractOpenemsComponent impleme
         this.onlyRead = config.onlyRead();
 
         // Set channel values.
-        _setControlMode(this.controlModeSetting);
-        _setStopPump(this.stopPump);
-        _setReadOnlySetting(this.onlyRead);
+        this._setControlMode(this.controlModeSetting);
+        this._setStopPump(this.stopPump);
+        this._setReadOnlySetting(this.onlyRead);
 
         this.printInfoToLog = config.printPumpStatus();
     }
@@ -224,11 +224,11 @@ public class PumpGrundfosControllerImpl extends AbstractOpenemsComponent impleme
                     this.motorSpeedSetpoint = motorSpeedSetpointOptional.get();
                     this.motorSpeedClampDone = false;
                 }
-                if (motorSpeedClampDone == false) {
+                if (this.motorSpeedClampDone == false) {
                     this.motorSpeedClampDone = true;
                     this.motorSpeedSetpoint = Math.max(this.motorSpeedSetpoint, MIN_MOTOR_SPEED);
                     this.motorSpeedSetpoint = Math.min(this.motorSpeedSetpoint, 100.0);
-                    _setMotorSpeedSetpoint(this.motorSpeedSetpoint);
+                    this._setMotorSpeedSetpoint(this.motorSpeedSetpoint);
 
                     /* Compare new set point with config, to see if config value is different and needs to be updated.
                        Set point is a double, so for comparison it should be rounded. Multiply by 1000 before rounding
@@ -284,7 +284,7 @@ public class PumpGrundfosControllerImpl extends AbstractOpenemsComponent impleme
                                     + "Resetting to minimum valid value " + intervalHmin + " bar.");
                             this.pressureSetpoint = intervalHmin;
                         }
-                        _setPressureSetpoint(this.pressureSetpoint);
+                        this._setPressureSetpoint(this.pressureSetpoint);
 
                         // ref_rem is a percentage value. To send 100%, write 100 to the channel.
                         this.pressureSetpointToRefRem = 100 * (this.pressureSetpoint - intervalHmin) / intervalHrange;

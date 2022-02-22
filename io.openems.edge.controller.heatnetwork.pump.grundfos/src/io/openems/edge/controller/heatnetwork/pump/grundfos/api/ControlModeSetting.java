@@ -2,6 +2,10 @@ package io.openems.edge.controller.heatnetwork.pump.grundfos.api;
 
 import io.openems.common.types.OptionsEnum;
 
+/**
+ * Possible operating modes of the Grundfos pump.
+ */
+
 public enum ControlModeSetting implements OptionsEnum  {
 	UNDEFINED(-1, "Undefined"), //
 	CONST_PRESSURE(0, "Constant pressure"), //
