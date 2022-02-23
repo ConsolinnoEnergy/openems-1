@@ -23,7 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * This Implementation of the {@link AbstractCalculator} Class.
+ * The CalculatorMultiplierImpl is an implementation of the {@link AbstractCalculator} Class.
  * This Child receives values to multiply them up and write the result to an output by calling parent methods.
  * Those values can either be a ChannelAddress (value) or a static value.
  * When you want to divide a value from the current product, simply add the {@link #SPECIAL_CHARACTER} in front of a config entry.
@@ -34,8 +34,13 @@ import java.util.List;
         property = EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE)
 
 public class CalculatorMultiplierImpl extends AbstractCalculator implements OpenemsComponent, EventHandler {
-
+    // A Special Character signifies, that the previous Calculation should be divided by the next incoming value.
     private static final String SPECIAL_CHARACTER = "/";
+
+    private static final double FORBIDDEN_DIVISOR = 0.d;
+
+    private static final Double INIT_VALUE = 1.d;
+
 
     @Reference
     ComponentManager cpm;
@@ -71,10 +76,10 @@ public class CalculatorMultiplierImpl extends AbstractCalculator implements Open
     }
 
     /**
-     * After the Process image -> get all existing Values from the parent.
-     * If the Value is a Channel -> get the Value.
-     * If the Value is a special Value -> Divide it by 1.
-     * Multiply all values up and call the parent {@link AbstractCalculator#writeToOutput(double, ComponentManager)} Method.
+     * After the OpenEMS Process image -> get all existing values from the parent.
+     * If the value is a channel -> get the value.
+     * If the value is a special value -> divide it by 1.
+     * Multiply all values up and call the parent {@link AbstractCalculator#writeToOutput(double, ComponentManager)} method.
      *
      * @param event the OpenEMS Event. Usually {@link EdgeEventConstants#TOPIC_CYCLE_AFTER_PROCESS_IMAGE}
      */
@@ -83,7 +88,7 @@ public class CalculatorMultiplierImpl extends AbstractCalculator implements Open
         if (this.isEnabled() && event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE)) {
             List<Double> values = new ArrayList<>();
             super.values.forEach(entry -> {
-                Double value = 1.d;
+                Double value = INIT_VALUE;
                 switch (entry.getType()) {
                     case VALUE:
                         value = TypeUtils.getAsType(OpenemsType.DOUBLE, entry.getValue());
@@ -99,12 +104,12 @@ public class CalculatorMultiplierImpl extends AbstractCalculator implements Open
                         }
                         break;
                 }
-                if (entry.isSpecialValue() && value != null && value != 0.d) {
+                if (entry.isSpecialValue() && value != null && value != FORBIDDEN_DIVISOR) {
                     value = 1 / value;
                 }
                 values.add(value);
             });
-            AtomicDouble atomicDouble = new AtomicDouble(1);
+            AtomicDouble atomicDouble = new AtomicDouble(INIT_VALUE);
             values.forEach(entry -> {
                 if (entry != null) {
                     atomicDouble.set(atomicDouble.get() * entry);
