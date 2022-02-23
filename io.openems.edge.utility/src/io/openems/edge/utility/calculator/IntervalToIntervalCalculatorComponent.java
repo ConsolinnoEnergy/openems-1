@@ -11,7 +11,6 @@ import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.common.event.EdgeEventConstants;
 import io.openems.edge.common.type.TypeUtils;
 import io.openems.edge.utility.api.IntervalToIntervalCalculator;
-import io.openems.edge.utility.api.IntervalToIntervalCalculatorImpl;
 import org.osgi.service.component.ComponentContext;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
@@ -30,12 +29,12 @@ import java.util.Optional;
 
 /**
  * <p>
- * This Component provides the ability to Calculate a function Value from one Interval A [a;b] to another Interval B [c;d].
- * E.g. You have an analogue Signal of 4-20mA and want to set it into ratio of Pressure
+ * This component provides the ability to calculate a function value from one interval A [a;b] to another interval B [c;d].
+ * E.g. You have an analogue signal of 4-20mA and want to set it into ratio of pressure
  * with a range of -5 to 5 bar.
- * Set up Interval A with [4;20] and Interval B with [-5;5]
+ * Set up interval A with [4;20] and interval B with [-5;5]. Now an input in mA can be set in relation to the pressure.
  * </p>
- * {@link IntervalToIntervalCalculator} us used to calculate the output.
+ * {@link IntervalToIntervalCalculator} is used to calculate the output.
  * You can use the IntervalToIntervalCalculator to calculate the output within your own class.
  */
 
@@ -47,8 +46,6 @@ import java.util.Optional;
 public class IntervalToIntervalCalculatorComponent extends AbstractOpenemsComponent implements OpenemsComponent, EventHandler {
 
     private final Logger log = LoggerFactory.getLogger(IntervalToIntervalCalculatorComponent.class);
-
-    private final IntervalToIntervalCalculator intervalToIntervalCalculator = new IntervalToIntervalCalculatorImpl();
 
     @Reference
     ComponentManager cpm;
@@ -85,9 +82,8 @@ public class IntervalToIntervalCalculatorComponent extends AbstractOpenemsCompon
                 Optional<?> inputValue;
                 double output;
                 Double input;
+                // ---- Get Optional Input
                 switch (this.config.inputType()) {
-
-
                     case NEXT_VALUE:
                         inputValue = inputChannel.getNextValue().asOptional();
                         break;
@@ -95,7 +91,7 @@ public class IntervalToIntervalCalculatorComponent extends AbstractOpenemsCompon
                         if (inputChannel instanceof WriteChannel<?>) {
                             inputValue = ((WriteChannel<?>) inputChannel).getNextWriteValue();
                         } else {
-                            this.log.warn("InputChannel Not A Write Channel! Please Reconfigure!");
+                            this.log.warn("InputChannel Not a WriteChannel! Please reconfigure!");
                             return;
                         }
                         break;
@@ -107,9 +103,11 @@ public class IntervalToIntervalCalculatorComponent extends AbstractOpenemsCompon
                 if (inputValue.isPresent()) {
                     input = TypeUtils.getAsType(OpenemsType.DOUBLE, inputValue);
                     if (input != null) {
-                        output = this.intervalToIntervalCalculator.calculateDoubleByCalculationType(this.config.representationType(),
+                        // Map Input to the interval
+                        output = IntervalToIntervalCalculator.calculateDoubleByCalculationType(this.config.representationType(),
                                 this.config.inputMinIntervalA(), this.config.inputMaxIntervalA(), this.config.inputMinIntervalB(),
                                 this.config.inputMaxIntervalB(), input);
+                        // write to output
                         switch (this.config.outputType()) {
 
                             case VALUE:

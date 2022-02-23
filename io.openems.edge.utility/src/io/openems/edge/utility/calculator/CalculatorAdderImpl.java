@@ -24,10 +24,10 @@ import java.util.List;
 
 
 /**
- * This Implementation of the {@link AbstractCalculator} Class.
- * This Child receives values to add them up and write the result to an output by calling parent methods.
+ * The CalculatorAdderImpl is an implementation of the {@link AbstractCalculator} class.
+ * This child receives values to add them up and write the result to an output by calling parent methods.
  * Those values can either be a ChannelAddress (value) or a static value.
- * When you want to Subtract a value from the sum, simply add the {@link #SPECIAL_CHARACTER} in front of a config entry.
+ * When you want to subtract a value from the sum, simply add the {@link #SPECIAL_CHARACTER} in front of a config entry.
  */
 
 @Designate(ocd = AdderConfig.class, factory = true)
@@ -36,8 +36,12 @@ import java.util.List;
         property = {EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE})
 
 public class CalculatorAdderImpl extends AbstractCalculator implements OpenemsComponent, EventHandler {
-
+    // A Special Character signifies, that the Value should be subtracted, instead of added.
     private static final String SPECIAL_CHARACTER = "-";
+
+    private static final int NEGATE = -1;
+
+    private static final double INIT_VALUE = 0.d;
 
     @Reference
     ComponentManager cpm;
@@ -49,14 +53,16 @@ public class CalculatorAdderImpl extends AbstractCalculator implements OpenemsCo
 
     @Activate
     void activate(ComponentContext context, AdderConfig config) throws OpenemsError.OpenemsNamedException {
-        super.activate(context, config.id(), config.alias(), config.enabled(), config.outputChannel(), config.inputOutputType());
+        super.activate(context, config.id(), config.alias(), config.enabled(), config.outputChannel(),
+                config.inputOutputType());
         this.activationOrModifiedRoutine(config);
     }
 
 
     @Modified
     void modified(ComponentContext context, AdderConfig config) throws OpenemsError.OpenemsNamedException {
-        super.modified(context, config.id(), config.alias(), config.enabled(), config.outputChannel(), config.inputOutputType());
+        super.modified(context, config.id(), config.alias(), config.enabled(), config.outputChannel(),
+                config.inputOutputType());
         this.activationOrModifiedRoutine(config);
 
     }
@@ -73,11 +79,11 @@ public class CalculatorAdderImpl extends AbstractCalculator implements OpenemsCo
     }
 
     /**
-     * After the Process image -> get all existing Values from the parent.
-     * If the Value is a Channel -> get the Value.
-     * If the Value is a special Value -> Multiply it by -1.
-     * Add all values up and call the parent {@link AbstractCalculator#writeToOutput(double, ComponentManager)} Method.
-     *
+     * After the OpenEMS Process image -> get all existing values from the parent.
+     * If the value is a channel -> get the value of this channel.
+     * If the value is a special value -> the value  = 1/value .
+     * Add all values up and call the parent {@link AbstractCalculator#writeToOutput(double, ComponentManager)} method.
+     * This will write the calculated Value to the configured output channel.
      * @param event the OpenEMS Event. Usually {@link EdgeEventConstants#TOPIC_CYCLE_AFTER_PROCESS_IMAGE}
      */
     @Override
@@ -85,7 +91,7 @@ public class CalculatorAdderImpl extends AbstractCalculator implements OpenemsCo
         if (this.isEnabled() && event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE)) {
             List<Double> values = new ArrayList<>();
             super.values.forEach(entry -> {
-                Double value = 0.d;
+                Double value = INIT_VALUE;
                 switch (entry.getType()) {
                     case VALUE:
                         value = TypeUtils.getAsType(OpenemsType.DOUBLE, entry.getValue());
@@ -102,11 +108,11 @@ public class CalculatorAdderImpl extends AbstractCalculator implements OpenemsCo
                         break;
                 }
                 if (entry.isSpecialValue()) {
-                    value *= -1;
+                    value *= NEGATE;
                 }
                 values.add(value);
             });
-            AtomicDouble atomicDouble = new AtomicDouble(0);
+            AtomicDouble atomicDouble = new AtomicDouble(INIT_VALUE);
             values.forEach(entry -> {
                 if (entry != null) {
                     atomicDouble.getAndAdd(entry);
