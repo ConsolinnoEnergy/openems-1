@@ -6,6 +6,7 @@ import io.openems.edge.common.channel.value.Value;
 import io.openems.edge.common.component.AbstractOpenemsComponent;
 import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.cycle.Cycle;
+import io.openems.edge.common.type.TypeUtils;
 import io.openems.edge.exceptionalstate.api.ExceptionalState;
 import io.openems.edge.exceptionalstate.api.ExceptionalStateHandler;
 import io.openems.edge.exceptionalstate.api.ExceptionalStateHandlerImpl;
@@ -361,6 +362,9 @@ public abstract class AbstractValve extends AbstractOpenemsComponent implements 
         } else {
             int setPointPowerLevelValue = this.setPointPowerLevelValue();
             if (setPointPowerLevelValue >= DEFAULT_MIN_POWER_VALUE) {
+                if(this.maxMinValid()){
+                    setPointPowerLevelValue = TypeUtils.fitWithin(this.minimum.intValue(), this.maximum.intValue(), setPointPowerLevelValue);
+                }
                 this.setPowerLevel(setPointPowerLevelValue);
                 childHasNothingToDo = true;
             }

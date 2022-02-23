@@ -282,15 +282,13 @@ public class ValveTwoOutput extends AbstractValve implements OpenemsComponent, H
      * Check if the Min and/or Max value is defined and valid.
      */
     private void checkMaxAndMinAllowed() {
-        Double maxAllowed = this.getMaxAllowedValue();
-        Double minAllowed = this.getMinAllowedValue();
         double futurePowerLevel = this.getFuturePowerLevelValue();
         double currentPowerLevel = this.getPowerLevelValue();
         double powerValueToCompare = this.isChanging ? futurePowerLevel : currentPowerLevel;
-        if (maxAllowed != null && (maxAllowed + TOLERANCE < powerValueToCompare)) {
-            this.setPowerLevel(maxAllowed);
-        } else if (minAllowed != null && (minAllowed - TOLERANCE > powerValueToCompare)) {
-            this.changeByPercentage(minAllowed - futurePowerLevel);
+        if (this.maximum != null && (this.maximum + TOLERANCE < powerValueToCompare)) {
+            this.setPowerLevel(this.maximum);
+        } else if (this.minimum != null && (this.minimum - TOLERANCE > powerValueToCompare)) {
+            this.setPowerLevel(this.minimum);
         }
     }
 
