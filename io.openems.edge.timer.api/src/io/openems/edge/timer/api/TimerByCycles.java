@@ -2,6 +2,7 @@ package io.openems.edge.timer.api;
 
 import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.common.event.EdgeEventConstants;
+import org.joda.time.DateTime;
 import org.osgi.service.component.ComponentContext;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
@@ -89,5 +90,15 @@ public class TimerByCycles extends AbstractTimer implements OpenemsComponent, Ev
                 });
             }
         }
+    }
+
+    @Override
+    public void setInitTime(String id, String identifierSwap, Integer count) {
+        super.setInitTime(id, identifierSwap, count);
+    }
+
+    @Override
+    public void setInitTime(String id, String identifierSwap, DateTime dateTime) {
+
     }
 }

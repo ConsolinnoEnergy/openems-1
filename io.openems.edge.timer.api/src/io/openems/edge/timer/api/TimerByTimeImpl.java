@@ -63,4 +63,13 @@ public class TimerByTimeImpl extends AbstractTimer implements OpenemsComponent {
         return false;
     }
 
+    @Override
+    public void setInitTime(String id, String identifierSwap, DateTime dateTime) {
+       super.setInitTime(id, identifierSwap, dateTime);
+    }
+
+    @Override
+    public void setInitTime(String id, String identifierSwap, Integer count) {
+
+    }
 }

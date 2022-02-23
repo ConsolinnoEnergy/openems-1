@@ -8,6 +8,7 @@ import io.openems.edge.bridge.genibus.api.task.GenibusWriteTask;
 import io.openems.edge.bridge.genibus.api.task.HeadClass4and5;
 import io.openems.edge.bridge.genibus.protocol.ApplicationProgramDataUnit;
 import io.openems.edge.bridge.genibus.protocol.Telegram;
+import io.openems.edge.common.cycle.Cycle;
 import io.openems.edge.common.taskmanager.Priority;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,10 +31,11 @@ class GenibusWorker extends AbstractCycleWorker {
     private final ArrayList<PumpDevice> deviceList = new ArrayList<>();
     private int currentDeviceCounter = 0;
     private final GenibusImpl parent;
-    private long cycleTimeMs = 1000;   // Also measured at runtime.
+    private long cycleTimeMs = Cycle.DEFAULT_CYCLE_TIME;   // Also measured at runtime.
     private long timeSinceLastTimestamp;
     private int delayCurrentRun;
     private int delayLastRun;
+    private int runIdentifier = 0;
 
     private static final int HEAD_CLASS_PROTOCOL_DATA = 0;
     private static final int HEAD_CLASS_MEASURED_DATA = 2;
@@ -50,16 +52,6 @@ class GenibusWorker extends AbstractCycleWorker {
 
     protected GenibusWorker(GenibusImpl parent) {
         this.parent = parent;
-    }
-
-    @Override
-    public void activate(String name) {
-        super.activate(name);
-    }
-
-    @Override
-    public void deactivate() {
-        super.deactivate();
     }
 
     /**
@@ -89,7 +81,7 @@ class GenibusWorker extends AbstractCycleWorker {
                 }
                 return;
             }
-            currentDevice = this.deviceList.get(0);   // Only done so Intellij does not complain about "variable might not be initialized".
+            currentDevice = this.deviceList.get(0);
 
             // This handles the switching to the next device. Selects the next device in the list, unless that device is offline.
             for (int i = 0; i < this.deviceList.size(); i++) {
@@ -842,6 +834,7 @@ class GenibusWorker extends AbstractCycleWorker {
         /* The forever method can start delayed, if the last execution took longer than one cycle. The delay time is
            considered for timing calculations. */
         this.delayCurrentRun = this.parent.workerStartDelay;
+        this.runIdentifier = this.parent.workerRunIdentifier;
         if (this.cycleStopwatch.isRunning()) {
             this.cycleTimeMs = this.cycleStopwatch.elapsed(TimeUnit.MILLISECONDS) + this.delayLastRun - this.delayCurrentRun;
             if (this.parent.getDebug()) {
@@ -985,5 +978,13 @@ class GenibusWorker extends AbstractCycleWorker {
      */
     public void setCycleTime(int cycleTime) {
         this.cycleTimeMs = cycleTime;
+    }
+
+    /**
+     * Gets the runIdentifier.
+     * @return the runIdentifier.
+     */
+    public int getRunIdentifier() {
+        return this.runIdentifier;
     }
 }

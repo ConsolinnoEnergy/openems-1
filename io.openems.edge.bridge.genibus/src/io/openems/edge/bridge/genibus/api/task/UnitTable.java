@@ -157,6 +157,19 @@ public enum UnitTable {
     }
 
     /**
+     * Most common scaling formula for converting from Genibus units to OpenEMS channel units. Applies the Genibus unit
+     * factor and then a power of 10 scaling of the OpenEMS channel unit.
+     *
+     * @param genibusUnitFactor the Genibus unit factor.
+     * @param channelUnitScaleFactor the OpenEMS channel unit scale factor.
+     * @param value the value to scale.
+     * @return the scaled value.
+     */
+    private double basicScalingToOpenEms(double genibusUnitFactor, int channelUnitScaleFactor, double value) {
+        return genibusUnitFactor * Math.pow(10, -channelUnitScaleFactor) * value;
+    }
+
+    /**
      * Convert a value from Genibus unit to OpenEMS unit. Returns ’null’ if the unit provided by Genibus is not
      * compatible to the OpenEMS unit or one of the units is not yet supported.
      * Genibus has the units ’Kelvin’ (absolute temperature) and ’diff-Kelvin’ (temperature difference).
@@ -187,7 +200,7 @@ public enum UnitTable {
                     switch (unitString) {
                         case "Celsius/10":
                         case "Celsius":
-                            return OptionalDouble.of(genibusUnitFactor * Math.pow(10, -channelUnitScaleFactor) * value);
+                            return OptionalDouble.of(this.basicScalingToOpenEms(genibusUnitFactor, channelUnitScaleFactor, value));
                         case "Kelvin/100":
                         case "Kelvin":
                             return OptionalDouble.of(((genibusUnitFactor * value) - 273.15) * Math.pow(10, -channelUnitScaleFactor));
@@ -198,7 +211,7 @@ public enum UnitTable {
                     switch (unitString) {
                         case "diff-Kelvin/100":
                         case "diff-Kelvin":
-                            return OptionalDouble.of(genibusUnitFactor * Math.pow(10, -channelUnitScaleFactor) * value);
+                            return OptionalDouble.of(this.basicScalingToOpenEms(genibusUnitFactor, channelUnitScaleFactor, value));
                     }
                 case BAR:
                     switch (unitString) {
@@ -214,7 +227,7 @@ public enum UnitTable {
                         case "psi":
                         case "psi*10":
                         case "kPa":
-                            return OptionalDouble.of(genibusUnitFactor * Math.pow(10, -channelUnitScaleFactor) * value);
+                            return OptionalDouble.of(this.basicScalingToOpenEms(genibusUnitFactor, channelUnitScaleFactor, value));
                     }
                 case PASCAL:
                     switch (unitString) {
@@ -235,7 +248,7 @@ public enum UnitTable {
                 case AMPERE:
                     switch (unitString) {
                         case "Ampere*0.1":
-                            return OptionalDouble.of(genibusUnitFactor * Math.pow(10, -channelUnitScaleFactor) * value);
+                            return OptionalDouble.of(this.basicScalingToOpenEms(genibusUnitFactor, channelUnitScaleFactor, value));
                     }
                 case HERTZ:
                     switch (unitString) {
@@ -244,7 +257,7 @@ public enum UnitTable {
                         case "Hz":
                         case "2*Hz":
                         case "2.5*Hz":
-                            return OptionalDouble.of(genibusUnitFactor * Math.pow(10, -channelUnitScaleFactor) * value);
+                            return OptionalDouble.of(this.basicScalingToOpenEms(genibusUnitFactor, channelUnitScaleFactor, value));
                     }
                 case WATT:
                     switch (unitString) {
@@ -253,7 +266,7 @@ public enum UnitTable {
                         case "Watt*100":
                         case "kW":
                         case "kW*10":
-                            return OptionalDouble.of(genibusUnitFactor * Math.pow(10, -channelUnitScaleFactor) * value);
+                            return OptionalDouble.of(this.basicScalingToOpenEms(genibusUnitFactor, channelUnitScaleFactor, value));
                     }
                 case PERCENT:
                     switch (unitString) {
@@ -262,7 +275,7 @@ public enum UnitTable {
                         case "0.1%":
                         case "1%":
                         case "10%":
-                            return OptionalDouble.of(genibusUnitFactor * Math.pow(10, -channelUnitScaleFactor) * value);
+                            return OptionalDouble.of(this.basicScalingToOpenEms(genibusUnitFactor, channelUnitScaleFactor, value));
                     }
                 case CUBICMETER_PER_HOUR:
                     switch (unitString) {
@@ -270,7 +283,7 @@ public enum UnitTable {
                         case "m³/h":
                         case "5*m³/h":
                         case "10*m³/h":
-                            return OptionalDouble.of(genibusUnitFactor * Math.pow(10, -channelUnitScaleFactor) * value);
+                            return OptionalDouble.of(this.basicScalingToOpenEms(genibusUnitFactor, channelUnitScaleFactor, value));
                     }
                 case CUBICMETER_PER_SECOND:
                     switch (unitString) {
@@ -291,6 +304,19 @@ public enum UnitTable {
             }
         }
         return OptionalDouble.empty();  // Code lands here if units don't match or units are not yet supported.
+    }
+
+    /**
+     * Most common scaling formula for converting from OpenEMS channel units to Genibus units. Applies a power of 10
+     * scaling of the OpenEMS channel unit and then divides by the Genibus unit factor.
+     *
+     * @param channelUnitScaleFactor the OpenEMS channel unit scale factor.
+     * @param genibusUnitFactor the Genibus unit factor.
+     * @param value the value to scale.
+     * @return the scaled value.
+     */
+    private double basicScalingToGenibus(int channelUnitScaleFactor, double genibusUnitFactor, double value) {
+        return (Math.pow(10, channelUnitScaleFactor) / genibusUnitFactor) * value;
     }
 
     /**
@@ -324,7 +350,7 @@ public enum UnitTable {
                     switch (unitString) {
                         case "Celsius/10":
                         case "Celsius":
-                            return OptionalDouble.of((Math.pow(10, channelUnitScaleFactor) / genibusUnitFactor) * value);
+                            return OptionalDouble.of(this.basicScalingToGenibus(channelUnitScaleFactor, genibusUnitFactor, value));
                         case "Kelvin/100":
                         case "Kelvin":
                             return OptionalDouble.of(((value * Math.pow(10, channelUnitScaleFactor)) + 273.15) / genibusUnitFactor);
@@ -335,7 +361,7 @@ public enum UnitTable {
                     switch (unitString) {
                         case "diff-Kelvin/100":
                         case "diff-Kelvin":
-                            return OptionalDouble.of((Math.pow(10, channelUnitScaleFactor) / genibusUnitFactor) * value);
+                            return OptionalDouble.of(this.basicScalingToGenibus(channelUnitScaleFactor, genibusUnitFactor, value));
                     }
                 case BAR:
                     switch (unitString) {
@@ -351,7 +377,7 @@ public enum UnitTable {
                         case "psi":
                         case "psi*10":
                         case "kPa":
-                            return OptionalDouble.of((Math.pow(10, channelUnitScaleFactor) / genibusUnitFactor) * value);
+                            return OptionalDouble.of(this.basicScalingToGenibus(channelUnitScaleFactor, genibusUnitFactor, value));
                     }
                 case PASCAL:
                     switch (unitString) {
@@ -372,7 +398,7 @@ public enum UnitTable {
                 case AMPERE:
                     switch (unitString) {
                         case "Ampere*0.1":
-                            return OptionalDouble.of((Math.pow(10, channelUnitScaleFactor) / genibusUnitFactor) * value);
+                            return OptionalDouble.of(this.basicScalingToGenibus(channelUnitScaleFactor, genibusUnitFactor, value));
                     }
                 case HERTZ:
                     switch (unitString) {
@@ -381,7 +407,7 @@ public enum UnitTable {
                         case "Hz":
                         case "2*Hz":
                         case "2.5*Hz":
-                            return OptionalDouble.of((Math.pow(10, channelUnitScaleFactor) / genibusUnitFactor) * value);
+                            return OptionalDouble.of(this.basicScalingToGenibus(channelUnitScaleFactor, genibusUnitFactor, value));
                     }
                 case WATT:
                     switch (unitString) {
@@ -390,7 +416,7 @@ public enum UnitTable {
                         case "Watt*100":
                         case "kW":
                         case "kW*10":
-                            return OptionalDouble.of((Math.pow(10, channelUnitScaleFactor) / genibusUnitFactor) * value);
+                            return OptionalDouble.of(this.basicScalingToGenibus(channelUnitScaleFactor, genibusUnitFactor, value));
                     }
                 case PERCENT:
                     switch (unitString) {
@@ -399,7 +425,7 @@ public enum UnitTable {
                         case "0.1%":
                         case "1%":
                         case "10%":
-                            return OptionalDouble.of((Math.pow(10, channelUnitScaleFactor) / genibusUnitFactor) * value);
+                            return OptionalDouble.of(this.basicScalingToGenibus(channelUnitScaleFactor, genibusUnitFactor, value));
                     }
                 case CUBICMETER_PER_HOUR:
                     switch (unitString) {
@@ -407,7 +433,7 @@ public enum UnitTable {
                         case "m³/h":
                         case "5*m³/h":
                         case "10*m³/h":
-                            return OptionalDouble.of((Math.pow(10, channelUnitScaleFactor) / genibusUnitFactor) * value);
+                            return OptionalDouble.of(this.basicScalingToGenibus(channelUnitScaleFactor, genibusUnitFactor, value));
                     }
                 case CUBICMETER_PER_SECOND:
                     switch (unitString) {
