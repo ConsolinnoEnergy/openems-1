@@ -2,10 +2,9 @@ package io.openems.edge.utility.api;
 
 /**
  * <p>
- * The IntervalToIntervalCalculator.
- * Use this if you want to calculate a Mapping of an Interval to another Interval.
- * E.g. Interval A has a range of [0;10] Interval B[-5;5]. When the input x is of Interval A,
- * you can calculate the corresponding value to Interval B.
+ * The IntervalToIntervalCalculator that maps a value of one interval to another interval value.
+ * When the Input x of the interval A is given, and has a range of [0;10] and interval B has a range of [-5;5].
+ * This Interface calculates the corresponding value y to interval B.
  * </p>
  * <p>
  * Formula: y = mx + h
@@ -21,8 +20,8 @@ public interface IntervalToIntervalCalculator {
 
     /**
      * Calculation Type.
-     * These Combinations represent, if the input Value comes from the first (A) or the second interval (B).
-     * Therefore, the mapped value of the other Interval can be calculated.
+     * These Combinations represent, if the input value comes from the first (A) or the second interval (B).
+     * Therefore, the mapped value of the other interval can be calculated.
      */
     public enum RepresentationType {
 
@@ -30,15 +29,15 @@ public interface IntervalToIntervalCalculator {
     }
 
     /**
-     * Calculates a Value depending on the CalculationType.
+     * Calculates a value depending on the CalculationType.
      *
-     * @param representationType the CalculationType (is incoming input from Interval A or B)
-     * @param minValueIntervalA  the min Value of Interval A
-     * @param maxValueIntervalA  the max Value of Interval A.
-     * @param minValueIntervalB  the minimum Value of Interval B.
-     * @param maxValueIntervalB  the maximum Value of Interval B.
-     * @param input              the input, either from Interval A or B.
-     * @return the adapted calculated Value corresponding to the other Interval (different to Input)
+     * @param representationType the CalculationType (is incoming input from interval A or B)
+     * @param minValueIntervalA  the min value of interval A
+     * @param maxValueIntervalA  the max value of interval A.
+     * @param minValueIntervalB  the minimum value of interval B.
+     * @param maxValueIntervalB  the maximum value of interval B.
+     * @param input              the input, either from interval A or B.
+     * @return the adapted calculated value corresponding to the other interval (different to Input)
      */
     static double calculateDoubleByCalculationType(RepresentationType representationType, double minValueIntervalA,
                                                    double maxValueIntervalA, double minValueIntervalB,
@@ -54,15 +53,15 @@ public interface IntervalToIntervalCalculator {
 
 
     /**
-     * Calculates a Value depending on the CalculationType.
+     * Calculates a value depending on the CalculationType.
      *
-     * @param representationType the CalculationType (is incoming input from Interval A or B)
-     * @param minValueIntervalA  the min Value of Interval A
-     * @param maxValueIntervalA  the max Value of Interval A.
-     * @param minValueIntervalB  the minimum Value of Interval B.
-     * @param maxValueIntervalB  the maximum Value of Interval B.
-     * @param input              the input, either from Interval A or B.
-     * @return the adapted calculated Value corresponding to the other Interval (different to Input)
+     * @param representationType the CalculationType (is incoming input from interval A or B)
+     * @param minValueIntervalA  the min value of interval A
+     * @param maxValueIntervalA  the max value of interval A.
+     * @param minValueIntervalB  the minimum value of interval B.
+     * @param maxValueIntervalB  the maximum value of interval B.
+     * @param input              the input, either from interval A or B.
+     * @return the adapted calculated value corresponding to the other interval (different to Input)
      */
 
     static int calculateIntByCalculationType(RepresentationType representationType, int minValueIntervalA,
@@ -72,7 +71,7 @@ public interface IntervalToIntervalCalculator {
     }
 
     /**
-     * Calculates the function Value, depending on the Intervals A [a;b]and B[a;b].
+     * Calculates the function value, depending on the intervals A [a;b] and B [a;b].
      * Formula: y = mx + h
      * m = [d-c/b-a] = slope
      * h = (bc-ad)/(b-a) = constant
@@ -85,8 +84,8 @@ public interface IntervalToIntervalCalculator {
      * @param maxValueIntervalA the maximum of the interval A.
      * @param minValueIntervalB the minimum of the interval B.
      * @param maxValueIntervalB the maximum of the interval B.
-     * @param input             the Value of X.
-     * @return the function Value Y.
+     * @param input             the value of X.
+     * @return the function value Y.
      */
     static double calculateIntervalValueDouble(double minValueIntervalA, double maxValueIntervalA, double minValueIntervalB, double maxValueIntervalB, double input) {
         double slope = (maxValueIntervalB - minValueIntervalB) / (maxValueIntervalA - minValueIntervalA);

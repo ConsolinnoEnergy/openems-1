@@ -22,13 +22,13 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * This abstract Class is the Parent of Calculator implementations.
- * It stores a List of {@link ValueWrapper}. Which allow the Calculator to hold Values with certain Properties.
- * Those Values are either ChannelAddresses or static numeric values.
- * Children call on activation or modification the {@link #addValues(String[], String, ComponentManager)} Method
- * to Add either Channel or static Values to the List.
+ * This abstract Class is the Parent of Calculator implementations,
+ * It stores a list of {@link ValueWrapper}, which allows the calculator to hold values with certain properties.
+ * Those values are either ChannelAddresses or static numeric values.
+ * Children call on activation or modification the {@link #addValues(String[], String, ComponentManager)} method
+ * to add either channel or static values to the list.
  * On Events, the children get the List of the ValueWrapper and run their calculation routine.
- * After running the Routine, they call the parent to write the result to the output channel.
+ * Afterwards, they call the parent to write the result to the output channel.
  * This is done in {@link #writeToOutput(double, ComponentManager)}.
  */
 public abstract class AbstractCalculator extends AbstractOpenemsComponent implements OpenemsComponent {
@@ -63,7 +63,7 @@ public abstract class AbstractCalculator extends AbstractOpenemsComponent implem
 
     /**
      * Add the Values to the Parent Value List.
-     * If a given Value within the values Array is neither a number nor a ChannelAddress, an error will be thrown.
+     * If a given value within the values array is neither a number nor a ChannelAddress, an error will be thrown.
      *
      * @param values           the values to add. Usually from the child Config.
      * @param specialCharacter the "SpecialCharacter" is unique for the children. Children know what to do when the value is unique.
@@ -113,7 +113,7 @@ public abstract class AbstractCalculator extends AbstractOpenemsComponent implem
     }
 
     /**
-     * Writes a Result to the configured {@link #output} Address.
+     * Writes a result to the configured {@link #output} address.
      *
      * @param output the result of children calculation.
      * @param cpm    the ComponentManager

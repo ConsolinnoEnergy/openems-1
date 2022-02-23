@@ -29,10 +29,10 @@ import java.util.Optional;
 
 /**
  * <p>
- * This Component provides the ability to Calculate a function Value from one Interval A [a;b] to another Interval B [c;d].
- * E.g. You have an analogue Signal of 4-20mA and want to set it into ratio of Pressure
+ * This component provides the ability to calculate a function value from one interval A [a;b] to another interval B [c;d].
+ * E.g. You have an analogue signal of 4-20mA and want to set it into ratio of pressure
  * with a range of -5 to 5 bar.
- * Set up Interval A with [4;20] and Interval B with [-5;5]. Now an input in mA can be set in relation to the pressure.
+ * Set up interval A with [4;20] and interval B with [-5;5]. Now an input in mA can be set in relation to the pressure.
  * </p>
  * {@link IntervalToIntervalCalculator} is used to calculate the output.
  * You can use the IntervalToIntervalCalculator to calculate the output within your own class.
@@ -91,7 +91,7 @@ public class IntervalToIntervalCalculatorComponent extends AbstractOpenemsCompon
                         if (inputChannel instanceof WriteChannel<?>) {
                             inputValue = ((WriteChannel<?>) inputChannel).getNextWriteValue();
                         } else {
-                            this.log.warn("InputChannel Not A Write Channel! Please Reconfigure!");
+                            this.log.warn("InputChannel Not a WriteChannel! Please reconfigure!");
                             return;
                         }
                         break;

@@ -24,10 +24,10 @@ import java.util.List;
 
 
 /**
- * This Implementation of the {@link AbstractCalculator} Class.
- * This Child receives values to add them up and write the result to an output by calling parent methods.
+ * The CalculatorAdderImpl is an implementation of the {@link AbstractCalculator} class.
+ * This child receives values to add them up and write the result to an output by calling parent methods.
  * Those values can either be a ChannelAddress (value) or a static value.
- * When you want to Subtract a value from the sum, simply add the {@link #SPECIAL_CHARACTER} in front of a config entry.
+ * When you want to subtract a value from the sum, simply add the {@link #SPECIAL_CHARACTER} in front of a config entry.
  */
 
 @Designate(ocd = AdderConfig.class, factory = true)
@@ -79,11 +79,11 @@ public class CalculatorAdderImpl extends AbstractCalculator implements OpenemsCo
     }
 
     /**
-     * After the Process image -> get all existing Values from the parent.
-     * If the Value is a Channel -> get the Value of this channel.
-     * If the Value is a special Value -> Multiply it by -1.
-     * Add all values up and call the parent {@link AbstractCalculator#writeToOutput(double, ComponentManager)} Method.
-     * This will write the calculated Value to the configured output Channel.
+     * After the OpenEMS Process image -> get all existing values from the parent.
+     * If the value is a channel -> get the value of this channel.
+     * If the value is a special value -> the value  = 1/value .
+     * Add all values up and call the parent {@link AbstractCalculator#writeToOutput(double, ComponentManager)} method.
+     * This will write the calculated Value to the configured output channel.
      * @param event the OpenEMS Event. Usually {@link EdgeEventConstants#TOPIC_CYCLE_AFTER_PROCESS_IMAGE}
      */
     @Override
