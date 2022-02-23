@@ -73,6 +73,7 @@ public class TimerByCycles extends AbstractTimer implements OpenemsComponent, Ev
             return wrapper.getCounter().get() >= wrapper.getMaxValue();
         } else {
             wrapper.setInitialized(true);
+            wrapper.getCounter().set(1);
             return false;
         }
     }
