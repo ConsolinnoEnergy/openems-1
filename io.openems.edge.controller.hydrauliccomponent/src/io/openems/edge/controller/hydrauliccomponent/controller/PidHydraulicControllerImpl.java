@@ -5,6 +5,7 @@ import io.openems.edge.common.component.AbstractOpenemsComponent;
 import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.common.filter.PidFilter;
+import io.openems.edge.common.type.TypeUtils;
 import io.openems.edge.controller.api.Controller;
 import io.openems.edge.controller.hydrauliccomponent.api.HydraulicController;
 import io.openems.edge.controller.hydrauliccomponent.api.PidHydraulicController;
@@ -188,7 +189,7 @@ public class PidHydraulicControllerImpl extends AbstractOpenemsComponent impleme
                     this.timerHandler.resetTimer(WAIT_TIME_IDENTIFIER);
                     int referenceTemperature = this.thermometer.getTemperatureValue();
                     int setPointTemperature = this.setMinTemperature().value().orElse(0);
-                    if (this.notWithinTemperatureRange(referenceTemperature, setPointTemperature)) {
+                    if (this.notWithinTemperatureRange(referenceTemperature, setPointTemperature) && referenceTemperature != Thermometer.MISSING_TEMPERATURE) {
                         //      && this.hydraulicComponentAtMaximum(referenceTemperature, setPointTemperature) == false) {
                         this.runStatus = RunStatus.RUNNING;
                         //calculated Percentage
@@ -198,12 +199,13 @@ public class PidHydraulicControllerImpl extends AbstractOpenemsComponent impleme
 
                         // is percentage value fix if so subtract from current powerLevel?
                         if (this.morePercentEqualsCooling) {
-                            powerValueToApply *= -1;
+                            powerValueToApply = this.config.upperLimit() - powerValueToApply;
                         }
-                        if (this.hydraulicComponent.getPowerLevelChannel().getNextValue().isDefined()) {
+                        powerValueToApply = TypeUtils.fitWithin(HydraulicComponent.DEFAULT_MIN_POWER_VALUE, HydraulicComponent.DEFAULT_MAX_POWER_VALUE, (int) powerValueToApply);
+                       /* if (this.hydraulicComponent.getPowerLevelChannel().getNextValue().isDefined()) {
                             powerValueToApply += this.hydraulicComponent.getPowerLevelChannel().getNextValue().orElse(0.d);
                             powerValueToApply = Math.max(HydraulicComponent.DEFAULT_MIN_POWER_VALUE, powerValueToApply);
-                        }
+                        }*/
                         this.hydraulicComponent.setPointPowerLevelChannel().setNextWriteValueFromObject(powerValueToApply);
                     }
                 } else {

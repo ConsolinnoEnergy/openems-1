@@ -61,6 +61,8 @@ public class ThermometerVirtualImpl extends AbstractOpenemsComponent implements 
         super.activate(context, config.id(), config.alias(), config.enabled());
         this.config = config;
         this.activationOrModifiedRoutine(config);
+        this.getTemperatureChannel().setNextValue(MISSING_TEMPERATURE);
+        this.getTemperatureChannel().nextProcessImage();
 
     }
 
