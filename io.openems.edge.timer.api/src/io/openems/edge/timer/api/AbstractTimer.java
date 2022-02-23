@@ -1,6 +1,7 @@
 package io.openems.edge.timer.api;
 
 import io.openems.edge.common.component.AbstractOpenemsComponent;
+import org.joda.time.DateTime;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -85,5 +86,17 @@ public abstract class AbstractTimer extends AbstractOpenemsComponent implements 
             identifierToValueMap.put(identifier, new ValueInitializedWrapper(maxValue));
             this.componentToIdentifierValueAndInitializedMap.put(id, identifierToValueMap);
         }
+    }
+
+    @Override
+    public void setInitTime(String id, String identifierSwap, DateTime dateTime){
+        this.getWrapper(id, identifierSwap).setInitialized(true);
+        this.getWrapper(id,identifierSwap).setInitialDateTime(dateTime);
+    }
+
+    @Override
+    public void setInitTime(String id, String identifierSwap, Integer count){
+        this.getWrapper(id, identifierSwap).setInitialized(true);
+        this.getWrapper(id,identifierSwap).setCounter(count);
     }
 }

@@ -47,7 +47,10 @@ public class GenibusImpl extends AbstractOpenemsComponent implements OpenemsComp
 
     private final GenibusWorker worker = new GenibusWorker(this);
     protected int workerStartDelay;
+    protected int workerRunIdentifier = 0;
     protected long timestampExecuteWrite;
+
+    private static final int BROADCAST_ADDRESS = 254;
 
     protected String portName;
     protected boolean connectionOk = true;  // Start with true because this boolean is also used to track if an error message should be sent.
@@ -63,7 +66,7 @@ public class GenibusImpl extends AbstractOpenemsComponent implements OpenemsComp
     }
 
     @Activate
-    public void activate(ComponentContext context, Config config) {
+    void activate(ComponentContext context, Config config) {
         super.activate(context, config.id(), config.alias(), config.enabled());
         this.debug = config.debug();
         this.portName = config.portName();
@@ -86,7 +89,7 @@ public class GenibusImpl extends AbstractOpenemsComponent implements OpenemsComp
     }
 
     @Deactivate
-    public void deactivate() {
+    protected void deactivate() {
         super.deactivate();
         this.worker.deactivate();
         this.connectionHandler.stop();
@@ -127,7 +130,7 @@ public class GenibusImpl extends AbstractOpenemsComponent implements OpenemsComp
      */
     protected void handleTelegram(Telegram telegram) {
 
-        /* When testing on the leaflet I saw weird random connection problems. I guess the leaflet has occasional hangups
+        /* When testing on a raspberry pi I saw weird random connection problems. I guess the pi has occasional hangups
            that cause an execution delay. Adding more time to the timeout solved this problem. Adding 100 ms helped, but
            to eliminate the problem 100% adding 200 ms was needed. Running OpenEMS on a laptop did not have that issue.
            Adjustable by config with parameter ’timeoutIncreaseMs’ */
@@ -158,7 +161,7 @@ public class GenibusImpl extends AbstractOpenemsComponent implements OpenemsComp
         int responseTelegramAddress = Byte.toUnsignedInt(responseTelegram.getSourceAddress());
 
         // Broadcast (= request address 254) will have different address in response. Let that through.
-        if (requestTelegramAddress != responseTelegramAddress && requestTelegramAddress != 254) {
+        if (requestTelegramAddress != responseTelegramAddress && requestTelegramAddress != BROADCAST_ADDRESS) {
             this.logWarn(this.log, "Telegram address mismatch! Request telegram was sent to address " + requestTelegramAddress
                     + ", but response telegram is from address " + responseTelegramAddress + ". This is not the right response telegram. Cannot process, resetting connection.");
             telegram.getPumpDevice().setConnectionOk(false);
@@ -304,22 +307,30 @@ public class GenibusImpl extends AbstractOpenemsComponent implements OpenemsComp
         if (this.isEnabled() && EdgeEventConstants.TOPIC_CYCLE_EXECUTE_WRITE.equals(event.getTopic())) {
             this.timestampExecuteWrite = System.currentTimeMillis();
             this.workerStartDelay = 0;
+            this.workerRunIdentifier++;
+            if (this.workerRunIdentifier > 10) {
+                this.workerRunIdentifier = 0;
+            }
             this.worker.triggerNextRun();
 
-            /* The GenibusWorker extends the AbstractCycleWorker, and a new run will only start when the worker
-               has finished it's forever() method and triggerNextRun() is called. Calling triggerNextRun() while
-               forever() is not finished does nothing.
-               The execution of one iteration of the GenibusWorker's forever() method may take longer than one OpenEMS
+            /* The execution of one iteration of the GenibusWorker's forever() method may take longer than one OpenEMS
                cycle, especially if a Genibus device is not responding and the code has to wait for the answer timeout.
-               If the GenibusWorker is not finished on the first call of triggerNextRun(), later calls are added to
-               allow a delayed start and keep the worker from idling. Otherwise, if it barely missed triggerNextRun() it
-               would idle the rest of the cycle. */
+               The GenibusWorker is an AbstractCycleWorker, and as such calling triggerNextRun() will only start a new
+               run if the forever() method is finished when triggerNextRun() is called. If the GenibusWorker is not
+               finished on the first call of triggerNextRun(), later calls are added to allow a delayed start and keep
+               the worker from idling. Otherwise, if it barely missed the first triggerNextRun() it would idle the rest
+               of the cycle. */
             int delayedStartLoopCounter = 4 + (this.timeoutIncreaseMs / 50);
             for (int i = 0; i < delayedStartLoopCounter; i++) {
                 try {
                     Thread.sleep(50);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
+                }
+                if (this.workerRunIdentifier == this.worker.getRunIdentifier()) {
+                    /* The worker collects the value of ’workerRunIdentifier’ at the start of it's run. Compare value to
+                       see if the next run has started or not. Exit loop if run has started.*/
+                    break;
                 }
                 this.workerStartDelay += 50;
                 this.worker.triggerNextRun();

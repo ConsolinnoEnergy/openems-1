@@ -1,7 +1,6 @@
 package io.openems.edge.heater.heatpump.heliotherm;
 
 import io.openems.edge.heater.heatpump.heliotherm.api.ControlMode;
-import io.openems.edge.heater.heatpump.heliotherm.api.OperatingMode;
 import io.openems.edge.heater.heatpump.heliotherm.api.PowerControlSetting;
 import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
@@ -12,8 +11,6 @@ import org.osgi.service.metatype.annotations.Option;
         description = "A module to map Modbus calls to OpenEMS channels for a Heliotherm heat pump."
 )
 @interface Config {
-
-    String service_pid();
 
     @AttributeDefinition(name = "HeatPump-Device ID", description = "Unique Id of the heat pump.")
     String id() default "HeatPump0";
@@ -100,9 +97,7 @@ import org.osgi.service.metatype.annotations.Option;
     @AttributeDefinition(name = "Print info to log", description = "Print status info to the log.")
     boolean printInfoToLog() default false;
 
-
     boolean enabled() default true;
-
 
     String webconsole_configurationFactory_nameHint() default "Heat Pump Heliotherm Device [{id}]";
 

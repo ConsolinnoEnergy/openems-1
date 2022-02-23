@@ -8,6 +8,7 @@ import io.openems.edge.common.channel.FloatReadChannel;
 import io.openems.edge.common.channel.IntegerReadChannel;
 import io.openems.edge.common.channel.value.Value;
 import io.openems.edge.heater.api.Chp;
+import io.openems.edge.heater.api.Heater;
 
 /**
  * Channels for the Viessmann chp.
@@ -154,8 +155,8 @@ public interface ChpViessmann extends Chp {
          * </ul>
          */
         PT_100_1(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS)),    // Todo: check if unit is correct (degree vs decidegree).
-        //PT_100_2(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)), -> Heater RETURN_TEMPERATURE
-        //PT_100_3(Doc.of(OpenemsType.INTEGER).unit(Unit.DEZIDEGREE_CELSIUS)), -> Heater FLOW_TEMPERATURE
+       // PT_100_2(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS)), //-> Heater RETURN_TEMPERATURE
+       // PT_100_3(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS)), //-> Heater FLOW_TEMPERATURE
         PT_100_4(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS)),
         PT_100_5(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS)),
         PT_100_6(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS)),

@@ -2,15 +2,12 @@ package io.openems.edge.heater.chp.viessmann;
 
 import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
-import org.osgi.service.metatype.annotations.Option;
 
 @ObjectClassDefinition(
         name = "Chp Vitobloc",
         description = "A combined heat and power system."
 )
 @interface Config {
-
-    String service_pid();
 
     @AttributeDefinition(name = "Chp-Device ID", description = "Unique Id of the Chp Device.")
     String id() default "Chp0";
@@ -73,7 +70,6 @@ import org.osgi.service.metatype.annotations.Option;
     boolean printInfoToLog() default false;
 
     boolean enabled() default true;
-
 
     String webconsole_configurationFactory_nameHint() default "Heater Chp Viessmann [{id}]";
 

@@ -3,20 +3,12 @@ Bundle-Vendor: Consolinno Energy GmbH
 Bundle-License: https://opensource.org/licenses/EPL-2.0
 Bundle-Version: 1.0.0.${tstamp}
 
-
-
-
--buildpath:  \
+-buildpath: \
 	${buildpath},\
 	io.openems.edge.common,\
 	io.openems.common,\
 	io.openems.wrapper.snksoft,\
-    org.apache.felix.scr,\
-    org.osgi.compendium,\
-    osgi.annotation,\
-    com.fazecast.jSerialComm,\
-    com.google.gson,\
-    com.google.guava,\
+	com.fazecast.jSerialComm
 
 -testpath: \
 	${testpath}

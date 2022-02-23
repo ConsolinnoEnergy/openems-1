@@ -2,8 +2,8 @@ package io.openems.edge.bridge.genibus.api.task;
 
 import io.openems.common.channel.Unit;
 import io.openems.edge.common.channel.Channel;
-import io.openems.edge.common.channel.DoubleReadChannel;
 import io.openems.edge.common.taskmanager.Priority;
+
 import java.util.OptionalDouble;
 
 /**

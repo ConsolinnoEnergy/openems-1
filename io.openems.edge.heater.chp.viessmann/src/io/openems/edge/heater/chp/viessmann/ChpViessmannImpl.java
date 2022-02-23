@@ -491,10 +491,10 @@ public class ChpViessmannImpl extends AbstractOpenemsModbusComponent implements 
                 }
                 this._setHeatingPowerPercentSetpoint(powerPercentToAio);
 
-                writeToAioValue = (int)Math.round(powerPercentToAio);
+                writeToAioValue = (int) Math.round(powerPercentToAio);
                 if (this.percentageRange == PercentageRange.RANGE_50_100) {
                     // Map to 50-100% range.
-                    writeToAioValue = (int)Math.round((powerPercentToAio - 50) * 2);
+                    writeToAioValue = (int) Math.round((powerPercentToAio - 50) * 2);
                 }
             } else {
                 if (this.useRelay) {
@@ -540,11 +540,12 @@ public class ChpViessmannImpl extends AbstractOpenemsModbusComponent implements 
             scaleFactor = thermalOutput50 / thermalOutput100;
         }
         float multiplier = (2 - (scaleFactor * 4));
-        return (int)Math.round(powerPercent * thermalOutput100 * (1 + (100 - powerPercent) * multiplier));
+        return (int) Math.round(powerPercent * thermalOutput100 * (1 + (100 - powerPercent) * multiplier));
     }
 
     /**
      * Collects all the error messages and puts them in a char array.
+     *
      * @return the error messages.
      */
     private char[] generateErrorAsCharArray() {
@@ -618,13 +619,13 @@ public class ChpViessmannImpl extends AbstractOpenemsModbusComponent implements 
      * @return the debug message.
      */
     public String debugLog() {
-        String debugMessage = this.getHeaterState().asEnum().asCamelCase() //
+        String debugMessage = this.id() + " :" + this.getHeaterState().asEnum().asCamelCase() //
                 + "|F:" + this.getFlowTemperature().asString() //
                 + "|R:" + this.getReturnTemperature().asString(); //
-        if (this.getWarningMessage().get().equals("No warning") == false) {
+        if (this.getWarningMessage().isDefined() && this.getWarningMessage().get().equals("No warning") == false) {
             debugMessage = debugMessage + "|Warning";
         }
-        if (this.getErrorMessage().get().equals("No error") == false) {
+        if (this.getWarningMessage().isDefined() && this.getErrorMessage().get().equals("No error") == false) {
             debugMessage = debugMessage + "|Error";
         }
         return debugMessage;

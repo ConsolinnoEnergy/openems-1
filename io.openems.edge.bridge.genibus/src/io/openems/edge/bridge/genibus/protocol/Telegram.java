@@ -11,7 +11,6 @@ import io.openems.edge.bridge.genibus.api.PumpDevice;
 import io.openems.edge.bridge.genibus.api.task.GenibusTask;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import com.github.snksoft.crc.CRC;
 
 /**

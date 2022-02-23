@@ -5,6 +5,7 @@ import io.openems.edge.common.component.AbstractOpenemsComponent;
 import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.common.filter.PidFilter;
+import io.openems.edge.common.type.TypeUtils;
 import io.openems.edge.controller.api.Controller;
 import io.openems.edge.controller.hydrauliccomponent.api.HydraulicController;
 import io.openems.edge.controller.hydrauliccomponent.api.PidHydraulicController;
@@ -188,22 +189,20 @@ public class PidHydraulicControllerImpl extends AbstractOpenemsComponent impleme
                     this.timerHandler.resetTimer(WAIT_TIME_IDENTIFIER);
                     int referenceTemperature = this.thermometer.getTemperatureValue();
                     int setPointTemperature = this.setMinTemperature().value().orElse(0);
-                    if (this.notWithinTemperatureRange(referenceTemperature, setPointTemperature)) {
+                    if (referenceTemperature != Thermometer.MISSING_TEMPERATURE &&
+                            referenceTemperature != TypeUtils.fitWithin(setPointTemperature - BOUNDARY,
+                                    setPointTemperature + BOUNDARY, referenceTemperature)) {
                         //      && this.hydraulicComponentAtMaximum(referenceTemperature, setPointTemperature) == false) {
                         this.runStatus = RunStatus.RUNNING;
                         //calculated Percentage
                         double powerValueToApply = this.pidFilter.applyPidFilter(referenceTemperature, setPointTemperature);
-                        // / 10 bc systems show good % value with this
+                        // it seems, that the calculated powerValue is a setPoint instead of adding/subtracting
+                        // by giving a min and max range in dC you have to divide the result by 10
                         powerValueToApply = powerValueToApply / 10;
-
-                        // is percentage value fix if so subtract from current powerLevel?
                         if (this.morePercentEqualsCooling) {
                             powerValueToApply *= -1;
                         }
-                        if (this.hydraulicComponent.getPowerLevelChannel().getNextValue().isDefined()) {
-                            powerValueToApply += this.hydraulicComponent.getPowerLevelChannel().getNextValue().orElse(0.d);
-                            powerValueToApply = Math.max(HydraulicComponent.DEFAULT_MIN_POWER_VALUE, powerValueToApply);
-                        }
+                        powerValueToApply = TypeUtils.fitWithin(HydraulicComponent.DEFAULT_MIN_POWER_VALUE, HydraulicComponent.DEFAULT_MAX_POWER_VALUE, (int) powerValueToApply);
                         this.hydraulicComponent.setPointPowerLevelChannel().setNextWriteValueFromObject(powerValueToApply);
                     }
                 } else {
