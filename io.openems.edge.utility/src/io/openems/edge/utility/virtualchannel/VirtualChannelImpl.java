@@ -71,11 +71,13 @@ public class VirtualChannelImpl extends AbstractOpenemsComponent implements Open
                     this.getStringChannel().setNextWriteValueFromObject(defaultValue);
                     break;
                 case BOOLEAN:
-                    //Either 0 or negative Value interpreted as false, else true
-                    if (defaultValue.equals("0") || defaultValue.contains("-")) {
-                        defaultValue = "false";
-                    } else {
-                        defaultValue = "true";
+                    if(!(defaultValue.equalsIgnoreCase("false") || defaultValue.equalsIgnoreCase("true"))) {
+                        //Either 0 or negative Value interpreted as false, else true
+                        if (defaultValue.equals("0") || defaultValue.contains("-")) {
+                            defaultValue = "false";
+                        } else {
+                            defaultValue = "true";
+                        }
                     }
                     this.getBooleanChannel().setNextWriteValueFromObject(defaultValue);
                     break;
