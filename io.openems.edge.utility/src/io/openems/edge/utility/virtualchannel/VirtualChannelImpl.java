@@ -4,9 +4,9 @@ import io.openems.common.exceptions.OpenemsError;
 import io.openems.edge.common.component.AbstractOpenemsComponent;
 import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.common.event.EdgeEventConstants;
+import io.openems.edge.utility.api.ContainsOnlyNumbers;
 import io.openems.edge.utility.api.VirtualChannel;
 import io.openems.edge.utility.api.VirtualChannelType;
-import org.osgi.service.cm.ConfigurationException;
 import org.osgi.service.component.ComponentContext;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
@@ -82,10 +82,14 @@ public class VirtualChannelImpl extends AbstractOpenemsComponent implements Open
                     this.getBooleanChannel().setNextWriteValueFromObject(defaultValue);
                     break;
                 case DOUBLE:
-                    this.getDoubleChannel().setNextWriteValueFromObject(defaultValue);
+                    if(ContainsOnlyNumbers.containsOnlyValidNumbers(defaultValue)) {
+                        this.getDoubleChannel().setNextWriteValueFromObject(defaultValue);
+                    }
                     break;
-                case INTEGER:
+                case LONG:
+                    if(ContainsOnlyNumbers.containsOnlyValidNumbers(defaultValue)) {
                     this.getLongChannel().setNextWriteValueFromObject(defaultValue);
+                }
                     break;
             }
         } catch (OpenemsError.OpenemsNamedException e) {
@@ -111,7 +115,7 @@ public class VirtualChannelImpl extends AbstractOpenemsComponent implements Open
             case DOUBLE:
                 debugString += this.getDoubleChannel().value();
                 break;
-            case INTEGER:
+            case LONG:
                 debugString += this.getLongChannel().value();
                 break;
         }
@@ -132,7 +136,7 @@ public class VirtualChannelImpl extends AbstractOpenemsComponent implements Open
                 case DOUBLE:
                     this.getDoubleChannel().getNextWriteValue().ifPresent(entry -> this.getDoubleChannel().setNextValue(entry));
                     break;
-                case INTEGER:
+                case LONG:
                     this.getLongChannel().getNextWriteValue().ifPresent(entry -> this.getLongChannel().setNextValue(entry));
                     break;
             }
