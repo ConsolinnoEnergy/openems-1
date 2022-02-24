@@ -1,3 +1,11 @@
+openems-consolinno (0.1.24-1) unstable; urgency=medium
+
+  * PID supports now the functionality of morePercentEqualsCooling e.g.
+    when opening a valve it gets colder. 
+  * Also potential optimizer fix
+
+ -- Felix <felix@felix-ThinkPad-E15-Gen-2>  Thu, 24 Feb 2022 10:31:26 +0100
+
 openems-consolinno (0.1.23-1) unstable; urgency=medium
 
   * implemented a Controller to update Configs after X amount of time
