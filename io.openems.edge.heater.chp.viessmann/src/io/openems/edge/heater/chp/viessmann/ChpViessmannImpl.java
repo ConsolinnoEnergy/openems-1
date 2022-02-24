@@ -92,7 +92,7 @@ public class ChpViessmannImpl extends AbstractOpenemsModbusComponent implements 
     private boolean readOnly = false;
     private boolean startupStateChecked = false;
     private boolean readyForCommands = false;
-
+    private double defaultPower = 0.d;
     private EnableSignalHandler enableSignalHandler;
     private static final String ENABLE_SIGNAL_IDENTIFIER = "CHP_VIESSMANN_ENABLE_SIGNAL_IDENTIFIER";
     private boolean useExceptionalState;
@@ -134,7 +134,8 @@ public class ChpViessmannImpl extends AbstractOpenemsModbusComponent implements 
             this.allocateComponents(config);
             this.percentageRange = config.percentageRange();
             this.startupStateChecked = false;
-            this.powerPercentSetpoint = config.defaultSetPointPowerPercent();
+            this.powerPercentSetpoint = Math.min(100, Math.max(config.defaultSetPointPowerPercent(), 0));
+            this.defaultPower = this.powerPercentSetpoint;
             this.initializeTimers(config);
         }
 
@@ -453,71 +454,64 @@ public class ChpViessmannImpl extends AbstractOpenemsModbusComponent implements 
                 }
             }
         }
-
-        if (this.aioChannel.isEnabled()) {
-            int writeToAioValue = 0;
-            if (turnOnChp) {
-                if (this.useRelay) {
-                    if (this.relay.isEnabled()) {
-                        try {
-                            this.relay.getRelaysWriteChannel().setNextWriteValue(true);
-                        } catch (OpenemsError.OpenemsNamedException e) {
-                            this.log.warn("Couldn't write in Channel " + e.getMessage());
-                        }
-                    } else {
-                        this.log.warn("Relay module " + this.relay.id() + "is not enabled! Sending commands to CHP not possible.");
-                    }
+        int writeToAioValue = 0;
+        if (turnOnChp) {
+            if (this.useRelay) {
+                try {
+                    this.relay.getRelaysWriteChannel().setNextWriteValue(true);
+                } catch (OpenemsError.OpenemsNamedException e) {
+                    this.log.warn("Couldn't write in Channel " + e.getMessage());
                 }
-
-                // Check write channels for values. Since there are two channels, need to have a hierarchy.
-                // SET_POINT_HEATING_POWER_PERCENT (heater interface) overwrites EFFECTIVE_ELECTRIC_POWER_SETPOINT (Chp interface).
-                Optional<Double> electricPowerWrite = this.getElectricPowerSetpointChannel().getNextWriteValueAndReset();
-                if (electricPowerWrite.isPresent()) {
-                    double electricPowerSetpoint = electricPowerWrite.get();
-                    electricPowerSetpoint = Math.min(electricPowerSetpoint, this.electricOutput);
-                    electricPowerSetpoint = Math.max(electricPowerSetpoint, 0);
-                    this._setElectricPowerSetpoint(electricPowerSetpoint);
-                    this.powerPercentSetpoint = 100.0 * electricPowerSetpoint / this.electricOutput;
-                }
-                Optional<Double> heatingPowerPercentWrite = this.getHeatingPowerPercentSetpointChannel().getNextWriteValueAndReset();
-                if (heatingPowerPercentWrite.isPresent()) {
-                    this.powerPercentSetpoint = heatingPowerPercentWrite.get();
-                }
-                this.powerPercentSetpoint = Math.min(this.powerPercentSetpoint, 100);
-                this.powerPercentSetpoint = Math.max(this.powerPercentSetpoint, 0);
-                double powerPercentToAio = this.powerPercentSetpoint;
-                if (exceptionalStateActive) {
-                    powerPercentToAio = exceptionalStateValue;
-                }
-                this._setHeatingPowerPercentSetpoint(powerPercentToAio);
-
-                writeToAioValue = (int) Math.round(powerPercentToAio);
-                if (this.percentageRange == PercentageRange.RANGE_50_100) {
-                    // Map to 50-100% range.
-                    writeToAioValue = (int) Math.round((powerPercentToAio - 50) * 2);
-                }
+            }
+            double powerPercentToAio = this.defaultPower;
+            if (exceptionalStateActive) {
+                powerPercentToAio = exceptionalStateValue;
             } else {
-                if (this.useRelay) {
-                    if (this.relay.isEnabled()) {
-                        try {
-                            this.relay.getRelaysWriteChannel().setNextWriteValue(false);
-                        } catch (OpenemsError.OpenemsNamedException e) {
-                            this.log.warn("Couldn't write in Channel " + e.getMessage());
-                        }
-                    } else {
-                        this.log.warn("Relay module " + this.relay.id() + "is not enabled! Sending commands to CHP not possible.");
+                if (this.getHeatingPowerPercentSetpointChannel().getNextWriteValue().isPresent()) {
+                    Optional<Double> heatingPowerPercentWrite = this.getHeatingPowerPercentSetpointChannel().getNextWriteValueAndReset();
+                    heatingPowerPercentWrite.ifPresent(aDouble -> this.powerPercentSetpoint = aDouble);
+                    this.powerPercentSetpoint = Math.min(this.powerPercentSetpoint, 100);
+                    this.powerPercentSetpoint = Math.max(this.powerPercentSetpoint, 0);
+                    powerPercentToAio = this.powerPercentSetpoint;
+                } else {
+                    // Check write channels for values. Since there are two channels, need to have a hierarchy.
+                    // SET_POINT_HEATING_POWER_PERCENT (heater interface) overwrites EFFECTIVE_ELECTRIC_POWER_SETPOINT (Chp interface).
+                    Optional<Double> electricPowerWrite = this.getElectricPowerSetpointChannel().getNextWriteValueAndReset();
+                    if (electricPowerWrite.isPresent()) {
+                        double electricPowerSetpoint = electricPowerWrite.get();
+                        electricPowerSetpoint = Math.min(electricPowerSetpoint, this.electricOutput);
+                        electricPowerSetpoint = Math.max(electricPowerSetpoint, 0);
+                        this._setElectricPowerSetpoint(electricPowerSetpoint);
+                        this.powerPercentSetpoint = 100.0 * electricPowerSetpoint / this.electricOutput;
                     }
                 }
             }
+            this._setHeatingPowerPercentSetpoint(powerPercentToAio);
 
-            // Use AiO to send commands to chp.
-            try {
-                this.aioChannel.setWritePercent(writeToAioValue);
-            } catch (OpenemsError.OpenemsNamedException e) {
-                this.log.warn("Couldn't write in Channel " + e.getMessage());
+            writeToAioValue = (int) Math.round(powerPercentToAio);
+            if (this.percentageRange == PercentageRange.RANGE_50_100) {
+                // Map to 50-100% range.
+                writeToAioValue = (int) Math.round((powerPercentToAio - 50) * 2);
             }
         } else {
-            this.log.warn("AiO module " + this.aioChannel.id() + "is not enabled! Sending commands to CHP not possible.");
+            if (this.useRelay) {
+                if (this.relay.isEnabled()) {
+                    try {
+                        this.relay.getRelaysWriteChannel().setNextWriteValue(false);
+                    } catch (OpenemsError.OpenemsNamedException e) {
+                        this.log.warn("Couldn't write in Channel " + e.getMessage());
+                    }
+                } else {
+                    this.log.warn("Relay module " + this.relay.id() + "is not enabled! Sending commands to CHP not possible.");
+                }
+            }
+        }
+
+        // Use AiO to send commands to chp.
+        try {
+            this.aioChannel.setWritePercent(writeToAioValue);
+        } catch (OpenemsError.OpenemsNamedException e) {
+            this.log.warn("Couldn't write in Channel " + e.getMessage());
         }
     }
 
