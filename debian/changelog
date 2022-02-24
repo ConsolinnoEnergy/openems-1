@@ -1,3 +1,12 @@
+openems-consolinno (0.1.23-1) unstable; urgency=medium
+
+  * implemented a Controller to update Configs after X amount of time
+    and using an optional Error Channel. 
+  * Also bugfix in PID and TimerByCycles Components. 
+  * VirtualThermometer on Default use MissingTemperature
+
+ -- Felix <felix@felix-ThinkPad-E15-Gen-2>  Wed, 23 Feb 2022 17:20:24 +0100
+
 openems-consolinno (0.1.22-1) unstable; urgency=medium
 
   * MQTT null safety in telemetry subscribe
