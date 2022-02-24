@@ -109,6 +109,7 @@ public class MqttBridgeImpl extends AbstractOpenemsComponent implements OpenemsC
 
     //TimeZone Available for all classes
     private DateTimeZone timeZone = DateTimeZone.UTC;
+    private boolean isFirstConnection;
 
     public MqttBridgeImpl() {
         super(OpenemsComponent.ChannelId.values(),
@@ -157,6 +158,7 @@ public class MqttBridgeImpl extends AbstractOpenemsComponent implements OpenemsC
             this.subscribeManager.setComponentManager(this.cpm);
             this.publishManager.setCoreCycle(config.useCoreCycleTime());
             this.subscribeManager.setCoreCycle(config.useCoreCycleTime());
+            this.isFirstConnection = true;
         }
     }
 
@@ -443,7 +445,7 @@ public class MqttBridgeImpl extends AbstractOpenemsComponent implements OpenemsC
             return;
         }
         if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE)) {
-            if (this.isConnected() == false && (this.tryReconnect() || this.publishManager == null || this.subscribeManager == null)) {
+            if (this.isConnected() == false && this.tryReconnect()) {
                 ExecutorService executorService = Executors.newSingleThreadExecutor();
                 executorService.submit(() -> this.createNewMqttSession.run());
                 try {
@@ -530,6 +532,10 @@ public class MqttBridgeImpl extends AbstractOpenemsComponent implements OpenemsC
      * @return true if it should reconnect.
      */
     private boolean tryReconnect() {
+        if(this.isFirstConnection){
+            this.isFirstConnection = false;
+            return true;
+        }
         if (this.initialized) {
             boolean shouldTryToReconnectAgain = new DateTime().isAfter(this.initialTime.plusSeconds(TIME_SECONDS_TO_WAIT_TILL_RECONNECT));
             if (shouldTryToReconnectAgain) {
