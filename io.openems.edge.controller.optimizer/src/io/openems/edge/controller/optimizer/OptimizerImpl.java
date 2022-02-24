@@ -395,6 +395,7 @@ public class OptimizerImpl extends AbstractOpenemsComponent implements OpenemsCo
         List<String> channelIds = new ArrayList<>();
         List<String> value = new ArrayList<>();
         String timeStamp = minTime + "";
+        //0030 is previously converted to 30 therefore timeStamp.length == 2 -> convert to 030 to get the timestamp in JsonTask
         if (timeStamp.length() == 2) {
             timeStamp = "0" + timeStamp;
         }
