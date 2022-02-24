@@ -107,9 +107,10 @@ public class ThermometerVirtualImpl extends AbstractOpenemsComponent implements 
         if (this.isEnabled()) {
             if (this.configSuccess) {
                 if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE)) {
-                    Optional<Integer> currentTemp = this.getVirtualTemperature();
-                    currentTemp.ifPresent(integer -> this.getTemperatureChannel().setNextValue(integer + this.offset));
-                    if (currentTemp.isPresent() == false && this.useAnotherChannelAsTemp) {
+                    if (!this.useAnotherChannelAsTemp) {
+                        Optional<Integer> currentTemp = this.getVirtualTemperature();
+                        currentTemp.ifPresent(integer -> this.getTemperatureChannel().setNextValue(integer + this.offset));
+                    } else {
                         try {
                             Channel<?> temperatureChannel = this.cpm.getChannel(this.refThermometer);
                             Integer temperature = TypeUtils.getAsType(OpenemsType.INTEGER, temperatureChannel.value());
