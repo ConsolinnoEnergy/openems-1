@@ -54,6 +54,7 @@ public class ThermometerThresholdImpl extends AbstractOpenemsComponent implement
     private boolean configSuccess;
 
     private Thermometer referenceThermometer;
+    private boolean defaultActive = true;
 
     public ThermometerThresholdImpl() {
         super(OpenemsComponent.ChannelId.values(),
@@ -78,9 +79,14 @@ public class ThermometerThresholdImpl extends AbstractOpenemsComponent implement
     private void activationOrModifiedRoutine(Config config) {
         try {
             this.config = config;
+            int defaultTemperature = config.defaultTemperature();
             if (this.cpm.getComponent(config.thermometerId()) instanceof Thermometer) {
                 this.referenceThermometer = this.cpm.getComponent(config.thermometerId());
                 int referenceTemperature = this.referenceThermometer.getTemperatureValue();
+                if (referenceTemperature == MISSING_TEMPERATURE) {
+                    referenceTemperature = defaultTemperature;
+                    this.defaultActive = true;
+                }
                 int threshold = config.thresholdTemperature();
                 int fictionalTemperature = (referenceTemperature / threshold) * threshold;
                 this.getTemperatureChannel().setNextValue(fictionalTemperature);
@@ -165,6 +171,9 @@ public class ThermometerThresholdImpl extends AbstractOpenemsComponent implement
     private void calculateTemperatureValue() {
         int currentTemperature = this.getTemperatureValue();
         float thermometerValue = (float) this.referenceThermometer.getTemperatureValue();
+        if (this.referenceThermometer.getTemperatureValue() == MISSING_TEMPERATURE) {
+            return;
+        }
         int incomingTemperature;
         boolean roundUp = false;
         float threshold = this.getThreshold();
@@ -180,7 +189,7 @@ public class ThermometerThresholdImpl extends AbstractOpenemsComponent implement
         //Check if it's not equals --> e.g. 580 dC was before now its 570dC
         if (incomingTemperature != currentTemperature) {
             //Check if we have to wait until we can set the new Temperature
-            if (this.intervalToWaitCounter.get() < this.maxIntervalToWait) {
+            if (this.intervalToWaitCounter.get() < this.maxIntervalToWait && !this.defaultActive) {
                 this.intervalToWaitCounter.getAndIncrement();
             } else {
                 //Apply new Values -> Is Thermometer rising/falling, whats the new temperature etc etc
@@ -192,6 +201,7 @@ public class ThermometerThresholdImpl extends AbstractOpenemsComponent implement
                 this.getTemperatureChannel().setNextValue(incomingTemperature);
                 this.setThermometerState(newThermometerState);
                 this.intervalToWaitCounter.getAndSet(RESET);
+                this.defaultActive = false;
             }
         } else {
             this.intervalToWaitCounter.getAndSet(RESET);
@@ -200,7 +210,12 @@ public class ThermometerThresholdImpl extends AbstractOpenemsComponent implement
 
     @Override
     public String debugLog() {
-        return "Temperature: " + (this.getTemperatureValue() == Thermometer.MISSING_TEMPERATURE ? "NotDefined" : this.getTemperatureValue())
+        return "Temperature: " + this.getDebugStringTemperature(this.getTemperatureValue()) + " Reference Temperature: "
+                + this.getDebugStringTemperature(this.referenceThermometer.getTemperatureValue());
+    }
+
+    private String getDebugStringTemperature(int temperatureValue) {
+        return (temperatureValue == Thermometer.MISSING_TEMPERATURE ? "NotDefined" : temperatureValue)
                 + this.getTemperatureChannel().channelDoc().getUnit().getSymbol();
     }
 }
