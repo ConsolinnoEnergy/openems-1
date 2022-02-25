@@ -117,8 +117,9 @@ public class GasBoilerViessmannImpl extends AbstractOpenemsModbusComponent imple
         this.readOnly = config.readOnly();
         if (this.isEnabled() == false) {
             this._setHeaterState(HeaterState.OFF.getValue());
+        } else {
+            this._setHeaterState(HeaterState.STANDBY.getValue());
         }
-
         // Settings needed when not in ’read only’ mode.
         if (this.readOnly == false) {
             this.powerPercentSettingDefault = config.defaultSetPointPowerPercent();
