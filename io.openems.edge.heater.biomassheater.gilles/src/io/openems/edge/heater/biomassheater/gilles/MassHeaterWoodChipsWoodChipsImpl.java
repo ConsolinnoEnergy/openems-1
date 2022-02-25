@@ -81,7 +81,8 @@ import java.util.Optional;
 @Component(name = "Heater.Gilles.WoodChip",
         immediate = true,
         configurationPolicy = ConfigurationPolicy.REQUIRE,
-        property = EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE)
+        property = {EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE,
+                EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS})
 
 public class MassHeaterWoodChipsWoodChipsImpl extends AbstractOpenemsModbusComponent implements OpenemsComponent, EventHandler,
         ExceptionalState, MassHeaterWoodChips {
@@ -126,6 +127,8 @@ public class MassHeaterWoodChipsWoodChipsImpl extends AbstractOpenemsModbusCompo
 
         if (this.isEnabled() == false) {
             this._setHeaterState(HeaterState.OFF.getValue());
+        } else {
+            this._setHeaterState(HeaterState.STANDBY.getValue());
         }
 
         if (this.readOnly == false) {
