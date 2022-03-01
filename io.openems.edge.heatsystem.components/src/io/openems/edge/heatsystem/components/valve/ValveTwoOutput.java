@@ -105,7 +105,7 @@ public class ValveTwoOutput extends AbstractValve implements OpenemsComponent, H
                 this.getPowerLevelChannel().setNextValue(0);
                 this.getPowerLevelChannel().nextProcessImage();
                 try {
-                    this.setPointPowerLevelChannel().setNextWriteValueFromObject(100);
+                    this.setPointPowerLevelChannel().setNextWriteValueFromObject(-1);
                 } catch (OpenemsError.OpenemsNamedException e) {
                     this.log.warn(this.id() + ": Couldn't write into own Channel. Reason: " + e.getMessage());
                 }
