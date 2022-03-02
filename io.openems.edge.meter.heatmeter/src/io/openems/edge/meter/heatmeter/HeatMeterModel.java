@@ -4,6 +4,8 @@ package io.openems.edge.meter.heatmeter;
 public enum HeatMeterModel {
     //HeatMeter Types with their address for Mbus
     ITRON_CF_51(3, 4, 1, 5, 6),
+    QUNDIS_Q_HEAT_55(14, 10, 0, 11, 12),
+    LANDIS_UH50(4, 5, 2, 6, 7),
     SHARKY_775(4, 5, 0, 6, 7),
     ZELSIUS_C5_CMF(0,0,0,0,0),
     ELSTER_SENSOSTAR_2(3,5,1,7,8);

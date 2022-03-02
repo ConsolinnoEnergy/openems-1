@@ -1,5 +1,6 @@
 package io.openems.edge.meter.gasmeter;
 
+import io.openems.edge.meter.api.GasMeter;
 import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 import org.osgi.service.metatype.annotations.Option;
@@ -18,13 +19,8 @@ import org.osgi.service.metatype.annotations.Option;
     @AttributeDefinition(name = "alias", description = "Human readable name of the gasmeter.")
     String alias() default "";
 
-    @AttributeDefinition(name = "MeterType", description = "Identification via Type",
-            options = {
-                    @Option(label = "Placeholder", value = "Placeholder"),
-                    @Option(label = "Placeholder", value = "Placeholder"),
-                    @Option(label = "Placeholder", value = "Placeholder"),
-            })
-    String meterType() default "Placeholder";
+    @AttributeDefinition(name = "MeterType", description = "Identification via Type")
+    GasMeterType meterType() default GasMeterType.AUTOSEARCH;
 
     @AttributeDefinition(name = "MBus-Bridge Id", description = "The Unique Id of the mBus-Bridge you what to allocate to this device.")
     String mbusBridgeId() default "mbus0";
