@@ -54,11 +54,13 @@ public class VirtualComponentOptimizedImpl extends AbstractOpenemsComponent impl
 
     @Override
     public void handleEvent(Event event) {
-        Optional<Boolean> enabled = this.getEnableSignal().getNextWriteValue();
-        if(enabled.isPresent()){
-            this.getEnableSignal().setNextValue(enabled.get());
-        } else {
-            this.getEnableSignal().setNextValue(false);
+        if(event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE)) {
+            Optional<Boolean> enabled = this.getEnableSignal().getNextWriteValue();
+            if (enabled.isPresent()) {
+                this.getEnableSignal().setNextValue(enabled.get());
+            } else {
+                this.getEnableSignal().setNextValue(false);
+            }
         }
     }
 }
