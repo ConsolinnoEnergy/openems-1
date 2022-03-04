@@ -1,9 +1,7 @@
 package io.openems.edge.bridge.rest.device;
 
-import com.sun.corba.se.spi.orb.Operation;
 import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
-import org.osgi.service.metatype.annotations.Option;
 
 @ObjectClassDefinition(
         name = "Rest Remote Device",
