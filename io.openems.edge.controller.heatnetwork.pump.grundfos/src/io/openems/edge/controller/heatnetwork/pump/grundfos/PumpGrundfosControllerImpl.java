@@ -11,22 +11,16 @@ import io.openems.edge.controller.heatnetwork.pump.grundfos.api.ControlModeSetti
 import io.openems.edge.controller.heatnetwork.pump.grundfos.api.PumpGrundfosController;
 import io.openems.edge.pump.grundfos.api.PumpGrundfos;
 import io.openems.edge.pump.grundfos.api.PumpMode;
-import org.osgi.service.cm.Configuration;
 import org.osgi.service.cm.ConfigurationAdmin;
 import org.osgi.service.cm.ConfigurationException;
 import org.osgi.service.component.ComponentContext;
-import org.osgi.service.component.annotations.Reference;
-import org.osgi.service.component.annotations.Activate;
-import org.osgi.service.component.annotations.Component;
-import org.osgi.service.component.annotations.ConfigurationPolicy;
-import org.osgi.service.component.annotations.Deactivate;
+import org.osgi.service.component.annotations.*;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.text.DecimalFormat;
-import java.util.Dictionary;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -61,14 +55,19 @@ public class PumpGrundfosControllerImpl extends AbstractOpenemsComponent impleme
     private static final double MIN_MOTOR_SPEED = 52.0;
 
     private double pressureSetpointToRefRem = 0;
-    double pressureSetpoint;    // Unit of this variable is assumed to be that of channel PRESSURE_SETPOINT.
+
+    // Unit of these two variable is assumed to be that of channel PRESSURE_SETPOINT.
+    double pressureSetpoint;
+    double defaultPressureSetpoint;
+
     double motorSpeedSetpoint;  // Unit is %. So 60 means 60%.
     private ControlModeSetting controlModeSetting;
     private boolean stopPump;
     private boolean printInfoToLog;
     private boolean onlyRead;
     private boolean pressureSetpointCalculationDone;
-    private boolean motorSpeedClampDone;
+    private boolean updateDefaultConfig = false;
+    private boolean checkDefaultPressureSetpoint = false;
 
     public PumpGrundfosControllerImpl() {
         super(OpenemsComponent.ChannelId.values(),
@@ -98,14 +97,40 @@ public class PumpGrundfosControllerImpl extends AbstractOpenemsComponent impleme
                 this.log.warn("Couldn't save new control mode setting to config. " + e.getMessage());
             }
         }
+        this.motorSpeedSetpoint = config.motorSpeedSetpoint();
+        boolean motorSpeedCorrected = false;
+        if (this.motorSpeedSetpoint > 100.0) {
+            this.motorSpeedSetpoint = 100.0;
+            motorSpeedCorrected = true;
+        }
+        if (this.motorSpeedSetpoint < MIN_MOTOR_SPEED) {
+            this.motorSpeedSetpoint = MIN_MOTOR_SPEED;
+            motorSpeedCorrected = true;
+        }
+        if (motorSpeedCorrected) {
+            try {
+                ConfigurationUpdate.updateConfig(ca, this.servicePid(), "motorSpeedSetpoint", this.motorSpeedSetpoint);
+            } catch (IOException e) {
+                this.log.warn("Couldn't save new motor speed setting to config. " + e.getMessage());
+            }
+        }
         this.stopPump = config.stopPump();
+        this.onlyRead = config.onlyRead();
+        this.updateDefaultConfig = config.updateDefaultConfig();
+        if (this.updateDefaultConfig == false) {
+            /* Check if the pressure set point in the config is within the limits. If value is outside limits, correct
+               value and update config with corrected value.
+               Not needed for separate treatment if ’updateDefaultConfig == true’, since then every set point is checked
+               and written to config. */
+            this.defaultPressureSetpoint = config.pressureSetpoint();
+            this.checkDefaultPressureSetpoint = true;
+        }
         this.pressureSetpoint = config.pressureSetpoint();
         this.pressureSetpointCalculationDone = false;
-        this.motorSpeedSetpoint = config.motorSpeedSetpoint();
-        this.motorSpeedClampDone = false;
-        this.onlyRead = config.onlyRead();
+
 
         // Set channel values.
+        this._setMotorSpeedSetpoint(this.motorSpeedSetpoint);
         this._setControlMode(this.controlModeSetting);
         this._setStopPump(this.stopPump);
         this._setReadOnlySetting(this.onlyRead);
@@ -184,19 +209,19 @@ public class PumpGrundfosControllerImpl extends AbstractOpenemsComponent impleme
 
             if (this.onlyRead == false) {
 
-                /* Collect write values. Compare with value in config and update if it is different. Updating the config
-                   restarts the module, channels are filled with new values in activate(). Call update() when all
-                   nextWrites have been collected, as module restart also means channels are initialized again, deleting
-                   all values. */
-                boolean updateConfig = false;
+                /* Collect write values. Compare with value in config and update if it is different, if config option to
+                   do so is set. Updating the config restarts the module, channels are filled with new values in activate().
+                   Do update when all nextWrites have been collected, as module restart also means channels are
+                   initialized again, deleting all values. */
+                Map<String, Object> valuesForConfig = new HashMap<>();
                 Optional<Integer> controlModeOptional = this.getControlModeChannel().getNextWriteValueAndReset();
                 if (controlModeOptional.isPresent()) {
                     int enumAsInt = controlModeOptional.get();
                     // Restrict to valid write values
                     if (enumAsInt >= 0 && enumAsInt <= 4) {
                         this.controlModeSetting = ControlModeSetting.valueOf(enumAsInt);
-                        if (this.controlModeSetting != this.config.controlMode()) {
-                            updateConfig = true;
+                        if (this.updateDefaultConfig && this.controlModeSetting != this.config.controlMode()) {
+                            valuesForConfig.put("controlMode", this.controlModeSetting);
                         }
                     }
                 }
@@ -204,36 +229,35 @@ public class PumpGrundfosControllerImpl extends AbstractOpenemsComponent impleme
                 if (stopPumpOptional.isPresent()) {
                     this.stopPump = stopPumpOptional.get();
                     if (this.stopPump != this.config.stopPump()) {
-                        updateConfig = true;
+                        valuesForConfig.put("stopPump", this.stopPump);
                     }
                 }
                 Optional<Double> motorSpeedSetpointOptional = this.getMotorSpeedSetpointChannel().getNextWriteValueAndReset();
                 if (motorSpeedSetpointOptional.isPresent()) {
                     this.motorSpeedSetpoint = motorSpeedSetpointOptional.get();
-                    this.motorSpeedClampDone = false;
-                }
-                if (this.motorSpeedClampDone == false) {
-                    this.motorSpeedClampDone = true;
                     this.motorSpeedSetpoint = Math.max(this.motorSpeedSetpoint, MIN_MOTOR_SPEED);
                     this.motorSpeedSetpoint = Math.min(this.motorSpeedSetpoint, 100.0);
                     this._setMotorSpeedSetpoint(this.motorSpeedSetpoint);
 
-                    /* Compare new set point with config, to see if config value is different and needs to be updated.
-                       Set point is a double, so for comparison it should be rounded. Multiply by 1000 before rounding
-                       to keep three digits after the decimal point. Then round to a long for comparison. */
-                    long newSetpoint = Math.round(this.motorSpeedSetpoint * 1000);
-                    long oldSetpoint = Math.round(this.config.motorSpeedSetpoint() * 1000);
-                    if (newSetpoint != oldSetpoint) {
-                        updateConfig = true;
+                    if (this.updateDefaultConfig) {
+                        /* Compare new set point with config, to see if config value is different and needs to be updated.
+                           Set point is a double, so for comparison it should be rounded. Multiply by 1000 before rounding
+                           to keep three digits after the decimal point. Then round to a long for comparison. */
+                        long newSetpoint = Math.round(this.motorSpeedSetpoint * 1000);
+                        long oldSetpoint = Math.round(this.config.motorSpeedSetpoint() * 1000);
+                        if (newSetpoint != oldSetpoint) {
+                            valuesForConfig.put("motorSpeedSetpoint", this.motorSpeedSetpoint);
+                        }
                     }
                 }
                 Optional<Boolean> readOnlyOptional = this.getReadOnlySettingChannel().getNextWriteValueAndReset();
                 if (readOnlyOptional.isPresent()) {
                     this.onlyRead = readOnlyOptional.get();
-                    if (this.onlyRead != this.config.onlyRead()) {
-                        updateConfig = true;
+                    if (this.updateDefaultConfig && this.onlyRead != this.config.onlyRead()) {
+                        valuesForConfig.put("onlyRead", this.onlyRead);
                     }
                 }
+
                 Optional<Double> pressureSetpointOptional = this.getPressureSetpointChannel().getNextWriteValueAndReset();
                 if (pressureSetpointOptional.isPresent()) {
                     this.pressureSetpoint = pressureSetpointOptional.get();
@@ -277,14 +301,27 @@ public class PumpGrundfosControllerImpl extends AbstractOpenemsComponent impleme
                         // ref_rem is a percentage value. To send 100%, write 100 to the channel.
                         this.pressureSetpointToRefRem = 100 * (this.pressureSetpoint - intervalHmin) / intervalHrange;
 
-                        /* Compare new set point with config, to see if config value is different and needs to be
-                           updated. Set point is a double, so for comparison it should be rounded. Multiply by 1000
-                           before rounding to keep three digits after the decimal point. Then round to a long for
-                           comparison. */
-                        long newSetpoint = Math.round(this.pressureSetpoint * 1000);
-                        long oldSetpoint = Math.round(this.config.pressureSetpoint() * 1000);
-                        if (newSetpoint != oldSetpoint) {
-                            updateConfig = true;
+                        if (this.updateDefaultConfig) {
+                            /* Compare new set point with config, to see if config value is different and needs to be
+                               updated. Set point is a double, so for comparison it should be rounded. Multiply by 1000
+                               before rounding to keep three digits after the decimal point. Then round to a long for
+                               comparison. */
+                            long newSetpoint = Math.round(this.pressureSetpoint * 1000);
+                            long oldSetpoint = Math.round(this.config.pressureSetpoint() * 1000);
+                            if (newSetpoint != oldSetpoint) {
+                                valuesForConfig.put("pressureSetpoint", this.pressureSetpoint);
+                            }
+                        } else if (this.checkDefaultPressureSetpoint) {
+                            // Need separate check, because pressureSetpoint might be different to defaultPressureSetpoint at this point.
+                            this.checkDefaultPressureSetpoint = false;
+                            if (this.defaultPressureSetpoint > intervalHrange + intervalHmin) {
+                                this.defaultPressureSetpoint = intervalHrange + intervalHmin;
+                                valuesForConfig.put("pressureSetpoint", this.defaultPressureSetpoint);
+                            }
+                            if (this.defaultPressureSetpoint < intervalHmin) {
+                                this.defaultPressureSetpoint = intervalHmin;
+                                valuesForConfig.put("pressureSetpoint", this.defaultPressureSetpoint);
+                            }
                         }
                     }
                 }
@@ -337,15 +374,9 @@ public class PumpGrundfosControllerImpl extends AbstractOpenemsComponent impleme
                             break;
                     }
                 }
-                if (updateConfig) {
-                    Map<String, Object> keyValueMap = new HashMap<>();
-                    keyValueMap.put("controlMode", this.controlModeSetting);
-                    keyValueMap.put("stopPump", this.stopPump);
-                    keyValueMap.put("pressureSetpoint", this.pressureSetpoint);
-                    keyValueMap.put("motorSpeedSetpoint", this.motorSpeedSetpoint);
-                    keyValueMap.put("onlyRead", this.onlyRead);
+                if (valuesForConfig.isEmpty() == false) {
                     try {
-                        ConfigurationUpdate.updateConfig(ca, this.servicePid(), keyValueMap);
+                        ConfigurationUpdate.updateConfig(ca, this.servicePid(), valuesForConfig);
                     } catch (IOException e) {
                         this.log.warn("Couldn't save new settings to config. " + e.getMessage());
                     }
