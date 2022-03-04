@@ -5,6 +5,7 @@ import io.openems.common.channel.Unit;
 import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
 import io.openems.common.types.OpenemsType;
 import io.openems.edge.common.channel.BooleanWriteChannel;
+import io.openems.edge.common.channel.BooleanReadChannel;
 import io.openems.edge.common.channel.Channel;
 import io.openems.edge.common.channel.Doc;
 import io.openems.edge.common.channel.DoubleReadChannel;
@@ -363,6 +364,15 @@ public interface PumpGrundfos extends OpenemsComponent {
          * </ul>
          */
         WARN_MESSAGE(Doc.of(OpenemsType.STRING)),
+
+        /**
+         * Error occurred. When the WarnMessage contains not null -> set this to true.
+         * <ul>
+         *      <li> Interface: PumpGrundfosChannels
+         *      <li> Type: Boolean
+         * </ul>
+         */
+        ERROR_OCCURRED(Doc.of(OpenemsType.BOOLEAN)),
 
         /**
          * Alarm log 1-5. Contains the code for the last 5 logged alarms. Newest is in 1.
@@ -1462,6 +1472,34 @@ public interface PumpGrundfos extends OpenemsComponent {
      */
     default void _setWarnMessage(String value) {
         this.getWarnMessageChannel().setNextValue(value);
+    }
+
+    /**
+     * Gets the Channel for {@link ChannelId#ERROR_OCCURRED}.
+     *
+     * @return the Channel
+     */
+    default BooleanReadChannel getErrorOccurredChannel() {
+        return this.channel(ChannelId.ERROR_OCCURRED);
+    }
+
+    /**
+     * Gets the Value of Error Occurred.
+     * See {@link ChannelId#ERROR_OCCURRED}.
+     *
+     * @return the Channel {@link Value}
+     */
+    default Value<Boolean> getErrorOccurred() {
+        return this.getErrorOccurredChannel().value();
+    }
+
+    /**
+     * Internal method to set the 'nextValue' on {@link ChannelId#ERROR_OCCURRED} Channel.
+     *
+     * @param value the next value
+     */
+    default void _setErrorOccurred(boolean value) {
+        this.getErrorOccurredChannel().setNextValue(value);
     }
 
     /**

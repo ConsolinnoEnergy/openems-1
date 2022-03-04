@@ -720,6 +720,9 @@ public class PumpGrundfosImpl extends AbstractOpenemsComponent implements Openem
             this.logWarn(this.log, genibusWarningMessage);
         }
 
+        boolean errorOccured = allErrors.toString().equals("") == false || genibusWarningMessage.equals("") == false;
+        this._setErrorOccurred(errorOccured);
+
         if (this.broadcast) {
             boolean signalReceived = getConnectionOkChannel().value().isDefined() && getConnectionOkChannel().value().get();
             this.logInfo(this.log, "--GENIbus broadcast--");
