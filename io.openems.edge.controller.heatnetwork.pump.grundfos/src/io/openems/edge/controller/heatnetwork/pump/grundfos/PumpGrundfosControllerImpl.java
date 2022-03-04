@@ -5,6 +5,7 @@ import io.openems.common.exceptions.OpenemsError;
 import io.openems.edge.common.component.AbstractOpenemsComponent;
 import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
+import io.openems.edge.common.configupdate.ConfigurationUpdate;
 import io.openems.edge.controller.api.Controller;
 import io.openems.edge.controller.heatnetwork.pump.grundfos.api.ControlModeSetting;
 import io.openems.edge.controller.heatnetwork.pump.grundfos.api.PumpGrundfosController;
@@ -26,6 +27,8 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.text.DecimalFormat;
 import java.util.Dictionary;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -87,9 +90,13 @@ public class PumpGrundfosControllerImpl extends AbstractOpenemsComponent impleme
         }
 
         this.controlModeSetting = config.controlMode();
-        if (this.controlModeSetting == ControlModeSetting.UNDEFINED) {
+        if (this.controlModeSetting == ControlModeSetting.UNDEFINED) {  // Not a valid selection. Change config entry to AutoAdapt.
             this.controlModeSetting = ControlModeSetting.AUTO_ADAPT;
-            this.updateConfig();
+            try {
+                ConfigurationUpdate.updateConfig(ca, this.servicePid(), "controlMode", this.controlModeSetting);
+            } catch (IOException e) {
+                this.log.warn("Couldn't save new control mode setting to config. " + e.getMessage());
+            }
         }
         this.stopPump = config.stopPump();
         this.pressureSetpoint = config.pressureSetpoint();
@@ -158,25 +165,6 @@ public class PumpGrundfosControllerImpl extends AbstractOpenemsComponent impleme
         } catch (OpenemsError.OpenemsNamedException e) {
             e.printStackTrace();
             return true;
-        }
-    }
-
-    /**
-     * Updates config values to current values.
-     */
-    private void updateConfig() {
-        Configuration c;
-        try {
-            c = this.ca.getConfiguration(this.servicePid(), "?");
-            Dictionary<String, Object> properties = c.getProperties();
-            properties.put("controlMode", this.controlModeSetting);
-            properties.put("stopPump", this.stopPump);
-            properties.put("pressureSetpoint", this.pressureSetpoint);
-            properties.put("motorSpeedSetpoint", this.motorSpeedSetpoint);
-            properties.put("onlyRead", this.onlyRead);
-            c.update(properties);
-        } catch (IOException e) {
-            this.log.warn("Couldn't save new settings to config. " + e.getMessage());
         }
     }
 
@@ -350,7 +338,17 @@ public class PumpGrundfosControllerImpl extends AbstractOpenemsComponent impleme
                     }
                 }
                 if (updateConfig) {
-                    this.updateConfig();
+                    Map<String, Object> keyValueMap = new HashMap<>();
+                    keyValueMap.put("controlMode", this.controlModeSetting);
+                    keyValueMap.put("stopPump", this.stopPump);
+                    keyValueMap.put("pressureSetpoint", this.pressureSetpoint);
+                    keyValueMap.put("motorSpeedSetpoint", this.motorSpeedSetpoint);
+                    keyValueMap.put("onlyRead", this.onlyRead);
+                    try {
+                        ConfigurationUpdate.updateConfig(ca, this.servicePid(), keyValueMap);
+                    } catch (IOException e) {
+                        this.log.warn("Couldn't save new settings to config. " + e.getMessage());
+                    }
                 }
             }
             if (this.printInfoToLog) {
