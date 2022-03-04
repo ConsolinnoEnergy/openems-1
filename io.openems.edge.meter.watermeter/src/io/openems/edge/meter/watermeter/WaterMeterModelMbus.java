@@ -5,6 +5,7 @@ public enum WaterMeterModelMbus {
     AUTOSEARCH(0, 1),
     PAD_PULS_M2(0,1),
     ITRON_BM_M(1,4),
+    WZG_VERSION_3(0,1)
     ;
 
     int volumeCounterPosition;

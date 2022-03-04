@@ -42,7 +42,7 @@ public interface GasMeter extends Meter {
          *     <li>Unit: CubicMeter
          * </ul>
          */
-        TOTAL_CONSUMED_ENERGY_CUBIC_METER(Doc.of(OpenemsType.LONG).unit(Unit.CUBIC_METER)),
+        TOTAL_CONSUMED_ENERGY_CUBIC_METER(Doc.of(OpenemsType.DOUBLE).unit(Unit.CUBIC_METER)),
         /**
          * Flow Temperature in Degree Celsius.
          * <ul>
@@ -89,7 +89,7 @@ public interface GasMeter extends Meter {
      *
      * @return the Channel
      */
-    default Channel<Long> getTotalConsumedEnergyCubicMeterChannel() {
+    default Channel<Double> getTotalConsumedEnergyCubicMeterChannel() {
         return this.channel(ChannelId.TOTAL_CONSUMED_ENERGY_CUBIC_METER);
     }
 
