@@ -4,7 +4,6 @@ import io.openems.common.channel.AccessMode;
 import io.openems.common.channel.Unit;
 import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
 import io.openems.common.types.OpenemsType;
-import io.openems.edge.common.channel.BooleanReadChannel;
 import io.openems.edge.common.channel.BooleanWriteChannel;
 import io.openems.edge.common.channel.Channel;
 import io.openems.edge.common.channel.Doc;
@@ -366,15 +365,6 @@ public interface PumpGrundfos extends OpenemsComponent {
         WARN_MESSAGE(Doc.of(OpenemsType.STRING)),
 
         /**
-         * Error occurred. When the WarnMessage contains not null -> set this to true.
-         * <ul>
-         *      <li> Interface: PumpGrundfosChannels
-         *      <li> Type: Boolean
-         * </ul>
-         */
-        ERROR_OCCURRED(Doc.of(OpenemsType.BOOLEAN)),
-
-        /**
          * Alarm log 1-5. Contains the code for the last 5 logged alarms. Newest is in 1.
          * <ul>
          *      <li> Interface: PumpGrundfosChannels
@@ -389,9 +379,115 @@ public interface PumpGrundfos extends OpenemsComponent {
         ALARM_LOG_5(Doc.of(OpenemsType.DOUBLE)),
 
 
-        //WRITE//
+        // Head class 3, commands. Can only do SET. Write only.
 
-        // config params //
+        /**
+         * Stops the motor.
+         * <ul>
+         *      <li> Interface: PumpGrundfosChannels
+         *      <li> Type: Boolean
+         *      <li> Magna3: Commands, (3, 5) STOP
+         * </ul>
+         */
+        STOP(Doc.of(OpenemsType.BOOLEAN).accessMode(AccessMode.READ_WRITE)),
+
+        /**
+         * Starts the Motor.
+         * <ul>
+         *      <li> Interface: PumpGrundfosChannels
+         *      <li> Type: Boolean
+         *      <li> Magna3: Commands, (3, 6) START
+         * </ul>
+         */
+        START(Doc.of(OpenemsType.BOOLEAN).accessMode(AccessMode.READ_WRITE)),
+
+        /**
+         * Switch to Remote Mode.
+         * <ul>
+         *      <li> Interface: PumpGrundfosChannels
+         *      <li> Type: Boolean
+         *      <li> Magna3: Commands, (3, 7) REMOTE
+         * </ul>
+         */
+        REMOTE(Doc.of(OpenemsType.BOOLEAN).accessMode(AccessMode.READ_WRITE)),
+
+        /**
+         * Switch to control mode const. Frequency.
+         * <ul>
+         *      <li> Interface: PumpGrundfosChannels
+         *      <li> Type: Boolean
+         *      <li> Magna3: Commands, (3, 22) CONST_FREQ
+         * </ul>
+         *
+         */
+        CONST_FREQUENCY(Doc.of(OpenemsType.BOOLEAN).accessMode(AccessMode.READ_WRITE)),
+
+        /**
+         * Switch to control mode const. Pressure.
+         * <ul>
+         *      <li> Interface: PumpGrundfosChannels
+         *      <li> Type: Boolean
+         *      <li> Magna3: Commands, (3, 24) CONST_PRESS
+         * </ul>
+         */
+        CONST_PRESSURE(Doc.of(OpenemsType.BOOLEAN).accessMode(AccessMode.READ_WRITE)),
+
+        /**
+         * Sets the motor running on min curve.
+         * <ul>
+         *      <li> Interface: PumpGrundfosChannels
+         *      <li> Type: Boolean
+         *      <li> Magna3: Commands, (3, 25) MIN
+         * </ul>
+         *
+         */
+        MIN_MOTOR_CURVE(Doc.of(OpenemsType.BOOLEAN).accessMode(AccessMode.READ_WRITE)),
+
+        /**
+         * Sets the motor running on max curve.
+         * <ul>
+         *      <li> Interface: PumpGrundfosChannels
+         *      <li> Type: Boolean
+         *      <li> Magna3: Commands, (3, 26) MAX
+         * </ul>
+         */
+        MAX_MOTOR_CURVE(Doc.of(OpenemsType.BOOLEAN).accessMode(AccessMode.READ_WRITE)),
+
+        /**
+         * Sets the motor in control mode AutoAdapt.
+         * <ul>
+         *      <li> Interface: PumpGrundfosChannels
+         *      <li> Type: Boolean
+         *      <li> Magna3: Commands, (3, 52) AUTO_ADAPT
+         * </ul>
+         *
+         */
+        AUTO_ADAPT(Doc.of(OpenemsType.BOOLEAN).accessMode(AccessMode.READ_WRITE)),
+
+        /**
+         * Turn on center LED flashing.
+         * <ul>
+         *      <li> Interface: PumpGrundfosChannels
+         *      <li> Type: Boolean
+         *      <li> Magna3: Commands, (3, 121) wink_on
+         * </ul>
+         *
+         */
+        WINK_ON(Doc.of(OpenemsType.BOOLEAN).accessMode(AccessMode.READ_WRITE)),
+
+        /**
+         * Turn off center LED flashing.
+         * <ul>
+         *      <li> Interface: PumpGrundfosChannels
+         *      <li> Type: Boolean
+         *      <li> Magna3: Commands, (3, 122) wink_off
+         * </ul>
+         *
+         */
+        WINK_OFF(Doc.of(OpenemsType.BOOLEAN).accessMode(AccessMode.READ_WRITE)),
+
+
+        // Head class 4, configuration parameters. Can do GET, SET and INFO. Read and write.
 
         /**
          * Pump rotation frequency f_upper. Highest motor speed/frequency, only for factory change.
@@ -416,36 +512,27 @@ public interface PumpGrundfos extends OpenemsComponent {
         FREQUENCY_F_NOM(Doc.of(OpenemsType.DOUBLE).unit(Unit.HERTZ).accessMode(AccessMode.READ_WRITE)),
 
         /**
-         * Pump rotation frequency f_min.
+         * User selected min frequency f_min. Unit is ’percent of f_nom’. Used by Low frequency stop function as Low
+         * flow freq. limit.
          * <ul>
          *      <li> Interface: PumpGrundfosChannels
          *      <li> Type: Double
-         *      <li> Unit: Hertz
+         *      <li> Unit: Percent
          *      <li> Magna3: 8 bit Configuration Parameters, (4, 34) f_min
          * </ul>
          */
-        FREQUENCY_F_MIN(Doc.of(OpenemsType.DOUBLE).unit(Unit.HERTZ).accessMode(AccessMode.READ_WRITE)),
+        FREQUENCY_F_MIN(Doc.of(OpenemsType.DOUBLE).unit(Unit.PERCENT).accessMode(AccessMode.READ_WRITE)),
 
         /**
-         * Pump rotation frequency f_max.
+         * User selected max frequency f_max. Unit is ’percent of f_nom’.
          * <ul>
          *      <li> Interface: PumpGrundfosChannels
          *      <li> Type: Double
-         *      <li> Unit: Hertz
+         *      <li> Unit: Percent
          *      <li> Magna3: 8 bit Configuration Parameters, (4, 35) f_max
          * </ul>
          */
-        FREQUENCY_F_MAX(Doc.of(OpenemsType.DOUBLE).unit(Unit.HERTZ).accessMode(AccessMode.READ_WRITE)),
-
-        /**
-         * Address of the multipump master. Copied to unit_addr if it is sent to a pump that is the master.
-         * <ul>
-         *      <li> Interface: PumpGrundfosChannels
-         *      <li> Type: Double
-         *      <li> Magna3: 8 bit Configuration Parameters, (4, 45) mp_master_addr
-         * </ul>
-         */
-        MP_MASTER_ADDR(Doc.of(OpenemsType.DOUBLE).accessMode(AccessMode.READ_WRITE)),
+        FREQUENCY_F_MAX(Doc.of(OpenemsType.DOUBLE).unit(Unit.PERCENT).accessMode(AccessMode.READ_WRITE)),
 
         /**
          * Pump GENIbus address.
@@ -458,7 +545,7 @@ public interface PumpGrundfos extends OpenemsComponent {
         UNIT_ADDR(Doc.of(OpenemsType.DOUBLE).accessMode(AccessMode.READ_WRITE)),
 
         /**
-         * GENIbus group address.
+         * Pump GENIbus group address.
          * <ul>
          *      <li> Interface: PumpGrundfosChannels
          *      <li> Type: Double
@@ -469,26 +556,28 @@ public interface PumpGrundfos extends OpenemsComponent {
 
         /**
          * Constant Pressure Mode minimum reference. INFO reads unit = 30 = 1%, min = 0, range = 100.
-         * Values for this parameter are 0% - 100% (write 0 - 1.0 in channel), where % is % of the range interval of the
+         * Values for this parameter are 0% - 100% (write 0 - 100 in channel), where % is % of the range interval of the
          * pressure sensor. The range interval of the pressure sensor is the one transmitted by INFO for h (pumps MGE
          * and Magna) or h_diff (pump Magna).
          * <ul>
          *      <li> Interface: PumpGrundfosChannels
          *      <li> Type: Double
+         *      <li> Unit: Percent
          *      <li> Magna3: 8 bit Configuration Parameters, (4, 83) h_const_ref_min
          * </ul>
          */
-        H_CONST_REF_MIN(Doc.of(OpenemsType.DOUBLE).accessMode(AccessMode.READ_WRITE)),
+        H_CONST_REF_MIN(Doc.of(OpenemsType.DOUBLE).unit(Unit.PERCENT).accessMode(AccessMode.READ_WRITE)),
 
         /**
          * Constant Pressure Mode maximum reference.
          * <ul>
          *      <li> Interface: PumpGrundfosChannels
          *      <li> Type: Double
+         *      <li> Unit: Percent
          *      <li> Magna3: 8 bit Configuration Parameters, (4, 84) h_const_ref_max
          * </ul>
          */
-        H_CONST_REF_MAX(Doc.of(OpenemsType.DOUBLE).accessMode(AccessMode.READ_WRITE)),
+        H_CONST_REF_MAX(Doc.of(OpenemsType.DOUBLE).unit(Unit.PERCENT).accessMode(AccessMode.READ_WRITE)),
 
         /**
          * Low flow stop dead band relative to actual setpoint.
@@ -499,7 +588,7 @@ public interface PumpGrundfos extends OpenemsComponent {
          *      <li> Magna3: 8bit Configuration Parameters, (4, 101) delta_h
          * </ul>
          */
-        SET_PRESSURE_DELTA(Doc.of(OpenemsType.DOUBLE).accessMode(AccessMode.READ_WRITE).unit(Unit.PERCENT)),
+        SET_PRESSURE_DELTA(Doc.of(OpenemsType.DOUBLE).unit(Unit.PERCENT).accessMode(AccessMode.READ_WRITE).unit(Unit.PERCENT)),
 
         /**
          * Pump maximum head/pressure.
@@ -524,31 +613,6 @@ public interface PumpGrundfos extends OpenemsComponent {
         SET_PUMP_MAX_FLOW(Doc.of(OpenemsType.DOUBLE).unit(Unit.CUBICMETER_PER_HOUR).accessMode(AccessMode.READ_WRITE)),
 
         // Sensor configuration
-
-        /**
-         * Analogue input 1 function. Enum with values 0-3.
-         * 0: Not active
-         * 1: Control loop feedback -> sys_fb
-         * 2: Reference influence: F(ana_in_1) -> ref_att
-         * 3: Other (extra measurement)
-         * <ul>
-         *      <li> Interface: PumpGrundfosChannels
-         *      <li> Type: Double
-         *      <li> Magna3: 8 bit Configuration Parameters, (4, 229) ana_in_1_func
-         * </ul>
-         */
-        ANA_IN_1_FUNC(Doc.of(OpenemsType.DOUBLE).accessMode(AccessMode.READ_WRITE)),
-
-        /**
-         * Analogue input 1 application. Which values is this sensor mapped to? For example h_diff.
-         * Value 0-255, see table 8.3 on page 47 in manual.
-         * <ul>
-         *      <li> Interface: PumpGrundfosChannels
-         *      <li> Type: Double
-         *      <li> Magna3: 8 bit Configuration Parameters, (4, 226) ana_in_1_applic
-         * </ul>
-         */
-        ANA_IN_1_APPLIC(Doc.of(OpenemsType.DOUBLE).accessMode(AccessMode.READ_WRITE)),
 
         /**
          * Analogue input 1 unit. Value 0-22, see table 8.2 on page 45 in manual.
@@ -579,6 +643,31 @@ public interface PumpGrundfos extends OpenemsComponent {
          * </ul>
          */
         ANA_IN_1_MAX(Doc.of(OpenemsType.DOUBLE).accessMode(AccessMode.READ_WRITE)),
+
+        /**
+         * Analogue input 1 application. Which values is this sensor mapped to? For example h_diff.
+         * Value 0-255, see table 8.3 on page 47 in manual.
+         * <ul>
+         *      <li> Interface: PumpGrundfosChannels
+         *      <li> Type: Double
+         *      <li> Magna3: 8 bit Configuration Parameters, (4, 226) ana_in_1_applic
+         * </ul>
+         */
+        ANA_IN_1_APPLIC(Doc.of(OpenemsType.DOUBLE).accessMode(AccessMode.READ_WRITE)),
+
+        /**
+         * Analogue input 1 function. Enum with values 0-3.
+         * 0: Not active
+         * 1: Control loop feedback -> sys_fb
+         * 2: Reference influence: F(ana_in_1) -> ref_att
+         * 3: Other (extra measurement)
+         * <ul>
+         *      <li> Interface: PumpGrundfosChannels
+         *      <li> Type: Double
+         *      <li> Magna3: 8 bit Configuration Parameters, (4, 229) ana_in_1_func
+         * </ul>
+         */
+        ANA_IN_1_FUNC(Doc.of(OpenemsType.DOUBLE).accessMode(AccessMode.READ_WRITE)),
 
         /**
          * Grundfos pressure sensor function.
@@ -625,172 +714,9 @@ public interface PumpGrundfos extends OpenemsComponent {
          */
         H_RANGE(Doc.of(OpenemsType.DOUBLE).unit(Unit.BAR).accessMode(AccessMode.READ_WRITE)),
 
-        // commands //
 
-        /**
-         * Start the Motor.
-         * <ul>
-         *      <li> Interface: PumpGrundfosChannels
-         *      <li> Type: Boolean
-         *      <li> Magna3: Commands, (3, 6) START
-         * </ul>
-         */
-        START(Doc.of(OpenemsType.BOOLEAN).accessMode(AccessMode.READ_WRITE)),
+        // Head class 5, reference values. Can do GET, SET and INFO. Read and write.
 
-        /**
-         * Stop the motor.
-         * <ul>
-         *      <li> Interface: PumpGrundfosChannels
-         *      <li> Type: Boolean
-         *      <li> Magna3: Commands, (3, 5) STOP
-         * </ul>
-         */
-        STOP(Doc.of(OpenemsType.BOOLEAN).accessMode(AccessMode.READ_WRITE)),
-
-        /**
-         * Switch to Remote Mode.
-         * <ul>
-         *      <li> Interface: PumpGrundfosChannels
-         *      <li> Type: Boolean
-         *      <li> Magna3: Commands, (3, 7) REMOTE
-         * </ul>
-         */
-        REMOTE(Doc.of(OpenemsType.BOOLEAN).accessMode(AccessMode.READ_WRITE)),
-
-        /**
-         * Motor running on min Curve.
-         * <ul>
-         *      <li> Interface: PumpGrundfosChannels
-         *      <li> Type: Boolean
-         *      <li> Magna3: Commands, (3, 25) MIN
-         * </ul>
-         *
-         */
-        MIN_MOTOR_CURVE(Doc.of(OpenemsType.BOOLEAN).accessMode(AccessMode.READ_WRITE)),
-
-        /**
-         * Motor running on max Curve.
-         * <ul>
-         *      <li> Interface: PumpGrundfosChannels
-         *      <li> Type: Boolean
-         *      <li> Magna3: Commands, (3, 26) MAX
-         * </ul>
-         */
-        MAX_MOTOR_CURVE(Doc.of(OpenemsType.BOOLEAN).accessMode(AccessMode.READ_WRITE)),
-
-        /**
-         * Switch to control mode const. Frequency.
-         * <ul>
-         *      <li> Interface: PumpGrundfosChannels
-         *      <li> Type: Boolean
-         *      <li> Magna3: Commands, (3, 22) CONST_FREQ
-         * </ul>
-         *
-         */
-        CONST_FREQUENCY(Doc.of(OpenemsType.BOOLEAN).accessMode(AccessMode.READ_WRITE)),
-
-        /**
-         * Switch to control mode const. Pressure.
-         * <ul>
-         *      <li> Interface: PumpGrundfosChannels
-         *      <li> Type: Boolean
-         *      <li> Magna3: Commands, (3, 24) CONST_PRESS
-         * </ul>
-         */
-        CONST_PRESSURE(Doc.of(OpenemsType.BOOLEAN).accessMode(AccessMode.READ_WRITE)),
-
-        /**
-         * Switch the motor in control mode AutoAdapt.
-         * <ul>
-         *      <li> Interface: PumpGrundfosChannels
-         *      <li> Type: Boolean
-         *      <li> Magna3: Commands, (3, 52) AUTO_ADAPT
-         * </ul>
-         *
-         */
-        AUTO_ADAPT(Doc.of(OpenemsType.BOOLEAN).accessMode(AccessMode.READ_WRITE)),
-
-        /**
-         * Multipump master. Appoints this pump the master in a multipump system.
-         * <ul>
-         *      <li> Interface: PumpGrundfosChannels
-         *      <li> Type: Boolean
-         *      <li> Magna3: Commands, (3, 40) mp_master
-         * </ul>
-         *
-         */
-        MP_Master(Doc.of(OpenemsType.BOOLEAN).accessMode(AccessMode.READ_WRITE)),
-
-        /**
-         * Multipump start search. Start wireless multipump assistant.
-         * Warning: Setting up a multipump system is not possible with a Genibus connection.
-         * <ul>
-         *      <li> Interface: PumpGrundfosChannels
-         *      <li> Type: Boolean
-         *      <li> Magna3: Commands, (3, 87) mp_start_search
-         * </ul>
-         *
-         */
-        MP_START_SEARCH(Doc.of(OpenemsType.BOOLEAN).accessMode(AccessMode.READ_WRITE)),
-
-        /**
-         * Accept multipump join request.
-         * Warning: Setting up a multipump system is not possible with a Genibus connection.
-         * <ul>
-         *      <li> Interface: PumpGrundfosChannels
-         *      <li> Type: Boolean
-         *      <li> Magna3: Commands, (3, 88) mp_join_req_accepted
-         * </ul>
-         *
-         */
-        MP_JOIN_REQ_ACCEPTED(Doc.of(OpenemsType.BOOLEAN).accessMode(AccessMode.READ_WRITE)),
-
-        /**
-         * Start multipump.
-         * Warning: Setting up a multipump system is not possible with a Genibus connection.
-         * <ul>
-         *      <li> Interface: PumpGrundfosChannels
-         *      <li> Type: Boolean
-         *      <li> Magna3: Commands, (3, 92) mp_start_multi_pump
-         * </ul>
-         *
-         */
-        MP_START_MULTI_PUMP(Doc.of(OpenemsType.BOOLEAN).accessMode(AccessMode.READ_WRITE)),
-
-        /**
-         * End multipump. If sent to master, also ends multipump on the slaves.
-         * <ul>
-         *      <li> Interface: PumpGrundfosChannels
-         *      <li> Type: Boolean
-         *      <li> Magna3: Commands, (3, 93) mp_end_multi_pump
-         * </ul>
-         *
-         */
-        MP_END_MULTI_PUMP(Doc.of(OpenemsType.BOOLEAN).accessMode(AccessMode.READ_WRITE)),
-
-        /**
-         * Turn on center LED flashing.
-         * <ul>
-         *      <li> Interface: PumpGrundfosChannels
-         *      <li> Type: Boolean
-         *      <li> Magna3: Commands, (3, 121) wink_on
-         * </ul>
-         *
-         */
-        WINK_ON(Doc.of(OpenemsType.BOOLEAN).accessMode(AccessMode.READ_WRITE)),
-
-        /**
-         * Turn off center LED flashing.
-         * <ul>
-         *      <li> Interface: PumpGrundfosChannels
-         *      <li> Type: Boolean
-         *      <li> Magna3: Commands, (3, 122) wink_off
-         * </ul>
-         *
-         */
-        WINK_OFF(Doc.of(OpenemsType.BOOLEAN).accessMode(AccessMode.READ_WRITE)),
-
-        // Reference Values //
         /**
          * Remote Reference (GENIbus set point). Unit is percent, so a value of 50 in the channel means 50%.
          * Range is 0 - 100.
@@ -803,7 +729,9 @@ public interface PumpGrundfos extends OpenemsComponent {
          */
         REF_REM(Doc.of(OpenemsType.DOUBLE).unit(Unit.PERCENT).accessMode(AccessMode.READ_WRITE)),
 
-        // Strings
+
+        // Head class 7, character strings (ASCII). Can do only GET. Read only.
+
         /**
          * Device product number.
          * <ul>
@@ -824,7 +752,9 @@ public interface PumpGrundfos extends OpenemsComponent {
          */
         SERIAL_NO(Doc.of(OpenemsType.STRING).accessMode(AccessMode.READ_ONLY)),
 
+
         // Other, not GENIbus.
+
         /**
          * Connection status. Is the controller currently receiving data from the pump or not.
          * <ul>
@@ -1515,7 +1445,6 @@ public interface PumpGrundfos extends OpenemsComponent {
         return this.channel(ChannelId.WARN_MESSAGE);
     }
 
-
     /**
      * Gets the warn message. Contains the parsed messages from warn bits 1 to 4.
      * See {@link ChannelId#WARN_MESSAGE}.
@@ -1527,24 +1456,13 @@ public interface PumpGrundfos extends OpenemsComponent {
     }
 
     /**
-     * Gets the Channel for {@link ChannelId#ERROR_OCCURRED}.
+     * Internal method to set the 'nextValue' on {@link ChannelId#WARN_MESSAGE} Channel.
      *
-     * @return the Channel
+     * @param value the next value
      */
-    default BooleanReadChannel getErrorOccurredChannel() {
-        return this.channel(ChannelId.ERROR_OCCURRED);
+    default void _setWarnMessage(String value) {
+        this.getWarnMessageChannel().setNextValue(value);
     }
-
-    /**
-     * Gets the Value of Error Occurred.
-     * See {@link ChannelId#ERROR_OCCURRED}.
-     *
-     * @return the Channel {@link Value}
-     */
-    default Value<Boolean> getErrorOccurred() {
-        return this.getErrorOccurredChannel().value();
-    }
-
 
     /**
      * Gets the Channel for {@link ChannelId#ALARM_LOG_1}.
@@ -1642,6 +1560,209 @@ public interface PumpGrundfos extends OpenemsComponent {
     }
 
 
+    // Head class 3, commands. No getter, because you can't read commands.
+
+    /**
+     * Gets the Channel for {@link ChannelId#STOP}.
+     *
+     * @return the Channel
+     */
+    default BooleanWriteChannel getStopChannel() {
+        return this.channel(ChannelId.STOP);
+    }
+
+    /**
+     * Stops the motor.
+     * See {@link ChannelId#STOP}.
+     *
+     * @param value the next write value
+     * @throws OpenemsNamedException on error
+     */
+    default void setStop(boolean value) throws OpenemsNamedException {
+        this.getStopChannel().setNextWriteValue(value);
+    }
+
+    /**
+     * Gets the Channel for {@link ChannelId#START}.
+     *
+     * @return the Channel
+     */
+    default BooleanWriteChannel getStartChannel() {
+        return this.channel(ChannelId.START);
+    }
+
+    /**
+     * Starts the motor.
+     * See {@link ChannelId#START}.
+     *
+     * @param value the next write value
+     * @throws OpenemsNamedException on error
+     */
+    default void setStart(boolean value) throws OpenemsNamedException {
+        this.getStartChannel().setNextWriteValue(value);
+    }
+
+    /**
+     * Gets the Channel for {@link ChannelId#REMOTE}.
+     *
+     * @return the Channel
+     */
+    default BooleanWriteChannel getRemoteChannel() {
+        return this.channel(ChannelId.REMOTE);
+    }
+
+    /**
+     * Switch to remote mode.
+     * See {@link ChannelId#REMOTE}.
+     *
+     * @param value the next write value
+     * @throws OpenemsNamedException on error
+     */
+    default void setRemote(boolean value) throws OpenemsNamedException {
+        this.getRemoteChannel().setNextWriteValue(value);
+    }
+
+    /**
+     * Gets the Channel for {@link ChannelId#CONST_FREQUENCY}.
+     *
+     * @return the Channel
+     */
+    default BooleanWriteChannel getConstFrequencyChannel() {
+        return this.channel(ChannelId.CONST_FREQUENCY);
+    }
+
+    /**
+     * Switch to control mode constant frequency.
+     * See {@link ChannelId#CONST_FREQUENCY}.
+     *
+     * @param value the next write value
+     * @throws OpenemsNamedException on error
+     */
+    default void setConstFrequency(boolean value) throws OpenemsNamedException {
+        this.getConstFrequencyChannel().setNextWriteValue(value);
+    }
+
+    /**
+     * Gets the Channel for {@link ChannelId#CONST_PRESSURE}.
+     *
+     * @return the Channel
+     */
+    default BooleanWriteChannel getConstPressureChannel() {
+        return this.channel(ChannelId.CONST_PRESSURE);
+    }
+
+    /**
+     * Switch to control mode constant pressure.
+     * See {@link ChannelId#CONST_PRESSURE}.
+     *
+     * @param value the next write value
+     * @throws OpenemsNamedException on error
+     */
+    default void setConstPressure(boolean value) throws OpenemsNamedException {
+        this.getConstPressureChannel().setNextWriteValue(value);
+    }
+
+    /**
+     * Gets the Channel for {@link ChannelId#MIN_MOTOR_CURVE}.
+     *
+     * @return the Channel
+     */
+    default BooleanWriteChannel getMinMotorCurveChannel() {
+        return this.channel(ChannelId.MIN_MOTOR_CURVE);
+    }
+
+    /**
+     * Sets the motor running on min curve.
+     * See {@link ChannelId#MIN_MOTOR_CURVE}.
+     *
+     * @param value the next write value
+     * @throws OpenemsNamedException on error
+     */
+    default void setMinMotorCurve(boolean value) throws OpenemsNamedException {
+        this.getMinMotorCurveChannel().setNextWriteValue(value);
+    }
+
+    /**
+     * Gets the Channel for {@link ChannelId#MAX_MOTOR_CURVE}.
+     *
+     * @return the Channel
+     */
+    default BooleanWriteChannel getMaxMotorCurveChannel() {
+        return this.channel(ChannelId.MAX_MOTOR_CURVE);
+    }
+
+    /**
+     * Sets the motor running on max curve.
+     * See {@link ChannelId#MAX_MOTOR_CURVE}.
+     *
+     * @param value the next write value
+     * @throws OpenemsNamedException on error
+     */
+    default void setMaxMotorCurve(boolean value) throws OpenemsNamedException {
+        this.getMaxMotorCurveChannel().setNextWriteValue(value);
+    }
+
+    /**
+     * Gets the Channel for {@link ChannelId#AUTO_ADAPT}.
+     *
+     * @return the Channel
+     */
+    default BooleanWriteChannel getAutoAdaptChannel() {
+        return this.channel(ChannelId.AUTO_ADAPT);
+    }
+
+    /**
+     * Sets the motor in control mode AutoAdapt.
+     * See {@link ChannelId#AUTO_ADAPT}.
+     *
+     * @param value the next write value
+     * @throws OpenemsNamedException on error
+     */
+    default void setAutoAdapt(boolean value) throws OpenemsNamedException {
+        this.getAutoAdaptChannel().setNextWriteValue(value);
+    }
+
+    /**
+     * Gets the Channel for {@link ChannelId#WINK_ON}.
+     *
+     * @return the Channel
+     */
+    default BooleanWriteChannel getWinkOnChannel() {
+        return this.channel(ChannelId.WINK_ON);
+    }
+
+    /**
+     * Turn on center LED flashing.
+     * See {@link ChannelId#WINK_ON}.
+     *
+     * @param value the next write value
+     * @throws OpenemsNamedException on error
+     */
+    default void setWinkOn(boolean value) throws OpenemsNamedException {
+        this.getWinkOnChannel().setNextWriteValue(value);
+    }
+
+    /**
+     * Gets the Channel for {@link ChannelId#WINK_OFF}.
+     *
+     * @return the Channel
+     */
+    default BooleanWriteChannel getWinkOffChannel() {
+        return this.channel(ChannelId.WINK_OFF);
+    }
+
+    /**
+     * Turn off center LED flashing.
+     * See {@link ChannelId#WINK_OFF}.
+     *
+     * @param value the next write value
+     * @throws OpenemsNamedException on error
+     */
+    default void setWinkOff(boolean value) throws OpenemsNamedException {
+        this.getWinkOffChannel().setNextWriteValue(value);
+    }
+
+
     // Head class 4, config parameters.
 
     /**
@@ -1716,12 +1837,325 @@ public interface PumpGrundfos extends OpenemsComponent {
     }
 
     /**
+     * Gets the user selected min frequency f_min. Unit is ’percent of f_nom’. Used by Low frequency stop function as
+     * Low flow freq. limit.
+     * See {@link ChannelId#FREQUENCY_F_MIN}.
+     *
+     * @return the Channel {@link Value}
+     */
+    default Value<Double> getFmin() {
+        return this.getFminChannel().value();
+    }
+
+    /**
+     * Set the user selected min frequency f_min. Unit is ’percent of f_nom’. Used by Low frequency stop function as
+     * Low flow freq. limit.
+     * See {@link ChannelId#FREQUENCY_F_MIN}.
+     *
+     * @param value the next write value
+     * @throws OpenemsNamedException on error
+     */
+    default void setFmin(double value) throws OpenemsNamedException {
+        this.getFminChannel().setNextWriteValue(value);
+    }
+
+    /**
+     * Set the user selected min frequency f_min. Unit is ’percent of f_nom’. Used by Low frequency stop function as
+     * Low flow freq. limit.
+     * See {@link ChannelId#FREQUENCY_F_MIN}.
+     *
+     * @param value the next write value
+     * @throws OpenemsNamedException on error
+     */
+    default void setFmin(Double value) throws OpenemsNamedException {
+        this.getFminChannel().setNextWriteValue(value);
+    }
+
+    /**
      * Gets the Channel for {@link ChannelId#FREQUENCY_F_MAX}.
      *
      * @return the Channel
      */
     default DoubleWriteChannel getFmaxChannel() {
         return this.channel(ChannelId.FREQUENCY_F_MAX);
+    }
+
+    /**
+     * Gets the user selected max frequency f_max. Unit is ’percent of f_nom’.
+     * See {@link ChannelId#FREQUENCY_F_MAX}.
+     *
+     * @return the Channel {@link Value}
+     */
+    default Value<Double> getFmax() {
+        return this.getFmaxChannel().value();
+    }
+
+    /**
+     * Set the user selected max frequency f_max. Unit is ’percent of f_nom’.
+     * See {@link ChannelId#FREQUENCY_F_MAX}.
+     *
+     * @param value the next write value
+     * @throws OpenemsNamedException on error
+     */
+    default void setFmax(double value) throws OpenemsNamedException {
+        this.getFmaxChannel().setNextWriteValue(value);
+    }
+
+    /**
+     * Set the user selected max frequency f_max. Unit is ’percent of f_nom’.
+     * See {@link ChannelId#FREQUENCY_F_MAX}.
+     *
+     * @param value the next write value
+     * @throws OpenemsNamedException on error
+     */
+    default void setFmax(Double value) throws OpenemsNamedException {
+        this.getFmaxChannel().setNextWriteValue(value);
+    }
+
+    /**
+     * Gets the Channel for {@link ChannelId#UNIT_ADDR}.
+     *
+     * @return the Channel
+     */
+    default DoubleWriteChannel getUnitAddrChannel() {
+        return this.channel(ChannelId.UNIT_ADDR);
+    }
+
+    /**
+     * Gets the Genibus unit address of the pump.
+     * See {@link ChannelId#UNIT_ADDR}.
+     *
+     * @return the Channel {@link Value}
+     */
+    default Value<Double> getUnitAddr() {
+        return this.getUnitAddrChannel().value();
+    }
+
+    /**
+     * Sets the Genibus unit address of the pump.
+     * See {@link ChannelId#UNIT_ADDR}.
+     *
+     * @param value the next write value
+     * @throws OpenemsNamedException on error
+     */
+    default void setUnitAddr(double value) throws OpenemsNamedException {
+        this.getUnitAddrChannel().setNextWriteValue(value);
+    }
+
+    /**
+     * Sets the Genibus unit address of the pump.
+     * See {@link ChannelId#UNIT_ADDR}.
+     *
+     * @param value the next write value
+     * @throws OpenemsNamedException on error
+     */
+    default void setUnitAddr(Double value) throws OpenemsNamedException {
+        this.getUnitAddrChannel().setNextWriteValue(value);
+    }
+
+    /**
+     * Gets the Channel for {@link ChannelId#GROUP_ADDR}.
+     *
+     * @return the Channel
+     */
+    default DoubleWriteChannel getGroupAddrChannel() {
+        return this.channel(ChannelId.GROUP_ADDR);
+    }
+
+    /**
+     * Gets the Genibus group address of the pump.
+     * See {@link ChannelId#UNIT_ADDR}.
+     *
+     * @return the Channel {@link Value}
+     */
+    default Value<Double> getGroupAddr() {
+        return this.getGroupAddrChannel().value();
+    }
+
+    /**
+     * Sets the Genibus group address of the pump.
+     * See {@link ChannelId#UNIT_ADDR}.
+     *
+     * @param value the next write value
+     * @throws OpenemsNamedException on error
+     */
+    default void setGroupAddr(double value) throws OpenemsNamedException {
+        this.getGroupAddrChannel().setNextWriteValue(value);
+    }
+
+    /**
+     * Sets the Genibus group address of the pump.
+     * See {@link ChannelId#UNIT_ADDR}.
+     *
+     * @param value the next write value
+     * @throws OpenemsNamedException on error
+     */
+    default void setGroupAddr(Double value) throws OpenemsNamedException {
+        this.getGroupAddrChannel().setNextWriteValue(value);
+    }
+
+    /**
+     * Gets the Channel for {@link ChannelId#H_CONST_REF_MIN}.
+     *
+     * @return the Channel
+     */
+    default DoubleWriteChannel getHconstRefMinChannel() {
+        return this.channel(ChannelId.H_CONST_REF_MIN);
+    }
+
+    /**
+     * Gets the constant pressure mode minimum reference. Unit is percent of the pressure sensor range.
+     * See {@link ChannelId#H_CONST_REF_MIN}.
+     *
+     * @return the Channel {@link Value}
+     */
+    default Value<Double> getHconstRefMin() {
+        return this.getHconstRefMinChannel().value();
+    }
+
+    /**
+     * Sets the constant pressure mode minimum reference. Unit is percent of the pressure sensor range.
+     * See {@link ChannelId#H_CONST_REF_MIN}.
+     *
+     * @param value the next write value
+     * @throws OpenemsNamedException on error
+     */
+    default void setHconstRefMin(double value) throws OpenemsNamedException {
+        this.getHconstRefMinChannel().setNextWriteValue(value);
+    }
+
+    /**
+     * Sets the constant pressure mode minimum reference. Unit is percent of the pressure sensor range.
+     * See {@link ChannelId#H_CONST_REF_MIN}.
+     *
+     * @param value the next write value
+     * @throws OpenemsNamedException on error
+     */
+    default void setHconstRefMin(Double value) throws OpenemsNamedException {
+        this.getHconstRefMinChannel().setNextWriteValue(value);
+    }
+
+    /**
+     * Gets the Channel for {@link ChannelId#H_CONST_REF_MAX}.
+     *
+     * @return the Channel
+     */
+    default DoubleWriteChannel getHconstRefMaxChannel() {
+        return this.channel(ChannelId.H_CONST_REF_MAX);
+    }
+
+    /**
+     * Gets the constant pressure mode maximum reference. Unit is percent of the pressure sensor range.
+     * See {@link ChannelId#H_CONST_REF_MAX}.
+     *
+     * @return the Channel {@link Value}
+     */
+    default Value<Double> getHconstRefMax() {
+        return this.getHconstRefMaxChannel().value();
+    }
+
+    /**
+     * Sets the constant pressure mode maximum reference. Unit is percent of the pressure sensor range.
+     * See {@link ChannelId#H_CONST_REF_MAX}.
+     *
+     * @param value the next write value
+     * @throws OpenemsNamedException on error
+     */
+    default void setHconstRefMax(double value) throws OpenemsNamedException {
+        this.getHconstRefMaxChannel().setNextWriteValue(value);
+    }
+
+    /**
+     * Sets the constant pressure mode maximum reference. Unit is percent of the pressure sensor range.
+     * See {@link ChannelId#H_CONST_REF_MAX}.
+     *
+     * @param value the next write value
+     * @throws OpenemsNamedException on error
+     */
+    default void setHconstRefMax(Double value) throws OpenemsNamedException {
+        this.getHconstRefMaxChannel().setNextWriteValue(value);
+    }
+
+    /**
+     * Gets the Channel for {@link ChannelId#SET_PRESSURE_DELTA}.
+     *
+     * @return the Channel
+     */
+    default DoubleWriteChannel getPressureDeltaChannel() {
+        return this.channel(ChannelId.SET_PRESSURE_DELTA);
+    }
+
+    /**
+     * Gets the low flow stop dead band relative to actual setpoint. Unit is percent.
+     * See {@link ChannelId#SET_PRESSURE_DELTA}.
+     *
+     * @return the Channel {@link Value}
+     */
+    default Value<Double> getPressureDelta() {
+        return this.getPressureDeltaChannel().value();
+    }
+
+    /**
+     * Sets the low flow stop dead band relative to actual setpoint. Unit is percent.
+     * See {@link ChannelId#SET_PRESSURE_DELTA}.
+     *
+     * @param value the next write value
+     * @throws OpenemsNamedException on error
+     */
+    default void setPressureDeltaChannel(double value) throws OpenemsNamedException {
+        this.getPressureDeltaChannel().setNextWriteValue(value);
+    }
+
+    /**
+     * Sets the low flow stop dead band relative to actual setpoint. Unit is percent.
+     * See {@link ChannelId#SET_PRESSURE_DELTA}.
+     *
+     * @param value the next write value
+     * @throws OpenemsNamedException on error
+     */
+    default void setPressureDeltaChannel(Double value) throws OpenemsNamedException {
+        this.getPressureDeltaChannel().setNextWriteValue(value);
+    }
+
+    /**
+     * Gets the Channel for {@link ChannelId#SET_MAX_PRESSURE}.
+     *
+     * @return the Channel
+     */
+    default DoubleWriteChannel getMaxPressureChannel() {
+        return this.channel(ChannelId.SET_MAX_PRESSURE);
+    }
+
+    /**
+     * Gets the pump maximum head/pressure. Unit is bar.
+     * See {@link ChannelId#SET_MAX_PRESSURE}.
+     *
+     * @return the Channel {@link Value}
+     */
+    default Value<Double> getMaxPressure() {
+        return this.getMaxPressureChannel().value();
+    }
+
+    /**
+     * Sets the pump maximum head/pressure. Unit is bar.
+     * See {@link ChannelId#SET_MAX_PRESSURE}.
+     *
+     * @param value the next write value
+     * @throws OpenemsNamedException on error
+     */
+    default void setMaxPressure(double value) throws OpenemsNamedException {
+        this.getMaxPressureChannel().setNextWriteValue(value);
+    }
+
+    /**
+     * Sets the pump maximum head/pressure. Unit is bar.
+     * See {@link ChannelId#SET_MAX_PRESSURE}.
+     *
+     * @param value the next write value
+     * @throws OpenemsNamedException on error
+     */
+    default void setMaxPressure(Double value) throws OpenemsNamedException {
+        this.getMaxPressureChannel().setNextWriteValue(value);
     }
 
     /**
@@ -1733,131 +2167,110 @@ public interface PumpGrundfos extends OpenemsComponent {
         return this.channel(ChannelId.SET_PUMP_MAX_FLOW);
     }
 
-    default DoubleWriteChannel setPressureDelta() {
-        return this.channel(ChannelId.SET_PRESSURE_DELTA);
+    /**
+     * Gets the pump maximum flow. Unit is cubic meters per hour (m³/h).
+     * See {@link ChannelId#SET_PUMP_MAX_FLOW}.
+     *
+     * @return the Channel {@link Value}
+     */
+    default Value<Double> getPumpMaxFlow() {
+        return this.getPumpMaxFlowChannel().value();
     }
 
-    default DoubleWriteChannel setMaxPressure() {
-        return this.channel(ChannelId.SET_MAX_PRESSURE);
+    /**
+     * Sets the pump maximum flow. Unit is cubic meters per hour (m³/h).
+     * See {@link ChannelId#SET_PUMP_MAX_FLOW}.
+     *
+     * @param value the next write value
+     * @throws OpenemsNamedException on error
+     */
+    default void setPumpMaxFlow(double value) throws OpenemsNamedException {
+        this.getPumpMaxFlowChannel().setNextWriteValue(value);
     }
 
-    default DoubleWriteChannel setConstRefMinH() {
-        return this.channel(ChannelId.H_CONST_REF_MIN);
+    /**
+     * Sets the pump maximum flow. Unit is cubic meters per hour (m³/h).
+     * See {@link ChannelId#SET_PUMP_MAX_FLOW}.
+     *
+     * @param value the next write value
+     * @throws OpenemsNamedException on error
+     */
+    default void setPumpMaxFlow(Double value) throws OpenemsNamedException {
+        this.getPumpMaxFlowChannel().setNextWriteValue(value);
     }
 
-    default DoubleWriteChannel setConstRefMaxH() {
-        return this.channel(ChannelId.H_CONST_REF_MAX);
-    }
-
-    default DoubleWriteChannel setUnitAddr() {
-        return this.channel(ChannelId.UNIT_ADDR);
-    }
-
-    default DoubleWriteChannel setGroupAddr() {
-        return this.channel(ChannelId.GROUP_ADDR);
-    }
 
     // Sensor configuration
-    default DoubleWriteChannel setSensor1Func() {
+    default DoubleWriteChannel getSensor1FuncChannel() {
         return this.channel(ChannelId.ANA_IN_1_FUNC);
     }
 
-    default DoubleWriteChannel setSensor1Applic() {
+    default DoubleWriteChannel getSensor1ApplicChannel() {
         return this.channel(ChannelId.ANA_IN_1_APPLIC);
     }
 
-    default DoubleWriteChannel setSensor1Unit() {
+    default DoubleWriteChannel getSensor1UnitChannel() {
         return this.channel(ChannelId.ANA_IN_1_UNIT);
     }
 
-    default DoubleWriteChannel setSensor1Min() {
+    default DoubleWriteChannel getSensor1MinChannel() {
         return this.channel(ChannelId.ANA_IN_1_MIN);
     }
 
-    default DoubleWriteChannel setSensor1Max() {
+    default DoubleWriteChannel getSensor1MaxChannel() {
         return this.channel(ChannelId.ANA_IN_1_MAX);
     }
 
-    default DoubleWriteChannel setSensorGspFunc() {
+    default DoubleWriteChannel getSensorGspFuncChannel() {
         return this.channel(ChannelId.GRF_SENSOR_PRESS_FUNC);
     }
 
-    default DoubleWriteChannel setHrange() {
+    default DoubleWriteChannel getHrangeChannel() {
         return this.channel(ChannelId.H_RANGE);
     }
 
 
-    //command Channel
-    default BooleanWriteChannel setRemote() {
-        return this.channel(ChannelId.REMOTE);
-    }
+    // Head class 5, reference values.
 
-    default BooleanWriteChannel setStart() {
-        return this.channel(ChannelId.START);
-    }
-
-    default BooleanWriteChannel setStop() {
-        return this.channel(ChannelId.STOP);
-    }
-
-    default BooleanWriteChannel setAutoAdapt() {
-        return this.channel(ChannelId.AUTO_ADAPT);
-    }
-
-    default BooleanWriteChannel setMinMotorCurve() {
-        return this.channel(ChannelId.MIN_MOTOR_CURVE);
-    }
-
-    default BooleanWriteChannel setMaxMotorCurve() {
-        return this.channel(ChannelId.MAX_MOTOR_CURVE);
-    }
-
-    default BooleanWriteChannel setConstFrequency() {
-        return this.channel(ChannelId.CONST_FREQUENCY);
-    }
-
-    default BooleanWriteChannel setConstPressure() {
-        return this.channel(ChannelId.CONST_PRESSURE);
-    }
-
-    default BooleanWriteChannel setWinkOn() {
-        return this.channel(ChannelId.WINK_ON);
-    }
-
-    default BooleanWriteChannel setWinkOff() {
-        return this.channel(ChannelId.WINK_OFF);
-    }
-
-    default BooleanWriteChannel setMpMaster() {
-        return this.channel(ChannelId.MP_Master);
-    }
-
-    default BooleanWriteChannel setMpStartSearch() {
-        return this.channel(ChannelId.MP_START_SEARCH);
-    }
-
-    default BooleanWriteChannel setMpJoinReqAccepted() {
-        return this.channel(ChannelId.MP_JOIN_REQ_ACCEPTED);
-    }
-
-    default BooleanWriteChannel setMpStartMultipump() {
-        return this.channel(ChannelId.MP_START_MULTI_PUMP);
-    }
-
-    default BooleanWriteChannel setMpEndMultipump() {
-        return this.channel(ChannelId.MP_END_MULTI_PUMP);
-    }
-
-
-    // Reference Value
-    default DoubleWriteChannel setRefRem() {
+    /**
+     * Gets the Channel for {@link ChannelId#REF_REM}.
+     *
+     * @return the Channel
+     */
+    default DoubleWriteChannel getRefRemChannel() {
         return this.channel(ChannelId.REF_REM);
     }
 
+    /**
+     * Gets the remote reference set point. Unit is percent, percent of what depends on the control mode.
+     * See {@link ChannelId#REF_REM}.
+     *
+     * @return the Channel {@link Value}
+     */
+    default Value<Double> getRefRem() {
+        return this.getRefRemChannel().value();
+    }
 
-    // Multipump
-    default DoubleWriteChannel setMpMasterAddr() {
-        return this.channel(ChannelId.MP_MASTER_ADDR);
+    /**
+     * Sets the remote reference set point. Unit is percent, percent of what depends on the control mode.
+     * See {@link ChannelId#REF_REM}.
+     *
+     * @param value the next write value
+     * @throws OpenemsNamedException on error
+     */
+    default void setRefRem(double value) throws OpenemsNamedException {
+        this.getRefRemChannel().setNextWriteValue(value);
+    }
+
+    /**
+     * Sets the remote reference set point. Unit is percent, percent of what depends on the control mode.
+     * See {@link ChannelId#REF_REM}.
+     *
+     * @param value the next write value
+     * @throws OpenemsNamedException on error
+     */
+    default void setRefRem(Double value) throws OpenemsNamedException {
+        this.getRefRemChannel().setNextWriteValue(value);
     }
 
     default DoubleWriteChannel setTpMode() {
@@ -1868,19 +2281,71 @@ public interface PumpGrundfos extends OpenemsComponent {
         return this.channel(ChannelId.TP_MODE_STRING);
     }
 
-
-    // Strings
-    default StringReadChannel getProductNumber() {
+    /**
+     * Gets the Channel for {@link ChannelId#DEVICE_PROD_NO}.
+     *
+     * @return the Channel
+     */
+    default StringReadChannel getProductNumberChannel() {
         return this.channel(ChannelId.DEVICE_PROD_NO);
     }
 
-    default StringReadChannel getSerialNumber() {
+    /**
+     * Gets the device product number.
+     * See {@link ChannelId#DEVICE_PROD_NO}.
+     *
+     * @return the Channel {@link Value}
+     */
+    default Value<String> getProductNumber() {
+        return this.getProductNumberChannel().value();
+    }
+
+    /**
+     * Gets the Channel for {@link ChannelId#SERIAL_NO}.
+     *
+     * @return the Channel
+     */
+    default StringReadChannel getSerialNumberChannel() {
         return this.channel(ChannelId.SERIAL_NO);
     }
 
-    // Other
-    default Channel<Boolean> isConnectionOk() {
+    /**
+     * Gets the device serial number in production.
+     * See {@link ChannelId#SERIAL_NO}.
+     *
+     * @return the Channel {@link Value}
+     */
+    default Value<String> getSerialNumber() {
+        return this.getSerialNumberChannel().value();
+    }
+
+    /**
+     * Gets the Channel for {@link ChannelId#REF_REM}.
+     *
+     * @return the Channel
+     */
+    default Channel<Boolean> getConnectionOkChannel() {
         return this.channel(ChannelId.CONNECTION_OK);
+    }
+
+    /**
+     * Gets the status of the Genibus connection of the pump. ’true’ means the connection is ok, ’false’ means the
+     * connection is lost.
+     * See {@link ChannelId#CONNECTION_OK}.
+     *
+     * @return the Channel {@link Value}
+     */
+    default Value<Boolean> getConnectionOk() {
+        return this.getConnectionOkChannel().value();
+    }
+
+    /**
+     * Internal method to set the 'nextValue' on {@link ChannelId#CONNECTION_OK} Channel.
+     *
+     * @param value the next write value
+     */
+    default void _setConnectionOk(boolean value) {
+        this.getConnectionOkChannel().setNextValue(value);
     }
 
     public PumpDevice getPumpDevice();
