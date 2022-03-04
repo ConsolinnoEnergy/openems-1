@@ -6,7 +6,6 @@ import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
 
 
-import io.openems.edge.heater.analogue.ControlType;
 import io.openems.edge.io.api.AnalogInputOutput;
 import org.osgi.service.cm.ConfigurationException;
 

@@ -28,6 +28,9 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     @AttributeDefinition(name = "Starting SetPoint Temperature", description = "Default/Start value of the Setpoint Temperature, that will be set at init.; Unit: DeciDegree")
     int startSetPointTemperature() default 500;
 
+    @AttributeDefinition(name = "Default Temperature", description = "When the Reference Temperature measures a missing Temperature in the beginning, this Temperature will be used instead.")
+    int defaultTemperature() default 600;
+
     boolean enabled() default true;
 
     String webconsole_configurationFactory_nameHint() default "TemperatureThreshold [{id}]";

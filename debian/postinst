@@ -2,6 +2,22 @@
 set -e
 # Automatically added by dh_installsystemd/12.10ubuntu1
 if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+
+    # Create openems user and set rights for serial ports
+    if ! getent passwd openems >/dev/null; then
+        adduser --disabled-password \
+                --disabled-login \
+                --quiet \
+                --system \
+                --home /data/openems \
+                --no-create-home \
+                --gecos "OpenEMS daemon" \
+                --group \
+                openems
+        adduser openems dialout
+    fi
+
+
     # This will only remove masks created by d-s-h on package removal.
     deb-systemd-helper unmask 'openems.service' >/dev/null || true
 

@@ -14,6 +14,7 @@ import io.openems.edge.bridge.mqtt.manager.MqttSubscribeManager;
 import io.openems.edge.common.component.AbstractOpenemsComponent;
 import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
+import io.openems.edge.common.configupdate.ConfigurationUpdate;
 import io.openems.edge.common.event.EdgeEventConstants;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.joda.time.DateTime;
@@ -108,6 +109,7 @@ public class MqttBridgeImpl extends AbstractOpenemsComponent implements OpenemsC
 
     //TimeZone Available for all classes
     private DateTimeZone timeZone = DateTimeZone.UTC;
+    private boolean isFirstConnection;
 
     public MqttBridgeImpl() {
         super(OpenemsComponent.ChannelId.values(),
@@ -156,6 +158,7 @@ public class MqttBridgeImpl extends AbstractOpenemsComponent implements OpenemsC
             this.subscribeManager.setComponentManager(this.cpm);
             this.publishManager.setCoreCycle(config.useCoreCycleTime());
             this.subscribeManager.setCoreCycle(config.useCoreCycleTime());
+            this.isFirstConnection = true;
         }
     }
 
@@ -163,22 +166,25 @@ public class MqttBridgeImpl extends AbstractOpenemsComponent implements OpenemsC
      * Updates Config --> MqttTypes and Priorities.
      */
     private void updateConfig() {
-        Configuration c;
 
+        Map<String, Object> properties = new HashMap<>();
+        String propertyInput = Arrays.toString(MqttType.values());
+        properties.put("mqttTypes", this.propertyInput(propertyInput));
+        this.setMqttTypes().setNextValue(MqttType.values());
+        propertyInput = Arrays.toString(MqttPriority.values());
+        properties.put("mqttPriorities", this.propertyInput(propertyInput));
         try {
-            c = this.ca.getConfiguration(this.servicePid(), "?");
-            Dictionary<String, Object> properties = c.getProperties();
-            String propertyInput = Arrays.toString(MqttType.values());
-
-            properties.put("mqttTypes", this.propertyInput(propertyInput));
-            this.setMqttTypes().setNextValue(MqttType.values());
-            propertyInput = Arrays.toString(MqttPriority.values());
-            properties.put("mqttPriorities", this.propertyInput(propertyInput));
-            c.update(properties);
-
+            ConfigurationUpdate.updateConfig(this.ca, this.servicePid(), properties);
         } catch (IOException e) {
             this.log.warn("Couldn't update config, reason: " + e.getMessage());
         }
+       /* Configuration c;
+        try {
+            c = this.ca.getConfiguration(this.servicePid(), "?");
+            Dictionary<String, Object> properties = c.getProperties();
+            c.update(properties);
+
+        } */
     }
 
     /**
@@ -439,7 +445,7 @@ public class MqttBridgeImpl extends AbstractOpenemsComponent implements OpenemsC
             return;
         }
         if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE)) {
-            if (this.isConnected() == false && (this.tryReconnect() || this.publishManager == null || this.subscribeManager == null)) {
+            if (this.isConnected() == false && this.tryReconnect()) {
                 ExecutorService executorService = Executors.newSingleThreadExecutor();
                 executorService.submit(() -> this.createNewMqttSession.run());
                 try {
@@ -526,6 +532,10 @@ public class MqttBridgeImpl extends AbstractOpenemsComponent implements OpenemsC
      * @return true if it should reconnect.
      */
     private boolean tryReconnect() {
+        if(this.isFirstConnection){
+            this.isFirstConnection = false;
+            return true;
+        }
         if (this.initialized) {
             boolean shouldTryToReconnectAgain = new DateTime().isAfter(this.initialTime.plusSeconds(TIME_SECONDS_TO_WAIT_TILL_RECONNECT));
             if (shouldTryToReconnectAgain) {

@@ -60,6 +60,7 @@ public class ControllerHeatnetworkWatchdogImpl extends AbstractOpenemsComponent 
     private ExceptionalState target;
     private boolean errorState;
     private boolean configSuccess;
+    private boolean useAbsolute;
 
 
     Config config;
@@ -97,6 +98,7 @@ public class ControllerHeatnetworkWatchdogImpl extends AbstractOpenemsComponent 
             this.timeHandler.addOneIdentifier(CHECK_ERROR_HANDLING_TIME_IDENTIFIER, config.timerId(), config.errorPeriod());
             this.timeHandler.addOneIdentifier(CHECK_MISSING_COMPONENTS, config.timerId(), DELTA_TIME_MISSING_COMPONENTS);
             this.configurationDone = config.configurationDone();
+            this.useAbsolute = config.useAbsoluteValue();
             this.allocateComponents(config.sourceThermometer(), config.targetThermometer(), config.targetComponentId());
             if (config.componentId() != null && !config.componentId().trim().equals("")) {
                 this.update(this.cm.getConfiguration(this.servicePid(), "?"), "channelIdList", new ArrayList<>(this.cpm.getComponent(config.componentId()).channels()), config.channelIdList().length);
@@ -158,10 +160,10 @@ public class ControllerHeatnetworkWatchdogImpl extends AbstractOpenemsComponent 
 
     /**
      * <p>
-     * Checks if there is an Error in the Valve or Pump. And overwrite them with the ExceptionalState.
-     * At first, check if the SourceComponent has the expected Value.
+     * Checks if there is an error in the valve or pump. And overwrite them with the "ExceptionalState".
+     * At first, check if the source-component has the expected value.
      * After that check if the time is up to calculate the difference between the two thermometer.
-     * Should the difference between those Thermometer fall below the configured errorDelta (or exceeds if inverse)
+     * Should the difference between those {@link Thermometer} fall below the configured errorDelta (or exceeds if inverse)
      * Everything is fine and working as expected, the timer resets and tested again after the configured TestTime is up.
      * </p>
      * <p>
@@ -184,11 +186,7 @@ public class ControllerHeatnetworkWatchdogImpl extends AbstractOpenemsComponent 
                         this.timeHandler.resetTimer(CHECK_THERMOMETER_DIFFERENCE_IDENTIFIER);
                         this.currentlyHeatingOrCooling = true;
                     } else if (this.currentlyHeatingOrCooling && this.timeHandler.checkTimeIsUp(CHECK_THERMOMETER_DIFFERENCE_IDENTIFIER)) {
-                        if (this.invert) {
-                            error = (Math.abs(this.sourceThermometer.getTemperatureValue() - this.targetThermometer.getTemperatureValue()) <= this.errorDelta);
-                        } else {
-                            error = (Math.abs(this.sourceThermometer.getTemperatureValue() - this.targetThermometer.getTemperatureValue()) >= this.errorDelta);
-                        }
+                        error = this.calculateError();
                         done = true;
                     }
                     if (done) {
@@ -207,9 +205,26 @@ public class ControllerHeatnetworkWatchdogImpl extends AbstractOpenemsComponent 
         }
     }
 
+    /**
+     * Calculates if an error is present within the watchdog, by either using the absolute value or not and comparing it to
+     * the errorDelta either with >= or <= depending on the config and inversion.
+     * @return a boolean.
+     */
+    private boolean calculateError() {
+        double errorValue = this.sourceThermometer.getTemperatureValue() - this.targetThermometer.getTemperatureValue();
+        if (this.useAbsolute) {
+            errorValue = Math.abs(errorValue);
+        }
+        if (this.invert) {
+            return errorValue <= this.errorDelta;
+        } else {
+            return errorValue >= this.errorDelta;
+        }
+    }
+
 
     /**
-     * Sometimes Components need to refresh References. This will set new references if needed.
+     * Sometimes components need to refresh references. This will set new references if needed.
      */
     private void checkMissingComponents() {
         try {
@@ -237,7 +252,7 @@ public class ControllerHeatnetworkWatchdogImpl extends AbstractOpenemsComponent 
     }
 
     /**
-     * Check if an error Occurred.
+     * Check if an error occurred.
      *
      * @param error is an error active.
      * @throws OpenemsError.OpenemsNamedException thrown if setNextWriteValue fails.
@@ -258,7 +273,7 @@ public class ControllerHeatnetworkWatchdogImpl extends AbstractOpenemsComponent 
     }
 
     /**
-     * Check if the active Value of the targetComponent matches the expected value.
+     * Check if the active value of the targetComponent matches the expected value.
      *
      * @return a boolean.
      */
@@ -277,7 +292,7 @@ public class ControllerHeatnetworkWatchdogImpl extends AbstractOpenemsComponent 
     }
 
     /**
-     * Update method available for Components.
+     * Update method available for components.
      *
      * @param config        config of the Component, will be updated automatically.
      * @param configTarget  target, where to put ChannelIds. Usually something like "ChannelIds".

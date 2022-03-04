@@ -1,3 +1,42 @@
+openems-consolinno (0.1.25-1) unstable; urgency=medium
+
+  * Fixed PWM Frequency Setting
+  * improvment MQTT 
+  * implementation of Meter from MAGGIE
+
+ -- Felix <felix@felix-ThinkPad-E15-Gen-2>  Wed, 02 Mar 2022 16:38:29 +0100
+
+openems-consolinno (0.1.24-1) unstable; urgency=medium
+
+  * PID supports now the functionality of morePercentEqualsCooling e.g.
+    when opening a valve it gets colder. 
+  * Also potential optimizer fix
+
+ -- Felix <felix@felix-ThinkPad-E15-Gen-2>  Thu, 24 Feb 2022 10:31:26 +0100
+
+openems-consolinno (0.1.23-1) unstable; urgency=medium
+
+  * implemented a Controller to update Configs after X amount of time
+    and using an optional Error Channel. 
+  * Also bugfix in PID and TimerByCycles Components. 
+  * VirtualThermometer on Default use MissingTemperature
+
+ -- Felix <felix@felix-ThinkPad-E15-Gen-2>  Wed, 23 Feb 2022 17:20:24 +0100
+
+openems-consolinno (0.1.22-1) unstable; urgency=medium
+
+  * MQTT null safety in telemetry subscribe
+
+ -- Felix <felix@felix-ThinkPad-E15-Gen-2>  Tue, 22 Feb 2022 14:09:30 +0100
+
+openems-consolinno (0.1.21-1) unstable; urgency=medium
+
+  * improvments of packages such as MQTT, LucidControl, added calculator
+    for interval calculation and Adder and multiplier, as well as a
+    bugfix for Optimizer
+
+ -- Felix <felix@felix-ThinkPad-E15-Gen-2>  Tue, 15 Feb 2022 12:28:05 +0100
+
 openems-consolinno (0.1.20-2) unstable; urgency=medium
 
   * added new link to gitmodules should be working now

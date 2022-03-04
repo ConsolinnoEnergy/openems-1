@@ -57,7 +57,6 @@ public class RelayImpl extends AbstractOpenemsModbusComponent implements Openems
     //Relay 5 to 8 are able to be set as inverse.
     // But internally they need the MReg Number 1 to 4 so they need to be shifted by 4.
     private static final int RELAY_INVERSION_OFFSET = 4;
-    private static final int FIRST_INVERTIBLE_RELAY = 5;
 
     public RelayImpl() {
         super(OpenemsComponent.ChannelId.values(),
@@ -80,9 +79,6 @@ public class RelayImpl extends AbstractOpenemsModbusComponent implements Openems
                 && (this.lc.getFunctionAddress(LeafletCore.ModuleType.REL, this.relayModule, (this.position - 1)) != Error.ERROR.getValue())) {
             // Inverts Relay, if it is Configured and able to do so.
             this.relayDiscreteOutput = this.lc.getFunctionAddress(LeafletCore.ModuleType.REL, this.relayModule, (this.position - 1));
-            if (this.position >= FIRST_INVERTIBLE_RELAY && this.inverted) {
-                this.lc.invertRelay(this.relayModule, (this.position - RELAY_INVERSION_OFFSET));
-            }
             super.activate(context, config.id(), config.alias(), config.enabled(), config.modbusUnitId(), this.cm,
                     "Modbus", config.modbusBridgeId());
         } else {
@@ -98,9 +94,6 @@ public class RelayImpl extends AbstractOpenemsModbusComponent implements Openems
         } catch (OpenemsError.OpenemsNamedException ignored) {
             this.log.error("Error in getRelaysWriteChannel.setNextWriteValue");
         }
-        if (this.inverted) {
-            this.lc.revertInversion(this.relayModule, (this.position - RELAY_INVERSION_OFFSET));
-        }
         this.lc.removeModule(LeafletCore.ModuleType.REL, this.relayModule, this.position);
         super.deactivate();
     }
@@ -111,10 +104,10 @@ public class RelayImpl extends AbstractOpenemsModbusComponent implements Openems
             return new ModbusProtocol(this,
                     new FC5WriteCoilTask(this.relayDiscreteOutput,
                             (ModbusCoilElement) m(Relay.ChannelId.WRITE_ON_OFF, new CoilElement(this.relayDiscreteOutput),
-                                    ElementToChannelConverter.DIRECT_1_TO_1)),
+                                    ElementToChannelConverter.INVERT_IF_TRUE(this.inverted))),
                     new FC1ReadCoilsTask(this.relayDiscreteOutput, Priority.HIGH,
                             m(Relay.ChannelId.READ_ON_OFF, new CoilElement(this.relayDiscreteOutput),
-                                    ElementToChannelConverter.DIRECT_1_TO_1)));
+                                    ElementToChannelConverter.INVERT_IF_TRUE(this.inverted))));
         } else {
             this.deactivate();
             return null;
@@ -125,8 +118,8 @@ public class RelayImpl extends AbstractOpenemsModbusComponent implements Openems
     public String debugLog() {
         if (this.getRelaysWriteChannel().getNextWriteValue().isPresent()) {
             if (this.getRelaysReadChannel().value().isDefined()) {
-                return "Write: " + this.getRelaysWriteChannel().getNextWriteValue().get().toString()
-                        + " Read: " + this.getRelaysReadChannel().getNextValue().get().toString();
+                return "Write: " + this.getRelaysWriteChannel().getNextWriteValue().get()
+                        + " Read: " + this.getRelaysReadChannel().value().get();
             }
             return this.getRelaysWriteChannel().getNextWriteValue().get().toString();
         }

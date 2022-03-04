@@ -1,27 +1,31 @@
 [Unit]
 Description=OpenEMS
-After=network.target
-
+After=network.target leafletbs.service
+Wants=leafletbs.service
+OnFailure=uptime-reboot@720.service
  
 
 [Service]
-User=root
-Group=root
+User=openems
+Group=openems
 Type=notify
 WorkingDirectory=/usr/lib/openems
+Environment=CONFIGDIR=/data/openems
+EnvironmentFile=-/data/openems/openems.conf
 LimitCORE=infinity
 LimitRTPRIO=2
 LimitRTTIME=60000000
 CPUSchedulingPolicy=rr
 CPUSchedulingPriority=1
-ExecStart=/usr/bin/java -Dfelix.cm.dir=/etc/openems.d/ -jar /usr/lib/openems/openems.jar
+ExecStartPre=-+/usr/bin/mkdir -p ${CONFIGDIR}
+ExecStartPre=-+/usr/bin/chown -R openems.openems ${CONFIGDIR}
+ExecStart=/usr/bin/java -Dfelix.cm.dir=${CONFIGDIR} -Dfelix.webconsole.password=${PASSWORD} -jar /usr/lib/openems/openems.jar
 SuccessExitStatus=143
 Restart=always
 RestartSec=10
-WatchdogSec=60
-StartLimitInterval=5min
+WatchdogSec=100
+StartLimitInterval=8min
 StartLimitBurst=4
-StartLimitAction=reboot-force
 
  
 [Install]

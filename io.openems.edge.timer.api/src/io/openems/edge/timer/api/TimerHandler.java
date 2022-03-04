@@ -1,6 +1,7 @@
 package io.openems.edge.timer.api;
 
 import io.openems.common.exceptions.OpenemsError;
+import org.joda.time.DateTime;
 import org.osgi.service.cm.ConfigurationException;
 
 /**
@@ -41,4 +42,7 @@ public interface TimerHandler {
      */
     boolean checkTimeIsUp(String identifier);
 
+    void setInitialTime(DateTime dateTime, String identifierSwap);
+
+    void setInitialTime(Integer count, String identifierSwap);
 }

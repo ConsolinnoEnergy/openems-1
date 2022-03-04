@@ -2,11 +2,13 @@ package io.openems.edge.thermometer.virtual;
 
 import io.openems.common.exceptions.OpenemsError;
 import io.openems.common.types.ChannelAddress;
+import io.openems.common.types.OpenemsType;
 import io.openems.edge.common.channel.Channel;
 import io.openems.edge.common.component.AbstractOpenemsComponent;
 import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.common.event.EdgeEventConstants;
+import io.openems.edge.common.type.TypeUtils;
 import io.openems.edge.thermometer.api.Thermometer;
 import io.openems.edge.thermometer.api.ThermometerVirtual;
 import org.osgi.service.component.ComponentContext;
@@ -61,6 +63,8 @@ public class ThermometerVirtualImpl extends AbstractOpenemsComponent implements 
         super.activate(context, config.id(), config.alias(), config.enabled());
         this.config = config;
         this.activationOrModifiedRoutine(config);
+        this.getTemperatureChannel().setNextValue(MISSING_TEMPERATURE);
+        this.getTemperatureChannel().nextProcessImage();
 
     }
 
@@ -103,19 +107,21 @@ public class ThermometerVirtualImpl extends AbstractOpenemsComponent implements 
         if (this.isEnabled()) {
             if (this.configSuccess) {
                 if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE)) {
-                    Optional<Integer> currentTemp = this.getVirtualTemperature();
-                    currentTemp.ifPresent(integer -> this.getTemperatureChannel().setNextValue(integer + this.offset));
-                    if (currentTemp.isPresent() == false && this.useAnotherChannelAsTemp) {
+                    if (!this.useAnotherChannelAsTemp) {
+                        Optional<Integer> currentTemp = this.getVirtualTemperature();
+                        currentTemp.ifPresent(integer -> this.getTemperatureChannel().setNextValue(integer + this.offset));
+                    } else {
                         try {
-                            Channel<?> temperature = this.cpm.getChannel(this.refThermometer);
-                            if (temperature.value().isDefined()) {
-                                this.getTemperatureChannel().setNextValue(temperature.value().get());
+                            Channel<?> temperatureChannel = this.cpm.getChannel(this.refThermometer);
+                            Integer temperature = TypeUtils.getAsType(OpenemsType.INTEGER, temperatureChannel.value());
+
+                            if (temperature != null && temperature != MISSING_TEMPERATURE) {
+                                this.getTemperatureChannel().setNextValue(temperature + this.offset);
                             }
                         } catch (OpenemsError.OpenemsNamedException e) {
                             this.log.warn("Couldn't find Channel: " + this.refThermometer.toString());
                         }
                     }
-
                 }
             } else {
                 this.activationOrModifiedRoutine(this.config);

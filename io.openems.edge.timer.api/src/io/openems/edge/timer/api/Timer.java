@@ -1,5 +1,7 @@
 package io.openems.edge.timer.api;
 
+import org.joda.time.DateTime;
+
 /**
  * The Timer interface. This is normally used by TimerHandler, but other classes can use the Timer directly. (Even though it's not recommended)
  * The Timer is used to measure, if a specific time is up. ATM it can be a cycle counter or it could be a real Time.
@@ -42,4 +44,8 @@ public interface Timer {
      * @param maxValue   the maxValue (max CycleTime or maxTime to wait)
      */
     void addIdentifierToTimer(String id, String identifier, int maxValue);
+
+    void setInitTime(String id, String identifierSwap, DateTime dateTime);
+
+    void setInitTime(String id, String identifierSwap, Integer count);
 }

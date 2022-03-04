@@ -64,7 +64,8 @@ task buildEdgeDeb(dependsOn: buildEdge, type: Deb) {
         packageName = 'openems-dev'
         packageDescription = "DEV VERSION: Open EMS for Consolinno Leaflet"
     }
-    requires('openjdk-8-jre')
+    requires('openjdk-8-jre-headless')
+    requires('librxtx-java')
 
     from("${buildDir}/openems-edge.jar") {
         into "/usr/lib/openems"
@@ -72,6 +73,10 @@ task buildEdgeDeb(dependsOn: buildEdge, type: Deb) {
     }
 
     from("openems.service") {
+        into "/lib/systemd/system"
+    }
+
+    from("uptime-reboot@.service") {
         into "/lib/systemd/system"
     }
 

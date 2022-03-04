@@ -68,6 +68,7 @@ public class OptimizerImpl extends AbstractOpenemsComponent implements OpenemsCo
     private MqttBridge mqttBridge;
     private boolean fallback;
     private boolean previousFallback;
+    private boolean rollOver = true;
     private DateTime savedDate = new DateTime();
 
     public OptimizerImpl() {
@@ -175,8 +176,13 @@ public class OptimizerImpl extends AbstractOpenemsComponent implements OpenemsCo
                 } else {
                     timestamp = Integer.parseInt(now.hourOfDay().getAsString() + now.minuteOfHour().getAsString());
                 }
-                if (now.hourOfDay().get() == 0) {
+                if (now.hourOfDay().get() == 0 && this.rollOver) {
+                    this.rollOver = false;
                     timestamp = Integer.parseInt("0" + timestamp);
+                    this.minTime = 0;
+                    this.minDeltaTime = DEFAULT;
+                } else if (now.hourOfDay().get() != 0) {
+                    this.rollOver = true;
                 }
                 timeArray[i] = Integer.parseInt(this.jsonArray.get(i).getAsJsonObject().entrySet().iterator().next().getKey());
                 if (this.minTime != DEFAULT) {
@@ -186,7 +192,7 @@ public class OptimizerImpl extends AbstractOpenemsComponent implements OpenemsCo
                 if (deltaTime >= 0 && deltaTime <= this.minDeltaTime) {
                     this.minTime = timeArray[i];
                     this.activeTask = i;
-
+                    this.log.info("ActiveTask: " + i);
                 }
                 if (this.fallback) {
                     this.minTime = Integer.parseInt("000");
@@ -389,6 +395,10 @@ public class OptimizerImpl extends AbstractOpenemsComponent implements OpenemsCo
         List<String> channelIds = new ArrayList<>();
         List<String> value = new ArrayList<>();
         String timeStamp = minTime + "";
+        //0030 is previously converted to 30 therefore timeStamp.length == 2 -> convert to 030 to get the timestamp in JsonTask
+        if (timeStamp.length() == 2) {
+            timeStamp = "0" + timeStamp;
+        }
         if (timeStamp.equals("0")) {
             timeStamp = "000";
         }

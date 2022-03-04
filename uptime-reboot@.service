@@ -1,0 +1,8 @@
+[Unit]
+Description=Uptime Dependent Restart
+
+ 
+[Service]
+ExecStart=/bin/sh -c "[ `/bin/cut -d '.' -f1 /proc/uptime` -lt %i ]"
+FailureAction=reboot-force
+ 

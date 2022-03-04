@@ -7,7 +7,9 @@ import io.openems.edge.bridge.modbus.api.BridgeModbus;
 import io.openems.edge.bridge.modbus.api.ElementToChannelConverter;
 import io.openems.edge.bridge.modbus.api.ModbusProtocol;
 import io.openems.edge.bridge.modbus.api.element.CoilElement;
+import io.openems.edge.bridge.modbus.api.element.DummyCoilElement;
 import io.openems.edge.bridge.modbus.api.element.DummyRegisterElement;
+import io.openems.edge.bridge.modbus.api.element.UnsignedDoublewordElement;
 import io.openems.edge.bridge.modbus.api.element.UnsignedWordElement;
 import io.openems.edge.bridge.modbus.api.task.FC2ReadInputsTask;
 import io.openems.edge.bridge.modbus.api.task.FC3ReadRegistersTask;
@@ -66,8 +68,8 @@ import java.util.Optional;
         configurationPolicy = ConfigurationPolicy.REQUIRE,
         immediate = true,
         property = { //
-        EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE, //
-        EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS //
+                EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE, //
+                EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS //
         })
 public class GasBoilerViessmannImpl extends AbstractOpenemsModbusComponent implements OpenemsComponent, EventHandler,
         ExceptionalState, GasBoilerViessmann {
@@ -79,7 +81,7 @@ public class GasBoilerViessmannImpl extends AbstractOpenemsModbusComponent imple
 
     private boolean printInfoToLog;
     private boolean readOnly = false;
-    private double heatingPowerPercentSetting;
+    private double powerPercentSettingDefault;
     static final int hvac_off = 6;
     private boolean readyForCommands = false;
 
@@ -115,11 +117,12 @@ public class GasBoilerViessmannImpl extends AbstractOpenemsModbusComponent imple
         this.readOnly = config.readOnly();
         if (this.isEnabled() == false) {
             this._setHeaterState(HeaterState.OFF.getValue());
+        } else {
+            this._setHeaterState(HeaterState.STANDBY.getValue());
         }
-
         // Settings needed when not in ’read only’ mode.
         if (this.readOnly == false) {
-            this.heatingPowerPercentSetting = config.defaultSetPointPowerPercent();
+            this.powerPercentSettingDefault = config.defaultSetPointPowerPercent();
             this.initializeTimers(config);
 
             // Deactivating controllers for heating circuits because we will not need them
@@ -403,6 +406,7 @@ public class GasBoilerViessmannImpl extends AbstractOpenemsModbusComponent imple
                         m(GasBoilerViessmann.ChannelId.ERROR_BIT_251, new CoilElement(451)),
                         m(GasBoilerViessmann.ChannelId.ERROR_BIT_252, new CoilElement(452)),
                         m(GasBoilerViessmann.ChannelId.ERROR_BIT_253, new CoilElement(453)),
+                        m(GasBoilerViessmann.ChannelId.ERROR_BIT_254, new CoilElement(454)),
                         m(GasBoilerViessmann.ChannelId.ERROR_BIT_255, new CoilElement(455))
                 ),
 
@@ -428,13 +432,16 @@ public class GasBoilerViessmannImpl extends AbstractOpenemsModbusComponent imple
                         new DummyRegisterElement(7, 7),
                         m(Heater.ChannelId.FLOW_TEMPERATURE, new UnsignedWordElement(8), ElementToChannelConverter.SCALE_FACTOR_MINUS_1),
                         new DummyRegisterElement(9, 30),
-                        m(Heater.ChannelId.RETURN_TEMPERATURE, new UnsignedWordElement(31)),
-                        new DummyRegisterElement(32, 35),
-                        m(GasBoilerViessmann.ChannelId.OPERATING_HOURS_TIER1, new UnsignedWordElement(36)),
-                        m(GasBoilerViessmann.ChannelId.OPERATING_HOURS_TIER2, new UnsignedWordElement(37)),
-                        m(GasBoilerViessmann.ChannelId.BOILER_STARTS, new UnsignedWordElement(38)),
-                        m(GasBoilerViessmann.ChannelId.BOILER_STATE, new UnsignedWordElement(39))
-                )
+                        m(Heater.ChannelId.RETURN_TEMPERATURE, new UnsignedWordElement(31))
+                ),
+                new FC4ReadInputRegistersTask(36, Priority.HIGH,
+                        m(GasBoilerViessmann.ChannelId.OPERATING_HOURS_TIER1, new UnsignedWordElement(36))),
+                new FC4ReadInputRegistersTask(37, Priority.HIGH,
+                        m(GasBoilerViessmann.ChannelId.OPERATING_HOURS_TIER2, new UnsignedWordElement(37))),
+                new FC4ReadInputRegistersTask(38, Priority.HIGH,
+                        m(GasBoilerViessmann.ChannelId.BOILER_STARTS, new UnsignedWordElement(38))),
+                new FC4ReadInputRegistersTask(39, Priority.HIGH,
+                        m(GasBoilerViessmann.ChannelId.BOILER_STATE, new UnsignedWordElement(39)))
         );
         if (this.readOnly == false) {
             protocol.addTasks(
@@ -532,19 +539,18 @@ public class GasBoilerViessmannImpl extends AbstractOpenemsModbusComponent imple
     protected void writeCommands() {
         // Collect heatingPowerPercentSetpoint channel ’nextWrite’.
         Optional<Double> heatingPowerPercentOptional = this.getHeatingPowerPercentSetpointChannel().getNextWriteValueAndReset();
-        if (heatingPowerPercentOptional.isPresent()) {
-            double setpoint = heatingPowerPercentOptional.get();
-            // Restrict to valid write values
-            setpoint = Math.min(setpoint, 100);
-            setpoint = Math.max(0, setpoint);
-            this.heatingPowerPercentSetting = setpoint;
-        }
+
+        double setpoint = heatingPowerPercentOptional.orElse(this.powerPercentSettingDefault);
+        // Restrict to valid write values
+        setpoint = Math.min(setpoint, 100);
+        setpoint = Math.max(0, setpoint);
+
 
         // Handle EnableSignal.
         boolean turnOnHeater = this.enableSignalHandler.deviceShouldBeHeating(this);
 
         // Handle ExceptionalState. ExceptionalState overwrites EnableSignal.
-        double heatingPowerPercentSetpointToModbus = this.heatingPowerPercentSetting;
+        double heatingPowerPercentSetpointToModbus = setpoint;
         boolean exceptionalStateActive = false;
         if (this.useExceptionalState) {
             exceptionalStateActive = this.exceptionalStateHandler.exceptionalStateActive(this);
@@ -601,8 +607,8 @@ public class GasBoilerViessmannImpl extends AbstractOpenemsModbusComponent imple
      */
     public String debugLog() {
         String debugMessage = this.getHeaterState().asEnum().asCamelCase() //
-                            + "|F:" + this.getFlowTemperature().asString() //
-                            + "|R:" + this.getReturnTemperature().asString(); //
+                + "|F:" + this.getFlowTemperature().asString() //
+                + "|R:" + this.getReturnTemperature().asString(); //
         if (this.getErrorMessage().get().equals("No error") == false) {
             debugMessage = debugMessage + "|Error";
         }

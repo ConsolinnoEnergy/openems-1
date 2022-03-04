@@ -1,5 +1,6 @@
 package io.openems.edge.heater.analogue;
 
+import io.openems.edge.heater.analogue.component.ControlType;
 import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
