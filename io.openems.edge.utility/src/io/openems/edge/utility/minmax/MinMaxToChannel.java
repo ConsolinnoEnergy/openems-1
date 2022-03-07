@@ -132,11 +132,11 @@ public class MinMaxToChannel extends AbstractOpenemsComponent implements Openems
                     int minMaxToWrite = 0;
                     switch (this.minMax) {
                         case MIN:
-                            minMaxToWrite = TypeUtils.max(arrayValues);
+                            minMaxToWrite = TypeUtils.min(arrayValues);
                             break;
                         default:
                         case MAX:
-                            minMaxToWrite = TypeUtils.min(arrayValues);
+                            minMaxToWrite = TypeUtils.max(arrayValues);
                             break;
                     }
                     this.writeValueToResponseChannel(minMaxToWrite);
