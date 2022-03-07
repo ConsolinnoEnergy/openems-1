@@ -135,7 +135,7 @@ public abstract class AbstractPumpTask implements GenibusTask {
         }
         if (this.genibusUnitIndex > 0) {
             this.unitString = this.unitTable.getInformationData().get(this.genibusUnitIndex);
-            if (this.unitString.length() == 0) {
+            if (this.unitString == null) {
                 this.unitString = "not yet supported";
             }
             this.genibusUnitFactor = this.unitTable.getGenibusUnitFactor(this.genibusUnitIndex);
