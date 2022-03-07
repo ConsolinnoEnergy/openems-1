@@ -104,7 +104,6 @@ public class ValveTwoOutput extends AbstractValve implements OpenemsComponent, H
             } else if (config.shouldOpenOnActivation()) {
                 this.getPowerLevelChannel().setNextValue(100);
                 this.getPowerLevelChannel().nextProcessImage();
-                this.forceOpen();
                 try {
                     this.setPointPowerLevelChannel().setNextWriteValueFromObject(-1);
                 } catch (OpenemsError.OpenemsNamedException e) {
