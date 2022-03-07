@@ -1,21 +1,28 @@
 package io.openems.edge.heater.analogue;
 
 import io.openems.common.exceptions.OpenemsError;
+import io.openems.common.types.ChannelAddress;
+import io.openems.common.types.OpenemsType;
+import io.openems.edge.common.channel.Channel;
 import io.openems.edge.common.channel.WriteChannel;
 import io.openems.edge.common.component.AbstractOpenemsComponent;
 import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
+import io.openems.edge.common.configupdate.ConfigurationUpdate;
 import io.openems.edge.common.event.EdgeEventConstants;
+import io.openems.edge.common.type.TypeUtils;
 import io.openems.edge.heater.analogue.component.AnalogueHeaterOrCoolerAio;
 import io.openems.edge.heater.analogue.component.AnalogueHeaterOrCoolerComponent;
 import io.openems.edge.heater.analogue.component.AnalogueHeaterOrCoolerLucidControl;
 import io.openems.edge.heater.analogue.component.AnalogueHeaterOrCoolerPwm;
 import io.openems.edge.heater.analogue.component.AnalogueHeaterOrCoolerRelay;
 import io.openems.edge.heater.analogue.component.ControlType;
+import io.openems.edge.heater.api.EnableSignalHandler;
+import io.openems.edge.heater.api.EnableSignalHandlerImpl;
 import io.openems.edge.heater.api.Heater;
+import io.openems.edge.heater.api.HeaterState;
 import io.openems.edge.timer.api.TimerHandler;
 import io.openems.edge.timer.api.TimerHandlerImpl;
-import org.osgi.service.cm.Configuration;
 import org.osgi.service.cm.ConfigurationAdmin;
 import org.osgi.service.cm.ConfigurationException;
 import org.osgi.service.component.ComponentContext;
@@ -26,9 +33,9 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Dictionary;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Optional;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public abstract class AbstractAnalogueHeaterOrCooler extends AbstractOpenemsComponent implements OpenemsComponent, Heater {
@@ -43,11 +50,15 @@ public abstract class AbstractAnalogueHeaterOrCooler extends AbstractOpenemsComp
     private TimerHandler timer;
     private static final String ENABLE_IDENTIFIER = "ENABLE_SIGNAL_IDENTIFIER";
     private static final String POWER_IDENTIFIER = "POWER_IDENTIFIER";
-    private boolean isActive = false;
     private int overwritePower;
     private int maxPowerKw;
     protected boolean configurationSuccess = false;
     private int defaultRunPower;
+    private boolean useError;
+    private boolean hasError;
+    private final List<ChannelAddress> errorList = new ArrayList<>();
+    private EnableSignalHandler enableSignalHandler;
+    private int minPower;
 
     private ControlType type = ControlType.PERCENT;
 
@@ -60,6 +71,7 @@ public abstract class AbstractAnalogueHeaterOrCooler extends AbstractOpenemsComp
     }
 
     protected void activate(ComponentContext context, String id, String alias, boolean enabled,
+                            boolean useError, String[] errorChannelAddressesList,
                             String[] analogueIds, AnalogueType analogueType, ControlType controlType,
                             int defaultMinPower, String timerId, int maxTimeEnableSignal,
                             int maxTimePowerSignal, int defaultRunPower, int maxPower, ComponentManager cpm, ConfigurationAdmin ca) {
@@ -68,13 +80,15 @@ public abstract class AbstractAnalogueHeaterOrCooler extends AbstractOpenemsComp
         this.ca = ca;
         try {
             this.activationOrModifiedRoutine(analogueIds, analogueType, controlType, defaultMinPower, timerId, maxTimeEnableSignal,
-                    maxTimePowerSignal, defaultRunPower, maxPower);
+                    maxTimePowerSignal, defaultRunPower, maxPower, useError, errorChannelAddressesList);
+            this._setHeaterState(HeaterState.STANDBY);
         } catch (OpenemsError.OpenemsNamedException | ConfigurationException e) {
             this.log.warn("Configuration Apply failed, try again later!");
         }
     }
 
     void modified(ComponentContext context, String id, String alias, boolean enabled,
+                  boolean useError, String[] errorChannelAddressesList,
                   String[] analogueIds, AnalogueType analogueType, ControlType controlType,
                   int defaultMinPower, String timerId, int maxTimeEnableSignal,
                   int maxTimePowerSignal, int defaultRunPower, int maxPower, ComponentManager cpm, ConfigurationAdmin ca) {
@@ -85,7 +99,7 @@ public abstract class AbstractAnalogueHeaterOrCooler extends AbstractOpenemsComp
         this.heaterComponent.clear();
         try {
             this.activationOrModifiedRoutine(analogueIds, analogueType, controlType, defaultMinPower, timerId, maxTimeEnableSignal,
-                    maxTimePowerSignal, defaultRunPower, maxPower);
+                    maxTimePowerSignal, defaultRunPower, maxPower, useError, errorChannelAddressesList);
         } catch (OpenemsError.OpenemsNamedException | ConfigurationException e) {
             this.log.warn("Configuration Apply failed, try again later!");
         }
@@ -95,22 +109,25 @@ public abstract class AbstractAnalogueHeaterOrCooler extends AbstractOpenemsComp
     /**
      * This method is an internal method, that will run all basic operations/setups either if the component was activated or modified.
      *
-     * @param analogueIds         the analogue Devices applied to a AnalogueHeaterOrCoolingComponent
-     * @param analogueType        the analogueType for this Heater
-     * @param controlType         the ControlType
-     * @param defaultMinPower     the minimum Power that will be applied, when no EnableSignal is present.
-     * @param timerId             the Timer that the Heater will use.
-     * @param maxTimeEnableSignal the maximum Time an EnableSignal is allowed to be absent after EnableSignal was set to true.
-     * @param maxTimePowerSignal  the maximum Time a new SetPoint for a PowerValue is allowed to be absent.
-     * @param defaultRunPower     the default RunPower, when EnableSignal is true and no SetPoint was set.
-     * @param maxPower            the maximum Power available for this heater.
+     * @param analogueIds               the analogue Devices applied to a AnalogueHeaterOrCoolingComponent
+     * @param analogueType              the analogueType for this Heater
+     * @param controlType               the ControlType
+     * @param defaultMinPower           the minimum Power that will be applied, when no EnableSignal is present.
+     * @param timerId                   the Timer that the Heater will use.
+     * @param maxTimeEnableSignal       the maximum Time an EnableSignal is allowed to be absent after EnableSignal was set to true.
+     * @param maxTimePowerSignal        the maximum Time a new SetPoint for a PowerValue is allowed to be absent.
+     * @param defaultRunPower           the default RunPower, when EnableSignal is true and no SetPoint was set.
+     * @param maxPower                  the maximum Power available for this heater.
+     * @param useError                  use Error input to determine if everything is ok with the analogue heater
+     * @param errorChannelAddressesList the list of errorChannel. If either is true -> error -> Heater/cooler cannot work
      * @throws OpenemsError.OpenemsNamedException if a component couldn't be found
      * @throws ConfigurationException             if a component could be found but was not the correct instance of XYZ.
      */
     protected void activationOrModifiedRoutine(String[] analogueIds, AnalogueType analogueType, ControlType controlType,
                                                int defaultMinPower, String timerId, int maxTimeEnableSignal,
-                                               int maxTimePowerSignal, int defaultRunPower, int maxPower) throws OpenemsError.OpenemsNamedException, ConfigurationException {
+                                               int maxTimePowerSignal, int defaultRunPower, int maxPower, boolean useError, String[] errorChannelAddressesList) throws OpenemsError.OpenemsNamedException, ConfigurationException {
         this.heaterComponent.clear();
+        this.errorList.clear();
         Arrays.stream(analogueIds).forEach(id -> {
             try {
                 switch (analogueType) {
@@ -131,6 +148,19 @@ public abstract class AbstractAnalogueHeaterOrCooler extends AbstractOpenemsComp
                 this.log.error("Unable to get Components. Check Config!");
             }
         });
+        this.useError = useError;
+        if (this.useError) {
+            Arrays.stream(errorChannelAddressesList).forEach(errorChannelAddress -> {
+                try {
+                    ChannelAddress address = ChannelAddress.fromString(errorChannelAddress);
+                    if (!this.errorList.contains(address)) {
+                        this.errorList.add(address);
+                    }
+                } catch (OpenemsError.OpenemsNamedException e) {
+                    this.log.warn(this.id() + ": ChannelAddress is wrong! " + errorChannelAddress + " is not a valid");
+                }
+            });
+        }
 
         if (this.timer != null) {
             this.timer.removeComponent();
@@ -138,12 +168,14 @@ public abstract class AbstractAnalogueHeaterOrCooler extends AbstractOpenemsComp
         this.timer = new TimerHandlerImpl(this.id(), this.cpm);
         this.timer.addOneIdentifier(ENABLE_IDENTIFIER, timerId, maxTimeEnableSignal);
         this.timer.addOneIdentifier(POWER_IDENTIFIER, timerId, maxTimePowerSignal);
+        this.enableSignalHandler = new EnableSignalHandlerImpl(this.timer, ENABLE_IDENTIFIER);
         this.overwritePower = defaultRunPower;
         this.getDefaultActivePowerChannel().setNextValue(defaultRunPower);
         this.getDefaultMinPowerChannel().setNextValue(defaultMinPower);
         this.maxPowerKw = maxPower;
         this.type = controlType;
         this.defaultRunPower = defaultRunPower;
+        this.minPower = defaultMinPower;
         this.configurationSuccess = true;
     }
 
@@ -151,11 +183,11 @@ public abstract class AbstractAnalogueHeaterOrCooler extends AbstractOpenemsComp
         if (this.isEnabled() && this.configurationSuccess) {
             if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE)) {
                 //Check for New Default Values
-                this.getDefaultActivePowerChannel().getNextWriteValueAndReset().ifPresent(entry -> this.updateConfig(entry, true));
-                this.getDefaultMinPowerChannel().getNextWriteValueAndReset().ifPresent(entry -> this.updateConfig(entry, false));
+                this.updateConfig();
             } else if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS)) {
-                if (this.shouldRun()) {
-                    this.isActive = true;
+                this.hasErrorCheck();
+                if (this.enableSignalHandler.deviceShouldBeHeating(this) && !this.hasError) {
+                    this._setHeaterState(HeaterState.RUNNING);
                     this.heaterComponent.forEach(component -> {
                         try {
                             component.startProcess(this.powerToApply());
@@ -164,7 +196,9 @@ public abstract class AbstractAnalogueHeaterOrCooler extends AbstractOpenemsComp
                         }
                     });
                 } else {
-                    this.isActive = false;
+                    if (this.hasError == false) {
+                        this._setHeaterState(HeaterState.STANDBY);
+                    }
                     this.getEnableSignalChannel().getNextWriteValueAndReset();
                     this.getEnableSignalChannel().setNextValue(false);
                     this.heaterComponent.forEach(component -> {
@@ -183,6 +217,33 @@ public abstract class AbstractAnalogueHeaterOrCooler extends AbstractOpenemsComp
                     }
                 });
             }
+        }
+    }
+
+    /**
+     * Checks if the Heater/Cooler has an Error.
+     * Iterate through errorList (if configured) and set the {@link #hasError} attribute.
+     */
+    private void hasErrorCheck() {
+        if (this.useError) {
+            AtomicBoolean errorFound = new AtomicBoolean(false);
+            this.errorList.forEach(entry -> {
+                if (errorFound.get() == false) {
+                    try {
+                        Channel<?> channel = this.cpm.getChannel(entry);
+                        Boolean errorOccurred = TypeUtils.getAsType(OpenemsType.BOOLEAN, channel.value());
+                        errorFound.set(errorOccurred != null && errorOccurred);
+                    } catch (OpenemsError.OpenemsNamedException e) {
+                        this.log.info(this.id() + ": Channel: " + entry + " Not Available!");
+                    }
+                }
+            });
+            this.hasError = errorFound.get();
+            if (this.hasError) {
+                this._setHeaterState(HeaterState.BLOCKED_OR_ERROR);
+            }
+        } else {
+            this.hasError = false;
         }
     }
 
@@ -232,46 +293,28 @@ public abstract class AbstractAnalogueHeaterOrCooler extends AbstractOpenemsComp
     }
 
     /**
-     * Should this device Heat.
-     * Either -> it is set to AutoRun -> always true
-     * or if an EnableSignal was Set
-     * else if this Component was Active before and the Time is not up, to reset the component
-     *
-     * @return true if this device should run at {@link #overwritePower}.
-     */
-
-    private boolean shouldRun() {
-        Optional<Boolean> enableValue = this.getEnableSignalChannel().getNextWriteValueAndReset();
-        if (enableValue.isPresent()) {
-            this.timer.resetTimer(ENABLE_IDENTIFIER);
-            this.getEnableSignalChannel().setNextValue(enableValue.get());
-            return enableValue.get();
-        } else {
-            return this.timer.checkTimeIsUp(ENABLE_IDENTIFIER) == false;
-        }
-    }
-
-    /**
      * Updates the Config if either: {@link Heater.ChannelId#SET_DEFAULT_ACTIVE_POWER_VALUE} or {@link Heater.ChannelId#SET_DEFAULT_MINIMUM_POWER_VALUE}
      * is updated.
-     *
-     * @param power       which powerValue should be written to an identifier of the property
-     * @param activePower if the value comes from the activePowerValueChannel (true) or the MinimumPowerValueChannel(false)
      */
-    private void updateConfig(Integer power, boolean activePower) {
-        Configuration c;
-        try {
-            c = this.ca.getConfiguration(this.servicePid(), "?");
-            Dictionary<String, Object> properties = c.getProperties();
-            String propertyName = activePower ? "defaultRunPower" : "inactiveValue";
-            int setPointValue = (int) properties.get(propertyName);
+    private void updateConfig() {
+        Map<String, Object> propertyMap = new HashMap<>();
 
-            if ((setPointValue != power)) {
-                properties.put(propertyName, power);
-                c.update(properties);
+        this.getDefaultActivePowerChannel().getNextWriteValueAndReset().ifPresent(entry -> {
+            if (entry != this.defaultRunPower) {
+                propertyMap.put("defaultRunPower", entry);
             }
-        } catch (IOException e) {
-            this.log.warn("Couldn't update ChannelProperty, reason: " + e.getMessage());
+        });
+        this.getDefaultMinPowerChannel().getNextWriteValueAndReset().ifPresent(entry -> {
+            if (entry != this.minPower) {
+                propertyMap.put("inactiveValue", entry);
+            }
+        });
+        if (propertyMap.size() > 0) {
+            try {
+                ConfigurationUpdate.updateConfig(this.ca, this.servicePid(), propertyMap);
+            } catch (IOException e) {
+                this.log.info(this.id() + ": Couldn't update Config.");
+            }
         }
     }
 
