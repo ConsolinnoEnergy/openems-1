@@ -47,6 +47,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 
@@ -95,13 +96,13 @@ public class MqttBridgeImpl extends AbstractOpenemsComponent implements OpenemsC
     private String mqttBroker;
     private String mqttClientId;
     private int keepAlive = 100;
-    private AtomicInteger executorCurrent = new AtomicInteger(10);
-    private static final int EXECUTOR_MAX = 90;
 
     private DateTime initialTime;
     private boolean initialized;
     private static final int TIME_SECONDS_TO_WAIT_TILL_RECONNECT = 60;
     private Map<String, List<MqttTask>> missingSubscriptionsAfterReconnect = new HashMap<>();
+    private Thread connectionThread;
+    AtomicBoolean keepRunning = new AtomicBoolean(true);
 
 
     //FOR LAST WILL
@@ -126,6 +127,10 @@ public class MqttBridgeImpl extends AbstractOpenemsComponent implements OpenemsC
             return;
         }
         this.basicActivationOrModifiedSetup(config);
+        this.connectionThread = new Thread(createNewMqttSession);
+        if (!this.connectionThread.isAlive()) {
+            this.connectionThread.start();
+        }
     }
 
     /**
@@ -159,6 +164,12 @@ public class MqttBridgeImpl extends AbstractOpenemsComponent implements OpenemsC
             this.publishManager.setCoreCycle(config.useCoreCycleTime());
             this.subscribeManager.setCoreCycle(config.useCoreCycleTime());
             this.isFirstConnection = true;
+        }
+        if (this.connectionThread != null) {
+            if (!this.connectionThread.isAlive()) {
+                this.keepRunning.set(this.isEnabled());
+                this.connectionThread.start();
+            }
         }
     }
 
@@ -242,6 +253,10 @@ public class MqttBridgeImpl extends AbstractOpenemsComponent implements OpenemsC
     @Modified
     void modified(ComponentContext context, Config config) throws MqttException, OpenemsException {
         super.modified(context, config.id(), config.alias(), config.enabled());
+        if (this.connectionThread != null) {
+            this.keepRunning.set(false);
+            this.connectionThread.interrupt();
+        }
         this.disconnectPublishAndSubscriber();
         this.basicActivationOrModifiedSetup(config);
         this.subscribeTasks.forEach((id, taskList) ->
@@ -253,6 +268,7 @@ public class MqttBridgeImpl extends AbstractOpenemsComponent implements OpenemsC
                     }
                 })
         );
+
     }
 
     /**
@@ -288,6 +304,8 @@ public class MqttBridgeImpl extends AbstractOpenemsComponent implements OpenemsC
     protected void deactivate() {
         //Disconnect every connection
         this.disconnectPublishAndSubscriber();
+        this.keepRunning.set(false);
+        this.connectionThread.interrupt();
         super.deactivate();
     }
 
@@ -442,39 +460,13 @@ public class MqttBridgeImpl extends AbstractOpenemsComponent implements OpenemsC
     @Override
     public void handleEvent(Event event) {
         if (!this.isEnabled()) {
+            this.keepRunning.set(false);
             return;
+        } else {
+            this.keepRunning.set(true);
         }
         if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE)) {
-            if (this.isConnected() == false && this.tryReconnect()) {
-                ExecutorService executorService = Executors.newSingleThreadExecutor();
-                executorService.submit(() -> this.createNewMqttSession.run());
-                try {
-                    executorService.shutdown();
-                    executorService.awaitTermination(Math.min(this.executorCurrent.get(), EXECUTOR_MAX), TimeUnit.SECONDS);
-                } catch (InterruptedException e) {
-                    this.log.error("Create MQTT Session Interrupted");
-                } finally {
-                    if (executorService.isTerminated() == false) {
-                        this.log.error("Failed to establish connection, Trying again");
-
-                        if (this.publishManager != null) {
-                            this.publishManager.deactivate();
-                        }
-                        if (this.subscribeManager != null) {
-                            this.subscribeManager.deactivate();
-                        }
-
-                        this.publishManager = null;
-                        this.subscribeManager = null;
-                        this.bridgePublisher = null;
-                        this.executorCurrent.getAndAdd(5);
-                    } else {
-                        this.executorCurrent.set(20);
-                    }
-                    executorService.shutdownNow();
-                }
-            }
-            if (this.publishManager != null && this.subscribeManager != null) {
+            if (this.isConnected()) {
                 if (this.missingSubscriptionsAfterReconnect.size() > 0) {
                     this.subscribeToMissingTopics();
                 }
@@ -532,7 +524,7 @@ public class MqttBridgeImpl extends AbstractOpenemsComponent implements OpenemsC
      * @return true if it should reconnect.
      */
     private boolean tryReconnect() {
-        if(this.isFirstConnection){
+        if (this.isFirstConnection) {
             this.isFirstConnection = false;
             return true;
         }
@@ -556,36 +548,41 @@ public class MqttBridgeImpl extends AbstractOpenemsComponent implements OpenemsC
      * Or the Broker actively disconnects the Client (KeepAlive or something).
      */
     Runnable createNewMqttSession = () -> {
-        if (this.publishManager != null) {
-            this.publishManager.deactivate();
-        }
-        if (this.subscribeManager != null) {
-            this.subscribeManager.deactivate();
-        }
-        try {
+        while (keepRunning.get()) {
+            if (isConnected() == false && tryReconnect()) {
 
-            this.publishManager = new MqttPublishManager(this.publishTasks, this.mqttBroker, this.mqttUsername,
-                    this.mqttPassword, this.keepAlive, this.mqttClientId, this.timeZone);
-            //ClientId --> + CLIENT_SUB_0
-            this.subscribeManager = new MqttSubscribeManager(this.subscribeTasks, this.mqttBroker, this.mqttUsername,
-                    this.mqttPassword, this.mqttClientId, this.keepAlive, this.timeZone);
-            this.subscribeTasks.forEach((key, value) -> value.forEach(entry -> {
-                try {
-                    this.subscribeManager.subscribeToTopic(entry, key);
-                } catch (MqttException e) {
-                    this.log.warn("Couldn't apply subscription, try again later");
-                    if (this.missingSubscriptionsAfterReconnect.containsKey(key)) {
-                        this.missingSubscriptionsAfterReconnect.get(key).add(entry);
-                    } else {
-                        List<MqttTask> missingTaskList = new ArrayList<>();
-                        missingTaskList.add(entry);
-                        this.missingSubscriptionsAfterReconnect.put(key, missingTaskList);
-                    }
+                if (this.publishManager != null) {
+                    this.publishManager.deactivate();
                 }
-            }));
-        } catch (
-                MqttException e) {
-            this.log.warn("Couldn't connect to Broker, somethings wrong!");
+                if (this.subscribeManager != null) {
+                    this.subscribeManager.deactivate();
+                }
+                try {
+
+                    this.publishManager = new MqttPublishManager(this.publishTasks, this.mqttBroker, this.mqttUsername,
+                            this.mqttPassword, this.keepAlive, this.mqttClientId, this.timeZone);
+                    //ClientId --> + CLIENT_SUB_0
+                    this.subscribeManager = new MqttSubscribeManager(this.subscribeTasks, this.mqttBroker, this.mqttUsername,
+                            this.mqttPassword, this.mqttClientId, this.keepAlive, this.timeZone);
+                    this.subscribeTasks.forEach((key, value) -> value.forEach(entry -> {
+                        try {
+                            this.subscribeManager.subscribeToTopic(entry, key);
+                        } catch (MqttException e) {
+                            this.log.warn("Couldn't apply subscription, try again later");
+                            if (this.missingSubscriptionsAfterReconnect.containsKey(key)) {
+                                this.missingSubscriptionsAfterReconnect.get(key).add(entry);
+                            } else {
+                                List<MqttTask> missingTaskList = new ArrayList<>();
+                                missingTaskList.add(entry);
+                                this.missingSubscriptionsAfterReconnect.put(key, missingTaskList);
+                            }
+                        }
+                    }));
+                } catch (
+                        MqttException e) {
+                    this.log.warn("Couldn't connect to Broker, somethings wrong!");
+                }
+            }
         }
     };
 }
