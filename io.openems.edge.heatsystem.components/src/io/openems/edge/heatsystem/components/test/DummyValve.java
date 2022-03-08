@@ -145,11 +145,13 @@ public class DummyValve extends AbstractOpenemsComponent implements HydraulicCom
     }
 
     @Override
-    public void setPowerLevel(double percent) {
+    public boolean setPowerLevel(double percent) {
         percent -= this.getPowerLevelValue();
         if (this.changeByPercentage(percent)) {
             this.setPointPowerLevelChannel().setNextValue(-1);
+            return true;
         }
+        return false;
     }
 
     @Override

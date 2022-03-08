@@ -378,8 +378,9 @@ public abstract class AbstractValve extends AbstractOpenemsComponent implements 
                     if (this.maxMinValid()) {
                         setPointPowerLevelValue = TypeUtils.fitWithin(this.minimum.intValue(), this.maximum.intValue(), setPointPowerLevelValue);
                     }
-                    this.setPowerLevel(setPointPowerLevelValue);
-                    childHasNothingToDo = true;
+                    if(this.setPowerLevel(setPointPowerLevelValue)) {
+                        childHasNothingToDo = true;
+                    }
                 }
             }
         }
@@ -394,11 +395,13 @@ public abstract class AbstractValve extends AbstractOpenemsComponent implements 
      *
      * @param setPoint the setPoint that will be changed to a percent value that a valve has to be adapted to.
      */
-    public void setPowerLevel(double setPoint) {
+    public boolean setPowerLevel(double setPoint) {
         setPoint -= this.getPowerLevelValue();
         if (this.changeByPercentage(setPoint)) {
             this.setPointPowerLevelChannel().setNextValue(-1);
+            return true;
         }
+        return false;
     }
 
 
