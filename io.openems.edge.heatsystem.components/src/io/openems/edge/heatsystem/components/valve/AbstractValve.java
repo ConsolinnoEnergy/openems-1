@@ -351,7 +351,19 @@ public abstract class AbstractValve extends AbstractOpenemsComponent implements 
         boolean childHasNothingToDo = false;
         this.exceptionalStateActive = this.isExceptionalStateActive();
         if (this.exceptionalStateActive) {
-            this.setPowerLevel(this.getExceptionalSateValue());
+            int exceptionalStateValue = this.getExceptionalStateValue();
+                //Allow Forcing but only from exceptionalState -> need to revert exceptionalState
+            if (exceptionalStateValue == DEFAULT_MIN_EXCEPTIONAL_VALUE) {
+                this.exceptionalStateActive = false;
+                this.forceClose();
+                this.exceptionalStateActive =  true;
+            } else if (exceptionalStateValue == DEFAULT_MAX_POWER_VALUE) {
+                this.exceptionalStateActive = false;
+                this.forceOpen();
+                this.exceptionalStateActive = true;
+            } else {
+                this.setPowerLevel(this.getExceptionalSateValue());
+            }
             childHasNothingToDo = true;
         } else if (this.shouldReset()) {
             this.reset();
@@ -360,13 +372,15 @@ public abstract class AbstractValve extends AbstractOpenemsComponent implements 
             this.forceOpen();
             childHasNothingToDo = true;
         } else {
-            int setPointPowerLevelValue = this.setPointPowerLevelValue();
-            if (setPointPowerLevelValue >= DEFAULT_MIN_POWER_VALUE) {
-                if(this.maxMinValid()){
-                    setPointPowerLevelValue = TypeUtils.fitWithin(this.minimum.intValue(), this.maximum.intValue(), setPointPowerLevelValue);
+            if(this.readyToChange()) {
+                int setPointPowerLevelValue = this.setPointPowerLevelValue();
+                if (setPointPowerLevelValue >= DEFAULT_MIN_POWER_VALUE) {
+                    if (this.maxMinValid()) {
+                        setPointPowerLevelValue = TypeUtils.fitWithin(this.minimum.intValue(), this.maximum.intValue(), setPointPowerLevelValue);
+                    }
+                    this.setPowerLevel(setPointPowerLevelValue);
+                    childHasNothingToDo = true;
                 }
-                this.setPowerLevel(setPointPowerLevelValue);
-                childHasNothingToDo = true;
             }
         }
 
@@ -478,7 +492,7 @@ public abstract class AbstractValve extends AbstractOpenemsComponent implements 
     private boolean parentForced(boolean closing) {
         if (this.exceptionalStateActive == false) {
             this.isForced = true;
-            this.futurePowerLevelChannel().setNextValue(DEFAULT_MAX_POWER_VALUE);
+            this.futurePowerLevelChannel().setNextValue(closing ? DEFAULT_MIN_POWER_VALUE : DEFAULT_MAX_POWER_VALUE);
             this.timeChannel().setNextValue(DEFAULT_MAX_POWER_VALUE * this.secondsPerPercentage);
 
             this.getIsBusyChannel().setNextValue(true);
@@ -507,8 +521,12 @@ public abstract class AbstractValve extends AbstractOpenemsComponent implements 
         if (currentPowerValue + percentage >= DEFAULT_MAX_POWER_VALUE || currentPowerValue + percentage <= DEFAULT_MIN_POWER_VALUE) {
             ableToAdapt = true;
         }
-        return this.parentActive == false && (this.readyToChange() == false || this.exceptionalStateActive)
-                || percentage == DEFAULT_MIN_POWER_VALUE || ableToAdapt == false;
+        //Parent active always valid.
+        if(this.parentActive){
+            return false;
+        } else {
+            return !this.readyToChange() || !this.exceptionalStateActive || !ableToAdapt || percentage == DEFAULT_MIN_POWER_VALUE;
+        }
     }
 
     protected void setCycle(Cycle cycle) {
