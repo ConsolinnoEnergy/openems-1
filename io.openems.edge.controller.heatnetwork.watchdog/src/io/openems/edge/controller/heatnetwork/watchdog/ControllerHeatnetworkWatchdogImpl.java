@@ -61,6 +61,7 @@ public class ControllerHeatnetworkWatchdogImpl extends AbstractOpenemsComponent 
     private boolean errorState;
     private boolean configSuccess;
     private boolean useAbsolute;
+    private ExceptionalStateType exceptionalStateType;
 
 
     Config config;
@@ -93,6 +94,7 @@ public class ControllerHeatnetworkWatchdogImpl extends AbstractOpenemsComponent 
             this.activateValue = config.expectedValue();
             this.invert = config.invert();
             this.errorDelta = config.errorDelta();
+            this.exceptionalStateType = config.exceptionalStateType();
             this.timeHandler = new TimerHandlerImpl(config.timerId(), this.cpm);
             this.timeHandler.addOneIdentifier(CHECK_THERMOMETER_DIFFERENCE_IDENTIFIER, config.timerId(), config.testPeriod());
             this.timeHandler.addOneIdentifier(CHECK_ERROR_HANDLING_TIME_IDENTIFIER, config.timerId(), config.errorPeriod());
@@ -208,6 +210,7 @@ public class ControllerHeatnetworkWatchdogImpl extends AbstractOpenemsComponent 
     /**
      * Calculates if an error is present within the watchdog, by either using the absolute value or not and comparing it to
      * the errorDelta either with >= or <= depending on the config and inversion.
+     *
      * @return a boolean.
      */
     private boolean calculateError() {
@@ -264,8 +267,12 @@ public class ControllerHeatnetworkWatchdogImpl extends AbstractOpenemsComponent 
         if (error || this.errorState) {
             this.errorState = true;
             this.target.getExceptionalStateEnableSignalChannel().setNextWriteValue(true);
-            this.target.getExceptionalStateValueChannel().setNextWriteValue(ExceptionalState.DEFAULT_MIN_EXCEPTIONAL_VALUE);
-            this.log.warn("ERROR STATE ACTIVE, TARGET: " + this.target.id() + " SET TO EXCEPTIONAL STATE with: " + ExceptionalState.DEFAULT_MIN_EXCEPTIONAL_VALUE);
+            int exceptionalValue = ExceptionalState.DEFAULT_MIN_EXCEPTIONAL_VALUE;
+            if (this.exceptionalStateType.equals(ExceptionalStateType.MAX_VALUE)) {
+                exceptionalValue = ExceptionalState.DEFAULT_MAX_EXCEPTIONAL_VALUE;
+            }
+            this.target.getExceptionalStateValueChannel().setNextWriteValue(exceptionalValue);
+            this.log.warn("ERROR STATE ACTIVE, TARGET: " + this.target.id() + " SET TO EXCEPTIONAL STATE with: " + exceptionalValue);
             if (this.timeHandler.checkTimeIsUp(CHECK_ERROR_HANDLING_TIME_IDENTIFIER)) {
                 this.errorState = false;
             }
