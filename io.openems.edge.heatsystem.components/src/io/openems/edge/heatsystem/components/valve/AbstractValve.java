@@ -352,11 +352,11 @@ public abstract class AbstractValve extends AbstractOpenemsComponent implements 
         this.exceptionalStateActive = this.isExceptionalStateActive();
         if (this.exceptionalStateActive) {
             int exceptionalStateValue = this.getExceptionalStateValue();
-                //Allow Forcing but only from exceptionalState -> need to revert exceptionalState
+            //Allow Forcing but only from exceptionalState -> need to revert exceptionalState
             if (exceptionalStateValue == DEFAULT_MIN_EXCEPTIONAL_VALUE) {
                 this.exceptionalStateActive = false;
                 this.forceClose();
-                this.exceptionalStateActive =  true;
+                this.exceptionalStateActive = true;
             } else if (exceptionalStateValue == DEFAULT_MAX_POWER_VALUE) {
                 this.exceptionalStateActive = false;
                 this.forceOpen();
@@ -372,14 +372,16 @@ public abstract class AbstractValve extends AbstractOpenemsComponent implements 
             this.forceOpen();
             childHasNothingToDo = true;
         } else {
-            if(this.readyToChange()) {
+            if (this.readyToChange()) {
                 int setPointPowerLevelValue = this.setPointPowerLevelValue();
                 if (setPointPowerLevelValue >= DEFAULT_MIN_POWER_VALUE) {
                     if (this.maxMinValid()) {
                         setPointPowerLevelValue = TypeUtils.fitWithin(this.minimum.intValue(), this.maximum.intValue(), setPointPowerLevelValue);
                     }
-                    if(this.setPowerLevel(setPointPowerLevelValue)) {
-                        childHasNothingToDo = true;
+                    if (ableToAdapt(setPointPowerLevelValue - this.getPowerLevelValue())) {
+                        if (this.setPowerLevel(setPointPowerLevelValue)) {
+                            childHasNothingToDo = true;
+                        }
                     }
                 }
             }
@@ -519,20 +521,33 @@ public abstract class AbstractValve extends AbstractOpenemsComponent implements 
      */
 
     protected boolean changeInvalid(double percentage) {
-        boolean ableToAdapt = Math.abs(percentage) >= this.percentPossiblePerCycle;
-        double currentPowerValue = this.getPowerLevelValue();
-        if (currentPowerValue + percentage >= DEFAULT_MAX_POWER_VALUE || currentPowerValue + percentage <= DEFAULT_MIN_POWER_VALUE) {
-            ableToAdapt = true;
-        }
+        boolean ableToAdapt = this.ableToAdapt(percentage);
         //Parent active always valid.
-        if(this.parentActive){
+        if (this.parentActive) {
             return false;
         } else {
             return !this.readyToChange() || !this.exceptionalStateActive || !ableToAdapt || percentage == DEFAULT_MIN_POWER_VALUE;
         }
     }
 
+    /**
+     * private check if setPowerLevel can be applied by Parent
+     *
+     * @param percentage the percentage you want to apply
+     * @return true on able to Adapt
+     */
+    private boolean ableToAdapt(double percentage) {
+        boolean ableToAdapt = Math.abs(percentage) >= this.percentPossiblePerCycle * 2;
+        double currentPowerValue = this.getPowerLevelValue();
+        if (currentPowerValue + percentage >= DEFAULT_MAX_POWER_VALUE || currentPowerValue + percentage <= DEFAULT_MIN_POWER_VALUE) {
+            ableToAdapt = true;
+        }
+        return ableToAdapt;
+    }
+
     protected void setCycle(Cycle cycle) {
         this.cycle = cycle;
     }
+
+
 }
