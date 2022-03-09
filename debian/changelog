@@ -1,3 +1,14 @@
+openems-consolinno (0.1.26-1) unstable; urgency=medium
+
+  * Implemented Blueprint of Weishaupt
+  * Fixes for ValveTwoOutput (TODO Check one output)
+  * Fixes and improvments of PID
+  * Reduced ConnectionTime for MQTT (20 seconds instead of 90)
+  * Watchdog is able to Set min an Max (Open or close fully)
+  * bit unstable 1 feature untested but is needed atm
+
+ -- Felix <felix@felix-ThinkPad-E15-Gen-2>  Wed, 09 Mar 2022 12:22:11 +0100
+
 openems-consolinno (0.1.25-1) unstable; urgency=medium
 
   * Fixed PWM Frequency Setting
