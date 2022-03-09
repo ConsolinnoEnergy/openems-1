@@ -96,11 +96,11 @@ public class MqttBridgeImpl extends AbstractOpenemsComponent implements OpenemsC
     private String mqttClientId;
     private int keepAlive = 100;
     private AtomicInteger executorCurrent = new AtomicInteger(10);
-    private static final int EXECUTOR_MAX = 90;
+    private static final int EXECUTOR_MAX = 20;
 
     private DateTime initialTime;
     private boolean initialized;
-    private static final int TIME_SECONDS_TO_WAIT_TILL_RECONNECT = 60;
+    private static final int TIME_SECONDS_TO_WAIT_TILL_RECONNECT = 210;
     private Map<String, List<MqttTask>> missingSubscriptionsAfterReconnect = new HashMap<>();
 
 
@@ -469,7 +469,7 @@ public class MqttBridgeImpl extends AbstractOpenemsComponent implements OpenemsC
                         this.bridgePublisher = null;
                         this.executorCurrent.getAndAdd(5);
                     } else {
-                        this.executorCurrent.set(20);
+                        this.executorCurrent.set(5);
                     }
                     executorService.shutdownNow();
                 }

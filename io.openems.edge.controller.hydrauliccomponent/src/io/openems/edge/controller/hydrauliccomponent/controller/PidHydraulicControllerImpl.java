@@ -181,9 +181,9 @@ public class PidHydraulicControllerImpl extends AbstractOpenemsComponent impleme
                 this.log.warn("A Component is Missing in the Controller : " + super.id());
                 return;
             }
-            boolean enableSignal = this.getEnableSignalChannel().getNextWriteValue().orElse(false);
+            boolean enableSignal = this.getEnableSignalChannel().getNextWriteValue().orElse(false) || this.isAutorun();
             this.getEnableSignalChannel().setNextValue(enableSignal);
-            if (enableSignal || this.autoRunChannel().value().orElse(false)) {
+            if (enableSignal) {
                 if (this.timerHandler.checkTimeIsUp(WAIT_TIME_IDENTIFIER)) {
                     this.timerHandler.resetTimer(WAIT_TIME_IDENTIFIER);
                     int referenceTemperature = this.thermometer.getTemperatureValue();

@@ -47,6 +47,9 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     @AttributeDefinition(name = "Invert", description = "Instead of A-B >= errorDelta (inverse false), check if A-B <= delta(inverse true)")
     boolean invert() default true;
 
+    @AttributeDefinition(name = "Exceptional State Type", description = "When Watchdog is active, what type of Exceptional State do you want to write. Min or Max")
+    ExceptionalStateType exceptionalStateType() default ExceptionalStateType.MIN_VALUE;
+
     @AttributeDefinition(name = "TestPeriod", description = "Time (in s) for how long the test has to run.")
     int testPeriod() default 180;
 

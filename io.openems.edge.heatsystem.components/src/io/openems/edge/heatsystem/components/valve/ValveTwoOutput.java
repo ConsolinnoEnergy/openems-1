@@ -102,7 +102,7 @@ public class ValveTwoOutput extends AbstractValve implements OpenemsComponent, H
             if (config.shouldCloseOnActivation()) {
                 this.forceClose();
             } else if (config.shouldOpenOnActivation()) {
-                this.getPowerLevelChannel().setNextValue(0);
+                this.getPowerLevelChannel().setNextValue(100);
                 this.getPowerLevelChannel().nextProcessImage();
                 try {
                     this.setPointPowerLevelChannel().setNextWriteValueFromObject(-1);
@@ -263,6 +263,11 @@ public class ValveTwoOutput extends AbstractValve implements OpenemsComponent, H
                 try {
                     this.activateOrModifiedRoutine(this.config);
                     this.configSuccess = true;
+                    if(this.config.shouldCloseOnActivation()){
+                        this.forceClose();
+                    } else if(this.config.shouldOpenOnActivation()){
+                        this.forceOpen();
+                    }
                 } catch (ConfigurationException | OpenemsError.OpenemsNamedException e) {
                     this.configSuccess = false;
                     this.log.error("Config is Wrong in : " + super.id());

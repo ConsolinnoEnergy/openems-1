@@ -95,7 +95,7 @@ public class DummyPump extends AbstractOpenemsComponent implements OpenemsCompon
 
 
     private void controlRelays(boolean activate) {
-            System.out.println("Relays is " + activate);
+        System.out.println("Relays is " + activate);
     }
 
     @Override
@@ -124,7 +124,7 @@ public class DummyPump extends AbstractOpenemsComponent implements OpenemsCompon
     }
 
     @Override
-    public void setPowerLevel(double percent) {
-        this.changeByPercentage(percent - this.getPowerLevelValue());
+    public boolean setPowerLevel(double percent) {
+        return this.changeByPercentage(percent - this.getPowerLevelValue());
     }
 }
