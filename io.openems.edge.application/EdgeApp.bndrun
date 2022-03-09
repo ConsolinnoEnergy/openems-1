@@ -160,6 +160,7 @@
 	bnd.identity;id='io.openems.edge.heater.heatpump.heliotherm',\
 	bnd.identity;id='io.openems.edge.heater.heatpump.tecalor',\
 	bnd.identity;id='io.openems.edge.heater.powerplant',\
+	bnd.identity;id='io.openems.edge.heater.heatpump.weishaupt',\
 	bnd.identity;id='io.openems.edge.heatsystem.components',\
 	bnd.identity;id='io.openems.edge.hydraulic',\
 	bnd.identity;id='io.openems.edge.io.api',\
@@ -352,6 +353,7 @@
 	io.openems.edge.heater.heatpump.alphainnotec;version=snapshot,\
 	io.openems.edge.heater.heatpump.heliotherm;version=snapshot,\
 	io.openems.edge.heater.heatpump.tecalor;version=snapshot,\
+	io.openems.edge.heater.heatpump.weishaupt;version=snapshot,\
 	io.openems.edge.heater.powerplant;version=snapshot,\
 	io.openems.edge.heatsystem.components;version=snapshot,\
 	io.openems.edge.hydraulic;version=snapshot,\

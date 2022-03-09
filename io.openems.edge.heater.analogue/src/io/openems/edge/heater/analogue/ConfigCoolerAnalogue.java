@@ -20,10 +20,10 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     @AttributeDefinition(name = "AnalogueDevice ID", description = "The Device Id that Controls the Cooler in reality")
     String[] analogueId() default {"Relay0"};
 
-    /*boolean useErrorSignals() default true;
+    boolean useErrorSignals() default true;
 
-    @AttributeDefinition(name = "SignalSensor Ids", description = "If you want to use SignalSensor as ErrorHandling, put them here")
-    String[] signalSensors() default {"SignalSensor0"};*/
+    @AttributeDefinition(name = "ChannelIds for Error", description = "List of Channel that describe an error (true == error)")
+    String[] errorChannelAddress() default {"SignalSensor0/SignalActive"};
 
     @AttributeDefinition(name = "Max Power in KW", description = "Maximum available Power")
     int maxPower() default 100;

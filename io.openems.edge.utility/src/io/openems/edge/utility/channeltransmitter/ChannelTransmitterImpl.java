@@ -148,29 +148,32 @@ public class ChannelTransmitterImpl extends AbstractOpenemsComponent implements 
                 inputValue = this.getAlternativeValueIfNecessary(inputValue);
             }
             if (inputValue.isPresent()) {
-
+                String valueToSet = inputValue.get().toString();
+                if(valueToSet.equalsIgnoreCase("null")){
+                    valueToSet = null;
+                }
                 switch (this.outputType) {
                     case VALUE:
-                        this.log.info("Value is invalid. Doing NextValue Instead: " + this.id());
                         this.outputType = InputOutputType.NEXT_VALUE;
-                        outputChannel.setNextValue(inputValue.get());
+                        outputChannel.setNextValue(valueToSet);
+                        outputChannel.nextProcessImage();
                         break;
                     case NEXT_WRITE_VALUE:
                         if (outputChannel instanceof WriteChannel<?>) {
                             try {
-                                ((WriteChannel<?>) outputChannel).setNextWriteValueFromObject(inputValue.get());
+                                ((WriteChannel<?>) outputChannel).setNextWriteValueFromObject(valueToSet);
                             } catch (OpenemsError.OpenemsNamedException e) {
                                 this.log.warn("Couldn't set NextWriteValue. Reason: " + e.getMessage());
                             }
                         } else {
                             this.log.warn("OutputChannel not a WriteChannel. Using nextValue instead");
                             this.outputType = InputOutputType.NEXT_VALUE;
-                            outputChannel.setNextValue(inputValue.get());
+                            outputChannel.setNextValue(valueToSet);
                         }
                         break;
                     case NEXT_VALUE:
                     default:
-                        outputChannel.setNextValue(inputValue.get());
+                        outputChannel.setNextValue(valueToSet);
                         break;
                 }
             }
@@ -195,7 +198,6 @@ public class ChannelTransmitterImpl extends AbstractOpenemsComponent implements 
             }
         } else {
             found.set(this.forbiddenValues.contains("null"));
-
         }
         if (found.get()) {
             switch (this.valueWrapper.getType()) {
