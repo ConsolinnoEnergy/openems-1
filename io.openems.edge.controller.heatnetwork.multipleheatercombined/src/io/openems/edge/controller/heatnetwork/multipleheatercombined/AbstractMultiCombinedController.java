@@ -390,12 +390,10 @@ public abstract class AbstractMultiCombinedController extends AbstractOpenemsCom
             Thermometer min = wrapper.getActivationThermometer();
             Thermometer maxNew;
             Thermometer minNew;
-
-            if (max.isEnabled() == false) {
                 try {
                     OpenemsComponent component = this.cpm.getComponent(max.id());
 
-                    if (component instanceof Thermometer) {
+                    if (component instanceof Thermometer && component.equals(max)) {
                         maxNew = (Thermometer) component;
                         wrapper.renewThermometer(ThermometerType.DEACTIVATE_THERMOMETER, maxNew);
                     } else {
@@ -404,12 +402,11 @@ public abstract class AbstractMultiCombinedController extends AbstractOpenemsCom
                 } catch (OpenemsError.OpenemsNamedException e) {
                     this.log.warn("Couldn't find Max Thermometer : " + max.id() + " MultiHeater might not be working!");
                 }
-            }
-            if (min.isEnabled() == false) {
+
                 try {
                     OpenemsComponent component = this.cpm.getComponent(min.id());
 
-                    if (component instanceof Thermometer) {
+                    if (component instanceof Thermometer && component.equals(min)) {
                         minNew = (Thermometer) component;
                         wrapper.renewThermometer(ThermometerType.ACTIVATE_THERMOMETER, minNew);
                     } else {
@@ -419,7 +416,6 @@ public abstract class AbstractMultiCombinedController extends AbstractOpenemsCom
                     this.log.warn("Couldn't find Max Thermometer : " + min.id() + " MultiHeater might not be working!");
                 }
 
-            }
         });
     }
 }

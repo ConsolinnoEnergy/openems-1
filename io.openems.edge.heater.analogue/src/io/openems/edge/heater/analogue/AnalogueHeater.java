@@ -42,7 +42,7 @@ import org.osgi.service.metatype.annotations.Designate;
  */
 
 @Designate(ocd = ConfigHeaterAnalogue.class, factory = true)
-@Component(name = "AnalogueHeater", immediate = true,
+@Component(name = "Heater.Analogue", immediate = true,
         configurationPolicy = ConfigurationPolicy.REQUIRE,
         property = {EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE,
                 EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS})
@@ -66,7 +66,9 @@ public class AnalogueHeater extends AbstractAnalogueHeaterOrCooler implements Op
     @Activate
     void activate(ComponentContext context, ConfigHeaterAnalogue config) {
         this.config = config;
-        super.activate(context, config.id(), config.alias(), config.enabled(), config.analogueId(), config.analogueType(),
+        super.activate(context, config.id(), config.alias(), config.enabled(),
+                config.useErrorSignals(), config.errorChannelAddress(),
+                config.analogueId(), config.analogueType(),
                 config.controlType(), config.defaultMinPower(), config.timerId(), config.maxTimeEnableSignal(),
                 config.maxTimePowerSignal(), config.defaultRunPower(), config.maxPower(), this.cpm, this.cm);
     }
@@ -74,7 +76,9 @@ public class AnalogueHeater extends AbstractAnalogueHeaterOrCooler implements Op
     @Modified
     void modified(ComponentContext context, ConfigHeaterAnalogue config) {
         this.config = config;
-        super.modified(context, config.id(), config.alias(), config.enabled(), config.analogueId(), config.analogueType(),
+        super.modified(context, config.id(), config.alias(), config.enabled(),
+                config.useErrorSignals(), config.errorChannelAddress(),
+                config.analogueId(), config.analogueType(),
                 config.controlType(), config.defaultMinPower(), config.timerId(), config.maxTimeEnableSignal(),
                 config.maxTimePowerSignal(), config.defaultRunPower(), config.maxPower(), this.cpm, this.cm);
 
@@ -93,7 +97,8 @@ public class AnalogueHeater extends AbstractAnalogueHeaterOrCooler implements Op
             try {
                 super.activationOrModifiedRoutine(this.config.analogueId(), this.config.analogueType(),
                         this.config.controlType(), this.config.defaultMinPower(), this.config.timerId(), this.config.maxTimeEnableSignal(),
-                        this.config.maxTimePowerSignal(), this.config.defaultRunPower(), this.config.maxPower());
+                        this.config.maxTimePowerSignal(), this.config.defaultRunPower(), this.config.maxPower(),
+                        this.config.useErrorSignals(), this.config.errorChannelAddress());
             } catch (OpenemsError.OpenemsNamedException | ConfigurationException e) {
                 super.log.warn("Couldn't apply Config yet. Reason: " + e.getMessage());
             }

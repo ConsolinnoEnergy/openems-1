@@ -328,8 +328,8 @@ public class HydraulicPositionControllerImpl extends AbstractOpenemsComponent im
                 } else {
                     this.isRunning = false;
                     if (this.closeWhenNeitherAutoRunNorEnableSignal) {
-                        if (this.controlledComponent.getPowerLevelValue() != 0) {
-                            this.controlledComponent.setPointPowerLevelChannel().setNextValue(0);
+                        if (this.controlledComponent.getPowerLevelValue() != HydraulicComponent.DEFAULT_MIN_POWER_VALUE) {
+                            this.controlledComponent.setPointPowerLevelChannel().setNextValue(HydraulicComponent.DEFAULT_MIN_POWER_VALUE);
                         }
                     }
                 }

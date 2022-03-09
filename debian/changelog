@@ -1,3 +1,11 @@
+openems-consolinno (0.1.25-1) unstable; urgency=medium
+
+  * Fixed PWM Frequency Setting
+  * improvment MQTT 
+  * implementation of Meter from MAGGIE
+
+ -- Felix <felix@felix-ThinkPad-E15-Gen-2>  Wed, 02 Mar 2022 16:38:29 +0100
+
 openems-consolinno (0.1.24-1) unstable; urgency=medium
 
   * PID supports now the functionality of morePercentEqualsCooling e.g.
