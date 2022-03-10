@@ -619,14 +619,18 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
         HR_0_OUTSIDETEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
 
         /**
-         * Return temperature set point. Minimum 150, maximum 800. (<- Aus Handbuch. Minimum Wert sicher falsch, schon
-         * Wert 50 ausgelesen.)
+         * Return temperature set point. Minimum 150, maximum 500.
+         * (Manual says minimum 150, maximum 800. But 500 was the maximum I was able to set).
+         * This register also has the unusual characteristic that when you write a value outside the valid range, it
+         * writes 350 instead. Channel HR_1_MODBUS added to be able to sanitize the input before sending it to modbus,
+         * so this behaviour will not happen. Write values outside the valid range are ignored.
          * <ul>
          *     <li> Type: Integer
          *     <li> Unit: decimal degree Celsius
          * </ul>
          */
         HR_1_RETURN_TEMP_SETPOINT(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
+        HR_1_MODBUS(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
 
         /**
          * Mixing circuit 1 (Mischkreis 1) flow temperature setpoint. Minimum 150, maximum 800.
@@ -2365,6 +2369,16 @@ public interface HeatpumpAlphaInnotec extends HeatpumpSmartGrid {
      */
     default void setReturnTempSetpoint(int value) throws OpenemsNamedException {
         this.getReturnTempSetpointChannel().setNextWriteValue(value);
+    }
+
+    /**
+     * For internal use only!
+     * Gets the Channel for {@link ChannelId#HR_1_MODBUS}.
+     *
+     * @return the Channel
+     */
+    default IntegerWriteChannel getHr1ModbusChannel() {
+        return this.channel(ChannelId.HR_1_MODBUS);
     }
 
     /**

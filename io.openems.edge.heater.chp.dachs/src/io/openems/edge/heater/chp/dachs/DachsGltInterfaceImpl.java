@@ -13,6 +13,7 @@ import io.openems.edge.heater.api.EnableSignalHandler;
 import io.openems.edge.heater.api.EnableSignalHandlerImpl;
 import io.openems.edge.heater.api.Heater;
 import io.openems.edge.heater.api.HeaterState;
+import io.openems.edge.heater.api.StartupCheckHandler;
 import io.openems.edge.heater.chp.dachs.api.DachsGltInterface;
 import io.openems.edge.timer.api.TimerHandler;
 import io.openems.edge.timer.api.TimerHandlerImpl;
@@ -165,21 +166,11 @@ public class DachsGltInterfaceImpl extends AbstractOpenemsComponent implements O
 						}
 					}
 				}
-					
-				/* At startup, check if chp is already running. If yes, keep it running by sending 'EnableSignal = true' 
-				   to yourself once. This gives controllers until the EnableSignal timer runs out to decide the state of 
-				   the chp. This avoids a chp restart if the controllers want the chp to stay on. -> Longer chp lifetime.
-			   	   Without this function, the chp will always switch off at startup because EnableSignal starts as ’false’. */
+
+				// Check heater state at startup. Avoid turning off heater just because EnableSignal initial value is ’false’.
 				if (this.startupStateChecked == false) {
 					this.startupStateChecked = true;
-					turnOnChp = this.chpEngineRunning;
-					if (turnOnChp) {
-						try {
-							this.getEnableSignalChannel().setNextWriteValue(true);
-						} catch (OpenemsError.OpenemsNamedException e) {
-							this.log.warn("Couldn't write in Channel " + e.getMessage());
-						}
-					}
+					turnOnChp = StartupCheckHandler.deviceAlreadyHeating(this, this.log);
 				}
 
 				/* This is the on-off switch. There are some things to watch out for:
@@ -349,6 +340,8 @@ public class DachsGltInterfaceImpl extends AbstractOpenemsComponent implements O
 				this.chpEngineRunning = false;
 				this._setHeaterState(HeaterState.BLOCKED_OR_ERROR.getValue());
 			}
+			// Switch process image because result is needed immediately for startupCheck.
+			this.getHeaterStateChannel().nextProcessImage();
 
 		} else {
 			this.readyForCommands = false;

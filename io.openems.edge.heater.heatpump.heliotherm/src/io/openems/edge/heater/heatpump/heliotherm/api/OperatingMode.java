@@ -16,9 +16,9 @@ public enum OperatingMode implements OptionsEnum {
 	SETBACK(5, "Setback mode (Absenkung)"), //
 	VACATION(6, "Holidays, full time setback (Urlaub)"), //
 	PARTY(7, "No night setback (Party)"), //
-	BAKE_OUT(8, "Bake out mode (Ausheizen)"), //
-	DSM_BLOCK(9, "Demand side management block (EVU Sperre)"), //
-	MAIN_SWITCH_OFF(10, "Main switch off (Hauptschalter aus)"); //
+	BAKE_OUT(8, "Bake out mode (Ausheizen)"), // Not a write value
+	DSM_BLOCK(9, "Demand side management block (EVU Sperre)"), // Not a write value
+	MAIN_SWITCH_OFF(10, "Main switch off (Hauptschalter aus)"); // Not a write value
 
 	private final int value;
 	private final String name;

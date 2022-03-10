@@ -15,6 +15,7 @@ import io.openems.edge.bridge.modbus.api.task.FC4ReadInputRegistersTask;
 import io.openems.edge.common.channel.IntegerReadChannel;
 import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
+import io.openems.edge.common.configupdate.ConfigurationUpdate;
 import io.openems.edge.common.event.EdgeEventConstants;
 import io.openems.edge.common.taskmanager.Priority;
 import io.openems.edge.exceptionalstate.api.ExceptionalState;
@@ -25,12 +26,10 @@ import io.openems.edge.heater.api.EnableSignalHandlerImpl;
 import io.openems.edge.heater.api.Heater;
 import io.openems.edge.heater.api.HeaterState;
 import io.openems.edge.heater.api.HeatpumpControlMode;
-import io.openems.edge.heater.api.SmartGridState;
-import io.openems.edge.heater.heatpump.tecalor.api.HeatpumpTecalor;
 import io.openems.edge.heater.api.HeatpumpSmartGrid;
-
-import java.util.Optional;
-
+import io.openems.edge.heater.api.SmartGridState;
+import io.openems.edge.heater.api.StartupCheckHandler;
+import io.openems.edge.heater.heatpump.tecalor.api.HeatpumpTecalor;
 import io.openems.edge.heater.heatpump.tecalor.api.OperatingMode;
 import io.openems.edge.timer.api.TimerHandler;
 import io.openems.edge.timer.api.TimerHandlerImpl;
@@ -52,6 +51,9 @@ import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.util.Optional;
+
 /**
  * This module reads the most important variables available via Modbus from a Tecalor heat pump and maps them to OpenEMS
  * channels. WriteChannels can be used to send commands to the heat pump via setter methods in
@@ -71,15 +73,16 @@ public class HeatPumpTecalorImpl extends AbstractOpenemsModbusComponent implemen
 		ExceptionalState, HeatpumpTecalor {
 
 	@Reference
-	protected ConfigurationAdmin cm;
+	protected ComponentManager cpm;
 
 	@Reference
-	protected ComponentManager cpm;
+	protected ConfigurationAdmin ca;
 
 	private final Logger log = LoggerFactory.getLogger(HeatPumpTecalorImpl.class);
 	private boolean printInfoToLog;
 	private boolean readOnly;
 	private boolean connectionAlive;
+	private boolean startupStateChecked = false;
 
 	private OperatingMode defaultModeOfOperation;
 	private EnableSignalHandler enableSignalHandler;
@@ -105,7 +108,7 @@ public class HeatPumpTecalorImpl extends AbstractOpenemsModbusComponent implemen
 
 	@Activate
 	void activate(ComponentContext context, Config config) throws OpenemsError.OpenemsNamedException, ConfigurationException {
-		super.activate(context, config.id(), config.alias(), config.enabled(), config.modbusUnitId(), this.cm,
+		super.activate(context, config.id(), config.alias(), config.enabled(), config.modbusUnitId(), this.ca,
 				"Modbus", config.modbus_id());
 		this.printInfoToLog = config.printInfoToLog();
 		this.readOnly = config.readOnly();
@@ -115,14 +118,21 @@ public class HeatPumpTecalorImpl extends AbstractOpenemsModbusComponent implemen
 
 		// Settings needed when not in ’read only’ mode.
 		if (this.readOnly == false) {
+			this.startupStateChecked = false;
+
 			// Use SmartGridState or EnableSignal & ExceptionalState to control heat pump.
 			this._setUseSmartGridState(config.openEmsControlMode() == HeatpumpControlMode.SMART_GRID_STATE);
 			this.getUseSmartGridStateChannel().nextProcessImage();
 
 			this.defaultModeOfOperation = config.defaultModeOfOperation();
+			// Check if value is valid. If not, update config with a valid entry.
 			if (this.defaultModeOfOperation == OperatingMode.UNDEFINED) {
-				// It is possible to select UNDEFINED in config, but that makes no sense.
-				this.defaultModeOfOperation = OperatingMode.ANTIFREEZE;
+				this.defaultModeOfOperation = OperatingMode.PROGRAM_MODE;
+				try {
+					ConfigurationUpdate.updateConfig(ca, this.servicePid(), "defaultModeOfOperation", this.defaultModeOfOperation);
+				} catch (IOException e) {
+					this.log.warn("Couldn't save new operating mode setting to config. " + e.getMessage());
+				}
 			}
 			this.initializeTimers(config);
 		}
@@ -362,13 +372,18 @@ public class HeatPumpTecalorImpl extends AbstractOpenemsModbusComponent implemen
 		if (this.isEnabled() == false) {
 			return;
 		}
-		if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE)) {
-			this.channelmapping();
-			if (this.printInfoToLog) {
-				this.printInfo();
-			}
-		} else if (this.readOnly == false && this.connectionAlive && event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS)) {
-			this.writeCommands();
+		switch (event.getTopic()) {
+			case EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE:
+				this.channelmapping();
+				if (this.printInfoToLog) {
+					this.printInfo();
+				}
+				break;
+			case EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS:
+				if (this.readOnly == false && this.connectionAlive) {
+					this.writeCommands();
+				}
+				break;
 		}
 	}
 
@@ -567,9 +582,16 @@ public class HeatPumpTecalorImpl extends AbstractOpenemsModbusComponent implemen
 		Optional<Integer> operatingModeOptional = this.getOperatingModeChannel().getNextWriteValueAndReset();
 		if (operatingModeOptional.isPresent()) {
 			int enumAsInt = operatingModeOptional.get();
-			// Restrict to valid write values
-			if (enumAsInt >= 0 && enumAsInt <= 7) {
+			// Restrict to valid write values, check if new value is different.
+			if (enumAsInt >= 0 && enumAsInt <= 5 && enumAsInt != this.defaultModeOfOperation.getValue()) {
 				this.defaultModeOfOperation = OperatingMode.valueOf(enumAsInt);
+
+				// Save setting to config, so set point does not go back to default on restart.
+				try {
+					ConfigurationUpdate.updateConfig(ca, this.servicePid(), "defaultModeOfOperation", this.defaultModeOfOperation);
+				} catch (IOException e) {
+					this.log.warn("Couldn't save new operating mode setting to config. " + e.getMessage());
+				}
 			}
 		}
 
@@ -635,6 +657,12 @@ public class HeatPumpTecalorImpl extends AbstractOpenemsModbusComponent implemen
 						turnOnHeatpump = true;
 					}
 				}
+			}
+
+			// Check heater state at startup. Avoid turning off heater just because EnableSignal initial value is ’false’.
+			if (this.startupStateChecked == false) {
+				this.startupStateChecked = true;
+				turnOnHeatpump = StartupCheckHandler.deviceAlreadyHeating(this, this.log);
 			}
 
 			if (turnOnHeatpump) {

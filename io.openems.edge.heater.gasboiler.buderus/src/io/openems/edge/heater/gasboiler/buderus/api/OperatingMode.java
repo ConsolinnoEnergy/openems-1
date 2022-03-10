@@ -28,5 +28,22 @@ public enum OperatingMode implements OptionsEnum {
 	@Override
 	public OptionsEnum getUndefined() {
 		return UNDEFINED;
-	}	
+	}
+
+	/**
+	 * Returns the enum corresponding to the integer value.
+	 *
+	 * @param value the integer value of the enum
+	 * @return the enum
+	 */
+	public static OperatingMode valueOf(int value) {
+		switch (value) {
+			case 0:
+				return OperatingMode.SET_POINT_TEMPERATURE;
+			case 1:
+				return OperatingMode.SET_POINT_POWER_PERCENT;
+			default:
+				return OperatingMode.UNDEFINED;
+		}
+	}
 }

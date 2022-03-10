@@ -4,21 +4,24 @@ import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
 @ObjectClassDefinition(
-        name = "Heater Woodchips Gilles",
-        description = "A Massheater by Gilles, using Woodchips. Communicating via Modbus."
+        name = "Heater Biomass Gilles (now Hargassner)",
+        description = "A biomass heater by Gilles (now Hargassner). Communicating via Modbus."
 )
 @interface Config {
 
-    @AttributeDefinition(name = "MassHeater-Device ID", description = "Unique Id of the MassHeater.")
-    String id() default "WoodChipHeater0";
+    @AttributeDefinition(name = "Component-ID", description = "Unique ID of this Component")
+    String id() default "BiomassHeater0";
 
-    @AttributeDefinition(name = "alias", description = "Human readable name of MassHeater.")
+    @AttributeDefinition(name = "Alias", description = "Human-readable name of this Component; defaults to Component-ID")
     String alias() default "";
 
-    @AttributeDefinition(name = "ModBus-Bridge Id", description = "The Unique Id of the modBus-Bridge you what to allocate to this device.")
+    @AttributeDefinition(name = "Is enabled?", description = "Is this Component enabled?")
+    boolean enabled() default true;
+
+    @AttributeDefinition(name = "Modbus-Bridge Id", description = "The Unique Id of the Modbus-Bridge you want to allocate to this device.")
     String modBusBridgeId() default "modbus0";
 
-    @AttributeDefinition(name = "ModBus-Unit Id", description = "Integer Unit Id of the Component.")
+    @AttributeDefinition(name = "Modbus Unit-ID", description = "The Unit-ID of the Modbus device.")
     int modBusUnitId() default 0;
 
     @AttributeDefinition(name = "Default power percent set point", description = "If the heater receives the command to "
@@ -51,11 +54,9 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     @AttributeDefinition(name = "Print info to log", description = "Print status info to the log.")
     boolean printInfoToLog() default false;
 
-    @AttributeDefinition(name = "Only Activate the Heater", description = "Only start the heater, no SetPoint.")
-    boolean onlyEnableBioMassHeater() default true;
+    @AttributeDefinition(name = "On/Off only", description = "Only turn the heater on or off, don't set a power set point.")
+    boolean onlyOnOff() default true;
 
-    boolean enabled() default true;
-
-    String webconsole_configurationFactory_nameHint() default "Heater Woodchips Gilles [{id}]";
+    String webconsole_configurationFactory_nameHint() default "Heater Biomass Gilles [{id}]";
 
 }

@@ -13,16 +13,19 @@ import io.openems.edge.bridge.modbus.api.task.FC16WriteRegistersTask;
 import io.openems.edge.bridge.modbus.api.task.FC3ReadRegistersTask;
 import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
+import io.openems.edge.common.configupdate.ConfigurationUpdate;
 import io.openems.edge.common.event.EdgeEventConstants;
 import io.openems.edge.common.taskmanager.Priority;
+import io.openems.edge.common.type.TypeUtils;
 import io.openems.edge.exceptionalstate.api.ExceptionalState;
 import io.openems.edge.exceptionalstate.api.ExceptionalStateHandler;
 import io.openems.edge.exceptionalstate.api.ExceptionalStateHandlerImpl;
 import io.openems.edge.heater.api.Chp;
-import io.openems.edge.heater.api.EnableSignalHandler;
 import io.openems.edge.heater.api.EnableSignalHandlerImpl;
 import io.openems.edge.heater.api.Heater;
 import io.openems.edge.heater.api.HeaterState;
+import io.openems.edge.heater.api.EnableSignalHandler;
+import io.openems.edge.heater.api.StartupCheckHandler;
 import io.openems.edge.heater.chp.kwenergy.api.ChpKwEnergySmartblock;
 import io.openems.edge.heater.chp.kwenergy.api.ControlMode;
 import io.openems.edge.timer.api.TimerHandler;
@@ -45,8 +48,11 @@ import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 
 
@@ -73,10 +79,10 @@ public class ChpKwEnergySmartblockImpl extends AbstractOpenemsModbusComponent im
 		ExceptionalState, ChpKwEnergySmartblock {
 
 	@Reference
-	protected ConfigurationAdmin cm;
+	protected ComponentManager cpm;
 
 	@Reference
-	protected ComponentManager cpm;
+	protected ConfigurationAdmin ca;
 
 	private final Logger log = LoggerFactory.getLogger(ChpKwEnergySmartblockImpl.class);
 	private boolean printInfoToLog;
@@ -84,9 +90,11 @@ public class ChpKwEnergySmartblockImpl extends AbstractOpenemsModbusComponent im
 	private boolean connectionAlive = false;
 	private boolean readOnly = false;
 	private boolean startupStateChecked = false;
-	private int maxChpPower;
+	private double maxChpPower;
 	private int lastReceivedHandshake = 0;
 	private double powerPercentSetpoint;
+	private int exceptionalStateValue;
+	private boolean exceptionalStateActive;
 
 	// No successful handshake for this amount of seconds results in: heater state changing to ’off’, stop sending commands.
 	private final int handshakeTimeoutSeconds = 30;
@@ -113,38 +121,66 @@ public class ChpKwEnergySmartblockImpl extends AbstractOpenemsModbusComponent im
 
 	@Activate
 	void activate(ComponentContext context, Config config) throws OpenemsError.OpenemsNamedException, ConfigurationException {
-		super.activate(context, config.id(), config.alias(), config.enabled(), config.modbusUnitId(), this.cm,
+		super.activate(context, config.id(), config.alias(), config.enabled(), config.modbusUnitId(), this.ca,
 				"Modbus", config.modbusBridgeId());
 
 		this.printInfoToLog = config.printInfoToLog();
 		this.connectionTimestamp = LocalDateTime.now().minusSeconds(this.handshakeTimeoutSeconds + 1);	// Initialize with past time value so connection test is negative at start.
 		this.maxChpPower = config.maxChpPower();
 		this.readOnly = config.readOnly();
-		this.startupStateChecked = false;
 		if (this.isEnabled() == false) {
 			this._setHeaterState(HeaterState.OFF.getValue());
 		}
 
 		if (this.readOnly == false) {
+			this.startupStateChecked = false;
 			this.initializeTimers(config);
+			int powerPercentToConfig = 0;
+			double powerToConfig = 0;
+			Map<String, Object> keyValueMap = new HashMap<>();
 			switch (config.controlMode()) {
-				case "power":
-					this.setControlMode(ControlMode.POWER);
+				case POWER:
+					this._setControlMode(ControlMode.POWER);
 					double setpointValue = config.defaultSetPointElectricPower();
-					setpointValue = Math.min(setpointValue, this.maxChpPower);
-					setpointValue = Math.max(setpointValue, this.maxChpPower / 2.0);
-					this.powerPercentSetpoint = setpointValue / this.maxChpPower;
+					setpointValue = TypeUtils.fitWithin(0.d, this.maxChpPower, setpointValue);
+					this.powerPercentSetpoint = 100 * setpointValue / this.maxChpPower;	// Convert to %, where 100 means 100%.
+
+					// Set config value for power percent to match power value.
+					powerPercentToConfig = (int) Math.round(this.powerPercentSetpoint);
+					if (setpointValue != config.defaultSetPointElectricPower() || powerPercentToConfig != config.defaultSetPointPowerPercent()) {
+						keyValueMap.put("defaultSetPointPowerPercent", powerPercentToConfig);
+						keyValueMap.put("defaultSetPointElectricPower", setpointValue);	// In case config value was out of range, update with corrected value.
+					}
 					break;
-				case "consumption":
-					this.setControlMode(ControlMode.CONSUMPTION.getValue());
+				case CONSUMPTION:
+					this._setControlMode(ControlMode.CONSUMPTION);
 					break;
-				case "powerPercent":
+				case UNDEFINED:
+					// Not a valid selection. Change config entry to power percent.
+					keyValueMap.put("controlMode", ControlMode.POWER_PERCENT);
+				case POWER_PERCENT:
 				default:
-					this.setControlMode(ControlMode.POWER_PERCENT);
+					this._setControlMode(ControlMode.POWER_PERCENT);
 					this.powerPercentSetpoint = config.defaultSetPointPowerPercent();
-					this.powerPercentSetpoint = Math.min(this.powerPercentSetpoint, 100);
-					this.powerPercentSetpoint = Math.max(0, this.powerPercentSetpoint);
+					this.powerPercentSetpoint = TypeUtils.fitWithin(0.d, 100.d, this.powerPercentSetpoint);
+
+					/* Set config value for power to match power percent value.
+					   maxChpPower might not be correct (power percent mode does not require it), so value could be wrong. */
+					powerToConfig = this.maxChpPower * this.powerPercentSetpoint / 100.0;
+					powerPercentToConfig = (int) Math.round(this.powerPercentSetpoint);
+					if (powerToConfig != config.defaultSetPointElectricPower() || powerPercentToConfig != config.defaultSetPointPowerPercent()) {
+						keyValueMap.put("defaultSetPointPowerPercent", powerPercentToConfig);	// In case config value was out of range, update with corrected value.
+						keyValueMap.put("defaultSetPointElectricPower", powerToConfig);
+					}
 					break;
+			}
+			// Config update restarts the module.
+			if (keyValueMap.isEmpty() == false) {
+				try {
+					ConfigurationUpdate.updateConfig(ca, this.servicePid(), keyValueMap);
+				} catch (IOException e) {
+					this.log.warn("Couldn't save new settings to config. " + e.getMessage());
+				}
 			}
 			this.getControlModeChannel().nextProcessImage();    // So ’value’ field of channel is filled immediately.
 		}
@@ -282,13 +318,18 @@ public class ChpKwEnergySmartblockImpl extends AbstractOpenemsModbusComponent im
 		if (this.isEnabled() == false) {
 			return;
 		}
-		if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE)) {
-			this.channelmapping();
-			if (this.printInfoToLog) {
-				this.printInfo();
-			}
-		} else if (this.readOnly == false && event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS)) {
-			this.writeCommands();
+		switch (event.getTopic()) {
+			case EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE:
+				this.channelmapping();
+				if (this.printInfoToLog) {
+					this.printInfo();
+				}
+				break;
+			case EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS:
+				if (this.readOnly == false) {
+					this.writeCommands();
+				}
+				break;
 		}
 	}
 
@@ -454,14 +495,33 @@ public class ChpKwEnergySmartblockImpl extends AbstractOpenemsModbusComponent im
 	 * The channels SET_POINT_HEATING_POWER_PERCENT and EFFECTIVE_ELECTRIC_POWER_SETPOINT get special treatment. The chp
 	 * cannot do EFFECTIVE_ELECTRIC_POWER_SETPOINT, so it is mapped to SET_POINT_HEATING_POWER_PERCENT as a workaround.
 	 * The write of SET_POINT_HEATING_POWER_PERCENT is not directly mapped to Modbus, because ExceptionalState should be
-	 * able to override that value. To send the write of SET_POINT_HEATING_POWER_PERCENT to Modbus, a duplicate
-	 * ’private’ channel is used.
+	 * able to override that value. To send the write of SET_POINT_HEATING_POWER_PERCENT to Modbus, a duplicate ’private’
+	 * channel is used.
 	 * The benefit of this design is that when ExceptionalState is active and applies it's own heatingPowerPercentSetpoint,
 	 * the previous set point is saved. Also, it is still possible to write to the set point channels during
 	 * ExceptionalState. The value is saved and applied once ExceptionalState ends. This way you don't have to pay
 	 * attention to the state of the chp when writing in the set point channels.
 	 */
 	protected void writeCommands() {
+		// Collect control mode channel ’nextWrite’.
+		Optional<Integer> controlModeOptional = this.getControlModeChannel().getNextWriteValueAndReset();
+		if (controlModeOptional.isPresent()) {
+			int enumAsInt = controlModeOptional.get();
+			// Restrict to valid write values.
+			if (enumAsInt >= 0 && enumAsInt <= 2) {
+				ControlMode controlMode = ControlMode.valueOf(enumAsInt);
+
+				// Check if value is different. If yes do config update, so mode does not change back on restart.
+				if (getControlMode().asEnum() != controlMode) {
+					this._setControlMode(controlMode);
+					try {
+						ConfigurationUpdate.updateConfig(ca, this.servicePid(), "controlMode", controlMode);
+					} catch (IOException e) {
+						this.log.warn("Couldn't save new control mode setting to config. " + e.getMessage());
+					}
+				}
+			}
+		}
 
 		// Handshake. Get value, send it back. If handshake is not sent, no writing of commands is possible.
 		if (getHandshakeOut().isDefined()) {
@@ -486,79 +546,58 @@ public class ChpKwEnergySmartblockImpl extends AbstractOpenemsModbusComponent im
 
 		// Can only send commands if handshake is successful.
 		if (this.connectionAlive) {
+			ControlMode controlMode = this.getControlMode().asEnum();
+
+			// Collect set points and save them to config.
+			if (controlMode == ControlMode.POWER_PERCENT) {
+				Optional<Double> powerPercentOptional = this.getHeatingPowerPercentSetpointChannel().getNextWriteValueAndReset();
+				if (powerPercentOptional.isPresent()) {
+					this.powerPercentSetpoint = powerPercentOptional.get();
+					this.powerPercentSetpoint = TypeUtils.fitWithin(0.d, 100.d, this.powerPercentSetpoint);
+				}
+			} else if (controlMode == ControlMode.POWER) {
+				Optional<Double> powerSetPointOptional = this.getElectricPowerSetpointChannel().getNextWriteValueAndReset();
+				if (powerSetPointOptional.isPresent()) {
+					double setpointValue = powerSetPointOptional.get();
+					this.powerPercentSetpoint = 100 * setpointValue / this.maxChpPower;
+					this.powerPercentSetpoint = TypeUtils.fitWithin(0.d, 100.d, this.powerPercentSetpoint);
+				}
+			}
 
 			// Handle EnableSignal.
 			boolean turnOnChp = this.enableSignalHandler.deviceShouldBeHeating(this);
 
 			// Handle ExceptionalState. ExceptionalState overwrites EnableSignal.
-			int exceptionalStateValue = 0;
-			boolean exceptionalStateActive = false;
+			this.exceptionalStateValue = 0;
+			this.exceptionalStateActive = false;
 			if (this.useExceptionalState) {
-				exceptionalStateActive = this.exceptionalStateHandler.exceptionalStateActive(this);
-				if (exceptionalStateActive) {
-					exceptionalStateValue = this.getExceptionalStateValue();
-					if (exceptionalStateValue <= this.DEFAULT_MIN_EXCEPTIONAL_VALUE) {
+				this.exceptionalStateActive = this.exceptionalStateHandler.exceptionalStateActive(this);
+				if (this.exceptionalStateActive) {
+					this.exceptionalStateValue = this.getExceptionalStateValue();
+					if (this.exceptionalStateValue <= this.DEFAULT_MIN_EXCEPTIONAL_VALUE) {
 						turnOnChp = false;
 					} else {
 						turnOnChp = true;
-						exceptionalStateValue = Math.min(exceptionalStateValue, this.DEFAULT_MAX_EXCEPTIONAL_VALUE);
+						this.exceptionalStateValue = TypeUtils.fitWithin(0, this.DEFAULT_MAX_EXCEPTIONAL_VALUE, this.exceptionalStateValue);
 					}
 				}
 			}
 
-			/* At startup, check if chp is already running. If yes, keep it running by sending 'EnableSignal = true' to
-			   yourself once. This gives controllers until the EnableSignal timer runs out to decide the state of the chp.
-			   This avoids a chp restart if the controllers want the chp to stay on. -> Longer chp lifetime.
-			   Without this function, the chp will always switch off at startup because EnableSignal starts as ’false’. */
+			// Check heater state at startup. Avoid turning off heater just because EnableSignal initial value is ’false’.
 			if (this.startupStateChecked == false) {
 				this.startupStateChecked = true;
-				turnOnChp = (HeaterState.valueOf(this.getHeaterState().orElse(-1)) == HeaterState.RUNNING);
-				if (turnOnChp) {
-					try {
-						this.getEnableSignalChannel().setNextWriteValue(true);
-					} catch (OpenemsError.OpenemsNamedException e) {
-						this.log.warn("Couldn't write in Channel " + e.getMessage());
-					}
-				}
+				turnOnChp = StartupCheckHandler.deviceAlreadyHeating(this, this.log);
 			}
 
 			// Send command bits, based on settings.
 			int commandBits1to16 = 0;
 			if (turnOnChp) {
-				ControlMode controlMode = this.getControlMode().asEnum();
-				if (exceptionalStateActive) {
-					controlMode = ControlMode.POWER_PERCENT;
-				}
-				if (controlMode == ControlMode.POWER_PERCENT) {
-					Optional<Double> powerPercentOptional = this.getHeatingPowerPercentSetpointChannel().getNextWriteValueAndReset();
-					if (powerPercentOptional.isPresent()) {
-						this.powerPercentSetpoint = powerPercentOptional.get();
-						this.powerPercentSetpoint = Math.min(this.powerPercentSetpoint, 100);
-						this.powerPercentSetpoint = Math.max(0, this.powerPercentSetpoint);
+				if (controlMode == ControlMode.POWER_PERCENT || controlMode == ControlMode.POWER) {
+					this._setElectricPowerSetpoint(this.powerPercentSetpoint * this.maxChpPower / 100.0);
+					int powerPercentToModbus = (int) Math.round(this.powerPercentSetpoint * 10);	// Convert to per mill
+					if (this.exceptionalStateActive) {
+						powerPercentToModbus = this.exceptionalStateValue * 10;
 					}
-					// Convert to per mill
-					int powerPercentToModbus = (int)Math.round(this.powerPercentSetpoint * 10);
-					if (exceptionalStateActive) {
-						powerPercentToModbus = exceptionalStateValue * 10;
-					}
-					this._setElectricPowerSetpoint((powerPercentToModbus * this.maxChpPower) / 1000.0);
-					try {
-						this.getHr111ModbusChannel().setNextWriteValue(powerPercentToModbus);
-					} catch (OpenemsError.OpenemsNamedException e) {
-						this.log.warn("Couldn't write in Channel " + e.getMessage());
-					}
-				} else if (controlMode == ControlMode.POWER) {
-					// Map EffectiveElectricPowerSetpoint channel from Chp interface.
-					Optional<Double> powerSetPointOptional = this.getElectricPowerSetpointChannel().getNextWriteValueAndReset();
-					if (powerSetPointOptional.isPresent()) {
-						double setpointValue = powerSetPointOptional.get();
-						setpointValue = Math.min(setpointValue, this.maxChpPower);
-						setpointValue = Math.max(setpointValue, this.maxChpPower / 2.0);
-						this._setElectricPowerSetpoint(setpointValue);
-						this.powerPercentSetpoint = 100 * setpointValue / this.maxChpPower;;
-					}
-					// Convert to per mill
-					int powerPercentToModbus = (int)Math.round(this.powerPercentSetpoint * 10);
 					try {
 						this.getHr111ModbusChannel().setNextWriteValue(powerPercentToModbus);
 					} catch (OpenemsError.OpenemsNamedException e) {
@@ -624,6 +663,9 @@ public class ChpKwEnergySmartblockImpl extends AbstractOpenemsModbusComponent im
 		this.logInfo(this.log, "Heater state: " + this.getHeaterState());
 		this.logInfo(this.log, "Control mode OpenEMS: " + this.getControlMode().asEnum().getName());
 		this.logInfo(this.log, "Received handshake counter: " + this.lastReceivedHandshake);
+		if (this.useExceptionalState) {
+			this.logInfo(this.log, "Exceptional state: " + this.exceptionalStateActive + ", value: " + this.exceptionalStateValue);
+		}
 		this.logInfo(this.log, "Status message: " + this.getStatusMessage().get());
 		this.logInfo(this.log, "Warning message: " + this.getWarningMessage().get());
 		this.logInfo(this.log, "Error message: " + this.getErrorMessage().get());

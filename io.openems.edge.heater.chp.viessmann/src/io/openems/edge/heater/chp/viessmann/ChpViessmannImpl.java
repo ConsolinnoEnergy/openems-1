@@ -2,34 +2,32 @@ package io.openems.edge.heater.chp.viessmann;
 
 import io.openems.common.exceptions.OpenemsError;
 import io.openems.common.exceptions.OpenemsException;
-import io.openems.edge.io.api.AnalogInputOutput;
 import io.openems.edge.bridge.modbus.api.AbstractOpenemsModbusComponent;
 import io.openems.edge.bridge.modbus.api.BridgeModbus;
 import io.openems.edge.bridge.modbus.api.ElementToChannelConverter;
 import io.openems.edge.bridge.modbus.api.ModbusProtocol;
-import io.openems.edge.bridge.modbus.api.element.DummyRegisterElement;
-import io.openems.edge.bridge.modbus.api.element.FloatDoublewordElement;
-import io.openems.edge.bridge.modbus.api.element.SignedWordElement;
-import io.openems.edge.bridge.modbus.api.element.UnsignedDoublewordElement;
-import io.openems.edge.bridge.modbus.api.element.UnsignedWordElement;
+import io.openems.edge.bridge.modbus.api.element.*;
 import io.openems.edge.bridge.modbus.api.task.FC3ReadRegistersTask;
 import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
+import io.openems.edge.common.configupdate.ConfigurationUpdate;
 import io.openems.edge.common.event.EdgeEventConstants;
 import io.openems.edge.common.taskmanager.Priority;
 import io.openems.edge.exceptionalstate.api.ExceptionalState;
 import io.openems.edge.exceptionalstate.api.ExceptionalStateHandler;
 import io.openems.edge.exceptionalstate.api.ExceptionalStateHandlerImpl;
 import io.openems.edge.heater.api.Chp;
-import io.openems.edge.heater.api.EnableSignalHandler;
 import io.openems.edge.heater.api.EnableSignalHandlerImpl;
 import io.openems.edge.heater.api.Heater;
 import io.openems.edge.heater.api.HeaterState;
+import io.openems.edge.heater.api.EnableSignalHandler;
+import io.openems.edge.heater.api.StartupCheckHandler;
+import io.openems.edge.heater.chp.viessmann.api.ChpViessmann;
 import io.openems.edge.heater.chp.viessmann.api.ModuleStatus;
+import io.openems.edge.io.api.AnalogInputOutput;
+import io.openems.edge.io.api.Relay;
 import io.openems.edge.timer.api.TimerHandler;
 import io.openems.edge.timer.api.TimerHandlerImpl;
-import io.openems.edge.heater.chp.viessmann.api.ChpViessmann;
-import io.openems.edge.io.api.Relay;
 import org.osgi.service.cm.ConfigurationAdmin;
 import org.osgi.service.cm.ConfigurationException;
 import org.osgi.service.component.ComponentContext;
@@ -48,6 +46,7 @@ import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -78,13 +77,21 @@ public class ChpViessmannImpl extends AbstractOpenemsModbusComponent implements 
 
     private final Logger log = LoggerFactory.getLogger(ChpViessmannImpl.class);
 
+    @Reference
+    protected ConfigurationAdmin ca;
+
+    @Reference
+    protected ComponentManager cpm;
+
     private ViessmannChpType chpType;
     private int electricOutput;
-    private double powerPercentSetpoint;
+    private double powerPercentSetpoint = 0.d;
     private Relay relay;
     private boolean useRelay;
     private AnalogInputOutput aioChannel;
     private PercentageRange percentageRange;
+    private int exceptionalStateValue;
+    private boolean exceptionalStateActive;
 
     private final String[] errorPossibilities = ErrorPossibilities.STANDARD_ERRORS.getErrorList();
 
@@ -92,18 +99,11 @@ public class ChpViessmannImpl extends AbstractOpenemsModbusComponent implements 
     private boolean readOnly = false;
     private boolean startupStateChecked = false;
     private boolean readyForCommands = false;
-    private double defaultPower = 0.d;
     private EnableSignalHandler enableSignalHandler;
     private static final String ENABLE_SIGNAL_IDENTIFIER = "CHP_VIESSMANN_ENABLE_SIGNAL_IDENTIFIER";
     private boolean useExceptionalState;
     private ExceptionalStateHandler exceptionalStateHandler;
     private static final String EXCEPTIONAL_STATE_IDENTIFIER = "CHP_VIESSMANN_EXCEPTIONAL_STATE_IDENTIFIER";
-
-    @Reference
-    protected ConfigurationAdmin cm;
-
-    @Reference
-    protected ComponentManager cpm;
 
     @Reference(policy = ReferencePolicy.STATIC, policyOption = ReferencePolicyOption.GREEDY, cardinality = ReferenceCardinality.MANDATORY)
     protected void setModbus(BridgeModbus modbus) {
@@ -120,7 +120,7 @@ public class ChpViessmannImpl extends AbstractOpenemsModbusComponent implements 
 
     @Activate
     void activate(ComponentContext context, Config config) throws OpenemsError.OpenemsNamedException, ConfigurationException {
-        super.activate(context, config.id(), config.alias(), config.enabled(), config.modbusUnitId(), this.cm, "Modbus", config.modbusBridgeId());
+        super.activate(context, config.id(), config.alias(), config.enabled(), config.modbusUnitId(), this.ca, "Modbus", config.modbusBridgeId());
 
         this.chpType = config.chpType();
         this.printInfoToLog = config.printInfoToLog();
@@ -134,9 +134,31 @@ public class ChpViessmannImpl extends AbstractOpenemsModbusComponent implements 
             this.allocateComponents(config);
             this.percentageRange = config.percentageRange();
             this.startupStateChecked = false;
-            this.powerPercentSetpoint = Math.min(100, Math.max(config.defaultSetPointPowerPercent(), 0));
-            this.defaultPower = this.powerPercentSetpoint;
+            this.powerPercentSetpoint = config.defaultSetPointPowerPercent();
+            boolean updateConfig = false;
+            if (this.powerPercentSetpoint > 100) {
+                this.powerPercentSetpoint = 100;
+                updateConfig = true;
+            }
+            if (this.percentageRange == PercentageRange.RANGE_50_100 && this.powerPercentSetpoint < 50) {
+                this.powerPercentSetpoint = 50;
+                updateConfig = true;
+            } else if (this.powerPercentSetpoint < 0) {
+                this.powerPercentSetpoint = 0;
+                updateConfig = true;
+            }
+            // If value was out of range, put corrected value in config.
+            if (updateConfig) {
+                try {
+                    ConfigurationUpdate.updateConfig(ca, this.servicePid(), "defaultSetPointPowerPercent", this.powerPercentSetpoint);
+                } catch (IOException e) {
+                    this.log.warn("Couldn't save new power percent setting to config. " + e.getMessage());
+                }
+            }
             this.initializeTimers(config);
+            this._setHeatingPowerPercentSetpoint(powerPercentSetpoint);
+            double electricPowerSetpoint = this.powerPercentSetpoint * this.electricOutput / 100.0;
+            this._setElectricPowerSetpoint(electricPowerSetpoint);
         }
 
 
@@ -298,13 +320,18 @@ public class ChpViessmannImpl extends AbstractOpenemsModbusComponent implements 
         if (this.isEnabled() == false) {
             return;
         }
-        if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE)) {
-            this.channelmapping();
-            if (this.printInfoToLog) {
-                this.printInfo();
-            }
-        } else if (this.readOnly == false && this.readyForCommands && event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS)) {
-            this.writeCommands();
+        switch (event.getTopic()) {
+            case EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE:
+                this.channelmapping();
+                if (this.printInfoToLog) {
+                    this.printInfo();
+                }
+                break;
+            case EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS:
+                if (this.readOnly == false && this.readyForCommands) {
+                    this.writeCommands();
+                }
+                break;
         }
     }
 
@@ -416,6 +443,10 @@ public class ChpViessmannImpl extends AbstractOpenemsModbusComponent implements 
 
     /**
      * Determine commands and send them to the heater.
+     * The chp can be controlled by the channels SET_POINT_HEATING_POWER_PERCENT and EFFECTIVE_ELECTRIC_POWER_SETPOINT.
+     * However, the actual control mechanism is sending a voltage using an AIO. Both channels are mapped to that voltage,
+     * the last received nextWriteValue from either channel is used. If there happens to be a nextWriteValue in both
+     * channels at the same time, the one in SET_POINT_HEATING_POWER_PERCENT is used.
      */
     protected void writeCommands() {
 
@@ -423,76 +454,82 @@ public class ChpViessmannImpl extends AbstractOpenemsModbusComponent implements 
         boolean turnOnChp = this.enableSignalHandler.deviceShouldBeHeating(this);
 
         // Handle ExceptionalState. ExceptionalState overwrites EnableSignal.
-        int exceptionalStateValue = 0;
-        boolean exceptionalStateActive = false;
+        this.exceptionalStateValue = 0;
+        this.exceptionalStateActive = false;
         if (this.useExceptionalState) {
-            exceptionalStateActive = this.exceptionalStateHandler.exceptionalStateActive(this);
-            if (exceptionalStateActive) {
-                exceptionalStateValue = this.getExceptionalStateValue();
-                if (exceptionalStateValue <= this.DEFAULT_MIN_EXCEPTIONAL_VALUE) {
+            this.exceptionalStateActive = this.exceptionalStateHandler.exceptionalStateActive(this);
+            if (this.exceptionalStateActive) {
+                this.exceptionalStateValue = this.getExceptionalStateValue();
+                if (this.exceptionalStateValue <= this.DEFAULT_MIN_EXCEPTIONAL_VALUE) {
                     turnOnChp = false;
                 } else {
                     // When ExceptionalStateValue is between 0 and 100, set Chp to this PowerPercentage.
                     turnOnChp = true;
-                    exceptionalStateValue = Math.min(exceptionalStateValue, this.DEFAULT_MAX_EXCEPTIONAL_VALUE);
+                    this.exceptionalStateValue = Math.min(this.exceptionalStateValue, this.DEFAULT_MAX_EXCEPTIONAL_VALUE);
                 }
             }
         }
 
-        /* At startup, check if chp is already running. If yes, keep it running by sending 'EnableSignal = true' to
-           yourself once. This gives controllers until the EnableSignal timer runs out to decide the state of the chp.
-           This avoids a chp restart if the controllers want the chp to stay on. -> Longer chp lifetime.
-           Without this function, the chp will always switch off at startup because EnableSignal starts as ’false’. */
+        // Check heater state at startup. Avoid turning off heater just because EnableSignal initial value is ’false’.
         if (this.startupStateChecked == false) {
             this.startupStateChecked = true;
-            turnOnChp = (HeaterState.valueOf(this.getHeaterState().orElse(-1)) == HeaterState.RUNNING);
-            if (turnOnChp) {
-                try {
-                    this.getEnableSignalChannel().setNextWriteValue(true);
-                } catch (OpenemsError.OpenemsNamedException e) {
-                    this.log.warn("Couldn't write in Channel " + e.getMessage());
-                }
-            }
+            turnOnChp = StartupCheckHandler.deviceAlreadyHeating(this, this.log);
         }
-        int writeToAioValue = 0;
-        if (turnOnChp) {
-            if (this.useRelay) {
-                try {
-                    this.relay.getRelaysWriteChannel().setNextWriteValue(true);
-                } catch (OpenemsError.OpenemsNamedException e) {
-                    this.log.warn("Couldn't write in Channel " + e.getMessage());
-                }
-            }
-            double powerPercentToAio = this.defaultPower;
-            if (exceptionalStateActive) {
-                powerPercentToAio = exceptionalStateValue;
+
+        // Check write channels for values. Since there are two channels, need to have a hierarchy.
+        // SET_POINT_HEATING_POWER_PERCENT (heater interface) overwrites EFFECTIVE_ELECTRIC_POWER_SETPOINT (Chp interface).
+        boolean updatePowerSetpoint = false;
+        Optional<Double> electricPowerWriteOptional = this.getElectricPowerSetpointChannel().getNextWriteValueAndReset();
+        if (electricPowerWriteOptional.isPresent()) {
+            double electricPowerSetpointWrite = electricPowerWriteOptional.get();
+            this.powerPercentSetpoint = 100.0 * electricPowerSetpointWrite / this.electricOutput;
+            updatePowerSetpoint = true;
+        }
+        Optional<Double> heatingPowerPercentWriteOptional = this.getHeatingPowerPercentSetpointChannel().getNextWriteValueAndReset();
+        if (heatingPowerPercentWriteOptional.isPresent()) {
+            this.powerPercentSetpoint = heatingPowerPercentWriteOptional.get();
+            updatePowerSetpoint = true;
+        }
+        if (updatePowerSetpoint) {
+            this.powerPercentSetpoint = Math.min(this.powerPercentSetpoint, 100);
+            if (this.percentageRange == PercentageRange.RANGE_50_100) {
+                this.powerPercentSetpoint = Math.max(this.powerPercentSetpoint, 50);
             } else {
-                if (this.getHeatingPowerPercentSetpointChannel().getNextWriteValue().isPresent()) {
-                    Optional<Double> heatingPowerPercentWrite = this.getHeatingPowerPercentSetpointChannel().getNextWriteValueAndReset();
-                    heatingPowerPercentWrite.ifPresent(aDouble -> this.powerPercentSetpoint = aDouble);
-                    this.powerPercentSetpoint = Math.min(this.powerPercentSetpoint, 100);
-                    this.powerPercentSetpoint = Math.max(this.powerPercentSetpoint, 0);
-                    powerPercentToAio = this.powerPercentSetpoint;
-                } else {
-                    // Check write channels for values. Since there are two channels, need to have a hierarchy.
-                    // SET_POINT_HEATING_POWER_PERCENT (heater interface) overwrites EFFECTIVE_ELECTRIC_POWER_SETPOINT (Chp interface).
-                    Optional<Double> electricPowerWrite = this.getElectricPowerSetpointChannel().getNextWriteValueAndReset();
-                    if (electricPowerWrite.isPresent()) {
-                        double electricPowerSetpoint = electricPowerWrite.get();
-                        electricPowerSetpoint = Math.min(electricPowerSetpoint, this.electricOutput);
-                        electricPowerSetpoint = Math.max(electricPowerSetpoint, 0);
-                        this._setElectricPowerSetpoint(electricPowerSetpoint);
-                        this.powerPercentSetpoint = 100.0 * electricPowerSetpoint / this.electricOutput;
+                this.powerPercentSetpoint = Math.max(this.powerPercentSetpoint, 0);
+            }
+            this._setHeatingPowerPercentSetpoint(powerPercentSetpoint);
+            double electricPowerSetpoint = this.powerPercentSetpoint * this.electricOutput / 100.0;
+            this._setElectricPowerSetpoint(electricPowerSetpoint);
+        }
+
+        if (this.aioChannel.isEnabled()) {
+            int writeToAioValue = 0;
+            if (turnOnChp) {
+                if (this.useRelay) {
+                    if (this.relay.isEnabled()) {
+                        try {
+                            this.relay.getRelaysWriteChannel().setNextWriteValue(true);
+                        } catch (OpenemsError.OpenemsNamedException e) {
+                            this.log.warn("Couldn't write in Channel " + e.getMessage());
+                        }
+                    } else {
+                        this.log.warn("Relay module " + this.relay.id() + "is not enabled! Sending commands to CHP not possible.");
                     }
                 }
-            }
-            this._setHeatingPowerPercentSetpoint(powerPercentToAio);
 
+                double powerPercentToAio = this.powerPercentSetpoint;
+                if (exceptionalStateActive) {
+                    powerPercentToAio = exceptionalStateValue;
+                }
             writeToAioValue = (int) Math.round(powerPercentToAio);
             if (this.percentageRange == PercentageRange.RANGE_50_100) {
                 // Map to 50-100% range.
+                    powerPercentToAio = Math.max(powerPercentToAio, 50);
                 writeToAioValue = (int) Math.round((powerPercentToAio - 50) * 2);
             }
+            this._setHeatingPowerPercentSetpoint(powerPercentToAio);    // Additional setter because exceptional state might change set point.
+            double electricPowerSetpoint = powerPercentToAio * this.electricOutput / 100.0;
+            this._setElectricPowerSetpoint(electricPowerSetpoint);
         } else {
             if (this.useRelay) {
                 if (this.relay.isEnabled()) {
@@ -507,11 +544,14 @@ public class ChpViessmannImpl extends AbstractOpenemsModbusComponent implements 
             }
         }
 
-        // Use AiO to send commands to chp.
-        try {
-            this.aioChannel.setWritePercent(writeToAioValue);
-        } catch (OpenemsError.OpenemsNamedException e) {
-            this.log.warn("Couldn't write in Channel " + e.getMessage());
+            // Use AiO to send commands to chp.
+            try {
+                this.aioChannel.setWritePercent(writeToAioValue);
+            } catch (OpenemsError.OpenemsNamedException e) {
+                this.log.warn("Couldn't write in Channel " + e.getMessage());
+            }
+        } else {
+            this.log.warn("AiO module " + this.aioChannel.id() + "is not enabled! Sending commands to CHP not possible.");
         }
     }
 
@@ -603,6 +643,9 @@ public class ChpViessmannImpl extends AbstractOpenemsModbusComponent implements 
         this.logInfo(this.log, "Operating hours: " + this.getOperatingHours());
         this.logInfo(this.log, "Engine start counter: " + this.getStartCounter());
         this.logInfo(this.log, "Hours until next maintenance: " + this.getNextMaintenance());
+        if (this.useExceptionalState) {
+            this.logInfo(this.log, "Exceptional state: " + this.exceptionalStateActive + ", value: " + this.exceptionalStateValue);
+        }
         this.logInfo(this.log, "Heater state: " + this.getHeaterState());
         this.logInfo(this.log, "Error message: " + this.getErrorMessage().get());
     }

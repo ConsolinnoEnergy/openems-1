@@ -234,9 +234,7 @@ public interface ChpKwEnergySmartblock extends Chp {
          *      <li> State 2: Control mode consumption
          * </ul>
          */
-        CONTROL_MODE(Doc.of(ControlMode.values()).accessMode(AccessMode.READ_WRITE).onInit(
-                channel -> ((EnumWriteChannel) channel).onSetNextWrite(channel::setNextValue)
-        )),
+        CONTROL_MODE(Doc.of(ControlMode.values()).accessMode(AccessMode.READ_WRITE)),
 
         // Channels for telemetry
 
@@ -769,6 +767,26 @@ public interface ChpKwEnergySmartblock extends Chp {
      */
     default Value<Integer> getControlMode() {
         return this.getControlModeChannel().value();
+    }
+
+    /**
+     * Internal method to set the 'nextValue' on {@link ChannelId#CONTROL_MODE} Channel.
+     *
+     * @param value the next value
+     */
+    default void _setControlMode(int value) {
+        this.getControlModeChannel().setNextValue(value);
+    }
+
+    /**
+     * Internal method to set the 'nextValue' on {@link ChannelId#CONTROL_MODE} Channel.
+     *
+     * @param mode the next value
+     */
+    default void _setControlMode(ControlMode mode) {
+        if (mode != ControlMode.UNDEFINED) {
+            this.getControlModeChannel().setNextValue(mode.getValue());
+        }
     }
 
     /**

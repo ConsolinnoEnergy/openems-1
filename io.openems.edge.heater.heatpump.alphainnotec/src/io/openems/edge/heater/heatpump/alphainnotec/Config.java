@@ -19,7 +19,10 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 	@AttributeDefinition(name = "Alias", description = "Human-readable name of this Component; defaults to Component-ID")
 	String alias() default "";
 
-	@AttributeDefinition(name = "Modbus-Bridge ID", description = "ID of Modbus bridge.")
+	@AttributeDefinition(name = "Is enabled?", description = "Is this Component enabled?")
+	boolean enabled() default true;
+
+	@AttributeDefinition(name = "Modbus-Bridge Id", description = "The Unique Id of the Modbus-Bridge you want to allocate to this device.")
 	String modbus_id() default "modbus0";
 
 	@AttributeDefinition(name = "Modbus Unit-ID", description = "The Unit-ID of the Modbus device.")
@@ -85,9 +88,6 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 	@AttributeDefinition(name = "Full remote mode", description = "Full remote mode. Only relevant for sending commands, "
 			+ "irrelevant in read only mode.")
 	boolean fullRemoteMode() default false;
-
-	@AttributeDefinition(name = "Is enabled?", description = "Is this Component enabled?")
-	boolean enabled() default true;
 
 	String webconsole_configurationFactory_nameHint() default "Heat Pump Alpha Innotec [{id}]";
 }

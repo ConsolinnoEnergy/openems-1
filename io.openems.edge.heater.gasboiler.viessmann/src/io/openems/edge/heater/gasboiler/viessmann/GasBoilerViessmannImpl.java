@@ -7,9 +7,7 @@ import io.openems.edge.bridge.modbus.api.BridgeModbus;
 import io.openems.edge.bridge.modbus.api.ElementToChannelConverter;
 import io.openems.edge.bridge.modbus.api.ModbusProtocol;
 import io.openems.edge.bridge.modbus.api.element.CoilElement;
-import io.openems.edge.bridge.modbus.api.element.DummyCoilElement;
 import io.openems.edge.bridge.modbus.api.element.DummyRegisterElement;
-import io.openems.edge.bridge.modbus.api.element.UnsignedDoublewordElement;
 import io.openems.edge.bridge.modbus.api.element.UnsignedWordElement;
 import io.openems.edge.bridge.modbus.api.task.FC2ReadInputsTask;
 import io.openems.edge.bridge.modbus.api.task.FC3ReadRegistersTask;
@@ -17,15 +15,18 @@ import io.openems.edge.bridge.modbus.api.task.FC4ReadInputRegistersTask;
 import io.openems.edge.bridge.modbus.api.task.FC6WriteRegisterTask;
 import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
+import io.openems.edge.common.configupdate.ConfigurationUpdate;
 import io.openems.edge.common.event.EdgeEventConstants;
 import io.openems.edge.common.taskmanager.Priority;
+import io.openems.edge.common.type.TypeUtils;
 import io.openems.edge.exceptionalstate.api.ExceptionalState;
 import io.openems.edge.exceptionalstate.api.ExceptionalStateHandler;
 import io.openems.edge.exceptionalstate.api.ExceptionalStateHandlerImpl;
-import io.openems.edge.heater.api.EnableSignalHandler;
 import io.openems.edge.heater.api.EnableSignalHandlerImpl;
 import io.openems.edge.heater.api.Heater;
 import io.openems.edge.heater.api.HeaterState;
+import io.openems.edge.heater.api.EnableSignalHandler;
+import io.openems.edge.heater.api.StartupCheckHandler;
 import io.openems.edge.heater.gasboiler.viessmann.api.GasBoilerViessmann;
 import io.openems.edge.timer.api.TimerHandler;
 import io.openems.edge.timer.api.TimerHandlerImpl;
@@ -47,6 +48,7 @@ import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -79,10 +81,14 @@ public class GasBoilerViessmannImpl extends AbstractOpenemsModbusComponent imple
     @Reference
     ComponentManager cpm;
 
+    @Reference
+    ConfigurationAdmin ca;
+
     private boolean printInfoToLog;
     private boolean readOnly = false;
-    private double powerPercentSettingDefault;
-    static final int hvac_off = 6;
+    private boolean startupStateChecked = false;
+    private double heatingPowerPercentSetting;
+    private static final int HVAC_OFF = 6;
     private boolean readyForCommands = false;
 
     private EnableSignalHandler enableSignalHandler;
@@ -98,9 +104,6 @@ public class GasBoilerViessmannImpl extends AbstractOpenemsModbusComponent imple
         super.setModbus(modbus);
     }
 
-    @Reference
-    protected ConfigurationAdmin cm;
-
     public GasBoilerViessmannImpl() {
         super(OpenemsComponent.ChannelId.values(),
                 GasBoilerViessmann.ChannelId.values(),
@@ -111,7 +114,7 @@ public class GasBoilerViessmannImpl extends AbstractOpenemsModbusComponent imple
     @Activate
     void activate(ComponentContext context, Config config) throws OpenemsError.OpenemsNamedException,
             ConfigurationException {
-        super.activate(context, config.id(), config.alias(), config.enabled(), config.modbusUnitId(), this.cm, "Modbus", config.modbusBridgeId());
+        super.activate(context, config.id(), config.alias(), config.enabled(), config.modbusUnitId(), this.ca, "Modbus", config.modbusBridgeId());
 
         this.printInfoToLog = config.printInfoToLog();
         this.readOnly = config.readOnly();
@@ -122,13 +125,31 @@ public class GasBoilerViessmannImpl extends AbstractOpenemsModbusComponent imple
         }
         // Settings needed when not in ’read only’ mode.
         if (this.readOnly == false) {
-            this.powerPercentSettingDefault = config.defaultSetPointPowerPercent();
+            this.startupStateChecked = false;
+            this.heatingPowerPercentSetting = config.defaultSetPointPowerPercent();
+            boolean updateConfig = false;
+            if (this.heatingPowerPercentSetting > 100) {
+                this.heatingPowerPercentSetting = 100;
+                updateConfig = true;
+            }
+            if (this.heatingPowerPercentSetting < 0) {
+                this.heatingPowerPercentSetting = 0;
+                updateConfig = true;
+            }
+            if (updateConfig) { // Updating config restarts the module.
+                try {
+                    ConfigurationUpdate.updateConfig(ca, this.servicePid(), "defaultSetPointPowerPercent", this.heatingPowerPercentSetting);
+                } catch (IOException e) {
+                    this.log.warn("Couldn't save new settings to config. " + e.getMessage());
+                }
+            }
+
             this.initializeTimers(config);
 
             // Deactivating controllers for heating circuits because we will not need them
-            this.setHc1OperatingMode(hvac_off);
-            this.setHc2OperatingMode(hvac_off);
-            this.setHc3OperatingMode(hvac_off);
+            this.setHc1OperatingMode(HVAC_OFF);
+            this.setHc2OperatingMode(HVAC_OFF);
+            this.setHc3OperatingMode(HVAC_OFF);
         }
     }
 
@@ -430,18 +451,17 @@ public class GasBoilerViessmannImpl extends AbstractOpenemsModbusComponent imple
                 new FC4ReadInputRegistersTask(6, Priority.HIGH,
                         m(Heater.ChannelId.EFFECTIVE_HEATING_POWER_PERCENT, new UnsignedWordElement(6), ElementToChannelConverter.SCALE_FACTOR_MINUS_1),
                         new DummyRegisterElement(7, 7),
-                        m(Heater.ChannelId.FLOW_TEMPERATURE, new UnsignedWordElement(8), ElementToChannelConverter.SCALE_FACTOR_MINUS_1),
-                        new DummyRegisterElement(9, 30),
+                        m(Heater.ChannelId.FLOW_TEMPERATURE, new UnsignedWordElement(8), ElementToChannelConverter.SCALE_FACTOR_MINUS_1)
+                ),
+                new FC4ReadInputRegistersTask(31, Priority.HIGH,
                         m(Heater.ChannelId.RETURN_TEMPERATURE, new UnsignedWordElement(31))
                 ),
                 new FC4ReadInputRegistersTask(36, Priority.HIGH,
-                        m(GasBoilerViessmann.ChannelId.OPERATING_HOURS_TIER1, new UnsignedWordElement(36))),
-                new FC4ReadInputRegistersTask(37, Priority.HIGH,
-                        m(GasBoilerViessmann.ChannelId.OPERATING_HOURS_TIER2, new UnsignedWordElement(37))),
-                new FC4ReadInputRegistersTask(38, Priority.HIGH,
-                        m(GasBoilerViessmann.ChannelId.BOILER_STARTS, new UnsignedWordElement(38))),
-                new FC4ReadInputRegistersTask(39, Priority.HIGH,
-                        m(GasBoilerViessmann.ChannelId.BOILER_STATE, new UnsignedWordElement(39)))
+                        m(GasBoilerViessmann.ChannelId.OPERATING_HOURS_TIER1, new UnsignedWordElement(36)),
+                        m(GasBoilerViessmann.ChannelId.OPERATING_HOURS_TIER2, new UnsignedWordElement(37)),
+                        m(GasBoilerViessmann.ChannelId.BOILER_STARTS, new UnsignedWordElement(38)),
+                        m(GasBoilerViessmann.ChannelId.BOILER_STATE, new UnsignedWordElement(39))
+                )
         );
         if (this.readOnly == false) {
             protocol.addTasks(
@@ -482,13 +502,18 @@ public class GasBoilerViessmannImpl extends AbstractOpenemsModbusComponent imple
         if (this.isEnabled() == false) {
             return;
         }
-        if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE)) {
-            this.channelmapping();
-            if (this.printInfoToLog) {
-                this.printInfo();
-            }
-        } else if (this.readOnly == false && this.readyForCommands && event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS)) {
-            this.writeCommands();
+        switch (event.getTopic()) {
+            case EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE:
+                this.channelmapping();
+                if (this.printInfoToLog) {
+                    this.printInfo();
+                }
+                break;
+            case EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS:
+                if (this.readOnly == false && this.readyForCommands) {
+                    this.writeCommands();
+                }
+                break;
         }
     }
 
@@ -526,34 +551,29 @@ public class GasBoilerViessmannImpl extends AbstractOpenemsModbusComponent imple
 
     /**
      * Determine commands and send them to the heater.
-     * The channel SET_POINT_HEATING_POWER_PERCENT gets special treatment, because that is changed by ExceptionalState.
-     * The write of that channel is not mapped to Modbus. This is done by a duplicate ’private’ channel. The write to
-     * the ’public’ channel SET_POINT_HEATING_POWER_PERCENT is stored in a local variable and sent to Modbus using the
-     * ’private’ channel.
+     * The channel SET_POINT_HEATING_POWER_PERCENT is not directly mapped to modbus. Its nextWriteValue is collected
+     * manually, so the value can be stored locally and manipulated before sending it to the heater. A duplicate ’private’
+     * channel is then used for the modbus writes.
      * The benefit of this design is that when ExceptionalState is active and applies it's own heatingPowerPercentSetpoint,
-     * the previous set point is saved. Also, it is still possible to write to the channel during ExceptionalState.
-     * A write to SET_POINT_HEATING_POWER_PERCENT is still registered and the value saved, but not executed. The changed
-     * set point is then applied once ExceptionalState ends. This way you don't have to pay attention to the state of
-     * the heater when writing in the SET_POINT_HEATING_POWER_PERCENT channel.
+     * the previous set point is saved. Also, it is still possible to write to the channel during ExceptionalState, to
+     * change the value that will be used after exceptional state ends.
      */
     protected void writeCommands() {
         // Collect heatingPowerPercentSetpoint channel ’nextWrite’.
         Optional<Double> heatingPowerPercentOptional = this.getHeatingPowerPercentSetpointChannel().getNextWriteValueAndReset();
-
-        double setpoint = heatingPowerPercentOptional.orElse(this.powerPercentSettingDefault);
-        // Restrict to valid write values
-        setpoint = Math.min(setpoint, 100);
-        setpoint = Math.max(0, setpoint);
-
+        if (heatingPowerPercentOptional.isPresent()) {
+            this.heatingPowerPercentSetting = heatingPowerPercentOptional.get();
+            // Restrict to valid write values
+            this.heatingPowerPercentSetting = TypeUtils.fitWithin(0.d, 100.d, this.heatingPowerPercentSetting);
+        }
 
         // Handle EnableSignal.
         boolean turnOnHeater = this.enableSignalHandler.deviceShouldBeHeating(this);
 
         // Handle ExceptionalState. ExceptionalState overwrites EnableSignal.
-        double heatingPowerPercentSetpointToModbus = setpoint;
-        boolean exceptionalStateActive = false;
+        double heatingPowerPercentSetpointToModbus = this.heatingPowerPercentSetting;
         if (this.useExceptionalState) {
-            exceptionalStateActive = this.exceptionalStateHandler.exceptionalStateActive(this);
+            boolean exceptionalStateActive = this.exceptionalStateHandler.exceptionalStateActive(this);
             if (exceptionalStateActive) {
                 int exceptionalStateValue = this.getExceptionalStateValue();
                 if (exceptionalStateValue <= this.DEFAULT_MIN_EXCEPTIONAL_VALUE) {
@@ -565,6 +585,12 @@ public class GasBoilerViessmannImpl extends AbstractOpenemsModbusComponent imple
                     heatingPowerPercentSetpointToModbus = exceptionalStateValue;
                 }
             }
+        }
+
+        // Check heater state at startup. Avoid turning off heater just because EnableSignal initial value is ’false’.
+        if (this.startupStateChecked == false) {
+            this.startupStateChecked = true;
+            turnOnHeater = StartupCheckHandler.deviceAlreadyHeating(this, this.log);
         }
 
         // Switch heater on or off.
