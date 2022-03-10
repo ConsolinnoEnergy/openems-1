@@ -1,6 +1,7 @@
 package io.openems.edge.heater.heatpump.heliotherm;
 
 import io.openems.edge.heater.heatpump.heliotherm.api.ControlMode;
+import io.openems.edge.heater.heatpump.heliotherm.api.OperatingMode;
 import io.openems.edge.heater.heatpump.heliotherm.api.PowerControlSetting;
 import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
@@ -12,16 +13,19 @@ import org.osgi.service.metatype.annotations.Option;
 )
 @interface Config {
 
-    @AttributeDefinition(name = "HeatPump-Device ID", description = "Unique Id of the heat pump.")
+    @AttributeDefinition(name = "Component-ID", description = "Unique ID of this Component")
     String id() default "HeatPump0";
 
-    @AttributeDefinition(name = "ModBus-Bridge Id", description = "The Unique Id of the modBus-Bridge you what to allocate to this device.")
-    String modbusBridgeId() default "modbus0";
-
-    @AttributeDefinition(name = "alias", description = "Human readable name of heat pump.")
+    @AttributeDefinition(name = "Alias", description = "Human-readable name of this Component; defaults to Component-ID")
     String alias() default "";
 
-    @AttributeDefinition(name = "ModBus-Unit Id", description = "Integer Unit Id of the Component.")
+    @AttributeDefinition(name = "Is enabled?", description = "Is this Component enabled?")
+    boolean enabled() default true;
+
+    @AttributeDefinition(name = "Modbus-Bridge Id", description = "The Unique Id of the Modbus-Bridge you want to allocate to this device.")
+    String modbusBridgeId() default "modbus0";
+
+    @AttributeDefinition(name = "Modbus Unit-ID", description = "The Unit-ID of the Modbus device.")
     int modbusUnitId() default 1;
 
     @AttributeDefinition(name = "Default control mode", description = "Use EnableSignal or temperature set point to "
@@ -35,17 +39,8 @@ import org.osgi.service.metatype.annotations.Option;
     int defaultSetPointTemperature() default 60;
 
     @AttributeDefinition(name = "Default operating mode", description = "When the heat pump turns on because of "
-            + "either EnableSignal or the temperature set point, this is the default operating mode.",
-            options = {
-                    @Option(label = "Automatic", value = "Automatic"),
-                    @Option(label = "Cooling", value = "Cooling"),
-                    @Option(label = "Summer", value = "Summer"),
-                    @Option(label = "Always on (Dauerbetrieb)", value = "Always on (Dauerbetrieb)"),
-                    @Option(label = "Setback mode (Absenkung)", value = "Setback mode (Absenkung)"),
-                    @Option(label = "Holidays, full time setback (Urlaub)", value = "Holidays, full time setback (Urlaub)"),
-                    @Option(label = "No night setback (Party)", value = "No night setback (Party)"),
-            })
-    String defaultOperatingMode() default "Automatic";
+            + "either EnableSignal or the temperature set point, this is the default operating mode.")
+    OperatingMode defaultOperatingMode() default OperatingMode.AUTOMATIC;
 
     @AttributeDefinition(name = "Power control setting", description = "Enter the power control mode that results from "
             + "the heat pump configuration. Consumption (photovoltaic mode on) or compressor speed (photovoltaic mode off).")
@@ -96,8 +91,6 @@ import org.osgi.service.metatype.annotations.Option;
 
     @AttributeDefinition(name = "Print info to log", description = "Print status info to the log.")
     boolean printInfoToLog() default false;
-
-    boolean enabled() default true;
 
     String webconsole_configurationFactory_nameHint() default "Heat Pump Heliotherm Device [{id}]";
 

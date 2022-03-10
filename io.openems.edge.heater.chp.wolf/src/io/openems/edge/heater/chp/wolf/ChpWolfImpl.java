@@ -13,16 +13,19 @@ import io.openems.edge.bridge.modbus.api.task.FC16WriteRegistersTask;
 import io.openems.edge.bridge.modbus.api.task.FC3ReadRegistersTask;
 import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
+import io.openems.edge.common.configupdate.ConfigurationUpdate;
 import io.openems.edge.common.event.EdgeEventConstants;
 import io.openems.edge.common.taskmanager.Priority;
+import io.openems.edge.common.type.TypeUtils;
 import io.openems.edge.exceptionalstate.api.ExceptionalState;
 import io.openems.edge.exceptionalstate.api.ExceptionalStateHandler;
 import io.openems.edge.exceptionalstate.api.ExceptionalStateHandlerImpl;
 import io.openems.edge.heater.api.Chp;
-import io.openems.edge.heater.api.EnableSignalHandler;
 import io.openems.edge.heater.api.EnableSignalHandlerImpl;
 import io.openems.edge.heater.api.Heater;
 import io.openems.edge.heater.api.HeaterState;
+import io.openems.edge.heater.api.EnableSignalHandler;
+import io.openems.edge.heater.api.StartupCheckHandler;
 import io.openems.edge.heater.chp.wolf.api.ChpWolf;
 import io.openems.edge.heater.chp.wolf.api.OperatingMode;
 import io.openems.edge.timer.api.TimerHandler;
@@ -45,6 +48,9 @@ import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 
 
@@ -72,10 +78,10 @@ public class ChpWolfImpl extends AbstractOpenemsModbusComponent implements Opene
 		ExceptionalState, ChpWolf {
 
 	@Reference
-	protected ConfigurationAdmin cm;
+	protected ComponentManager cpm;
 
 	@Reference
-	protected ComponentManager cpm;
+	protected ConfigurationAdmin ca;
 
 	private final Logger log = LoggerFactory.getLogger(ChpWolfImpl.class);
 	private boolean printInfoToLog;
@@ -86,6 +92,9 @@ public class ChpWolfImpl extends AbstractOpenemsModbusComponent implements Opene
 	private boolean startupStateChecked = false;
 	private boolean readyForCommands = false;
 	private int chpMaxElectricPower;
+	private int electricPowerSetpoint;
+	private int exceptionalStateValue;
+	private boolean exceptionalStateActive;
 
 	private EnableSignalHandler enableSignalHandler;
 	private static final String ENABLE_SIGNAL_IDENTIFIER = "KW_ENERGY_SMARTBLOCK_ENABLE_SIGNAL_IDENTIFIER";
@@ -109,7 +118,7 @@ public class ChpWolfImpl extends AbstractOpenemsModbusComponent implements Opene
 
 	@Activate
 	void activate(ComponentContext context, Config config) throws OpenemsError.OpenemsNamedException, ConfigurationException {
-		super.activate(context, config.id(), config.alias(), config.enabled(), config.modbusUnitId(), this.cm,
+		super.activate(context, config.id(), config.alias(), config.enabled(), config.modbusUnitId(), this.ca,
 				"Modbus", config.modbus_id());
 		this.printInfoToLog = config.printInfoToLog();
 		this.chpMaxElectricPower = config.chpMaxElectricPower();
@@ -120,8 +129,34 @@ public class ChpWolfImpl extends AbstractOpenemsModbusComponent implements Opene
 
 		if (this.readOnly == false) {
 			this.startupStateChecked = false;
-			this.setOperatingMode(config.defaultOperatingMode());
-			this.setElectricPowerSetpoint(config.defaultSetPointElectricPower());
+			OperatingMode operatingMode = config.defaultOperatingMode();
+			Map<String, Object> keyValueMap = new HashMap<>();
+
+			// In case of invalid setting, default to ElectricPower mode and change value in config.
+			if (operatingMode == OperatingMode.UNDEFINED) {
+				keyValueMap.put("defaultOperatingMode", OperatingMode.ELECTRIC_POWER);
+			}
+
+			this.electricPowerSetpoint = config.defaultSetPointElectricPower();
+			if (this.electricPowerSetpoint > this.chpMaxElectricPower) {	// If value was out of range, put corrected value in config.
+				this.electricPowerSetpoint = this.chpMaxElectricPower;
+				keyValueMap.put("defaultSetPointElectricPower", this.electricPowerSetpoint);
+			}
+			if (this.electricPowerSetpoint < 0) {
+				this.electricPowerSetpoint = 0;
+				keyValueMap.put("defaultSetPointElectricPower", this.electricPowerSetpoint);
+			}
+
+			if (keyValueMap.isEmpty() == false) { // Updating config restarts the module.
+				try {
+					ConfigurationUpdate.updateConfig(ca, this.servicePid(), keyValueMap);
+				} catch (IOException e) {
+					this.log.warn("Couldn't save new settings to config. " + e.getMessage());
+				}
+			}
+
+			this._setOperatingMode(operatingMode);
+			this.getOperatingModeChannel().nextProcessImage();
 			this.initializeTimers(config);
 		}
 	}
@@ -209,13 +244,18 @@ public class ChpWolfImpl extends AbstractOpenemsModbusComponent implements Opene
 		if (this.isEnabled() == false) {
 			return;
 		}
-		if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE)) {
-			this.channelmapping();
-			if (this.printInfoToLog) {
-				this.printInfo();
-			}
-		} else if (this.readOnly == false && this.readyForCommands && event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS)) {
-			this.writeCommands();
+		switch (event.getTopic()) {
+			case EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE:
+				this.channelmapping();
+				if (this.printInfoToLog) {
+					this.printInfo();
+				}
+				break;
+			case EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS:
+				if (this.readOnly == false && this.readyForCommands) {
+					this.writeCommands();
+				}
+				break;
 		}
 	}
 
@@ -316,51 +356,66 @@ public class ChpWolfImpl extends AbstractOpenemsModbusComponent implements Opene
 
 	/**
 	 * Determine commands and send them to the heater.
+	 * The channel EFFECTIVE_ELECTRIC_POWER_SETPOINT is not directly mapped to modbus. Its nextWriteValue is collected
+	 * manually, so the value can be stored locally and manipulated before sending it to the heater. A duplicate ’private’
+	 * channel is then used for the modbus writes.
+	 * The benefit of this design is that when ExceptionalState is active and applies it's own heatingPowerPercentSetpoint,
+	 * the previous set point is saved. Also, it is still possible to write to the channel during ExceptionalState, to
+	 * change the value that will be used after exceptional state ends.
 	 */
 	protected void writeCommands() {
 
-		// Handle EnableSignal.
-		boolean turnOnChp = this.enableSignalHandler.deviceShouldBeHeating(this);
+		// Update channel.
+		Optional<Double> electricPowerOptional = this.getElectricPowerSetpointChannel().getNextWriteValueAndReset();
+		electricPowerOptional.ifPresent(value ->
+				this.electricPowerSetpoint = TypeUtils.fitWithin(0, this.chpMaxElectricPower, (int) Math.round(value)));
 
-		/* At startup, check if chp is already running. If yes, keep it running by sending 'EnableSignal = true' to
-           yourself once. This gives controllers until the EnableSignal timer runs out to decide the state of the chp.
-           This avoids a chp restart if the controllers want the chp to stay on. -> Longer chp lifetime.
-           Without this function, the chp will always switch off at startup because EnableSignal starts as ’false’. */
-		if (this.startupStateChecked == false) {
-			this.startupStateChecked = true;
-			turnOnChp = (HeaterState.valueOf(this.getHeaterState().orElse(-1)) == HeaterState.RUNNING);
-			if (turnOnChp) {
-				try {
-					this.getEnableSignalChannel().setNextWriteValue(true);
-				} catch (OpenemsError.OpenemsNamedException e) {
-					this.log.warn("Couldn't write in Channel " + e.getMessage());
-				}
-			}
-		}
 
-		// Handle ExceptionalState. ExceptionalState overwrites EnableSignal.
-		int exceptionalStateValue = 0;
-		boolean exceptionalStateActive = false;
-		if (this.useExceptionalState) {
-			exceptionalStateActive = this.exceptionalStateHandler.exceptionalStateActive(this);
-			if (exceptionalStateActive) {
-				exceptionalStateValue = this.getExceptionalStateValue();
-				if (exceptionalStateValue <= this.DEFAULT_MIN_EXCEPTIONAL_VALUE) {
-					turnOnChp = false;
-				} else {
-					// When ExceptionalStateValue is between 0 and 100, set Chp to this PowerPercentage.
-					turnOnChp = true;
-					exceptionalStateValue = Math.min(exceptionalStateValue, this.DEFAULT_MAX_EXCEPTIONAL_VALUE);
-					int electricPowerSetpoint = (int)Math.round(this.chpMaxElectricPower * exceptionalStateValue / 100.0);
+		// Collect operating mode channel ’nextWrite’.
+		Optional<Integer> operatingModeOptional = this.getOperatingModeChannel().getNextWriteValueAndReset();
+		if (operatingModeOptional.isPresent()) {
+			int enumAsInt = operatingModeOptional.get();
+			// Restrict to valid write values.
+			if (enumAsInt >= 0 && enumAsInt <= 2) {
+				OperatingMode operatingMode = OperatingMode.valueOf(enumAsInt);
+
+				/* Check if value is different. If yes do config update, so mode does not change back on restart. Doing
+				   a config update restarts the module, the new operating mode is then applied in activate(). */
+				if (getOperatingMode().asEnum() != operatingMode) {
 					try {
-						this.setElectricPowerSetpoint(electricPowerSetpoint);
-					} catch (OpenemsNamedException e) {
-						this.log.warn("Couldn't write in Channel " + e.getMessage());
+						ConfigurationUpdate.updateConfig(ca, this.servicePid(), "defaultOperatingMode", operatingMode);
+					} catch (IOException e) {
+						this.log.warn("Couldn't save new operating mode setting to config. " + e.getMessage());
 					}
 				}
 			}
 		}
 
+		// Handle EnableSignal.
+		boolean turnOnChp = this.enableSignalHandler.deviceShouldBeHeating(this);
+
+		// Handle ExceptionalState. ExceptionalState overwrites EnableSignal.
+		this.exceptionalStateValue = 0;
+		this.exceptionalStateActive = false;
+		if (this.useExceptionalState) {
+			this.exceptionalStateActive = this.exceptionalStateHandler.exceptionalStateActive(this);
+			if (this.exceptionalStateActive) {
+				this.exceptionalStateValue = this.getExceptionalStateValue();
+				if (this.exceptionalStateValue <= this.DEFAULT_MIN_EXCEPTIONAL_VALUE) {
+					turnOnChp = false;
+				} else {
+					turnOnChp = true;
+					this.exceptionalStateValue = Math.min(this.exceptionalStateValue, this.DEFAULT_MAX_EXCEPTIONAL_VALUE);
+				}
+			}
+		}
+
+		// Check heater state at startup. Avoid turning off heater just because EnableSignal initial value is ’false’.
+		if (this.startupStateChecked == false) {
+			this.startupStateChecked = true;
+			turnOnChp = StartupCheckHandler.deviceAlreadyHeating(this, this.log);
+		}
+		
 		/*
 		Write bits mapping.
 		This chp has an unusual way of handling write commands. Instead of mapping one command to one
@@ -378,19 +433,19 @@ public class ChpWolfImpl extends AbstractOpenemsModbusComponent implements Opene
 		final int setFeedInManagement = 36;
 		final int setReserve = 37;
 		final int setOnOff = 38;
+
+		int bits2value = 0;
+		int bits3value = 0;
+		boolean setValues = false;
 		this.commandCycler++;
 		if (this.commandCycler == 1) {
 			int onOffValue = 0;
 			if (turnOnChp) {
 				onOffValue = 1;
 			}
-			try {
-				setWriteBits1(2);
-				setWriteBits2(onOffValue);
-				setWriteBits3(setOnOff);
-			} catch (OpenemsNamedException e) {
-				this.logError(this.log, "Error setting next write value: " + e);
-			}
+			bits2value = onOffValue;
+			bits3value = setOnOff;
+			setValues = true;
 		} else {
 			this.commandCycler = 0;
 			if (this.getOperatingMode().isDefined()) {
@@ -404,68 +459,48 @@ public class ChpWolfImpl extends AbstractOpenemsModbusComponent implements Opene
 						// Update channel.
 						Optional<Integer> feedInOptional = this.getFeedInSetpointChannel().getNextWriteValueAndReset();
 						if (feedInOptional.isPresent()) {
-							int feedInSetpoint = feedInOptional.get();
-							this.getFeedInSetpointChannel().setNextValue(feedInSetpoint);
+							this._setFeedInSetpoint(feedInOptional.get());
 							this.getFeedInSetpointChannel().nextProcessImage();
 						}
-						// Write set point.
 						if (getFeedInSetpoint().isDefined()) {
-							int feedInSetpoint = getFeedInSetpoint().get();
-							try {
-								setWriteBits1(2);
-								setWriteBits2(feedInSetpoint);
-								setWriteBits3(setFeedInManagement);
-							} catch (OpenemsNamedException e) {
-								this.logError(this.log, "Error setting next write value: " + e);
-							}
+							bits2value = getFeedInSetpoint().get();
+							bits3value = setFeedInManagement;
+							setValues = true;
 						}
 						break;
 					case RESERVE:
 						// Update channel.
 						Optional<Integer> reserveOptional = this.getReserveSetpointChannel().getNextWriteValueAndReset();
 						if (reserveOptional.isPresent()) {
-							int reserveSetpoint = reserveOptional.get();
-							this.getReserveSetpointChannel().setNextValue(reserveSetpoint);
+							this._setReserveSetpoint(reserveOptional.get());
 							this.getReserveSetpointChannel().nextProcessImage();
 						}
-						// Write set point.
 						if (getReserveSetpoint().isDefined()) {
-							int reserveSetpoint = getReserveSetpoint().get();
-							try {
-								setWriteBits1(2);
-								setWriteBits2(reserveSetpoint);
-								setWriteBits3(setReserve);
-							} catch (OpenemsNamedException e) {
-								this.logError(this.log, "Error setting next write value: " + e);
-							}
+							bits2value = getReserveSetpoint().get();
+							bits3value = setReserve;
+							setValues = true;
 						}
 						break;
 					case ELECTRIC_POWER:
 					default:
-						// Update channel.
-						Optional<Double> electricPowerOptional = this.getElectricPowerSetpointChannel().getNextWriteValueAndReset();
-						if (electricPowerOptional.isPresent()) {
-							int electricPowerSetpoint = (int)Math.round(electricPowerOptional.get());
-							this._setElectricPowerSetpoint(electricPowerSetpoint);
-							this.getElectricPowerSetpointChannel().nextProcessImage();
+						int electricPowerSetpointWrite = this.electricPowerSetpoint;
+						if (exceptionalStateActive) {
+							electricPowerSetpointWrite = (int) Math.round(this.chpMaxElectricPower * exceptionalStateValue / 100.0);
 						}
-						// Write set point.
-						if (getElectricPowerSetpoint().isDefined() || exceptionalStateActive) {
-							int electricPowerSetpoint;
-							if (exceptionalStateActive) {
-								electricPowerSetpoint = (int)Math.round(this.chpMaxElectricPower * exceptionalStateValue / 100.0);
-							} else {
-								electricPowerSetpoint = (int)Math.round(getElectricPowerSetpoint().get());
-							}
-							try {
-								setWriteBits1(2);
-								setWriteBits2(electricPowerSetpoint);
-								setWriteBits3(setElectricPower);
-							} catch (OpenemsNamedException e) {
-								this.logError(this.log, "Error setting next write value: " + e);
-							}
-						}
+						this._setElectricPowerSetpoint(electricPowerSetpointWrite);
+						bits2value = electricPowerSetpointWrite;
+						bits3value = setElectricPower;
+						setValues = true;
 				}
+			}
+		}
+		if (setValues) {
+			try {
+				setWriteBits1(2);
+				setWriteBits2(bits2value);
+				setWriteBits3(bits3value);
+			} catch (OpenemsNamedException e) {
+				this.logError(this.log, "Error setting next write value: " + e);
 			}
 		}
 	}
@@ -482,16 +517,17 @@ public class ChpWolfImpl extends AbstractOpenemsModbusComponent implements Opene
 		this.logInfo(this.log, "Buffer tank temp middle: " + this.getBufferTankTempMiddle());
 		this.logInfo(this.log, "Buffer tank temp bottom: " + this.getBufferTankTempBottom());
 		this.logInfo(this.log, "Electric power: " + this.getEffectiveElectricPower());
+		this.logInfo(this.log, "Set point electric power: " + this.getElectricPowerSetpoint());
 		this.logInfo(this.log, "Engine rpm: " + this.getRpm());
 		this.logInfo(this.log, "Runtime: " + this.getRuntime());
 		this.logInfo(this.log, "Engine starts: " + this.getEngineStarts());
 		this.logInfo(this.log, "Produced electric work total: " + this.getElectricalWork());
+		this.logInfo(this.log, "Heater state: " + this.getHeaterState());
+		if (this.useExceptionalState) {
+			this.logInfo(this.log, "Exceptional state: " + this.exceptionalStateActive + ", value: " + this.exceptionalStateValue);
+		}
 		this.logInfo(this.log, "Warning message: " + this.getWarningMessage().get());
 		this.logInfo(this.log, "Error message: " + this.getErrorMessage().get());
-		this.logInfo(this.log, "");
-		this.logInfo(this.log, "--Writable values--");
-		this.logInfo(this.log, "EnableSignal: " + this.getEnableSignal());
-		this.logInfo(this.log, "Set point electric power: " + this.getElectricPowerSetpoint());
 		this.logInfo(this.log, "");
 	}
 

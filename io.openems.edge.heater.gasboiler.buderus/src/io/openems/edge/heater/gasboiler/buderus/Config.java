@@ -10,16 +10,19 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 )
 @interface Config {
 
-    @AttributeDefinition(name = "Heater-Device ID", description = "Unique Id of the heater.")
+    @AttributeDefinition(name = "Component-ID", description = "Unique ID of this Component")
     String id() default "Heater0";
 
-    @AttributeDefinition(name = "ModBus-Bridge Id", description = "The Unique Id of the modBus-Bridge you what to allocate to this device.")
-    String modbusBridgeId() default "modbus0";
-
-    @AttributeDefinition(name = "alias", description = "Human readable name of heater.")
+    @AttributeDefinition(name = "Alias", description = "Human-readable name of this Component; defaults to Component-ID")
     String alias() default "";
 
-    @AttributeDefinition(name = "ModBus-Unit Id", description = "Integer Unit Id of the Component.")
+    @AttributeDefinition(name = "Is enabled?", description = "Is this Component enabled?")
+    boolean enabled() default true;
+
+    @AttributeDefinition(name = "Modbus-Bridge Id", description = "The Unique Id of the Modbus-Bridge you want to allocate to this device.")
+    String modbusBridgeId() default "modbus0";
+
+    @AttributeDefinition(name = "Modbus Unit-ID", description = "The Unit-ID of the Modbus device.")
     int modbusUnitId() default 1;
 
     @AttributeDefinition(name = "Default control mode", description = "Control mode set at startup. Heater will stay in "
@@ -60,8 +63,6 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
     @AttributeDefinition(name = "Print info to log", description = "Print status info to the log.")
     boolean printInfoToLog() default false;
-
-    boolean enabled() default true;
 
     String webconsole_configurationFactory_nameHint() default "Heater Gas Boiler Buderus [{id}]";
 

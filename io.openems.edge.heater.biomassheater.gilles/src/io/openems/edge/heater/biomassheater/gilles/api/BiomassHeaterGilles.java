@@ -13,9 +13,9 @@ import io.openems.edge.common.channel.value.Value;
 import io.openems.edge.heater.api.Heater;
 
 /**
- * Channels for the Gilles wood chips heater.
+ * Channels for the Gilles biomass heater.
  */
-public interface MassHeaterWoodChips extends Heater {
+public interface BiomassHeaterGilles extends Heater {
 
     enum ChannelId implements io.openems.edge.common.channel.ChannelId {
 

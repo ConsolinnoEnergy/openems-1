@@ -16,8 +16,10 @@ import io.openems.edge.bridge.modbus.api.task.FC4ReadInputRegistersTask;
 import io.openems.edge.bridge.modbus.api.task.FC5WriteCoilTask;
 import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
+import io.openems.edge.common.configupdate.ConfigurationUpdate;
 import io.openems.edge.common.event.EdgeEventConstants;
 import io.openems.edge.common.taskmanager.Priority;
+import io.openems.edge.common.type.TypeUtils;
 import io.openems.edge.exceptionalstate.api.ExceptionalState;
 import io.openems.edge.exceptionalstate.api.ExceptionalStateHandler;
 import io.openems.edge.exceptionalstate.api.ExceptionalStateHandlerImpl;
@@ -25,7 +27,8 @@ import io.openems.edge.heater.api.EnableSignalHandler;
 import io.openems.edge.heater.api.EnableSignalHandlerImpl;
 import io.openems.edge.heater.api.Heater;
 import io.openems.edge.heater.api.HeaterState;
-import io.openems.edge.heater.biomassheater.gilles.api.MassHeaterWoodChips;
+import io.openems.edge.heater.api.StartupCheckHandler;
+import io.openems.edge.heater.biomassheater.gilles.api.BiomassHeaterGilles;
 import io.openems.edge.timer.api.TimerHandler;
 import io.openems.edge.timer.api.TimerHandlerImpl;
 import org.osgi.service.cm.ConfigurationAdmin;
@@ -46,6 +49,7 @@ import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.util.Optional;
 
 // Todo: Den Kommentar irgendwo anders speichern.
@@ -64,7 +68,7 @@ import java.util.Optional;
 // Wolfgang Mampel, Tel. +43 664 8573374
 
 /**
- * This module reads the most important variables available via Modbus from a Gilles (Hargassner) wood chip heater and
+ * This module reads the most important variables available via Modbus from a Gilles (now Hargassner) biomass heater and
  * maps them to OpenEMS channels. The module is written to be used with the Heater interface methods (EnableSignal) and
  * ExceptionalState.
  * When setEnableSignal() from the Heater interface is set to true with no other parameters like temperature specified,
@@ -78,26 +82,34 @@ import java.util.Optional;
  * and also automatically regulate the heating power.
  */
 @Designate(ocd = Config.class, factory = true)
-@Component(name = "Heater.Gilles.WoodChip",
+@Component(
+        name = "Heater.Biomass.Gilles",
         immediate = true,
         configurationPolicy = ConfigurationPolicy.REQUIRE,
-        property = {EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE,
-                EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS})
+        property = { //
+                EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE, //
+                EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS //
+        })
+public class BiomassHeaterGillesImpl extends AbstractOpenemsModbusComponent implements OpenemsComponent, EventHandler,
+        ExceptionalState, BiomassHeaterGilles {
 
-public class MassHeaterWoodChipsWoodChipsImpl extends AbstractOpenemsModbusComponent implements OpenemsComponent, EventHandler,
-        ExceptionalState, MassHeaterWoodChips {
-
-    private final Logger log = LoggerFactory.getLogger(MassHeaterWoodChipsWoodChipsImpl.class);
-
-    @Reference
-    protected ConfigurationAdmin cm;
+    private final Logger log = LoggerFactory.getLogger(BiomassHeaterGillesImpl.class);
 
     @Reference
     protected ComponentManager cpm;
 
+    @Reference
+    protected ConfigurationAdmin ca;
+
     private boolean printInfoToLog;
     private boolean readOnly;
+    private boolean startupStateChecked = false;
+    private int defaultSetPointPowerPercent;
     private double powerPercentSetpoint = 0.d;
+    private boolean checkLimitsOfConfigEntries;
+    private boolean checkLimitsAndUpdateChannel = false;
+    private int exceptionalStateValue = 0;
+    private boolean exceptionalStateActive;
 
     private EnableSignalHandler enableSignalHandler;
     private static final String ENABLE_SIGNAL_IDENTIFIER = "GILLES_WOODCHIPS_HEATER_ENABLE_SIGNAL_IDENTIFIER";
@@ -111,28 +123,30 @@ public class MassHeaterWoodChipsWoodChipsImpl extends AbstractOpenemsModbusCompo
         super.setModbus(modbus);
     }
 
-    public MassHeaterWoodChipsWoodChipsImpl() {
+    public BiomassHeaterGillesImpl() {
         super(OpenemsComponent.ChannelId.values(),
-                MassHeaterWoodChips.ChannelId.values(),
+                BiomassHeaterGilles.ChannelId.values(),
                 Heater.ChannelId.values(),
                 ExceptionalState.ChannelId.values());
     }
 
     @Activate
     void activate(ComponentContext context, Config config) throws OpenemsError.OpenemsNamedException, ConfigurationException {
+        super.activate(context, config.id(), config.alias(), config.enabled(), config.modBusUnitId(), this.ca, "Modbus", config.modBusBridgeId());
         this.readOnly = config.readOnly();
         this.printInfoToLog = config.printInfoToLog();
-        this.onlyOnOff = config.onlyEnableBioMassHeater();
-        super.activate(context, config.id(), config.alias(), config.enabled(), config.modBusUnitId(), this.cm, "Modbus", config.modBusBridgeId());
 
         if (this.isEnabled() == false) {
             this._setHeaterState(HeaterState.OFF.getValue());
-        } else {
-            this._setHeaterState(HeaterState.STANDBY.getValue());
         }
 
         if (this.readOnly == false) {
+            this.onlyOnOff = config.onlyOnOff();
+            this.startupStateChecked = false;
+            this.defaultSetPointPowerPercent = config.defaultSetPointPowerPercent();
+            this.checkLimitsOfConfigEntries = true;
             this.powerPercentSetpoint = config.defaultSetPointPowerPercent();
+            this.checkLimitsAndUpdateChannel = true;
             this.initializeTimers(config);
         }
     }
@@ -159,32 +173,32 @@ public class MassHeaterWoodChipsWoodChipsImpl extends AbstractOpenemsModbusCompo
         ModbusProtocol protocol = new ModbusProtocol(this,
 
                 new FC2ReadInputsTask(10000, Priority.HIGH,
-                        m(MassHeaterWoodChips.ChannelId.DI_10000_ERROR, new CoilElement(10000)),
-                        m(MassHeaterWoodChips.ChannelId.DI_10001_WARNING, new CoilElement(10001)),
-                        m(MassHeaterWoodChips.ChannelId.DI_10002_CLEANING, new CoilElement(10002)),
-                        m(MassHeaterWoodChips.ChannelId.DI_10003_FUME_EXTRACTOR, new CoilElement(10003)),
-                        m(MassHeaterWoodChips.ChannelId.DI_10004_AIR_BLOWER, new CoilElement(10004)),
-                        m(MassHeaterWoodChips.ChannelId.DI_10005_PRIMARY_AIR_BLOWER, new CoilElement(10005)),
-                        m(MassHeaterWoodChips.ChannelId.DI_10006_SECONDARY_AIR_BLOWER, new CoilElement(10006)),
-                        m(MassHeaterWoodChips.ChannelId.DI_10007_STOKER, new CoilElement(10007)),
-                        m(MassHeaterWoodChips.ChannelId.DI_10008_ROTARY_VALVE, new CoilElement(10008)),
-                        m(MassHeaterWoodChips.ChannelId.DI_10009_DOSI, new CoilElement(10009)),
-                        m(MassHeaterWoodChips.ChannelId.DI_10010_SCREW_CONVEYOR_1, new CoilElement(10010)),
-                        m(MassHeaterWoodChips.ChannelId.DI_10011_SCREW_CONVEYOR_2, new CoilElement(10011)),
-                        m(MassHeaterWoodChips.ChannelId.DI_10012_SCREW_CONVEYOR_3, new CoilElement(10012)),
-                        m(MassHeaterWoodChips.ChannelId.DI_10013_CROSS_CONVEYOR, new CoilElement(10013)),
-                        m(MassHeaterWoodChips.ChannelId.DI_10014_MOVING_FLOOR_1, new CoilElement(10014)),
-                        m(MassHeaterWoodChips.ChannelId.DI_10015_MOVING_FLOOR_2, new CoilElement(10015)),
-                        m(MassHeaterWoodChips.ChannelId.DI_10016_IGNITION, new CoilElement(10016)),
-                        m(MassHeaterWoodChips.ChannelId.DI_10017_LS_1, new CoilElement(10017)),
-                        m(MassHeaterWoodChips.ChannelId.DI_10018_LS_2, new CoilElement(10018)),
-                        m(MassHeaterWoodChips.ChannelId.DI_10019_LS_3, new CoilElement(10019)),
-                        m(MassHeaterWoodChips.ChannelId.DI_10020_LS_LATERAL, new CoilElement(10020)),
-                        m(MassHeaterWoodChips.ChannelId.DI_10021_LS_MOVING_FLOOR, new CoilElement(10021)),
-                        m(MassHeaterWoodChips.ChannelId.DI_10022_ASH_SCREW_CONVEYOR_1, new CoilElement(10022)),
-                        m(MassHeaterWoodChips.ChannelId.DI_10023_ASH_SCREW_CONVEYOR_2, new CoilElement(10023)),
-                        m(MassHeaterWoodChips.ChannelId.DI_10024_SIGNAL_CONTACT_1, new CoilElement(10024)),
-                        m(MassHeaterWoodChips.ChannelId.DI_10025_SIGNAL_CONTACT_2, new CoilElement(10025))
+                        m(BiomassHeaterGilles.ChannelId.DI_10000_ERROR, new CoilElement(10000)),
+                        m(BiomassHeaterGilles.ChannelId.DI_10001_WARNING, new CoilElement(10001)),
+                        m(BiomassHeaterGilles.ChannelId.DI_10002_CLEANING, new CoilElement(10002)),
+                        m(BiomassHeaterGilles.ChannelId.DI_10003_FUME_EXTRACTOR, new CoilElement(10003)),
+                        m(BiomassHeaterGilles.ChannelId.DI_10004_AIR_BLOWER, new CoilElement(10004)),
+                        m(BiomassHeaterGilles.ChannelId.DI_10005_PRIMARY_AIR_BLOWER, new CoilElement(10005)),
+                        m(BiomassHeaterGilles.ChannelId.DI_10006_SECONDARY_AIR_BLOWER, new CoilElement(10006)),
+                        m(BiomassHeaterGilles.ChannelId.DI_10007_STOKER, new CoilElement(10007)),
+                        m(BiomassHeaterGilles.ChannelId.DI_10008_ROTARY_VALVE, new CoilElement(10008)),
+                        m(BiomassHeaterGilles.ChannelId.DI_10009_DOSI, new CoilElement(10009)),
+                        m(BiomassHeaterGilles.ChannelId.DI_10010_SCREW_CONVEYOR_1, new CoilElement(10010)),
+                        m(BiomassHeaterGilles.ChannelId.DI_10011_SCREW_CONVEYOR_2, new CoilElement(10011)),
+                        m(BiomassHeaterGilles.ChannelId.DI_10012_SCREW_CONVEYOR_3, new CoilElement(10012)),
+                        m(BiomassHeaterGilles.ChannelId.DI_10013_CROSS_CONVEYOR, new CoilElement(10013)),
+                        m(BiomassHeaterGilles.ChannelId.DI_10014_MOVING_FLOOR_1, new CoilElement(10014)),
+                        m(BiomassHeaterGilles.ChannelId.DI_10015_MOVING_FLOOR_2, new CoilElement(10015)),
+                        m(BiomassHeaterGilles.ChannelId.DI_10016_IGNITION, new CoilElement(10016)),
+                        m(BiomassHeaterGilles.ChannelId.DI_10017_LS_1, new CoilElement(10017)),
+                        m(BiomassHeaterGilles.ChannelId.DI_10018_LS_2, new CoilElement(10018)),
+                        m(BiomassHeaterGilles.ChannelId.DI_10019_LS_3, new CoilElement(10019)),
+                        m(BiomassHeaterGilles.ChannelId.DI_10020_LS_LATERAL, new CoilElement(10020)),
+                        m(BiomassHeaterGilles.ChannelId.DI_10021_LS_MOVING_FLOOR, new CoilElement(10021)),
+                        m(BiomassHeaterGilles.ChannelId.DI_10022_ASH_SCREW_CONVEYOR_1, new CoilElement(10022)),
+                        m(BiomassHeaterGilles.ChannelId.DI_10023_ASH_SCREW_CONVEYOR_2, new CoilElement(10023)),
+                        m(BiomassHeaterGilles.ChannelId.DI_10024_SIGNAL_CONTACT_1, new CoilElement(10024)),
+                        m(BiomassHeaterGilles.ChannelId.DI_10025_SIGNAL_CONTACT_2, new CoilElement(10025))
 
                 ),
                 new FC4ReadInputRegistersTask(20000, Priority.HIGH,
@@ -192,97 +206,97 @@ public class MassHeaterWoodChipsWoodChipsImpl extends AbstractOpenemsModbusCompo
                                 ElementToChannelConverter.DIRECT_1_TO_1),
                         m(Heater.ChannelId.RETURN_TEMPERATURE, new UnsignedWordElement(20001),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
-                        m(MassHeaterWoodChips.ChannelId.IR_20002_EXHAUST_TEMPERATURE, new UnsignedWordElement(20002),
+                        m(BiomassHeaterGilles.ChannelId.IR_20002_EXHAUST_TEMPERATURE, new UnsignedWordElement(20002),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
-                        m(MassHeaterWoodChips.ChannelId.IR_20003_FURNACE_TEMPERATURE, new UnsignedWordElement(20003),
+                        m(BiomassHeaterGilles.ChannelId.IR_20003_FURNACE_TEMPERATURE, new UnsignedWordElement(20003),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
                         m(Heater.ChannelId.EFFECTIVE_HEATING_POWER_PERCENT, new UnsignedWordElement(20004),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
-                        m(MassHeaterWoodChips.ChannelId.IR_20005_OXYGEN_PERCENT, new UnsignedWordElement(20005),
+                        m(BiomassHeaterGilles.ChannelId.IR_20005_OXYGEN_PERCENT, new UnsignedWordElement(20005),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
-                        m(MassHeaterWoodChips.ChannelId.IR_20006_NEGATIVE_PRESSURE, new UnsignedWordElement(20006),
+                        m(BiomassHeaterGilles.ChannelId.IR_20006_NEGATIVE_PRESSURE, new UnsignedWordElement(20006),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
                         m(Heater.ChannelId.EFFECTIVE_HEATING_POWER, new UnsignedWordElement(20007),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
-                        m(MassHeaterWoodChips.ChannelId.IR_20008_HEATING_AMOUNT_TOTAL, new UnsignedWordElement(20008),
+                        m(BiomassHeaterGilles.ChannelId.IR_20008_HEATING_AMOUNT_TOTAL, new UnsignedWordElement(20008),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
-                        m(MassHeaterWoodChips.ChannelId.IR_20009_PERCOLATION, new UnsignedWordElement(20009),
+                        m(BiomassHeaterGilles.ChannelId.IR_20009_PERCOLATION, new UnsignedWordElement(20009),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
-                        m(MassHeaterWoodChips.ChannelId.IR_20010_RETURN_TEMPERATURE_HEAT_NETWORK, new UnsignedWordElement(20010),
+                        m(BiomassHeaterGilles.ChannelId.IR_20010_RETURN_TEMPERATURE_HEAT_NETWORK, new UnsignedWordElement(20010),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
-                        m(MassHeaterWoodChips.ChannelId.IR_20011_STORAGE_TANK_TEMPERATURE_SENSOR_1, new UnsignedWordElement(20011),
+                        m(BiomassHeaterGilles.ChannelId.IR_20011_STORAGE_TANK_TEMPERATURE_SENSOR_1, new UnsignedWordElement(20011),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
-                        m(MassHeaterWoodChips.ChannelId.IR_20012_STORAGE_TANK_TEMPERATURE_SENSOR_2, new UnsignedWordElement(20012),
+                        m(BiomassHeaterGilles.ChannelId.IR_20012_STORAGE_TANK_TEMPERATURE_SENSOR_2, new UnsignedWordElement(20012),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
-                        m(MassHeaterWoodChips.ChannelId.IR_20013_STORAGE_TANK_TEMPERATURE_SENSOR_3, new UnsignedWordElement(20013),
+                        m(BiomassHeaterGilles.ChannelId.IR_20013_STORAGE_TANK_TEMPERATURE_SENSOR_3, new UnsignedWordElement(20013),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
-                        m(MassHeaterWoodChips.ChannelId.IR_20014_STORAGE_TANK_TEMPERATURE_SENSOR_4, new UnsignedWordElement(20014),
+                        m(BiomassHeaterGilles.ChannelId.IR_20014_STORAGE_TANK_TEMPERATURE_SENSOR_4, new UnsignedWordElement(20014),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
-                        m(MassHeaterWoodChips.ChannelId.IR_20015_STORAGE_TANK_TEMPERATURE_SENSOR_5, new UnsignedWordElement(20015),
+                        m(BiomassHeaterGilles.ChannelId.IR_20015_STORAGE_TANK_TEMPERATURE_SENSOR_5, new UnsignedWordElement(20015),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
-                        m(MassHeaterWoodChips.ChannelId.IR_20016_STORAGE_TANK_TEMPERATURE_SENSOR_6, new UnsignedWordElement(20016),
+                        m(BiomassHeaterGilles.ChannelId.IR_20016_STORAGE_TANK_TEMPERATURE_SENSOR_6, new UnsignedWordElement(20016),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
-                        m(MassHeaterWoodChips.ChannelId.IR_20017_STORAGE_TANK_TEMPERATURE_SENSOR_7, new UnsignedWordElement(20017),
+                        m(BiomassHeaterGilles.ChannelId.IR_20017_STORAGE_TANK_TEMPERATURE_SENSOR_7, new UnsignedWordElement(20017),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
-                        m(MassHeaterWoodChips.ChannelId.IR_20018_STORAGE_TANK_TEMPERATURE_SENSOR_8, new UnsignedWordElement(20018),
+                        m(BiomassHeaterGilles.ChannelId.IR_20018_STORAGE_TANK_TEMPERATURE_SENSOR_8, new UnsignedWordElement(20018),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
-                        m(MassHeaterWoodChips.ChannelId.IR_20019_STORAGE_TANK_TEMPERATURE_SENSOR_9, new UnsignedWordElement(20019),
+                        m(BiomassHeaterGilles.ChannelId.IR_20019_STORAGE_TANK_TEMPERATURE_SENSOR_9, new UnsignedWordElement(20019),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
-                        m(MassHeaterWoodChips.ChannelId.IR_20020_STORAGE_TANK_TEMPERATURE_SENSOR_10, new UnsignedWordElement(20020),
+                        m(BiomassHeaterGilles.ChannelId.IR_20020_STORAGE_TANK_TEMPERATURE_SENSOR_10, new UnsignedWordElement(20020),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
-                        m(MassHeaterWoodChips.ChannelId.IR_20021_STORAGE_TANK_TEMPERATURE_SENSOR_11, new UnsignedWordElement(20021),
+                        m(BiomassHeaterGilles.ChannelId.IR_20021_STORAGE_TANK_TEMPERATURE_SENSOR_11, new UnsignedWordElement(20021),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
-                        m(MassHeaterWoodChips.ChannelId.IR_20022_STORAGE_TANK_TEMPERATURE_SENSOR_12, new UnsignedWordElement(20022),
+                        m(BiomassHeaterGilles.ChannelId.IR_20022_STORAGE_TANK_TEMPERATURE_SENSOR_12, new UnsignedWordElement(20022),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
-                        m(MassHeaterWoodChips.ChannelId.IR_20023_STORAGE_TANK_TEMPERATURE_SENSOR_13, new UnsignedWordElement(20023),
+                        m(BiomassHeaterGilles.ChannelId.IR_20023_STORAGE_TANK_TEMPERATURE_SENSOR_13, new UnsignedWordElement(20023),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
-                        m(MassHeaterWoodChips.ChannelId.IR_20024_STORAGE_TANK_TEMPERATURE_SENSOR_14, new UnsignedWordElement(20024),
+                        m(BiomassHeaterGilles.ChannelId.IR_20024_STORAGE_TANK_TEMPERATURE_SENSOR_14, new UnsignedWordElement(20024),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
-                        m(MassHeaterWoodChips.ChannelId.IR_20025_STORAGE_TANK_TEMPERATURE_SENSOR_15, new UnsignedWordElement(20025),
+                        m(BiomassHeaterGilles.ChannelId.IR_20025_STORAGE_TANK_TEMPERATURE_SENSOR_15, new UnsignedWordElement(20025),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
-                        m(MassHeaterWoodChips.ChannelId.IR_20026_STORAGE_TANK_TEMPERATURE_SENSOR_16, new UnsignedWordElement(20026),
+                        m(BiomassHeaterGilles.ChannelId.IR_20026_STORAGE_TANK_TEMPERATURE_SENSOR_16, new UnsignedWordElement(20026),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
-                        m(MassHeaterWoodChips.ChannelId.IR_20027_BOILER_TEMPERATURE_SET_POINT_READ, new UnsignedWordElement(20027),
+                        m(BiomassHeaterGilles.ChannelId.IR_20027_BOILER_TEMPERATURE_SET_POINT_READ, new UnsignedWordElement(20027),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
-                        m(MassHeaterWoodChips.ChannelId.IR_20028_MINIMUM_FLOW_TEMPERATURE_SET_POINT_READ, new UnsignedWordElement(20028),
+                        m(BiomassHeaterGilles.ChannelId.IR_20028_MINIMUM_FLOW_TEMPERATURE_SET_POINT_READ, new UnsignedWordElement(20028),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
-                        m(MassHeaterWoodChips.ChannelId.IR_20029_SLIDE_IN_PERCENTAGE_VALUE_SET_POINT_READ, new UnsignedWordElement(20029),
+                        m(BiomassHeaterGilles.ChannelId.IR_20029_SLIDE_IN_PERCENTAGE_VALUE_SET_POINT_READ, new UnsignedWordElement(20029),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
-                        m(MassHeaterWoodChips.ChannelId.HR_24579_EXHAUST_TEMPERATURE_MIN_SET_POINT, new UnsignedWordElement(20030),
+                        m(BiomassHeaterGilles.ChannelId.HR_24579_EXHAUST_TEMPERATURE_MIN_SET_POINT, new UnsignedWordElement(20030),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
-                        m(MassHeaterWoodChips.ChannelId.HR_24580_EXHAUST_TEMPERATURE_MAX_SET_POINT, new UnsignedWordElement(20031),
+                        m(BiomassHeaterGilles.ChannelId.HR_24580_EXHAUST_TEMPERATURE_MAX_SET_POINT, new UnsignedWordElement(20031),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
-                        m(MassHeaterWoodChips.ChannelId.IR_20032_OXYGEN_PERCENT_MIN_SET_POINT_READ, new UnsignedWordElement(20032),
+                        m(BiomassHeaterGilles.ChannelId.IR_20032_OXYGEN_PERCENT_MIN_SET_POINT_READ, new UnsignedWordElement(20032),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
-                        m(MassHeaterWoodChips.ChannelId.IR_20033_OXYGEN_PERCENT_MAX_SET_POINT_READ, new UnsignedWordElement(20033),
+                        m(BiomassHeaterGilles.ChannelId.IR_20033_OXYGEN_PERCENT_MAX_SET_POINT_READ, new UnsignedWordElement(20033),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
-                        m(MassHeaterWoodChips.ChannelId.IR_20034_SLIDE_IN_MIN_SET_POINT_READ, new UnsignedWordElement(20034),
+                        m(BiomassHeaterGilles.ChannelId.IR_20034_SLIDE_IN_MIN_SET_POINT_READ, new UnsignedWordElement(20034),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
-                        m(MassHeaterWoodChips.ChannelId.IR_20035_SLIDE_IN_MAX_SET_POINT_READ, new UnsignedWordElement(20035),
+                        m(BiomassHeaterGilles.ChannelId.IR_20035_SLIDE_IN_MAX_SET_POINT_READ, new UnsignedWordElement(20035),
                                 ElementToChannelConverter.DIRECT_1_TO_1)
                 ),
                 new FC3ReadRegistersTask(24576, Priority.HIGH,
                         m(Heater.ChannelId.SET_POINT_TEMPERATURE, new UnsignedWordElement(24576),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
-                        m(MassHeaterWoodChips.ChannelId.HR_24577_MINIMUM_FLOW_TEMPERATURE_SET_POINT, new UnsignedWordElement(24577),
+                        m(BiomassHeaterGilles.ChannelId.HR_24577_MINIMUM_FLOW_TEMPERATURE_SET_POINT, new UnsignedWordElement(24577),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
-                        m(MassHeaterWoodChips.ChannelId.HR_24578_SLIDE_IN_PERCENTAGE_VALUE_SET_POINT, new UnsignedWordElement(24578),
+                        m(BiomassHeaterGilles.ChannelId.HR_24578_SLIDE_IN_PERCENTAGE_VALUE_SET_POINT, new UnsignedWordElement(24578),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
-                        m(MassHeaterWoodChips.ChannelId.HR_24579_EXHAUST_TEMPERATURE_MIN_SET_POINT, new UnsignedWordElement(24579),
+                        m(BiomassHeaterGilles.ChannelId.HR_24579_EXHAUST_TEMPERATURE_MIN_SET_POINT, new UnsignedWordElement(24579),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
-                        m(MassHeaterWoodChips.ChannelId.HR_24580_EXHAUST_TEMPERATURE_MAX_SET_POINT, new UnsignedWordElement(24580),
+                        m(BiomassHeaterGilles.ChannelId.HR_24580_EXHAUST_TEMPERATURE_MAX_SET_POINT, new UnsignedWordElement(24580),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
-                        m(MassHeaterWoodChips.ChannelId.HR_24581_OXYGEN_PERCENT_MIN_SET_POINT, new UnsignedWordElement(24581),
+                        m(BiomassHeaterGilles.ChannelId.HR_24581_OXYGEN_PERCENT_MIN_SET_POINT, new UnsignedWordElement(24581),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
-                        m(MassHeaterWoodChips.ChannelId.HR_24582_OXYGEN_PERCENT_MAX_SET_POINT, new UnsignedWordElement(24582),
+                        m(BiomassHeaterGilles.ChannelId.HR_24582_OXYGEN_PERCENT_MAX_SET_POINT, new UnsignedWordElement(24582),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
-                        m(MassHeaterWoodChips.ChannelId.HR_24583_SLIDE_IN_MIN_SET_POINT, new UnsignedWordElement(24583),
+                        m(BiomassHeaterGilles.ChannelId.HR_24583_SLIDE_IN_MIN_SET_POINT, new UnsignedWordElement(24583),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
-                        m(MassHeaterWoodChips.ChannelId.HR_24584_SLIDE_IN_MAX_SET_POINT, new UnsignedWordElement(24584),
+                        m(BiomassHeaterGilles.ChannelId.HR_24584_SLIDE_IN_MAX_SET_POINT, new UnsignedWordElement(24584),
                                 ElementToChannelConverter.DIRECT_1_TO_1)
                 ),
                 new FC1ReadCoilsTask(16387, Priority.HIGH,
-                        m(MassHeaterWoodChips.ChannelId.DO_16387_ON_OFF_SWITCH, new CoilElement(16387)))
+                        m(BiomassHeaterGilles.ChannelId.DO_16387_ON_OFF_SWITCH, new CoilElement(16387)))
         );
         if (this.readOnly == false) {
             if (this.onlyOnOff == false) {
@@ -290,26 +304,26 @@ public class MassHeaterWoodChipsWoodChipsImpl extends AbstractOpenemsModbusCompo
                         new FC16WriteRegistersTask(24576,
                                 m(Heater.ChannelId.SET_POINT_TEMPERATURE, new UnsignedWordElement(24576),
                                         ElementToChannelConverter.DIRECT_1_TO_1),
-                                m(MassHeaterWoodChips.ChannelId.HR_24577_MINIMUM_FLOW_TEMPERATURE_SET_POINT, new UnsignedWordElement(24577),
+                                m(BiomassHeaterGilles.ChannelId.HR_24577_MINIMUM_FLOW_TEMPERATURE_SET_POINT, new UnsignedWordElement(24577),
                                         ElementToChannelConverter.DIRECT_1_TO_1),
-                                m(MassHeaterWoodChips.ChannelId.HR_24578_SLIDE_IN_PERCENTAGE_VALUE_SET_POINT, new UnsignedWordElement(24578),
+                                m(BiomassHeaterGilles.ChannelId.HR_24578_SLIDE_IN_PERCENTAGE_VALUE_SET_POINT, new UnsignedWordElement(24578),
                                         ElementToChannelConverter.DIRECT_1_TO_1),
-                                m(MassHeaterWoodChips.ChannelId.HR_24579_EXHAUST_TEMPERATURE_MIN_SET_POINT, new UnsignedWordElement(24579),
+                                m(BiomassHeaterGilles.ChannelId.HR_24579_EXHAUST_TEMPERATURE_MIN_SET_POINT, new UnsignedWordElement(24579),
                                         ElementToChannelConverter.DIRECT_1_TO_1),
-                                m(MassHeaterWoodChips.ChannelId.HR_24580_EXHAUST_TEMPERATURE_MAX_SET_POINT, new UnsignedWordElement(24580),
+                                m(BiomassHeaterGilles.ChannelId.HR_24580_EXHAUST_TEMPERATURE_MAX_SET_POINT, new UnsignedWordElement(24580),
                                         ElementToChannelConverter.DIRECT_1_TO_1),
-                                m(MassHeaterWoodChips.ChannelId.HR_24581_OXYGEN_PERCENT_MIN_SET_POINT, new UnsignedWordElement(24581),
+                                m(BiomassHeaterGilles.ChannelId.HR_24581_OXYGEN_PERCENT_MIN_SET_POINT, new UnsignedWordElement(24581),
                                         ElementToChannelConverter.DIRECT_1_TO_1),
-                                m(MassHeaterWoodChips.ChannelId.HR_24582_OXYGEN_PERCENT_MAX_SET_POINT, new UnsignedWordElement(24582),
+                                m(BiomassHeaterGilles.ChannelId.HR_24582_OXYGEN_PERCENT_MAX_SET_POINT, new UnsignedWordElement(24582),
                                         ElementToChannelConverter.DIRECT_1_TO_1),
-                                m(MassHeaterWoodChips.ChannelId.HR_24583_SLIDE_IN_MIN_SET_POINT, new UnsignedWordElement(24583),
+                                m(BiomassHeaterGilles.ChannelId.HR_24583_SLIDE_IN_MIN_SET_POINT, new UnsignedWordElement(24583),
                                         ElementToChannelConverter.DIRECT_1_TO_1),
-                                m(MassHeaterWoodChips.ChannelId.HR_24584_SLIDE_IN_MAX_SET_POINT, new UnsignedWordElement(24584),
+                                m(BiomassHeaterGilles.ChannelId.HR_24584_SLIDE_IN_MAX_SET_POINT, new UnsignedWordElement(24584),
                                         ElementToChannelConverter.DIRECT_1_TO_1)
                         ));
             }
             protocol.addTask(new FC5WriteCoilTask(16387,
-                    m(MassHeaterWoodChips.ChannelId.DO_16387_ON_OFF_SWITCH, new CoilElement(16387)))
+                    m(BiomassHeaterGilles.ChannelId.DO_16387_ON_OFF_SWITCH, new CoilElement(16387)))
             );
         }
         return protocol;
@@ -320,13 +334,18 @@ public class MassHeaterWoodChipsWoodChipsImpl extends AbstractOpenemsModbusCompo
         if (this.isEnabled() == false) {
             return;
         }
-        if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE)) {
-            this.channelmapping();
-            if (this.printInfoToLog) {
-                this.printInfo();
-            }
-        } else if (this.readOnly == false && event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS)) {
-            this.writeCommands();
+        switch (event.getTopic()) {
+            case EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE:
+                this.channelmapping();
+                if (this.printInfoToLog) {
+                    this.printInfo();
+                }
+                break;
+            case EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS:
+                if (this.readOnly == false) {
+                    this.writeCommands();
+                }
+                break;
         }
     }
 
@@ -351,6 +370,8 @@ public class MassHeaterWoodChipsWoodChipsImpl extends AbstractOpenemsModbusCompo
         } else {
             this._setErrorMessage("Modbus not connected");
         }
+        this.getWarningMessageChannel().nextProcessImage();
+        this.getErrorMessageChannel().nextProcessImage();
 
         if (this.getOnOffSwitch().isDefined() && this.getEffectiveHeatingPowerPercent().isDefined()) {
             if (this.getOnOffSwitch().get()) {
@@ -366,6 +387,8 @@ public class MassHeaterWoodChipsWoodChipsImpl extends AbstractOpenemsModbusCompo
         } else {
             this._setHeaterState(HeaterState.UNDEFINED.getValue());
         }
+        // Switch process image because result is needed immediately for startupCheck.
+        this.getHeaterStateChannel().nextProcessImage();
     }
 
     /**
@@ -376,61 +399,104 @@ public class MassHeaterWoodChipsWoodChipsImpl extends AbstractOpenemsModbusCompo
      * amount of fuel it can use (SlideInMinSetpoint - SlideInMaxSetpoint). To reduce the power, the upper limit of this
      * range is reduced. The lower limit should not be changed.
      * Reason: The heater should be allowed to regulate itself for optimal incineration conditions. To do that, it needs
-     * a bit of leeway in the fuel set point.
+     * a bit of leeway in the fuel set point. Because of this, there is also the config option "On/Off only" that
+     * operates the heater without sending a power set point.
+     * The channel SET_POINT_HEATING_POWER_PERCENT is not directly mapped to modbus. Its nextWriteValue is collected
+     * manually, so the value can be stored locally and manipulated before sending it to the heater. A duplicate ’private’
+     * channel is then used for the modbus writes.
+     * The benefit of this design is that when ExceptionalState is active and applies it's own heatingPowerPercentSetpoint,
+     * the previous set point is saved. Also, it is still possible to write to the channel during ExceptionalState, to
+     * change the value that will be used after exceptional state ends.
      */
     protected void writeCommands() {
 
         // Map SET_POINT_HEATING_POWER_PERCENT from Heater interface.
-        Optional<Double> writeValue = this.getHeatingPowerPercentSetpointChannel().getNextWriteValueAndReset();
-        writeValue.ifPresent(value -> this.powerPercentSetpoint = value);
-
-        // Limit setpoint.
-        int slideInSetpoint = 0;
-        boolean connectionAlive = false;
-        if (this.getSlideInMinSetPointRead().isDefined()) {
-            connectionAlive = true;
-            int slideInMinValue = this.getSlideInMinSetPointRead().get();
-            this.powerPercentSetpoint = Math.max(this.powerPercentSetpoint, slideInMinValue);
-            this._setHeatingPowerPercentSetpoint(this.powerPercentSetpoint);
-            slideInSetpoint = (int) Math.round(this.powerPercentSetpoint);
-        }
-
-        // Handle EnableSignal.
-        boolean turnOnHeater = this.enableSignalHandler.deviceShouldBeHeating(this);
-
-        // Handle ExceptionalState. ExceptionalState overwrites EnableSignal.
-        if (this.useExceptionalState) {
-            boolean exceptionalStateActive = this.exceptionalStateHandler.exceptionalStateActive(this);
-            if (exceptionalStateActive) {
-                int exceptionalStateValue = this.getExceptionalStateValue();
-                if (exceptionalStateValue <= this.DEFAULT_MIN_EXCEPTIONAL_VALUE) {
-                    turnOnHeater = false;
-                } else {
-                    turnOnHeater = true;
-                    exceptionalStateValue = Math.min(exceptionalStateValue, this.DEFAULT_MAX_EXCEPTIONAL_VALUE);
-                    if (this.getSlideInMinSetPointRead().isDefined()) {
-                        int slideInMinValue = this.getSlideInMinSetPointRead().get();
-                        slideInSetpoint = exceptionalStateValue;
-                        slideInSetpoint = Math.max(slideInSetpoint, slideInMinValue);
-                        this._setHeatingPowerPercentSetpoint(slideInSetpoint);
-                    }
-                    try {
-                        this.setHeatingPowerPercentSetpoint(exceptionalStateValue);
-                    } catch (OpenemsError.OpenemsNamedException e) {
-                        this.log.warn("Couldn't write in Channel " + e.getMessage());
-                    }
-                }
+        Optional<Double> writeValueOptional = this.getHeatingPowerPercentSetpointChannel().getNextWriteValueAndReset();
+        if (writeValueOptional.isPresent()) {
+            this.powerPercentSetpoint = writeValueOptional.get();
+            this.checkLimitsAndUpdateChannel = true;
+            if (this.onlyOnOff) {
+                this.log.info("Detected write to power percent set point. Ignored because of config setting \"On/Off only\".");
             }
         }
 
-        if (connectionAlive) {
-            try {
-                this.setOnOffSwitch(turnOnHeater);
-                if (this.onlyOnOff == false && slideInSetpoint > 0) {
-                    this.setSlideInMaxSetPoint(slideInSetpoint);
+        /* Check Modbus connection. If this value is present, the connection is alive and heater status is available.
+           Don't send commands to heater without checking heater status. */
+        if (this.getSlideInMinSetPointRead().isDefined()) {
+            int slideInMinValue = this.getSlideInMinSetPointRead().get();
+
+            /* Do a range check on the value from the config. If value is out of range, update config with corrected value.
+               Do a check on both defaultSetPointPowerPercent and powerPercentSetpoint, because these might be different
+               at this point. */
+            if (this.checkLimitsOfConfigEntries) {
+                boolean updateConfig = false;
+                if (this.defaultSetPointPowerPercent > 100) {
+                    this.defaultSetPointPowerPercent = 100;
+                    updateConfig = true;
                 }
-            } catch (OpenemsError.OpenemsNamedException e) {
-                this.log.warn("Couldn't write in Channel " + e.getMessage());
+                if (this.defaultSetPointPowerPercent < slideInMinValue) {
+                    this.defaultSetPointPowerPercent = slideInMinValue;
+                    updateConfig = true;
+                }
+                this.checkLimitsOfConfigEntries = false;
+
+                // A config update restarts the module.
+                if (updateConfig) {
+                    try {
+                        ConfigurationUpdate.updateConfig(ca, this.servicePid(), "defaultSetPointPowerPercent", this.defaultSetPointPowerPercent);
+                    } catch (IOException e) {
+                        this.log.warn("Couldn't save new power percent setting to config. " + e.getMessage());
+                    }
+                }
+            }
+
+            if (this.checkLimitsAndUpdateChannel && this.onlyOnOff == false) {
+                this.powerPercentSetpoint = TypeUtils.fitWithin((double) slideInMinValue, 100.d, this.powerPercentSetpoint);
+                this._setHeatingPowerPercentSetpoint(this.powerPercentSetpoint);
+                this.checkLimitsAndUpdateChannel = false;
+            }
+            int slideInSetpoint = (int) Math.round(this.powerPercentSetpoint);
+
+            // Handle EnableSignal.
+            boolean turnOnHeater = this.enableSignalHandler.deviceShouldBeHeating(this);
+
+            // Handle ExceptionalState. ExceptionalState overwrites EnableSignal.
+            if (this.useExceptionalState) {
+                this.exceptionalStateActive = this.exceptionalStateHandler.exceptionalStateActive(this);
+                if (this.exceptionalStateActive) {
+                    this.exceptionalStateValue = this.getExceptionalStateValue();
+                    if (this.exceptionalStateValue <= this.DEFAULT_MIN_EXCEPTIONAL_VALUE) {
+                        turnOnHeater = false;
+                    } else {
+                        turnOnHeater = true;
+                        this.exceptionalStateValue = TypeUtils.fitWithin(slideInMinValue, this.DEFAULT_MAX_EXCEPTIONAL_VALUE, this.exceptionalStateValue);
+                        slideInSetpoint = this.exceptionalStateValue;
+                        this._setHeatingPowerPercentSetpoint(slideInSetpoint);
+                    }
+                }
+            }
+
+            // Check heater state at startup. Avoid turning off heater just because EnableSignal initial value is ’false’.
+            if (this.startupStateChecked == false) {
+                this.startupStateChecked = true;
+                turnOnHeater = StartupCheckHandler.deviceAlreadyHeating(this, this.log);
+            }
+
+            if (turnOnHeater) {
+                try {
+                    this.setOnOffSwitch(true);
+                    if (slideInSetpoint > 0 && this.onlyOnOff == false) {
+                        this.setSlideInMaxSetPoint(slideInSetpoint);
+                    }
+                } catch (OpenemsError.OpenemsNamedException e) {
+                    this.log.warn("Couldn't write in Channel " + e.getMessage());
+                }
+            } else {
+                try {
+                    this.setOnOffSwitch(false);
+                } catch (OpenemsError.OpenemsNamedException e) {
+                    this.log.warn("Couldn't write in Channel " + e.getMessage());
+                }
             }
         }
     }
@@ -449,6 +515,9 @@ public class MassHeaterWoodChipsWoodChipsImpl extends AbstractOpenemsModbusCompo
         this.logInfo(this.log, "Boiler temperature set point: " + this.getBoilerTemperatureSetPointRead().orElse(-1));
         this.logInfo(this.log, "Return temperature: " + this.getReturnTemperature().orElse(-1));
         this.logInfo(this.log, "Heater state: " + this.getHeaterState().asEnum());
+        if (this.useExceptionalState) {
+            this.logInfo(this.log, "Exceptional state: " + this.exceptionalStateActive + ", value: " + this.exceptionalStateValue);
+        }
         this.logInfo(this.log, "Warning message: " + this.getWarningMessage().orElse("no Warnings"));
         this.logInfo(this.log, "Error message: " + this.getErrorMessage().orElse("No Errors"));
         this.logInfo(this.log, "");
@@ -471,6 +540,5 @@ public class MassHeaterWoodChipsWoodChipsImpl extends AbstractOpenemsModbusCompo
         }
         return debugMessage;
     }
-
 }
 

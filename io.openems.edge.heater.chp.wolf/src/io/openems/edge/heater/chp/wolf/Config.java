@@ -13,16 +13,16 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 	String id() default "Chp0";
 
 	@AttributeDefinition(name = "Alias", description = "Human-readable name of this Component; defaults to Component-ID")
-	String alias() default "";	
+	String alias() default "";
 
-	@AttributeDefinition(name = "Modbus-Bridge ID", description = "ID of Modbus bridge.")
+	@AttributeDefinition(name = "Is enabled?", description = "Is this Component enabled?")
+	boolean enabled() default true;
+
+	@AttributeDefinition(name = "Modbus-Bridge Id", description = "The Unique Id of the Modbus-Bridge you want to allocate to this device.")
 	String modbus_id() default "modbus0";
 
 	@AttributeDefinition(name = "Modbus Unit-ID", description = "The Unit-ID of the Modbus device.")
 	int modbusUnitId() default 1;
-
-	@AttributeDefinition(name = "Default operating mode", description = "Default setting for the operating mode.")
-	OperatingMode defaultOperatingMode() default OperatingMode.ELECTRIC_POWER;
 
 	@AttributeDefinition(name = "Wait time EnableSignal", description = "How long to wait after the EnableSignal is "
 			+ "no longer received before the Chp is switched off. Unit is seconds, unless cycles option is selected.")
@@ -43,14 +43,15 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 	@AttributeDefinition(name = "ExceptionalState timer Id", description = "Name of the timer used for the ExceptionalState.")
 	String exceptionalStateTimerId() default "TimerByTime";
 
+	@AttributeDefinition(name = "Default operating mode", description = "Default setting for the operating mode.")
+	OperatingMode defaultOperatingMode() default OperatingMode.ELECTRIC_POWER;
+
 	@AttributeDefinition(name = "Chp electric power [kW]", description = "Maximum electric "
 			+ "output of this chp. Unit is kilowatt.")
 	int chpMaxElectricPower() default 4;
 
-	@AttributeDefinition(name = "Default electric power setpoint [kW]", description = "Value for "
-			+ "electric power setpoint until a value is set via channel EffectiveElectricPowerSetpoint. "
-			+ "Valid values are half of maximum electric power up to maximum electric "
-			+ "power, unit is kilowatt.")
+	@AttributeDefinition(name = "Default electric power setpoint [kW]", description = "Default value for the electric "
+			+ "power set point used in operating mode \"electric power\". Valid values are 0 up to maximum electric power, unit is kilowatt.")
 	int defaultSetPointElectricPower() default 4;
 
 	@AttributeDefinition(name = "Read only", description = "Only read values from Modbus, don't send commands.")
@@ -58,9 +59,6 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
 	@AttributeDefinition(name = "Print info to log", description = "Print status info to the log.")
 	boolean printInfoToLog() default false;
-	
-	@AttributeDefinition(name = "Is enabled?", description = "Is this Component enabled?")
-	boolean enabled() default true;
 
 	String webconsole_configurationFactory_nameHint() default "Heater Chp Wolf [{id}]";
 

@@ -29,7 +29,9 @@ import java.util.Optional;
  * For some heaters (a CHP for example), this is is bad for the lifetime and should be avoided. A method to do that is
  * to check at component startup if the device is already heating. If it is, simply call 'this.setEnableSignal(true)'
  * once (the component sends the EnableSignal to itself). Any controllers then have until the timer runs out to send
- * their EnableSignal if the device is supposed to keep heating.</p>
+ * their EnableSignal if the device is supposed to keep heating.
+ * The interface {@link io.openems.edge.heater.api.StartupCheckHandler} provides a static helper method to facilitate
+ * this functionality.</p>
  */
 public class EnableSignalHandlerImpl implements EnableSignalHandler {
     private final TimerHandler timer;
