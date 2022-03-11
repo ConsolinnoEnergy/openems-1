@@ -19,9 +19,9 @@ public interface HeatpumpWeishaupt extends HeatpumpSmartGrid {
 
     public enum ChannelId implements io.openems.edge.common.channel.ChannelId {
 
-        /* Registers. Manuel doesn't say if they are Input or Holding. Assume Holding.
-           The lowest register address is 1, so assume manual is 1 based.
-           OpenEMS is 0 based, so if manual says it's address 1, need to put 0 in OpenEMS. */
+        /* Registers. Manuel doesn't say if they are Input or Holding. Testing revealed they are both input and holding,
+           meaning the input registers have the same values as the holding registers.
+           The registers in the manual are 0 based, meaning the first register has address 0. OpenEMS is also 0 based.*/
 
         // Read only
 
