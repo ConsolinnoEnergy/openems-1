@@ -28,6 +28,12 @@ import org.osgi.service.metatype.annotations.Option;
     @AttributeDefinition(name = "PrimaryAddress", description = "primary Address of the Mbus Component.")
     int primaryAddress();
 
+    @AttributeDefinition(name = "Don't poll every second", description = "Turn this on if the meter should not be polled every second.")
+    boolean usePollingInterval() default false;
+
+    @AttributeDefinition(name = "Polling interval in seconds", description = "If the \"Don't poll every second\" option is turned on, this is the wait time between polling. Unit is seconds.")
+    int pollingIntervalSeconds() default 600;
+
     boolean enabled() default true;
 
 

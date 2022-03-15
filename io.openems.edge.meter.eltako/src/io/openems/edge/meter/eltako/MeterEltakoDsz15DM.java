@@ -81,8 +81,13 @@ public class MeterEltakoDsz15DM extends AbstractOpenemsMbusComponent
     @Activate
     void activate(ComponentContext context, Config config) {
         this.meterType = config.type();
-        super.activate(context, config.id(), config.alias(), config.enabled(), config.primaryAddress(), this.cm, "mbus",
-                config.mbus_id(), 0);
+        if (config.usePollingInterval()) {
+            super.activate(context, config.id(), config.alias(), config.enabled(), config.primaryAddress(), this.cm, "mbus",
+                    config.mbus_id(), config.pollingIntervalSeconds());     // If you want to use the polling interval, put the time as the last argument in super.activate().
+        } else {
+            super.activate(context, config.id(), config.alias(), config.enabled(), config.primaryAddress(), this.cm, "mbus",
+                    config.mbus_id(), 0);  // If you don't want to use the polling interval, use super.activate() without the last argument.
+        }
     }
 
     @Deactivate
