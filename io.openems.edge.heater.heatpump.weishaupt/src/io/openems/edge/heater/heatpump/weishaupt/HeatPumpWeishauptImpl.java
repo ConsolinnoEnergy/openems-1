@@ -99,35 +99,35 @@ public class HeatPumpWeishauptImpl extends AbstractOpenemsModbusComponent implem
 	protected ModbusProtocol defineModbusProtocol() throws OpenemsException {
 
 		ModbusProtocol protocol = new ModbusProtocol(this,
-				new FC3ReadRegistersTask(0, Priority.HIGH,
-						m(HeatpumpWeishaupt.ChannelId.HR1_OUTSIDE_TEMP, new SignedWordElement(0),
-								ElementToChannelConverter.SCALE_FACTOR_1),
-						m(Heater.ChannelId.RETURN_TEMPERATURE, new SignedWordElement(1),
-								ElementToChannelConverter.SCALE_FACTOR_1),
-						m(HeatpumpWeishaupt.ChannelId.HR3_DOMESTIC_HOT_WATER, new SignedWordElement(2),
-								ElementToChannelConverter.SCALE_FACTOR_1),
-						new DummyRegisterElement(3),
-						m(Heater.ChannelId.FLOW_TEMPERATURE, new SignedWordElement(4),
-								ElementToChannelConverter.SCALE_FACTOR_1)
-				),
-				new FC3ReadRegistersTask(102, Priority.HIGH,
-						m(HeatpumpWeishaupt.ChannelId.HR103_STATUS_CODE, new UnsignedWordElement(102),
+				new FC3ReadRegistersTask(1, Priority.HIGH,
+						m(HeatpumpWeishaupt.ChannelId.HR1_OUTSIDE_TEMP, new SignedWordElement(1),
 								ElementToChannelConverter.DIRECT_1_TO_1),
-						m(HeatpumpWeishaupt.ChannelId.HR104_BLOCKED_CODE, new UnsignedWordElement(103),
+						m(Heater.ChannelId.RETURN_TEMPERATURE, new SignedWordElement(2),
 								ElementToChannelConverter.DIRECT_1_TO_1),
-						m(HeatpumpWeishaupt.ChannelId.HR105_ERROR_CODE, new UnsignedWordElement(104),
+						m(HeatpumpWeishaupt.ChannelId.HR3_DOMESTIC_HOT_WATER, new SignedWordElement(3),
+								ElementToChannelConverter.DIRECT_1_TO_1),
+						new DummyRegisterElement(4),
+						m(Heater.ChannelId.FLOW_TEMPERATURE, new SignedWordElement(5),
 								ElementToChannelConverter.DIRECT_1_TO_1)
 				),
-				new FC3ReadRegistersTask(141, Priority.HIGH,
-				m(HeatpumpWeishaupt.ChannelId.HR142_OPERATING_MODE, new UnsignedWordElement(141),
+				new FC3ReadRegistersTask(103, Priority.HIGH,
+						m(HeatpumpWeishaupt.ChannelId.HR103_STATUS_CODE, new UnsignedWordElement(103),
+								ElementToChannelConverter.DIRECT_1_TO_1),
+						m(HeatpumpWeishaupt.ChannelId.HR104_BLOCKED_CODE, new UnsignedWordElement(104),
+								ElementToChannelConverter.DIRECT_1_TO_1),
+						m(HeatpumpWeishaupt.ChannelId.HR105_ERROR_CODE, new UnsignedWordElement(105),
+								ElementToChannelConverter.DIRECT_1_TO_1)
+				),
+				new FC3ReadRegistersTask(142, Priority.HIGH,
+				m(HeatpumpWeishaupt.ChannelId.HR142_OPERATING_MODE, new UnsignedWordElement(142),
 						ElementToChannelConverter.DIRECT_1_TO_1)
 				)
 		);
 
 		if (this.readOnly == false) {
 			protocol.addTasks(
-					new FC16WriteRegistersTask(141,
-							m(HeatpumpWeishaupt.ChannelId.HR142_OPERATING_MODE, new UnsignedWordElement(141),
+					new FC16WriteRegistersTask(142,
+							m(HeatpumpWeishaupt.ChannelId.HR142_OPERATING_MODE, new UnsignedWordElement(142),
 									ElementToChannelConverter.DIRECT_1_TO_1)
 					)
 			);
