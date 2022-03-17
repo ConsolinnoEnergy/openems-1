@@ -168,6 +168,11 @@ public class ChannelDataRecordMapper {
 	protected void mapScaledCheckedDataToChannel(DataRecord record, Channel<?> channel) {
 		Unit openemsUnit = channel.channelDoc().getUnit();
 
+		// Abort if the transmitted data is an error state.
+		if (record.getFunctionField() == DataRecord.FunctionField.ERROR_VAL) {
+			return;
+		}
+
 		// Timestamp unit from meter is milliseconds since epoch, same as System.currentTimeMillis().
 		// However, meter time accuracy is minutes. If you want seconds accuracy, set your timestamp channel to address
 		// -1 which then uses "setTimestamp()" method and lets OpenEMS calculate the timestamp.

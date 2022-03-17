@@ -529,7 +529,7 @@ public interface HydraulicComponent extends OpenemsComponent {
      *
      * @param percent the PowerLevel the Pump should be set to.
      */
-    void setPowerLevel(double percent);
+    boolean setPowerLevel(double percent);
 
     String CHECK_COMPONENT_IDENTIFIER = "CHECK_COMPONENTS_TIME";
 

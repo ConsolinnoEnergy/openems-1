@@ -5,7 +5,6 @@ import io.openems.edge.evcs.api.ChargingType;
 import io.openems.edge.evcs.api.Status;
 import org.osgi.service.cm.ConfigurationAdmin;
 import org.osgi.service.component.annotations.Reference;
-import sun.net.ProgressSource;
 
 /**
  * This WriteHandler writes the Values from the Internal Channels that where retrieved over Modbus into the correct OpenEms Channels.

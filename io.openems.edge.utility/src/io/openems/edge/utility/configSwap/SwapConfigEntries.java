@@ -82,7 +82,6 @@ public class SwapConfigEntries extends AbstractOpenemsComponent implements Opene
     private Config config;
 
 
-
     private final Logger log = LoggerFactory.getLogger(SwapConfigEntries.class);
 
     public SwapConfigEntries() {
@@ -110,7 +109,6 @@ public class SwapConfigEntries extends AbstractOpenemsComponent implements Opene
      * (The config component entry position is mapped to the error-channel config entry position)
      * After that fill the active and inactive ConfigurationMap, followed by adding the active Component and the initial
      * DateTime. And set the initial DateTime.
-     *
      *
      * @param config the component-config.
      */
@@ -204,6 +202,7 @@ public class SwapConfigEntries extends AbstractOpenemsComponent implements Opene
     /**
      * Updates Own config, by setting a new DateTime and a new ActiveComponent.
      * This happens either on initial set Up or after the Time is up.
+     *
      * @throws IOException if the update fails.
      */
     private void updateOwnConfig() throws IOException {
@@ -215,9 +214,10 @@ public class SwapConfigEntries extends AbstractOpenemsComponent implements Opene
 
     /**
      * Fills the key Value pairs for the active and inactive Configurations
-     * @param valueMap the Map reference, where the key values will be put into.
+     *
+     * @param valueMap      the Map reference, where the key values will be put into.
      * @param keyValuePairs the Configuration of either the active or inactive configurations
-     * @param exC exception Array to capture an error.
+     * @param exC           exception Array to capture an error.
      */
     private void putKeyAndValuePairsToMap(Map<String, Object> valueMap, String[] keyValuePairs, ConfigurationException[] exC) {
         Arrays.stream(keyValuePairs).forEach(entry -> {
@@ -238,13 +238,12 @@ public class SwapConfigEntries extends AbstractOpenemsComponent implements Opene
     }
 
     /**
-     *
      * The overwritten handleEvent method.
      * This component checks if the time is up to swap active components (or if an error occurred,
      * swap the active component as well).
      * When swapping the active component, always get the next entry of the {@link #componentStrings}.
      * When the end of the list is reached, start at the beginning.
-     *
+     * <p>
      * After getting a new active component, and also updating the dateTime, this component will be updated as well (update method of OSGi is called).
      * In the end, the new active Component receives an update with the {@link #activeValues}. This will be put into the Configuration.
      * Additionally, all the inactive Components receive {@link #inactiveValues}.
@@ -253,6 +252,9 @@ public class SwapConfigEntries extends AbstractOpenemsComponent implements Opene
      */
     @Override
     public void handleEvent(Event event) {
+        if (this.isEnabled() == false) {
+            return;
+        }
         if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE)) {
             if (this.configSuccess) {
                 if ((this.timeFrame != INFINITE_COMPONENT && this.timerHandler.checkTimeIsUp(IDENTIFIER_SWAP)) || this.errorOccurred()) {

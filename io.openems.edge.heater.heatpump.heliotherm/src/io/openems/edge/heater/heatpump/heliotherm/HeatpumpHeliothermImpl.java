@@ -16,8 +16,10 @@ import io.openems.edge.bridge.modbus.api.task.FC4ReadInputRegistersTask;
 import io.openems.edge.bridge.modbus.api.task.FC6WriteRegisterTask;
 import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
+import io.openems.edge.common.configupdate.ConfigurationUpdate;
 import io.openems.edge.common.event.EdgeEventConstants;
 import io.openems.edge.common.taskmanager.Priority;
+import io.openems.edge.common.type.TypeUtils;
 import io.openems.edge.exceptionalstate.api.ExceptionalState;
 import io.openems.edge.exceptionalstate.api.ExceptionalStateHandler;
 import io.openems.edge.exceptionalstate.api.ExceptionalStateHandlerImpl;
@@ -25,8 +27,9 @@ import io.openems.edge.heater.api.EnableSignalHandler;
 import io.openems.edge.heater.api.EnableSignalHandlerImpl;
 import io.openems.edge.heater.api.Heater;
 import io.openems.edge.heater.api.HeaterState;
-import io.openems.edge.heater.heatpump.heliotherm.api.HeatpumpHeliotherm;
+import io.openems.edge.heater.api.StartupCheckHandler;
 import io.openems.edge.heater.heatpump.heliotherm.api.ControlMode;
+import io.openems.edge.heater.heatpump.heliotherm.api.HeatpumpHeliotherm;
 import io.openems.edge.heater.heatpump.heliotherm.api.OperatingMode;
 import io.openems.edge.heater.heatpump.heliotherm.api.PowerControlSetting;
 import io.openems.edge.timer.api.TimerHandler;
@@ -49,8 +52,11 @@ import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 
 
@@ -63,7 +69,8 @@ import java.util.Optional;
 // ToDo: Add smart grid functionality using AiO module.
 
 @Designate(ocd = Config.class, factory = true)
-@Component(name = "Heater.HeatPump.Heliotherm",
+@Component(
+        name = "Heater.HeatPump.Heliotherm",
         immediate = true,
         configurationPolicy = ConfigurationPolicy.REQUIRE,
         property = { //
@@ -74,17 +81,18 @@ public class HeatpumpHeliothermImpl extends AbstractOpenemsModbusComponent imple
         ExceptionalState, HeatpumpHeliotherm {
 
     @Reference
-    protected ConfigurationAdmin cm;
+    protected ComponentManager cpm;
 
     @Reference
-    protected ComponentManager cpm;
+    protected ConfigurationAdmin ca;
 
     private final Logger log = LoggerFactory.getLogger(HeatpumpHeliothermImpl.class);
     private boolean printInfoToLog;
     private boolean readOnly;
+    private boolean startupStateChecked = false;
     private boolean connectionAlive;
     private LocalDateTime fiveSecondTimestamp;
-    private static final int sendIntervalSeconds = 6; // How often to send commands to the heat pump. Allowed minimum is 5.
+    private static final int SEND_INTERVAL_SECONDS = 6; // How often to send commands to the heat pump. Allowed minimum is 5.
     private int maxElectricPower;
     private int maxCompressorSpeed;
     private ControlMode controlModeSetting;
@@ -94,6 +102,8 @@ public class HeatpumpHeliothermImpl extends AbstractOpenemsModbusComponent imple
     private int lastTemperatureSetPoint;
     private double lastPowerPercentSetPoint;
     private int lastConsumptionSetPoint;
+    private static final int TEMPERATURE_SET_POINT_MAX = 1200;  // Can't remember how I got this number. I think trial and error.
+    private static final int TEMPERATURE_SET_POINT_MIN = 0;  // Can't remember how I got this number. I think trial and error.
 
     private EnableSignalHandler enableSignalHandler;
     private static final String ENABLE_SIGNAL_IDENTIFIER = "HEAT_PUMP_HELIOTHERM_ENABLE_SIGNAL_IDENTIFIER";
@@ -116,7 +126,7 @@ public class HeatpumpHeliothermImpl extends AbstractOpenemsModbusComponent imple
 
     @Activate
     public void activate(ComponentContext context, Config config) throws OpenemsError.OpenemsNamedException, ConfigurationException {
-        super.activate(context, config.id(), config.alias(), config.enabled(), config.modbusUnitId(), this.cm,
+        super.activate(context, config.id(), config.alias(), config.enabled(), config.modbusUnitId(), this.ca,
                 "Modbus", config.modbusBridgeId());
 
         this.printInfoToLog = config.printInfoToLog();
@@ -126,37 +136,51 @@ public class HeatpumpHeliothermImpl extends AbstractOpenemsModbusComponent imple
         }
 
         if (this.readOnly == false) {
+            this.startupStateChecked = false;
             this.controlModeSetting = config.defaultControlMode();
-            this.operatingModeSetting = this.parseConfigOperatingMode(config.defaultOperatingMode());
+
+            // Check if values are valid. If not, update config with a valid entry.
+            Map<String, Object> keyValueMap = new HashMap<>();
+            this.operatingModeSetting = config.defaultOperatingMode();
+            if (this.operatingModeSetting.getValue() < 0 || this.operatingModeSetting.getValue() > 7) {
+                this.operatingModeSetting = OperatingMode.AUTOMATIC;
+                keyValueMap.put("defaultOperatingMode", this.operatingModeSetting);
+            }
             this.lastTemperatureSetPoint = config.defaultSetPointTemperature() * 10; // Convert to d°C.
+            if (this.lastTemperatureSetPoint > TEMPERATURE_SET_POINT_MAX) {
+                this.lastTemperatureSetPoint = TEMPERATURE_SET_POINT_MAX;
+                keyValueMap.put("defaultSetPointTemperature", this.lastTemperatureSetPoint / 10);
+            }
+            if (this.lastTemperatureSetPoint < TEMPERATURE_SET_POINT_MIN) {
+                this.lastTemperatureSetPoint = TEMPERATURE_SET_POINT_MIN;
+                keyValueMap.put("defaultSetPointTemperature", this.lastTemperatureSetPoint / 10);
+            }
             this.setTemperatureSetpoint(this.lastTemperatureSetPoint);
             this.powerControlSetting = config.powerControlSetting();
             this.maxElectricPower = config.maxElectricPower();
             this.mapPowerPercentToConsumption = config.mapPowerPercentToConsumption();
             this.maxCompressorSpeed = config.maxCompressorSpeed();
-            this.fiveSecondTimestamp = LocalDateTime.now().minusSeconds(sendIntervalSeconds);    // Initialize with past time value so code executes immediately on first run.
-            this.setHeatingPowerPercentSetpoint(config.defaultSetPointPowerPercent());
-            this.initializeTimers(config);
-        }
-    }
+            int defaultSetPointPowerPercent = config.defaultSetPointPowerPercent();
+            if (defaultSetPointPowerPercent > 100) {
+                defaultSetPointPowerPercent = 100;
+                keyValueMap.put("defaultSetPointPowerPercent", defaultSetPointPowerPercent);
+            }
+            if (defaultSetPointPowerPercent < 0) {
+                defaultSetPointPowerPercent = 0;
+                keyValueMap.put("defaultSetPointPowerPercent", defaultSetPointPowerPercent);
+            }
+            this.setHeatingPowerPercentSetpoint(defaultSetPointPowerPercent);
 
-    private OperatingMode parseConfigOperatingMode(String string) {
-        switch (string) {
-            case "Cooling":
-                return OperatingMode.COOLING;
-            case "Summer":
-                return OperatingMode.SUMMER;
-            case "Always on (Dauerbetrieb)":
-                return OperatingMode.ALWAYS_ON;
-            case "Setback mode (Absenkung)":
-                return OperatingMode.SETBACK;
-            case "Holidays, full time setback (Urlaub)":
-                return OperatingMode.VACATION;
-            case "No night setback (Party)":
-                return OperatingMode.PARTY;
-            case "Automatic":
-            default:
-                return OperatingMode.AUTOMATIC;
+            if (keyValueMap.isEmpty() == false) { // Updating config restarts the module.
+                try {
+                    ConfigurationUpdate.updateConfig(ca, this.servicePid(), keyValueMap);
+                } catch (IOException e) {
+                    this.log.warn("Couldn't save new settings to config. " + e.getMessage());
+                }
+            }
+
+            this.fiveSecondTimestamp = LocalDateTime.now().minusSeconds(SEND_INTERVAL_SECONDS);    // Initialize with past time value so code executes immediately on first run.
+            this.initializeTimers(config);
         }
     }
 
@@ -309,13 +333,18 @@ public class HeatpumpHeliothermImpl extends AbstractOpenemsModbusComponent imple
         if (this.isEnabled() == false) {
             return;
         }
-        if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE)) {
-            this.channelmapping();
-            if (this.printInfoToLog) {
-                this.printInfo();
-            }
-        } else if (this.readOnly == false && this.connectionAlive && event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS)) {
-            this.writeCommands();
+        switch (event.getTopic()) {
+            case EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE:
+                this.channelmapping();
+                if (this.printInfoToLog) {
+                    this.printInfo();
+                }
+                break;
+            case EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS:
+                if (this.readOnly == false && this.connectionAlive) {
+                    this.writeCommands();
+                }
+                break;
         }
     }
 
@@ -399,12 +428,16 @@ public class HeatpumpHeliothermImpl extends AbstractOpenemsModbusComponent imple
     protected void writeCommands() {
 
         // Handle OperatingMode channel
+        Map<String, Object> keyValueMap = new HashMap<>();
         Optional<Integer> operatingModeOptional = this.getHr100OperatingModeChannel().getNextWriteValueAndReset();
         if (operatingModeOptional.isPresent()) {
             int enumAsInt = operatingModeOptional.get();
             // Restrict to valid write values
-            if (enumAsInt >= 0 && enumAsInt <= 7) {
+            if (enumAsInt >= 0 && enumAsInt <= 7 && enumAsInt != this.operatingModeSetting.getValue()) {
                 this.operatingModeSetting = OperatingMode.valueOf(enumAsInt);
+
+                // Save change to config.
+                keyValueMap.put("defaultOperatingMode", this.operatingModeSetting);
             }
         }
 
@@ -415,8 +448,8 @@ public class HeatpumpHeliothermImpl extends AbstractOpenemsModbusComponent imple
         if (heatingPowerPercentSetPointOptional.isPresent()
                 && (this.powerControlSetting == PowerControlSetting.COMPRESSOR_SPEED || this.mapPowerPercentToConsumption)) {
             this.lastPowerPercentSetPoint = heatingPowerPercentSetPointOptional.get();
-            this.lastPowerPercentSetPoint = Math.min(this.lastPowerPercentSetPoint, 100);
-            this.lastPowerPercentSetPoint = Math.max(this.lastPowerPercentSetPoint, 0);
+            this.lastPowerPercentSetPoint = TypeUtils.fitWithin(0.0, 100.0, this.lastPowerPercentSetPoint);
+
             if (this.mapPowerPercentToConsumption && this.lastPowerPercentSetPoint > 1) {
                 this.lastConsumptionSetPoint = (int) Math.round((this.lastPowerPercentSetPoint * this.maxElectricPower) / 100);
             }
@@ -444,9 +477,15 @@ public class HeatpumpHeliothermImpl extends AbstractOpenemsModbusComponent imple
         Optional<Boolean> useTemperatureControlModeOptional = this.getHr103UseSetPointTemperatureChannel().getNextWriteValueAndReset();
         if (useTemperatureControlModeOptional.isPresent()) {
             if (useTemperatureControlModeOptional.get()) {
-                this.controlModeSetting = ControlMode.TEMPERATURE_SET_POINT;
+                if (this.controlModeSetting != ControlMode.TEMPERATURE_SET_POINT) {
+                    this.controlModeSetting = ControlMode.TEMPERATURE_SET_POINT;
+                    keyValueMap.put("defaultControlMode", this.controlModeSetting);
+                }
             } else {
-                this.controlModeSetting = ControlMode.ENABLE_SIGNAL;
+                if (this.controlModeSetting != ControlMode.ENABLE_SIGNAL) {
+                    this.controlModeSetting = ControlMode.ENABLE_SIGNAL;
+                    keyValueMap.put("defaultControlMode", this.controlModeSetting);
+                }
             }
         }
 
@@ -454,9 +493,10 @@ public class HeatpumpHeliothermImpl extends AbstractOpenemsModbusComponent imple
         int operatingModeToModbus = 0;
         if (this.controlModeSetting == ControlMode.TEMPERATURE_SET_POINT) {
             Optional<Integer> temperatureSetPointOptional = this.getTemperatureSetpointChannel().getNextWriteValueAndReset();
-            temperatureSetPointOptional.ifPresent(integer -> this.lastTemperatureSetPoint = integer);
-            this.lastTemperatureSetPoint = Math.min(this.lastTemperatureSetPoint, 1200);
-            this.lastTemperatureSetPoint = Math.max(this.lastTemperatureSetPoint, 0);
+            if (temperatureSetPointOptional.isPresent()) {
+                this.lastTemperatureSetPoint = temperatureSetPointOptional.get();
+                this.lastTemperatureSetPoint = TypeUtils.fitWithin(TEMPERATURE_SET_POINT_MIN, TEMPERATURE_SET_POINT_MAX, this.lastTemperatureSetPoint);
+            }
             operatingModeToModbus = this.operatingModeSetting.getValue();
         } else {
 
@@ -486,6 +526,12 @@ public class HeatpumpHeliothermImpl extends AbstractOpenemsModbusComponent imple
                 }
             }
 
+            // Check heater state at startup. Avoid turning off heater just because EnableSignal initial value is ’false’.
+            if (this.startupStateChecked == false) {
+                this.startupStateChecked = true;
+                turnOnHeatpump = StartupCheckHandler.deviceAlreadyHeating(this, this.log);
+            }
+
             // Turn on heater when enableSignal == true.
             if (turnOnHeatpump) {
                 // Warning: operatingModeSetting can be set to OFF, meaning the heat pump won't switch on!
@@ -496,7 +542,7 @@ public class HeatpumpHeliothermImpl extends AbstractOpenemsModbusComponent imple
         }
 
         // This part handles the 5 second rule. Write values are only sent every ’sendIntervalSeconds’ seconds.
-        if (ChronoUnit.SECONDS.between(this.fiveSecondTimestamp, LocalDateTime.now()) >= sendIntervalSeconds) {
+        if (ChronoUnit.SECONDS.between(this.fiveSecondTimestamp, LocalDateTime.now()) >= SEND_INTERVAL_SECONDS) {
             this.fiveSecondTimestamp = LocalDateTime.now();
 
             try {
@@ -599,6 +645,15 @@ public class HeatpumpHeliothermImpl extends AbstractOpenemsModbusComponent imple
                 }
             }
 
+        }
+
+        // Updating config restarts the module.
+        if (keyValueMap.isEmpty() == false) {
+            try {
+                ConfigurationUpdate.updateConfig(ca, this.servicePid(), keyValueMap);
+            } catch (IOException e) {
+                this.log.warn("Couldn't save new settings to config. " + e.getMessage());
+            }
         }
     }
 

@@ -6,7 +6,6 @@ import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
 import io.openems.common.types.OpenemsType;
 import io.openems.edge.common.channel.BooleanWriteChannel;
 import io.openems.edge.common.channel.Doc;
-import io.openems.edge.common.channel.DoubleWriteChannel;
 import io.openems.edge.common.channel.EnumWriteChannel;
 import io.openems.edge.common.channel.IntegerReadChannel;
 import io.openems.edge.common.channel.IntegerWriteChannel;
@@ -273,6 +272,7 @@ public interface GasBoilerBuderus extends Heater {
         HR1_HEARTBEAT_OUT(Doc.of(OpenemsType.INTEGER).accessMode(AccessMode.READ_ONLY)),
 
         //HR400_SET_POINT_FLOW_TEMPERATUR -> Heater, SET_POINT_TEMPERATURE, d°C. Unit at heater is °C, not d°C, so watch the conversion.
+        HR400_MODBUS(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)),
 
         //HR401_SET_POINT_POWER_PERCENT -> Heater, SET_POINT_POWER_PERCENT, %. Unit at heater is also %, a value of 50 in the channel means 50%.
         HR401_MODBUS(Doc.of(OpenemsType.DOUBLE).unit(Unit.PERCENT).accessMode(AccessMode.READ_WRITE)),
@@ -302,13 +302,7 @@ public interface GasBoilerBuderus extends Heater {
          *      <li> Type: Integer
          * </ul>
          */
-        OPERATING_MODE(Doc.of(OperatingMode.values()).accessMode(AccessMode.READ_WRITE)
-                .onInit(channel -> { //
-                    // on each Write to the channel -> set the value
-                    ((EnumWriteChannel) channel).onSetNextWrite(value -> {
-                        channel.setNextValue(value);
-                    });
-                })),
+        OPERATING_MODE(Doc.of(OperatingMode.values()).accessMode(AccessMode.READ_WRITE)),
 
         /**
          * Status message of the heater.
@@ -840,11 +834,21 @@ public interface GasBoilerBuderus extends Heater {
 
     /**
      * For internal use only!
+     * Gets the Channel for {@link ChannelId#HR400_MODBUS}.
+     *
+     * @return the Channel
+     */
+    default IntegerWriteChannel getHr400ModbusChannel() {
+        return this.channel(ChannelId.HR400_MODBUS);
+    }
+
+    /**
+     * For internal use only!
      * Gets the Channel for {@link ChannelId#HR401_MODBUS}.
      *
      * @return the Channel
      */
-    default DoubleWriteChannel getHr401ModbusChannel() {
+    default IntegerWriteChannel getHr401ModbusChannel() {
         return this.channel(ChannelId.HR401_MODBUS);
     }
 
@@ -916,6 +920,26 @@ public interface GasBoilerBuderus extends Heater {
      */
     default Value<Integer> getOperatingMode() {
         return this.getOperatingModeChannel().value();
+    }
+
+    /**
+     * Internal method to set the 'nextValue' on {@link ChannelId#OPERATING_MODE} Channel.
+     *
+     * @param value the next write value
+     */
+    default void _setOperatingMode(int value) {
+        this.getOperatingModeChannel().setNextValue(value);
+    }
+
+    /**
+     * Internal method to set the 'nextValue' on {@link ChannelId#OPERATING_MODE} Channel.
+     *
+     * @param mode the next write value
+     */
+    default void _setOperatingMode(OperatingMode mode) {
+        if (mode != null && mode != OperatingMode.UNDEFINED) {
+            this.getOperatingModeChannel().setNextValue(mode.getValue());
+        }
     }
 
     /**

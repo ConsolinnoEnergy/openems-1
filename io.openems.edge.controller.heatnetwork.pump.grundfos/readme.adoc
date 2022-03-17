@@ -1,1 +1,3 @@
-This bundle provides a controller to operate a Grundfos pump in constant pressure mode over GENIbus.
+= Controller Grundfos pump
+
+This bundle provides a controller to operate a Grundfos pump over GENIbus.

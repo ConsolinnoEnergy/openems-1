@@ -147,11 +147,7 @@ public interface ChpWolf extends Chp {
          *      <li> State 2: Reserve
          * </ul>
          */
-        OPERATING_MODE(Doc.of(OperatingMode.values()).accessMode(AccessMode.READ_WRITE).onInit(
-                channel -> {
-                    ((IntegerWriteChannel) channel).onSetNextWrite(channel::setNextValue);
-                }
-        )),
+        OPERATING_MODE(Doc.of(OperatingMode.values()).accessMode(AccessMode.READ_WRITE)),
 
         // EFFECTIVE_ELECTRIC_POWER_SETPOINT -> chp interface
 
@@ -472,6 +468,26 @@ public interface ChpWolf extends Chp {
     }
 
     /**
+     * Internal method to set the 'nextValue' on {@link ChannelId#OPERATING_MODE} Channel.
+     *
+     * @param value the next write value
+     */
+    default void _setOperatingMode(int value) {
+        this.getOperatingModeChannel().setNextValue(value);
+    }
+
+    /**
+     * Internal method to set the 'nextValue' on {@link ChannelId#OPERATING_MODE} Channel.
+     *
+     * @param mode the next write value
+     */
+    default void _setOperatingMode(OperatingMode mode) {
+        if (mode != null && mode != OperatingMode.UNDEFINED) {
+            this.getOperatingModeChannel().setNextValue(mode.getValue());
+        }
+    }
+
+    /**
      * Set the operating mode of the chp.
      * <ul>
      *      <li> Type: Integer
@@ -544,7 +560,16 @@ public interface ChpWolf extends Chp {
     default Value<Integer> getFeedInSetpoint() {
     	return this.getFeedInSetpointChannel().value();
     }
-    
+
+    /**
+     * Internal method to set the 'nextValue' on {@link ChannelId#FEED_IN_SETPOINT} Channel.
+     *
+     * @param value the next write value
+     */
+    default void _setFeedInSetpoint(int value) {
+        this.getFeedInSetpointChannel().setNextValue(value);
+    }
+
     /**
 	 * Set feed-in set point (Einspeisemanagement). See {@link ChannelId#FEED_IN_SETPOINT}.
 	 * 
@@ -582,7 +607,16 @@ public interface ChpWolf extends Chp {
     default Value<Integer> getReserveSetpoint() {
     	return this.getReserveSetpointChannel().value(); 
     }
-    
+
+    /**
+     * Internal method to set the 'nextValue' on {@link ChannelId#RESERVE_SETPOINT} Channel.
+     *
+     * @param value the next write value
+     */
+    default void _setReserveSetpoint(int value) {
+        this.getReserveSetpointChannel().setNextValue(value);
+    }
+
     /**
 	 * Set Reserve set point. See {@link ChannelId#RESERVE_SETPOINT}.
 	 * 

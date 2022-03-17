@@ -533,6 +533,25 @@ public class TypeUtils {
 	}
 
 	/**
+	 * Safely finds the max value of all values.
+	 *
+	 * @return the max value; or null if all values are null
+	 */
+	public static Double max(Double... values) {
+		Double result = null;
+		for (Double value : values) {
+			if (value != null) {
+				if (result == null) {
+					result = value;
+				} else {
+					result = Math.max(result, value);
+				}
+			}
+		}
+		return result;
+	}
+
+	/**
 	 * Safely finds the min value of all values.
 	 * 
 	 * @return the min value; or null if all values are null
@@ -692,6 +711,19 @@ public class TypeUtils {
 	 * @return the adjusted value
 	 */
 	public static Integer fitWithin(Integer lowLimit, Integer highLimit, Integer value) {
+		return TypeUtils.max(lowLimit, //
+				TypeUtils.min(highLimit, value));
+	}
+
+	/**
+	 * Fits a value within a lower and upper boundary.
+	 *
+	 * @param lowLimit  the lower boundary
+	 * @param highLimit the upper boundary
+	 * @param value     the actual value
+	 * @return the adjusted value
+	 */
+	public static Double fitWithin(Double lowLimit, Double highLimit, Double value) {
 		return TypeUtils.max(lowLimit, //
 				TypeUtils.min(highLimit, value));
 	}

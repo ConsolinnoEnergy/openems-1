@@ -4,43 +4,17 @@ package io.openems.edge.meter.gasmeter;
  * Stored GasMeter types for easier configuration.
  */
 public enum GasMeterType {
-    PLACEHOLDER(0, 0, 0, 0, 0);
+    AUTOSEARCH(0,1),
+    PAD_PULS_M2(0,1),
+    ITRON_CYBLE(4,2);
 
-    int powerAddress;
-    int percolationAddress;
     int totalConsumptionEnergyAddress;
-    int flowTempAddress;
-    int returnTempAddress;
+    int time;
 
-    GasMeterType(int power, int percolation, int totalConsumptionEnergy, int flowTemp, int returnTemp) {
-        this.powerAddress = power;
-        this.percolationAddress = percolation;
+    GasMeterType(int totalConsumptionEnergy,int time) {
         this.totalConsumptionEnergyAddress = totalConsumptionEnergy;
-
-        this.flowTempAddress = flowTemp;
-        this.returnTempAddress = returnTemp;
+        this.time = time;
     }
-
-    /**
-     * Gets the address for the POWER Channel of the Meter.
-     *
-     * @return the address.
-     */
-
-    public int getPowerAddress() {
-        return this.powerAddress;
-    }
-
-    /**
-     * Get the address for the PERCOLATION Channel of the GasMeter.
-     *
-     * @return the address.
-     */
-
-    public int getPercolationAddress() {
-        return this.percolationAddress;
-    }
-
     /**
      * Gets the address for the TotalConsumptionEnergyAddress. It's not important if Channel Measured in m³ or kW.
      *
@@ -51,23 +25,5 @@ public enum GasMeterType {
         return this.totalConsumptionEnergyAddress;
     }
 
-    /**
-     * Gets the address for the FlowTemperature.
-     *
-     * @return the address.
-     */
-
-    public int getFlowTempAddress() {
-        return this.flowTempAddress;
-    }
-
-    /**
-     * Get the address for the RETURN_TEMPERATURE.
-     *
-     * @return the address.
-     */
-
-    public int getReturnTempAddress() {
-        return this.returnTempAddress;
-    }
+    public int getTime(){return this.time;}
 }

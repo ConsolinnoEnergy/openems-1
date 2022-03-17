@@ -95,6 +95,15 @@ public class ElementToChannelConverter {
 	public static final ElementToChannelConverter REPLACE_WITH_MINUS_ZERO_IF_0XFFFF = new ElementToChannelValueReplacer(65535, -1);
 
 	/**
+	 * If the value of the element is LeafletError, writes null in the channel.
+	 */
+	public static final ElementToChannelConverter REPLACE_WITH_MINUS_ZERO_IF_LEAFLET_ERROR = new ElementToChannelValueReplacer(32768, -1);
+	/**
+	 * If the value of the element is LeafletError, writes null in the channel.
+	 */
+	public static final ElementToChannelConverter REPLACE_WITH_MISSING_TEMP_IF_LEAFLET_ERROR_NEGATIVE = new ElementToChannelValueReplacer(-32768, -999);
+
+	/**
 	 * Converts only positive values from Element to Channel.
 	 */
 	public static final ElementToChannelConverter KEEP_POSITIVE = new ElementToChannelConverter(//

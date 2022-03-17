@@ -37,11 +37,12 @@ public class ControllerWatchdogImplTest {
         private int errorPeriod;
         private boolean useAbsoluteValue;
         private boolean configurationDone;
+        private ExceptionalStateType exceptionalStateType;
 
         MyConfig(String id, String alias, boolean enabled, String service_pid, String sourceThermometer,
                  String targetThermometer, int errorDelta, boolean invert, int startTemperature,
                  int testPeriod, String timerId, String enableChannel, String expectedValue, String targetComponentId,
-                 int errorPeriod, boolean configurationDone, boolean useAbsoluteValue) {
+                 int errorPeriod, boolean configurationDone, boolean useAbsoluteValue, ExceptionalStateType exceptionalStateType) {
 
             super(Config.class, id);
             this.id = id;
@@ -61,6 +62,7 @@ public class ControllerWatchdogImplTest {
             this.errorPeriod = errorPeriod;
             this.configurationDone = configurationDone;
             this.useAbsoluteValue = useAbsoluteValue;
+            this.exceptionalStateType = exceptionalStateType;
         }
 
         @Override
@@ -139,6 +141,11 @@ public class ControllerWatchdogImplTest {
             return this.configurationDone;
         }
 
+        @Override
+        public ExceptionalStateType exceptionalStateType () {
+            return this.exceptionalStateType;
+        }
+
     }
 
     private static ControllerHeatnetworkWatchdogImpl overseer;
@@ -162,9 +169,9 @@ public class ControllerWatchdogImplTest {
         overseer.cpm = cpm;
 
         config = new MyConfig("ControllerOverseer0", "", true, "", "source",
-                "target", 20, false, 200, 0, "test", "source/Temperature", "300", "exception", 0, true, true);
+                "target", 20, false, 200, 0, "test", "source/Temperature", "300", "exception", 0, true, true, ExceptionalStateType.MIN_VALUE);
         configInvers = new MyConfig("ControllerOverseer0", "", true, "", "source",
-                "target", 20, true, 200, 0, "test", "source/Temperature", "300", "exception", 0, true, true);
+                "target", 20, true, 200, 0, "test", "source/Temperature", "300", "exception", 0, true, true, ExceptionalStateType.MIN_VALUE);
         sourceThermometer = new DummyThermometer(config.sourceThermometer());
         targetThermometer = new DummyThermometer(config.targetThermometer());
         heater = new DummyDecentralizedHeater("exception");

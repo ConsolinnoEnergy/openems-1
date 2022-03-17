@@ -15,6 +15,9 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 	@AttributeDefinition(name = "Alias", description = "Human-readable name of this Component; defaults to Component-ID")
 	String alias() default "";
 
+    @AttributeDefinition(name = "Is enabled?", description = "Is this Component enabled?")
+    boolean enabled() default true;
+
     @AttributeDefinition(name = "IP address", description = "IP address of the GLT web interface")
     String address() default "localhost";
 
@@ -54,9 +57,6 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     
     @AttributeDefinition(name = "Debug", description = "Write debug messages to log.")
     boolean debug() default false;
-
-    @AttributeDefinition(name = "Is enabled?", description = "Is this Component enabled?")
-	boolean enabled() default true;
 
     String webconsole_configurationFactory_nameHint() default "Heater Chp Dachs GLT-Interface [{id}]";
 }

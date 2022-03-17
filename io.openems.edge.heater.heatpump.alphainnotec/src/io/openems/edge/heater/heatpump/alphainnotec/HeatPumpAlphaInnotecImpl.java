@@ -19,8 +19,10 @@ import io.openems.edge.bridge.modbus.api.task.FC4ReadInputRegistersTask;
 import io.openems.edge.bridge.modbus.api.task.FC5WriteCoilTask;
 import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
+import io.openems.edge.common.configupdate.ConfigurationUpdate;
 import io.openems.edge.common.event.EdgeEventConstants;
 import io.openems.edge.common.taskmanager.Priority;
+import io.openems.edge.common.type.TypeUtils;
 import io.openems.edge.exceptionalstate.api.ExceptionalState;
 import io.openems.edge.exceptionalstate.api.ExceptionalStateHandler;
 import io.openems.edge.exceptionalstate.api.ExceptionalStateHandlerImpl;
@@ -29,25 +31,26 @@ import io.openems.edge.heater.api.EnableSignalHandlerImpl;
 import io.openems.edge.heater.api.Heater;
 import io.openems.edge.heater.api.HeaterState;
 import io.openems.edge.heater.api.HeatpumpControlMode;
+import io.openems.edge.heater.api.HeatpumpSmartGrid;
+import io.openems.edge.heater.api.SmartGridState;
+import io.openems.edge.heater.api.StartupCheckHandler;
 import io.openems.edge.heater.heatpump.alphainnotec.api.BlockRelease;
 import io.openems.edge.heater.heatpump.alphainnotec.api.CoolingMode;
+import io.openems.edge.heater.heatpump.alphainnotec.api.HeatingMode;
+import io.openems.edge.heater.heatpump.alphainnotec.api.HeatpumpAlphaInnotec;
 import io.openems.edge.heater.heatpump.alphainnotec.api.PoolMode;
+import io.openems.edge.heater.heatpump.alphainnotec.api.SystemStatus;
 import io.openems.edge.heater.heatpump.alphainnotec.api.VentilationMode;
 import io.openems.edge.timer.api.TimerHandler;
 import io.openems.edge.timer.api.TimerHandlerImpl;
-import io.openems.edge.heater.heatpump.alphainnotec.api.HeatingMode;
-import io.openems.edge.heater.heatpump.alphainnotec.api.SystemStatus;
-import io.openems.edge.heater.heatpump.alphainnotec.api.HeatpumpAlphaInnotec;
-import io.openems.edge.heater.api.HeatpumpSmartGrid;
-import io.openems.edge.heater.api.SmartGridState;
 import org.osgi.service.cm.ConfigurationAdmin;
 import org.osgi.service.cm.ConfigurationException;
 import org.osgi.service.component.ComponentContext;
-import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.ConfigurationPolicy;
 import org.osgi.service.component.annotations.Deactivate;
+import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.component.annotations.ReferenceCardinality;
 import org.osgi.service.component.annotations.ReferencePolicy;
 import org.osgi.service.component.annotations.ReferencePolicyOption;
@@ -58,7 +61,9 @@ import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Arrays;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -80,10 +85,10 @@ public class HeatPumpAlphaInnotecImpl extends AbstractOpenemsModbusComponent imp
 		ExceptionalState, HeatpumpAlphaInnotec {
 
 	@Reference
-	protected ConfigurationAdmin cm;
+	protected ComponentManager cpm;
 
 	@Reference
-	protected ComponentManager cpm;
+	protected ConfigurationAdmin ca;
 	
 	private final Logger log = LoggerFactory.getLogger(HeatPumpAlphaInnotecImpl.class);
 	private boolean printInfoToLog;
@@ -99,6 +104,9 @@ public class HeatPumpAlphaInnotecImpl extends AbstractOpenemsModbusComponent imp
 	private CoolingMode coolingModeSetting;
 	private PoolMode poolModeSetting;
 	private VentilationMode ventilationModeSetting;
+
+	private static final int RETURN_TEMP_SET_POINT_MIN = 150; // As per manual, unit is d°C.
+	private static final int RETURN_TEMP_SET_POINT_MAX = 500; // Manual says 800, but pump won't accept anything higher than 500. Unit is d°C.
 
 	private EnableSignalHandler enableSignalHandler;
 	private static final String ENABLE_SIGNAL_IDENTIFIER = "HEAT_PUMP_ALPHA_INNOTEC_ENABLE_SIGNAL_IDENTIFIER";
@@ -123,7 +131,7 @@ public class HeatPumpAlphaInnotecImpl extends AbstractOpenemsModbusComponent imp
 
 	@Activate
 	void activate(ComponentContext context, Config config) throws OpenemsError.OpenemsNamedException, ConfigurationException {
-		super.activate(context, config.id(), config.alias(), config.enabled(), config.modbusUnitId(), this.cm,
+		super.activate(context, config.id(), config.alias(), config.enabled(), config.modbusUnitId(), this.ca,
 				"Modbus", config.modbus_id());
 
 		this.printInfoToLog = config.printInfoToLog();
@@ -140,13 +148,45 @@ public class HeatPumpAlphaInnotecImpl extends AbstractOpenemsModbusComponent imp
 			this.getUseSmartGridStateChannel().nextProcessImage();
 
 			this.startupStateChecked = false;
+
+			// In case any control mode is set to UNDEFINED, change to a default and save value to config.
+			Map<String, Object> keyValueMap = new HashMap<>();
 			this.heatingModeSetting = config.defaultHeatingMode();
+			if (this.heatingModeSetting == HeatingMode.UNDEFINED) {
+				keyValueMap.put("defaultHeatingMode", HeatingMode.AUTOMATIC);
+			}
 			this.domesticHotWaterModeSetting = config.defaultDomesticHotWaterMode();
+			if (this.domesticHotWaterModeSetting == HeatingMode.UNDEFINED) {
+				keyValueMap.put("defaultDomesticHotWaterMode", HeatingMode.OFF);
+			}
 			this.mixingCircuit2ModeSetting = config.defaultMixingCircuit2Mode();
+			if (this.mixingCircuit2ModeSetting == HeatingMode.UNDEFINED) {
+				keyValueMap.put("defaultMixingCircuit2Mode", HeatingMode.OFF);
+			}
 			this.mixingCircuit3ModeSetting = config.defaultMixingCircuit3Mode();
+			if (this.mixingCircuit3ModeSetting == HeatingMode.UNDEFINED) {
+				keyValueMap.put("defaultMixingCircuit3Mode", HeatingMode.OFF);
+			}
 			this.coolingModeSetting = config.defaultCoolingMode();
+			if (this.coolingModeSetting == CoolingMode.UNDEFINED) {
+				keyValueMap.put("defaultCoolingMode", CoolingMode.OFF);
+			}
 			this.poolModeSetting = config.defaultPoolMode();
+			if (this.poolModeSetting == PoolMode.UNDEFINED) {
+				keyValueMap.put("defaultPoolMode", PoolMode.OFF);
+			}
 			this.ventilationModeSetting = config.defaultVentilationMode();
+			if (this.ventilationModeSetting == VentilationMode.UNDEFINED) {
+				keyValueMap.put("defaultVentilationMode", VentilationMode.OFF);
+			}
+			if (keyValueMap.isEmpty() == false) { // Updating config restarts the module.
+				try {
+					ConfigurationUpdate.updateConfig(ca, this.servicePid(), keyValueMap);
+				} catch (IOException e) {
+					this.log.warn("Couldn't save new settings to config. " + e.getMessage());
+				}
+			}
+
 			this.initializeTimers(config);
 		}
 	}
@@ -404,7 +444,7 @@ public class HeatPumpAlphaInnotecImpl extends AbstractOpenemsModbusComponent imp
 					new FC16WriteRegistersTask(0,
 							m(HeatpumpAlphaInnotec.ChannelId.HR_0_OUTSIDETEMP, new SignedWordElement(0),
 									ElementToChannelConverter.DIRECT_1_TO_1),
-							m(HeatpumpAlphaInnotec.ChannelId.HR_1_RETURN_TEMP_SETPOINT, new UnsignedWordElement(1),
+							m(HeatpumpAlphaInnotec.ChannelId.HR_1_MODBUS, new UnsignedWordElement(1),
 									ElementToChannelConverter.DIRECT_1_TO_1),
 							m(HeatpumpAlphaInnotec.ChannelId.HR_2_FLOW_TEMP_SETPOINT_MC1, new UnsignedWordElement(2),
 									ElementToChannelConverter.DIRECT_1_TO_1),
@@ -551,6 +591,8 @@ public class HeatPumpAlphaInnotecImpl extends AbstractOpenemsModbusComponent imp
 			}
 		} else {
 			this._setErrorMessage("No Modbus connection");
+
+			// ToDo: Manually write a value in IR_46_ERROR to indicate Modbus is not connected?
 		}
 		this.getErrorMessageChannel().nextProcessImage();
 	}
@@ -567,63 +609,96 @@ public class HeatPumpAlphaInnotecImpl extends AbstractOpenemsModbusComponent imp
 	 * channels is still registered and the value saved, but not executed. The changed operating mode is then applied
 	 * once EnableSignal is true. This way you don't have to pay attention to the state of the heat pump when writing
 	 * in the operating mode channels.
+	 * Also, write values are saved to config so that an OpenEMS restart does not disrupt operation. In case of a
+	 * restart, the module will load the value from the config and immediately return to its previous state.
 	 */
 	protected void writeCommands() {
+
 		// Collect operating mode channels ’nextWrite’.
+		boolean updateConfig = false;
+		Map<String, Object> keyValueMap = new HashMap<>();
 		Optional<Integer> heatingModeOptional = this.getHeatingOperationModeChannel().getNextWriteValueAndReset();
 		if (heatingModeOptional.isPresent()) {
 			int enumAsInt = heatingModeOptional.get();
-			// Restrict to valid write values
-			if (enumAsInt >= 0 && enumAsInt <= 4) {
+			// Restrict to valid write values, check if new value is different.
+			if (enumAsInt >= 0 && enumAsInt <= 4 && enumAsInt != this.heatingModeSetting.getValue()) {
 				this.heatingModeSetting = HeatingMode.valueOf(enumAsInt);
+
+				// Save setting to config, so setting does not go back to default on restart.
+				updateConfig = true;
+				keyValueMap.put("defaultHeatingMode", this.heatingModeSetting);
 			}
 		}
 		Optional<Integer> domesticHotWaterModeOptional = this.getDomesticHotWaterOperationModeChannel().getNextWriteValueAndReset();
 		if (domesticHotWaterModeOptional.isPresent()) {
 			int enumAsInt = domesticHotWaterModeOptional.get();
-			// Restrict to valid write values
-			if (enumAsInt >= 0 && enumAsInt <= 4) {
+			// Restrict to valid write values, check if new value is different.
+			if (enumAsInt >= 0 && enumAsInt <= 4 && enumAsInt != this.domesticHotWaterModeSetting.getValue()) {
 				this.domesticHotWaterModeSetting = HeatingMode.valueOf(enumAsInt);
+
+				// Save setting to config, so setting does not go back to default on restart.
+				updateConfig = true;
+				keyValueMap.put("defaultDomesticHotWaterMode", this.domesticHotWaterModeSetting);
 			}
 		}
 		Optional<Integer> mixingCircuit2ModeOptional = this.getCircuit2OperationModeChannel().getNextWriteValueAndReset();
 		if (mixingCircuit2ModeOptional.isPresent()) {
 			int enumAsInt = mixingCircuit2ModeOptional.get();
-			// Restrict to valid write values
-			if (enumAsInt >= 0 && enumAsInt <= 4) {
+			// Restrict to valid write values, check if new value is different.
+			if (enumAsInt >= 0 && enumAsInt <= 4 && enumAsInt != this.mixingCircuit2ModeSetting.getValue()) {
 				this.mixingCircuit2ModeSetting = HeatingMode.valueOf(enumAsInt);
+
+				// Save setting to config, so setting does not go back to default on restart.
+				updateConfig = true;
+				keyValueMap.put("defaultMixingCircuit2Mode", this.mixingCircuit2ModeSetting);
 			}
 		}
 		Optional<Integer> mixingCircuit3ModeOptional = this.getCircuit3OperationModeChannel().getNextWriteValueAndReset();
 		if (mixingCircuit3ModeOptional.isPresent()) {
 			int enumAsInt = mixingCircuit3ModeOptional.get();
-			// Restrict to valid write values
-			if (enumAsInt >= 0 && enumAsInt <= 4) {
+			// Restrict to valid write values, check if new value is different.
+			if (enumAsInt >= 0 && enumAsInt <= 4 && enumAsInt != this.mixingCircuit3ModeSetting.getValue()) {
 				this.mixingCircuit3ModeSetting = HeatingMode.valueOf(enumAsInt);
+
+				// Save setting to config, so setting does not go back to default on restart.
+				updateConfig = true;
+				keyValueMap.put("defaultMixingCircuit3Mode", this.mixingCircuit3ModeSetting);
 			}
 		}
 		Optional<Integer> coolingModeOptional = this.getCoolingOperationModeChannel().getNextWriteValueAndReset();
 		if (coolingModeOptional.isPresent()) {
 			int enumAsInt = coolingModeOptional.get();
-			// Restrict to valid write values
-			if (enumAsInt >= 0 && enumAsInt <= 1) {
+			// Restrict to valid write values, check if new value is different.
+			if (enumAsInt >= 0 && enumAsInt <= 1 && enumAsInt != this.coolingModeSetting.getValue()) {
 				this.coolingModeSetting = CoolingMode.valueOf(enumAsInt);
+
+				// Save setting to config, so setting does not go back to default on restart.
+				updateConfig = true;
+				keyValueMap.put("defaultCoolingMode", this.coolingModeSetting);
 			}
 		}
 		Optional<Integer> poolModeOptional = this.getPoolHeatingOperationModeChannel().getNextWriteValueAndReset();
 		if (poolModeOptional.isPresent()) {
 			int enumAsInt = poolModeOptional.get();
-			// Restrict to valid write values
-			if (enumAsInt >= 0 && enumAsInt <= 4 && enumAsInt != 1) {
+			// Restrict to valid write values, check if new value is different.
+			if (enumAsInt >= 0 && enumAsInt <= 4 && enumAsInt != 1 && enumAsInt != this.poolModeSetting.getValue()) {
 				this.poolModeSetting = PoolMode.valueOf(enumAsInt);
+
+				// Save setting to config, so setting does not go back to default on restart.
+				updateConfig = true;
+				keyValueMap.put("defaultPoolMode", this.poolModeSetting);
 			}
 		}
 		Optional<Integer> ventilationModeOptional = this.getVentilationOperationModeChannel().getNextWriteValueAndReset();
 		if (ventilationModeOptional.isPresent()) {
 			int enumAsInt = ventilationModeOptional.get();
-			// Restrict to valid write values
-			if (enumAsInt >= 0 && enumAsInt <= 3) {
+			// Restrict to valid write values, check if new value is different.
+			if (enumAsInt >= 0 && enumAsInt <= 3 && enumAsInt != this.ventilationModeSetting.getValue()) {
 				this.ventilationModeSetting = VentilationMode.valueOf(enumAsInt);
+
+				// Save setting to config, so setting does not go back to default on restart.
+				updateConfig = true;
+				keyValueMap.put("defaultVentilationMode", this.ventilationModeSetting);
 			}
 		}
 
@@ -701,34 +776,10 @@ public class HeatPumpAlphaInnotecImpl extends AbstractOpenemsModbusComponent imp
 				}
 			}
 
-			/* At startup, check if the heater is already running. If yes, keep it running by sending 'EnableSignal = true'
-               to itself once. This avoids the heater always switching off when OpenEMS restarts, because the EnableSignal
-               has the initial value ’false’.
-               By sending the EnableSignal to itself, the heater will stay on until the EnableSignal timer runs out. This
-               should give any controllers enough time to send that signal themselves and allow heater operation without
-               unnecessary disruptions. */
+			// Check heater state at startup. Avoid turning off heater just because EnableSignal initial value is ’false’.
 			if (this.startupStateChecked == false) {
 				this.startupStateChecked = true;
-				turnOnHeatpump = (HeaterState.valueOf(this.getHeaterState().orElse(-1)) == HeaterState.RUNNING);
-				if (turnOnHeatpump) {
-					try {
-						// Try to get currently used settings from heat pump, to keep those and not go back to default values.
-						this.heatingModeSetting = getHeatingOperationMode().asEnum();
-						this.domesticHotWaterModeSetting = getDomesticHotWaterOperationMode().asEnum();
-						this.mixingCircuit2ModeSetting = getCircuit2OperationMode().asEnum();
-						this.mixingCircuit3ModeSetting = getCircuit3OperationMode().asEnum();
-						this.coolingModeSetting = getCoolingOperationMode().asEnum();
-						this.poolModeSetting = getPoolHeatingOperationMode().asEnum();
-						this.ventilationModeSetting = getVentilationOperationMode().asEnum();
-					} catch (IllegalArgumentException e) {
-						this.log.warn("Couldn't get heat pump operation mode " + e.getMessage());
-					}
-					try {
-						this.getEnableSignalChannel().setNextWriteValue(true);
-					} catch (OpenemsError.OpenemsNamedException e) {
-						this.log.warn("Couldn't write in Channel " + e.getMessage());
-					}
-				}
+				turnOnHeatpump = StartupCheckHandler.deviceAlreadyHeating(this, this.log);
 			}
 
 			if (turnOnHeatpump) {
@@ -769,6 +820,19 @@ public class HeatPumpAlphaInnotecImpl extends AbstractOpenemsModbusComponent imp
 					    won't switch on. (Also possible for EnableSignal)
 				}
 				*/
+			}
+		}
+
+		/* Sanitize input for channel HR_1_RETURN_TEMP_SETPOINT. If you write a value that is outside the valid range,
+		   it writes 350 instead. Don't want that behaviour, better to cap it to min or max value if outside the range. */
+		Optional<Integer> returnTempSetpointOptional = this.getReturnTempSetpointChannel().getNextWriteValueAndReset();
+		if (returnTempSetpointOptional.isPresent()) {
+			int writeToModbus = returnTempSetpointOptional.get();
+			writeToModbus = TypeUtils.fitWithin(RETURN_TEMP_SET_POINT_MIN, RETURN_TEMP_SET_POINT_MAX, writeToModbus);
+			try {
+				this.getHr1ModbusChannel().setNextWriteValue(writeToModbus);
+			} catch (OpenemsError.OpenemsNamedException e) {
+				this.logError(this.log, "Could not write to return temp set point channel. Reason: " + e.getMessage());
 			}
 		}
 
@@ -827,6 +891,15 @@ public class HeatPumpAlphaInnotecImpl extends AbstractOpenemsModbusComponent imp
 				} catch (OpenemsError.OpenemsNamedException e) {
 					e.printStackTrace();
 				}
+			}
+		}
+
+		// Updating config restarts the module.
+		if (updateConfig) {
+			try {
+				ConfigurationUpdate.updateConfig(ca, this.servicePid(), keyValueMap);
+			} catch (IOException e) {
+				this.log.warn("Couldn't save new settings to config. " + e.getMessage());
 			}
 		}
 	}
@@ -958,6 +1031,19 @@ public class HeatPumpAlphaInnotecImpl extends AbstractOpenemsModbusComponent imp
 			}
 		}
 
+		/* Sanitize input for channel HR_1_RETURN_TEMP_SETPOINT. If you write a value that is outside the valid range,
+		   it writes 350 instead. Don't want that behaviour, better to cap it to min or max value if outside the range. */
+		Optional<Integer> returnTempSetpointOptional = this.getReturnTempSetpointChannel().getNextWriteValueAndReset();
+		if (returnTempSetpointOptional.isPresent()) {
+			int writeToModbus = returnTempSetpointOptional.get();
+			writeToModbus = TypeUtils.fitWithin(RETURN_TEMP_SET_POINT_MIN, RETURN_TEMP_SET_POINT_MAX, writeToModbus);
+			try {
+				this.getHr1ModbusChannel().setNextWriteValue(writeToModbus);
+			} catch (OpenemsError.OpenemsNamedException e) {
+				this.logError(this.log, "Could not write to return temp set point channel. Reason: " + e.getMessage());
+			}
+		}
+
 		// Collect operating mode channels ’nextWrite’.
 		Optional<Integer> heatingModeOptional = this.getHeatingOperationModeChannel().getNextWriteValueAndReset();
 		if (heatingModeOptional.isPresent()) {
@@ -1048,87 +1134,4 @@ public class HeatPumpAlphaInnotecImpl extends AbstractOpenemsModbusComponent imp
 			}
 		}
 	}
-
-	// Just for testing. Needs to be added to handleEvent() to work.
-	/*
-	protected void pumpTest() {
-		this.logInfo(this.log, "--Testing Channels--");
-		this.logInfo(this.log, "State: " + getHeatpumpOperatingMode().asEnum().getName());
-		this.logInfo(this.log, "Smart Grid State name: " + getSmartGridState().asEnum().getName());	// Gets the "name" field of the Enum.
-		this.logInfo(this.log, "Smart Grid State number: " + getSmartGridState().get());	// This gets the integer value.
-		this.logInfo(this.log, "Block/release: " + getBlockRelease().asEnum().getName());
-		this.logInfo(this.log, "Heizung State: " + getHeatingOperationMode().asEnum().getName());
-		this.logInfo(this.log, "Kühlung State: " + getCoolingOperationMode().asEnum().getName());
-		this.logInfo(this.log, "Heizkurve MK1 Parallelversch.: " + getHeatingCurveCircuit1ParallelShift());
-		this.logInfo(this.log, "Temp +- (signed): " + getTempPlusMinus());
-		this.logInfo(this.log, "Mitteltemp: " + getAverageTemp().get());
-		this.logInfo(this.log, "Vorlauftemp: " + getFlowTemperature());
-		this.logInfo(this.log, "Rücklauftemp: " + getReturnTemperature());
-		this.logInfo(this.log, "Aussentemp (signed): " + getOutsideTemp());	// Test if variables that can be negative (signed) display correctly. Could not test as temperature was not negative.
-		this.logInfo(this.log, "Rücklauftemp soll (unsigned): " + getReturnTempSetpoint());
-		this.logInfo(this.log, "Wärmemenge Heizung (double): " + getHeatAmountHeating());	// Test if 32 bit integers (doubleword) are translated correctly.
-		this.logInfo(this.log, "RBE ist: " + getRbeRoomTempActual());
-		this.logInfo(this.log, "RBE soll: " + getRbeRoomTempSetpoint());
-		this.logInfo(this.log, "EVU: " + getEvuActive());	// Not sure what this is doing. When testing, this was "true" when pump state said "cooling mode", even though pump state has a "EVU-Sperre" status.
-		this.logInfo(this.log, "EVU2: " + getEvu2Active());	// Not sure what this is doing. I expected setting smart grid status to "off" would trigger this, but it remained "false" when smart grid state was "off". Documentation says EVU2 = "true" when smart grid state = "off".
-		this.logInfo(this.log, "Verdichter1: " + getVD1active());
-		this.logInfo(this.log, "Verdichter2: " + getVD1active());
-		this.logInfo(this.log, "ZWE3 (optional): " + getVD1active());	// Test what readings you get from Modbus variables that are not supported by the heat pump model.
-		this.logInfo(this.log, "HUP: " + getForceOnHup());
-		this.logInfo(this.log, "Error Code: " + getErrorCode());	// Code "0" means no error. "Null" means no reading (yet).
-		this.logInfo(this.log, "");
-
-
-		// Test Modbus write. Write an integer that is supplied by the enum.
-		if (this.testcounter == 5) {
-			this.logInfo(this.log, "Set " + SmartGridState.SG1_BLOCKED.getName());
-			this.logInfo(this.log, "");
-			try {
-				setSmartGridState(SmartGridState.SG1_BLOCKED.getValue());
-			} catch (OpenemsError.OpenemsNamedException e) {
-				this.logError(this.log, "Unable to set SmartGridState to "
-						+ SmartGridState.SG1_BLOCKED.getName());
-			}
-		}
-
-		if (this.testcounter == 10) {
-			this.logInfo(this.log, "Set " + SmartGridState.SG3_STANDARD.getName());
-			this.logInfo(this.log, "");
-			try {
-				setSmartGridState(SmartGridState.SG3_STANDARD.getValue());
-			} catch (OpenemsError.OpenemsNamedException e) {
-				this.logError(this.log, "Unable to set SmartGridState to "
-						+ SmartGridState.SG3_STANDARD.getName());
-			}
-		}
-
-		// Test trying to write unsupported values (by Modbus device). Apparently nothing happens.
-		if (this.testcounter == 15) {
-			this.logInfo(this.log, "Set " + SmartGridState.UNDEFINED.getName());
-			this.logInfo(this.log, "");
-			try {
-				setSmartGridState(SmartGridState.UNDEFINED.getValue());
-			} catch (OpenemsError.OpenemsNamedException e) {
-				this.logError(this.log, "Unable to set SmartGridState to "
-						+ SmartGridState.UNDEFINED.getName());
-			}
-			this.logInfo(this.log, "Channel setNextWriteValue: "
-					+ getSmartGridStateChannel().getNextWriteValue().get());
-			this.logInfo(this.log, "");
-		}
-
-		if (this.testcounter == 20) {
-			this.logInfo(this.log, "Set " + SmartGridState.SG3_STANDARD.getName());
-			this.logInfo(this.log, "");
-			try {
-				setSmartGridState(SmartGridState.SG3_STANDARD.getValue());
-			} catch (OpenemsError.OpenemsNamedException e) {
-				this.logError(this.log, "Unable to set SmartGridState to "
-						+ SmartGridState.SG3_STANDARD.getName());
-			}
-		}
-
-		this.testcounter++;
-	}
-	*/
 }
