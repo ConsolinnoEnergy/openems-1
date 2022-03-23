@@ -1,3 +1,15 @@
+openems-consolinno (0.1.28-1) unstable; urgency=medium
+
+  * Added Weishaupt Basekit
+  * Bugfix VirtualComponentOptimizedImpl -> Enablesignal now gets nextWriteValueAndReset
+  * ConditionApplier can handle ChannelAddresses additionally instead of static active/inactive values
+  * Comparator is now added to OpenEMS -> compare == <= < > >= !=
+  * Added TimeFrameHandler to Check if you are in a certain TimeFrame works with Seconds, Minutes, Hours, Days, DaysOfYear, Months and year
+  * Some Improvements to ControlCenter, where HeatupProgram is now optional and instead of working with Relay it uses HydraulicComponent instead (previously pump == relay)
+  * Added a Virtual HydraulicComponent to "fool" ControlCenter if no real HydraulicComponent should be controlled additionally
+
+ -- Felix <felix@felix-ThinkPad-E15-Gen-2>  Wed, 23 Mar 2022 11:42:33 +0100
+
 openems-consolinno (0.1.27-1) unstable; urgency=medium
 
   * Added LeafletError Handling
