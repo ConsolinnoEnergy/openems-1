@@ -7,6 +7,8 @@ import io.openems.edge.common.component.AbstractOpenemsComponent;
 import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.controller.api.Controller;
+import io.openems.edge.controller.heatnetwork.watchdog.api.ControllerHeatnetworkWatchdog;
+import io.openems.edge.controller.heatnetwork.watchdog.api.ErrorType;
 import io.openems.edge.exceptionalstate.api.ExceptionalState;
 import io.openems.edge.thermometer.api.Thermometer;
 import io.openems.edge.timer.api.TimerHandler;
@@ -39,7 +41,7 @@ import java.util.stream.Collectors;
  */
 @Designate(ocd = Config.class, factory = true)
 @Component(name = "Controller.Heatnetwork.ErrorWatchDog")
-public class ControllerHeatnetworkWatchdogImpl extends AbstractOpenemsComponent implements Controller, OpenemsComponent {
+public class ControllerHeatnetworkWatchdogImpl extends AbstractOpenemsComponent implements Controller, OpenemsComponent, ControllerHeatnetworkWatchdog {
 
 
     private final Logger log = LoggerFactory.getLogger(ControllerHeatnetworkWatchdogImpl.class);
@@ -62,12 +64,13 @@ public class ControllerHeatnetworkWatchdogImpl extends AbstractOpenemsComponent 
     private boolean configSuccess;
     private boolean useAbsolute;
     private ExceptionalStateType exceptionalStateType;
+    private ErrorType errorType = ErrorType.UNDEFINED;
 
 
     Config config;
 
     public ControllerHeatnetworkWatchdogImpl() {
-        super(OpenemsComponent.ChannelId.values(), Controller.ChannelId.values());
+        super(OpenemsComponent.ChannelId.values(), Controller.ChannelId.values(), ControllerHeatnetworkWatchdog.ChannelId.values());
     }
 
     @Reference
@@ -105,6 +108,9 @@ public class ControllerHeatnetworkWatchdogImpl extends AbstractOpenemsComponent 
             if (config.componentId() != null && !config.componentId().trim().equals("")) {
                 this.update(this.cm.getConfiguration(this.servicePid(), "?"), "channelIdList", new ArrayList<>(this.cpm.getComponent(config.componentId()).channels()), config.channelIdList().length);
             }
+            this._setErrorActive(false);
+            this.errorType = config.errorType();
+            this._setErrorType(this.errorType);
             this.configSuccess = true;
         } catch (IOException | ConfigurationException | OpenemsError.OpenemsNamedException e) {
             this.log.warn("Couldn't apply Config. Trying again later!" + e.getMessage());
@@ -266,16 +272,20 @@ public class ControllerHeatnetworkWatchdogImpl extends AbstractOpenemsComponent 
         }
         if (error || this.errorState) {
             this.errorState = true;
+            this._setErrorActive(true);
             this.target.getExceptionalStateEnableSignalChannel().setNextWriteValue(true);
             int exceptionalValue = ExceptionalState.DEFAULT_MIN_EXCEPTIONAL_VALUE;
             if (this.exceptionalStateType.equals(ExceptionalStateType.MAX_VALUE)) {
                 exceptionalValue = ExceptionalState.DEFAULT_MAX_EXCEPTIONAL_VALUE;
             }
             this.target.getExceptionalStateValueChannel().setNextWriteValue(exceptionalValue);
+            this.log.warn(this.errorType.getName());
             this.log.warn("ERROR STATE ACTIVE, TARGET: " + this.target.id() + " SET TO EXCEPTIONAL STATE with: " + exceptionalValue);
             if (this.timeHandler.checkTimeIsUp(CHECK_ERROR_HANDLING_TIME_IDENTIFIER)) {
                 this.errorState = false;
             }
+        } else {
+            this._setErrorActive(false);
         }
     }
 
@@ -346,6 +356,4 @@ public class ControllerHeatnetworkWatchdogImpl extends AbstractOpenemsComponent 
         types = types.replace(" ", "");
         return types.split(",");
     }
-
-
 }
