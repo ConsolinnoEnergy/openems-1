@@ -12,7 +12,6 @@ import io.openems.edge.heater.api.Cooler;
 import io.openems.edge.heater.api.Heater;
 import io.openems.edge.heater.api.HeaterState;
 import io.openems.edge.thermometer.api.Thermometer;
-import io.openems.edge.thermometer.api.ThermometerThreshold;
 import io.openems.edge.thermometer.api.ThermometerType;
 import io.openems.edge.thermometer.api.ThermometerWrapper;
 import io.openems.edge.thermometer.api.ThermometerWrapperForCoolingImpl;
@@ -363,20 +362,20 @@ abstract class AbstractTemperatureSurveillanceController extends AbstractOpenems
             try {
                 OpenemsComponent allocatedOpenemsComponent;
                 allocatedOpenemsComponent = this.cpm.getComponent(this.activationThermometer.id());
-                if (!this.activationThermometer.equals(allocatedOpenemsComponent) && allocatedOpenemsComponent instanceof ThermometerThreshold) {
-                    this.activationThermometer = (ThermometerThreshold) allocatedOpenemsComponent;
+                if (!this.activationThermometer.equals(allocatedOpenemsComponent) && allocatedOpenemsComponent instanceof Thermometer) {
+                    this.activationThermometer = (Thermometer) allocatedOpenemsComponent;
                     this.thermometerWrapper.renewThermometer(ThermometerType.ACTIVATE_THERMOMETER, this.activationThermometer);
                 }
                 allocatedOpenemsComponent = this.cpm.getComponent(this.deactivationThermometer.id());
-                if (!this.deactivationThermometer.equals(allocatedOpenemsComponent) && allocatedOpenemsComponent instanceof ThermometerThreshold) {
-                    this.deactivationThermometer = (ThermometerThreshold) allocatedOpenemsComponent;
+                if (!this.deactivationThermometer.equals(allocatedOpenemsComponent) && allocatedOpenemsComponent instanceof Thermometer) {
+                    this.deactivationThermometer = (Thermometer) allocatedOpenemsComponent;
                     this.thermometerWrapper.renewThermometer(ThermometerType.DEACTIVATE_THERMOMETER, this.deactivationThermometer);
                 }
 
                 if (!this.referenceThermometer.equals(this.cpm.getComponent(this.referenceThermometer.id()))) {
                     allocatedOpenemsComponent = this.cpm.getComponent(this.referenceThermometer.id());
-                    if (allocatedOpenemsComponent instanceof ThermometerThreshold) {
-                        this.referenceThermometer = (ThermometerThreshold) allocatedOpenemsComponent;
+                    if (allocatedOpenemsComponent instanceof Thermometer) {
+                        this.referenceThermometer = (Thermometer) allocatedOpenemsComponent;
                     }
                 }
 

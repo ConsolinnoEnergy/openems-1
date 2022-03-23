@@ -5,5 +5,5 @@ package io.openems.edge.utility.conditionapplier.multiple;
  * to determine which CheckCondition is set. Usually setup via {@link ConfigMultipleConditionApplier}
  */
 public enum CheckConditions {
-    AND, OR
+    AND, OR, XOR
 }

@@ -21,9 +21,13 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
     boolean useActiveValue() default true;
 
+    boolean activeValueIsChannel() default false;
+
     String activeValue() default "true";
 
     boolean useInactiveValue() default true;
+
+    boolean inactiveValueIsChannel() default false;
 
     String inactiveValue() default "false";
 
