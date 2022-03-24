@@ -6,28 +6,34 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 import io.openems.edge.meter.api.MeterType;
 
 @ObjectClassDefinition(//
-		name = "Meter ABB B23 M-Bus", //
-		description = "Implements the ABB B23 M-Bus meter.")
+        name = "Meter ABB B23 M-Bus", //
+        description = "Implements the ABB B23 M-Bus meter.")
 @interface Config {
 
-	@AttributeDefinition(name = "Component-ID", description = "Unique ID of this Component")
-	String id() default "meter0";
+    @AttributeDefinition(name = "Component-ID", description = "Unique ID of this Component")
+    String id() default "meter0";
 
-	@AttributeDefinition(name = "Mbus PrimaryAddress", description = "PrimaryAddress of the M-Bus device.")
-	int primaryAddress() default 10;
+    @AttributeDefinition(name = "Mbus PrimaryAddress", description = "PrimaryAddress of the M-Bus device.")
+    int primaryAddress() default 10;
 
-	@AttributeDefinition(name = "Alias", description = "Human-readable name of this Component; defaults to Component-ID")
-	String alias() default "";
+    @AttributeDefinition(name = "Alias", description = "Human-readable name of this Component; defaults to Component-ID")
+    String alias() default "";
 
-	@AttributeDefinition(name = "Is enabled?", description = "Is this Component enabled?")
-	boolean enabled() default true;
+    @AttributeDefinition(name = "Is enabled?", description = "Is this Component enabled?")
+    boolean enabled() default true;
 
-	@AttributeDefinition(name = "Meter-Type", description = "What is measured by this Meter?")
-	MeterType type() default MeterType.PRODUCTION;
+    @AttributeDefinition(name = "Meter-Type", description = "What is measured by this Meter?")
+    MeterType type() default MeterType.PRODUCTION;
 
-	@AttributeDefinition(name = "Mbus-ID", description = "ID of M-Bus bridge.")
-	String mbus_id() default "mbus0";
+    @AttributeDefinition(name = "Mbus-ID", description = "ID of M-Bus bridge.")
+    String mbus_id() default "mbus0";
 
-	String webconsole_configurationFactory_nameHint() default "Meter ABB B23 M-Bus [{id}]";
+    @AttributeDefinition(name = "Don't poll every second", description = "Turn this on if the meter should not be polled every second.")
+    boolean usePollingInterval() default false;
+
+    @AttributeDefinition(name = "Polling interval in seconds", description = "If the \"Don't poll every second\" option is turned on, this is the wait time between polling. Unit is seconds.")
+    int pollingIntervalSeconds() default 600;
+
+    String webconsole_configurationFactory_nameHint() default "Meter ABB B23 M-Bus [{id}]";
 
 }

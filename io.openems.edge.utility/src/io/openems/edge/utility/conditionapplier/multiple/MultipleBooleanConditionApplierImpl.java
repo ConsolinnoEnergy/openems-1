@@ -8,6 +8,7 @@ import io.openems.edge.common.channel.WriteChannel;
 import io.openems.edge.common.component.AbstractOpenemsComponent;
 import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
+import io.openems.edge.common.configupdate.ConfigurationUpdate;
 import io.openems.edge.common.event.EdgeEventConstants;
 import io.openems.edge.utility.api.ConditionApplier;
 import org.osgi.service.cm.Configuration;
@@ -73,8 +74,9 @@ public class MultipleBooleanConditionApplierImpl extends AbstractOpenemsComponen
 
     private final Map<ChannelAddress, Boolean> conditionsToExpectedValue = new HashMap<>();
     private ConditionWrapper conditionWrapper;
+    private CheckConditions checkConditions;
 
-    private ConditionChecker conditionChecker;
+    private ConfigMultipleConditionApplier config;
 
 
     @Activate
@@ -95,6 +97,7 @@ public class MultipleBooleanConditionApplierImpl extends AbstractOpenemsComponen
      *                                            It CONTINUES to apply channelAddresses, even if one entry is wrong -> look at the info log which entry is wrong!
      */
     private void activateOrModifiedRoutine(ConfigMultipleConditionApplier config) throws OpenemsError.OpenemsNamedException {
+        this.config = config;
         this.conditionsToExpectedValue.clear();
         Arrays.stream(config.channelAddresses()).forEach(entry -> {
             try {
@@ -107,12 +110,13 @@ public class MultipleBooleanConditionApplierImpl extends AbstractOpenemsComponen
                 this.log.info("Entry: " + entry + " is not a ChannelAddress, continue with other Config entries");
             }
         });
-        CheckConditions checkCondition = config.checkConditions();
 
-        this.conditionWrapper = new ConditionWrapper(config.useActiveValue(), config.activeValue(), config.useInactiveValue(),
+
+        this.conditionWrapper = new ConditionWrapper(config.useActiveValue(), config.activeValueIsChannel(), config.activeValue(),
+                config.useInactiveValue(), config.inactiveValueIsChannel(),
                 config.inactiveValue(), ChannelAddress.fromString(config.answerChannelAddress()));
 
-        this.conditionChecker = new ConditionChecker(checkCondition);
+        this.checkConditions = config.checkConditions();
 
         this._getDefaultActiveValueChannel().setNextValue(config.activeValue());
         this._getDefaultActiveValueChannel().nextProcessImage();
@@ -135,7 +139,7 @@ public class MultipleBooleanConditionApplierImpl extends AbstractOpenemsComponen
     public void handleEvent(Event event) {
         if (this.isEnabled()) {
             if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS)) {
-                boolean conditionMet = this.conditionChecker.checkConditions(this.conditionsToExpectedValue);
+                boolean conditionMet = ConditionChecker.checkConditions(this.cpm, this.checkConditions, this.log, this.conditionsToExpectedValue);
                 this.conditionWrapper.applyValueDependingOnConditionMet(conditionMet);
             } else if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE)) {
                 if (this._getDefaultActiveValueChannel().getNextWriteValue().isPresent()) {
@@ -153,18 +157,17 @@ public class MultipleBooleanConditionApplierImpl extends AbstractOpenemsComponen
      * @param activeValue is the ConfigEntry the Active value (true) or the inactive Value (false)
      */
     private void updateConfig(boolean activeValue) {
-        Configuration c;
+
 
         try {
-            Optional<String> channelValue = activeValue ? this._getDefaultActiveValueChannel().getNextWriteValueAndReset() : this._getDefaultInactiveValueChannel().getNextWriteValueAndReset();
-            c = this.ca.getConfiguration(this.servicePid(), "?");
-            Dictionary<String, Object> properties = c.getProperties();
+            Optional<String> channelValue = activeValue ?
+                    this._getDefaultActiveValueChannel().getNextWriteValueAndReset() :
+                    this._getDefaultInactiveValueChannel().getNextWriteValueAndReset();
             String propertyName = activeValue ? "activeValue" : "inactiveValue";
-            String setPointValue = (String) properties.get(propertyName);
+            String setPointValue = activeValue ? this.config.activeValue() : this.config.inactiveValue();
 
             if (channelValue.isPresent() && setPointValue.equals(channelValue.get()) == false) {
-                properties.put(propertyName, channelValue);
-                c.update(properties);
+                ConfigurationUpdate.updateConfig(this.ca, this.servicePid(), propertyName, channelValue);
             }
         } catch (IOException e) {
             this.log.warn("Couldn't update ChannelProperty, reason: " + e.getMessage());
@@ -180,17 +183,22 @@ public class MultipleBooleanConditionApplierImpl extends AbstractOpenemsComponen
     private class ConditionWrapper {
 
         private final boolean useActiveValue;
+        private final boolean activeValueIsChannel;
         private final String activeValue;
         private final boolean useInactiveValue;
+        private final boolean inactiveValueIsChannel;
         private final String inactiveValue;
         private final ChannelAddress answerChannel;
 
-        public ConditionWrapper(boolean useActiveValue, String activeValue, boolean useInactiveValue,
+        public ConditionWrapper(boolean useActiveValue, boolean activeValueIsChannel, String activeValue,
+                                boolean useInactiveValue, boolean inactiveValueIsChannel,
                                 String inactiveValue, ChannelAddress answerChannel) {
             this.useActiveValue = useActiveValue;
+            this.activeValueIsChannel = activeValueIsChannel;
             this.activeValue = activeValue;
             this.useInactiveValue = useInactiveValue;
             this.inactiveValue = inactiveValue;
+            this.inactiveValueIsChannel = inactiveValueIsChannel;
             this.answerChannel = answerChannel;
         }
 
@@ -213,7 +221,33 @@ public class MultipleBooleanConditionApplierImpl extends AbstractOpenemsComponen
          */
         void activeValueToChannel() {
             if (this.useActiveValue) {
-                this.writeValueToChannel(this.activeValue);
+                String valueToWrite = this.activeValue;
+                if (this.activeValueIsChannel) {
+                    valueToWrite = this.getValueFromChannelAddress(this.activeValue);
+                }
+                this.writeValueToChannel(valueToWrite);
+            }
+        }
+
+        /**
+         * Get the Value From a Channel Address (if String is channelAddress).
+         *
+         * @param value the value -> either inactive or active value. In this case it should be a ChannelAddress
+         * @return either the value
+         */
+        private String getValueFromChannelAddress(String value) {
+            try {
+                Channel<?> channel = cpm.getChannel(ChannelAddress.fromString(value));
+                if (channel.value().isDefined()) {
+                    return channel.value().get().toString();
+                } else if (channel.getNextValue().isDefined()) {
+                    return channel.getNextValue().get().toString();
+                } else {
+                    return "";
+                }
+            } catch (OpenemsError.OpenemsNamedException e) {
+                log.warn(id() + " Channel: " + value + " is not available");
+                return "";
             }
         }
 
@@ -222,7 +256,11 @@ public class MultipleBooleanConditionApplierImpl extends AbstractOpenemsComponen
          */
         void inactiveValueToChannel() {
             if (this.useInactiveValue) {
-                this.writeValueToChannel(this.inactiveValue);
+                String valueToWrite = this.activeValue;
+                if (this.inactiveValueIsChannel) {
+                    valueToWrite = this.getValueFromChannelAddress(this.activeValue);
+                }
+                this.writeValueToChannel(valueToWrite);
             }
         }
 
@@ -249,72 +287,4 @@ public class MultipleBooleanConditionApplierImpl extends AbstractOpenemsComponen
 
         }
     }
-
-    /**
-     * The ConditionChecker is a helper class for the ConditionApplier.
-     * It gets a Map of ChannelAddresses and the expected Boolean value. After that it checks for each key,value pair
-     * If the condition is met. If the {@link CheckConditions} is {@link CheckConditions#AND} it checks each condition,
-     * or until one condition is NOT met -> return false
-     * otherwise if the {@link CheckConditions} is {@link CheckConditions#OR} check for ONE condition to be true ->
-     * return true.
-     */
-    private class ConditionChecker {
-
-        private final CheckConditions condition;
-
-        public ConditionChecker(CheckConditions checkCondition) {
-            this.condition = checkCondition;
-        }
-
-        /**
-         * This Method checks, depending on the {@link CheckConditions} if the condition for the {@link MultipleBooleanConditionApplierImpl}
-         * was met or not. It receives a Map with ChannelAddresses and expected Boolean values to check.
-         *
-         * @param values the Stored ChannelAddresses with it's expected values.
-         * @return if the conditions are met.
-         */
-        @SuppressWarnings("checkstyle:RequireThis")
-        public boolean checkConditions(Map<ChannelAddress, Boolean> values) {
-            AtomicBoolean conditionOk = new AtomicBoolean(true);
-            if (this.condition.equals(CheckConditions.OR)) {
-                conditionOk.set(false);
-            }
-
-            values.forEach((key, value) -> {
-                // run until one condition of key value is false or if CheckCondition OR and not true
-                if ((conditionOk.get() && this.condition.equals(CheckConditions.AND))
-                        || (this.condition.equals(CheckConditions.OR) && conditionOk.get() == false)) {
-                    try {
-                        Optional<?> channelValue;
-                        Channel<?> channel = cpm.getChannel(key);
-                        if (channel.channelDoc().getType().equals(OpenemsType.BOOLEAN)) {
-                            if (channel instanceof WriteChannel<?>) {
-                                channelValue = ((WriteChannel<?>) channel).getNextWriteValue();
-                                if (channelValue.isPresent() == false) {
-                                    channelValue = channel.value().asOptional();
-                                }
-                            } else {
-                                channelValue = channel.value().asOptional();
-                            }
-                            if (channelValue.isPresent()) {
-                                boolean conditionMet = channelValue.get() == value;
-                                if (conditionMet && this.condition.equals(CheckConditions.OR)) {
-                                    conditionOk.set(true);
-                                } else if (conditionMet == false && this.condition.equals(CheckConditions.AND)) {
-                                    conditionOk.set(false);
-                                }
-                            }
-                        } else {
-                            log.warn("ChannelAddress is not an Boolean Channel: " + key);
-                        }
-                    } catch (OpenemsError.OpenemsNamedException e) {
-                        log.warn("ChannelAddress not available: " + e.getMessage());
-                    }
-
-                }
-            });
-            return conditionOk.get();
-        }
-    }
-
 }

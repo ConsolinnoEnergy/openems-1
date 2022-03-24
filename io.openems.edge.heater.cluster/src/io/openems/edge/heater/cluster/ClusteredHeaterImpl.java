@@ -296,7 +296,9 @@ public class ClusteredHeaterImpl extends AbstractOpenemsComponent implements Ope
                         int powerProvided = this.currentRunningHeatersWithSetPoint.get(heaterToGet);
                         //if power needs to be reduced
                         if (powerToApply.get() < 0) {
-                            if (powerProvided - powerToApply.get() <= 0) {
+                            //Reduce power -> if power < 0 e.g. "Offline" remove current running heater
+                            //TODO Later -> Replace 0 with min Power of single Heater.
+                            if (powerProvided + powerToApply.get() <= 0) {
                                 powerToApply.set(powerToApply.get() + powerProvided);
                                 this.currentRunningHeatersWithSetPoint.remove(heaterToGet);
                             } else {

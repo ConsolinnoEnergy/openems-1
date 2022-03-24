@@ -9,6 +9,7 @@ import io.openems.edge.controller.heatnetwork.controlcenter.api.ControlCenter;
 import io.openems.edge.controller.heatnetwork.heatingcurveregulator.api.HeatingCurveRegulatorChannel;
 import io.openems.edge.controller.heatnetwork.warmup.api.ControllerWarmup;
 import io.openems.edge.controller.hydrauliccomponent.api.PidHydraulicController;
+import io.openems.edge.heatsystem.components.HydraulicComponent;
 import io.openems.edge.io.api.Relay;
 import org.osgi.service.cm.ConfigurationException;
 import org.osgi.service.component.ComponentContext;
@@ -20,8 +21,6 @@ import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * This is the Consolinno Control Center module. It manages the hierarchy of heating controllers.
@@ -42,7 +41,7 @@ public class ControlCenterImpl extends AbstractOpenemsComponent implements Opene
     private PidHydraulicController pidControllerChannel;
     private ControllerWarmup warmupControllerChannel;
     private HeatingCurveRegulatorChannel heatingCurveRegulatorChannel;
-    private Relay pump;
+    private HydraulicComponent hydraulicComponent;
 
     // Variables for channel readout
     private boolean activateTemperatureOverride;
@@ -64,15 +63,7 @@ public class ControlCenterImpl extends AbstractOpenemsComponent implements Opene
     }
 
     @Activate
-    public void activate(ComponentContext context, Config config) throws OpenemsError.OpenemsNamedException, ConfigurationException {
-        AtomicBoolean instanceFound = new AtomicBoolean(false);
-
-        cpm.getAllComponents().stream().filter(component -> component.id().equals(config.id())).findFirst().ifPresent(consumer -> {
-            instanceFound.set(true);
-        });
-        if (instanceFound.get() == true) {
-            return;
-        }
+    void activate(ComponentContext context, Config config) throws OpenemsError.OpenemsNamedException, ConfigurationException {
         super.activate(context, config.id(), config.alias(), config.enabled());
         this.config = config;
         //allocate components
@@ -80,19 +71,19 @@ public class ControlCenterImpl extends AbstractOpenemsComponent implements Opene
         this.activateHeater().setNextValue(false);
         // This allows to start the warmupController from this module.
         if (config.run_warmup_program()) {
-            warmupControllerChannel.playPauseWarmupController().setNextWriteValue(true);
+            this.warmupControllerChannel.playPauseWarmupController().setNextWriteValue(true);
         }
     }
 
     @Deactivate
-    public void deactivate() {
+    protected void deactivate() {
         super.deactivate();
     }
 
     @Override
     public void run() throws OpenemsError.OpenemsNamedException {
-        if (componentIsMissing()) {
-            log.warn("A Component is missing in: " + super.id());
+        if (this.componentIsMissing()) {
+            this.log.warn("A Component is missing in: " + super.id());
             return;
         }
         // For the Overrides, copy values from the WriteValue to the NextValue fields.
@@ -107,42 +98,42 @@ public class ControlCenterImpl extends AbstractOpenemsComponent implements Opene
         boolean overrideChannelHasValues = this.activateTemperatureOverride().value().isDefined()
                 && this.setOverrideTemperature().value().isDefined();
 
-        boolean warmupControllerChannelHasValues = warmupControllerChannel.playPauseWarmupController().value().isDefined()
-                && warmupControllerChannel.getWarmupTemperature().value().isDefined()
-                && warmupControllerChannel.noError().value().isDefined();
+        boolean warmupControllerChannelHasValues = this.config.run_warmup_program() && this.warmupControllerChannel.playPauseWarmupController().value().isDefined()
+                && this.warmupControllerChannel.getWarmupTemperature().value().isDefined()
+                && this.warmupControllerChannel.noError().value().isDefined();
 
-        boolean heatingCurveRegulatorChannelHasValues = heatingCurveRegulatorChannel.signalTurnOnHeater().value().isDefined()
-                && heatingCurveRegulatorChannel.getHeatingTemperature().value().isDefined()
-                && heatingCurveRegulatorChannel.noError().value().isDefined();
+        boolean heatingCurveRegulatorChannelHasValues = this.heatingCurveRegulatorChannel.signalTurnOnHeater().value().isDefined()
+                && this.heatingCurveRegulatorChannel.getHeatingTemperature().value().isDefined()
+                && this.heatingCurveRegulatorChannel.noError().value().isDefined();
 
         // Transfer channel data to local variables for better readability of logic code.
         if (overrideChannelHasValues) {
-            activateTemperatureOverride = this.activateTemperatureOverride().value().get();
-            overrideTemperature = this.setOverrideTemperature().value().get();
+            this.activateTemperatureOverride = this.activateTemperatureOverride().value().get();
+            this.overrideTemperature = this.setOverrideTemperature().value().get();
         }
         if (warmupControllerChannelHasValues) {
-            warmupControllerIsOn = warmupControllerChannel.playPauseWarmupController().value().get();
-            warmupControllerNoError = warmupControllerChannel.noError().value().get();
-            warmupControllerTemperature = warmupControllerChannel.getWarmupTemperature().value().get();
+            this.warmupControllerIsOn = this.warmupControllerChannel.playPauseWarmupController().value().get();
+            this.warmupControllerNoError = this.warmupControllerChannel.noError().value().get();
+            this.warmupControllerTemperature = this.warmupControllerChannel.getWarmupTemperature().value().get();
         }
         if (heatingCurveRegulatorChannelHasValues) {
             // The HeatingCurveRegulator is asking for heating based on outside temperature. Heating in winter, no
             // heating in summer.
-            heatingCurveRegulatorAskingForHeating = heatingCurveRegulatorChannel.signalTurnOnHeater().value().get();
-            heatingCurveRegulatorNoError = heatingCurveRegulatorChannel.noError().value().get();
-            heatingCurveRegulatorTemperature = heatingCurveRegulatorChannel.getHeatingTemperature().value().get();
+            this.heatingCurveRegulatorAskingForHeating = this.heatingCurveRegulatorChannel.signalTurnOnHeater().value().get();
+            this.heatingCurveRegulatorNoError = this.heatingCurveRegulatorChannel.noError().value().get();
+            this.heatingCurveRegulatorTemperature = this.heatingCurveRegulatorChannel.getHeatingTemperature().value().get();
         }
 
         // Control logic. Execute controllers by priority. From high to low: override, warmup, heatingCurve
-        if (overrideChannelHasValues && activateTemperatureOverride) {
-            turnOnHeater(overrideTemperature);
-        } else if (warmupControllerChannelHasValues && warmupControllerIsOn && warmupControllerNoError) {
-            turnOnHeater(warmupControllerTemperature);
-        } else if (heatingCurveRegulatorChannelHasValues && heatingCurveRegulatorAskingForHeating
-                && heatingCurveRegulatorNoError) {
-            turnOnHeater(heatingCurveRegulatorTemperature);
+        if (overrideChannelHasValues && this.activateTemperatureOverride) {
+            this.turnOnHeater(this.overrideTemperature);
+        } else if (warmupControllerChannelHasValues && this.warmupControllerIsOn && this.warmupControllerNoError) {
+            this.turnOnHeater(this.warmupControllerTemperature);
+        } else if (heatingCurveRegulatorChannelHasValues && this.heatingCurveRegulatorAskingForHeating
+                && this.heatingCurveRegulatorNoError) {
+            this.turnOnHeater(this.heatingCurveRegulatorTemperature);
         } else {
-            turnOffHeater();
+            this.turnOffHeater();
         }
     }
 
@@ -153,17 +144,23 @@ public class ControlCenterImpl extends AbstractOpenemsComponent implements Opene
      */
     private boolean componentIsMissing() {
         try {
-            if (this.pidControllerChannel.isEnabled() == false) {
-                this.pidControllerChannel = cpm.getComponent(config.allocated_Pid_Controller());
+            OpenemsComponent component = this.cpm.getComponent(this.config.allocated_Pid_Controller());
+            if (this.pidControllerChannel != component && component instanceof PidHydraulicController) {
+                this.pidControllerChannel = (PidHydraulicController) component;
             }
-            if (this.warmupControllerChannel.isEnabled() == false) {
-                this.warmupControllerChannel = cpm.getComponent(config.allocated_Warmup_Controller());
+            if (this.config.run_warmup_program()) {
+                component = this.cpm.getComponent(this.config.allocated_Warmup_Controller());
+                if (this.warmupControllerChannel != component && component instanceof ControllerWarmup) {
+                    this.warmupControllerChannel = (ControllerWarmup) component;
+                }
             }
-            if (this.heatingCurveRegulatorChannel.isEnabled() == false) {
-                this.heatingCurveRegulatorChannel = cpm.getComponent(config.allocated_Heating_Curve_Regulator());
+            component = this.cpm.getComponent(this.config.allocated_Heating_Curve_Regulator());
+            if (this.heatingCurveRegulatorChannel != component && component instanceof HeatingCurveRegulatorChannel) {
+                this.heatingCurveRegulatorChannel = (HeatingCurveRegulatorChannel) component;
             }
-            if (this.pump.isEnabled() == false) {
-                this.pump = cpm.getComponent(config.allocated_Pump());
+            component = this.cpm.getComponent(this.config.allocated_Pump());
+            if (this.hydraulicComponent != component && component instanceof HydraulicComponent) {
+                this.hydraulicComponent = (HydraulicComponent) component;
             }
             return false;
         } catch (OpenemsError.OpenemsNamedException e) {
@@ -175,41 +172,41 @@ public class ControlCenterImpl extends AbstractOpenemsComponent implements Opene
     private void turnOnHeater(int temperatureInDezidegree) throws OpenemsError.OpenemsNamedException {
         this.activateHeater().setNextValue(true);
         this.temperatureHeating().setNextValue(temperatureInDezidegree);
-        pidControllerChannel.setEnableSignal(true);
-        pidControllerChannel.setMinTemperature().setNextWriteValue(temperatureInDezidegree);
-        pump.getRelaysWriteChannel().setNextWriteValue(true);
+        this.pidControllerChannel.setEnableSignal(true);
+        this.pidControllerChannel.setMinTemperature().setNextWriteValue(temperatureInDezidegree);
+        this.hydraulicComponent.setPointPowerLevelChannel().setNextWriteValueFromObject(HydraulicComponent.DEFAULT_MAX_POWER_VALUE);
     }
 
     private void turnOffHeater() throws OpenemsError.OpenemsNamedException {
         this.activateHeater().setNextValue(false);
         this.temperatureHeating().setNextValue(0);
-        pidControllerChannel.setEnableSignal(false);
-        pump.getRelaysWriteChannel().setNextWriteValue(false);
+        this.pidControllerChannel.setEnableSignal(false);
+        this.hydraulicComponent.setPointPowerLevelChannel().setNextWriteValueFromObject(HydraulicComponent.DEFAULT_MIN_POWER_VALUE);
     }
 
     void allocateComponents() throws OpenemsError.OpenemsNamedException, ConfigurationException {
-        if (cpm.getComponent(config.allocated_Pid_Controller()) instanceof PidHydraulicController) {
-            pidControllerChannel = cpm.getComponent(config.allocated_Pid_Controller());
+        if (this.cpm.getComponent(this.config.allocated_Pid_Controller()) instanceof PidHydraulicController) {
+            this.pidControllerChannel = this.cpm.getComponent(this.config.allocated_Pid_Controller());
         } else {
-            throw new ConfigurationException(config.allocated_Pid_Controller(),
+            throw new ConfigurationException(this.config.allocated_Pid_Controller(),
                     "Allocated Passing Controller not a Pid for Passing Controller; Check if Name is correct and try again.");
         }
-        if (cpm.getComponent(config.allocated_Warmup_Controller()) instanceof ControllerWarmup) {
-            this.warmupControllerChannel = cpm.getComponent(config.allocated_Warmup_Controller());
+        if (this.config.run_warmup_program() && this.cpm.getComponent(this.config.allocated_Warmup_Controller()) instanceof ControllerWarmup) {
+            this.warmupControllerChannel = this.cpm.getComponent(this.config.allocated_Warmup_Controller());
         } else {
-            throw new ConfigurationException(config.allocated_Warmup_Controller(),
+            throw new ConfigurationException(this.config.allocated_Warmup_Controller(),
                     "Allocated Warmup Controller not a WarmupPassing Controller; Check if Name is correct and try again.");
         }
-        if (cpm.getComponent(config.allocated_Heating_Curve_Regulator()) instanceof HeatingCurveRegulatorChannel) {
-            this.heatingCurveRegulatorChannel = cpm.getComponent(config.allocated_Heating_Curve_Regulator());
+        if (this.cpm.getComponent(this.config.allocated_Heating_Curve_Regulator()) instanceof HeatingCurveRegulatorChannel) {
+            this.heatingCurveRegulatorChannel = this.cpm.getComponent(this.config.allocated_Heating_Curve_Regulator());
         } else {
-            throw new ConfigurationException(config.allocated_Warmup_Controller(),
+            throw new ConfigurationException(this.config.allocated_Warmup_Controller(),
                     "Allocated Heating Controller not a Heating Curve Regulator; Check if Name is correct and try again.");
         }
-        if (cpm.getComponent(config.allocated_Pump()) instanceof Relay) {
-            this.pump = cpm.getComponent(config.allocated_Pump());
+        if (this.cpm.getComponent(this.config.allocated_Pump()) instanceof HydraulicComponent) {
+            this.hydraulicComponent = this.cpm.getComponent(this.config.allocated_Pump());
         } else {
-            throw new ConfigurationException(config.allocated_Warmup_Controller(),
+            throw new ConfigurationException(this.config.allocated_Warmup_Controller(),
                     "Allocated Heating Controller not a Heating Curve Regulator; Check if Name is correct and try again.");
         }
 

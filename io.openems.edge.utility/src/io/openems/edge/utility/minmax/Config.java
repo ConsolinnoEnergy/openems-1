@@ -16,7 +16,7 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     String alias() default "";
 
     @AttributeDefinition(name = "Channel to read From", description = "Enter Channel to read the Value from.")
-    String[] inputChannel() default {"TemperatureSensor0/Temperature", "VirtualThermometer0/Thermometer"};
+    String[] inputChannel() default {"TemperatureSensor0/Temperature", "VirtualThermometer0/Temperature"};
 
     @AttributeDefinition(name = "Channel to write into", description = "Write the Max/Min Value into this channel")
     String[] responseChannel() default {"VirtualThermometer/VirtualTemperature"};

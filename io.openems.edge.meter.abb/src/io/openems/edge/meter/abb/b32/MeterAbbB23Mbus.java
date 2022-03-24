@@ -30,127 +30,132 @@ import java.util.List;
 
 @Designate(ocd = Config.class, factory = true)
 @Component(name = "Meter.ABB.B23", //
-		immediate = true, //
-		configurationPolicy = ConfigurationPolicy.REQUIRE)
+        immediate = true, //
+        configurationPolicy = ConfigurationPolicy.REQUIRE)
 
 public class MeterAbbB23Mbus extends AbstractOpenemsMbusComponent
-		implements SymmetricMeter, AsymmetricMeter, OpenemsComponent {
+        implements SymmetricMeter, AsymmetricMeter, OpenemsComponent {
 
-	private MeterType meterType = MeterType.PRODUCTION;
+    private MeterType meterType = MeterType.PRODUCTION;
 
-	@Reference
-	protected ConfigurationAdmin cm;
+    @Reference
+    protected ConfigurationAdmin cm;
 
-	@Reference(policy = ReferencePolicy.STATIC, policyOption = ReferencePolicyOption.GREEDY, cardinality = ReferenceCardinality.MANDATORY)
-	protected void setMbus(BridgeMbus mbus) {
-		super.setMbus(mbus);
-	}
+    @Reference(policy = ReferencePolicy.STATIC, policyOption = ReferencePolicyOption.GREEDY, cardinality = ReferenceCardinality.MANDATORY)
+    protected void setMbus(BridgeMbus mbus) {
+        super.setMbus(mbus);
+    }
 
-	public enum ChannelId implements io.openems.edge.common.channel.ChannelId {
-		TOTAL_CONSUMED_ENERGY(Doc.of(OpenemsType.INTEGER) //
-				.unit(Unit.KILOWATT_HOURS)), //
-		MANUFACTURER_ID(Doc.of(OpenemsType.STRING) //
-				.unit(Unit.NONE)), //
-		DEVICE_ID(Doc.of(OpenemsType.STRING) //
-				.unit(Unit.NONE)), //
-		;
+    public enum ChannelId implements io.openems.edge.common.channel.ChannelId {
+        TOTAL_CONSUMED_ENERGY(Doc.of(OpenemsType.INTEGER) //
+                .unit(Unit.KILOWATT_HOURS)), //
+        MANUFACTURER_ID(Doc.of(OpenemsType.STRING) //
+                .unit(Unit.NONE)), //
+        DEVICE_ID(Doc.of(OpenemsType.STRING) //
+                .unit(Unit.NONE)), //
+        ;
 
-		private final Doc doc;
+        private final Doc doc;
 
-		private ChannelId(Doc doc) {
-			this.doc = doc;
-		}
+        private ChannelId(Doc doc) {
+            this.doc = doc;
+        }
 
-		public Doc doc() {
-			return this.doc;
-		}
-	}
+        public Doc doc() {
+            return this.doc;
+        }
+    }
 
-	public MeterAbbB23Mbus() {
-		super(OpenemsComponent.ChannelId.values(), //
-				SymmetricMeter.ChannelId.values(), //
-				AsymmetricMeter.ChannelId.values(), //
-				ChannelId.values());
-	}
+    public MeterAbbB23Mbus() {
+        super(OpenemsComponent.ChannelId.values(), //
+                SymmetricMeter.ChannelId.values(), //
+                AsymmetricMeter.ChannelId.values(), //
+                ChannelId.values());
+    }
 
-	@Activate
-	void activate(ComponentContext context, Config config) {
-		this.meterType = config.type();
-		super.activate(context, config.id(), config.alias(), config.enabled(), config.primaryAddress(), this.cm, "mbus",
-				config.mbus_id(), 0);
-	}
+    @Activate
+    void activate(ComponentContext context, Config config) {
+        this.meterType = config.type();
+        if (config.usePollingInterval()) {
+            super.activate(context, config.id(), config.alias(), config.enabled(), config.primaryAddress(), this.cm, "mbus",
+                    config.mbus_id(), config.pollingIntervalSeconds());     // If you want to use the polling interval, put the time as the last argument in super.activate().
+        } else {
+            super.activate(context, config.id(), config.alias(), config.enabled(), config.primaryAddress(), this.cm, "mbus",
+                    config.mbus_id(), 0);  // If you don't want to use the polling interval, use super.activate() without the last argument.
+        }
+    }
 
-	@Deactivate
-	protected void deactivate() {
-		super.deactivate();
-	}
+    @Deactivate
+    protected void deactivate() {
+        super.deactivate();
+    }
 
-	@Override
-	public MeterType getMeterType() {
-		return this.meterType;
-	}
+    @Override
+    public MeterType getMeterType() {
+        return this.meterType;
+    }
 
-	@Override
-	protected void addChannelDataRecords() {
-		this.channelDataRecordsList.add(new ChannelRecord(channel(ChannelId.TOTAL_CONSUMED_ENERGY), 0));
-		this.channelDataRecordsList.add(new ChannelRecord(channel(AsymmetricMeter.ChannelId.ACTIVE_POWER_L1), 1));
-		this.channelDataRecordsList.add(new ChannelRecord(channel(AsymmetricMeter.ChannelId.ACTIVE_POWER_L2), 2));
-		this.channelDataRecordsList.add(new ChannelRecord(channel(AsymmetricMeter.ChannelId.ACTIVE_POWER_L3), 3));
-		// TODO mapping seems to be wrong; L3 is repeated
-		this.channelDataRecordsList.add(new ChannelRecord(channel(AsymmetricMeter.ChannelId.ACTIVE_POWER_L3), 4));
-		this.channelDataRecordsList.add(new ChannelRecord(channel(AsymmetricMeter.ChannelId.ACTIVE_POWER_L3), 5));
-		this.channelDataRecordsList.add(new ChannelRecord(channel(AsymmetricMeter.ChannelId.ACTIVE_POWER_L3), 6));
-		this.channelDataRecordsList.add(new ChannelRecord(channel(ChannelId.MANUFACTURER_ID), DataType.Manufacturer));
-		this.channelDataRecordsList.add(new ChannelRecord(channel(ChannelId.DEVICE_ID), DataType.DeviceId));
-	}
+    @Override
+    protected void addChannelDataRecords() {
+        this.channelDataRecordsList.add(new ChannelRecord(channel(ChannelId.TOTAL_CONSUMED_ENERGY), 0));
+        this.channelDataRecordsList.add(new ChannelRecord(channel(AsymmetricMeter.ChannelId.ACTIVE_POWER_L1), 1));
+        this.channelDataRecordsList.add(new ChannelRecord(channel(AsymmetricMeter.ChannelId.ACTIVE_POWER_L2), 2));
+        this.channelDataRecordsList.add(new ChannelRecord(channel(AsymmetricMeter.ChannelId.ACTIVE_POWER_L3), 3));
+        // TODO mapping seems to be wrong; L3 is repeated
+        this.channelDataRecordsList.add(new ChannelRecord(channel(AsymmetricMeter.ChannelId.ACTIVE_POWER_L3), 4));
+        this.channelDataRecordsList.add(new ChannelRecord(channel(AsymmetricMeter.ChannelId.ACTIVE_POWER_L3), 5));
+        this.channelDataRecordsList.add(new ChannelRecord(channel(AsymmetricMeter.ChannelId.ACTIVE_POWER_L3), 6));
+        this.channelDataRecordsList.add(new ChannelRecord(channel(ChannelId.MANUFACTURER_ID), DataType.Manufacturer));
+        this.channelDataRecordsList.add(new ChannelRecord(channel(ChannelId.DEVICE_ID), DataType.DeviceId));
+    }
 
-	/**
-	 * Gets the Channel for {@link ChannelId#TOTAL_CONSUMED_ENERGY}.
-	 *
-	 * @return the Channel
-	 */
-	public Channel<Integer> getTotalConsumedEnergyChannel() {
-		return this.channel(ChannelId.TOTAL_CONSUMED_ENERGY);
-	}
+    /**
+     * Gets the Channel for {@link ChannelId#TOTAL_CONSUMED_ENERGY}.
+     *
+     * @return the Channel
+     */
+    public Channel<Integer> getTotalConsumedEnergyChannel() {
+        return this.channel(ChannelId.TOTAL_CONSUMED_ENERGY);
+    }
 
-	/**
-	 * Gets the Total Consumed Energy in [kWh]. See {@link ChannelId#TOTAL_CONSUMED_ENERGY}.
-	 *
-	 * @return the Channel {@link Value}
-	 */
-	public Value<Integer> getTotalConsumedEnergy() {
-		return this.getTotalConsumedEnergyChannel().value();
-	}
+    /**
+     * Gets the Total Consumed Energy in [kWh]. See {@link ChannelId#TOTAL_CONSUMED_ENERGY}.
+     *
+     * @return the Channel {@link Value}
+     */
+    public Value<Integer> getTotalConsumedEnergy() {
+        return this.getTotalConsumedEnergyChannel().value();
+    }
 
-	@Override
-	public String debugLog() {
-		String debug = "";
-		if (this.getActivePower().isDefined()) {
-			debug += this.getActivePowerChannel().channelId().id() + " "
-					+ this.getActivePower().toString()
-					+ "\n";
-		}
-		if (this.getActiveConsumptionEnergy().isDefined()) {
-			debug += this.getActiveConsumptionEnergyChannel().channelId().id()
-					+ " " + getActiveConsumptionEnergy().toString()
-					+ "\n";
-		}
-		if (this.getActiveProductionEnergy().isDefined()) {
-			debug += this.getActiveProductionEnergyChannel().channelId().id()
-					+ " " + getActiveProductionEnergy().toString()
-					+ "\n";
-		}
-		if (this.getTotalConsumedEnergy().isDefined()) {
-			debug += this.getTotalConsumedEnergyChannel().channelId().id()
-					+ " " + this.getTotalConsumedEnergy().toString()
-					+ "\n";
-		}
-		return debug;
-	}
+    @Override
+    public String debugLog() {
+        String debug = "";
+        if (this.getActivePower().isDefined()) {
+            debug += this.getActivePowerChannel().channelId().id() + " "
+                    + this.getActivePower().toString()
+                    + "\n";
+        }
+        if (this.getActiveConsumptionEnergy().isDefined()) {
+            debug += this.getActiveConsumptionEnergyChannel().channelId().id()
+                    + " " + getActiveConsumptionEnergy().toString()
+                    + "\n";
+        }
+        if (this.getActiveProductionEnergy().isDefined()) {
+            debug += this.getActiveProductionEnergyChannel().channelId().id()
+                    + " " + getActiveProductionEnergy().toString()
+                    + "\n";
+        }
+        if (this.getTotalConsumedEnergy().isDefined()) {
+            debug += this.getTotalConsumedEnergyChannel().channelId().id()
+                    + " " + this.getTotalConsumedEnergy().toString()
+                    + "\n";
+        }
+        return debug;
+    }
 
-	@Override
-	public void findRecordPositions(VariableDataStructure data, List<ChannelRecord> channelDataRecordsList) {
-		// Not needed so far.
-	}
+    @Override
+    public void findRecordPositions(VariableDataStructure data, List<ChannelRecord> channelDataRecordsList) {
+        // Not needed so far.
+    }
 
 }

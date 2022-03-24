@@ -61,8 +61,7 @@ public class GasMeterMbusImpl extends AbstractOpenemsMbusComponent implements Op
                 .unit(Unit.NONE)), //
 
         CUBIC_METER_TO_MBUS(Doc.of(OpenemsType.DOUBLE)),
-        TIME_STAMP_STRING_TO_MBUS(Doc.of(OpenemsType.STRING))
-        ;
+        TIME_STAMP_STRING_TO_MBUS(Doc.of(OpenemsType.STRING));
 
         private final Doc doc;
 
@@ -75,18 +74,24 @@ public class GasMeterMbusImpl extends AbstractOpenemsMbusComponent implements Op
         }
     }
 
-    Channel<Double> getCubicMeterToMbus(){
+    Channel<Double> getCubicMeterToMbus() {
         return this.channel(ChannelId.CUBIC_METER_TO_MBUS);
     }
-    Channel<String> getTimeToMBus(){
+
+    Channel<String> getTimeToMBus() {
         return this.channel(ChannelId.TIME_STAMP_STRING_TO_MBUS);
     }
 
     @Activate
     public void activate(ComponentContext context, Config config) {
-      this.gasMeterType = config.meterType();
-        super.activate(context, config.id(), config.alias(), config.enabled(), config.primaryAddress(), this.cm, "mbus",
-                config.mbusBridgeId(), 0);
+        this.gasMeterType = config.meterType();
+        if (config.usePollingInterval()) {
+            super.activate(context, config.id(), config.alias(), config.enabled(), config.primaryAddress(), this.cm, "mbus",
+                    config.mbusBridgeId(), config.pollingIntervalSeconds());     // If you want to use the polling interval, put the time as the last argument in super.activate().
+        } else {
+            super.activate(context, config.id(), config.alias(), config.enabled(), config.primaryAddress(), this.cm, "mbus",
+                    config.mbusBridgeId(), 0);  // If you don't want to use the polling interval, use super.activate() without the last argument.
+        }
     }
 
 
@@ -113,10 +118,10 @@ public class GasMeterMbusImpl extends AbstractOpenemsMbusComponent implements Op
     @Override
     public void handleEvent(Event event) {
         if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE)) {
-            if(this.getCubicMeterToMbus().value().isDefined()){
+            if (this.getCubicMeterToMbus().value().isDefined()) {
                 this.getTotalConsumedEnergyCubicMeterChannel().setNextValue(this.getCubicMeterToMbus().value());
             }
-            if(this.getTimeToMBus().value().isDefined()){
+            if (this.getTimeToMBus().value().isDefined()) {
                 this.getTimestampStringChannel().setNextValue(this.getTimeToMBus().value());
             }
         }

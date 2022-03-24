@@ -34,7 +34,7 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     String[] forbiddenValues() default {"-901", "404", "null"};
 
     @AttributeDefinition(name = "Alternative Value", description = "The Alternative Value. Can be either a ChannelAddress or a staticValue")
-    String alternativeValue() default "VirtualChannel0/VirtualInteger";
+    String alternativeValue() default "VirtualChannel0/VirtualLong";
 
     @AttributeDefinition(name = "Alternative Value is String", description = "If the alternative Value is a String and NOT a ChannelAddress. Tick true")
     boolean alternativeValueIsString() default false;
