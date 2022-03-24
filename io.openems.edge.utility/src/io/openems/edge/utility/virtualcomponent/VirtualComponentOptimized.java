@@ -31,8 +31,8 @@ public interface VirtualComponentOptimized extends OpenemsComponent {
          */
         WRITE_OPTIMIZED_VALUE_LONG(Doc.of(OpenemsType.LONG).accessMode(AccessMode.READ_WRITE).onInit(
                 channel -> {
-            ((LongWriteChannel) channel).onSetNextWrite(channel::setNextValue);
-        })),
+                    ((LongWriteChannel) channel).onSetNextWrite(channel::setNextValue);
+                })),
 
         /**
          * Input For Write Value.
@@ -43,9 +43,9 @@ public interface VirtualComponentOptimized extends OpenemsComponent {
          * </ul>
          */
         WRITE_OPTIMIZED_VALUE_DOUBLE(Doc.of(OpenemsType.DOUBLE).accessMode(AccessMode.READ_WRITE).onInit(
-                        channel -> {
-                            ((DoubleWriteChannel) channel).onSetNextWrite(channel::setNextValue);
-                        })),
+                channel -> {
+                    ((DoubleWriteChannel) channel).onSetNextWrite(channel::setNextValue);
+                })),
 
         /**
          * Input For Write Value.
@@ -82,7 +82,6 @@ public interface VirtualComponentOptimized extends OpenemsComponent {
         ENABLE_SIGNAL(Doc.of(OpenemsType.BOOLEAN).accessMode(AccessMode.READ_WRITE));
 
 
-
         private final Doc doc;
 
         ChannelId(Doc doc) {
@@ -96,7 +95,48 @@ public interface VirtualComponentOptimized extends OpenemsComponent {
 
     }
 
-    default WriteChannel<Boolean> getEnableSignal(){
+    /**
+     * Get the {@link ChannelId#ENABLE_SIGNAL}.
+     *
+     * @return the channel
+     */
+    default WriteChannel<Boolean> getEnableSignal() {
         return this.channel(ChannelId.ENABLE_SIGNAL);
+    }
+
+    /**
+     * Get the {@link ChannelId#WRITE_OPTIMIZED_VALUE_BOOLEAN}.
+     *
+     * @return the channel
+     */
+    default WriteChannel<Boolean> getOptimizedValueBooleanChannel() {
+        return this.channel(ChannelId.WRITE_OPTIMIZED_VALUE_BOOLEAN);
+    }
+
+    /**
+     * Get the {@link ChannelId#WRITE_OPTIMIZED_VALUE_STRING}.
+     *
+     * @return the channel
+     */
+    default WriteChannel<String> getOptimizedValueStringChannel() {
+        return this.channel(ChannelId.WRITE_OPTIMIZED_VALUE_STRING);
+    }
+
+    /**
+     * Get the {@link ChannelId#WRITE_OPTIMIZED_VALUE_LONG}.
+     *
+     * @return the channel
+     */
+    default WriteChannel<Long> getOptimizedValueLongChannel() {
+        return this.channel(ChannelId.WRITE_OPTIMIZED_VALUE_LONG);
+    }
+
+    /**
+     * Get the {@link ChannelId#WRITE_OPTIMIZED_VALUE_DOUBLE}.
+     *
+     * @return the channel
+     */
+    default WriteChannel<Double> getOptimizedValueDoubleChannel() {
+        return this.channel(ChannelId.WRITE_OPTIMIZED_VALUE_DOUBLE);
     }
 }
