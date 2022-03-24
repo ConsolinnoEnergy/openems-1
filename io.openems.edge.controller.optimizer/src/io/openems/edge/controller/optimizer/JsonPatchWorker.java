@@ -104,7 +104,7 @@ class JsonPatchWorker {
                                 .getAsJsonObject().remove("channel_value");
                         old.get("time").getAsJsonArray().get(n).getAsJsonObject().get(time).getAsJsonArray().get(this.taskPosition)
                                 .getAsJsonObject().add("channel_value", now.getAsJsonObject().get(time).getAsJsonArray()
-                                .get(0).getAsJsonObject().get("channel_value"));
+                                        .get(0).getAsJsonObject().get("channel_value"));
                         alreadyHere = true;
                     } else if (!alreadyHere) {
                         //Adds Component in schedule if its not existent in any way
@@ -325,16 +325,16 @@ class JsonPatchWorker {
     void deleteChannel(String errorChannelId) {
         String component = errorChannelId.substring(0, errorChannelId.indexOf("/"));
         String channel = errorChannelId.substring(errorChannelId.indexOf("/") + 1);
-        for (int i = 0; i < this.lastTimestampArray.size(); i++) {
-            String time = this.lastTimestampArray.get(i);
-            int objectSize = this.jsonObject.get("time").getAsJsonArray().get(i).getAsJsonObject().get(time).getAsJsonArray().size();
-            for (int n = 0; n < objectSize; n++) {
-                if (this.checkThisTask(this.jsonObject, i, n, time, component, channel)) {
-                    this.jsonObject.get("time").getAsJsonArray().get(i).getAsJsonObject().get(time).getAsJsonArray().remove(n);
+        if (this.lastTimestampArray != null) {
+            for (int i = 0; i < this.lastTimestampArray.size(); i++) {
+                String time = this.lastTimestampArray.get(i);
+                int objectSize = this.jsonObject.get("time").getAsJsonArray().get(i).getAsJsonObject().get(time).getAsJsonArray().size();
+                for (int n = 0; n < objectSize; n++) {
+                    if (this.checkThisTask(this.jsonObject, i, n, time, component, channel)) {
+                        this.jsonObject.get("time").getAsJsonArray().get(i).getAsJsonObject().get(time).getAsJsonArray().remove(n);
+                    }
                 }
-
             }
-
         }
         this.jsonString = this.jsonObject.toString();
     }

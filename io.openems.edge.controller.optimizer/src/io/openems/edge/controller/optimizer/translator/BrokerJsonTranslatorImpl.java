@@ -55,6 +55,7 @@ public class BrokerJsonTranslatorImpl extends AbstractOpenemsComponent implement
     private String lastSchedule;
     private String fallbackString;
     private boolean configurationDone;
+    private boolean firstRun;
 
     public BrokerJsonTranslatorImpl() {
         super(OpenemsComponent.ChannelId.values(),
@@ -76,7 +77,7 @@ public class BrokerJsonTranslatorImpl extends AbstractOpenemsComponent implement
         List<List<String>> fallbackSchedule;
         fallbackSchedule = this.createSchedule();
         this.optimizer.addFallbackSchedule(fallbackSchedule);
-
+        this.firstRun = true;
         super.activate(context, config.id(), config.alias(), config.enabled());
         this.update(this.cm.getConfiguration(this.servicePid(), "?"), "channelIdList", new ArrayList<>(this.cpm.getComponent(this.componentId).channels()), config.channelIdList().length);
 
@@ -129,7 +130,8 @@ public class BrokerJsonTranslatorImpl extends AbstractOpenemsComponent implement
                     this.optimizer.handleNewSchedule(newSchedule);
                     this.lastSchedule = newSchedule.toString();
                 }
-            } else if (newSchedule.isEmpty() == false && lastSchedule.equals(newSchedule.toString()) == false) {
+            } else if ((newSchedule.isEmpty() == false && lastSchedule.equals(newSchedule.toString()) == false) || this.firstRun) {
+                this.firstRun = false;
                 this.optimizer.handleNewSchedule(newSchedule);
                 this.lastSchedule = newSchedule.toString();
 
