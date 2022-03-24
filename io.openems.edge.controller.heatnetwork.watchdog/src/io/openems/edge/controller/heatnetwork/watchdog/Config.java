@@ -1,5 +1,6 @@
 package io.openems.edge.controller.heatnetwork.watchdog;
 
+import io.openems.edge.controller.heatnetwork.watchdog.api.ErrorType;
 import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
@@ -60,6 +61,8 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     String timerId() default "TimerByTime";
 
     boolean configurationDone() default false;
+
+    ErrorType errorType() default ErrorType.UNDEFINED;
 
     boolean enabled() default true;
 

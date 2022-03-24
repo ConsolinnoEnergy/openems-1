@@ -4,6 +4,7 @@ import io.openems.common.types.ChannelAddress;
 import io.openems.edge.common.test.AbstractComponentConfig;
 import io.openems.edge.common.test.AbstractComponentTest;
 import io.openems.edge.common.test.DummyComponentManager;
+import io.openems.edge.controller.heatnetwork.watchdog.api.ErrorType;
 import io.openems.edge.controller.test.ControllerTest;
 import io.openems.edge.heater.decentralized.test.DummyDecentralizedHeater;
 import io.openems.edge.thermometer.api.Thermometer;
@@ -38,6 +39,7 @@ public class ControllerWatchdogImplTest {
         private boolean useAbsoluteValue;
         private boolean configurationDone;
         private ExceptionalStateType exceptionalStateType;
+        private ErrorType errorType = ErrorType.UNDEFINED;
 
         MyConfig(String id, String alias, boolean enabled, String service_pid, String sourceThermometer,
                  String targetThermometer, int errorDelta, boolean invert, int startTemperature,
@@ -145,6 +147,9 @@ public class ControllerWatchdogImplTest {
         public ExceptionalStateType exceptionalStateType () {
             return this.exceptionalStateType;
         }
+
+        @Override
+        public ErrorType errorType(){return this.errorType;}
 
     }
 
