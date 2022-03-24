@@ -1,9 +1,12 @@
 package io.openems.edge.utility.virtualcomponent;
 
+import io.openems.common.types.OpenemsType;
 import io.openems.edge.common.channel.value.Value;
 import io.openems.edge.common.component.AbstractOpenemsComponent;
 import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.common.event.EdgeEventConstants;
+import io.openems.edge.common.type.TypeUtils;
+import io.openems.edge.utility.api.VirtualChannelType;
 import org.osgi.service.cm.ConfigurationException;
 import org.osgi.service.component.ComponentContext;
 import org.osgi.service.component.annotations.Activate;
@@ -27,10 +30,12 @@ import java.util.Optional;
 @Designate(ocd = Config.class, factory = true)
 @Component(name = "Utility.Virtual.Component", immediate = true,
         configurationPolicy = ConfigurationPolicy.REQUIRE,
-property = { EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE } )
+        property = {EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE})
 
 public class VirtualComponentOptimizedImpl extends AbstractOpenemsComponent implements OpenemsComponent, VirtualComponentOptimized, EventHandler {
 
+    private boolean useSetPointCheck;
+    private VirtualChannelType type;
 
     public VirtualComponentOptimizedImpl() {
         super(VirtualComponentOptimized.ChannelId.values(),
@@ -40,11 +45,15 @@ public class VirtualComponentOptimizedImpl extends AbstractOpenemsComponent impl
     @Activate
     void activate(ComponentContext context, Config config) throws ConfigurationException {
         super.activate(context, config.id(), config.alias(), config.enabled());
+        this.useSetPointCheck = config.useOptimizedValueAsEnableSignalIndicator();
+        this.type = config.virtualChannelType();
     }
 
     @Modified
     void modified(ComponentContext context, Config config) throws ConfigurationException {
         super.modified(context, config.id(), config.alias(), config.enabled());
+        this.useSetPointCheck = config.useOptimizedValueAsEnableSignalIndicator();
+        this.type = config.virtualChannelType();
     }
 
     @Deactivate
@@ -54,9 +63,27 @@ public class VirtualComponentOptimizedImpl extends AbstractOpenemsComponent impl
 
     @Override
     public void handleEvent(Event event) {
-        if(event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE)) {
+        if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE)) {
             Optional<Boolean> enabled = this.getEnableSignal().getNextWriteValueAndReset();
-            if (enabled.isPresent()) {
+            if (this.useSetPointCheck) {
+                Double value = 0.0d;
+                switch (this.type) {
+                    case STRING:
+                        value = TypeUtils.getAsType(OpenemsType.DOUBLE, this.getOptimizedValueStringChannel().value());
+                        break;
+                    case BOOLEAN:
+                        value = TypeUtils.getAsType(OpenemsType.DOUBLE, this.getOptimizedValueBooleanChannel().value());
+                        break;
+                    case DOUBLE:
+                        value = this.getOptimizedValueDoubleChannel().value().orElse(0.d);
+                        break;
+                    case LONG:
+                        value = TypeUtils.getAsType(OpenemsType.DOUBLE, this.getOptimizedValueLongChannel().value());
+                        break;
+                }
+                boolean setEnabled = value != null && value > 0.d;
+                this.getEnableSignal().setNextValue(setEnabled);
+            } else if (enabled.isPresent()) {
                 this.getEnableSignal().setNextValue(enabled.get());
             } else {
                 this.getEnableSignal().setNextValue(false);
