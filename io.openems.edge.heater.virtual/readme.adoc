@@ -1,0 +1,4 @@
+= Heater Virtual
+
+Implemented Natures::
+- Heater
