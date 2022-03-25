@@ -8,7 +8,7 @@ import io.openems.edge.common.channel.WriteChannel;
 
 /**
  * A HeaterCluster. Other Classes and Controller can set a recommended HeatingPower.
- * Usually a Recommended HeatingPower is preferred, however the Overwrite Heating Power can have a higher priority,
+ * Usually a Recommended HeatingPower is preferred, however Overwrite Heating Power can have a higher priority,
  * when it is set constantly and higher than the Recommended Heating Power.
  * As Long as the ClusteredHeater is Heating / EnableSignal is set, the Inherited Heater stays active.
  */
@@ -31,14 +31,29 @@ public interface ClusteredHeater extends Heater {
 
     }
 
+    /**
+     * Get the {@link ChannelId#OVERWRITE_SET_POINT_HEATING_POWER} channel.
+     *
+     * @return the channel.
+     */
     default WriteChannel<Float> getOverWriteSetPointHeatingPowerChannel() {
         return this.channel(ChannelId.OVERWRITE_SET_POINT_HEATING_POWER);
     }
 
+    /**
+     * Get the {@link ChannelId#RECOMMENDED_SET_POINT_HEATING_POWER} channel.
+     *
+     * @return the channel.
+     */
     default WriteChannel<Float> getRecommendedSetPointHeatingPower() {
         return this.channel(ChannelId.RECOMMENDED_SET_POINT_HEATING_POWER);
     }
 
+    /**
+     * Get the {@link ChannelId#CLUSTER_STATE} channel.
+     *
+     * @return the channel.
+     */
     default Channel<Integer> getClusterStateChannel() {
         return this.channel(ChannelId.CLUSTER_STATE);
     }

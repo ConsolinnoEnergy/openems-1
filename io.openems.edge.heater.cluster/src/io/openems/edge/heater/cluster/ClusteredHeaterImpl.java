@@ -1,15 +1,21 @@
 package io.openems.edge.heater.cluster;
 
+import com.google.common.collect.Lists;
 import io.openems.common.exceptions.OpenemsError;
+import io.openems.common.types.ChannelAddress;
+import io.openems.common.types.OpenemsType;
 import io.openems.edge.common.component.AbstractOpenemsComponent;
 import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.common.event.EdgeEventConstants;
+import io.openems.edge.common.type.TypeUtils;
 import io.openems.edge.heater.api.EnergyControlMode;
 import io.openems.edge.heater.api.Heater;
 import io.openems.edge.heater.api.HeaterState;
 import io.openems.edge.heater.api.ClusterState;
 import io.openems.edge.heater.api.ClusteredHeater;
+import io.openems.edge.timer.api.TimerHandler;
+import io.openems.edge.timer.api.TimerHandlerImpl;
 import org.osgi.service.cm.ConfigurationException;
 import org.osgi.service.component.ComponentContext;
 import org.osgi.service.component.annotations.Activate;
@@ -33,9 +39,34 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
-
+/**
+ * <p>
+ * The Heater Cluster stores "n" amount of Heater. Those should be the same HeaterType.
+ * They should have the same amount of a maximum HeatingPower.
+ * </p>
+ * <p>
+ * When the HeaterCluster is Enabled. It iterates through its heater and activates them, depending on the power demand.
+ * The iteration order for activating is: Get the highest priority -> get the first -> second -> third -> etc. heater.
+ * Whenever the demand is satisfied -> stop iterating and run the selected heater.
+ * </p>
+ * <p>
+ * Furthermore, there are three Types of possible demands. The default value, that always applies when no other demand is set.
+ * The "overwriteDemand" and the "recommendedDemand".
+ * </p>
+ * <p>
+ * When both overwrite and recommended are written, check which value is the greater one.
+ * When the pastPowerValue is greater than the overwriteValue. Apply the pastPowerValue.
+ * However, when the recommended value is only available and it's less than the pastPowerValue, apply the recommended value.
+ * This is because, the recommended value is usually set by an AI.
+ * The overwriteValue works like a "fallback" when the AI miscalculates, and it gets too cold.
+ * </p>
+ * <p>
+ * Furthermore, the Heater within the priorities can be optionally sorted. Select a ChannelId and a deltaTime, and whenever
+ * the Time is up, those Heater will be sorted by the given ChannelId. If Ascending or Descending is up to the configuration.
+ * </p>
+ */
 @Designate(ocd = Config.class, factory = true)
-@Component(name = "ClusterHeater", immediate = true,
+@Component(name = "Heater.Cluster", immediate = true,
         configurationPolicy = ConfigurationPolicy.REQUIRE,
         property = EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS)
 
@@ -55,6 +86,11 @@ public class ClusteredHeaterImpl extends AbstractOpenemsComponent implements Ope
     private final Map<Heater, Integer> currentRunningHeatersWithSetPoint = new HashMap<>();
     private Config config;
     private boolean configSuccess = false;
+    private boolean shouldSort;
+    private SortType sortType;
+    private String channelIdToSortBy;
+    private TimerHandler timerHandler;
+    private static final String SORT_AGAIN = "CLUSTERED_HEATER_SORT_AGAIN";
 
     public ClusteredHeaterImpl() {
         super(OpenemsComponent.ChannelId.values(),
@@ -74,6 +110,7 @@ public class ClusteredHeaterImpl extends AbstractOpenemsComponent implements Ope
     }
 
     private void activationOrModificationRoutine(Config config) {
+        this.configSuccess = false;
         this.priorityToHeaterMap.forEach((key, value) -> {
             value.clear();
         });
@@ -84,20 +121,29 @@ public class ClusteredHeaterImpl extends AbstractOpenemsComponent implements Ope
         this.maxIndividualHeatingPowerKw = config.maxPowerOfaSingleHeaterInThisCluster();
         this.getDefaultActivePowerChannel().setNextValue(config.defaultPowerLevel());
         try {
-            if (config.highPrioHeater() != null && config.highPrioHeater().length > 0) {
+            if (config.highPrioHeater() != null && config.highPrioHeater().length > 0 && !config.highPrioHeater()[0].equals("")) {
                 this.putConfiguredHeaterToMap(Arrays.asList(config.highPrioHeater()), this.priorityToHeaterMap.get(ClusteredHeaterPriority.HIGH));
             }
-            if (config.midPrioHeater() != null && config.midPrioHeater().length > 0) {
+            if (config.midPrioHeater() != null && config.midPrioHeater().length > 0 && !config.midPrioHeater()[0].equals("")) {
                 this.putConfiguredHeaterToMap(Arrays.asList(config.midPrioHeater()), this.priorityToHeaterMap.get(ClusteredHeaterPriority.MID));
             }
-            if (config.lowPrioHeater() != null && config.lowPrioHeater().length > 0) {
+            if (config.lowPrioHeater() != null && config.lowPrioHeater().length > 0 && !config.lowPrioHeater()[0].equals("")) {
                 this.putConfiguredHeaterToMap(Arrays.asList(config.lowPrioHeater()), this.priorityToHeaterMap.get(ClusteredHeaterPriority.LOW));
             }
+            this.shouldSort = config.sortHeater();
+            this.sortType = config.sortType();
+            this.channelIdToSortBy = config.channelId();
+            if (this.timerHandler != null) {
+                this.timerHandler.removeComponent();
+            }
+            this.timerHandler = new TimerHandlerImpl(this.id(), this.cpm);
+            this.timerHandler.addOneIdentifier(SORT_AGAIN, config.timerId(), config.maxTimeInterval());
         } catch (OpenemsError.OpenemsNamedException | ConfigurationException e) {
             this.configSuccess = false;
             this.log.warn("Something went wrong with configuration, trying again later!");
+            return;
         }
-
+        this.configSuccess = true;
     }
 
     private void putConfiguredHeaterToMap(List<String> heaterIdList, Map<Integer, Heater> heaterMapToPut) throws ConfigurationException, OpenemsError.OpenemsNamedException {
@@ -152,12 +198,12 @@ public class ClusteredHeaterImpl extends AbstractOpenemsComponent implements Ope
             if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS)) {
                 //refresh default ActivePowerChannel if externally set
                 if (this.getDefaultActivePowerChannel().getNextWriteValue().isPresent()) {
-                    this.getDefaultActivePowerChannel().setNextValue(this.getDefaultActivePowerChannel().getNextWriteValueAndReset().get());
+                    this.getDefaultActivePowerChannel().setNextValue(this.getDefaultActivePowerChannel().getNextWriteValueAndReset());
                 }
                 //Externally Set EnableSignal
                 if (this.getEnableSignalChannel().getNextWriteValueAndReset().orElse(false)) {
                     this.getEnableSignalChannel().setNextValue(true);
-
+                    this.sortHeater();
                     float selectedPowerLevelThisRun = -1.f;
                     //Convert Values depending on expected INPUT -> Convert to general KW input!
                     float defaultPower = this.convertPower((float)
@@ -221,24 +267,85 @@ public class ClusteredHeaterImpl extends AbstractOpenemsComponent implements Ope
     }
 
     /**
-     * PowerSetPoint is calculated -> now apply them to the heater. Remember StoredPowerSetPoint is in KW
+     * <p>
+     * 1. Get all Heater
+     * 2. For each heater in priority map -> sort them by given ChannelId
+     * 3. Invert (Descending) if configured {@link SortType#DESCENDING}
+     * 4. Put them in an new Hashmap
+     * 5. the old {@link #priorityToHeaterMap} is replaced by the new sorted one.
+     * </p>
+     * <p>
+     * Sorting the heater only happens, if {@link #shouldSort} is configured and the time is up.
+     * </p>
+     */
+    private void sortHeater() {
+        if (this.shouldSort && this.timerHandler.checkTimeIsUp(SORT_AGAIN)) {
+            this.timerHandler.resetTimer(SORT_AGAIN);
+            Map<ClusteredHeaterPriority, Map<Integer, Heater>> newSortedMap = new HashMap<>();
+
+            this.priorityToHeaterMap.forEach((key, value) -> {
+                List<Heater> heaterList = new ArrayList<>();
+                value.forEach((index, heater) -> {
+                    heaterList.add(heater);
+                });
+                heaterList.sort((heater1, heater2) -> {
+                    Integer calcDouble;
+                    Integer calcDouble2;
+                    try {
+                        calcDouble = TypeUtils.getAsType(OpenemsType.INTEGER, this.cpm.getChannel(new ChannelAddress(heater1.id(), this.channelIdToSortBy)).value());
+                        if (calcDouble == null) {
+                            calcDouble = 0;
+                        }
+                    } catch (OpenemsError.OpenemsNamedException e) {
+                        this.log.warn(this.id() + "Channel not available for " + heater1.id() + " channel: " + this.channelIdToSortBy);
+                        calcDouble = 0;
+                    }
+                    try {
+                        calcDouble2 = TypeUtils.getAsType(OpenemsType.INTEGER, this.cpm.getChannel(new ChannelAddress(heater2.id(), this.channelIdToSortBy)).value());
+                        if (calcDouble2 == null) {
+                            calcDouble2 = 0;
+                        }
+                    } catch (OpenemsError.OpenemsNamedException e) {
+                        calcDouble2 = 0;
+                    }
+                    return calcDouble.compareTo(calcDouble2);
+                });
+                List<Heater> copiedList = Lists.reverse(heaterList);
+                AtomicInteger counter = new AtomicInteger(0);
+                Map<Integer, Heater> newHeaterList = new HashMap<>();
+                if (this.sortType.equals(SortType.DESCENDING)) {
+                    copiedList.forEach(heater -> {
+                        newHeaterList.put(counter.getAndIncrement(), heater);
+                    });
+                } else {
+                    heaterList.forEach(heater -> {
+                        newHeaterList.put(counter.getAndIncrement(), heater);
+                    });
+                }
+                newSortedMap.put(key, newHeaterList);
+            });
+            this.priorityToHeaterMap = newSortedMap;
+        }
+    }
+
+    /**
+     * PowerSetPoint is calculated -> now apply them to the heater. StoredPowerSetPoint is in KW.
      */
 
     private void enableSelectedRunningHeatersAndConvertPowerSetPoint() {
 
         this.currentRunningHeatersWithSetPoint.forEach((heater, setPoint) -> {
-            Float convertedSetPoint = this.convertPower((float) setPoint, this.energyControlModeOutput);
-            if (convertedSetPoint != null) {
+            if (setPoint != null) {
                 try {
                     heater.getEnableSignalChannel().setNextWriteValueFromObject(true);
                     switch (this.energyControlModeOutput) {
                         case PERCENT:
-                            heater.setHeatingPowerPercentSetpoint((convertedSetPoint * this.maxIndividualHeatingPowerKw) / 100.f);
+                            heater.setHeatingPowerPercentSetpoint((setPoint * 100.f) / this.maxIndividualHeatingPowerKw);
                             break;
                         case KW:
                         case TEMPERATURE:
                         default:
-                            heater.setHeatingPowerSetpoint(convertedSetPoint);
+                            heater.setHeatingPowerSetpoint(setPoint);
                             break;
                     }
                 } catch (OpenemsError.OpenemsNamedException e) {
@@ -285,7 +392,7 @@ public class ClusteredHeaterImpl extends AbstractOpenemsComponent implements Ope
                 }
             });
         } else {
-            //Reverse order of ClusteredPriority and reduce from least priority to max priority
+            //Reverse order of ClusteredPriority and reduce from the least priority to max priority
             List<ClusteredHeaterPriority> values = Arrays.asList(ClusteredHeaterPriority.values());
             Collections.reverse(values);
             values.forEach(priority -> {
@@ -296,8 +403,6 @@ public class ClusteredHeaterImpl extends AbstractOpenemsComponent implements Ope
                         int powerProvided = this.currentRunningHeatersWithSetPoint.get(heaterToGet);
                         //if power needs to be reduced
                         if (powerToApply.get() < 0) {
-                            //Reduce power -> if power < 0 e.g. "Offline" remove current running heater
-                            //TODO Later -> Replace 0 with min Power of single Heater.
                             if (powerProvided + powerToApply.get() <= 0) {
                                 powerToApply.set(powerToApply.get() + powerProvided);
                                 this.currentRunningHeatersWithSetPoint.remove(heaterToGet);
@@ -316,10 +421,11 @@ public class ClusteredHeaterImpl extends AbstractOpenemsComponent implements Ope
     }
 
     /**
-     * Converts Power
+     * Converts the Power.
      *
-     * @param inputValue
-     * @return
+     * @param inputValue  the input PowerLevel.
+     * @param controlMode the {@link EnergyControlMode}.
+     * @return the converted Power in KW.
      */
     private Float convertPower(Float inputValue, EnergyControlMode controlMode) {
         if (inputValue == null) {
