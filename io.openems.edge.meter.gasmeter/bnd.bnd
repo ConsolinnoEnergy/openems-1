@@ -1,15 +1,7 @@
-Bundle-Name: OpenEMS Edge Gasmeter Api
+Bundle-Name: OpenEMS Edge Gasmeter
 Bundle-Vendor: Consolinno Energy GmbH
 Bundle-License: https://opensource.org/licenses/EPL-2.0
 Bundle-Version: 1.0.0.${tstamp}
-Bundle-Description: \
-    This Bundle creates Mcps, and add it to the spi list, depending on the Version of the board.
-
-
-Private-Package:  \
-	io.openems.edge.meter.gasmeter
-
--includeresource: {readme.md}
 
 -buildpath:  \
 	${buildpath},\

@@ -8,6 +8,7 @@ import io.openems.edge.bridge.mbus.api.ChannelRecord;
 import io.openems.edge.bridge.mbus.api.WMbusProtocol;
 import io.openems.edge.common.channel.Doc;
 import io.openems.edge.common.component.OpenemsComponent;
+import io.openems.edge.common.event.EdgeEventConstants;
 import io.openems.edge.meter.api.Meter;
 import io.openems.edge.meter.api.WaterMeter;
 import org.openmuc.jmbus.DataRecord;
@@ -22,6 +23,9 @@ import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.component.annotations.ReferenceCardinality;
 import org.osgi.service.component.annotations.ReferencePolicy;
 import org.osgi.service.component.annotations.ReferencePolicyOption;
+import org.osgi.service.event.Event;
+import org.osgi.service.event.EventConstants;
+import org.osgi.service.event.EventHandler;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,8 +35,9 @@ import java.util.List;
 @Designate(ocd = ConfigWirelessMbus.class, factory = true)
 @Component(name = "WaterMeter.WirelessMbus",
         configurationPolicy = ConfigurationPolicy.REQUIRE,
-        immediate = true)
-public class WaterMeterWirelessMbusImpl extends AbstractOpenemsWMbusComponent implements OpenemsComponent, WaterMeter {
+        immediate = true,
+        property = {EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE})
+public class WaterMeterWirelessMbusImpl extends AbstractOpenemsWMbusComponent implements OpenemsComponent, WaterMeter, EventHandler {
 
     @Reference
     protected ConfigurationAdmin cm;
@@ -223,6 +228,15 @@ public class WaterMeterWirelessMbusImpl extends AbstractOpenemsWMbusComponent im
                         break;
                     }
                 }
+            }
+        }
+    }
+
+    @Override
+    public void handleEvent(Event event) {
+        if (this.isEnabled() && event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE)) {
+            if (this.getTotalConsumedWater().isDefined()) {
+                this.getMeterReadingChannel().setNextValue(this.getTotalConsumedWater());
             }
         }
     }
