@@ -1,4 +1,4 @@
-package io.openems.edge.meter.gasmeter;
+package io.openems.edge.meter.gasmeter.generic;
 
 import io.openems.common.channel.Unit;
 import io.openems.common.types.OpenemsType;
@@ -30,7 +30,7 @@ import org.osgi.service.metatype.annotations.Designate;
 import java.util.List;
 
 @Designate(ocd = Config.class, factory = true)
-@Component(name = "GasMeterMbus",
+@Component(name = "Gasmeter.Mbus.Generic",
         configurationPolicy = ConfigurationPolicy.REQUIRE,
         immediate = true,
         property = {EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE})
@@ -44,8 +44,8 @@ public class GasMeterMbusImpl extends AbstractOpenemsMbusComponent implements Op
         super.setMbus(mbus);
     }
 
+    private Config config;
 
-    private GasMeterType gasMeterType;
 
     public GasMeterMbusImpl() {
         super(OpenemsComponent.ChannelId.values(),
@@ -61,7 +61,10 @@ public class GasMeterMbusImpl extends AbstractOpenemsMbusComponent implements Op
                 .unit(Unit.NONE)), //
 
         CUBIC_METER_TO_MBUS(Doc.of(OpenemsType.DOUBLE)),
-        TIME_STAMP_STRING_TO_MBUS(Doc.of(OpenemsType.STRING));
+        READING_POWER_TO_MBUS(Doc.of(OpenemsType.LONG).unit(Unit.KILOWATT)),
+        FLOW_RATE_TO_MBUS(Doc.of(OpenemsType.LONG).unit(Unit.CUBICMETER_PER_SECOND)),
+        FLOW_TEMP_TO_MBUS(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS)),
+        RETURN_TEMP_TO_MBUS(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS));
 
         private final Doc doc;
 
@@ -78,13 +81,26 @@ public class GasMeterMbusImpl extends AbstractOpenemsMbusComponent implements Op
         return this.channel(ChannelId.CUBIC_METER_TO_MBUS);
     }
 
-    Channel<String> getTimeToMBus() {
-        return this.channel(ChannelId.TIME_STAMP_STRING_TO_MBUS);
+    Channel<Integer> getPowerToMbus() {
+        return this.channel(ChannelId.READING_POWER_TO_MBUS);
     }
 
+    Channel<Double> getFlowRateToMbus() {
+        return this.channel(ChannelId.FLOW_RATE_TO_MBUS);
+    }
+
+    Channel<Integer> getFlowTempToMbus() {
+        return this.channel(ChannelId.FLOW_TEMP_TO_MBUS);
+    }
+
+    Channel<Integer> getReturnTempToMbus() {
+        return this.channel(ChannelId.RETURN_TEMP_TO_MBUS);
+    }
+
+
     @Activate
-    public void activate(ComponentContext context, Config config) {
-        this.gasMeterType = config.meterType();
+     void activate(ComponentContext context, Config config) {
+        this.config = config;
         if (config.usePollingInterval()) {
             super.activate(context, config.id(), config.alias(), config.enabled(), config.primaryAddress(), this.cm, "mbus",
                     config.mbusBridgeId(), config.pollingIntervalSeconds());     // If you want to use the polling interval, put the time as the last argument in super.activate().
@@ -96,17 +112,22 @@ public class GasMeterMbusImpl extends AbstractOpenemsMbusComponent implements Op
 
 
     @Deactivate
-    public void deactivate() {
+    protected void deactivate() {
         super.deactivate();
     }
 
 
     @Override
     protected void addChannelDataRecords() {
-        this.channelDataRecordsList.add(new ChannelRecord(channel(ChannelId.CUBIC_METER_TO_MBUS), this.gasMeterType.getTotalConsumptionEnergyAddress()));
-        this.channelDataRecordsList.add(new ChannelRecord(channel(ChannelId.TIME_STAMP_STRING_TO_MBUS), this.gasMeterType.getTime()));
+        this.channelDataRecordsList.add(new ChannelRecord(channel(ChannelId.READING_POWER_TO_MBUS), this.config.meterReading()));
+        this.channelDataRecordsList.add(new ChannelRecord(channel(ChannelId.FLOW_RATE_TO_MBUS), this.config.flowRateAddress()));
+        this.channelDataRecordsList.add(new ChannelRecord(channel(ChannelId.CUBIC_METER_TO_MBUS), this.config.totalConsumedEnergyAddress()));
+        this.channelDataRecordsList.add(new ChannelRecord(channel(ChannelId.FLOW_TEMP_TO_MBUS), this.config.flowTempAddress()));
+        this.channelDataRecordsList.add(new ChannelRecord(channel(ChannelId.RETURN_TEMP_TO_MBUS), this.config.returnTempAddress()));
         this.channelDataRecordsList.add(new ChannelRecord(channel(ChannelId.MANUFACTURER_ID), ChannelRecord.DataType.Manufacturer));
         this.channelDataRecordsList.add(new ChannelRecord(channel(ChannelId.DEVICE_ID), ChannelRecord.DataType.DeviceId));
+        this.channelDataRecordsList.add(new ChannelRecord(channel(Meter.ChannelId.TIMESTAMP_SECONDS), -1));
+        this.channelDataRecordsList.add(new ChannelRecord(channel(Meter.ChannelId.TIMESTAMP_STRING), -2));
 
     }
 
@@ -120,10 +141,19 @@ public class GasMeterMbusImpl extends AbstractOpenemsMbusComponent implements Op
         if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE)) {
             if (this.getCubicMeterToMbus().value().isDefined()) {
                 this.getTotalConsumedEnergyCubicMeterChannel().setNextValue(this.getCubicMeterToMbus().value());
-                this.getMeterReadingChannel().setNextValue(this.getCubicMeterToMbus());
             }
-            if (this.getTimeToMBus().value().isDefined()) {
-                this.getTimestampStringChannel().setNextValue(this.getTimeToMBus().value());
+            if (this.getPowerToMbus().value().isDefined()) {
+                this.getPowerChannel().setNextValue(this.getPowerToMbus().value());
+                this.getMeterReadingChannel().setNextValue(this.getPowerToMbus().value());
+            }
+            if (this.getFlowRateToMbus().value().isDefined()) {
+                this.getFlowRateChannel().setNextValue(this.getFlowRateToMbus().value());
+            }
+            if (this.getFlowTempToMbus().value().isDefined()) {
+                this.getFlowTempChannel().setNextValue(this.getFlowTempToMbus().value());
+            }
+            if (this.getReturnTempToMbus().value().isDefined()) {
+                this.getReturnTemp().setNextValue(this.getReturnTempToMbus().value());
             }
         }
     }

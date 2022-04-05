@@ -33,7 +33,7 @@ public interface GasMeter extends Meter {
          * <li>Unit: CubicMeterPerSecond
          * </ul>
          */
-        PERCOLATION(Doc.of(OpenemsType.LONG).unit(Unit.CUBICMETER_PER_SECOND)),
+        FLOW_RATE(Doc.of(OpenemsType.LONG).unit(Unit.CUBICMETER_PER_SECOND)),
         /**
          * Total Consumed Energy Cubic Meter.
          * <ul>
@@ -80,8 +80,8 @@ public interface GasMeter extends Meter {
      *
      * @return the Channel.
      */
-    default Channel<Long> getPercolationChannel() {
-        return this.channel(ChannelId.PERCOLATION);
+    default Channel<Long> getFlowRateChannel() {
+        return this.channel(ChannelId.FLOW_RATE);
     }
 
     /**

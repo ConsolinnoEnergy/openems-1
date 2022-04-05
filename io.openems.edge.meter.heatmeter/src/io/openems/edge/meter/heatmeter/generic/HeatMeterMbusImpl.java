@@ -1,4 +1,4 @@
-package io.openems.edge.meter.heatmeter;
+package io.openems.edge.meter.heatmeter.generic;
 
 import io.openems.common.channel.Unit;
 import io.openems.common.types.OpenemsType;
@@ -9,8 +9,9 @@ import io.openems.edge.common.channel.Channel;
 import io.openems.edge.common.channel.Doc;
 import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.common.event.EdgeEventConstants;
-import io.openems.edge.meter.api.Meter;
 import io.openems.edge.meter.api.HeatMeter;
+import io.openems.edge.meter.api.Meter;
+import io.openems.edge.meter.heatmeter.HeatMeterModel;
 import org.openmuc.jmbus.VariableDataStructure;
 import org.osgi.service.cm.ConfigurationAdmin;
 import org.osgi.service.component.ComponentContext;
@@ -30,7 +31,7 @@ import org.osgi.service.metatype.annotations.Designate;
 import java.util.List;
 
 @Designate(ocd = Config.class, factory = true)
-@Component(name = "HeatMeter.Mbus",
+@Component(name = "HeatMeter.Mbus.Generic",
         configurationPolicy = ConfigurationPolicy.REQUIRE,
         immediate = true,
         property = {EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE})
@@ -52,6 +53,8 @@ public class HeatMeterMbusImpl extends AbstractOpenemsMbusComponent implements O
                 Meter.ChannelId.values(),
                 ChannelId.values());
     }
+
+    Config config;
 
     @Override
     public void handleEvent(Event event) {
@@ -124,10 +127,9 @@ public class HeatMeterMbusImpl extends AbstractOpenemsMbusComponent implements O
     }
 
     @Activate
-    public void activate(ComponentContext context, Config config) {
+    void activate(ComponentContext context, Config config) {
 
-        //use data record positions as specified in HeatMeterType
-        this.heatMeterModel = config.model();
+        this.config = config;
 
         if (config.usePollingInterval()) {
             super.activate(context, config.id(), config.alias(), config.enabled(), config.primaryAddress(), this.cm, "mbus",
@@ -140,17 +142,17 @@ public class HeatMeterMbusImpl extends AbstractOpenemsMbusComponent implements O
 
 
     @Deactivate
-    public void deactivate() {
+    protected void deactivate() {
         super.deactivate();
     }
 
     @Override
     protected void addChannelDataRecords() {
-        this.channelDataRecordsList.add(new ChannelRecord(channel(ChannelId.TOTAL_CONSUMED_ENERGY_TO_MBUS), this.heatMeterModel.totalConsumptionEnergyAddress));
-        this.channelDataRecordsList.add(new ChannelRecord(channel(ChannelId.FLOW_TEMP_TO_MBUS), this.heatMeterModel.flowTempAddress));
-        this.channelDataRecordsList.add(new ChannelRecord(channel(ChannelId.RETURN_TEMP_TO_MBUS), this.heatMeterModel.returnTempAddress));
-        this.channelDataRecordsList.add(new ChannelRecord(channel(ChannelId.READING_TO_MBUS), this.heatMeterModel.powerAddress));
-        this.channelDataRecordsList.add(new ChannelRecord(channel(ChannelId.FLOW_RATE_TO_MBUS), this.heatMeterModel.flowRateAddress));
+        this.channelDataRecordsList.add(new ChannelRecord(channel(ChannelId.TOTAL_CONSUMED_ENERGY_TO_MBUS), this.config.totalConsumedEnergyAddress()));
+        this.channelDataRecordsList.add(new ChannelRecord(channel(ChannelId.FLOW_TEMP_TO_MBUS), this.config.flowTempAddress()));
+        this.channelDataRecordsList.add(new ChannelRecord(channel(ChannelId.RETURN_TEMP_TO_MBUS), this.config.returnTempAddress()));
+        this.channelDataRecordsList.add(new ChannelRecord(channel(ChannelId.READING_TO_MBUS), this.config.meterReading()));
+        this.channelDataRecordsList.add(new ChannelRecord(channel(ChannelId.FLOW_RATE_TO_MBUS), this.config.flowRateAddress()));
         this.channelDataRecordsList.add(new ChannelRecord(channel(ChannelId.MANUFACTURER_ID), ChannelRecord.DataType.Manufacturer));
         this.channelDataRecordsList.add(new ChannelRecord(channel(ChannelId.DEVICE_ID), ChannelRecord.DataType.DeviceId));
 
