@@ -86,7 +86,7 @@ public class WaterMeterWirelessMbusImpl extends AbstractOpenemsWMbusComponent im
             this.logError(this.log, "The radio address needs to be 8 characters long. The entered radio address "
                     + config.radioAddress() + " is " + config.radioAddress().length() + " characters long. Cannot activate.");
         }
-        if (config.model().equals("Manual")) {
+        if (config.model().equals(WaterMeterModelWirelessMbus.MANUAL)) {
             this.volAddress = config.volAddress();
             this.timeStampAddress = config.timeStampAddress();
         } else {
@@ -134,7 +134,7 @@ public class WaterMeterWirelessMbusImpl extends AbstractOpenemsWMbusComponent im
     }
 
     @SuppressWarnings("incomplete-switch")
-	@Override
+    @Override
     protected WMbusProtocol defineWMbusProtocol(String key) {
         WMbusProtocol protocol = new WMbusProtocol(this, key, this.getErrorMessageChannel(),
                 // The total_consumed_water channelRecord needs to be in the first position of this list, otherwise findRecordPositions()
@@ -153,11 +153,11 @@ public class WaterMeterWirelessMbusImpl extends AbstractOpenemsWMbusComponent im
         );
         switch (this.waterMeterModelWirelessMbus) {
             case RELAY_PADPULS_M2W_CHANNEL1:
-                String meterNumber1 = super.getRadioAddress().substring(2,8) + "01";
+                String meterNumber1 = super.getRadioAddress().substring(2, 8) + "01";
                 protocol.setMeterNumber(meterNumber1);
                 break;
             case RELAY_PADPULS_M2W_CHANNEL2:
-                String meterNumber2 = super.getRadioAddress().substring(2,8) + "02";
+                String meterNumber2 = super.getRadioAddress().substring(2, 8) + "02";
                 protocol.setMeterNumber(meterNumber2);
                 break;
         }

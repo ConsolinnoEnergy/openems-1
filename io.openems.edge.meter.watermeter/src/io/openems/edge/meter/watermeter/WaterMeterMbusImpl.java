@@ -79,7 +79,7 @@ public class WaterMeterMbusImpl extends AbstractOpenemsMbusComponent
 
     @Activate
     void activate(ComponentContext context, ConfigMbus config) {
-        if (config.model().equals("Manual")) {
+        if (config.model().equals(WaterMeterModelMbus.MANUAL)) {
             this.volAddress = config.volAddress();
             this.timeStampAddress = config.timeStampAddress();
         } else {

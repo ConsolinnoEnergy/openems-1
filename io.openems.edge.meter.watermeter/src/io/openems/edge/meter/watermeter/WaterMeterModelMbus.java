@@ -3,10 +3,10 @@ package io.openems.edge.meter.watermeter;
 public enum WaterMeterModelMbus {
     // Water meter models with their record positions for Mbus.
     AUTOSEARCH(0, 1),
-    PAD_PULS_M2(0,1),
-    ITRON_BM_M(1,4),
-    WZG_VERSION_3(0,1)
-    ;
+    PAD_PULS_M2(0, 1),
+    ITRON_BM_M(1, 4),
+    WZG_VERSION_3(0, 1),
+    MANUAL(0, 0);
 
     int volumeCounterPosition;
     int timeStampPosition;
@@ -16,6 +16,11 @@ public enum WaterMeterModelMbus {
         this.timeStampPosition = time;
     }
 
-    public int getVolumeCounterPosition(){ return volumeCounterPosition; }
-    public int getTimeStampPosition(){ return timeStampPosition; }
+    public int getVolumeCounterPosition() {
+        return volumeCounterPosition;
+    }
+
+    public int getTimeStampPosition() {
+        return timeStampPosition;
+    }
 }

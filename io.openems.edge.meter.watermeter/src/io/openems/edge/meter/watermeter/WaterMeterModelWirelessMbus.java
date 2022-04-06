@@ -6,6 +6,7 @@ public enum WaterMeterModelWirelessMbus {
     RELAY_PADPULS_M2W_CHANNEL1(0, 1),
     RELAY_PADPULS_M2W_CHANNEL2(0, 1),
     ENGELMANN_WATERSTAR_M(19, 18),
+    MANUAL(0,0)
     ;
 
 
