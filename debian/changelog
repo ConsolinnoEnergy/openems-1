@@ -1,3 +1,10 @@
+openems-consolinno (0.1.29-1) unstable; urgency=medium
+
+  * Added generic meter and Fixed a Bug in ConditionApplier
+  * Idk when the Bug happended...must be recently added somehow? idk
+
+ -- Felix <felix@felix-ThinkPad-E15-Gen-2>  Fri, 08 Apr 2022 12:45:20 +0200
+
 openems-consolinno (0.1.28-1) unstable; urgency=medium
 
   * Added Weishaupt Basekit
