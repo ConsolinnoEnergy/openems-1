@@ -256,9 +256,9 @@ public class MultipleBooleanConditionApplierImpl extends AbstractOpenemsComponen
          */
         void inactiveValueToChannel() {
             if (this.useInactiveValue) {
-                String valueToWrite = this.activeValue;
+                String valueToWrite = this.inactiveValue;
                 if (this.inactiveValueIsChannel) {
-                    valueToWrite = this.getValueFromChannelAddress(this.activeValue);
+                    valueToWrite = this.getValueFromChannelAddress(this.inactiveValue);
                 }
                 this.writeValueToChannel(valueToWrite);
             }
