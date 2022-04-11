@@ -47,6 +47,8 @@ public class HeatMeterMbusImpl extends AbstractOpenemsMbusComponent implements O
 
     HeatMeterModel heatMeterModel;
 
+
+
     public HeatMeterMbusImpl() {
         super(OpenemsComponent.ChannelId.values(),
                 HeatMeter.ChannelId.values(),
@@ -83,7 +85,7 @@ public class HeatMeterMbusImpl extends AbstractOpenemsMbusComponent implements O
                 .unit(Unit.NONE)), //
         DEVICE_ID(Doc.of(OpenemsType.STRING) //
                 .unit(Unit.NONE)), //
-        READING_TO_MBUS(Doc.of(OpenemsType.INTEGER).unit(Unit.KILOWATT)),
+        READING_TO_MBUS(Doc.of(OpenemsType.INTEGER).unit(Unit.KILOWATT_HOURS)),
         FLOW_RATE_TO_MBUS(Doc.of(OpenemsType.DOUBLE).unit(Unit.CUBICMETER_PER_HOUR)),
         TOTAL_CONSUMED_ENERGY_TO_MBUS(Doc.of(OpenemsType.INTEGER).unit(Unit.KILOWATT_HOURS)),
         FLOW_TEMP_TO_MBUS(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS)),
@@ -148,17 +150,15 @@ public class HeatMeterMbusImpl extends AbstractOpenemsMbusComponent implements O
 
     @Override
     protected void addChannelDataRecords() {
-        this.channelDataRecordsList.add(new ChannelRecord(channel(ChannelId.TOTAL_CONSUMED_ENERGY_TO_MBUS), this.config.totalConsumedEnergyAddress()));
-        this.channelDataRecordsList.add(new ChannelRecord(channel(ChannelId.FLOW_TEMP_TO_MBUS), this.config.flowTempAddress()));
-        this.channelDataRecordsList.add(new ChannelRecord(channel(ChannelId.RETURN_TEMP_TO_MBUS), this.config.returnTempAddress()));
-        this.channelDataRecordsList.add(new ChannelRecord(channel(ChannelId.READING_TO_MBUS), this.config.meterReading()));
-        this.channelDataRecordsList.add(new ChannelRecord(channel(ChannelId.FLOW_RATE_TO_MBUS), this.config.flowRateAddress()));
+        this.addToChannelDataRecordListIfDefined(channel(ChannelId.TOTAL_CONSUMED_ENERGY_TO_MBUS), this.config.totalConsumedEnergyAddress());
+        this.addToChannelDataRecordListIfDefined(channel(ChannelId.FLOW_TEMP_TO_MBUS), this.config.flowTempAddress());
+        this.addToChannelDataRecordListIfDefined(channel(ChannelId.RETURN_TEMP_TO_MBUS), this.config.returnTempAddress());
+        this.addToChannelDataRecordListIfDefined(channel(ChannelId.READING_TO_MBUS), this.config.meterReading());
+        this.addToChannelDataRecordListIfDefined(channel(ChannelId.FLOW_RATE_TO_MBUS), this.config.flowRateAddress());
         this.channelDataRecordsList.add(new ChannelRecord(channel(ChannelId.MANUFACTURER_ID), ChannelRecord.DataType.Manufacturer));
         this.channelDataRecordsList.add(new ChannelRecord(channel(ChannelId.DEVICE_ID), ChannelRecord.DataType.DeviceId));
-
         // Timestamp created by OpenEMS, not read from meter.
         this.channelDataRecordsList.add(new ChannelRecord(this.channel(Meter.ChannelId.TIMESTAMP_SECONDS), -1));
-
         // TimestampString is always on address -2, since it's an internal method. This channel needs to be
         // called after the TimestampSeconds Channel, as it takes it's value from that channel.
         this.channelDataRecordsList.add(new ChannelRecord(this.channel(Meter.ChannelId.TIMESTAMP_STRING), -2));

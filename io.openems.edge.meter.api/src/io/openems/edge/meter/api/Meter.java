@@ -52,7 +52,7 @@ public interface Meter extends OpenemsComponent {
         /**
          * Generic Meter Reading. Each Meter decides on it's own what to put here.
          */
-        METER_READING(Doc.of(OpenemsType.LONG).accessMode(AccessMode.READ_ONLY));
+        METER_READING(Doc.of(OpenemsType.DOUBLE).accessMode(AccessMode.READ_ONLY));
 
 
         private final Doc doc;
@@ -158,7 +158,7 @@ public interface Meter extends OpenemsComponent {
      *
      * @return the Channel
      */
-    default Channel<Long> getMeterReadingChannel() {
+    default Channel<Double> getMeterReadingChannel() {
         return this.channel(ChannelId.METER_READING);
     }
 
@@ -168,7 +168,7 @@ public interface Meter extends OpenemsComponent {
      *
      * @param value the next value
      */
-    default void _setMeterReading(Long value) {
+    default void _setMeterReading(Double value) {
         this.getMeterReadingChannel().setNextValue(value);
     }
 

@@ -61,7 +61,7 @@ public class GasMeterMbusImpl extends AbstractOpenemsMbusComponent implements Op
                 .unit(Unit.NONE)), //
 
         CUBIC_METER_TO_MBUS(Doc.of(OpenemsType.DOUBLE)),
-        READING_POWER_TO_MBUS(Doc.of(OpenemsType.LONG).unit(Unit.KILOWATT)),
+        READING_POWER_TO_MBUS(Doc.of(OpenemsType.DOUBLE)),
         FLOW_RATE_TO_MBUS(Doc.of(OpenemsType.LONG).unit(Unit.CUBICMETER_PER_SECOND)),
         FLOW_TEMP_TO_MBUS(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS)),
         RETURN_TEMP_TO_MBUS(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS));
@@ -119,11 +119,11 @@ public class GasMeterMbusImpl extends AbstractOpenemsMbusComponent implements Op
 
     @Override
     protected void addChannelDataRecords() {
-        this.channelDataRecordsList.add(new ChannelRecord(channel(ChannelId.READING_POWER_TO_MBUS), this.config.meterReading()));
-        this.channelDataRecordsList.add(new ChannelRecord(channel(ChannelId.FLOW_RATE_TO_MBUS), this.config.flowRateAddress()));
-        this.channelDataRecordsList.add(new ChannelRecord(channel(ChannelId.CUBIC_METER_TO_MBUS), this.config.totalConsumedEnergyAddress()));
-        this.channelDataRecordsList.add(new ChannelRecord(channel(ChannelId.FLOW_TEMP_TO_MBUS), this.config.flowTempAddress()));
-        this.channelDataRecordsList.add(new ChannelRecord(channel(ChannelId.RETURN_TEMP_TO_MBUS), this.config.returnTempAddress()));
+        this.addToChannelDataRecordListIfDefined(channel(ChannelId.READING_POWER_TO_MBUS), this.config.meterReading());
+        this.addToChannelDataRecordListIfDefined(channel(ChannelId.FLOW_RATE_TO_MBUS), this.config.flowRateAddress());
+        this.addToChannelDataRecordListIfDefined(channel(ChannelId.CUBIC_METER_TO_MBUS), this.config.totalConsumedEnergyAddress());
+        this.addToChannelDataRecordListIfDefined(channel(ChannelId.FLOW_TEMP_TO_MBUS), this.config.flowTempAddress());
+        this.addToChannelDataRecordListIfDefined(channel(ChannelId.RETURN_TEMP_TO_MBUS), this.config.returnTempAddress());
         this.channelDataRecordsList.add(new ChannelRecord(channel(ChannelId.MANUFACTURER_ID), ChannelRecord.DataType.Manufacturer));
         this.channelDataRecordsList.add(new ChannelRecord(channel(ChannelId.DEVICE_ID), ChannelRecord.DataType.DeviceId));
         this.channelDataRecordsList.add(new ChannelRecord(channel(Meter.ChannelId.TIMESTAMP_SECONDS), -1));
@@ -135,6 +135,7 @@ public class GasMeterMbusImpl extends AbstractOpenemsMbusComponent implements Op
     public void findRecordPositions(VariableDataStructure data, List<ChannelRecord> channelDataRecordsList) {
         // Not needed so far.
     }
+
 
     @Override
     public void handleEvent(Event event) {
