@@ -47,7 +47,7 @@ public class HeatMeterMbusImpl extends AbstractOpenemsMbusComponent implements O
 
     HeatMeterModel heatMeterModel;
 
-    private static final int NOT_DEFINED = -404;
+
 
     public HeatMeterMbusImpl() {
         super(OpenemsComponent.ChannelId.values(),
@@ -162,12 +162,6 @@ public class HeatMeterMbusImpl extends AbstractOpenemsMbusComponent implements O
         // TimestampString is always on address -2, since it's an internal method. This channel needs to be
         // called after the TimestampSeconds Channel, as it takes it's value from that channel.
         this.channelDataRecordsList.add(new ChannelRecord(this.channel(Meter.ChannelId.TIMESTAMP_STRING), -2));
-    }
-
-    private void addToChannelDataRecordListIfDefined(Channel<?> channel, int address) {
-        if (address != NOT_DEFINED) {
-            this.channelDataRecordsList.add(new ChannelRecord(channel, address));
-        }
     }
 
     @Override

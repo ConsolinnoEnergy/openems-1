@@ -158,7 +158,7 @@ public interface Meter extends OpenemsComponent {
      *
      * @return the Channel
      */
-    default Channel<Long> getMeterReadingChannel() {
+    default Channel<Double> getMeterReadingChannel() {
         return this.channel(ChannelId.METER_READING);
     }
 
@@ -168,7 +168,7 @@ public interface Meter extends OpenemsComponent {
      *
      * @param value the next value
      */
-    default void _setMeterReading(Long value) {
+    default void _setMeterReading(Double value) {
         this.getMeterReadingChannel().setNextValue(value);
     }
 
