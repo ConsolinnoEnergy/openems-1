@@ -1,3 +1,9 @@
+openems-consolinno (0.1.29-2) unstable; urgency=medium
+
+  * Fixed a bug within Generic Mbus Meter
+
+ -- Felix <felix@felix-ThinkPad-E15-Gen-2>  Mon, 11 Apr 2022 14:08:18 +0200
+
 openems-consolinno (0.1.29-1) unstable; urgency=medium
 
   * Added generic meter and Fixed a Bug in ConditionApplier
