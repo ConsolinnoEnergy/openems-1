@@ -21,19 +21,19 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     String mbusBridgeId() default "mbus0";
 
     @AttributeDefinition(name = "Meter reading", description = "The address for meter reading of this meter.")
-    int meterReading() default 0;
+    int meterReading() default -404;
 
     @AttributeDefinition(name = "Meter reading energy", description = "The address for meter reading energy of this meter.")
-    int totalConsumedEnergyAddress() default 0;
+    int totalConsumedEnergyAddress() default -404;
 
     @AttributeDefinition(name = "Flow temp", description = "The address for flow temp of this meter.")
-    int flowTempAddress() default 0;
+    int flowTempAddress() default -404;
 
     @AttributeDefinition(name = "Return temp", description = "The address for return temp of this meter.")
-    int returnTempAddress() default 0;
+    int returnTempAddress() default -404;
 
     @AttributeDefinition(name = "Flow rate", description = "The address for flow rate of this meter.")
-    int flowRateAddress() default 0;
+    int flowRateAddress() default -404;
 
 
     @AttributeDefinition(name = "PrimaryAddress", description = "primary Address of the Mbus Component.")
