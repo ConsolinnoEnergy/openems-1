@@ -27,10 +27,10 @@ Build oEMS Edge:
 
 Deploy:
   stage: Deploy
+  image: gradle:jdk8
   script:
     - echo Uploading software to repo
     - apt update
-    - apt install -y openjdk-8-jdk git
     - apt install curl
     - ./gradlew build
     - ./gradlew buildEdge
