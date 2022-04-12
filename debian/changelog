@@ -1,3 +1,9 @@
+openems-consolinno (0.1.29-5) unstable; urgency=medium
+
+  * docker img fixed for build processes too not just deploy
+
+ -- Felix <felix@felix-ThinkPad-E15-Gen-2>  Tue, 12 Apr 2022 17:46:41 +0200
+
 openems-consolinno (0.1.29-4) unstable; urgency=medium
 
   * test gradle docker img added

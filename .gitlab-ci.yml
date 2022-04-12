@@ -8,9 +8,9 @@ variables:
 
 Build oEMS Edge:
   stage: Build
+  image: gradle:jdk8
   script:
     - apt update
-    - apt install -y openjdk-8-jdk
     - ./gradlew build
     - ./gradlew buildComponents
     - ./gradlew buildEdge
