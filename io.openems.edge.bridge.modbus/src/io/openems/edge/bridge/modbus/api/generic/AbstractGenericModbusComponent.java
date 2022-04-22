@@ -28,6 +28,7 @@ import io.openems.edge.common.channel.WriteChannel;
 import io.openems.edge.common.channel.value.Value;
 import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
+import io.openems.edge.common.configupdate.ConfigurationUpdate;
 import io.openems.edge.common.taskmanager.Priority;
 import org.osgi.service.cm.Configuration;
 import org.osgi.service.cm.ConfigurationAdmin;
@@ -38,6 +39,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.Dictionary;
 import java.util.HashMap;
 import java.util.List;
@@ -269,6 +271,7 @@ public abstract class AbstractGenericModbusComponent extends AbstractOpenemsModb
                 channelsGiven.stream().filter(entry ->
                         !entry.channelId().id().startsWith("_Property")
                 ).collect(Collectors.toList());
+        channels.sort(Comparator.comparing(a -> a.channelId().id()));
         channels.forEach(entry -> {
             this.channelMap.put(entry.channelId().id(), entry);
         });
