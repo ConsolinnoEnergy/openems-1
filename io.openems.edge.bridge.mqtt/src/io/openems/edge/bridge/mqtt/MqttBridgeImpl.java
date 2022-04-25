@@ -19,7 +19,6 @@ import io.openems.edge.common.event.EdgeEventConstants;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
-import org.osgi.service.cm.Configuration;
 import org.osgi.service.cm.ConfigurationAdmin;
 import org.osgi.service.cm.ConfigurationException;
 import org.osgi.service.component.ComponentContext;
@@ -39,7 +38,6 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Dictionary;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -95,7 +93,7 @@ public class MqttBridgeImpl extends AbstractOpenemsComponent implements OpenemsC
     private String mqttBroker;
     private String mqttClientId;
     private int keepAlive = 100;
-    private AtomicInteger executorCurrent = new AtomicInteger(10);
+    private final AtomicInteger executorCurrent = new AtomicInteger(10);
     private static final int EXECUTOR_MAX = 20;
 
     private DateTime initialTime;
@@ -178,13 +176,6 @@ public class MqttBridgeImpl extends AbstractOpenemsComponent implements OpenemsC
         } catch (IOException e) {
             this.log.warn("Couldn't update config, reason: " + e.getMessage());
         }
-       /* Configuration c;
-        try {
-            c = this.ca.getConfiguration(this.servicePid(), "?");
-            Dictionary<String, Object> properties = c.getProperties();
-            c.update(properties);
-
-        } */
     }
 
     /**
@@ -532,7 +523,7 @@ public class MqttBridgeImpl extends AbstractOpenemsComponent implements OpenemsC
      * @return true if it should reconnect.
      */
     private boolean tryReconnect() {
-        if(this.isFirstConnection){
+        if (this.isFirstConnection) {
             this.isFirstConnection = false;
             return true;
         }
