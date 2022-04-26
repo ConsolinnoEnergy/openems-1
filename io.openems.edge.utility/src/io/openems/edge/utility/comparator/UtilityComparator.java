@@ -115,7 +115,7 @@ public class UtilityComparator extends AbstractOpenemsComponent implements Opene
             try {
                 Double valueA = this.getValueWrapperValue(this.inputAValueWrapper, this.inputAType);
                 Double valueB = this.getValueWrapperValue(this.inputBValueWrapper, this.inputBType);
-                if (!valueA.equals(MISSING_VALUE) && !valueB.equals(MISSING_VALUE)) {
+                if (valueA != null && valueB != null && !valueA.equals(MISSING_VALUE) && !valueB.equals(MISSING_VALUE)) {
                     this.writeToOutput(StaticComparator.compare(this.comparatorType, (Double) TypeUtils.getAsType(OpenemsType.DOUBLE, valueA),
                             (Double) TypeUtils.getAsType(OpenemsType.DOUBLE, valueB)));
                 }
