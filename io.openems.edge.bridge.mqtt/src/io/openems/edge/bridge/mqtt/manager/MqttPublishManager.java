@@ -19,10 +19,8 @@ import java.util.concurrent.atomic.AtomicInteger;
  * In One Cycle---> Handle currentToDo, calculated by AbstractMqttManager.
  */
 public class MqttPublishManager extends AbstractMqttManager {
-    private final Logger log = LoggerFactory.getLogger(MqttSubscribeManager.class);
 
-    //              QOS       MqttConnector
-    private final Map<Integer, MqttConnectionPublishImpl> connections = new HashMap<>();
+    private final MqttConnectionPublishImpl connection = new MqttConnectionPublishImpl();
 
     public MqttPublishManager(Map<String, List<MqttTask>> publishTasks, String mqttBroker,
                               String mqttUsername, String mqttPassword, int keepAlive, String mqttClientId,
@@ -32,12 +30,10 @@ public class MqttPublishManager extends AbstractMqttManager {
                 formatter);
         //Create new Connection Publish
         //Magic numbers bc there are only 3 QoS available
-        for (int x = 0; x < 3; x++) {
-            this.connections.put(x, new MqttConnectionPublishImpl());
-            this.connections.get(x).createMqttPublishSession(super.mqttBroker, super.mqttClientId + "_PUBLISH_" + x,
-                    super.keepAlive, super.mqttUsername, super.mqttPassword, x == 0);
-            this.connections.get(x).connect();
-        }
+
+        this.connection.createMqttPublishSession(super.mqttBroker, super.mqttClientId + "_PUBLISH",
+                super.keepAlive, super.mqttUsername, super.mqttPassword, false);
+        this.connection.connect();
     }
 
     /**
@@ -57,10 +53,9 @@ public class MqttPublishManager extends AbstractMqttManager {
                 }
                 //Sending the message via Mqttconnection + start and stop time to check how long it does take
                 //In Super class qos 0 will be "ignored" since there's no ack etc
-
                 int qos = task.getQos();
                 long time = System.currentTimeMillis();
-                this.connections.get(qos).sendMessage(task.getTopic(), task.getPayload(), qos, task.getRetainFlag());
+                this.connection.sendMessage(task.getTopic(), task.getPayload(), qos, task.getRetainFlag());
                 time = System.currentTimeMillis() - time;
                 //Time Calculation
                 AtomicInteger counter = super.counterForQos.get(qos);
@@ -68,7 +63,7 @@ public class MqttPublishManager extends AbstractMqttManager {
                 counter.getAndIncrement();
                 counter.set(counter.get() % MAX_LIST_LENGTH);
             } catch (MqttException e) {
-                log.warn("Error in Publishmanager: " + e.getMessage());
+                AbstractMqttManager.log.warn("Error in Publishmanager: " + e.getMessage());
                 //On Error add the task to future tasks to try again.
                 super.toDoFuture.add(task);
             }
@@ -82,13 +77,12 @@ public class MqttPublishManager extends AbstractMqttManager {
      * This will disconnect every connection and stops the communication with the Broker.
      */
     public void deactivate() {
-        this.connections.forEach((key, value) -> {
-            try {
-                value.disconnect();
-            } catch (MqttException e) {
-                log.warn("Error on disconnecting: " + e.getMessage());
-            }
-        });
+
+        try {
+            this.connection.disconnect();
+        } catch (MqttException e) {
+            AbstractMqttManager.log.warn("Error on disconnecting: " + e.getMessage());
+        }
     }
 
 
@@ -98,9 +92,6 @@ public class MqttPublishManager extends AbstractMqttManager {
      * @return true if the connection is established
      */
     public boolean isConnected() {
-        if (this.connections.values().stream().findFirst().isPresent()) {
-            return this.connections.values().stream().findFirst().get().isConnected();
-        }
-        return false;
+        return this.connection.isConnected();
     }
 }
