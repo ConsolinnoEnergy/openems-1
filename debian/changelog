@@ -1,3 +1,10 @@
+openems-consolinno (0.1.30-3) unstable; urgency=medium
+
+  * fixed generic modbus meter symmetric and asymmetric meter
+  * setModbus was missing
+
+ -- Felix <felix@felix-ThinkPad-E15-Gen-2>  Wed, 27 Apr 2022 08:37:57 +0200
+
 openems-consolinno (0.1.30-2) unstable; urgency=medium
 
   * fix of a nullpointer exception in comparator
