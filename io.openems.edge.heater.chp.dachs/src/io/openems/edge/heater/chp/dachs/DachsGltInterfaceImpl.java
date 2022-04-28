@@ -79,8 +79,7 @@ public class DachsGltInterfaceImpl extends AbstractOpenemsComponent implements O
 	private boolean readOnly = false;
 	private boolean startupStateChecked = false;
 	private boolean readyForCommands;
-	private boolean chpEngineRunning;
-	
+
 	private EnableSignalHandler enableSignalHandler;
 	private static final String ENABLE_SIGNAL_IDENTIFIER = "DACHS_CHP_ENABLE_SIGNAL_IDENTIFIER";
 	private boolean useExceptionalState;
@@ -324,20 +323,21 @@ public class DachsGltInterfaceImpl extends AbstractOpenemsComponent implements O
 			}
 			this._setWarningMessage(warningMessage);
 
+			boolean chpEngineRunning;
 			if (stateUndefined) {
-				this.chpEngineRunning = false;
+				chpEngineRunning = false;
 				this._setHeaterState(HeaterState.UNDEFINED.getValue());
 			} else if (rpmReadout > NORMAL_OPERATION_RPM_THRESHOLD) {
-				this.chpEngineRunning = true;
+				chpEngineRunning = true;
 				this._setHeaterState(HeaterState.RUNNING.getValue());
 			} else if (stateStartingUp) {
-				this.chpEngineRunning = true;
+				chpEngineRunning = true;
 				this._setHeaterState(HeaterState.STARTING_UP_OR_PREHEAT.getValue());
 			} else if (runClearance) {
-				this.chpEngineRunning = false;
+				chpEngineRunning = false;
 				this._setHeaterState(HeaterState.STANDBY.getValue());
 			} else {
-				this.chpEngineRunning = false;
+				chpEngineRunning = false;
 				this._setHeaterState(HeaterState.BLOCKED_OR_ERROR.getValue());
 			}
 			// Switch process image because result is needed immediately for startupCheck.

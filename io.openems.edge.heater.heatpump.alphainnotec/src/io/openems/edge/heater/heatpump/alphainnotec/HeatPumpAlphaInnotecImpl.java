@@ -126,7 +126,8 @@ public class HeatPumpAlphaInnotecImpl extends AbstractOpenemsModbusComponent imp
 		super(OpenemsComponent.ChannelId.values(),
 				HeatpumpAlphaInnotec.ChannelId.values(),
 				HeatpumpSmartGrid.ChannelId.values(),
-				Heater.ChannelId.values());
+				Heater.ChannelId.values(),
+				ExceptionalState.ChannelId.values());
 	}
 
 	@Activate
