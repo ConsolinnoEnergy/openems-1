@@ -1,4 +1,4 @@
-package io.openems.edge.heater.heatpump.weishaupt;
+package io.openems.edge.heater.heatpump.mitsubishi;
 
 import io.openems.common.exceptions.OpenemsError;
 import io.openems.common.exceptions.OpenemsException;
@@ -11,14 +11,14 @@ import io.openems.edge.bridge.modbus.api.element.SignedWordElement;
 import io.openems.edge.bridge.modbus.api.element.UnsignedWordElement;
 import io.openems.edge.bridge.modbus.api.task.FC16WriteRegistersTask;
 import io.openems.edge.bridge.modbus.api.task.FC3ReadRegistersTask;
-import io.openems.edge.common.component.ComponentManager;
+import io.openems.edge.bridge.modbus.api.task.FC4ReadInputRegistersTask;
 import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.common.event.EdgeEventConstants;
 import io.openems.edge.common.taskmanager.Priority;
 import io.openems.edge.heater.api.Heater;
 import io.openems.edge.heater.api.HeatpumpSmartGrid;
-import io.openems.edge.heater.heatpump.weishaupt.api.HeatpumpWeishaupt;
-import io.openems.edge.heater.heatpump.weishaupt.api.OperatingMode;
+import io.openems.edge.heater.heatpump.mitsubishi.api.HeatpumpMitsubishi;
+import io.openems.edge.heater.heatpump.mitsubishi.api.SystemOnOff;
 import org.osgi.service.cm.ConfigurationAdmin;
 import org.osgi.service.cm.ConfigurationException;
 import org.osgi.service.component.ComponentContext;
@@ -38,13 +38,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * This module reads the most important variables available via Modbus from a Weihaupt heat pump and maps them to OpenEMS
+ * This module reads the most important variables available via Modbus from a Mitsubishi heat pump and maps them to OpenEMS
  * channels. WriteChannels can be used to send commands to the heat pump via setter methods in
- * HeatpumpWeishaupt, HeatpumpSmartGrid and Heater.
+ * HeatpumpMitsubishi, HeatpumpSmartGrid and Heater.
  */
 
 @Designate(ocd = Config.class, factory = true)
-@Component(name = "Heater.HeatPump.Weishaupt",
+@Component(name = "Heater.HeatPump.Mitsubishi",
 		immediate = true,
 		configurationPolicy = ConfigurationPolicy.REQUIRE,
 		property = { //
@@ -52,16 +52,16 @@ import org.slf4j.LoggerFactory;
 				EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS //
 		})
 
-public class HeatPumpWeishauptImpl extends AbstractOpenemsModbusComponent implements OpenemsComponent, EventHandler,
-		HeatpumpWeishaupt {
+public class HeatPumpMitsubishiImpl extends AbstractOpenemsModbusComponent implements OpenemsComponent, EventHandler,
+		HeatpumpMitsubishi {
 
 	@Reference
 	protected ConfigurationAdmin cm;
 
-	private final Logger log = LoggerFactory.getLogger(HeatPumpWeishauptImpl.class);
+	private final Logger log = LoggerFactory.getLogger(HeatPumpMitsubishiImpl.class);
 	private boolean printInfoToLog;
 	private boolean readOnly;
-	private OperatingMode defaultModeOfOperation = OperatingMode.UNDEFINED;
+	private SystemOnOff systemOnOff = SystemOnOff.OFF;
 
 	// This is essential for Modbus to work.
 	@Reference(policy = ReferencePolicy.STATIC, policyOption = ReferencePolicyOption.GREEDY, cardinality = ReferenceCardinality.MANDATORY)
@@ -69,9 +69,9 @@ public class HeatPumpWeishauptImpl extends AbstractOpenemsModbusComponent implem
 		super.setModbus(modbus);
 	}
 
-	public HeatPumpWeishauptImpl() {
+	public HeatPumpMitsubishiImpl() {
 		super(OpenemsComponent.ChannelId.values(),
-				HeatpumpWeishaupt.ChannelId.values(),
+				HeatpumpMitsubishi.ChannelId.values(),
 				HeatpumpSmartGrid.ChannelId.values(),
 				Heater.ChannelId.values());
 	}
@@ -83,7 +83,11 @@ public class HeatPumpWeishauptImpl extends AbstractOpenemsModbusComponent implem
 		this.printInfoToLog = config.printInfoToLog();
 		this.readOnly = config.readOnly();
 		if (this.readOnly == false) {
-			this.defaultModeOfOperation = config.defaultModeOfOperation();
+			if (config.turnOnPump()) {
+				this.systemOnOff = SystemOnOff.ON;
+			} else {
+				this.systemOnOff = SystemOnOff.OFF;
+			}
 		}
 	}
 
@@ -96,35 +100,34 @@ public class HeatPumpWeishauptImpl extends AbstractOpenemsModbusComponent implem
 	protected ModbusProtocol defineModbusProtocol() throws OpenemsException {
 
 		ModbusProtocol protocol = new ModbusProtocol(this,
-				new FC3ReadRegistersTask(1, Priority.HIGH,
-						m(HeatpumpWeishaupt.ChannelId.HR1_OUTSIDE_TEMP, new SignedWordElement(1),
-								ElementToChannelConverter.DIRECT_1_TO_1),
-						m(Heater.ChannelId.RETURN_TEMPERATURE, new SignedWordElement(2),
-								ElementToChannelConverter.DIRECT_1_TO_1),
-						m(HeatpumpWeishaupt.ChannelId.HR3_DOMESTIC_HOT_WATER, new SignedWordElement(3),
-								ElementToChannelConverter.DIRECT_1_TO_1),
-						new DummyRegisterElement(4),
-						m(Heater.ChannelId.FLOW_TEMPERATURE, new SignedWordElement(5),
+				// Input registers read.
+				new FC4ReadInputRegistersTask(8, Priority.HIGH,
+						m(HeatpumpMitsubishi.ChannelId.IR8_ERROR_CODE, new UnsignedWordElement(8),
 								ElementToChannelConverter.DIRECT_1_TO_1)
 				),
-				new FC3ReadRegistersTask(103, Priority.HIGH,
-						m(HeatpumpWeishaupt.ChannelId.HR103_STATUS_CODE, new UnsignedWordElement(103),
+				new FC4ReadInputRegistersTask(58, Priority.HIGH,
+						m(HeatpumpMitsubishi.ChannelId.IR58_OUTSIDE_TEMP, new SignedWordElement(58),
 								ElementToChannelConverter.DIRECT_1_TO_1),
-						m(HeatpumpWeishaupt.ChannelId.HR104_BLOCKED_CODE, new UnsignedWordElement(104),
+						new DummyRegisterElement(59),
+						m(Heater.ChannelId.FLOW_TEMPERATURE, new SignedWordElement(60),
 								ElementToChannelConverter.DIRECT_1_TO_1),
-						m(HeatpumpWeishaupt.ChannelId.HR105_ERROR_CODE, new UnsignedWordElement(105),
+						new DummyRegisterElement(61),
+						m(Heater.ChannelId.RETURN_TEMPERATURE, new SignedWordElement(62),
 								ElementToChannelConverter.DIRECT_1_TO_1)
 				),
-				new FC3ReadRegistersTask(142, Priority.HIGH,
-				m(HeatpumpWeishaupt.ChannelId.HR142_OPERATING_MODE, new UnsignedWordElement(142),
+
+				// Holding registers read.
+				new FC3ReadRegistersTask(25, Priority.HIGH,
+				m(HeatpumpMitsubishi.ChannelId.HR25_SYSTEM_ON_OFF, new UnsignedWordElement(25),
 						ElementToChannelConverter.DIRECT_1_TO_1)
 				)
 		);
 
 		if (this.readOnly == false) {
 			protocol.addTasks(
-					new FC16WriteRegistersTask(142,
-							m(HeatpumpWeishaupt.ChannelId.HR142_OPERATING_MODE, new UnsignedWordElement(142),
+					// Holding registers write.
+					new FC16WriteRegistersTask(25,
+							m(HeatpumpMitsubishi.ChannelId.HR25_SYSTEM_ON_OFF, new UnsignedWordElement(25),
 									ElementToChannelConverter.DIRECT_1_TO_1)
 					)
 			);
@@ -154,41 +157,15 @@ public class HeatPumpWeishauptImpl extends AbstractOpenemsModbusComponent implem
 	protected void channelmapping() {
 
 		// Parse status code.
-		if (this.getStatusCode().isDefined()) {
-			int statusCode = this.getStatusCode().get();
-			String statusMessage = "Status code " + statusCode + ": ";
-			switch (statusCode) {
-				case 0:
-				case 1:
-					statusMessage = statusMessage + "Off";
-					break;
-				case 2:
-					statusMessage = statusMessage + "Heating";
-					break;
-				case 3:
-					statusMessage = statusMessage + "Swimming pool";
-					break;
-				case 4:
-					statusMessage = statusMessage + "Domestic hot water";
-					break;
-				case 5:
-					statusMessage = statusMessage + "Cooling";
-					break;
-				case 10:
-					statusMessage = statusMessage + "Defrost";
-					break;
-				case 11:
-					statusMessage = statusMessage + "Monitoring percolation";
-					break;
-				case 24:
-					statusMessage = statusMessage + "Delayed operating mode switch (Verzoegerte Betriebsmodusumschaltung)";
-					break;
-				case 30:
-					statusMessage = statusMessage + "Blocked";
+		if (this.getErrorCode().isDefined()) {
+			int errorCode = this.getErrorCode().get();
+			String statusMessage = "";
+			switch (errorCode) {
+				case 8000:
+					statusMessage = "No error (Code 8000)";
 					break;
 				default:
-					statusMessage = statusMessage + "Not in list";
-					break;
+					statusMessage = "Error code " + errorCode;
 			}
 			this._setStatusMessage(statusMessage);
 		} else {
@@ -202,9 +179,9 @@ public class HeatPumpWeishauptImpl extends AbstractOpenemsModbusComponent implem
 	 */
 	protected void writeCommands() {
 
-		// Test Modbus write by setting operating mode.
+		// Test Modbus write by setting system on/off.
 		try {
-			this.setOperatingMode(this.defaultModeOfOperation.getValue());
+			this.setSystemOnOff(this.systemOnOff);
 		} catch (OpenemsError.OpenemsNamedException e) {
 			this.logError(this.log, "Could not write to operating mode channel. "
 					+ "Reason: " + e.getMessage());
@@ -220,9 +197,7 @@ public class HeatPumpWeishauptImpl extends AbstractOpenemsModbusComponent implem
 		this.logInfo(this.log, "Outside temp: " + this.getOutsideTemp());
 		this.logInfo(this.log, "Flow temperature: " + this.getFlowTemperature());
 		this.logInfo(this.log, "Return temperature: " + this.getReturnTemperature());
-		this.logInfo(this.log, "Domestic hot water temp: " + this.getDomesticHotWaterTemp());
-		this.logInfo(this.log, "Operating mode: " + this.getOperatingMode().asEnum().getName());
-		this.logInfo(this.log, "Blocked code: " + this.getBlockedCode());
+		this.logInfo(this.log, "System on/off: " + this.getSystemOnOff().asEnum().getName());
 		this.logInfo(this.log, "Error code: " + this.getErrorCode());
 		this.logInfo(this.log, "Status message: " + this.getStatusMessage());
 	}

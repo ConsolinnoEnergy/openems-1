@@ -1,0 +1,6 @@
+= Heat Pump Mitsubishi
+
+This module reads the most important variables available via Modbus from a Mitsubishi heat pump and maps them to OpenEMS channels.
+WriteChannels can be used to send commands to the heat pump via setter methods in HeatpumpMitsubishi, HeatpumpSmartGrid and Heater.
+
+https://github.com/OpenEMS/openems/tree/develop/io.openems.edge.heater.heatpump.mitsubishi[Source Code icon:github[]]

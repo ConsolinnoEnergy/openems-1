@@ -158,6 +158,7 @@
 	bnd.identity;id='io.openems.edge.heater.gasboiler.viessmann',\
 	bnd.identity;id='io.openems.edge.heater.heatpump.alphainnotec',\
 	bnd.identity;id='io.openems.edge.heater.heatpump.heliotherm',\
+	bnd.identity;id='io.openems.edge.heater.heatpump.mitsubishi',\
 	bnd.identity;id='io.openems.edge.heater.heatpump.tecalor',\
 	bnd.identity;id='io.openems.edge.heater.powerplant',\
 	bnd.identity;id='io.openems.edge.heater.heatpump.weishaupt',\
@@ -353,6 +354,7 @@
 	io.openems.edge.heater.decentralized;version=snapshot,\
 	io.openems.edge.heater.heatpump.alphainnotec;version=snapshot,\
 	io.openems.edge.heater.heatpump.heliotherm;version=snapshot,\
+	io.openems.edge.heater.heatpump.mitsubishi;version=snapshot,\
 	io.openems.edge.heater.heatpump.tecalor;version=snapshot,\
 	io.openems.edge.heater.heatpump.weishaupt;version=snapshot,\
 	io.openems.edge.heater.powerplant;version=snapshot,\
