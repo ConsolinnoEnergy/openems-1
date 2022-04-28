@@ -397,4 +397,76 @@ public interface AsymmetricMeterModbusGeneric extends SymmetricMeterModbusGeneri
     }
 
 
+    /**
+     * Gets the Channel for {@link ChannelId#CURRENT_L1_LONG}.
+     *
+     * @return the Channel
+     */
+    default Channel<Integer> _getCurrentL1ChannelLong() {
+        return this.channel(ChannelId.CURRENT_L1_LONG);
+    }
+
+    /**
+     * Gets the Channel for {@link ChannelId#CURRENT_L1_DOUBLE}.
+     *
+     * @return the Channel
+     */
+    default Channel<Double> _getCurrentL1ChannelDouble() {
+        return this.channel(ChannelId.CURRENT_L1_DOUBLE);
+    }
+
+    default Channel<?> _hasCurrentL1() {
+        return GenericModbusComponent.getValueDefinedChannel(this._getCurrentL1ChannelLong(),
+                this._getCurrentL1ChannelDouble());
+    }
+
+    /**
+     * Gets the Channel for {@link ChannelId#CURRENT_L2_LONG}.
+     *
+     * @return the Channel
+     */
+    default Channel<Integer> _getCurrentL2ChannelLong() {
+        return this.channel(ChannelId.CURRENT_L2_LONG);
+    }
+
+    /**
+     * Gets the Channel for {@link ChannelId#CURRENT_L2_DOUBLE}.
+     *
+     * @return the Channel
+     */
+    default Channel<Double> _getCurrentL2ChannelDouble() {
+        return this.channel(ChannelId.CURRENT_L2_DOUBLE);
+    }
+
+    default Channel<?> _hasCurrentL2() {
+        return GenericModbusComponent.getValueDefinedChannel(this._getCurrentL2ChannelLong(),
+                this._getCurrentL2ChannelDouble());
+    }
+
+    /**
+     * Gets the Channel for {@link ChannelId#CURRENT_L3_LONG}.
+     *
+     * @return the Channel
+     */
+    default Channel<Integer> _getCurrentL3ChannelLong() {
+        return this.channel(ChannelId.CURRENT_L3_LONG);
+    }
+
+    /**
+     * Gets the Channel for {@link ChannelId#CURRENT_L3_DOUBLE}.
+     *
+     * @return the Channel
+     */
+    default Channel<Double> _getCurrentL3ChannelDouble() {
+        return this.channel(ChannelId.CURRENT_L3_DOUBLE);
+    }
+
+    default Channel<?> _hasCurrentL3() {
+        return GenericModbusComponent.getValueDefinedChannel(this._getCurrentL3ChannelLong(),
+                this._getCurrentL1ChannelDouble());
+    }
+
+
+
+
 }

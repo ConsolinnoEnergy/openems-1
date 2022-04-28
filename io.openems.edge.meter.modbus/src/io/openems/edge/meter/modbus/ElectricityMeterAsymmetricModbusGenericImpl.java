@@ -107,8 +107,9 @@ public class ElectricityMeterAsymmetricModbusGenericImpl extends AbstractElectri
             handleChannelUpdate(this.getVoltageL1Channel(), this._hasVoltageL1());
             handleChannelUpdate(this.getVoltageL2Channel(), this._hasVoltageL2());
             handleChannelUpdate(this.getVoltageL3Channel(), this._hasVoltageL3());
-            handleChannelUpdate(this.getCurrentChannel(), this._hasCurrent());
-
+            handleChannelUpdate(this.getCurrentL1Channel(), this._hasCurrentL1());
+            handleChannelUpdate(this.getCurrentL2Channel(), this._hasCurrentL2());
+            handleChannelUpdate(this.getCurrentL3Channel(), this._hasCurrentL3());
         }
     }
 
