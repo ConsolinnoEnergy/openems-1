@@ -490,8 +490,6 @@ public interface Heater extends OpenemsComponent {
     }
 
     /**
-	 * Internal method to set the 'nextValue' on {@link ChannelId#RETURN_TEMPERATURE} Channel.
-	default void _setReturnTemperature(int value) {
      * Gets the Channel for {@link ChannelId#EFFECTIVE_HEATING_POWER}.
      *
      * @return the Channel
