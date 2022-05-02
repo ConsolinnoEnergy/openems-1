@@ -1,3 +1,9 @@
+openems-consolinno (0.1.31-2) unstable; urgency=medium
+
+  * potential curl fix
+
+ -- Felix <felix@felix-ThinkPad-E15-Gen-2>  Mon, 02 May 2022 10:13:21 +0200
+
 openems-consolinno (0.1.31-1) unstable; urgency=medium
 
   * added functioning generic modbus electricity meter

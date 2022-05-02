@@ -31,7 +31,7 @@ Deploy:
   script:
     - echo Uploading software to repo
     - apt update
-    - apt install curl
+    - apt install curl -y
     - ./gradlew build
     - ./gradlew buildEdge
     - ./gradlew buildEdgeDeb
