@@ -63,7 +63,9 @@ public interface HydraulicLineController extends OpenemsComponent {
 
         MIN_VALVE_VALUE(Doc.of(OpenemsType.DOUBLE).accessMode(AccessMode.READ_WRITE).onInit(
                 channel -> ((DoubleWriteChannel) channel).onSetNextWrite(channel::setNextValue)
-        ));
+        )),
+
+        IS_ACTIVE(Doc.of(OpenemsType.BOOLEAN));
         private final Doc doc;
 
         ChannelId(Doc doc) {
@@ -111,6 +113,16 @@ public interface HydraulicLineController extends OpenemsComponent {
     default WriteChannel<Double> minValueChannel() {
         return this.channel(ChannelId.MIN_VALVE_VALUE);
     }
+
+    /**
+     * Return the {@link ChannelId#IS_ACTIVE} channel.
+     *
+     * @return the channel.
+     */
+    default Channel<Boolean> isActiveChannel() {
+        return this.channel(ChannelId.IS_ACTIVE);
+    }
+
 
 
 }
