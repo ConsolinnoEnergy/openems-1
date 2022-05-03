@@ -147,12 +147,8 @@ public class HeatpumpHeliothermImpl extends AbstractOpenemsModbusComponent imple
                 keyValueMap.put("defaultOperatingMode", this.operatingModeSetting);
             }
             this.lastTemperatureSetPoint = config.defaultSetPointTemperature() * 10; // Convert to d°C.
-            if (this.lastTemperatureSetPoint > TEMPERATURE_SET_POINT_MAX) {
-                this.lastTemperatureSetPoint = TEMPERATURE_SET_POINT_MAX;
-                keyValueMap.put("defaultSetPointTemperature", this.lastTemperatureSetPoint / 10);
-            }
-            if (this.lastTemperatureSetPoint < TEMPERATURE_SET_POINT_MIN) {
-                this.lastTemperatureSetPoint = TEMPERATURE_SET_POINT_MIN;
+            this.lastTemperatureSetPoint = TypeUtils.fitWithin(TEMPERATURE_SET_POINT_MIN, TEMPERATURE_SET_POINT_MAX, this.lastTemperatureSetPoint);
+            if (this.lastTemperatureSetPoint != config.defaultSetPointTemperature() * 10) {
                 keyValueMap.put("defaultSetPointTemperature", this.lastTemperatureSetPoint / 10);
             }
             this.setTemperatureSetpoint(this.lastTemperatureSetPoint);
@@ -161,12 +157,8 @@ public class HeatpumpHeliothermImpl extends AbstractOpenemsModbusComponent imple
             this.mapPowerPercentToConsumption = config.mapPowerPercentToConsumption();
             this.maxCompressorSpeed = config.maxCompressorSpeed();
             int defaultSetPointPowerPercent = config.defaultSetPointPowerPercent();
-            if (defaultSetPointPowerPercent > 100) {
-                defaultSetPointPowerPercent = 100;
-                keyValueMap.put("defaultSetPointPowerPercent", defaultSetPointPowerPercent);
-            }
-            if (defaultSetPointPowerPercent < 0) {
-                defaultSetPointPowerPercent = 0;
+            defaultSetPointPowerPercent = TypeUtils.fitWithin(0, 100, defaultSetPointPowerPercent);
+            if (defaultSetPointPowerPercent != config.defaultSetPointPowerPercent()) {
                 keyValueMap.put("defaultSetPointPowerPercent", defaultSetPointPowerPercent);
             }
             this.setHeatingPowerPercentSetpoint(defaultSetPointPowerPercent);
@@ -213,6 +205,22 @@ public class HeatpumpHeliothermImpl extends AbstractOpenemsModbusComponent imple
                         m(Heater.ChannelId.RETURN_TEMPERATURE, new SignedWordElement(13),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
                         m(HeatpumpHeliotherm.ChannelId.IR14_STORAGE_TANK_TEMPERATURE, new SignedWordElement(14),
+                                ElementToChannelConverter.DIRECT_1_TO_1),
+                        m(HeatpumpHeliotherm.ChannelId.IR15_HEAT_SOURCE_INLET_TEMP, new SignedWordElement(15),
+                                ElementToChannelConverter.DIRECT_1_TO_1),
+                        m(HeatpumpHeliotherm.ChannelId.IR16_HEAT_SOURCE_OUTLET_TEMP, new SignedWordElement(16),
+                                ElementToChannelConverter.DIRECT_1_TO_1),
+                        m(HeatpumpHeliotherm.ChannelId.IR17_VAPOR_INTAKE_TEMP, new SignedWordElement(17),
+                                ElementToChannelConverter.DIRECT_1_TO_1),
+                        m(HeatpumpHeliotherm.ChannelId.IR18_EVAPORATOR_TEMP, new SignedWordElement(18),
+                                ElementToChannelConverter.DIRECT_1_TO_1),
+                        m(HeatpumpHeliotherm.ChannelId.IR19_CONDENSER_TEMP, new SignedWordElement(19),
+                                ElementToChannelConverter.DIRECT_1_TO_1),
+                        m(HeatpumpHeliotherm.ChannelId.IR20_HOT_VAPOR_TEMP, new SignedWordElement(20),
+                                ElementToChannelConverter.DIRECT_1_TO_1),
+                        m(HeatpumpHeliotherm.ChannelId.IR21_LOW_PRESSURE, new SignedWordElement(21),
+                                ElementToChannelConverter.DIRECT_1_TO_1),
+                        m(HeatpumpHeliotherm.ChannelId.IR22_HIGH_PRESSURE, new SignedWordElement(22),
                                 ElementToChannelConverter.DIRECT_1_TO_1)
                 ),
                 new FC4ReadInputRegistersTask(25, Priority.HIGH,
@@ -221,7 +229,8 @@ public class HeatpumpHeliothermImpl extends AbstractOpenemsModbusComponent imple
                         m(HeatpumpHeliotherm.ChannelId.IR26_ERROR, new SignedWordElement(26),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
                         new DummyRegisterElement(27),
-                        new DummyRegisterElement(28),
+                        m(HeatpumpHeliotherm.ChannelId.IR28_PERCOLATION, new SignedWordElement(28),
+                                ElementToChannelConverter.DIRECT_1_TO_1),
                         m(HeatpumpHeliotherm.ChannelId.IR29_READ_COMPRESSOR_SPEED, new SignedWordElement(29),
                                 ElementToChannelConverter.SCALE_FACTOR_MINUS_1),
                         m(HeatpumpHeliotherm.ChannelId.IR30_COP, new SignedWordElement(30),
@@ -229,7 +238,8 @@ public class HeatpumpHeliothermImpl extends AbstractOpenemsModbusComponent imple
                         new DummyRegisterElement(31),
                         m(HeatpumpHeliotherm.ChannelId.IR32_DSM_INDICATOR, new SignedWordElement(32),
                                 ElementToChannelConverter.DIRECT_1_TO_1),
-                        new DummyRegisterElement(33),
+                        m(HeatpumpHeliotherm.ChannelId.IR33_OUTSIDE_TEMPERATURE_DELAYED, new SignedWordElement(33),
+                                ElementToChannelConverter.DIRECT_1_TO_1),
                         m(HeatpumpHeliotherm.ChannelId.IR34_READ_TEMP_SET_POINT, new SignedWordElement(34),
                                 ElementToChannelConverter.DIRECT_1_TO_1)
                 ),
@@ -237,11 +247,13 @@ public class HeatpumpHeliothermImpl extends AbstractOpenemsModbusComponent imple
                         m(HeatpumpHeliotherm.ChannelId.IR41_RUN_REQUEST_TYPE, new SignedWordElement(41),
                                 ElementToChannelConverter.DIRECT_1_TO_1)
                 ),
-                new FC4ReadInputRegistersTask(70, Priority.HIGH,
+                new FC4ReadInputRegistersTask(68, Priority.HIGH,
+                        m(HeatpumpHeliotherm.ChannelId.IR68_69_CUMULATED_ELECTRIC_ENERGY, new UnsignedDoublewordElement(68),
+                                ElementToChannelConverter.DIRECT_1_TO_1),
                         m(HeatpumpHeliotherm.ChannelId.IR70_71_ELECTRIC_POWER_CONSUMPTION, new UnsignedDoublewordElement(70),
-                                ElementToChannelConverter.DIRECT_1_TO_1)
-                ),
-                new FC4ReadInputRegistersTask(74, Priority.HIGH,
+                                ElementToChannelConverter.DIRECT_1_TO_1),
+                        m(HeatpumpHeliotherm.ChannelId.IR72_73_CUMULATED_THERMAL_ENERGY, new UnsignedDoublewordElement(72),
+                                ElementToChannelConverter.DIRECT_1_TO_1),
                         m(Heater.ChannelId.EFFECTIVE_HEATING_POWER, new UnsignedDoublewordElement(74),
                                 ElementToChannelConverter.SCALE_FACTOR_MINUS_1)
                 ),
@@ -665,6 +677,7 @@ public class HeatpumpHeliothermImpl extends AbstractOpenemsModbusComponent imple
         this.logInfo(this.log, "State enum: " + this.getHeaterState());
         this.logInfo(this.log, "Operating mode: " + getHr100OperatingMode().asEnum().getName());
         this.logInfo(this.log, "Compressor speed: " + getCompressorSpeed());
+        this.logInfo(this.log, "Max compressor speed (set by config): " + this.maxCompressorSpeed);
         this.logInfo(this.log, "OutsideTemperature: " + getOutsideTemperature());
         this.logInfo(this.log, "Flow temperature: " + getFlowTemperature());
         this.logInfo(this.log, "Return temperature: " + getReturnTemperature());
@@ -675,12 +688,11 @@ public class HeatpumpHeliothermImpl extends AbstractOpenemsModbusComponent imple
         this.logInfo(this.log, "Current electric power consumption: " + getElectricPowerConsumption());
         this.logInfo(this.log, "Current coefficient of performance: " + getCop());
 
-        double heatingPowerFromCop = 0;
+        int heatingPowerFromCop = 0;
         if (getCop().isDefined() && getElectricPowerConsumption().isDefined()) {
-            // ToDo: check if cop has the right dimension.
-            heatingPowerFromCop = getElectricPowerConsumption().get() * (getCop().get() / 10.0) / 1000; // Convert to kilowatt
+            heatingPowerFromCop = getCurrentElectricPower().get() * getCop().get() / 100; // COP unit is %, so divide by 100.
         }
-        this.logInfo(this.log, "Heating power calculated from cop & electric power: " + heatingPowerFromCop + " [kW]");
+        this.logInfo(this.log, "Heating power calculated from cop & electric power: " + heatingPowerFromCop + " [W]");
         */
 
         this.logInfo(this.log, "Run request code: " + getRunRequestType().get());

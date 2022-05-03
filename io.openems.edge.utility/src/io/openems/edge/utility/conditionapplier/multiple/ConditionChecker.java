@@ -6,6 +6,8 @@ import io.openems.common.types.OpenemsType;
 import io.openems.edge.common.channel.Channel;
 import io.openems.edge.common.channel.WriteChannel;
 import io.openems.edge.common.component.ComponentManager;
+import io.openems.edge.common.type.TypeUtils;
+import io.openems.edge.utility.api.ContainsOnlyNumbers;
 import org.slf4j.Logger;
 
 import java.util.Map;
@@ -34,19 +36,28 @@ public interface ConditionChecker {
             if ((conditionOk.get() && checkConditions.equals(CheckConditions.AND))
                     || (checkConditions.equals(CheckConditions.OR) && conditionOk.get() == false) || checkConditions.equals(CheckConditions.XOR)) {
                 try {
-                    Optional<?> channelValue;
+                    Optional<?> channelValue = Optional.empty();
                     Channel<?> channel = cpm.getChannel(key);
-                    if (channel.channelDoc().getType().equals(OpenemsType.BOOLEAN)) {
-                        if (channel instanceof WriteChannel<?>) {
-                            channelValue = ((WriteChannel<?>) channel).getNextWriteValue();
-                            if (channelValue.isPresent() == false) {
-                                channelValue = channel.value().asOptional();
+                    Boolean booleanChannelValue = false;
+                    if (channel instanceof WriteChannel<?>) {
+                        channelValue = ((WriteChannel<?>) channel).getNextWriteValue();
+                    }
+                    if (channelValue.isPresent() == false) {
+                        channelValue = channel.value().asOptional();
+                    }
+                    if (channelValue.isPresent()) {
+                        try {
+                            booleanChannelValue = TypeUtils.getAsType(OpenemsType.BOOLEAN, channelValue);
+                        } catch (IllegalArgumentException e) {
+                            String channelValueString = channelValue.get().toString();
+                            if (ContainsOnlyNumbers.containsOnlyValidNumbers(channelValueString)) {
+                                if (Double.parseDouble(channelValueString) >= 1) {
+                                    booleanChannelValue = true;
+                                }
                             }
-                        } else {
-                            channelValue = channel.value().asOptional();
-                        }
-                        if (channelValue.isPresent()) {
-                            boolean conditionMet = channelValue.get() == value;
+                        } finally {
+                            booleanChannelValue = booleanChannelValue != null && booleanChannelValue;
+                            boolean conditionMet = booleanChannelValue == value;
                             if (conditionMet) {
                                 if (checkConditions.equals(CheckConditions.OR)) {
                                     conditionOk.set(true);
@@ -62,8 +73,6 @@ public interface ConditionChecker {
                                 conditionOk.set(false);
                             }
                         }
-                    } else {
-                        log.warn("ChannelAddress is not an Boolean Channel: " + key);
                     }
                 } catch (OpenemsError.OpenemsNamedException e) {
                     log.warn("ChannelAddress not available: " + e.getMessage());

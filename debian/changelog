@@ -1,3 +1,17 @@
+openems-consolinno (0.1.31-2) unstable; urgency=medium
+
+  * potential curl fix
+
+ -- Felix <felix@felix-ThinkPad-E15-Gen-2>  Mon, 02 May 2022 10:13:21 +0200
+
+openems-consolinno (0.1.31-1) unstable; urgency=medium
+
+  * added functioning generic modbus electricity meter
+  * Weishaupt expansion and other Pump improvements
+  * InformationHoldingComponent merged 
+
+ -- Felix <felix@felix-ThinkPad-E15-Gen-2>  Mon, 02 May 2022 10:04:44 +0200
+
 openems-consolinno (0.1.30-3) unstable; urgency=medium
 
   * fixed generic modbus meter symmetric and asymmetric meter

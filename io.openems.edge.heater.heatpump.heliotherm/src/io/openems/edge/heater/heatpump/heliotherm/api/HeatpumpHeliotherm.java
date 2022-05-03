@@ -45,6 +45,78 @@ public interface HeatpumpHeliotherm extends Heater {
         IR14_STORAGE_TANK_TEMPERATURE(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS).accessMode(AccessMode.READ_ONLY)),
 
         /**
+         * Heat source inlet temperature. (Temp. EQ_Eintritt)
+         * <ul>
+         *      <li> Type: Integer
+         *      <li> Unit: Decimal degree Celsius
+         * </ul>
+         */
+        IR15_HEAT_SOURCE_INLET_TEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS).accessMode(AccessMode.READ_ONLY)),
+
+        /**
+         * Heat source outlet temperature. (Temp. EQ_Austritt)
+         * <ul>
+         *      <li> Type: Integer
+         *      <li> Unit: Decimal degree Celsius
+         * </ul>
+         */
+        IR16_HEAT_SOURCE_OUTLET_TEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS).accessMode(AccessMode.READ_ONLY)),
+
+        /**
+         * Vapor intake temperature. (Temp. Sauggas)
+         * <ul>
+         *      <li> Type: Integer
+         *      <li> Unit: Decimal degree Celsius
+         * </ul>
+         */
+        IR17_VAPOR_INTAKE_TEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS).accessMode(AccessMode.READ_ONLY)),
+
+        /**
+         * Evaporator temperature. (Temp. Verdampfung)
+         * <ul>
+         *      <li> Type: Integer
+         *      <li> Unit: Decimal degree Celsius
+         * </ul>
+         */
+        IR18_EVAPORATOR_TEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS).accessMode(AccessMode.READ_ONLY)),
+
+        /**
+         * Evaporator temperature. (Temp. Verdampfung)
+         * <ul>
+         *      <li> Type: Integer
+         *      <li> Unit: Decimal degree Celsius
+         * </ul>
+         */
+        IR19_CONDENSER_TEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS).accessMode(AccessMode.READ_ONLY)),
+
+        /**
+         * Hot vapor temperature. (Temp. Heissgas)
+         * <ul>
+         *      <li> Type: Integer
+         *      <li> Unit: Decimal degree Celsius
+         * </ul>
+         */
+        IR20_HOT_VAPOR_TEMP(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS).accessMode(AccessMode.READ_ONLY)),
+
+        /**
+         * Low pressure. (Niederdruck)
+         * <ul>
+         *      <li> Type: Integer
+         *      <li> Unit: Decibar
+         * </ul>
+         */
+        IR21_LOW_PRESSURE(Doc.of(OpenemsType.INTEGER).unit(Unit.DECI_BAR).accessMode(AccessMode.READ_ONLY)),
+
+        /**
+         * High pressure. (Hochdruck)
+         * <ul>
+         *      <li> Type: Integer
+         *      <li> Unit: Decibar
+         * </ul>
+         */
+        IR22_HIGH_PRESSURE(Doc.of(OpenemsType.INTEGER).unit(Unit.DECI_BAR).accessMode(AccessMode.READ_ONLY)),
+
+        /**
          * Heat pump running indicator.
          * <ul>
          *      <li> Type: Boolean
@@ -59,6 +131,15 @@ public interface HeatpumpHeliotherm extends Heater {
          * </ul>
          */
         IR26_ERROR(Doc.of(OpenemsType.BOOLEAN).accessMode(AccessMode.READ_ONLY)),
+
+        /**
+         * Percolation. (Durchfluss)
+         * <ul>
+         *      <li> Type: Integer
+         *      <li> Unit: Deciliter per minute
+         * </ul>
+         */
+        IR28_PERCOLATION(Doc.of(OpenemsType.INTEGER).unit(Unit.DECILITER_PER_MINUTE).accessMode(AccessMode.READ_ONLY)),
 
         /**
          * Compressor speed.
@@ -88,6 +169,15 @@ public interface HeatpumpHeliotherm extends Heater {
         IR32_DSM_INDICATOR(Doc.of(OpenemsType.BOOLEAN).accessMode(AccessMode.READ_ONLY)),
 
         /**
+         * Outside temperature, delayed.
+         * <ul>
+         *      <li> Type: Integer
+         *      <li> Unit: Decimal degree Celsius
+         * </ul>
+         */
+        IR33_OUTSIDE_TEMPERATURE_DELAYED(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS).accessMode(AccessMode.READ_ONLY)),
+
+        /**
          * Read the temperature set point the device is currently using.
          * <ul>
          *      <li> Type: Integer
@@ -109,6 +199,16 @@ public interface HeatpumpHeliotherm extends Heater {
         IR41_RUN_REQUEST_TYPE(Doc.of(OpenemsType.INTEGER).accessMode(AccessMode.READ_ONLY)),
 
         /**
+         * Cumulated electric energy. Unsigned double word. Integer in Java is 32bit, so still fits in an int.
+         * Unit from heatpump is kilowatt hours.
+         * <ul>
+         *      <li> Type: Integer
+         *      <li> Unit: Kilowatt hours
+         * </ul>
+         */
+        IR68_69_CUMULATED_ELECTRIC_ENERGY(Doc.of(OpenemsType.INTEGER).unit(Unit.KILOWATT_HOURS).accessMode(AccessMode.READ_ONLY)),
+
+        /**
          * Current electric power consumption. Unsigned double word. Integer in Java is 32bit, so still fits in an int.
          * Unit from heatpump is Watt.
          * <ul>
@@ -117,6 +217,16 @@ public interface HeatpumpHeliotherm extends Heater {
          * </ul>
          */
         IR70_71_ELECTRIC_POWER_CONSUMPTION(Doc.of(OpenemsType.INTEGER).unit(Unit.WATT).accessMode(AccessMode.READ_ONLY)),
+
+        /**
+         * Cumulated thermal energy. Unsigned double word. Integer in Java is 32bit, so still fits in an int.
+         * Unit from heatpump is kilowatt hours.
+         * <ul>
+         *      <li> Type: Integer
+         *      <li> Unit: Kilowatt hours
+         * </ul>
+         */
+        IR72_73_CUMULATED_THERMAL_ENERGY(Doc.of(OpenemsType.INTEGER).unit(Unit.KILOWATT_HOURS).accessMode(AccessMode.READ_ONLY)),
 
         /*
          * Current thermal power. Unsigned double word. Unit from heat pump is kW * 10e-1, watch the conversion!
@@ -318,7 +428,7 @@ public interface HeatpumpHeliotherm extends Heater {
     }
 
     /**
-     * Read the outside temperature. Unit is decimal degree Celsius.
+     * Gets the outside temperature. Unit is decimal degree Celsius.
      * See {@link ChannelId#IR10_OUTSIDE_TEMPERATURE}.
      *
      * @return the Channel {@link Value}
@@ -337,7 +447,7 @@ public interface HeatpumpHeliotherm extends Heater {
     }
 
     /**
-     * Read the storage tank temperature. Unit is decimal degree Celsius.
+     * Gets the storage tank temperature. Unit is decimal degree Celsius.
      * See {@link ChannelId#IR14_STORAGE_TANK_TEMPERATURE}.
      *
      * @return the Channel {@link Value}
@@ -345,6 +455,142 @@ public interface HeatpumpHeliotherm extends Heater {
     default Value<Integer> getStorageTankTemperature() {
         return this.getStorageTankTemperatureChannel().value();
     }
+
+    /**
+     * Gets the Channel for {@link ChannelId#IR15_HEAT_SOURCE_INLET_TEMP}.
+     *
+     * @return the Channel
+     */
+    public default IntegerReadChannel getHeatSourceInletTemperatureChannel() {
+        return this.channel(ChannelId.IR15_HEAT_SOURCE_INLET_TEMP);
+    }
+
+    /**
+     * Gets the heat source inlet temperature. Unit is decimal degree Celsius.
+     * See {@link ChannelId#IR15_HEAT_SOURCE_INLET_TEMP}.
+     *
+     * @return the Channel {@link Value}
+     */
+    public default Value<Integer> getHeatSourceInletTemperature() { return this.getHeatSourceInletTemperatureChannel().value(); }
+
+    /**
+     * Gets the Channel for {@link ChannelId#IR16_HEAT_SOURCE_OUTLET_TEMP}.
+     *
+     * @return the Channel
+     */
+    public default IntegerReadChannel getHeatSourceOutletTemperatureChannel() {
+        return this.channel(ChannelId.IR16_HEAT_SOURCE_OUTLET_TEMP);
+    }
+
+    /**
+     * Gets the heat source outlet temperature. Unit is decimal degree Celsius.
+     * See {@link ChannelId#IR16_HEAT_SOURCE_OUTLET_TEMP}.
+     *
+     * @return the Channel {@link Value}
+     */
+    public default Value<Integer> getHeatSourceOutletTemperature() { return this.getHeatSourceOutletTemperatureChannel().value(); }
+
+    /**
+     * Gets the Channel for {@link ChannelId#IR17_VAPOR_INTAKE_TEMP}.
+     *
+     * @return the Channel
+     */
+    public default IntegerReadChannel getVaporIntakeTemperatureChannel() {
+        return this.channel(ChannelId.IR17_VAPOR_INTAKE_TEMP);
+    }
+
+    /**
+     * Gets the vapor intake temperature. Unit is decimal degree Celsius.
+     * See {@link ChannelId#IR17_VAPOR_INTAKE_TEMP}.
+     *
+     * @return the Channel {@link Value}
+     */
+    public default Value<Integer> getVaporIntakeTemperature() { return this.getVaporIntakeTemperatureChannel().value(); }
+
+    /**
+     * Gets the Channel for {@link ChannelId#IR18_EVAPORATOR_TEMP}.
+     *
+     * @return the Channel
+     */
+    public default IntegerReadChannel getEvaporatorTemperatureChannel() {
+        return this.channel(ChannelId.IR18_EVAPORATOR_TEMP);
+    }
+
+    /**
+     * Gets the evaporator temperature. Unit is decimal degree Celsius.
+     * See {@link ChannelId#IR18_EVAPORATOR_TEMP}.
+     *
+     * @return the Channel {@link Value}
+     */
+    public default Value<Integer> getEvaporatorTemperature() { return this.getEvaporatorTemperatureChannel().value(); }
+
+    /**
+     * Gets the Channel for {@link ChannelId#IR19_CONDENSER_TEMP}.
+     *
+     * @return the Channel
+     */
+    public default IntegerReadChannel getCondenserTemperatureChannel() {
+        return this.channel(ChannelId.IR19_CONDENSER_TEMP);
+    }
+
+    /**
+     * Gets the condenser temperature. Unit is decimal degree Celsius.
+     * See {@link ChannelId#IR19_CONDENSER_TEMP}.
+     *
+     * @return the Channel {@link Value}
+     */
+    public default Value<Integer> getCondenserTemperature() { return this.getCondenserTemperatureChannel().value(); }
+
+    /**
+     * Gets the Channel for {@link ChannelId#IR20_HOT_VAPOR_TEMP}.
+     *
+     * @return the Channel
+     */
+    public default IntegerReadChannel getHotVaporTemperatureChannel() {
+        return this.channel(ChannelId.IR20_HOT_VAPOR_TEMP);
+    }
+
+    /**
+     * Gets the hot vapor temperature. Unit is decimal degree Celsius.
+     * See {@link ChannelId#IR20_HOT_VAPOR_TEMP}.
+     *
+     * @return the Channel {@link Value}
+     */
+    public default Value<Integer> getHotVaporTemperature() { return this.getHotVaporTemperatureChannel().value(); }
+
+    /**
+     * Gets the Channel for {@link ChannelId#IR21_LOW_PRESSURE}.
+     *
+     * @return the Channel
+     */
+    public default IntegerReadChannel getLowPressureValueChannel() {
+        return this.channel(ChannelId.IR21_LOW_PRESSURE);
+    }
+
+    /**
+     * Gets the low pressure value. Unit is decibar.
+     * See {@link ChannelId#IR21_LOW_PRESSURE}.
+     *
+     * @return the Channel {@link Value}
+     */
+    public default Value<Integer> getLowPressureValue() { return this.getLowPressureValueChannel().value(); }
+
+    /**
+     * Gets the Channel for {@link ChannelId#IR22_HIGH_PRESSURE}.
+     *
+     * @return the Channel
+     */
+    public default IntegerReadChannel getHighPressureValueChannel() {
+        return this.channel(ChannelId.IR22_HIGH_PRESSURE);
+    }
+
+    /**
+     * Gets the high pressure value. Unit is decibar.
+     * See {@link ChannelId#IR22_HIGH_PRESSURE}.
+     *
+     * @return the Channel {@link Value}
+     */
+    public default Value<Integer> getHighPressureValue() { return this.getHighPressureValueChannel().value(); }
 
     /**
      * Gets the Channel for {@link ChannelId#IR25_HEATPUMP_RUNNING}.
@@ -356,7 +602,7 @@ public interface HeatpumpHeliotherm extends Heater {
     }
 
     /**
-     * Heat pump running indicator.
+     * Gets the heat pump running indicator.
      * See {@link ChannelId#IR25_HEATPUMP_RUNNING}.
      *
      * @return the Channel {@link Value}
@@ -375,7 +621,7 @@ public interface HeatpumpHeliotherm extends Heater {
     }
 
     /**
-     * Error indicator.
+     * Gets the error indicator.
      * See {@link ChannelId#IR26_ERROR}.
      *
      * @return the Channel {@link Value}
@@ -383,6 +629,23 @@ public interface HeatpumpHeliotherm extends Heater {
     default Value<Boolean> getErrorIndicator() {
         return this.getErrorIndicatorChannel().value();
     }
+
+    /**
+     * Gets the Channel for {@link ChannelId#IR28_PERCOLATION}.
+     *
+     * @return the Channel
+     */
+    public default IntegerReadChannel getPercolationChannel() {
+        return this.channel(ChannelId.IR28_PERCOLATION);
+    }
+
+    /**
+     * Gets the percolation. Unit is deciliter per minute.
+     * See {@link ChannelId#IR28_PERCOLATION}.
+     *
+     * @return the Channel {@link Value}
+     */
+    public default Value<Integer> getPercolation() { return this.getPercolationChannel().value(); }
 
     /**
      * Gets the Channel for {@link ChannelId#IR29_READ_COMPRESSOR_SPEED}.
@@ -394,7 +657,7 @@ public interface HeatpumpHeliotherm extends Heater {
     }
 
     /**
-     * Get the current compressor speed. Unit is percent.
+     * Gets the current compressor speed. Unit is percent.
      * See {@link ChannelId#IR29_READ_COMPRESSOR_SPEED}.
      *
      * @return the Channel {@link Value}
@@ -413,7 +676,7 @@ public interface HeatpumpHeliotherm extends Heater {
     }
 
     /**
-     * Get the current coefficient of performance.
+     * Gets the current coefficient of performance.
      * See {@link ChannelId#IR30_COP}.
      *
      * @return the Channel {@link Value}
@@ -432,7 +695,7 @@ public interface HeatpumpHeliotherm extends Heater {
     }
 
     /**
-     * Demand side management (DSM) indicator (EVU Freigabe).
+     * Gets the demand side management (DSM) indicator (EVU Freigabe).
      * ’true’ = heat pump is allowed to run, ’false’ = heat pump blocked.
      * See {@link ChannelId#IR32_DSM_INDICATOR}.
      *
@@ -441,6 +704,23 @@ public interface HeatpumpHeliotherm extends Heater {
     default Value<Boolean> getDsmIndicator() {
         return this.getDsmIndicatorChannel().value();
     }
+
+    /**
+     * Gets the Channel for {@link ChannelId#IR33_OUTSIDE_TEMPERATURE_DELAYED}.
+     *
+     * @return the Channel
+     */
+    public default IntegerReadChannel getOutsideTemperatureDelayedChannel() {
+        return this.channel(ChannelId.IR33_OUTSIDE_TEMPERATURE_DELAYED);
+    }
+
+    /**
+     * Gets the outside temperature delayed. Unit is dezidegree Celsius.
+     * See {@link ChannelId#IR33_OUTSIDE_TEMPERATURE_DELAYED}.
+     *
+     * @return the Channel {@link Value}
+     */
+    public default Value<Integer> getOutsideTemperatureDelayed() { return this.getOutsideTemperatureDelayedChannel().value(); }
 
     /**
      * Gets the Channel for {@link ChannelId#IR34_READ_TEMP_SET_POINT}.
@@ -452,7 +732,7 @@ public interface HeatpumpHeliotherm extends Heater {
     }
 
     /**
-     * Read the temperature set point the device is currently using. Unit is decimal degree Celsius.
+     * Gets the temperature set point the device is currently using. Unit is decimal degree Celsius.
      * See {@link ChannelId#IR34_READ_TEMP_SET_POINT}.
      *
      * @return the Channel {@link Value}
@@ -485,6 +765,23 @@ public interface HeatpumpHeliotherm extends Heater {
     }
 
     /**
+     * Gets the Channel for {@link ChannelId#IR68_69_CUMULATED_ELECTRIC_ENERGY}.
+     *
+     * @return the Channel
+     */
+    public default IntegerReadChannel getCumulatedElectricEnergyChannel() {
+        return this.channel(ChannelId.IR68_69_CUMULATED_ELECTRIC_ENERGY);
+    }
+
+    /**
+     * Gets the cumulated electric energy. Unit is kilowatt hours.
+     * See {@link ChannelId#IR68_69_CUMULATED_ELECTRIC_ENERGY}.
+     *
+     * @return the Channel {@link Value}
+     */
+    public default Value<Integer> getCumulatedElectricEnergy() { return this.getCumulatedElectricEnergyChannel().value(); }
+
+    /**
      * Gets the Channel for {@link ChannelId#IR70_71_ELECTRIC_POWER_CONSUMPTION}.
      *
      * @return the Channel
@@ -494,7 +791,7 @@ public interface HeatpumpHeliotherm extends Heater {
     }
 
     /**
-     * Get the current electric power consumption. Unit is watt.
+     * Gets the current electric power consumption. Unit is watt.
      * See {@link ChannelId#IR70_71_ELECTRIC_POWER_CONSUMPTION}.
      *
      * @return the Channel {@link Value}
@@ -502,6 +799,23 @@ public interface HeatpumpHeliotherm extends Heater {
     default Value<Integer> getElectricPowerConsumption() {
         return this.getElectricPowerConsumptionChannel().value();
     }
+
+    /**
+     * Gets the Channel for {@link ChannelId#IR72_73_CUMULATED_THERMAL_ENERGY}.
+     *
+     * @return the Channel
+     */
+    public default IntegerReadChannel getCumulatedThermalEnergyChannel() {
+        return this.channel(ChannelId.IR72_73_CUMULATED_THERMAL_ENERGY);
+    }
+
+    /**
+     * Gets the cumulated thermal energy. Unit is kilowatt hours.
+     * See {@link ChannelId#IR72_73_CUMULATED_THERMAL_ENERGY}.
+     *
+     * @return the Channel {@link Value}
+     */
+    public default Value<Integer> getCumulatedThermalEnergy() { return this.getCumulatedThermalEnergyChannel().value(); }
 
 
     /* Holding Registers. Read/write.
@@ -520,7 +834,7 @@ public interface HeatpumpHeliotherm extends Heater {
     }
 
     /**
-     * Get the operating mode. Allowed to write 0 - 7, 8 - 10 is only used as an indicator.
+     * Gets the operating mode. Allowed to write 0 - 7, 8 - 10 is only used as an indicator.
      * 0 = Off
      * 1 = Automatic
      * 2 = Cooling
@@ -642,7 +956,7 @@ public interface HeatpumpHeliotherm extends Heater {
     }
 
     /**
-     * Get the ’use set point temperature’ control mode setting.
+     * Gets the ’use set point temperature’ control mode setting.
      * Using temperature control mode disables the heat pump reacting to EnableSignal and ExceptionalState.
      * Gets the Channel for {@link ChannelId#HR103_USE_SET_POINT_TEMPERATURE}.
      *
@@ -684,7 +998,7 @@ public interface HeatpumpHeliotherm extends Heater {
     }
 
     /**
-     * Get the setting for ’use power control’.
+     * Gets the setting for ’use power control’.
      * This is either ’power percent control mode’ or ’power consumption control mode’, depending on the heat pump
      * configuration.
      * Currently this flag is set automatically!
@@ -731,7 +1045,7 @@ public interface HeatpumpHeliotherm extends Heater {
     }
 
     /**
-     * Get the set point electric power consumption. Unit is watt.
+     * Gets the set point electric power consumption. Unit is watt.
      * This control mode only works when the heat pump is configured to ’photovoltaic mode - Modbus RTU/TCP’.
      * See {@link ChannelId#HR125_SET_POINT_ELECTRIC_POWER_CONSUMPTION}.
      *
@@ -795,7 +1109,7 @@ public interface HeatpumpHeliotherm extends Heater {
     }
 
     /**
-     * Get the status of the ’reset error’ register.
+     * Gets the status of the ’reset error’ register.
      * See {@link ChannelId#HR128_RESET_ERROR}.
      *
      * @return the Channel {@link Value}
@@ -835,7 +1149,7 @@ public interface HeatpumpHeliotherm extends Heater {
     }
 
     /**
-     * Get the outside temperature value that is sent to the device. Unit is decimal degree Celsius.
+     * Gets the outside temperature value that is sent to the device. Unit is decimal degree Celsius.
      * Needs register 130 set to true, otherwise this value is ignored.
      * See {@link ChannelId#HR129_OUTSIDE_TEMPERATURE_SEND}.
      *
@@ -889,7 +1203,7 @@ public interface HeatpumpHeliotherm extends Heater {
     }
 
     /**
-     * Get the heat pump setting for ’use value in register 129 as the outside temperature’.
+     * Gets the heat pump setting for ’use value in register 129 as the outside temperature’.
      * See {@link ChannelId#HR130_USE_MODBUS_OUTSIDE_TEMPERATURE}.
      *
      * @return the Channel {@link Value}
@@ -931,7 +1245,7 @@ public interface HeatpumpHeliotherm extends Heater {
     }
 
     /**
-     * Get the storage tank temperature value sent to the device. Unit is decimal degree Celsius.
+     * Gets the storage tank temperature value sent to the device. Unit is decimal degree Celsius.
      * Needs register 132 set to true, otherwise this setting is ignored.
      * See {@link ChannelId#HR131_STORAGE_TANK_TEMPERATURE_SEND}.
      *
@@ -989,7 +1303,7 @@ public interface HeatpumpHeliotherm extends Heater {
     }
 
     /**
-     * Get the heat pump setting for ’use value in register 131 as the storage tank temperature’.
+     * Gets the heat pump setting for ’use value in register 131 as the storage tank temperature’.
      * See {@link ChannelId#HR132_USE_MODBUS_SENT_STORAGE_TANK_TEMP}.
      *
      * @return the Channel {@link Value}
@@ -1075,7 +1389,7 @@ public interface HeatpumpHeliotherm extends Heater {
     }
 
     /**
-     * Get the heat pump setting for ’use the DSM setting (EVU Freigabe) sent to register 149’.
+     * Gets the heat pump setting for ’use the DSM setting (EVU Freigabe) sent to register 149’.
      * See {@link ChannelId#HR150_USE_MODBUS_DSM_SWITCH}.
      *
      * @return the Channel {@link Value}

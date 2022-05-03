@@ -553,6 +553,7 @@ abstract class AbstractHydraulicLineController extends AbstractOpenemsComponent 
             }
             this.wasActiveBefore = true;
             this.initialHeatUpWasSet = true;
+            this.isActiveChannel().setNextValue(true);
         } catch (OpenemsError.OpenemsNamedException e) {
             this.log.error("Error while trying to heat!");
         }
@@ -567,6 +568,7 @@ abstract class AbstractHydraulicLineController extends AbstractOpenemsComponent 
                 this.lineController.stopProcess();
             }
             this.wasActiveBefore = false;
+            this.isActiveChannel().setNextValue(false);
         } catch (OpenemsError.OpenemsNamedException e) {
             this.log.error("Error while trying to stop Heating");
         }
