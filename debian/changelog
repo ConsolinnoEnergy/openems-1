@@ -1,3 +1,10 @@
+openems-consolinno (0.1.32-1) unstable; urgency=medium
+
+  * implementation of Mock mitsubishi heatpump 
+  * fixed a bug in Clustered Heater, UNDEFINED heater are now ignored/removed
+
+ -- Felix <felix@felix-ThinkPad-E15-Gen-2>  Thu, 05 May 2022 09:21:56 +0200
+
 openems-consolinno (0.1.31-2) unstable; urgency=medium
 
   * potential curl fix
