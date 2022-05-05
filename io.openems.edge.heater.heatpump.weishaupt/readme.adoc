@@ -1,6 +1,6 @@
 = Heat Pump Weishaupt
 
 This module reads the most important variables available via Modbus from a Weishaupt heat pump and maps them to OpenEMS channels.
-WriteChannels can be used to send commands to the heat pump via setter methods in HeatpumpTecalorChannel and Heater.
+WriteChannels can be used to send commands to the heat pump via setter methods in HeatpumpWeishaupt, HeatpumpSmartGrid and Heater.
 
 https://github.com/OpenEMS/openems/tree/develop/io.openems.edge.heater.heatpump.weishaupt[Source Code icon:github[]]
