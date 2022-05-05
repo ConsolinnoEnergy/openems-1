@@ -213,7 +213,7 @@ public class ClusteredHeaterImpl extends AbstractOpenemsComponent implements Ope
                     Float overwritePowerLevel = this.convertPower(this.getOverWriteSetPointHeatingPowerChannel().getNextWriteValueAndReset().orElse(null), this.energyControlModeInput);
                     List<Heater> keySet = new ArrayList<>(this.currentRunningHeatersWithSetPoint.keySet());
                     keySet.forEach(entry -> {
-                        if (entry.getHeaterState().asEnum().equals(HeaterState.BLOCKED_OR_ERROR)) {
+                        if (entry.getHeaterState().asEnum().equals(HeaterState.BLOCKED_OR_ERROR) || entry.getHeaterState().asEnum().equals(HeaterState.UNDEFINED)) {
                             this.currentRunningHeatersWithSetPoint.remove(entry);
                         }
                     });
@@ -461,7 +461,7 @@ public class ClusteredHeaterImpl extends AbstractOpenemsComponent implements Ope
         //Check for possible Heaters that can be added -> neither already handled nor Blocked
         this.priorityToHeaterMap.forEach((key, value) -> {
             value.forEach((position, heater) -> {
-                if (!this.currentRunningHeatersWithSetPoint.containsKey(heater) && !heater.getHeaterState().asEnum().equals(HeaterState.BLOCKED_OR_ERROR)) {
+                if (!this.currentRunningHeatersWithSetPoint.containsKey(heater) && !heater.getHeaterState().asEnum().equals(HeaterState.BLOCKED_OR_ERROR) && !heater.getHeaterState().asEnum().equals(HeaterState.UNDEFINED)) {
                     possibleHeaterToAdd.getAndIncrement();
                 }
             });
