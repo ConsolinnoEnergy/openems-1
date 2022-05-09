@@ -155,7 +155,7 @@ public class LeafletCoreImpl extends AbstractOpenemsModbusComponent implements O
             super.activate(context, config.id(), config.alias(), config.enabled(), config.modbusUnitId(), this.cm,
                     "Modbus", config.modbusBridgeId());
         } else {
-                this.log.error("Firmware incompatible or not Running!");
+            this.log.error("Firmware incompatible or not Running!");
             this.log.info("The Configurator will now deactivate itself.");
             this.deactivate();
         }
@@ -216,7 +216,7 @@ public class LeafletCoreImpl extends AbstractOpenemsModbusComponent implements O
      */
     private void putElementInCorrectMap(Map<ModuleRegister, Integer> map, int group, List<String> row) {
         map.put(new ModuleRegister(this.stringToType(
-                row.get(this.moduleTypeOffset + (group * GROUP_SIZE))),
+                        row.get(this.moduleTypeOffset + (group * GROUP_SIZE))),
                         Integer.parseInt(row.get(this.moduleNumberOffset + (group * GROUP_SIZE))),
                         Integer.parseInt(row.get(this.mRegOffset + (group * GROUP_SIZE)))),
                 Integer.parseInt(row.get(0)));
@@ -500,7 +500,23 @@ public class LeafletCoreImpl extends AbstractOpenemsModbusComponent implements O
                 }
                 response = responseBuilder.toString();
             } catch (IOException e) {
-                this.log.error("The Firmware is not Running!");
+                try {
+                    Process p = Runtime.getRuntime().exec("leafletbs -v");
+
+
+                    BufferedReader reader =
+                            new BufferedReader(new InputStreamReader(p.getInputStream()));
+
+                    String line = "";
+                    StringBuilder responseBuilder = new StringBuilder();
+                    while ((line = reader.readLine()) != null) {
+                        responseBuilder.append(line);
+                    }
+                    response = responseBuilder.toString();
+                } catch (IOException ioException) {
+                    this.log.error("The Firmware is not Running!");
+                }
+
             }
             if (response.equals("") == false) {
                 String[] partOne = response.split("V");
