@@ -1,4 +1,9 @@
-This is the Consolinno Passing Control Center module. It manages the hierarchy of heating controllers.
+= Control Center
+
+It manages the controlType of heating controllers.
+By receiving different inputs and Controlling a PidHydraulicController and a HydraulicComponent.
+Used for e.g. underfloor heating or other heat-systems.
+
 * The output of a heating controller is a temperature and a boolean to signal if the controller wants to heat or not.
-* This controller polls three heating controllers by hierarchy and passes on the result (heating or not heating plus the temperature) to the next module(s).
+* This controller polls three heating controllers by controlType and passes on the result (heating or not heating plus the temperature) to the next module(s).
 

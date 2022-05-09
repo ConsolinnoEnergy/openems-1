@@ -3,9 +3,25 @@ package io.openems.edge.controller.heatnetwork.controlcenter.api;
 import io.openems.common.channel.AccessMode;
 import io.openems.common.channel.Unit;
 import io.openems.common.types.OpenemsType;
-import io.openems.edge.common.channel.*;
+import io.openems.edge.common.channel.BooleanWriteChannel;
+import io.openems.edge.common.channel.Channel;
+import io.openems.edge.common.channel.Doc;
+import io.openems.edge.common.channel.IntegerWriteChannel;
+import io.openems.edge.common.channel.WriteChannel;
 import io.openems.edge.common.component.OpenemsComponent;
 
+/**
+ * This is the Nature of the ControlCenter.
+ * By receiving a HeatingCurve, an optional WarmupProgram Controller
+ * and also by receiving Overrides, it .
+ * - The output of a heating controller is a temperature and a boolean to signal if the controller wants to heat or not.
+ * - This controller polls three heating controllers by hierarchy and passes on the result (heating or not heating plus
+ * the temperature) to the next module(s).
+ * The Hierarchy is:
+ * 1. Check if an Override is active -> if so use the temperature of the override.
+ * 2. If Override is not available check if the warmup program is configured and if so -> use the given temperature of the warmup program.
+ * 3. If 1. and 2. do not apply check if the HeatingCurve set's a temperature.
+ */
 public interface ControlCenter extends OpenemsComponent {
 
     public enum ChannelId implements io.openems.edge.common.channel.ChannelId {
@@ -21,7 +37,7 @@ public interface ControlCenter extends OpenemsComponent {
          */
 
         TEMPERATURE_OVERRIDE(Doc.of(OpenemsType.INTEGER).unit(Unit.DECIDEGREE_CELSIUS).accessMode(AccessMode.READ_WRITE)
-        .onInit(channel -> ((IntegerWriteChannel)channel).onSetNextWrite(channel::setNextValue))),
+                .onInit(channel -> ((IntegerWriteChannel) channel).onSetNextWrite(channel::setNextValue))),
 
         /**
          * Tells the controller to use the temperature override.
@@ -33,7 +49,7 @@ public interface ControlCenter extends OpenemsComponent {
          */
 
         ACTIVATE_OVERRIDE(Doc.of(OpenemsType.BOOLEAN).accessMode(AccessMode.READ_WRITE)
-                .onInit(channel -> ((BooleanWriteChannel)channel).onSetNextWrite(channel::setNextValue))),
+                .onInit(channel -> ((BooleanWriteChannel) channel).onSetNextWrite(channel::setNextValue))),
 
         /**
          * Heating temperature.
@@ -50,7 +66,6 @@ public interface ControlCenter extends OpenemsComponent {
          */
 
         ACTIVATE_HEATER(Doc.of(OpenemsType.BOOLEAN).accessMode(AccessMode.READ_ONLY));
-
 
 
         private final Doc doc;
@@ -96,7 +111,11 @@ public interface ControlCenter extends OpenemsComponent {
         return this.channel(ChannelId.ACTIVATE_HEATER);
     }
 
-
+    /**
+     * Get the Channel of {@link ChannelId#TEMPERATURE_HEATING}.
+     *
+     * @return the Channel
+     */
     default Channel<Integer> temperatureHeating() {
         return this.channel(ChannelId.TEMPERATURE_HEATING);
     }

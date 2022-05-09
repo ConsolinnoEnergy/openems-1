@@ -1,0 +1,10 @@
+= io.openems.edge.controller.heatnetwork.heatingcurveregulator HeatingCurve
+
+== Description
+
+This Controller takes a temperature as input and calculates a setPointTemperature depending on the component configuration.
+Additionally, when a setPointTemperature is calculated, it asks for heating.
+
+== Source
+
+https://de.wikipedia.org/wiki/Heizkurve

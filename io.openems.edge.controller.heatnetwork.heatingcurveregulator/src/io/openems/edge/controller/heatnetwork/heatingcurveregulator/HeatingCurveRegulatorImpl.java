@@ -1,17 +1,25 @@
 package io.openems.edge.controller.heatnetwork.heatingcurveregulator;
 
+import io.openems.common.channel.Unit;
 import io.openems.common.exceptions.OpenemsError;
+import io.openems.common.types.ChannelAddress;
+import io.openems.edge.common.channel.Channel;
 import io.openems.edge.common.component.AbstractOpenemsComponent;
 import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
+import io.openems.edge.common.configupdate.ConfigurationUpdate;
 import io.openems.edge.controller.api.Controller;
-import io.openems.edge.controller.heatnetwork.heatingcurveregulator.api.HeatingCurveRegulatorChannel;
+import io.openems.edge.controller.heatnetwork.heatingcurveregulator.api.HeatingCurveRegulator;
 import io.openems.edge.thermometer.api.Thermometer;
-import org.osgi.service.cm.Configuration;
 import org.osgi.service.cm.ConfigurationAdmin;
 import org.osgi.service.cm.ConfigurationException;
 import org.osgi.service.component.ComponentContext;
-import org.osgi.service.component.annotations.*;
+import org.osgi.service.component.annotations.Activate;
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.ConfigurationPolicy;
+import org.osgi.service.component.annotations.Deactivate;
+import org.osgi.service.component.annotations.Modified;
+import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,29 +28,34 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
-import java.util.Dictionary;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * This is the Consolinno weather dependent heating controller.
- * - It takes the outside temperature as input and asks for the heating to be turned on or off based on the outside
+ * This is a temperature dependent heating controller.
+ * - It takes a temperature (usually outsideTemperature) as input and asks for the heating to be turned on or off based on the outside
  * temperature.
+ * Additionally, it calculates a setPoint Temperature.
  * - If the outside temperature is below the activation threshold, a heating temperature is calculated based
  * on a parametrized heating curve.
  */
 
 @Designate(ocd = Config.class, factory = true)
-@Component(name = "AutomaticRegulator", immediate = true, configurationPolicy = ConfigurationPolicy.REQUIRE)
-public class HeatingCurveRegulatorImpl extends AbstractOpenemsComponent implements OpenemsComponent, HeatingCurveRegulatorChannel, Controller {
+@Component(name = "Controller.Heatnetwork.HeatingCurve", immediate = true, configurationPolicy = ConfigurationPolicy.REQUIRE)
+public class HeatingCurveRegulatorImpl extends AbstractOpenemsComponent implements OpenemsComponent, HeatingCurveRegulator, Controller {
 
     private final Logger log = LoggerFactory.getLogger(HeatingCurveRegulatorImpl.class);
+    @Reference
+    ConfigurationAdmin ca;
 
     @Reference
     protected ComponentManager cpm;
 
-    private Thermometer outsideTempSensor;
+    private ChannelAddress outsideThermometer;
     private int activationTemp;
     private int roomTemp;
     private double slope;
@@ -52,258 +65,324 @@ public class HeatingCurveRegulatorImpl extends AbstractOpenemsComponent implemen
     private int minimumStateTimeMinutes;
     private boolean measureAverage = false;
     private int measurementCounter = 0;
-    private int[] measurementDataOneMinute = new int[60];
-    private List<Integer> measurementData = new ArrayList<>();
+    private static final int MINUTE_IN_SECONDS = 60;
+    private final Integer[] measurementDataOneMinute = new Integer[MINUTE_IN_SECONDS];
+    private final List<Integer> measurementData = new ArrayList<>();
     private boolean shouldBeHeating = false;
-
-    // Variables for channel readout
-    private boolean tempSensorSendsData;
-    private int outsideTemperature;
+    private static final int TOLERANCE_FOR_AVERAGE_MEASUREMENT = 30;
+    private int calculatedHeatingCurveTemperature = 450;
 
     public HeatingCurveRegulatorImpl() {
         super(OpenemsComponent.ChannelId.values(),
-                HeatingCurveRegulatorChannel.ChannelId.values(),
+                HeatingCurveRegulator.ChannelId.values(),
                 Controller.ChannelId.values());
     }
 
     private boolean initial = true;
 
     @Activate
-    public void activate(ComponentContext context, Config config) throws OpenemsError.OpenemsNamedException, ConfigurationException {
-        AtomicBoolean instanceFound = new AtomicBoolean(false);
-
-        cpm.getAllComponents().stream().filter(component -> component.id().equals(config.id())).findFirst().ifPresent(consumer -> {
-            instanceFound.set(true);
-        });
-        if (instanceFound.get() == true) {
-            return;
-        }
+    void activate(ComponentContext context, Config config) throws OpenemsError.OpenemsNamedException, ConfigurationException {
         super.activate(context, config.id(), config.alias(), config.enabled());
-        initial = true;
-        activationTemp = config.activation_temp();
-        roomTemp = config.room_temp();
-        // Activation temperature can not be higher than desired room temperature, otherwise the function will crash.
-        if (activationTemp > roomTemp) {
-            activationTemp = roomTemp;
-        }
-        // Convert to dezidegree, since sensor data is dezidegree too.
-        activationTemp = activationTemp * 10;
-        slope = config.slope();
-        offset = config.offset();
-
-        this.noError().setNextValue(true);
-
+        this.initial = true;
+        this.activationOrModifiedRoutine(config);
+        this.noErrorChannel().setNextValue(true);
         // Set timestamp so that logic part 1 executes right away.
-        timestamp = LocalDateTime.now().minusMinutes(minimumStateTimeMinutes);
+        this.timestamp = LocalDateTime.now().minusMinutes(this.minimumStateTimeMinutes);
 
-        measurementTimeMinutes = config.measurement_time_minutes();
-        minimumStateTimeMinutes = config.minimum_state_time_minutes();
-        if (measurementTimeMinutes > minimumStateTimeMinutes) {
-            measurementTimeMinutes = minimumStateTimeMinutes;
+        this.measureAverage = false;
+        this.measurementCounter = 0;
+        this.measurementData.clear();
+        this.initializeMeasurementMinuteData();
+    }
+
+    private void initializeMeasurementMinuteData() {
+        Arrays.fill(this.measurementDataOneMinute, Thermometer.MISSING_TEMPERATURE);
+    }
+
+    private void activationOrModifiedRoutine(Config config) throws OpenemsError.OpenemsNamedException, ConfigurationException {
+        this.activationTemp = config.activation_temp();
+        this.roomTemp = config.room_temp();
+        // Activation temperature can not be higher than desired room temperature, otherwise the function will crash.
+        if (this.activationTemp > this.roomTemp) {
+            this.activationTemp = this.roomTemp;
+        }
+        // Convert to deci-degree, since sensor data is deci-degree too.
+        this.activationTemp = this.activationTemp * HeatingCurveRegulator.CELSIUS_TO_DECI_DEGREE_CONVERTER;
+        this.slope = config.slope();
+        this.offset = config.offset();
+        this.measurementTimeMinutes = config.measurement_time_minutes();
+        this.minimumStateTimeMinutes = config.minimum_state_time_minutes();
+        if (this.measurementTimeMinutes > this.minimumStateTimeMinutes) {
+            this.measurementTimeMinutes = this.minimumStateTimeMinutes;
         }
 
-        measureAverage = false;
-        measurementCounter = 0;
-        measurementData.clear();
-
-        // Allocate temperature sensor.
-
-        if (cpm.getComponent(config.temperatureSensorId()) instanceof Thermometer) {
-
-            this.outsideTempSensor = cpm.getComponent(config.temperatureSensorId());
+        if (this.cpm.getComponent(config.thermometerId()) instanceof Thermometer) {
+            Thermometer thermometer = this.cpm.getComponent(config.thermometerId());
+            this.outsideThermometer = thermometer.getTemperatureChannel().address();
         } else {
             throw new ConfigurationException("The configured component is not a temperature sensor! Please check "
-                    + config.temperatureSensorId(), "configured component is incorrect!");
+                    + config.thermometerId(), "configured component is incorrect!");
         }
+        this.initializeChannel();
+    }
 
+    private void initializeChannel() {
+        this.getRoomTemperature().setNextValue(this.roomTemp);
+        this.getActivationTemperature().setNextValue(this.activationTemp / HeatingCurveRegulator.CELSIUS_TO_DECI_DEGREE_CONVERTER);
+        this.getSlope().setNextValue(this.slope);
+        this.getOffset().setNextValue(this.offset);
+    }
 
-        this.getRoomTemperature().setNextValue(config.room_temp());
-        this.getActivationTemperature().setNextValue(config.activation_temp());
-        this.getSlope().setNextValue(config.slope());
-        this.getOffset().setNextValue(config.offset());
+    @Modified
+    void modified(ComponentContext context, Config config) throws OpenemsError.OpenemsNamedException, ConfigurationException {
+        super.modified(context, config.id(), config.alias(), config.enabled());
+        this.activationOrModifiedRoutine(config);
     }
 
 
     @Deactivate
-    public void deactivate() {
+    protected void deactivate() {
         super.deactivate();
-        turnOnHeater(false);
+        this.turnHeaterOff();
     }
 
-    @Reference
-    ConfigurationAdmin ca;
-
     private void updateConfig() {
-        Configuration c;
 
-        try {
-            c = ca.getConfiguration(this.servicePid(), "?");
-            Dictionary<String, Object> properties = c.getProperties();
-            Optional t = this.getRoomTemperature().getNextWriteValueAndReset();
-            if (t.isPresent()) {
-                properties.put("room.temp", t.get());
+        Map<String, Object> properties = new HashMap<>();
+        Optional<Integer> integerValue = this.getRoomTemperature().getNextWriteValueAndReset();
+        if (integerValue.isPresent() && integerValue.get() != this.roomTemp) {
+            properties.put("room_temp", integerValue.get());
+        }
+        integerValue = this.getActivationTemperature().getNextWriteValueAndReset();
+        if (integerValue.isPresent() && this.activationTemp != (integerValue.get() * HeatingCurveRegulator.CELSIUS_TO_DECI_DEGREE_CONVERTER)) {
+            properties.put("activation_temp", integerValue.get());
+        }
+        integerValue = this.getOffset().getNextWriteValueAndReset();
+        if (integerValue.isPresent() && this.offset != integerValue.get()) {
+            properties.put("offset", integerValue.get());
+        }
+        Optional<Double> doubleValue = this.getSlope().getNextWriteValueAndReset();
+        if (doubleValue.isPresent() && this.slope != doubleValue.get()) {
+            properties.put("slope", doubleValue.get());
+        }
+        if (!properties.isEmpty()) {
+            try {
+                ConfigurationUpdate.updateConfig(this.ca, this.servicePid(), properties);
+            } catch (IOException e) {
+                this.log.warn("Couldn't update Config from REST params.");
             }
-            t = this.getActivationTemperature().getNextWriteValueAndReset();
-            if (t.isPresent()) {
-                properties.put("activation.temp", t.get());
-            }
-            t = this.getSlope().getNextWriteValueAndReset();
-            if (t.isPresent()) {
-                properties.put("slope", t.get());
-            }
-            t = this.getOffset().getNextWriteValueAndReset();
-            if (t.isPresent()) {
-                properties.put("offset", t.get());
-            }
-            c.update(properties);
-
-        } catch (IOException e) {
         }
     }
 
     @Override
-    public void run() throws OpenemsError.OpenemsNamedException {
+    public void run() {
+        this.updateConfig();
 
-        boolean restchange = this.getActivationTemperature().getNextWriteValue().isPresent();
-        restchange |= this.getRoomTemperature().getNextWriteValue().isPresent();
-        restchange |= this.getSlope().getNextWriteValue().isPresent();
-        restchange |= this.getOffset().getNextWriteValue().isPresent();
-        if (restchange) {
-            updateConfig();
+        int outsideTemperature = Thermometer.MISSING_TEMPERATURE;
+        try {
+            //No check for Int needed, since it is actually the Thermometer -> getTemperatureChannel
+            outsideTemperature = ((Channel<Integer>) this.cpm.getChannel(this.outsideThermometer)).value().orElse(Thermometer.MISSING_TEMPERATURE);
+        } catch (OpenemsError.OpenemsNamedException ignored) {
+            this.log.warn(this.id() + " Couldn't read Temperature from ChannelAddress. Might be missing.");
         }
-        // Transfer channel data to local variables for better readability of logic code.
-        tempSensorSendsData = outsideTempSensor.getTemperatureChannel().value().isDefined();
-        if (tempSensorSendsData) {
-            outsideTemperature = outsideTempSensor.getTemperatureChannel().value().get();
+        boolean temperatureIsMissing = this.hasMissingTemperature(outsideTemperature);
+        if (!temperatureIsMissing) {
 
-            // Error handling.
-            if (this.noError().value().get() == false) {
-                this.noError().setNextValue(true);
-                this.logInfo(this.log, "Everything is fine now! Reading from the temperature sensor is "
-                        + outsideTemperature / 10 + "°C.");
+            this.checkToKeepCurrentState(outsideTemperature);
+
+            this.measureAverageTemperatureOfMinute(outsideTemperature);
+
+            this.checkAverageTemperatureAndDecideShouldBeHeating();
+
+            if (this.shouldBeHeating) {
+                this.turnHeaterOn();
+
+                this.calculatedHeatingCurveTemperature = Math.round(HeatingCurveRegulator.calculateHeatingCurveTemperatureInDeciDegree(this.slope, this.offset, this.roomTemp, outsideTemperature));
+
+                this.setHeatingTemperature(this.calculatedHeatingCurveTemperature);
+            } else {
+                this.turnHeaterOff();
             }
+        }
+    }
+
+    /**
+     * Part 1. Test temperature. Execution blocked by timestamp that is set when state changes (heating or no
+     * heating). This means once state changes, it will keep that state for at least minimumStateTimeMinutes.
+     *
+     * @param outsideTemperature the current outsideTemperature
+     */
+    private void checkToKeepCurrentState(int outsideTemperature) {
+        if (this.shouldBeHeating && ChronoUnit.MINUTES.between(this.timestamp, LocalDateTime.now()) > this.minimumStateTimeMinutes) {
+            // Check if temperature is above this.activationTemp
+            if (outsideTemperature > this.activationTemp) {
+                this.resetMeasurement();
+            }
+        }
+        if (this.initial || (this.shouldBeHeating == false && ChronoUnit.MINUTES.between(this.timestamp, LocalDateTime.now()) > this.minimumStateTimeMinutes)) {
+            this.initial = false;
+            // Check if temperature is below this.activationTemp
+            if (outsideTemperature <= this.activationTemp) {
+                this.resetMeasurement();
+            }
+        }
+    }
+
+
+    /**
+     * Part 2. Get average temperature over a set time period (entered in config). Use that average to decide
+     * heating state. Has a shortcut that decides faster if average temperature of 60 cycles is well above or
+     * below activation temperature. The shortcut is for a controller restart in winter, so heating starts faster.
+     *
+     * @param outsideTemperature the measured outsideTemperature.
+     */
+    private void measureAverageTemperatureOfMinute(int outsideTemperature) {
+        if (this.measureAverage) {
+            int average = Thermometer.MISSING_TEMPERATURE;
+            this.measurementDataOneMinute[this.measurementCounter] = outsideTemperature;
+            this.measurementCounter = this.measurementCounter % MINUTE_IN_SECONDS;
+            AtomicInteger count = new AtomicInteger(0);
+            AtomicInteger sum = new AtomicInteger(0);
+            if (this.measurementCounter == MINUTE_IN_SECONDS - 1) {
+                Arrays.stream(this.measurementDataOneMinute).filter(entry -> entry != Thermometer.MISSING_TEMPERATURE).forEach(validTemperature -> {
+                    count.getAndIncrement();
+                    sum.getAndAdd(validTemperature);
+                });
+
+                if (count.get() > 0) {
+                    average = (sum.get() / count.get());
+                    this.measurementData.add(average);
+                }
+            }
+
+            // Shortcut if average of one minute is 30dC above or below this.activationTemp.
+            if (average != Thermometer.MISSING_TEMPERATURE) {
+                if (this.shouldBeHeating) {
+                    if (average > this.activationTemp + TOLERANCE_FOR_AVERAGE_MEASUREMENT) {
+                        this.shouldBeHeating = false;
+                        this.timestamp = LocalDateTime.now();
+                        this.measureAverage = false;
+                    }
+                } else if (average <= this.activationTemp - TOLERANCE_FOR_AVERAGE_MEASUREMENT) {
+                    this.shouldBeHeating = true;
+                    this.timestamp = LocalDateTime.now();
+                    this.measureAverage = false;
+                }
+            }
+        }
+    }
+
+    /**
+     * Part 3. Evaluation at end of measurement time.
+     * Fail-safe: needs at least one entry in measurementData
+     */
+    private void checkAverageTemperatureAndDecideShouldBeHeating() {
+        if (ChronoUnit.MINUTES.between(this.timestamp, LocalDateTime.now()) > this.measurementTimeMinutes
+                && !this.measurementData.isEmpty()) {
+            AtomicInteger sum = new AtomicInteger(0);
+            this.measurementData.forEach(sum::getAndAdd);
+
+            int totalAverage = sum.get() / this.measurementData.size();
+
+            if (this.shouldBeHeating) {
+                // Is heating right now. Should heating be turned off?
+                if (totalAverage > this.activationTemp) {
+                    this.shouldBeHeating = false;
+                    this.timestamp = LocalDateTime.now();
+                } else {
+                    this.setTimeStampToExectuePartOne();
+                }
+            } else {
+                // Is not heating right now. Should heating be turned on?
+                if (totalAverage <= this.activationTemp) {
+                    this.shouldBeHeating = true;
+                    this.timestamp = LocalDateTime.now();
+                } else {
+                    this.setTimeStampToExectuePartOne();
+                }
+            }
+            this.measureAverage = false;
+        }
+
+
+    }
+
+    /**
+     * Check before actual HeatingCurve "logic". If the outsideTemperature equals a MissingTemperature
+     * The communication probably failed and the HeatingCurve enters an error state.
+     *
+     * @param outsideTemperature the measured outside temperature.
+     * @return true if temperature equals {@link Thermometer#MISSING_TEMPERATURE}.
+     */
+    private boolean hasMissingTemperature(int outsideTemperature) {
+
+        if (outsideTemperature != Thermometer.MISSING_TEMPERATURE) {
+            // Error handling.
+            if (this.hasError()) {
+                this.noErrorChannel().setNextValue(true);
+                this.logInfo(this.log, "Everything is fine now! Reading from the temperature sensor is "
+                        + outsideTemperature / HeatingCurveRegulator.CELSIUS_TO_DECI_DEGREE_CONVERTER + "°C.");
+
+            }
+            return false;
         } else {
             // No data from the temperature sensor (null in channel). -> Error
-            turnOnHeater(false);
-            this.noError().setNextValue(false);
-            this.logError(this.log, "Not getting any data from the outside temperature sensor " + outsideTempSensor.id() + ".");
-        }
-
-
-        // Control logic. Execution starts at part 1, which decides if the next part executes or not.
-        if (tempSensorSendsData) {
-
-            // Part 1. Test temperature. Execution blocked by timestamp that is set when state changes (heating or no
-            // heating). This means once state changes, it will keep that state for at least minimumStateTimeMinutes.
-            if (shouldBeHeating && ChronoUnit.MINUTES.between(timestamp, LocalDateTime.now()) > minimumStateTimeMinutes) {
-                // Check if temperature is above activationTemp
-                if (outsideTemperature > activationTemp) {
-                    measureAverage = true;
-                    timestamp = LocalDateTime.now();
-                    measurementCounter = 0;
-                    measurementData.clear();
-                }
-            }
-            if (initial || (shouldBeHeating == false && ChronoUnit.MINUTES.between(timestamp, LocalDateTime.now()) > minimumStateTimeMinutes)) {
-                initial = false;
-                // Check if temperature is below activationTemp
-                if (outsideTemperature <= activationTemp) {
-                    measureAverage = true;
-                    timestamp = LocalDateTime.now();
-                    measurementCounter = 0;
-                    measurementData.clear();
-                }
-            }
-            // Part 2. Get average temperature over a set time period (entered in config). Use that average to decide
-            // heating state. Has a shortcut that decides faster if average temperature of 60 cycles is well above or
-            // below activation temperature. The shortcut is for a controller restart in winter, so heating starts faster.
-            if (measureAverage) {
-                measurementDataOneMinute[measurementCounter] = outsideTemperature;
-                measurementCounter++;
-                if (measurementCounter >= 60) {
-                    double average = 0;
-                    for (int i = 0; i < 60; i++) {
-                        average += measurementDataOneMinute[i];
-                    }
-                    average = average / 60.0;
-                    measurementData.add((int) Math.round(average));
-                    measurementCounter = 0;
-
-                    // Shortcut if average of one minute is 5k above or below activationTemp.
-                    if (shouldBeHeating) {
-                        if (average > activationTemp + 30) {
-                            shouldBeHeating = false;
-                            timestamp = LocalDateTime.now();
-                            measureAverage = false;
-                        }
-                    } else {
-                        if (average <= activationTemp - 30) {
-                            shouldBeHeating = true;
-                            timestamp = LocalDateTime.now();
-                            measureAverage = false;
-                        }
-                    }
-                }
-
-                // Part 3. Evaluation at end of measurement time.
-                // Fail safe: needs at least one entry in measurementData, meaning at least 60 cycles have passed.
-                if (ChronoUnit.MINUTES.between(timestamp, LocalDateTime.now()) > measurementTimeMinutes
-                        && measurementData.size() >= 1) {
-                    double sum = 0;
-                    for (Integer entry : measurementData) {
-                        sum += entry;
-                    }
-                    int totalAverage = (int) Math.round(sum / measurementData.size());
-
-                    if (shouldBeHeating) {
-                        // Is heating right now. Should heating be turned off?
-                        if (totalAverage > activationTemp) {
-                            shouldBeHeating = false;
-                            timestamp = LocalDateTime.now();
-                        } else {
-                            // Set timestamp so that part 1 executes again right away.
-                            timestamp = LocalDateTime.now().minusMinutes(minimumStateTimeMinutes);
-                        }
-                    } else {
-                        // Is not heating right now. Should heating be turned on?
-                        if (totalAverage <= activationTemp) {
-                            shouldBeHeating = true;
-                            timestamp = LocalDateTime.now();
-                        } else {
-                            // Set timestamp so that part 1 executes again right away.
-                            timestamp = LocalDateTime.now().minusMinutes(minimumStateTimeMinutes);
-                        }
-                    }
-                    measureAverage = false;
-                }
-            }
-
-
-            if (shouldBeHeating) {
-                turnOnHeater(true);
-
-                // Calculate heating temperature. Function calculates everything in degree, not dezidegree!
-                double function = (slope * 1.8317984 * Math.pow((roomTemp - (0.1 * outsideTemperature)), 0.8281902))
-                        + roomTemp + offset;
-
-                // Convert back to dezidegree integer.
-                int outputTempDezidegree = (int) Math.round(function * 10);
-
-                setHeatingTemperature(outputTempDezidegree);
-                this.logDebug(this.log, "Outside thermometer measures " + 0.1 * outsideTemperature
-                        + "°C. Heater function calculates forward temperature to " + outputTempDezidegree / 10 + "°C.");
-            } else {
-                turnOnHeater(false);
-            }
+            this.turnHeaterOff();
+            this.noErrorChannel().setNextValue(false);
+            this.logError(this.log, "Not getting any data from the outside temperature sensor " + this.outsideThermometer.getComponentId() + ".");
+            return true;
         }
     }
 
-    private void turnOnHeater(boolean activate) {
-        this.signalTurnOnHeater().setNextValue(activate);
+    /**
+     * Set timestamp so that part 1 executes again right away.
+     */
+    private void setTimeStampToExectuePartOne() {
+        this.timestamp = LocalDateTime.now().minusMinutes(this.minimumStateTimeMinutes);
     }
 
+    /**
+     * Resets the current measurementData.
+     */
+    private void resetMeasurement() {
+        this.measureAverage = true;
+        this.timestamp = LocalDateTime.now();
+        this.measurementCounter = 0;
+        this.measurementData.clear();
+    }
+
+    /**
+     * Set the {@link HeatingCurveRegulator.ChannelId#ACTIVATE_HEATER} to true.
+     */
+    private void turnHeaterOn() {
+        this.signalTurnOnHeater().setNextValue(true);
+    }
+
+
+    /**
+     * Set the {@link HeatingCurveRegulator.ChannelId#ACTIVATE_HEATER} to false.
+     */
+
+    private void turnHeaterOff() {
+        this.signalTurnOnHeater().setNextValue(false);
+    }
+
+
+    /**
+     * Sets the {@link HeatingCurveRegulator.ChannelId#HEATING_TEMPERATURE}.
+     *
+     * @param temperature the setPointTemperature
+     */
     private void setHeatingTemperature(int temperature) {
         this.getHeatingTemperature().setNextValue(temperature);
     }
 
+    @Override
+    public String debugLog() {
+        if (this.shouldBeHeating) {
+            return this.id() + "HeatingCurve controller calculated temperature setPoint to "
+                    + this.calculatedHeatingCurveTemperature / CELSIUS_TO_DECI_DEGREE_CONVERTER + Unit.DEGREE_CELSIUS.getSymbol();
+        }
+        return this.id() + " Not Heating";
+    }
 }
