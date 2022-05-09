@@ -119,6 +119,7 @@ public class TimeFrameHandlerImpl extends AbstractOpenemsComponent implements Op
         this.useOutput = config.useOutput();
         if (this.useOutput) {
             this.outputChannel = ChannelAddress.fromString(config.channelOutput());
+            this.inputOutputType = config.inputOutputType();
         }
     }
 
