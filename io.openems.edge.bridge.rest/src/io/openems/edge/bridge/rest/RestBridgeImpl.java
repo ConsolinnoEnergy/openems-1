@@ -29,6 +29,7 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.Base64;
+import java.util.Date;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -65,6 +66,12 @@ public class RestBridgeImpl extends AbstractOpenemsComponent implements RestBrid
     private int keepAlive;
     AtomicBoolean connectionOk = new AtomicBoolean(true);
     DateTime initialDateTime;
+    DateTime initialReadTime;
+    DateTime initialWriteTime;
+    private int readInterval;
+    private int writeInterval;
+    private boolean initialReadWasSet;
+    private boolean initialWriteWasSet;
     private boolean initialDateTimeSet = false;
     private final AtomicBoolean readIsRunning = new AtomicBoolean(false);
     private final AtomicBoolean writeIsRunning = new AtomicBoolean(false);
@@ -72,6 +79,10 @@ public class RestBridgeImpl extends AbstractOpenemsComponent implements RestBrid
 
     public RestBridgeImpl() {
         super(OpenemsComponent.ChannelId.values());
+    }
+
+    private enum TaskType {
+        READ, WRITE
     }
 
     @Activate
@@ -92,6 +103,8 @@ public class RestBridgeImpl extends AbstractOpenemsComponent implements RestBrid
             this.loginData = "Basic " + Base64.getEncoder().encodeToString((config.username() + ":" + config.password()).getBytes());
             this.ipAddressAndPort = config.ipAddress() + ":" + config.port();
             this.keepAlive = config.keepAlive();
+            this.readInterval = config.readInterval();
+            this.writeInterval = config.writeInterval();
         }
     }
 
@@ -150,19 +163,57 @@ public class RestBridgeImpl extends AbstractOpenemsComponent implements RestBrid
                 } else {
                     this.checkIfAllConnectionsAreOkay();
                 }
-                if (this.connectionOk.get() && this.readIsRunning.get() == false) {
+                if (this.connectionOk.get() && this.readIsRunning.get() == false && this.shouldRead()) {
+                    this.initialReadWasSet = false;
                     this.executeReads();
                 }
                 break;
 
             case EdgeEventConstants.TOPIC_CYCLE_EXECUTE_WRITE:
-                if (this.connectionOk.get() && this.writeIsRunning.get() == false) {
+                if (this.connectionOk.get() && this.writeIsRunning.get() == false && this.shouldWrite()) {
+                    this.initialWriteWasSet = false;
                     this.executeWrites();
                 }
                 break;
 
         }
 
+    }
+
+    private boolean shouldWrite() {
+        return this.shouldExecuteTask(TaskType.WRITE);
+    }
+
+    private boolean shouldRead() {
+        return this.shouldExecuteTask(TaskType.READ);
+    }
+
+    private boolean shouldExecuteTask(TaskType taskType) {
+        boolean shouldExecute;
+        DateTime now = DateTime.now();
+        DateTime compare = DateTime.now();
+        int plusSeconds = 10;
+        switch (taskType) {
+
+            case READ:
+                if (!this.initialReadWasSet) {
+                    this.initialReadTime = DateTime.now();
+                    this.initialReadWasSet = true;
+                }
+                compare = this.initialReadTime;
+                plusSeconds = this.readInterval;
+                break;
+            case WRITE:
+                if (!this.initialWriteWasSet) {
+                    this.initialWriteTime = DateTime.now();
+                    this.initialWriteWasSet = true;
+                }
+                compare = this.initialWriteTime;
+                plusSeconds = this.writeInterval;
+                break;
+        }
+        shouldExecute = now.isAfter(compare.plusSeconds(plusSeconds));
+        return shouldExecute;
     }
 
     /**
