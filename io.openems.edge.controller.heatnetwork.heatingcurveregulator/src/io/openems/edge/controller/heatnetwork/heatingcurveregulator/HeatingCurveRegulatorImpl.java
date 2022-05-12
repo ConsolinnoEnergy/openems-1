@@ -241,6 +241,7 @@ public class HeatingCurveRegulatorImpl extends AbstractOpenemsComponent implemen
             int average = Thermometer.MISSING_TEMPERATURE;
             this.measurementDataOneMinute[this.measurementCounter] = outsideTemperature;
             this.measurementCounter = this.measurementCounter % MINUTE_IN_SECONDS;
+            this.measurementCounter++;
             AtomicInteger count = new AtomicInteger(0);
             AtomicInteger sum = new AtomicInteger(0);
             if (this.measurementCounter == MINUTE_IN_SECONDS - 1) {
