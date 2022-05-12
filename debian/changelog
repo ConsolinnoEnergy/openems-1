@@ -1,3 +1,12 @@
+openems-consolinno (0.2.1-2) unstable; urgency=medium
+
+  * Bugfixes and improvements from NAF tests
+  * Incresed connection Limits for Rest API
+  * Implemented a Timer for Rest Read and Write tasks
+  * improved the controlcenter hierarchy controller (better startup)
+
+ -- Felix <felix@felix-ThinkPad-E15-Gen-2>  Thu, 12 May 2022 14:10:30 +0200
+
 openems-consolinno (0.2.1-1) unstable; urgency=medium
 
   * Implemented BitToInt and IntToBitConverter
