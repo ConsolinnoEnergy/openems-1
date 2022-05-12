@@ -68,7 +68,7 @@ public class RestBridgeImpl extends AbstractOpenemsComponent implements RestBrid
     private boolean initialDateTimeSet = false;
     private final AtomicBoolean readIsRunning = new AtomicBoolean(false);
     private final AtomicBoolean writeIsRunning = new AtomicBoolean(false);
-    private static final int AWAIT_EXECUTOR_SHUTDOWN = 10;
+    private static final int AWAIT_EXECUTOR_SHUTDOWN = 20;
 
     public RestBridgeImpl() {
         super(OpenemsComponent.ChannelId.values());
