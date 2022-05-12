@@ -243,12 +243,14 @@ public class RestRemoteDeviceImpl extends AbstractOpenemsComponent implements Op
             if (this.isEnabled()) {
                 if (this.timerHandler.checkTimeIsUp(WAIT_TIME_IDENTIFIER)) {
                     try {
-                        if (this.restBridge == null || this.restBridge.isEnabled() == false) {
-                            OpenemsComponent component = this.cpm.getComponent(this.config.restBridgeId());
-                            if (component instanceof RestBridge) {
-                                this.restBridge = (RestBridge) component;
+                        OpenemsComponent component = this.cpm.getComponent(this.config.restBridgeId());
+                        if (component instanceof RestBridge) {
+                            RestBridge other = (RestBridge) component;
+                            if (this.restBridge == null || other != this.restBridge) {
+                                this.restBridge = other;
                             }
                         }
+
                         if (this.restBridge.getAllRequests() == null || this.restBridge.getAllRequests().containsKey(this.id()) == false) {
                             try {
                                 if (this.task == null) {

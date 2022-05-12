@@ -31,6 +31,12 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     @AttributeDefinition(name = "Keep Alive", description = "Time Interval to Check for active Connection. Time in Seconds.")
     int keepAlive() default 360;
 
+    @AttributeDefinition(name = "ReadInterval", description = "Time Interval to Check for new Reads.")
+    int readInterval() default 5;
+
+    @AttributeDefinition(name = "WriteInterval", description = "Time to set new Writes.")
+    int writeInterval() default 3;
+
     boolean enabled() default true;
 
     String webconsole_configurationFactory_nameHint() default "Rest Bridge [{id}]";
