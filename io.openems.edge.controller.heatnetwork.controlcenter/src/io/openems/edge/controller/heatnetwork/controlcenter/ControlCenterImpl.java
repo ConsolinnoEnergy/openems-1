@@ -51,6 +51,7 @@ public class ControlCenterImpl extends AbstractOpenemsComponent implements Opene
 
     private int setPointTemperature;
     private ControlType controlType;
+    private boolean configSuccess;
 
 
     enum ControlType {
@@ -67,16 +68,29 @@ public class ControlCenterImpl extends AbstractOpenemsComponent implements Opene
     }
 
     @Activate
-    void activate(ComponentContext context, Config config) throws OpenemsError.OpenemsNamedException, ConfigurationException {
+    void activate(ComponentContext context, Config config) {
         super.activate(context, config.id(), config.alias(), config.enabled());
         this.config = config;
         //allocate components
-        this.allocateComponents();
-        this.activateHeater().setNextValue(false);
-        // This allows to start the warmupController from this module.
-        if (config.run_warmup_program() && this.warmupController != null) {
-            this.warmupController.playPauseWarmupController().setNextWriteValue(true);
+        this.activationOrModifiedRoutine();
+
+    }
+
+    private void activationOrModifiedRoutine() {
+        this.configSuccess = false;
+        try {
+            this.allocateComponents();
+            this.activateHeater().setNextValue(false);
+            // This allows to start the warmupController from this module.
+            if (this.config.run_warmup_program() && this.warmupController != null) {
+                this.warmupController.playPauseWarmupController().setNextWriteValue(true);
+            }
+        } catch (OpenemsError.OpenemsNamedException | ConfigurationException e) {
+            this.log.warn(this.id() + "Couldn't apply Config. Reason: " + e.getMessage());
+            this.configSuccess = false;
+            return;
         }
+        this.configSuccess = true;
     }
 
     @Deactivate
@@ -86,33 +100,38 @@ public class ControlCenterImpl extends AbstractOpenemsComponent implements Opene
 
     @Override
     public void run() {
-        if (this.componentIsMissing()) {
-            this.log.warn("A Component is missing in: " + super.id());
-            return;
-        }
-        // For the Overrides, copy values from the WriteValue to the NextValue fields.
-        if (this.activateTemperatureOverride().getNextWriteValue().isPresent()) {
-            this.activateTemperatureOverride().setNextValue(this.activateTemperatureOverride().getNextValue().orElse(false));
-        }
-        if (this.setOverrideTemperature().getNextWriteValue().isPresent()) {
-            this.setOverrideTemperature().setNextValue(this.setOverrideTemperature().getNextWriteValue().get());
-        }
-        this.controlType = this.getCurrentControlType();
-        this.setActiveTemperatureDependingOnControlType(this.controlType);
-        if (!this.controlType.equals(ControlType.NONE)) {
-            try {
-                this.turnOnHeater();
-            } catch (OpenemsError.OpenemsNamedException e) {
-                this.log.warn(this.id() + " Couldn't ENABLE HydraulicController! Please check your config. A component might be missing");
+        if (this.configSuccess) {
+            if (this.componentIsMissing()) {
+                this.log.warn("A Component is missing in: " + super.id());
+                return;
+            }
+            // For the Overrides, copy values from the WriteValue to the NextValue fields.
+            if (this.activateTemperatureOverride().getNextWriteValue().isPresent()) {
+                this.activateTemperatureOverride().setNextValue(this.activateTemperatureOverride().getNextValue().orElse(false));
+            }
+            if (this.setOverrideTemperature().getNextWriteValue().isPresent()) {
+                this.setOverrideTemperature().setNextValue(this.setOverrideTemperature().getNextWriteValue().get());
+            }
+            this.controlType = this.getCurrentControlType();
+            this.setActiveTemperatureDependingOnControlType(this.controlType);
+            if (!this.controlType.equals(ControlType.NONE)) {
+                try {
+                    this.turnOnHeater();
+                } catch (OpenemsError.OpenemsNamedException e) {
+                    this.log.warn(this.id() + " Couldn't ENABLE HydraulicController! Please check your config. A component might be missing");
+                }
+            } else {
+                try {
+                    this.turnOffHeater();
+                } catch (OpenemsError.OpenemsNamedException e) {
+                    this.log.warn(this.id() + " Couldn't DISABLE HydraulicController! Please check your config. A component might be missing");
+                }
             }
         } else {
-            try {
-                this.turnOffHeater();
-            } catch (OpenemsError.OpenemsNamedException e) {
-                this.log.warn(this.id() + " Couldn't DISABLE HydraulicController! Please check your config. A component might be missing");
-            }
+            this.activationOrModifiedRoutine();
         }
     }
+
 
     /**
      * Depending on the ControlType a SetPointTemperature will be selected.
