@@ -14,7 +14,11 @@ import io.openems.edge.pump.grundfos.api.PumpMode;
 import org.osgi.service.cm.ConfigurationAdmin;
 import org.osgi.service.cm.ConfigurationException;
 import org.osgi.service.component.ComponentContext;
-import org.osgi.service.component.annotations.*;
+import org.osgi.service.component.annotations.Activate;
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.ConfigurationPolicy;
+import org.osgi.service.component.annotations.Deactivate;
+import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -66,8 +70,10 @@ public class PumpGrundfosControllerImpl extends AbstractOpenemsComponent impleme
     private boolean printInfoToLog;
     private boolean onlyRead;
     private boolean pressureSetpointCalculationDone;
-    private boolean updateDefaultConfig = false;
+    private boolean writeEveryChangeToConfig = false;
     private boolean checkDefaultPressureSetpoint = false;
+    private double intervalHrange;
+    private double intervalHmin;
 
     public PumpGrundfosControllerImpl() {
         super(OpenemsComponent.ChannelId.values(),
@@ -116,18 +122,16 @@ public class PumpGrundfosControllerImpl extends AbstractOpenemsComponent impleme
         }
         this.stopPump = config.stopPump();
         this.onlyRead = config.onlyRead();
-        this.updateDefaultConfig = config.updateDefaultConfig();
-        if (this.updateDefaultConfig == false) {
-            /* Check if the pressure set point in the config is within the limits. If value is outside limits, correct
-               value and update config with corrected value.
-               Not needed for separate treatment if ’updateDefaultConfig == true’, since then every set point is checked
-               and written to config. */
+        this.writeEveryChangeToConfig = config.writeEveryChangeToConfig();
+        if (this.writeEveryChangeToConfig == false) {
+            /* Separate variable for the pressure set point config entry to be able to check if that entry is within the
+               limits and correct the config entry if it is not. A separate variable is needed because it takes a while
+               before the limits are known. Can't use pressureSetpoint because that can change by then. */
             this.defaultPressureSetpoint = config.pressureSetpoint();
             this.checkDefaultPressureSetpoint = true;
         }
         this.pressureSetpoint = config.pressureSetpoint();
         this.pressureSetpointCalculationDone = false;
-
 
         // Set channel values.
         this._setMotorSpeedSetpoint(this.motorSpeedSetpoint);
@@ -208,134 +212,17 @@ public class PumpGrundfosControllerImpl extends AbstractOpenemsComponent impleme
         if (pumpOnline) {
 
             if (this.onlyRead == false) {
-
-                /* Collect write values. Compare with value in config and update if it is different, if config option to
-                   do so is set. Updating the config restarts the module, channels are filled with new values in activate().
-                   Do update when all nextWrites have been collected, as module restart also means channels are
-                   initialized again, deleting all values. */
-                Map<String, Object> valuesForConfig = new HashMap<>();
-                Optional<Integer> controlModeOptional = this.getControlModeChannel().getNextWriteValueAndReset();
-                if (controlModeOptional.isPresent()) {
-                    int enumAsInt = controlModeOptional.get();
-                    // Restrict to valid write values
-                    if (enumAsInt >= 0 && enumAsInt <= 4) {
-                        this.controlModeSetting = ControlModeSetting.valueOf(enumAsInt);
-                        if (this.updateDefaultConfig && this.controlModeSetting != this.config.controlMode()) {
-                            valuesForConfig.put("controlMode", this.controlModeSetting);
-                        }
-                    }
-                }
-                Optional<Boolean> stopPumpOptional = this.getStopPumpChannel().getNextWriteValueAndReset();
-                if (stopPumpOptional.isPresent()) {
-                    this.stopPump = stopPumpOptional.get();
-                    if (this.stopPump != this.config.stopPump()) {
-                        valuesForConfig.put("stopPump", this.stopPump);
-                    }
-                }
-                Optional<Double> motorSpeedSetpointOptional = this.getMotorSpeedSetpointChannel().getNextWriteValueAndReset();
-                if (motorSpeedSetpointOptional.isPresent()) {
-                    this.motorSpeedSetpoint = motorSpeedSetpointOptional.get();
-                    this.motorSpeedSetpoint = Math.max(this.motorSpeedSetpoint, MIN_MOTOR_SPEED);
-                    this.motorSpeedSetpoint = Math.min(this.motorSpeedSetpoint, 100.0);
-                    this._setMotorSpeedSetpoint(this.motorSpeedSetpoint);
-
-                    if (this.updateDefaultConfig) {
-                        /* Compare new set point with config, to see if config value is different and needs to be updated.
-                           Set point is a double, so for comparison it should be rounded. Multiply by 1000 before rounding
-                           to keep three digits after the decimal point. Then round to a long for comparison. */
-                        long newSetpoint = Math.round(this.motorSpeedSetpoint * 1000);
-                        long oldSetpoint = Math.round(this.config.motorSpeedSetpoint() * 1000);
-                        if (newSetpoint != oldSetpoint) {
-                            valuesForConfig.put("motorSpeedSetpoint", this.motorSpeedSetpoint);
-                        }
-                    }
-                }
-                Optional<Boolean> readOnlyOptional = this.getReadOnlySettingChannel().getNextWriteValueAndReset();
-                if (readOnlyOptional.isPresent()) {
-                    this.onlyRead = readOnlyOptional.get();
-                    if (this.updateDefaultConfig && this.onlyRead != this.config.onlyRead()) {
-                        valuesForConfig.put("onlyRead", this.onlyRead);
-                    }
-                }
-
-                Optional<Double> pressureSetpointOptional = this.getPressureSetpointChannel().getNextWriteValueAndReset();
-                if (pressureSetpointOptional.isPresent()) {
-                    this.pressureSetpoint = pressureSetpointOptional.get();
-                    this.pressureSetpointCalculationDone = false;
-                }
-
-                /* The pressure set point cannot simply be sent to Genibus. The set point value that is sent to Genibus
-                   is ref_rem, which is a percentage value [0;100]. Depending on the operating mode, ref_rem is mapped to
-                   different things. In constant pressure mode, the ref_rem is mapped to the pressure sensor range.
-                   As an example, if that pressure sensor range is [0;2] bar, the mapping would be:
-                   - ref_rem = 0 is 0 bar
-                   - ref_rem = 50 is 1 bar
-                   - ref_rem = 100 is 2 bar
-                   To convert the pressure set point from a pressure unit to a ref_rem value, you first need to read the
-                   pressure sensor range from the pump. */
-                if (this.pressureSetpointCalculationDone == false) {
-                    Unit channelUnit = getPressureSetpointChannel().channelDoc().getUnit(); // Unit of pressureSetpoint is this unit.
-                    Unit sensorUnit = this.pumpChannels.getPumpDevice().getSensorUnit();
-                    int scaleFactor = channelUnit.getScaleFactor() - sensorUnit.getScaleFactor();
-
-                    // Calculate range in unit of pressureSetpoint. Range is [intervalHmin;intervalHmin+intervalHrange].
-                    double intervalHrange = this.pumpChannels.getPumpDevice().getPressureSensorRange() * Math.pow(10, -scaleFactor);
-                    double intervalHmin = this.pumpChannels.getPumpDevice().getPressureSensorMin() * Math.pow(10, -scaleFactor);
-
-                    // Test if sensor range was received from the pump. If yes, range is bigger than 0.
-                    if (intervalHrange > 0) {
-                        this.pressureSetpointCalculationDone = true;
-
-                        if (this.pressureSetpoint > intervalHrange + intervalHmin) {
-                            this.logWarn(this.log, "Value for pressure setpoint = " + this.pressureSetpoint + " bar is above the interval range. "
-                                    + "Resetting to maximum valid value " + intervalHrange + intervalHmin + " bar.");
-                            this.pressureSetpoint = intervalHrange + intervalHmin;
-                        }
-                        if (this.pressureSetpoint < intervalHmin) {
-                            this.logWarn(this.log, "Value for pressure setpoint = " + this.pressureSetpoint + " bar is below the interval range. "
-                                    + "Resetting to minimum valid value " + intervalHmin + " bar.");
-                            this.pressureSetpoint = intervalHmin;
-                        }
-                        this._setPressureSetpoint(this.pressureSetpoint);
-
-                        // ref_rem is a percentage value. To send 100%, write 100 to the channel.
-                        this.pressureSetpointToRefRem = 100 * (this.pressureSetpoint - intervalHmin) / intervalHrange;
-
-                        if (this.updateDefaultConfig) {
-                            /* Compare new set point with config, to see if config value is different and needs to be
-                               updated. Set point is a double, so for comparison it should be rounded. Multiply by 1000
-                               before rounding to keep three digits after the decimal point. Then round to a long for
-                               comparison. */
-                            long newSetpoint = Math.round(this.pressureSetpoint * 1000);
-                            long oldSetpoint = Math.round(this.config.pressureSetpoint() * 1000);
-                            if (newSetpoint != oldSetpoint) {
-                                valuesForConfig.put("pressureSetpoint", this.pressureSetpoint);
-                            }
-                        } else if (this.checkDefaultPressureSetpoint) {
-                            // Need separate check, because pressureSetpoint might be different to defaultPressureSetpoint at this point.
-                            this.checkDefaultPressureSetpoint = false;
-                            if (this.defaultPressureSetpoint > intervalHrange + intervalHmin) {
-                                this.defaultPressureSetpoint = intervalHrange + intervalHmin;
-                                valuesForConfig.put("pressureSetpoint", this.defaultPressureSetpoint);
-                            }
-                            if (this.defaultPressureSetpoint < intervalHmin) {
-                                this.defaultPressureSetpoint = intervalHmin;
-                                valuesForConfig.put("pressureSetpoint", this.defaultPressureSetpoint);
-                            }
-                        }
-                    }
-                }
+                this.collectWriteValuesAndCalculatePressureSetpoint();
 
                 // Puts the pump in remote mode. Send every second.
                 this.pumpChannels.setRemote(true);
-
                 // Compare pump status with controller settings. Send commands if there is a difference.
                 if (this.stopPump) {
                     if (this.pumpChannels.getMotorFrequency().orElse(0.0) > 0) {
                         this.pumpChannels.setStop(true);    // Stop pump.
                     }
                 } else {
-                    if (this.pumpChannels.getMotorFrequencyChannel().value().orElse(0.0) <= 0) {
+                    if (this.pumpChannels.getMotorFrequency().orElse(0.0) <= 0) {
                         this.pumpChannels.setStart(true);   // Start pump.
                     }
                     switch (this.controlModeSetting) {
@@ -374,13 +261,9 @@ public class PumpGrundfosControllerImpl extends AbstractOpenemsComponent impleme
                             break;
                     }
                 }
-                if (valuesForConfig.isEmpty() == false) {
-                    try {
-                        ConfigurationUpdate.updateConfig(ca, this.servicePid(), valuesForConfig);
-                    } catch (IOException e) {
-                        this.log.warn("Couldn't save new settings to config. " + e.getMessage());
-                    }
-                }
+
+                // Do config update last, because a config update will restart the module.
+                this.checkConfigUpdate();
             }
             if (this.printInfoToLog) {
                 this.printInfo();
@@ -388,6 +271,152 @@ public class PumpGrundfosControllerImpl extends AbstractOpenemsComponent impleme
         } else {
             this.logWarn(this.log, "Warning: Pump " + this.pumpChannels.getPumpDevice().getPumpDeviceId()
                     + " at GENIbus address " + this.pumpChannels.getPumpDevice().getGenibusAddress() + " has no connection.");
+        }
+    }
+
+    /**
+     * Collect write values and limit them to the valid range. Do the calculation to convert the pressure set point to
+     * the equivalent ref_rem percentage value.
+     */
+    private void collectWriteValuesAndCalculatePressureSetpoint() {
+
+        //STOP_PUMP
+        this.getStopPumpChannel().getNextWriteValueAndReset().ifPresent(aBoolean -> this.stopPump = aBoolean);
+
+        //MOTOR SPEED
+        Optional<Double> motorSpeedSetpointOptional = this.getMotorSpeedSetpointChannel().getNextWriteValueAndReset();
+        if (motorSpeedSetpointOptional.isPresent()) {
+            this.motorSpeedSetpoint = motorSpeedSetpointOptional.get();
+            this.motorSpeedSetpoint = Math.max(this.motorSpeedSetpoint, MIN_MOTOR_SPEED);
+            this.motorSpeedSetpoint = Math.min(this.motorSpeedSetpoint, 100.0);
+            this._setMotorSpeedSetpoint(this.motorSpeedSetpoint);
+        }
+
+        //CONTROL_MODE
+        Optional<Integer> controlModeOptional = this.getControlModeChannel().getNextWriteValueAndReset();
+        if (controlModeOptional.isPresent()) {
+            int enumAsInt = controlModeOptional.get();
+            // Restrict to valid write values
+            if (enumAsInt >= 0 && enumAsInt <= 4) {
+                this.controlModeSetting = ControlModeSetting.valueOf(enumAsInt);
+            }
+        }
+
+        //READ_ONLY
+        this.getReadOnlySettingChannel().getNextWriteValueAndReset().ifPresent(aBoolean -> this.onlyRead = aBoolean);
+
+        //PRESSURE_SETPOINT
+        Optional<Double> pressureSetpointOptional = this.getPressureSetpointChannel().getNextWriteValueAndReset();
+        if (pressureSetpointOptional.isPresent()) {
+            this.pressureSetpoint = pressureSetpointOptional.get();
+            this.pressureSetpointCalculationDone = false;
+        }
+
+        /* The pressure set point cannot simply be sent to Genibus. The set point value that is sent to Genibus
+           is ref_rem, which is a percentage value [0;100]. Depending on the operating mode, ref_rem is mapped to
+           different things. In constant pressure mode, the ref_rem is mapped to the pressure sensor range.
+           As an example, if that pressure sensor range is [0;2] bar, the mapping would be:
+           - ref_rem = 0 is 0 bar
+           - ref_rem = 50 is 1 bar
+           - ref_rem = 100 is 2 bar
+           To convert the pressure set point from a pressure unit to a ref_rem value, you first need to read the
+           pressure sensor range from the pump. */
+        if (this.pressureSetpointCalculationDone == false) {
+            Unit channelUnit = getPressureSetpointChannel().channelDoc().getUnit(); // Unit of pressureSetpoint is this unit.
+            Unit sensorUnit = this.pumpChannels.getPumpDevice().getSensorUnit();
+            int scaleFactor = channelUnit.getScaleFactor() - sensorUnit.getScaleFactor();
+
+            // Calculate range in unit of pressureSetpoint. Range is [intervalHmin;intervalHmin+intervalHrange].
+            this.intervalHrange = this.pumpChannels.getPumpDevice().getPressureSensorRange() * Math.pow(10, -scaleFactor);
+            this.intervalHmin = this.pumpChannels.getPumpDevice().getPressureSensorMin() * Math.pow(10, -scaleFactor);
+
+            // Test if sensor range was received from the pump. If yes, range is bigger than 0.
+            if (this.intervalHrange > 0) {
+                this.pressureSetpointCalculationDone = true;
+
+                if (this.pressureSetpoint > this.intervalHrange + this.intervalHmin) {
+                    this.logWarn(this.log, "Value for pressure setpoint = " + this.pressureSetpoint + " bar is above the interval range. "
+                            + "Resetting to maximum valid value " + this.intervalHrange + this.intervalHmin + " bar.");
+                    this.pressureSetpoint = this.intervalHrange + this.intervalHmin;
+                }
+                if (this.pressureSetpoint < this.intervalHmin) {
+                    this.logWarn(this.log, "Value for pressure setpoint = " + this.pressureSetpoint + " bar is below the interval range. "
+                            + "Resetting to minimum valid value " + this.intervalHmin + " bar.");
+                    this.pressureSetpoint = this.intervalHmin;
+                }
+                this._setPressureSetpoint(this.pressureSetpoint);
+
+                // ref_rem is a percentage value. To send 100%, write 100 to the channel.
+                this.pressureSetpointToRefRem = 100 * (this.pressureSetpoint - this.intervalHmin) / this.intervalHrange;
+            }
+        }
+    }
+
+    /**
+     * Check if any config values need to be updated. If a config update is executed, this will restart the module.
+     */
+    private void checkConfigUpdate() {
+        Map<String, Object> valuesForConfig = new HashMap<>();
+        if (this.writeEveryChangeToConfig) {
+            //CONTROL_MODE
+            if (this.controlModeSetting != this.config.controlMode()) {
+                valuesForConfig.put("controlMode", this.controlModeSetting);
+            }
+            /* MOTOR SPEED
+               Compare set point with config, to see if config value is different and needs to be updated.
+               Set point is a double, so for comparison it should be rounded. Multiply by 1000 before rounding
+               to keep three digits after the decimal point. Then round to a long for comparison. */
+            long newSetpoint = Math.round(this.motorSpeedSetpoint * 1000);
+            long oldSetpoint = Math.round(this.config.motorSpeedSetpoint() * 1000);
+            if (newSetpoint != oldSetpoint) {
+                valuesForConfig.put("motorSpeedSetpoint", this.motorSpeedSetpoint);
+            }
+            // READ ONLY SETTING
+            if (this.onlyRead != this.config.onlyRead()) {
+                valuesForConfig.put("onlyRead", this.onlyRead);
+            }
+
+            /* Limits on pressureSetpoint are checked only when intervalHrange > 0. Don't update the config with a value
+               that is not checked. */
+            if (this.intervalHrange > 0) {
+                /* Compare new set point with config, to see if config value is different and needs to be
+                   updated. Set point is a double, so for comparison it should be rounded. Multiply by 1000
+                   before rounding to keep three digits after the decimal point. Then round to a long for comparison. */
+                newSetpoint = Math.round(this.pressureSetpoint * 1000);
+                oldSetpoint = Math.round(this.config.pressureSetpoint() * 1000);
+                if (newSetpoint != oldSetpoint) {
+                    valuesForConfig.put("pressureSetpoint", this.pressureSetpoint);
+                }
+            }
+        }
+
+        if (this.checkDefaultPressureSetpoint) {
+            /* intervalHrange and intervalHmin initialize as 0 and takes a while before they are != 0. Need this check,
+               otherwise you will always set defaultPressureSetpoint to 0 in config, which pretty much disables the pump
+               (in pressure mode). */
+            if (this.intervalHrange > 0) {
+                if (this.defaultPressureSetpoint > this.intervalHrange + this.intervalHmin) {
+                    this.defaultPressureSetpoint = this.intervalHrange + this.intervalHmin;
+                    valuesForConfig.put("pressureSetpoint", this.defaultPressureSetpoint);
+                }
+                if (this.defaultPressureSetpoint < this.intervalHmin) {
+                    this.defaultPressureSetpoint = this.intervalHmin;
+                    valuesForConfig.put("pressureSetpoint", this.defaultPressureSetpoint);
+                }
+                this.checkDefaultPressureSetpoint = false;
+            }
+        }
+
+        if (this.stopPump != this.config.stopPump()) {
+            valuesForConfig.put("stopPump", this.stopPump);
+        }
+
+        if (valuesForConfig.isEmpty() == false) {
+            try {
+                ConfigurationUpdate.updateConfig(ca, this.servicePid(), valuesForConfig);
+            } catch (IOException e) {
+                this.log.warn("Couldn't save new settings to config. " + e.getMessage());
+            }
         }
     }
 
