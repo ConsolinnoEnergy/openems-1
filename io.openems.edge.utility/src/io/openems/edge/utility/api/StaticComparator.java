@@ -60,6 +60,8 @@ public interface StaticComparator {
                     return value_A >= value_B;
                 case LESSER_OR_EQUALS:
                     return value_A <= value_B;
+                case BIT_EQUALS:
+                    return (value_A & value_B) == value_B;
                 case NOT_EQUALS:
                 default:
                     return !value_A.equals(value_B);
