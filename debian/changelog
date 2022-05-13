@@ -1,3 +1,9 @@
+openems-consolinno (0.2.2-1) unstable; urgency=medium
+
+  * Bugfix VirtualChannelModbusImpl with Configuration Done entry
+
+ -- Felix <felix@felix-ThinkPad-E15-Gen-2>  Fri, 13 May 2022 13:19:33 +0200
+
 openems-consolinno (0.2.1-2) unstable; urgency=medium
 
   * Bugfixes and improvements from NAF tests
