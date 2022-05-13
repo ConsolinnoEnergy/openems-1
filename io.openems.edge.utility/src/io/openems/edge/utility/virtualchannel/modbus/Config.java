@@ -51,5 +51,7 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
     boolean enabled() default true;
 
+    boolean configurationDone() default true;
+
     String webconsole_configurationFactory_nameHint() default "Generic Modbus Component {id}";
 }
