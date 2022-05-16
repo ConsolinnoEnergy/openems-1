@@ -1,5 +1,6 @@
 package io.openems.edge.utility.integerbitconverter;
 
+import io.openems.edge.utility.api.InputOutputType;
 import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
@@ -11,6 +12,13 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
     @AttributeDefinition(name = "Alias", description = "Human readable name of this component.")
     String alias() default "";
+
+    @AttributeDefinition(name = "Optional out", description = "Write to an optional output the Integer Value.")
+    boolean useOptionalOutput() default false;
+
+    String outputChannel() default "VirtualChannel0/VirtualLong";
+
+    InputOutputType output() default InputOutputType.NEXT_WRITE_VALUE;
 
     boolean enabled() default true;
 

@@ -1,9 +1,15 @@
 package io.openems.edge.utility.integerbitconverter;
 
+import io.openems.common.exceptions.OpenemsError;
+import io.openems.common.types.ChannelAddress;
+import io.openems.edge.common.channel.Channel;
 import io.openems.edge.common.component.AbstractOpenemsComponent;
+import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.common.event.EdgeEventConstants;
+import io.openems.edge.utility.api.InputOutputType;
 import io.openems.edge.utility.api.IntegerBitConverter;
+import io.openems.edge.utility.api.OutputWriter;
 import org.osgi.service.cm.ConfigurationException;
 import org.osgi.service.component.ComponentContext;
 import org.osgi.service.component.annotations.Activate;
@@ -12,9 +18,6 @@ import org.osgi.service.component.annotations.ConfigurationPolicy;
 import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Modified;
 import org.osgi.service.component.annotations.Reference;
-import org.osgi.service.component.annotations.ReferenceCardinality;
-import org.osgi.service.component.annotations.ReferencePolicy;
-import org.osgi.service.component.annotations.ReferencePolicyOption;
 import org.osgi.service.event.Event;
 import org.osgi.service.event.EventConstants;
 import org.osgi.service.event.EventHandler;
@@ -35,7 +38,13 @@ import org.slf4j.LoggerFactory;
 
 public class BitsToIntegerConverterImpl extends AbstractOpenemsComponent implements OpenemsComponent, IntegerBitConverter, EventHandler {
 
+    @Reference
+    ComponentManager cpm;
+
     private final Logger log = LoggerFactory.getLogger(BitsToIntegerConverterImpl.class);
+    private boolean useOutput;
+    private ChannelAddress outputAddress;
+    private InputOutputType outputType;
 
     public BitsToIntegerConverterImpl() {
         super(OpenemsComponent.ChannelId.values(),
@@ -43,13 +52,24 @@ public class BitsToIntegerConverterImpl extends AbstractOpenemsComponent impleme
     }
 
     @Activate
-    void activate(ComponentContext context, BitsToIntegerConverterConfig config) throws ConfigurationException {
+    void activate(ComponentContext context, BitsToIntegerConverterConfig config) throws OpenemsError.OpenemsNamedException {
         super.activate(context, config.id(), config.alias(), config.enabled());
+        this.activationOrModifiedRoutine(config);
     }
 
+
     @Modified
-    void modified(ComponentContext context, BitsToIntegerConverterConfig config) throws ConfigurationException {
+    void modified(ComponentContext context, BitsToIntegerConverterConfig config) throws OpenemsError.OpenemsNamedException {
         super.modified(context, config.id(), config.alias(), config.enabled());
+        this.activationOrModifiedRoutine(config);
+    }
+
+    private void activationOrModifiedRoutine(BitsToIntegerConverterConfig config) throws OpenemsError.OpenemsNamedException {
+        this.useOutput = config.useOptionalOutput();
+        if (this.useOutput) {
+            this.outputAddress = ChannelAddress.fromString(config.outputChannel());
+            this.outputType = config.output();
+        }
     }
 
     @Deactivate
@@ -63,6 +83,9 @@ public class BitsToIntegerConverterImpl extends AbstractOpenemsComponent impleme
             Integer result = this._generateIntegerFromChannel();
             this.integerValueChannel().setNextValue(result);
             this.longValueChannel().setNextValue(Integer.toUnsignedLong(result));
+            if (this.useOutput) {
+                OutputWriter.writeToOutput(result, this.outputType, this.outputAddress, this.cpm);
+            }
         }
     }
 
