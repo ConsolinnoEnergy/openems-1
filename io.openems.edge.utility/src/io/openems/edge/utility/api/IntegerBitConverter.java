@@ -7,7 +7,6 @@ import io.openems.edge.common.channel.Doc;
 import io.openems.edge.common.channel.WriteChannel;
 import io.openems.edge.common.component.OpenemsComponent;
 
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -623,8 +622,19 @@ public interface IntegerBitConverter extends OpenemsComponent {
      * @return the boolean Array. Bit 1 at Position 0, Bit 32 at position 31.
      */
     static boolean[] getBitsFromInteger(int value) {
+
+        return getBitsFromBitString(Integer.toBinaryString(value));
+    }
+
+    /**
+     * Get a Bit boolean Array from a Bit String.
+     *
+     * @param value the Bit string.
+     * @return the
+     */
+    static boolean[] getBitsFromBitString(String value) {
         boolean[] bits = new boolean[MAX_BITS];
-        String valueAsBitString = String.format("%32s", Integer.toBinaryString(value)).replaceAll(" ", "0");
+        String valueAsBitString = String.format("%32s", value).replaceAll(" ", "0");
         char[] valueAsChars = valueAsBitString.toCharArray();
         for (int x = 0; x < MAX_BITS; x++) {
             bits[x] = (valueAsChars[(MAX_BITS - 1) - x]) == '1';
