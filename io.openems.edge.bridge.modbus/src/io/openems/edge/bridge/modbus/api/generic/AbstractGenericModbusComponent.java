@@ -2,6 +2,7 @@ package io.openems.edge.bridge.modbus.api.generic;
 
 import io.openems.common.exceptions.OpenemsError;
 import io.openems.common.exceptions.OpenemsException;
+import io.openems.common.types.OpenemsType;
 import io.openems.edge.bridge.modbus.api.AbstractOpenemsModbusComponent;
 import io.openems.edge.bridge.modbus.api.ModbusProtocol;
 import io.openems.edge.bridge.modbus.api.element.AbstractModbusElement;
@@ -30,6 +31,7 @@ import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.common.configupdate.ConfigurationUpdate;
 import io.openems.edge.common.taskmanager.Priority;
+import io.openems.edge.common.type.TypeUtils;
 import org.osgi.service.cm.Configuration;
 import org.osgi.service.cm.ConfigurationAdmin;
 import org.osgi.service.cm.ConfigurationException;
@@ -627,7 +629,11 @@ public abstract class AbstractGenericModbusComponent extends AbstractOpenemsModb
                         case FLOAT:
                         case DOUBLE:
                             int scaleFactor = this.modbusConfig.get(source.channelId()).getStringLengthOrScaleFactor();
-                            double targetSetValue = (Double) targetValue.get() * Math.pow(10, scaleFactor);
+                            Double castedValue = TypeUtils.getAsType(OpenemsType.DOUBLE, targetValue.get());
+                            if (castedValue == null) {
+                                castedValue = 0.d;
+                            }
+                            double targetSetValue = castedValue * Math.pow(10, scaleFactor);
                             switch (target.getType()) {
 
                                 case BOOLEAN:

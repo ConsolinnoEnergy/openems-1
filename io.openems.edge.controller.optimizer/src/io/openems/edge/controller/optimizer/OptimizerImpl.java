@@ -224,9 +224,12 @@ public class OptimizerImpl extends AbstractOpenemsComponent implements OpenemsCo
         }
         if ((this.stopOnError && this.stop && this.jsonArray == null)) {
             this.fallback = true;
+            this.getHasScheduleChannel().setNextValue(false);
         } else if (!this.stop) {
             this.fallback = false;
+            this.getHasScheduleChannel().setNextValue(true);
         }
+        this.getHasScheduleChannel().setNextValue(this.jsonArray != null && !this.fallback);
 
     }
 
@@ -277,7 +280,6 @@ public class OptimizerImpl extends AbstractOpenemsComponent implements OpenemsCo
                     this.log.info("Connection established to Mqtt Server after " + this.logDisconnect + " attempt/-s");
                     this.logDisconnect = 1;
                     this.stop = false;
-
                     getStatusChannel().setNextValue("Online");
                 }
             } else {
@@ -286,7 +288,6 @@ public class OptimizerImpl extends AbstractOpenemsComponent implements OpenemsCo
                     this.log.warn("Connection Lost to Mqtt Server");
                     this.stop = true;
                     getStatusChannel().setNextValue("Error");
-
                 }
             }
             if (this.reconnect) {

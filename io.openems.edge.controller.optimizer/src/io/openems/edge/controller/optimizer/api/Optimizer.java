@@ -64,7 +64,12 @@ public interface Optimizer extends OpenemsComponent {
          * <li>Type: String
          * </ul>
          */
-        STATUS(Doc.of(OpenemsType.STRING));
+        STATUS(Doc.of(OpenemsType.STRING)),
+        /**
+         * If a Schedule is running, this is set to true.
+         * Otherwise, false.
+         */
+        HAS_SCHEDULE(Doc.of(OpenemsType.BOOLEAN));
         private final Doc doc;
 
         ChannelId(Doc doc) {
@@ -102,6 +107,15 @@ public interface Optimizer extends OpenemsComponent {
      */
     default Channel<String> getStatusChannel() {
         return this.channel(ChannelId.STATUS);
+    }
+
+    /**
+     * Return channel for the HasSchedule.
+     *
+     * @return Boolean HasSchedule Channel
+     */
+    default Channel<Boolean> getHasScheduleChannel() {
+        return this.channel(ChannelId.HAS_SCHEDULE);
     }
 
     /**
