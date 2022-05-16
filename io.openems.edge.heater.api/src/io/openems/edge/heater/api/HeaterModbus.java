@@ -6,7 +6,6 @@ import io.openems.edge.common.channel.Channel;
 import io.openems.edge.common.channel.Doc;
 import io.openems.edge.common.channel.WriteChannel;
 import io.openems.edge.common.component.GenericModbusComponent;
-import io.openems.edge.common.component.OpenemsComponent;
 
 public interface HeaterModbus extends GenericModbusComponent {
 
@@ -16,7 +15,7 @@ public interface HeaterModbus extends GenericModbusComponent {
         ENABLE_SIGNAL_LONG(Doc.of(OpenemsType.LONG).accessMode(AccessMode.READ_WRITE)),
 
         SET_POINT_POWER_LEVEL_KW_LONG(Doc.of(OpenemsType.LONG).accessMode(AccessMode.READ_WRITE)),
-        SET_POINT_POWER_LEVE_KW_DOUBLE(Doc.of(OpenemsType.DOUBLE).accessMode(AccessMode.READ_WRITE)),
+        SET_POINT_POWER_LEVEL_KW_DOUBLE(Doc.of(OpenemsType.DOUBLE).accessMode(AccessMode.READ_WRITE)),
 
         SET_POINT_POWER_LEVEL_PERCENT_LONG(Doc.of(OpenemsType.LONG).accessMode(AccessMode.READ_WRITE)),
         SET_POINT_POWER_LEVEL_PERCENT_DOUBLE(Doc.of(OpenemsType.DOUBLE).accessMode(AccessMode.READ_WRITE)),
@@ -93,7 +92,7 @@ public interface HeaterModbus extends GenericModbusComponent {
      * @return the Channel
      */
     default WriteChannel<Double> _getSetPointPowerLevelKwDouble() {
-        return this.channel(ChannelId.SET_POINT_POWER_LEVE_KW_DOUBLE);
+        return this.channel(ChannelId.SET_POINT_POWER_LEVEL_KW_DOUBLE);
     }
 
 
