@@ -233,7 +233,7 @@ public abstract class AbstractGenericModbusComponent extends AbstractOpenemsModb
                             if (priority != null) {
                                 this.modbusConfig.put(channel.channelId(), new ModbusConfigWrapper(channel.channelId(), address, type, priority, wordType, length));
                             } else {
-                                this.modbusConfig.put(channel.channelId(), new ModbusConfigWrapper(channel.channelId(), address, type, wordType, length));
+                                this.modbusConfig.put(channel.channelId(), new ModbusConfigWrapper(channel.channelId(), address, type, wordOrder, wordType, length));
                             }
                         } else {
                             ex[0] = new ConfigurationException("Configure Channel Configuration: " + super.id(), "Either Type is null or Channel not Available: For Entry: "
