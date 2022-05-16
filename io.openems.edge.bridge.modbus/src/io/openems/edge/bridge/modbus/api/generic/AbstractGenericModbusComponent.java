@@ -103,7 +103,7 @@ public abstract class AbstractGenericModbusComponent extends AbstractOpenemsModb
      */
 
     private enum TaskType {
-        READ_COIL, READ_REGISTER, READ_HOLDING_REGISTER, WRITE_COIL, WRITE_REGISTER, WRITE_HOLDING_REGISTER;
+        READ_COIL, READ_REGISTER, READ_HOLDING_REGISTER, WRITE_COIL, WRITE_HOLDING_REGISTER;
 
         /**
          * Contains Method -> Check if the String matches an enum value.
@@ -229,14 +229,11 @@ public abstract class AbstractGenericModbusComponent extends AbstractOpenemsModb
                         TaskType type = null;
                         if (TaskType.contains(taskType) && channel != null) {
                             type = TaskType.valueOf(taskType);
-                            if (type.equals(TaskType.WRITE_REGISTER)) {
-                                this.modbusConfig.put(channel.channelId(), new ModbusConfigWrapper(channel.channelId(), address, type, wordOrder, wordType, length));
+
+                            if (priority != null) {
+                                this.modbusConfig.put(channel.channelId(), new ModbusConfigWrapper(channel.channelId(), address, type, priority, wordType, length));
                             } else {
-                                if (priority != null) {
-                                    this.modbusConfig.put(channel.channelId(), new ModbusConfigWrapper(channel.channelId(), address, type, priority, wordType, length));
-                                } else {
-                                    this.modbusConfig.put(channel.channelId(), new ModbusConfigWrapper(channel.channelId(), address, type, wordType, length));
-                                }
+                                this.modbusConfig.put(channel.channelId(), new ModbusConfigWrapper(channel.channelId(), address, type, wordType, length));
                             }
                         } else {
                             ex[0] = new ConfigurationException("Configure Channel Configuration: " + super.id(), "Either Type is null or Channel not Available: For Entry: "
@@ -435,11 +432,8 @@ public abstract class AbstractGenericModbusComponent extends AbstractOpenemsModb
                         case READ_HOLDING_REGISTER:
                             this.addReadRegister(protocol, entry, true);
                             break;
-                        case WRITE_REGISTER:
-                            this.addWriteRegister(protocol, entry, false);
-                            break;
                         case WRITE_HOLDING_REGISTER:
-                            this.addWriteRegister(protocol, entry, true);
+                            this.addWriteRegister(protocol, entry);
                             break;
                         case WRITE_COIL:
                             protocol.addTask(new FC5WriteCoilTask(entry.getModbusAddress(),
@@ -461,12 +455,11 @@ public abstract class AbstractGenericModbusComponent extends AbstractOpenemsModb
     /**
      * Adds WriteRegister to a ModbusProtocol.
      *
-     * @param protocol          the protocol, where Tasks should be added.
-     * @param wrapper           a ModbusConfig Wrapper, usually from AbstractGenericModbusComponent
-     * @param isHoldingRegister is the task a holding register
+     * @param protocol the protocol, where Tasks should be added.
+     * @param wrapper  a ModbusConfig Wrapper, usually from AbstractGenericModbusComponent
      * @throws OpenemsException if adding a task fails.
      */
-    private void addWriteRegister(ModbusProtocol protocol, ModbusConfigWrapper wrapper, boolean isHoldingRegister) throws OpenemsException {
+    private void addWriteRegister(ModbusProtocol protocol, ModbusConfigWrapper wrapper) throws OpenemsException {
         AbstractWordElement<?, ?> element = null;
         AbstractModbusElement<?> element1 = null;
 
@@ -474,73 +467,39 @@ public abstract class AbstractGenericModbusComponent extends AbstractOpenemsModb
         switch (wrapper.getWordType()) {
             case INT_16:
                 element = new UnsignedWordElement(address);
-                if (isHoldingRegister) {
-                    protocol.addTask(new FC3ReadRegistersTask(wrapper.getModbusAddress(), Priority.HIGH,
-                            m(wrapper.getChannelId(), element)));
-                } else {
-                    protocol.addTask(new FC6WriteRegisterTask(wrapper.getModbusAddress(),
-                            m(wrapper.getChannelId(), element)));
-                }
+                protocol.addTask(new FC6WriteRegisterTask(wrapper.getModbusAddress(),
+                        m(wrapper.getChannelId(), element)));
                 break;
             case INT_16_SIGNED:
                 element = new SignedWordElement(address);
-                if (isHoldingRegister) {
-                    protocol.addTask(new FC3ReadRegistersTask(wrapper.getModbusAddress(), Priority.HIGH,
-                            m(wrapper.getChannelId(), element)));
-                } else {
-                    protocol.addTask(new FC6WriteRegisterTask(wrapper.getModbusAddress(),
-                            m(wrapper.getChannelId(), element)));
-                }
+                protocol.addTask(new FC6WriteRegisterTask(wrapper.getModbusAddress(),
+                        m(wrapper.getChannelId(), element)));
                 break;
             case INT_32:
                 element1 = new UnsignedDoublewordElement(address).wordOrder(wrapper.getWordOrder());
-                if (isHoldingRegister) {
-                    protocol.addTask(new FC3ReadRegistersTask(wrapper.getModbusAddress(), Priority.HIGH,
-                            m(wrapper.getChannelId(), element1)));
-                } else {
-                    protocol.addTask(new FC16WriteRegistersTask(wrapper.getModbusAddress(),
-                            m(wrapper.getChannelId(), element1)));
-                }
+                protocol.addTask(new FC16WriteRegistersTask(wrapper.getModbusAddress(),
+                        m(wrapper.getChannelId(), element1)));
                 break;
             case INT_32_SIGNED:
                 element1 = new SignedDoublewordElement(address).wordOrder(wrapper.getWordOrder());
-                if (isHoldingRegister) {
-                    protocol.addTask(new FC3ReadRegistersTask(wrapper.getModbusAddress(), Priority.HIGH,
-                            m(wrapper.getChannelId(), element1)));
-                } else {
-                    protocol.addTask(new FC16WriteRegistersTask(wrapper.getModbusAddress(),
-                            m(wrapper.getChannelId(), element1)));
-                }
+                protocol.addTask(new FC16WriteRegistersTask(wrapper.getModbusAddress(),
+                        m(wrapper.getChannelId(), element1)));
                 break;
+
             case FLOAT_32:
                 element1 = new FloatDoublewordElement(address).wordOrder(wrapper.getWordOrder());
-                if (isHoldingRegister) {
-                    protocol.addTask(new FC3ReadRegistersTask(wrapper.getModbusAddress(), Priority.HIGH,
-                            m(wrapper.getChannelId(), element1)));
-                } else {
-                    protocol.addTask(new FC16WriteRegistersTask(wrapper.getModbusAddress(),
-                            m(wrapper.getChannelId(), element1)));
-                }
+                protocol.addTask(new FC16WriteRegistersTask(wrapper.getModbusAddress(),
+                        m(wrapper.getChannelId(), element1)));
                 break;
             case INT_64:
                 element1 = new UnsignedQuadruplewordElement(address).wordOrder(wrapper.getWordOrder());
-                if (isHoldingRegister) {
-                    protocol.addTask(new FC3ReadRegistersTask(wrapper.getModbusAddress(), Priority.HIGH,
-                            m(wrapper.getChannelId(), element1)));
-                } else {
-                    protocol.addTask(new FC16WriteRegistersTask(wrapper.getModbusAddress(),
-                            m(wrapper.getChannelId(), element1)));
-                }
+                protocol.addTask(new FC16WriteRegistersTask(wrapper.getModbusAddress(),
+                        m(wrapper.getChannelId(), element1)));
                 break;
             case INT_64_SIGNED:
                 element1 = new SignedQuadruplewordElement(address).wordOrder(wrapper.getWordOrder());
-                if (isHoldingRegister) {
-                    protocol.addTask(new FC3ReadRegistersTask(wrapper.getModbusAddress(), Priority.HIGH,
-                            m(wrapper.getChannelId(), element1)));
-                } else {
-                    protocol.addTask(new FC16WriteRegistersTask(wrapper.getModbusAddress(),
-                            m(wrapper.getChannelId(), element1)));
-                }
+                protocol.addTask(new FC16WriteRegistersTask(wrapper.getModbusAddress(),
+                        m(wrapper.getChannelId(), element1)));
                 break;
         }
     }
