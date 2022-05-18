@@ -1,5 +1,12 @@
 openems-consolinno (0.2.3-1) unstable; urgency=medium
 
+  * Added WordOrder for ReadTasks in AbstractModbusComponent
+  * Added Default WordOrder and Priority in Wrapper
+
+ -- Felix <felix@felix-ThinkPad-E15-Gen-2>  Wed, 18 May 2022 11:01:52 +0200
+
+openems-consolinno (0.2.3-1) unstable; urgency=medium
+
   * Fixes in GenericModbusComponents
   * Added Optional OutputWrite to BitsToInteger Converter
 
