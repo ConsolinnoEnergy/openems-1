@@ -340,8 +340,8 @@ public abstract class AbstractGenericModbusComponent extends AbstractOpenemsModb
         private final io.openems.edge.common.channel.ChannelId channelId;
         private final int modbusAddress;
         private final TaskType taskType;
-        private Priority priority;
-        private WordOrder wordOrder;
+        private Priority priority = Priority.HIGH;
+        private WordOrder wordOrder = WordOrder.MSWLSW;
         private final WordType wordType;
         private final int length;
 
@@ -526,22 +526,22 @@ public abstract class AbstractGenericModbusComponent extends AbstractOpenemsModb
                 element = new SignedWordElement(address);
                 break;
             case INT_32:
-                element = new UnsignedDoublewordElement(address);
+                element = new UnsignedDoublewordElement(address).wordOrder(wrapper.getWordOrder());
                 break;
             case INT_32_SIGNED:
-                element = new SignedDoublewordElement(address);
+                element = new SignedDoublewordElement(address).wordOrder(wrapper.getWordOrder());
                 break;
             case INT_64:
-                element = new UnsignedQuadruplewordElement(address);
+                element = new UnsignedQuadruplewordElement(address).wordOrder(wrapper.getWordOrder());
                 break;
             case INT_64_SIGNED:
-                element = new SignedQuadruplewordElement(address);
+                element = new SignedQuadruplewordElement(address).wordOrder(wrapper.getWordOrder());
                 break;
             case FLOAT_32:
-                element = new FloatDoublewordElement(address);
+                element = new FloatDoublewordElement(address).wordOrder(wrapper.getWordOrder());
                 break;
             case FLOAT_64:
-                element = new FloatQuadrupleWordElement(address);
+                element = new FloatQuadrupleWordElement(address).wordOrder(wrapper.getWordOrder());
                 break;
             case STRING:
                 element = new StringWordElement(address, wrapper.getStringLengthOrScaleFactor());
