@@ -1,4 +1,4 @@
-openems-consolinno (0.2.3-1) unstable; urgency=medium
+openems-consolinno (0.2.4-1) unstable; urgency=medium
 
   * Added WordOrder for ReadTasks in AbstractModbusComponent
   * Added Default WordOrder and Priority in Wrapper
