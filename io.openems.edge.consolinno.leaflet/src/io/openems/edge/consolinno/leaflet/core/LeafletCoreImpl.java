@@ -123,6 +123,8 @@ public class LeafletCoreImpl extends AbstractOpenemsModbusComponent implements O
     //True if the compatibility Check was done once
     private boolean compatibleFlag;
 
+    private boolean remoteLeaflet = false;
+
 
     public LeafletCoreImpl() {
         super(OpenemsComponent.ChannelId.values(), LeafletCore.ChannelId.values());
@@ -142,6 +144,7 @@ public class LeafletCoreImpl extends AbstractOpenemsModbusComponent implements O
     void activate(ComponentContext context, Config config) throws OpenemsException, ConfigurationException {
         //Reads Source file CSV with the Register information
         this.source = this.sourceReader.readCsv(config.source());
+        this.remoteLeaflet = config.runningOnDifferentLeaflet();
         if (this.source.size() == 1) {
             throw new ConfigurationException("The Source file could not be found! Check Config!");
         }
@@ -486,22 +489,9 @@ public class LeafletCoreImpl extends AbstractOpenemsModbusComponent implements O
     public boolean checkFirmwareCompatibility() {
         if (!this.compatible && !this.compatibleFlag) {
             String response = "";
-            try {
-                Process p = Runtime.getRuntime().exec("LeafletBaseSoftware -v");
-
-
-                BufferedReader reader =
-                        new BufferedReader(new InputStreamReader(p.getInputStream()));
-
-                String line = "";
-                StringBuilder responseBuilder = new StringBuilder();
-                while ((line = reader.readLine()) != null) {
-                    responseBuilder.append(line);
-                }
-                response = responseBuilder.toString();
-            } catch (IOException e) {
+            if (!this.remoteLeaflet) {
                 try {
-                    Process p = Runtime.getRuntime().exec("leafletbs -v");
+                    Process p = Runtime.getRuntime().exec("LeafletBaseSoftware -v");
 
 
                     BufferedReader reader =
@@ -513,19 +503,36 @@ public class LeafletCoreImpl extends AbstractOpenemsModbusComponent implements O
                         responseBuilder.append(line);
                     }
                     response = responseBuilder.toString();
-                } catch (IOException ioException) {
-                    this.log.error("The Firmware is not Running!");
-                }
+                } catch (IOException e) {
+                    try {
+                        Process p = Runtime.getRuntime().exec("leafletbs -v");
 
-            }
-            if (response.equals("") == false) {
-                String[] partOne = response.split("V");
-                String[] partTwo = partOne[1].split(" ");
-                if (MINIMUM_COMPATIBLE_FIRMWARE_VERSION <= Integer.parseInt(partTwo[0].replace(".", ""))) {
-                    this.compatible = true;
+
+                        BufferedReader reader =
+                                new BufferedReader(new InputStreamReader(p.getInputStream()));
+
+                        String line = "";
+                        StringBuilder responseBuilder = new StringBuilder();
+                        while ((line = reader.readLine()) != null) {
+                            responseBuilder.append(line);
+                        }
+                        response = responseBuilder.toString();
+                    } catch (IOException ioException) {
+                        this.log.error("The Firmware is not Running!");
+                    }
+
                 }
+                if (response.equals("") == false) {
+                    String[] partOne = response.split("V");
+                    String[] partTwo = partOne[1].split(" ");
+                    if (MINIMUM_COMPATIBLE_FIRMWARE_VERSION <= Integer.parseInt(partTwo[0].replace(".", ""))) {
+                        this.compatible = true;
+                    }
+                }
+                this.compatibleFlag = true;
+            } else {
+                this.compatible = true;
             }
-            this.compatibleFlag = true;
         }
         return this.compatible;
     }
