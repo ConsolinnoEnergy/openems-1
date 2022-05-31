@@ -1,3 +1,10 @@
+openems-consolinno (0.2.5-1) unstable; urgency=medium
+
+  * ToggleSwitch has been abstracted
+  * Automated Toggle was implemented
+
+ -- Felix <felix@felix-ThinkPad-E15-Gen-2>  Tue, 31 May 2022 08:50:47 +0200
+
 openems-consolinno (0.2.4-1) unstable; urgency=medium
 
   * Added WordOrder for ReadTasks in AbstractModbusComponent
