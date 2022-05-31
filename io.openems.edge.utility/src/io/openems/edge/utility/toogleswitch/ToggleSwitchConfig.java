@@ -6,7 +6,7 @@ import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
 @ObjectClassDefinition(name = "Utility ToggleSwitch ", description = "Toggle Switch, switches between two states after a signal was active.")
-@interface Config {
+@interface ToggleSwitchConfig {
 
     @AttributeDefinition(name = "Id", description = "Unique Id for the component.")
     String id() default "ToggleSwitch";

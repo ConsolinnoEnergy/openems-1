@@ -24,5 +24,7 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     @AttributeDefinition(name = "ModbusBridgeId", description = "Unique Id for the ModbusBridge")
     String modbusBridgeId() default "modbus0";
 
+    boolean runningOnDifferentLeaflet() default false;
+
     String webconsole_configurationFactory_nameHint() default "LeafletCore {id}";
 }
