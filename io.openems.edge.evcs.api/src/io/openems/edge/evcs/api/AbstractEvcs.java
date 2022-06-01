@@ -130,7 +130,7 @@ class EvcsReadHandler {
 
     /**
      * TODO: the EnergySession is not fully implemented yet
-     * @throws OpenemsError.OpenemsNamedException This sould not happen
+     * @throws OpenemsError.OpenemsNamedException This should not happen
      */
     void run() throws OpenemsError.OpenemsNamedException {
         this.setPower();
