@@ -451,7 +451,7 @@ public class ChpViessmannImpl extends AbstractOpenemsModbusComponent implements 
     protected void writeCommands() {
 
         // Handle EnableSignal.
-        boolean turnOnChp = this.enableSignalHandler.deviceShouldBeHeating(this);
+        boolean turnOnChp = this.enableSignalHandler.deviceEnabled(this.getEnableSignalChannel());
 
         // Handle ExceptionalState. ExceptionalState overwrites EnableSignal.
         this.exceptionalStateValue = 0;

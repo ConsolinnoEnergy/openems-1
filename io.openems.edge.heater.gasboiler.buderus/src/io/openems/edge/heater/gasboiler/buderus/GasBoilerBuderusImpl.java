@@ -621,7 +621,7 @@ public class GasBoilerBuderusImpl extends AbstractOpenemsModbusComponent impleme
 
 		if (this.connectionAlive) {
 			// Handle EnableSignal.
-			boolean turnOnHeater = this.enableSignalHandler.deviceShouldBeHeating(this);
+			boolean turnOnHeater = this.enableSignalHandler.deviceEnabled(this.getEnableSignalChannel());
 
 			// Handle ExceptionalState. ExceptionalState overwrites EnableSignal.
 			int heatingPowerPercentSetpointToModbus = (int)Math.round(this.heatingPowerPercentSetting);

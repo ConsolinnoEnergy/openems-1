@@ -568,7 +568,7 @@ public class GasBoilerViessmannImpl extends AbstractOpenemsModbusComponent imple
         }
 
         // Handle EnableSignal.
-        boolean turnOnHeater = this.enableSignalHandler.deviceShouldBeHeating(this);
+        boolean turnOnHeater = this.enableSignalHandler.deviceEnabled(this.getEnableSignalChannel());
 
         // Handle ExceptionalState. ExceptionalState overwrites EnableSignal.
         double heatingPowerPercentSetpointToModbus = this.heatingPowerPercentSetting;

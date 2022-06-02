@@ -1,17 +1,18 @@
 package io.openems.edge.heater.api;
 
+import io.openems.edge.common.channel.WriteChannel;
 import io.openems.edge.timer.api.TimerHandler;
 
 import java.util.Optional;
 
 /**
- * The concrete Implementation of the EnableSignalHandler. It provides an implementation to handle the EnableSignal in
+ * The Implementation of the EnableSignalHandler. It provides an implementation to handle the EnableSignal in
  * the correct way to facilitate use of the EnableSignal.
- * The channel EnableSignal is supposed to be used in the following way:
+ * The channel EnableSignal is supposed to be used in the following way (in a {@link Heater}):
  * True in the ’nextWriteValue’ of the channel will turn the heater on. When the heater is on and no ’true’ is detected
  * in the ’nextWriteValue’, a timer is started. When no ’true’ is detected in ’nextWriteValue’ until the timer runs out,
  * the heater stops heating. The value in ’nextWriteValue’ is collected with ’getAndReset’, meaning a controller needs
- * to regularly write ’true’ in ’nextWriteValue’ of EnableSignal to keep a heater running. How often is dependant on the
+ * to regularly write ’true’ in ’nextWriteValue’ of EnableSignal to keep a heater running. How often depends on the
  * duration of the timer.
  * The timer can be set to any value and is given as an argument upon initialization of the handler class. It can be set
  * to use seconds or OpenEMS cycles as a measurement unit of time. For more information on the timer, see
@@ -19,7 +20,7 @@ import java.util.Optional;
  * The design choice to use the absence of a value as the off signal is based on the possibility of having multiple
  * controllers. The heater turns on when any of multiple controllers gives a signal. If no controller gives the ’on’
  * signal, the heater will switch off. If ’false’ was used as the off signal, a controller hierarchy would be needed to
- * avoid one controllers off signal overwriting another ones on signal.
+ * avoid one controller off signal overwriting another ones on signal.
  *
  * <p>Note:
  * If the component controlling the heater device has just been started, it will most likely take a few cycles before
@@ -47,7 +48,7 @@ public class EnableSignalHandlerImpl implements EnableSignalHandler {
     }
 
     @Override
-    public boolean deviceShouldBeHeating(Heater heaterComponent) {
+    public boolean deviceEnabled(WriteChannel<Boolean> enableSignalChannel) {
 
         /* Decide state of enabledSignal.
            The convention of EnableSignal is to write "true" in nextWrite to turn the device on, or nothing to turn it
@@ -58,13 +59,13 @@ public class EnableSignalHandlerImpl implements EnableSignalHandler {
            Fetch the value with get and reset. If a controller wants the device to stay on, it needs to write "true" in
            nextWrite of EnableSignal again before the timer runs out. */
 
-        Optional<Boolean> enabledSignal = heaterComponent.getEnableSignalChannel().getNextWriteValueAndReset();
+        Optional<Boolean> enabledSignal = enableSignalChannel.getNextWriteValueAndReset();
 
         // If for some reason enabledSignal is false, treat it as no signal.
         if (enabledSignal.isPresent() && enabledSignal.get()) {
             this.currentlyEnabled = true;
             this.timer.resetTimer(this.enableSignalTimerIdentifier);
-            heaterComponent._setEnableSignal(true);     // Set status in ’nextValue’ and ’value’ part of the channel.
+            enableSignalChannel.setNextValue(true);     // Set status in ’nextValue’ and ’value’ part of the channel.
             return true;    // enabledSignal is 'true’. Return true, meaning ’turn on device’.
         } else {
             // No value in the Optional or enabledSignal = false.
@@ -74,7 +75,7 @@ public class EnableSignalHandlerImpl implements EnableSignalHandler {
                 return true;
             } else {
                 // No ’true’ in enabledSignal and no timer running. Return false, meaning device should be off.
-                heaterComponent._setEnableSignal(false);
+                enableSignalChannel.setNextValue(false);
                 return false;
             }
         }

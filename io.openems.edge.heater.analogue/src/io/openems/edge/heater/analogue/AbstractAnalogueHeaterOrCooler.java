@@ -186,7 +186,7 @@ public abstract class AbstractAnalogueHeaterOrCooler extends AbstractOpenemsComp
                 this.updateConfig();
             } else if (event.getTopic().equals(EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS)) {
                 this.hasErrorCheck();
-                if (this.enableSignalHandler.deviceShouldBeHeating(this) && !this.hasError) {
+                if (this.enableSignalHandler.deviceEnabled(this.getEnableSignalChannel()) && !this.hasError) {
                     this._setHeaterState(HeaterState.RUNNING);
                     this.heaterComponent.forEach(component -> {
                         try {

@@ -799,7 +799,7 @@ public class MyHydraulicLineHeaterControllerTest {
                         .setChannels(new String[]{"foo", "bar"})
                         .setValveBypass(correctValveId)
                         .setTimerId(timerId)
-                        .setTimeoutMaxRemote(10)
+                        .setTimeoutMaxRemote(5)
                         .setTimeoutRestartCycle(defaultTimeOutRestartCycle)
                         .setShouldFallback(true)
                         .setMinuteFallbackStart(defaultFallbackStart)
@@ -813,7 +813,7 @@ public class MyHydraulicLineHeaterControllerTest {
                         .setReactionType(DecentralizedHeaterReactionType.NEED_HEAT)
                         .setEnabled(true)
                         .build())
-                //NOTE: Fallback needs to be set to 10
+                //NOTE: Fallback needs to be set to 5
                 .next(new TestCase()
                         .timeleap(clock, 1, ChronoUnit.SECONDS)//not strictly necessary but some things just won't work sometimes otherwise
                         .input(thermometerAddress, 400)
