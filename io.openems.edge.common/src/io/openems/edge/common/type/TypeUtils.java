@@ -61,9 +61,9 @@ public class TypeUtils {
                     String stringValue = (String) value;
                     if (stringValue.isEmpty()) {
                         return null;
-                    } else if (stringValue.equalsIgnoreCase("false")) {
+                    } else if (stringValue.equalsIgnoreCase("false") || stringValue.equalsIgnoreCase("0")) {
                         return (T) Boolean.FALSE;
-                    } else if (stringValue.equalsIgnoreCase("true")) {
+                    } else if (stringValue.equalsIgnoreCase("true") || stringValue.equalsIgnoreCase("1")) {
                         return (T) Boolean.TRUE;
                     } else {
                         throw new IllegalArgumentException("Cannot convert String [" + value + "] to Boolean.");
