@@ -643,7 +643,7 @@ public class HeatPumpTecalorImpl extends AbstractOpenemsModbusComponent implemen
 		} else {
 
 			// Handle EnableSignal.
-			boolean turnOnHeatpump = this.enableSignalHandler.deviceShouldBeHeating(this);
+			boolean turnOnHeatpump = this.enableSignalHandler.deviceEnabled(this.getEnableSignalChannel());
 
 			// Handle ExceptionalState. ExceptionalState overwrites EnableSignal.
 			int exceptionalStateValue = 0;

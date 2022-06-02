@@ -761,7 +761,7 @@ public class HeatPumpAlphaInnotecImpl extends AbstractOpenemsModbusComponent imp
 			}
 
 			// Handle EnableSignal.
-			boolean turnOnHeatpump = this.enableSignalHandler.deviceShouldBeHeating(this);
+			boolean turnOnHeatpump = this.enableSignalHandler.deviceEnabled(this.getEnableSignalChannel());
 
 			// Handle ExceptionalState. ExceptionalState overwrites EnableSignal.
 			int exceptionalStateValue = 0;

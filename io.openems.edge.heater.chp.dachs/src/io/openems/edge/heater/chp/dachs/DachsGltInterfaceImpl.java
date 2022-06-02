@@ -151,7 +151,7 @@ public class DachsGltInterfaceImpl extends AbstractOpenemsComponent implements O
 			if (this.readOnly == false && this.readyForCommands) {
 
 				// Handle EnableSignal.
-				boolean turnOnChp = this.enableSignalHandler.deviceShouldBeHeating(this);
+				boolean turnOnChp = this.enableSignalHandler.deviceEnabled(this.getEnableSignalChannel());
 
 				// Handle ExceptionalState. ExceptionalState overwrites EnableSignal.
 				if (this.useExceptionalState) {

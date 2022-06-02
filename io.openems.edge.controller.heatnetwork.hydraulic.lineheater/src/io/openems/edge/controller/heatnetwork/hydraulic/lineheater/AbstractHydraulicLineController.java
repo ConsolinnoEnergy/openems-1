@@ -12,6 +12,8 @@ import io.openems.edge.controller.heatnetwork.hydraulic.lineheater.helperclass.C
 import io.openems.edge.controller.heatnetwork.hydraulic.lineheater.helperclass.LineController;
 import io.openems.edge.controller.heatnetwork.hydraulic.lineheater.helperclass.OneChannelLineController;
 import io.openems.edge.controller.heatnetwork.hydraulic.lineheater.helperclass.ValveLineController;
+import io.openems.edge.heater.api.EnableSignalHandler;
+import io.openems.edge.heater.api.EnableSignalHandlerImpl;
 import io.openems.edge.heater.decentralized.api.DecentralizedCooler;
 import io.openems.edge.heater.decentralized.api.DecentralizedHeater;
 import io.openems.edge.heatsystem.components.HydraulicComponent;
@@ -23,7 +25,6 @@ import org.joda.time.DateTime;
 import org.osgi.service.cm.ConfigurationException;
 import org.osgi.service.component.ComponentContext;
 import org.osgi.service.component.annotations.Deactivate;
-import org.osgi.service.component.annotations.Reference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,11 +55,13 @@ abstract class AbstractHydraulicLineController extends AbstractOpenemsComponent 
     private static final int FULL_MINUTE = 60;
     private static final int FALLBACK_TEMPERATURE = 500;
     private static final int CHECK_MISSING_COMPONENTS = 60;
+    private static final int DELTA_TIME_ENABLE_SIGNAL = 5;
     private TimerHandler timerHandler;
     //
     private static final String IDENTIFIER_FALLBACK = "HYDRAULIC_HEATER_FALLBACK_IDENTIFIER";
     private static final String IDENTIFIER_CYCLE_RESTART = "HYDRAULIC_LINE_CYCLE_RESTART_IDENTIFIER";
     private static final String IDENTIFIER_CHECK_MISSING_COMPONENTS = "HYDRAULIC_LINE_CHECK_MISSING_IDENTIFIER";
+    private static final String ENABLE_SIGNAL_IDENTIFIER = "ENABLE_SIGNAL_HYDRAULIC_LINE_HEATER";
     private Thermometer thermometerLine;
     private boolean useDecentralizedComponent;
     private DecentralizedHeater decentralizedHeaterOptional;
@@ -79,6 +82,7 @@ abstract class AbstractHydraulicLineController extends AbstractOpenemsComponent 
     //NOTE: If more Variation comes --> create extra "LineHeater"Classes in this controller etc
 
     private HeaterType heaterType = HeaterType.HEATER;
+    private EnableSignalHandler enableSignalHandler;
 
     enum HeaterType {
         COOLER, HEATER
@@ -192,6 +196,8 @@ abstract class AbstractHydraulicLineController extends AbstractOpenemsComponent 
             this.timerHandler.addOneIdentifier(IDENTIFIER_FALLBACK, timerId, deltaTimeFallback);
             this.timerHandler.addOneIdentifier(IDENTIFIER_CYCLE_RESTART, timerId, deltaTimeCycleRestart);
             this.timerHandler.addOneIdentifier(IDENTIFIER_CHECK_MISSING_COMPONENTS, timerId, CHECK_MISSING_COMPONENTS);
+            this.timerHandler.addOneIdentifier(ENABLE_SIGNAL_IDENTIFIER, timerId, DELTA_TIME_ENABLE_SIGNAL);
+            this.enableSignalHandler = new EnableSignalHandlerImpl(this.timerHandler, ENABLE_SIGNAL_IDENTIFIER);
             this.configSuccess = true;
         } catch (Exception e) {
             this.log.warn("Couldn't apply config, trying again later!");
@@ -397,10 +403,10 @@ abstract class AbstractHydraulicLineController extends AbstractOpenemsComponent 
             //check for value -> need to heat up/cool down or not
             boolean decentralizedRequest = decentralizedRequestPresent && decentralizedRequestValue.orElse(false);
 
-            Optional<Boolean> signal = this.enableSignalChannel().getNextWriteValueAndReset();
-            this.enableSignalChannel().setNextValue(signal.orElse(false));
+            Optional<Boolean> signal = this.enableSignalChannel().getNextWriteValue();
+            boolean enabled = this.enableSignalHandler.deviceEnabled(this.enableSignalChannel());
 
-            if (signal.isPresent() == false && decentralizedRequestPresent == false) {
+            if (signal.isPresent() == false && decentralizedRequestPresent == false && enabled == false) {
                 if (this.shouldFallback && this.timerHandler.checkTimeIsUp(IDENTIFIER_FALLBACK)) {
                     this.isFallback = true;
                     this.isFallbackChannel().setNextValue(true);
@@ -416,8 +422,8 @@ abstract class AbstractHydraulicLineController extends AbstractOpenemsComponent 
                 } else {
                     this.stopProcess();
                 }
-            } else if (decentralizedRequestPresent || signal.isPresent()) {
-                if (decentralizedRequest || signal.orElse(false)) {
+            } else if (enabled || decentralizedRequestPresent) {
+                if (enabled || decentralizedRequest) {
                     int temperatureReference;
                     try {
                         temperatureReference = this.referenceTemperature.validateChannelAndGetValue(this.cpm);

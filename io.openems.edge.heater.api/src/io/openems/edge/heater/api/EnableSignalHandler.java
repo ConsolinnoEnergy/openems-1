@@ -1,8 +1,10 @@
 package io.openems.edge.heater.api;
 
+import io.openems.edge.common.channel.WriteChannel;
+
 /**
- * The Interface of the EnableSignalHandler. It allows for easy and uniform handling of the EnableSignal in the heater
- * component.
+ * The Interface of the EnableSignalHandler. It allows for easy and uniform handling of the EnableSignal (in the heater
+ * component).
  * The convention of the EnableSignal channel is to write ’true’ in nextWrite to turn the device on, or nothing to turn
  * it off (after the timer runs out). This way multiple controllers can access the device without needing controller
  * hierarchy. For a more detailed description see {@link io.openems.edge.heater.api.EnableSignalHandlerImpl}.
@@ -15,8 +17,8 @@ public interface EnableSignalHandler {
     /**
      * Checks if the device should be on or not in accordance with the EnableSignal rules.
      *
-     * @param heaterComponent the Component that implements the {@link Heater} interface.
+     * @param enableSignalChannel the EnableSignalChannel / any BooleanWriteChannel
      * @return true if EnableSignal is active or was active and the wait time is not up.
      */
-    boolean deviceShouldBeHeating(Heater heaterComponent);
+    boolean deviceEnabled(WriteChannel<Boolean> enableSignalChannel);
 }

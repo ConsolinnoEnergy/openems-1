@@ -565,7 +565,7 @@ public class ChpKwEnergySmartblockImpl extends AbstractOpenemsModbusComponent im
 			}
 
 			// Handle EnableSignal.
-			boolean turnOnChp = this.enableSignalHandler.deviceShouldBeHeating(this);
+			boolean turnOnChp = this.enableSignalHandler.deviceEnabled(this.getEnableSignalChannel());
 
 			// Handle ExceptionalState. ExceptionalState overwrites EnableSignal.
 			this.exceptionalStateValue = 0;

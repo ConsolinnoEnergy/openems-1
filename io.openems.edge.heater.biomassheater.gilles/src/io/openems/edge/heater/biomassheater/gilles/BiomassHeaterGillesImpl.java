@@ -458,7 +458,7 @@ public class BiomassHeaterGillesImpl extends AbstractOpenemsModbusComponent impl
             int slideInSetpoint = (int) Math.round(this.powerPercentSetpoint);
 
             // Handle EnableSignal.
-            boolean turnOnHeater = this.enableSignalHandler.deviceShouldBeHeating(this);
+            boolean turnOnHeater = this.enableSignalHandler.deviceEnabled(this.getEnableSignalChannel());
 
             // Handle ExceptionalState. ExceptionalState overwrites EnableSignal.
             if (this.useExceptionalState) {
