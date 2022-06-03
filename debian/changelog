@@ -1,3 +1,10 @@
+openems-consolinno (0.2.6-1) unstable; urgency=medium
+
+  * TypeUtils Boolean - conversion 1 and 0 compatibility
+  * EnableSignalHandler for LineHeater
+
+ -- Felix <felix@felix-ThinkPad-E15-Gen-2>  Fri, 03 Jun 2022 10:53:24 +0200
+
 openems-consolinno (0.2.5-1) unstable; urgency=medium
 
   * ToggleSwitch has been abstracted
