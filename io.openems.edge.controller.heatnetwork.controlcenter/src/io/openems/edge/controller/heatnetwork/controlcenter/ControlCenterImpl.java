@@ -107,7 +107,7 @@ public class ControlCenterImpl extends AbstractOpenemsComponent implements Opene
             }
             // For the Overrides, copy values from the WriteValue to the NextValue fields.
             if (this.activateTemperatureOverride().getNextWriteValue().isPresent()) {
-                this.activateTemperatureOverride().setNextValue(this.activateTemperatureOverride().getNextValue().orElse(false));
+                this.activateTemperatureOverride().setNextValue(this.activateTemperatureOverride().getNextWriteValue().orElse(false));
             }
             if (this.setOverrideTemperature().getNextWriteValue().isPresent()) {
                 this.setOverrideTemperature().setNextValue(this.setOverrideTemperature().getNextWriteValue().get());
