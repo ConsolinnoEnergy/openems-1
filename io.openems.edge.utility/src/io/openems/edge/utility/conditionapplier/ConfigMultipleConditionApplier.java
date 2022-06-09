@@ -1,9 +1,9 @@
-package io.openems.edge.utility.conditionapplier.multiple;
+package io.openems.edge.utility.conditionapplier;
 
 import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
-@ObjectClassDefinition(name = "Condition Applier Multiple BooleanChannel", description = "This Controller gets multiple ChannelAddresses (Boolean)")
+@ObjectClassDefinition(name = "Utility Condition Applier", description = "This Controller gets multiple ChannelAddresses (Boolean)")
 @interface ConfigMultipleConditionApplier {
 
     String service_pid();
@@ -35,5 +35,5 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
     boolean enabled() default true;
 
-    String webconsole_configurationFactory_nameHint() default "Condition Applier Multiple BooleanChannel {id}";
+    String webconsole_configurationFactory_nameHint() default "Utility Condition Applier {id}";
 }

@@ -5,7 +5,7 @@ import io.openems.edge.utility.api.ComparatorType;
 import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
-@ObjectClassDefinition(name = "Comparator Channel-values or static numbers",
+@ObjectClassDefinition(name = "Utility Comparator",
         description = "This Component allows the comparison of channels and static values the result is written into a given channel")
 @interface Config {
 

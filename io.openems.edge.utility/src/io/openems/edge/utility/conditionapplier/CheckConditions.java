@@ -1,4 +1,4 @@
-package io.openems.edge.utility.conditionapplier.multiple;
+package io.openems.edge.utility.conditionapplier;
 
 /**
  * This Enum is helping the {@link MultipleBooleanConditionApplierImpl}

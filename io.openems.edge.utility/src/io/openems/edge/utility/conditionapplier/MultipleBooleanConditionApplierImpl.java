@@ -1,8 +1,7 @@
-package io.openems.edge.utility.conditionapplier.multiple;
+package io.openems.edge.utility.conditionapplier;
 
 import io.openems.common.exceptions.OpenemsError;
 import io.openems.common.types.ChannelAddress;
-import io.openems.common.types.OpenemsType;
 import io.openems.edge.common.channel.Channel;
 import io.openems.edge.common.channel.WriteChannel;
 import io.openems.edge.common.component.AbstractOpenemsComponent;
@@ -11,7 +10,6 @@ import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.common.configupdate.ConfigurationUpdate;
 import io.openems.edge.common.event.EdgeEventConstants;
 import io.openems.edge.utility.api.ConditionApplier;
-import org.osgi.service.cm.Configuration;
 import org.osgi.service.cm.ConfigurationAdmin;
 import org.osgi.service.component.ComponentContext;
 import org.osgi.service.component.annotations.Activate;
@@ -29,11 +27,9 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Dictionary;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * The MultipleBooleanConditionApplier is an expansion of the {@link ConditionApplier} and allows the ability to check

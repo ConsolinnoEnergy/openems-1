@@ -4,7 +4,7 @@ import io.openems.edge.utility.api.MinMax;
 import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
-@ObjectClassDefinition(name = "MinMax To Channel Writer ", description = ".")
+@ObjectClassDefinition(name = "Utility MinMax", description = ".")
 @interface Config {
 
     String service_pid();

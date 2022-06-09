@@ -1,4 +1,4 @@
-package io.openems.edge.utility.conditionapplier.multiple;
+package io.openems.edge.utility.conditionapplier;
 
 import io.openems.common.exceptions.OpenemsError;
 import io.openems.common.types.ChannelAddress;

@@ -6,13 +6,14 @@ import io.openems.common.types.OpenemsType;
 import io.openems.edge.common.channel.Doc;
 import io.openems.edge.common.channel.WriteChannel;
 import io.openems.edge.common.component.OpenemsComponent;
+import io.openems.edge.utility.conditionapplier.MultipleBooleanConditionApplierImpl;
 
 /**
  * The Nature for ConditionApplier.
  * It allows Components or the User via REST
  * to set new Default Active and inactive Values.
  * Those will be stored in the config and written as the nextValue.
- * The Values will be applied to the e.g. {@link io.openems.edge.utility.conditionapplier.multiple.MultipleBooleanConditionApplierImpl}.
+ * The Values will be applied to the e.g. {@link MultipleBooleanConditionApplierImpl}.
  */
 public interface ConditionApplier extends OpenemsComponent {
 
