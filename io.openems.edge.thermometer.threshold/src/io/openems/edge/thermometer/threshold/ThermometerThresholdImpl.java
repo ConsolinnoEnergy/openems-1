@@ -92,9 +92,6 @@ public class ThermometerThresholdImpl extends AbstractOpenemsComponent implement
                 this.getTemperatureChannel().setNextValue(fictionalTemperature);
                 this.maxIntervalToWait = config.maxInterval();
                 this.setThresholdInDeciDegree(config.thresholdTemperature());
-                if (this.getSetPointTemperature() == Integer.MIN_VALUE) {
-                    this.getSetPointTemperatureChannel().setNextValue(config.startSetPointTemperature());
-                }
             } else {
                 throw new ConfigurationException("Activate Method ThresholdTemperatureImpl " + config.id(),
                         "Activate Method: ThermometerId" + config.thermometerId() + " Not an Instance of Thermometer");

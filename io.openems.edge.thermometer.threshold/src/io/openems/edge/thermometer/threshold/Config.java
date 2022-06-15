@@ -5,7 +5,7 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
 @ObjectClassDefinition(
         name = "Thermometer Threshold",
-        description = "Thermometer Threshold holding a Thermometer, Threshold, and a Interval"
+        description = "Thermometer Threshold holding a Thermometer, Threshold, and an Interval until it refreshes a Temperature"
 )
 @interface Config {
     String service_pid();
@@ -24,9 +24,6 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
     @AttributeDefinition(name = "MaxIntervalToWait", description = "To prevent fluctuations in Temperature (jumping from 500dC to 490dC immediately) you can set an intervalCounter")
     int maxInterval() default 1;
-
-    @AttributeDefinition(name = "Starting SetPoint Temperature", description = "Default/Start value of the Setpoint Temperature, that will be set at init.; Unit: DeciDegree")
-    int startSetPointTemperature() default 500;
 
     @AttributeDefinition(name = "Default Temperature", description = "When the Reference Temperature measures a missing Temperature in the beginning, this Temperature will be used instead.")
     int defaultTemperature() default 600;

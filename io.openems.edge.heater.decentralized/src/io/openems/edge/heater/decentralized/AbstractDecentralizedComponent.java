@@ -130,7 +130,6 @@ public abstract class AbstractDecentralizedComponent extends AbstractOpenemsComp
         componentFetchedByComponentManager = this.cpm.getComponent(thresholdId);
         if (componentFetchedByComponentManager instanceof ThermometerThreshold) {
             this.thresholdThermometer = (ThermometerThreshold) componentFetchedByComponentManager;
-            this.thresholdThermometer.setSetPointTemperature(tempSetPoint, super.id());
         } else {
             throw new ConfigurationException("activate",
                     "Component with ID: " + thresholdId + " not an instance of Threshold");
@@ -218,7 +217,6 @@ public abstract class AbstractDecentralizedComponent extends AbstractOpenemsComp
      */
 
     protected void setThresholdAndControlValve(boolean thresholdTempMet, int setPointTemperature) {
-        this.thresholdThermometer.setSetPointTemperatureAndActivate(setPointTemperature, super.id());
         if (this.componentType.equals(ComponentType.CONTROLLER)) {
             try {
                 this.configuredHydraulicController.getEnableSignalChannel().setNextWriteValueFromObject(true);
@@ -311,7 +309,6 @@ public abstract class AbstractDecentralizedComponent extends AbstractOpenemsComp
      */
     void deactivateControlledComponents() {
         this._setHeaterState(HeaterState.OFF);
-        this.thresholdThermometer.releaseSetPointTemperatureId(super.id());
         this.closeComponentOrDisableComponentController();
         this._setHeaterState(HeaterState.OFF);
     }
