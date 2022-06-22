@@ -63,6 +63,7 @@ public class AutomatedToggleSwitchImpl extends AbstractToggle implements Openems
         super.activate(context, config.id(), config.alias(), config.enabled(), config.valueTypeA(), config.valueTypeB(),
                 config.stateAValue(), config.stateBValue(), config.defaultState(), config.useOutput(),
                 config.outputChannelAddress(), config.outputType(), this.cpm, this.cm);
+        this.toggleEachCycle = config.toggleEachCycle();
         this.createTimerHandler();
     }
 
