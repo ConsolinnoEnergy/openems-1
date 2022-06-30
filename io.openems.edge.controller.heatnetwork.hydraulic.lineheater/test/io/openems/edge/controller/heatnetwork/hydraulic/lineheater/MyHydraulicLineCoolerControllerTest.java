@@ -40,6 +40,7 @@ public class MyHydraulicLineCoolerControllerTest {
     private static final String correctValveId = "Valve0";
     private static final DummyValve correctDummyValve = new DummyValve(correctValveId);
     private static final ChannelAddress valveSetPointPowerAddress = new ChannelAddress(correctValveId, "SetPointPowerLevel");
+    private static final ChannelAddress valvePowerLevel = new ChannelAddress(correctValveId, "CurrentPowerLevel");
     private static final ChannelAddress valveMaxAddress = new ChannelAddress(correctValveId, "MaxAllowedValue");
     private static final ChannelAddress valveMinAddress = new ChannelAddress(correctValveId, "MinAllowedValue");
     //TimeOuts
@@ -248,31 +249,46 @@ public class MyHydraulicLineCoolerControllerTest {
                         .input(thermometerAddress, 200)
 
                 )
+                .next(new TestCase()
+                        .input(controllerEnableSignal, true)
+                        .input(thermometerAddress, 200)
+
+                )
+                .next(new TestCase()
+                        .input(controllerEnableSignal, true)
+                        .input(thermometerAddress, 200)
+
+                )
+                .next(new TestCase()
+                        .input(controllerEnableSignal, true)
+                        .input(thermometerAddress, 200)
+
+                )
                 //5 Restart Cycles until
                 .next(new TestCase()
                         .input(controllerEnableSignal, true)
                         .input(thermometerAddress, 450)
-                        .output(valveSetPointPowerAddress, HydraulicComponent.DEFAULT_MIN_POWER_VALUE)
+                        .output(valvePowerLevel, (double)HydraulicComponent.DEFAULT_MIN_POWER_VALUE)
 
                 )
                 .next(new TestCase()
                         .input(controllerEnableSignal, true)
-                        .output(valveSetPointPowerAddress, HydraulicComponent.DEFAULT_MIN_POWER_VALUE)
+                        .output(valvePowerLevel, (double)HydraulicComponent.DEFAULT_MIN_POWER_VALUE)
 
                 )
                 .next(new TestCase()
                         .input(controllerEnableSignal, true)
-                        .output(valveSetPointPowerAddress, HydraulicComponent.DEFAULT_MIN_POWER_VALUE)
+                        .output(valvePowerLevel, (double)HydraulicComponent.DEFAULT_MIN_POWER_VALUE)
 
                 )
                 .next(new TestCase()
                         .input(controllerEnableSignal, true)
-                        .output(valveSetPointPowerAddress, HydraulicComponent.DEFAULT_MIN_POWER_VALUE)
+                        .output(valvePowerLevel, (double)HydraulicComponent.DEFAULT_MIN_POWER_VALUE)
 
                 )
                 .next(new TestCase()
                         .input(controllerEnableSignal, true)
-                        .output(valveSetPointPowerAddress, HydraulicComponent.DEFAULT_MIN_POWER_VALUE)
+                        .output(valvePowerLevel, (double)HydraulicComponent.DEFAULT_MIN_POWER_VALUE)
 
                 )
                 .next(new TestCase()
@@ -342,31 +358,56 @@ public class MyHydraulicLineCoolerControllerTest {
                         .input(thermometerAddress, 200)
 
                 )
+                .next(new TestCase()
+                        .input(controllerEnableSignal, true)
+                        .input(thermometerAddress, 200)
+
+                )
+                .next(new TestCase()
+                        .input(controllerEnableSignal, true)
+                        .input(thermometerAddress, 200)
+
+                )
+                .next(new TestCase()
+                        .input(controllerEnableSignal, true)
+                        .input(thermometerAddress, 200)
+
+                )
+                .next(new TestCase()
+                        .input(controllerEnableSignal, true)
+                        .input(thermometerAddress, 200)
+
+                )
+                .next(new TestCase()
+                        .input(controllerEnableSignal, true)
+                        .input(thermometerAddress, 200)
+
+                )
                 //5 Restart Cycles until
                 .next(new TestCase()
                         .input(controllerEnableSignal, true)
                         .input(thermometerAddress, 450)
-                        .output(valveSetPointPowerAddress, HydraulicComponent.DEFAULT_MIN_POWER_VALUE)
+                        .output(valvePowerLevel, (double)HydraulicComponent.DEFAULT_MIN_POWER_VALUE)
 
                 )
                 .next(new TestCase()
                         .input(controllerEnableSignal, true)
-                        .output(valveSetPointPowerAddress, HydraulicComponent.DEFAULT_MIN_POWER_VALUE)
+                        .output(valvePowerLevel, (double)HydraulicComponent.DEFAULT_MIN_POWER_VALUE)
 
                 )
                 .next(new TestCase()
                         .input(controllerEnableSignal, true)
-                        .output(valveSetPointPowerAddress, HydraulicComponent.DEFAULT_MIN_POWER_VALUE)
+                        .output(valvePowerLevel, (double) HydraulicComponent.DEFAULT_MIN_POWER_VALUE)
 
                 )
                 .next(new TestCase()
                         .input(controllerEnableSignal, true)
-                        .output(valveSetPointPowerAddress, HydraulicComponent.DEFAULT_MIN_POWER_VALUE)
+                        .output(valvePowerLevel,(double) HydraulicComponent.DEFAULT_MIN_POWER_VALUE)
 
                 )
                 .next(new TestCase()
                         .input(controllerEnableSignal, true)
-                        .output(valveSetPointPowerAddress, HydraulicComponent.DEFAULT_MIN_POWER_VALUE)
+                        .output(valvePowerLevel,(double) HydraulicComponent.DEFAULT_MIN_POWER_VALUE)
 
                 )
                 .next(new TestCase()
@@ -645,32 +686,31 @@ public class MyHydraulicLineCoolerControllerTest {
                 .next(new TestCase()
                         .input(controllerEnableSignal, true)
                         .input(thermometerAddress, 450)
-                        .output(valveSetPointPowerAddress, HydraulicComponent.DEFAULT_MIN_POWER_VALUE)
+                        .output(valvePowerLevel, (double)HydraulicComponent.DEFAULT_MIN_POWER_VALUE)
 
                 )
                 .next(new TestCase()
                         .input(controllerEnableSignal, true)
-                        .output(valveSetPointPowerAddress, HydraulicComponent.DEFAULT_MIN_POWER_VALUE)
+                        .output(valvePowerLevel, (double)HydraulicComponent.DEFAULT_MIN_POWER_VALUE)
 
                 )
                 .next(new TestCase()
                         .input(controllerEnableSignal, true)
-                        .output(valveSetPointPowerAddress, HydraulicComponent.DEFAULT_MIN_POWER_VALUE)
+                        .output(valvePowerLevel, (double)HydraulicComponent.DEFAULT_MIN_POWER_VALUE)
 
                 )
                 .next(new TestCase()
                         .input(controllerEnableSignal, true)
-                        .output(valveSetPointPowerAddress, HydraulicComponent.DEFAULT_MIN_POWER_VALUE)
+                        .output(valvePowerLevel, (double)HydraulicComponent.DEFAULT_MIN_POWER_VALUE)
 
                 )
                 .next(new TestCase()
                         .input(controllerEnableSignal, true)
-                        .output(valveSetPointPowerAddress, HydraulicComponent.DEFAULT_MIN_POWER_VALUE)
+                        .output(valvePowerLevel,(double) HydraulicComponent.DEFAULT_MIN_POWER_VALUE)
 
                 )
                 .next(new TestCase()
                         .input(controllerEnableSignal, true)
-                        .output(valveSetPointPowerAddress, HydraulicComponent.DEFAULT_MAX_POWER_VALUE)
                         .output(valveMaxAddress, defaultMaxValue)
                         .output(valveMinAddress, defaultMinValue)
 

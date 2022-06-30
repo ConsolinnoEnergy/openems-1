@@ -141,7 +141,9 @@ public class DummyValve extends AbstractOpenemsComponent implements HydraulicCom
 
     @Override
     public void reset() {
-
+        this.getPowerLevelChannel().setNextValue(HydraulicComponent.DEFAULT_MIN_POWER_VALUE);
+        this.futurePowerLevelChannel().setNextValue(HydraulicComponent.DEFAULT_MIN_POWER_VALUE);
+        this.setPointPowerLevelChannel().setNextValue(HydraulicComponent.DEFAULT_MIN_POWER_VALUE);
     }
 
     @Override

@@ -1,3 +1,9 @@
+openems-consolinno (1.0.13-2) unstable; urgency=medium
+
+  * Fixed Tests HydraulicController
+
+ -- Felix <felix@felix-ThinkPad-E15-Gen-2>  Thu, 30 Jun 2022 10:28:25 +0200
+
 openems-consolinno (0.2.7-1) unstable; urgency=medium
 
   * bugfix Controlcenter -> nextWrite Value instead of nextValue
