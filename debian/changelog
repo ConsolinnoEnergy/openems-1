@@ -1,4 +1,4 @@
-openems-consolinno (1.0.13-2) unstable; urgency=medium
+openems-consolinno (0.2.7-2) unstable; urgency=medium
 
   * Fixed Tests HydraulicController
 
