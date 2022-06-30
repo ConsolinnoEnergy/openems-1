@@ -13,19 +13,16 @@ public class ChannelLineController extends AbstractLineController {
     private final ChannelAddress readAddress;
     private final ChannelAddress maxAddress;
     private final ChannelAddress minAddress;
-    private final ComponentManager cpm;
     private Double max;
     private Double min;
 
     public ChannelLineController(boolean booleanControlled, ChannelAddress readAddress, ChannelAddress writeAddress,
                                  ChannelAddress maxAddress, ChannelAddress minAddress, ComponentManager cpm, boolean useMinMax) {
-        super(booleanControlled, useMinMax);
+        super(booleanControlled, useMinMax, cpm);
         this.writeAddress = writeAddress;
         this.readAddress = readAddress;
         this.maxAddress = maxAddress;
         this.minAddress = minAddress;
-        this.cpm = cpm;
-
     }
 
     @Override

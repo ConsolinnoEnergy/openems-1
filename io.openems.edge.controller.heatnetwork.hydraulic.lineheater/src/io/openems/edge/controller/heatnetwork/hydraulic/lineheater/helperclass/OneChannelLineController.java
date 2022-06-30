@@ -8,14 +8,12 @@ import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.heatsystem.components.HydraulicComponent;
 
 public class OneChannelLineController extends AbstractLineController {
-    ComponentManager cpm;
     ChannelAddress writeAddress;
 
 
     public OneChannelLineController(boolean booleanControlled, ChannelAddress writeAddress, ComponentManager cpm) {
-        super(booleanControlled, false);
+        super(booleanControlled, false, cpm);
         this.writeAddress = writeAddress;
-        this.cpm = cpm;
     }
 
 

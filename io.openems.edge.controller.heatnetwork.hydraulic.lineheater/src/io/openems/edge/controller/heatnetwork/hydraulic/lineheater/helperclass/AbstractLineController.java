@@ -1,5 +1,7 @@
 package io.openems.edge.controller.heatnetwork.hydraulic.lineheater.helperclass;
 
+import io.openems.edge.common.component.ComponentManager;
+
 /**
  * A LineHeater. This is the Parent of impl. of the LineHeaterHelperClasses. Helps out the HydraulicLineHeaterController.
  * Providing basic methods.
@@ -12,10 +14,12 @@ public abstract class AbstractLineController implements LineController {
     protected double previouslyCheckedPowerLevel = 0;
     protected static final int DEFAULT_LAST_POWER_VALUE = -1;
     protected boolean isRunning;
+    protected ComponentManager cpm;
 
-    protected AbstractLineController(boolean booleanControlled, boolean useMinMax) {
+    protected AbstractLineController(boolean booleanControlled, boolean useMinMax, ComponentManager cpm) {
         this.booleanControlled = booleanControlled;
         this.useMinMax = useMinMax;
+        this.cpm = cpm;
     }
 
     /**

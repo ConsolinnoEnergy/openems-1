@@ -283,7 +283,7 @@ abstract class AbstractHydraulicLineController extends AbstractOpenemsComponent 
      */
     private void createValveLineHeater(boolean booleanControlled, String valveId) throws Exception {
         HydraulicComponent valve = (HydraulicComponent) this.allocateComponent(valveId, ComponentType.HYDRAULIC_COMPONENT);
-        this.lineController = new ValveLineController(booleanControlled, valve, this.useMinMax);
+        this.lineController = new ValveLineController(booleanControlled, valve, this.useMinMax, this.cpm);
     }
 
     /**

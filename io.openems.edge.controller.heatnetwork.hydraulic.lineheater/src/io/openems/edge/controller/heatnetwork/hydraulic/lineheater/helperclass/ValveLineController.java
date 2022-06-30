@@ -1,6 +1,7 @@
 package io.openems.edge.controller.heatnetwork.hydraulic.lineheater.helperclass;
 
 import io.openems.common.exceptions.OpenemsError;
+import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.heatsystem.components.HydraulicComponent;
 
 public class ValveLineController extends AbstractLineController {
@@ -10,14 +11,14 @@ public class ValveLineController extends AbstractLineController {
     private Double min;
 
 
-    public ValveLineController(boolean booleanControlled, HydraulicComponent valve, boolean useMinMax) {
-        super(booleanControlled, useMinMax);
+    public ValveLineController(boolean booleanControlled, HydraulicComponent valve, boolean useMinMax, ComponentManager cpm) {
+        super(booleanControlled, useMinMax, cpm);
         this.valve = valve;
     }
 
     @Override
     public boolean startProcess() throws OpenemsError.OpenemsNamedException {
-
+        this.updateComponentIfNecessary();
         if (super.useMinMax) {
             this.valve.maxValueChannel().setNextWriteValue(this.max);
             this.valve.minValueChannel().setNextWriteValue(this.min);
@@ -39,12 +40,16 @@ public class ValveLineController extends AbstractLineController {
         return false;
     }
 
+    private void updateComponentIfNecessary() {
+
+    }
+
     @Override
     public boolean stopProcess() throws OpenemsError.OpenemsNamedException {
-
-        if (this.isRunning || this.valve.powerLevelReached() == false) {
+        this.updateComponentIfNecessary();
+        if (this.isRunning) {
             this.isRunning = false;
-            this.valve.setPointPowerLevelChannel().setNextWriteValueFromObject(HydraulicComponent.DEFAULT_MIN_POWER_VALUE);
+            this.valve.reset();
             return true;
         }
         return false;
