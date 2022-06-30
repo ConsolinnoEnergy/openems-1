@@ -1,3 +1,16 @@
+openems-consolinno (0.2.7-1) unstable; urgency=medium
+
+  * bugfix Controlcenter -> nextWrite Value instead of nextValue
+  * removed deprecated Condition Applier and changed config name to "Utility ConditionApplier"
+  * removed deprecated functionality of threshold thermometert (setPoint)
+  * bugfix in autoToggle Component (toggle Each Cycle) 
+  * Added ModbusTarget Filter to Generic Modbus Components (seems to fix some bugs)
+  * bugfix LineHeater -> ValveLineHeater Component
+  * Added functionality that allows MqttComponents to update channel on the fly (after 120 seconds) when configured (some Components add their channels on the fly...this addition checks for them and updates the component)
+
+
+ -- Felix <felix@felix-ThinkPad-E15-Gen-2>  Thu, 30 Jun 2022 09:29:08 +0200
+
 openems-consolinno (0.2.6-1) unstable; urgency=medium
 
   * TypeUtils Boolean - conversion 1 and 0 compatibility
