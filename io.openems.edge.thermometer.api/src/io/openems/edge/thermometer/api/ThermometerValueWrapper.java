@@ -2,8 +2,10 @@ package io.openems.edge.thermometer.api;
 
 import io.openems.common.exceptions.OpenemsError;
 import io.openems.common.types.ChannelAddress;
+import io.openems.common.types.OpenemsType;
 import io.openems.edge.common.channel.Channel;
 import io.openems.edge.common.component.ComponentManager;
+import io.openems.edge.common.type.TypeUtils;
 import org.osgi.service.cm.ConfigurationException;
 
 /**
@@ -55,7 +57,11 @@ public class ThermometerValueWrapper {
         if (this.usesChannel) {
             Channel<?> channel = cpm.getChannel(this.temperatureValueAddress);
             if (channel.value().isDefined() && this.containsOnlyValidNumbers(channel.value().get().toString())) {
-                return (Integer) channel.value().get();
+                Integer returnValue = TypeUtils.getAsType(OpenemsType.INTEGER, channel.value());
+                if (returnValue == null) {
+                    returnValue = Thermometer.MISSING_TEMPERATURE;
+                }
+                return returnValue;
             } else {
                 throw new ConfigurationException("ValidateChannelAndGetValue", "Either Channel does not contain a value or is not valid!");
             }
