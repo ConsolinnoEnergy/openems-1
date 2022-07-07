@@ -1,3 +1,9 @@
+openems-consolinno (0.2.7-3) unstable; urgency=medium
+
+  * ThermometerValueWrapper Bugfix - for IntegerValue
+
+ -- Felix <felix@felix-ThinkPad-E15-Gen-2>  Thu, 07 Jul 2022 10:07:29 +0200
+
 openems-consolinno (0.2.7-2) unstable; urgency=medium
 
   * Fixed Tests HydraulicController
