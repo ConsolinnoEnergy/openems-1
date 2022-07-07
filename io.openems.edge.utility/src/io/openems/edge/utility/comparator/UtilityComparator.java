@@ -119,9 +119,10 @@ public class UtilityComparator extends AbstractOpenemsComponent implements Opene
                     if (this.comparatorType.equals(ComparatorType.BIT_EQUALS)) {
                         this.writeToOutput(StaticComparator.compare(this.comparatorType, (Integer) TypeUtils.getAsType(OpenemsType.INTEGER, valueA),
                                 (Integer) TypeUtils.getAsType(OpenemsType.INTEGER, valueB)));
+                    } else {
+                        this.writeToOutput(StaticComparator.compare(this.comparatorType, (Double) TypeUtils.getAsType(OpenemsType.DOUBLE, valueA),
+                                (Double) TypeUtils.getAsType(OpenemsType.DOUBLE, valueB)));
                     }
-                    this.writeToOutput(StaticComparator.compare(this.comparatorType, (Double) TypeUtils.getAsType(OpenemsType.DOUBLE, valueA),
-                            (Double) TypeUtils.getAsType(OpenemsType.DOUBLE, valueB)));
                 }
             } catch (OpenemsError.OpenemsNamedException e) {
                 this.log.error(this.id() + " Couldn't find Channel! Reason: " + e.getMessage());
