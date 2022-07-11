@@ -201,7 +201,7 @@ public class MqttCommandComponent extends MqttOpenemsComponentConnector implemen
     }
 
     private void updateConfiguration() throws ConfigurationException, MqttException, IOException {
-        super.setConfiguration(MqttType.TELEMETRY, this.config.subscriptionList(), null,
+        super.setConfiguration(MqttType.TELEMETRY, this.config.subscriptionList(), new String[0],
                 this.config.payloads(), this.config.createdByOsgi(), this.config.mqttId(), this.cm, this.config.channelIdList().length,
                 this.config.pathForJson(), this.config.payloadStyle(), this.config.configurationDone(), this.config.componentAddsChannelOnTheFly());
     }

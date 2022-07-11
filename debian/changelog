@@ -1,3 +1,9 @@
+openems-consolinno (0.2.7-7) unstable; urgency=medium
+
+  * Fixed CommandComponent
+
+ -- Felix <felix@felix-ThinkPad-E15-Gen-2>  Mon, 11 Jul 2022 13:29:58 +0200
+
 openems-consolinno (0.2.7-6) unstable; urgency=medium
 
   * Fixed a Bug MqttCommandComponent
