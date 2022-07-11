@@ -71,6 +71,8 @@ public class HeatingCurveRegulatorImpl extends AbstractOpenemsComponent implemen
     private boolean shouldBeHeating = false;
     private static final int TOLERANCE_FOR_AVERAGE_MEASUREMENT = 30;
     private int calculatedHeatingCurveTemperature = 450;
+    private boolean configSuccess = false;
+    private Config config;
 
     public HeatingCurveRegulatorImpl() {
         super(OpenemsComponent.ChannelId.values(),
@@ -81,10 +83,13 @@ public class HeatingCurveRegulatorImpl extends AbstractOpenemsComponent implemen
     private boolean initial = true;
 
     @Activate
-    void activate(ComponentContext context, Config config) throws OpenemsError.OpenemsNamedException, ConfigurationException {
+    void activate(ComponentContext context, Config config) {
         super.activate(context, config.id(), config.alias(), config.enabled());
-        this.initial = true;
         this.activationOrModifiedRoutine(config);
+        this.initialRoutine();
+    }
+
+    private void initialRoutine() {
         this.noErrorChannel().setNextValue(true);
         // Set timestamp so that logic part 1 executes right away.
         this.timestamp = LocalDateTime.now().minusMinutes(this.minimumStateTimeMinutes);
@@ -93,13 +98,16 @@ public class HeatingCurveRegulatorImpl extends AbstractOpenemsComponent implemen
         this.measurementCounter = 0;
         this.measurementData.clear();
         this.initializeMeasurementMinuteData();
+        this.initial = true;
     }
 
     private void initializeMeasurementMinuteData() {
         Arrays.fill(this.measurementDataOneMinute, Thermometer.MISSING_TEMPERATURE);
     }
 
-    private void activationOrModifiedRoutine(Config config) throws OpenemsError.OpenemsNamedException, ConfigurationException {
+    private void activationOrModifiedRoutine(Config config) {
+        this.config = config;
+        this.configSuccess = false;
         this.activationTemp = config.activation_temp();
         this.roomTemp = config.room_temp();
         // Activation temperature can not be higher than desired room temperature, otherwise the function will crash.
@@ -115,15 +123,19 @@ public class HeatingCurveRegulatorImpl extends AbstractOpenemsComponent implemen
         if (this.measurementTimeMinutes > this.minimumStateTimeMinutes) {
             this.measurementTimeMinutes = this.minimumStateTimeMinutes;
         }
-
-        if (this.cpm.getComponent(config.thermometerId()) instanceof Thermometer) {
-            Thermometer thermometer = this.cpm.getComponent(config.thermometerId());
-            this.outsideThermometer = thermometer.getTemperatureChannel().address();
-        } else {
-            throw new ConfigurationException("The configured component is not a temperature sensor! Please check "
-                    + config.thermometerId(), "configured component is incorrect!");
+        try {
+            if (this.cpm.getComponent(config.thermometerId()) instanceof Thermometer) {
+                Thermometer thermometer = this.cpm.getComponent(config.thermometerId());
+                this.outsideThermometer = thermometer.getTemperatureChannel().address();
+                this.initializeChannel();
+                this.configSuccess = true;
+            } else {
+                throw new ConfigurationException("The configured component is not a temperature sensor! Please check "
+                        + config.thermometerId(), "configured component is incorrect!");
+            }
+        } catch (OpenemsError.OpenemsNamedException | ConfigurationException e) {
+            this.log.warn(e.getMessage());
         }
-        this.initializeChannel();
     }
 
     private void initializeChannel() {
@@ -137,6 +149,9 @@ public class HeatingCurveRegulatorImpl extends AbstractOpenemsComponent implemen
     void modified(ComponentContext context, Config config) throws OpenemsError.OpenemsNamedException, ConfigurationException {
         super.modified(context, config.id(), config.alias(), config.enabled());
         this.activationOrModifiedRoutine(config);
+        if(!this.initial){
+            this.initialRoutine();
+        }
     }
 
 
@@ -176,32 +191,39 @@ public class HeatingCurveRegulatorImpl extends AbstractOpenemsComponent implemen
 
     @Override
     public void run() {
-        this.updateConfig();
+        if (this.configSuccess) {
+            this.updateConfig();
 
-        int outsideTemperature = Thermometer.MISSING_TEMPERATURE;
-        try {
-            //No check for Int needed, since it is actually the Thermometer -> getTemperatureChannel
-            outsideTemperature = ((Channel<Integer>) this.cpm.getChannel(this.outsideThermometer)).value().orElse(Thermometer.MISSING_TEMPERATURE);
-        } catch (OpenemsError.OpenemsNamedException ignored) {
-            this.log.warn(this.id() + " Couldn't read Temperature from ChannelAddress. Might be missing.");
-        }
-        boolean temperatureIsMissing = this.hasMissingTemperature(outsideTemperature);
-        if (!temperatureIsMissing) {
+            int outsideTemperature = Thermometer.MISSING_TEMPERATURE;
+            try {
+                //No check for Int needed, since it is actually the Thermometer -> getTemperatureChannel
+                outsideTemperature = ((Channel<Integer>) this.cpm.getChannel(this.outsideThermometer)).value().orElse(Thermometer.MISSING_TEMPERATURE);
+            } catch (OpenemsError.OpenemsNamedException ignored) {
+                this.log.warn(this.id() + " Couldn't read Temperature from ChannelAddress. Might be missing.");
+            }
+            boolean temperatureIsMissing = this.hasMissingTemperature(outsideTemperature);
+            if (!temperatureIsMissing) {
 
-            this.checkToKeepCurrentState(outsideTemperature);
+                this.checkToKeepCurrentState(outsideTemperature);
 
-            this.measureAverageTemperatureOfMinute(outsideTemperature);
+                this.measureAverageTemperatureOfMinute(outsideTemperature);
 
-            this.checkAverageTemperatureAndDecideShouldBeHeating();
+                this.checkAverageTemperatureAndDecideShouldBeHeating();
 
-            if (this.shouldBeHeating) {
-                this.turnHeaterOn();
+                if (this.shouldBeHeating) {
+                    this.turnHeaterOn();
 
-                this.calculatedHeatingCurveTemperature = Math.round(HeatingCurveRegulator.calculateHeatingCurveTemperatureInDeciDegree(this.slope, this.offset, this.roomTemp, outsideTemperature));
+                    this.calculatedHeatingCurveTemperature = Math.round(HeatingCurveRegulator.calculateHeatingCurveTemperatureInDeciDegree(this.slope, this.offset, this.roomTemp, outsideTemperature));
 
-                this.setHeatingTemperature(this.calculatedHeatingCurveTemperature);
-            } else {
-                this.turnHeaterOff();
+                    this.setHeatingTemperature(this.calculatedHeatingCurveTemperature);
+                } else {
+                    this.turnHeaterOff();
+                }
+            }
+        } else {
+            this.activationOrModifiedRoutine(this.config);
+            if (!this.initial) {
+                this.initialRoutine();
             }
         }
     }
