@@ -54,7 +54,7 @@ public class MqttCommandComponent extends MqttOpenemsComponentConnector implemen
     void activate(ComponentContext context, CommandComponentConfig config) throws OpenemsError.OpenemsNamedException, IOException, ConfigurationException, MqttException {
         this.config = config;
         super.connectorDeactivate();
-        if (super.modified(context, config.id(), config.alias(), config.enabled(), this.cpm, config.mqttBridgeId())) {
+        if (super.activate(context, config.id(), config.alias(), config.enabled(), this.cpm, config.mqttBridgeId())) {
             this.configureMqtt(config);
         }
     }
