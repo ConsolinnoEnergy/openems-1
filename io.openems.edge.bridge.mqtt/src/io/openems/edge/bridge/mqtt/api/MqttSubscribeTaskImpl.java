@@ -236,6 +236,8 @@ public class MqttSubscribeTaskImpl extends AbstractMqttTask implements MqttSubsc
     @Override
     public void convertTime(DateTimeZone timeZone) {
         if (this.time != null && !this.time.equals("")) {
+            this.timeDate = DateTime.parse(this.time);
+        }else {
             this.timeDate = DateTime.now(timeZone);
         }
     }
