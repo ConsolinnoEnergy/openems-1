@@ -45,7 +45,7 @@ import java.util.concurrent.atomic.AtomicReference;
 @Designate(ocd = ConfigValveOneOutput.class, factory = true)
 @Component(name = "HeatsystemComponent.Valve.OneOutput", immediate = true,
         configurationPolicy = ConfigurationPolicy.REQUIRE,
-        property = {EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE,
+        property = {EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE,
                 EventConstants.EVENT_TOPIC + "=" + EdgeEventConstants.TOPIC_CYCLE_AFTER_CONTROLLERS}
 
 )
