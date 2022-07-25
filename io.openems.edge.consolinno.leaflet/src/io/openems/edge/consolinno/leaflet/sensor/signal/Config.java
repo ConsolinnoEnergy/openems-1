@@ -14,10 +14,10 @@ import org.osgi.service.metatype.annotations.Option;
     String alias() default "";
 
     @AttributeDefinition(name = "Module", description = "ModuleNumber where this Sensor is plugged in.")
-    int module();
+    int module() default 1;
 
     @AttributeDefinition(name = "Position", description = "PinPosition of this sensor.")
-    int position();
+    int position() default 1;
 
     @AttributeDefinition(name = "SignalType", description = "Is the Signal an Error/Status")
     SignalType signalType() default SignalType.STATUS;

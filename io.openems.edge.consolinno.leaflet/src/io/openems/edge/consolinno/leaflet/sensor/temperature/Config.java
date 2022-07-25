@@ -12,10 +12,10 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     String alias() default "";
 
     @AttributeDefinition(name = "Module", description = "ModuleNumber where this Sensor is plugged in.")
-    int module();
+    int module() default 1;
 
     @AttributeDefinition(name = "Position", description = "PinPosition of this sensor.")
-    int position();
+    int position() default 1;
 
     @AttributeDefinition(name = "LeafletId", description = "Unique Id of the LeafletCore, this Module is attached to.")
     String leafletId() default "LeafletCore";

@@ -52,10 +52,10 @@ import org.osgi.service.metatype.annotations.Option;
     String clientId() default "OpenEMS-1";
 
     @AttributeDefinition(name = "Keep Alive", description = "Keep Alive in Seconds")
-    int keepAlive() default 60;
+    int keepAlive() default 300;
 
     @AttributeDefinition(name = "LastWillSet", description = "Do you want a Last Will / Testament to be enabled")
-    boolean lastWillSet() default true;
+    boolean lastWillSet() default false;
 
     @AttributeDefinition(name = "Topic Last Will", description = "Topic for Last Will")
     String topicLastWill() default "OpenEMS/Leaflet_0/Status/";
