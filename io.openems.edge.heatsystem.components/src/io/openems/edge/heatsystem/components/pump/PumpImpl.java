@@ -206,10 +206,12 @@ public class PumpImpl extends AbstractOpenemsComponent implements OpenemsCompone
                     this.deviceType = DeviceType.PWM;
                     //reset pwm to 0; so pump is on activation off
                     this.pwm.getWritePwmPowerLevelChannel().setNextWriteValueFromObject(HydraulicComponent.DEFAULT_MIN_POWER_VALUE);
+                    this.checkPwmOrAioChannel = this.shouldCheckOutput ? this.pwm.getReadPwmPowerLevelChannel().address() : null;
                 } else if (openemsComponent instanceof AnalogInputOutput) {
                     this.aio = (AnalogInputOutput) openemsComponent;
                     this.deviceType = DeviceType.AIO;
                     this.aio.setWriteThousandthChannel().setNextWriteValueFromObject(HydraulicComponent.DEFAULT_MIN_POWER_VALUE);
+                    this.checkPwmOrAioChannel = this.shouldCheckOutput ? this.aio.getThousandthCheckChannel().address() : null;
                 } else {
                     throw new ConfigurationException("ConfigurePwmOrAio in " + super.id(), "Component instance is not an "
                             + "expected device. Make sure to configure a Pwm or Aio Device.");
@@ -236,14 +238,13 @@ public class PumpImpl extends AbstractOpenemsComponent implements OpenemsCompone
                 } else {
                     throw new ConfigurationException("Configure Relay in : " + super.id(), "Channel is not a WriteChannel");
                 }
-                if (this.shouldCheckOutput) {
-                    this.checkRelayChannel = ChannelAddress.fromString(config.checkRelayChannelAddress());
-                }
+                this.checkRelayChannel = this.shouldCheckOutput ? ChannelAddress.fromString(config.checkRelayChannelAddress()) : null;
                 break;
             case DEVICE:
                 OpenemsComponent relayComponent = this.cpm.getComponent(config.pump_Relay());
                 if (relayComponent instanceof Relay) {
                     this.relay = (Relay) relayComponent;
+                    this.checkRelayChannel = this.shouldCheckOutput ? this.relay.getRelaysReadChannel().address() : null;
                 } else {
                     throw new ConfigurationException("Configure Relay in " + super.id(), "Allocated relay, not a (configured) relay-device.");
                 }

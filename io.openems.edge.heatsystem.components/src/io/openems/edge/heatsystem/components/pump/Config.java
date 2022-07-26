@@ -23,7 +23,7 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     String alias() default "";
 
     @AttributeDefinition(name = "Configuration Type", description = "Do you want to Configure and Control the Pump via Devices or Channels")
-    ConfigurationType configType() default ConfigurationType.CHANNEL;
+    ConfigurationType configType() default ConfigurationType.DEVICE;
 
     @AttributeDefinition(name = "Pump Type", description = "What Kind of Pump is it?")
     PumpType pump_Type() default PumpType.RELAY;

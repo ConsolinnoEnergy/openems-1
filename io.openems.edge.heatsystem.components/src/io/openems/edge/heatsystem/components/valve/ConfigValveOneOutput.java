@@ -23,7 +23,6 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     @AttributeDefinition(name = "InputChannelAddress or InputDevice", description = "Device that writes PowerLevel to this Channel or Device.")
     String inputChannelOrDevice() default "Aio1/AioPercentWrite";
 
-
     @AttributeDefinition(name = "TimeToOpenValve", description = "Time to open or Close a Valve Completely (T in seconds)")
     int timeToOpenValve() default 30;
 
