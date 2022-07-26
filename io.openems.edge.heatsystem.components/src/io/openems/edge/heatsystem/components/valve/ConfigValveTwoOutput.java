@@ -21,7 +21,7 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     String alias() default "";
 
     @AttributeDefinition(name = "Configuration Type", description = "Select either Control by Channel or by DeviceType.")
-    ConfigurationType configurationType() default ConfigurationType.CHANNEL;
+    ConfigurationType configurationType() default ConfigurationType.DEVICE;
 
     @AttributeDefinition(name = "Closing Channel or Device", description = "What channel to write True/False if Valve should close OR Device. Depends on configurationType.")
     String close() default "Relay1/WriteOnOff";

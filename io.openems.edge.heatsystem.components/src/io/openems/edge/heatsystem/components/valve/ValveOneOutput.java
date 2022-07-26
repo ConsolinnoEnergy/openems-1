@@ -135,9 +135,12 @@ public class ValveOneOutput extends AbstractValve implements OpenemsComponent, H
                 if (component instanceof Pwm) {
                     this.valvePwm = (Pwm) component;
                     this.deviceType = DeviceType.PWM;
+                    this.optionalCheckOutputChannel = this.useCheckOutput ? this.valvePwm.getReadPwmPowerLevelChannel().address() : null;
+
                 } else if (component instanceof AnalogInputOutput) {
                     this.valveAio = (AnalogInputOutput) component;
                     this.deviceType = DeviceType.AIO;
+                    this.optionalCheckOutputChannel = this.useCheckOutput ? this.valveAio.getThousandthCheckChannel().address() : null;
                 } else {
                     throw new ConfigurationException("Activate : " + super.id(), "OpenEmsComponent "
                             + config.inputChannelOrDevice() + " is not an instance of an expected Device!");

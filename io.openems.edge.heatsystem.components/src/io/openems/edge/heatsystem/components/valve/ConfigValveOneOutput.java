@@ -18,7 +18,7 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     boolean enabled() default true;
 
     @AttributeDefinition(name = "Configuration Type", description = "Select either Control by Channel or by DeviceType.")
-    ConfigurationType configurationType() default ConfigurationType.CHANNEL;
+    ConfigurationType configurationType() default ConfigurationType.DEVICE;
 
     @AttributeDefinition(name = "InputChannelAddress or InputDevice", description = "Device that writes PowerLevel to this Channel or Device.")
     String inputChannelOrDevice() default "Aio1/AioPercentWrite";

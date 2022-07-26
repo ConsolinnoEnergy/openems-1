@@ -148,19 +148,16 @@ public class ValveTwoOutput extends AbstractValve implements OpenemsComponent, H
                 if (this.checkChannelOk() == false) {
                     throw new ConfigurationException("ActivateMethod in Valve: " + super.id(), "Given Channels are not ok!");
                 }
-                if (this.useCheckOutput) {
-                    this.inputClosingAddress = ChannelAddress.fromString(config.checkClosingChannelAddress());
-                    this.inputOpenAddress = ChannelAddress.fromString(config.checkOpeningChannelAddress());
-                } else {
-                    this.inputClosingAddress = null;
-                    this.inputOpenAddress = null;
-                }
+                this.inputClosingAddress = this.useCheckOutput ? ChannelAddress.fromString(config.checkClosingChannelAddress()) : null;
+                this.inputOpenAddress = this.useCheckOutput ? ChannelAddress.fromString(config.checkOpeningChannelAddress()) : null;
+
                 break;
             case DEVICE:
                 if (this.checkDevicesOkAndApplyThem(config.open(), config.close()) == false) {
                     throw new ConfigurationException("ActivateMethod in Valve: " + super.id(), "Given Devices are not ok!");
                 }
-                break;
+                this.inputClosingAddress = this.useCheckOutput ? this.closeRelay.getRelaysReadChannel().address() : null;
+                this.inputOpenAddress = this.useCheckOutput ? this.openRelay.getRelaysReadChannel().address() : null;
         }
         this.secondsPerPercentage = ((double) config.valve_Time() / 100.d);
         this.timeChannel().setNextValue(0);
@@ -263,9 +260,9 @@ public class ValveTwoOutput extends AbstractValve implements OpenemsComponent, H
                 try {
                     this.activateOrModifiedRoutine(this.config);
                     this.configSuccess = true;
-                    if(this.config.shouldCloseOnActivation()){
+                    if (this.config.shouldCloseOnActivation()) {
                         this.forceClose();
-                    } else if(this.config.shouldOpenOnActivation()){
+                    } else if (this.config.shouldOpenOnActivation()) {
                         this.forceOpen();
                     }
                 } catch (ConfigurationException | OpenemsError.OpenemsNamedException e) {
