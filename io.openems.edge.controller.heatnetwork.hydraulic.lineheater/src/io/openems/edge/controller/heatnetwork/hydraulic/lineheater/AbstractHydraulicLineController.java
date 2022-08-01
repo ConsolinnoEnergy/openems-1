@@ -162,7 +162,7 @@ abstract class AbstractHydraulicLineController extends AbstractOpenemsComponent 
         try {
             this.heaterType = heaterType;
             this.thermometerLine = (Thermometer) this.allocateComponent(referenceThermometer, ComponentType.THERMOMETER);
-            this.useMinMax = useMinMax;
+            this.useMinMax = useMinMax || minMaxOnly;
             this.onlyMinMax = minMaxOnly;
             this.createSpecificLineHeater(lineHeaterType, valueIsBoolean, bypassValveId, channelAddress, useMinMax, channels);
 
