@@ -30,10 +30,10 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
     double derivativeGain() default 0.1;
 
     @AttributeDefinition(name = "Lower Limit", description = "Lower Limit of the PID Controller.")
-    int lowerLimit() default -200;
+    int lowerLimit() default 0;
 
     @AttributeDefinition(name = "Upper Limit", description = "Upper Limit of the PID Controller.")
-    int upperLimit() default 200;
+    int upperLimit() default 1000;
 
     @AttributeDefinition(name = "TimerId", description = "Timer where the WaitTime will be handled.")
     String timerId() default "TimerByCounting";
