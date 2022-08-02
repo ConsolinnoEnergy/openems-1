@@ -53,7 +53,7 @@ import org.osgi.service.metatype.annotations.Option;
     boolean shouldCool() default false;
 
     @AttributeDefinition(name = "use Fallback", description = "If Enabled Signal isn't arriving (due to error) after activation, wait X amount till Fallback activates")
-    boolean useFallback() default true;
+    boolean useFallback() default false;
 
     @AttributeDefinition(name = "TimerId for FallbackTime", description = "TimerId for the Fallback time/cycles")
     String timerForFallback() default "TimerByCycles";
